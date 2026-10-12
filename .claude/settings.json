@@ -7,6 +7,68 @@
           {
             "type": "command",
             "command": ".claude/hooks/block-claude-main.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-dangerous-git.sh",
+            "if": "Bash(git *)"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/require-tests-before-commit.sh",
+            "if": "Bash(git *)"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-secrets.sh",
+            "if": "Bash(git *)"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/block-merged-branch-push.sh",
+            "if": "Bash(git *)"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-links.sh",
+            "if": "Edit(**/*.md)"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-skills.sh",
+            "if": "Edit(**/SKILL.md)"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-skills.sh",
+            "if": "Write(**/SKILL.md)"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-mermaid.sh",
+            "if": "Edit(**/*.md)"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/check-mermaid.sh",
+            "if": "Write(**/*.md)"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/unreviewed-commits.sh"
           }
         ]
       }
