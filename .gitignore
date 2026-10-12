@@ -9,3 +9,22 @@
 
 # OS
 .DS_Store
+
+# --- V1 워크 프로세스에서 가져온 항목 ---
+__pycache__/
+*.pyc
+
+# 비밀값 파일 — .claude/hooks/check-secrets.sh의 금지 경로와 같은 목록 (어긋나면
+# implementations/hooks/test_check_secrets.py가 잡는다).
+# 훅은 "무시된 파일은 보지 않는다"는 전제라, 여기서 먼저 막아야 untracked .env가 커밋을 막지 않는다.
+!.env.example
+!.env.sample
+!.env.template
+id_rsa
+id_ed25519
+credentials.json
+*.p12
+*.pfx
+
+# 세컨드 브레인 데이터 브랜치(data)의 작업 폴더 — ADR-0007
+projects/second-brain/data/

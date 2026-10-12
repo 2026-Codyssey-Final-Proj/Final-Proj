@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# git pre-commit — 커밋 전 비밀값 검사 (기록·보안 기준 6-3, ADR-0007).
+# 설치: 이 파일을 `.git/hooks/pre-commit`으로 복사하고 `chmod +x`. 저장소를 새로 클론하면 다시 설치한다.
+# data 브랜치 작업 폴더(고아 브랜치)에는 .claude가 없어서, 없으면 주 작업 폴더의 스크립트를 쓴다.
+s="$(git rev-parse --show-toplevel)/.claude/hooks/check-secrets.sh"
+[ -f "$s" ] || s="$(cd "$(git rev-parse --git-common-dir)/.." && pwd)/.claude/hooks/check-secrets.sh"
+[ -f "$s" ] || { echo "⚠️ pre-commit: check-secrets.sh를 찾지 못해 비밀값 검사를 건너뜁니다" >&2; exit 0; }
+exec bash "$s" --staged
