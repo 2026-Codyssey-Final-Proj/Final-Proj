@@ -11,6 +11,7 @@
 |---|---|
 | 무엇을 만드나, 요구사항 12개 | [requirements.md](docs/00-overview/requirements.md) — **요구의 원천** |
 | 기획안 | [final-project-plan.md](docs/00-overview/final-project-plan.md) |
+| **일정 · 역할 · 평가 기준** | [schedule.md](docs/00-overview/schedule.md) — 제출 11/8(일) 18:00, 평가 11/12~13 |
 | V1에서 무엇을 옮겼나 | [migration.md](docs/00-overview/migration.md) |
 | 공유·보안 규칙 | [team-sharing-security.md](docs/00-overview/team-sharing-security.md) |
 | Claude에게 일을 시킬 때 | [CLAUDE.md](CLAUDE.md) — 처음 세션이면 이름·역할부터 묻는다 |
