@@ -1,0 +1,11 @@
+# 개인 신원 파일 — 각자 로컬에서 만든다 (CLAUDE.md "처음 세션이면")
+.claude/identity.local.md
+
+# 비밀값
+.env
+.env.*
+*.pem
+*.key
+
+# OS
+.DS_Store
