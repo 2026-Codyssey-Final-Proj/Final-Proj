@@ -2,7 +2,7 @@
 세컨드 브레인 Walking Skeleton — 폰 이슈 한 줄을 문서·알람 일정·실행 기록으로 바꾼다.
 이슈 읽기와 캘린더 일정 만들기는 세션이 한다(ADR-0003) — 여기는 그 사이의 계산과 저장만 있다.
 이슈 제목 틀 (사용자 결정 2026-10-08, ADR-0005):
-  새 일   목적 / 이름 / 내용 / 마감        예: 학교 / 자료구조 과제 제출 / 트리 구현 3문제 / 10-30
+  새 일   목적 / 이름 / 내용 / 마감        예: 학교 / 예시 과제 제출 / 예시 내용 3문제 / 10-30
   완료    완료 / 목적 / 이름     또는  완료 / 번호
   수정    수정 / 목적 / 이름 / 새 마감     또는  수정 / 번호 / 새 마감
 번호 (사용자 결정 2026-10-08, D10·ADR-0006): 목적마다 범위가 있고, 다시 쓰지 않으며, 알림 제목에는 넣지 않는다.
@@ -99,9 +99,11 @@ def alarm_line(item):
 
 def calendar_event(item, now):
     start = datetime.combine(item.deadline, ALARM_TIME)
+    tonight = datetime.combine(now.date(), TONIGHT)
+    if item.deadline == now.date() and start <= now < tonight:  # 당일 마감인데 8시가 지났다 — 저녁 8시에 한 번 (2026-10-13)
+        return {"title": alarm_line(item), "start": tonight, "reminders": [tonight]}
     due = [start - timedelta(days=n) for n in REMINDER_DAYS]
     reminders = [r for r in due if r > now]
-    tonight = datetime.combine(now.date(), TONIGHT)
     if len(reminders) < len(due) and now < tonight < start:
         reminders.insert(0, tonight)
     return {"title": alarm_line(item), "start": start, "reminders": reminders}
