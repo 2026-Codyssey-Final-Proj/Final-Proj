@@ -33,8 +33,9 @@
 | T11 | 아키텍처 규칙 강제: 코드는 밖으로 보내지 않는다 (`test_architecture.py`) | | S4, implementations.md 6번 | T00~T10(모듈 전부 검사) | ✓ | `8947880` |
 | T12 | 지식 목록 (`knowledge_list.py`) | | F4a·Q4(다) | T03 | ✓ | `6fa320c` |
 | T13 | 이 문서 | — | 5→6 게이트 ②③ | T00~T12 | — | (이 커밋) |
+| T14 | 할 일 시간: 30분 단위 예상 시간, 완료 때 실제 시간 기록, 기록으로 묻기 (`duration.py`), 일정 제안이 할 일마다 시간을 씀 (`planning.py`), ADR-0009 | [P] | F17·F18a, Q11 | T06 | ✓ | `9790d76`, V1 PR #90 |
 
-V1(`gamercross/my-workspace`)의 PR #85(T01~T07)·#86(T08·T09)·#88(T10~T13)에 들어갔고, 이 레포에는 #24(T00~T08)와 이 PR(T10~T13)로 옮겼다. 개인 연결 설정은 옮기지 않았다.
+V1(`gamercross/my-workspace`)의 PR #85(T01~T07)·#86(T08·T09)·#88(T10~T13)·#90(T14)에 들어갔고, 이 레포에는 #24(T00~T08), #26(T10~T13)과 이 PR(T14·질문 답 문서)로 옮겼다. 개인 연결 설정은 옮기지 않았다.
 커밋 해시는 **V1 이력**의 것이라 이 레포에서는 찾을 수 없다(출처 표시용).
 
 ## 2. 요구 ↔ 시험 대응표 — EARS Unwanted 16개 전부
@@ -68,6 +69,7 @@ V1(`gamercross/my-workspace`)의 PR #85(T01~T07)·#86(T08·T09)·#88(T10~T13)에
 | D11 지난 알림 대체, 당일 마감 | 오늘 20:00 한 번 | `test_intake` · `test_a_past_reminder_is_replaced_by_tonight_8pm`, `test_deadline_today_after_8am_gets_one_tonight_reminder` | ✓ (폰 도착은 오늘 저녁 확인) |
 | F7a·F8a 브리핑 | 3일 이내 빠짐없이, 다음 할 일 3개 | `test_briefing` · `test_every_soon_task_is_shown_without_a_cap`, `test_three_day_window_is_inclusive_and_four_days_is_not_soon` | ✓ |
 | F17·Q11 | 하루 3시간(180분) 상한 | `test_planning` · `test_daily_limit_three_hours_q11` | ✓ (잠정 값) |
+| F17 할 일마다 시간 | 30분 단위(문서 `예상 시간`), 하루 상한보다 길면 놓지 못함으로 알림 | `test_duration` · `test_estimate_must_be_a_positive_multiple_of_thirty`, `test_planning` · `test_a_task_longer_than_the_daily_limit_is_reported_not_forced` | ✓ (실제 기록은 첫 완료부터) |
 | F17·Q12 | 한 주 최대 10개 | `test_planning` · `test_weekly_limit_ten_tasks_q12_and_the_rest_is_reported` | ✓ (잠정 값) |
 | F15a·Q9 | 스크린샷 5장, 그 밖의 파일 10개 | `test_bundle` · `test_screenshots_are_split_into_batches_of_five`, `test_other_files_are_split_into_batches_of_ten` | ✓ |
 | Q6 질문 수 | 2 | `test_summary_rules` · `test_at_most_two_questions_are_asked_now` | ✓ |

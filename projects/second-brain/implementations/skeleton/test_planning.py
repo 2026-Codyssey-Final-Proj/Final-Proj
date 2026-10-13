@@ -117,6 +117,36 @@ def test_load_tasks_reads_open_tasks_only_and_skips_knowledge(tmp=None):
     assert [(t.purpose, t.name, t.deadline) for t in tasks] == [("작업", "열린 일", date(2026, 10, 16))]
 
 
+def test_task_minutes_from_the_document_are_used_per_task():  # 사용자 결정 2026-10-13: 할 일마다 시간을 고른다
+    long_task = Task("작업", "긴 일", date(2026, 10, 18), minutes=120)
+    short_task = Task("작업", "짧은 일", date(2026, 10, 18), minutes=30)
+    plan = plan_week([long_task, short_task], [], datetime(2026, 10, 13, 8, 0))
+    spans = {p.name: (p.end - p.start).seconds // 60 for p in plan.proposals}
+    assert spans == {"긴 일": 120, "짧은 일": 30}
+
+
+def test_a_task_longer_than_the_daily_limit_is_reported_not_forced():
+    plan = plan_week([Task("작업", "너무 긴 일", date(2026, 10, 18), minutes=240)], [], NOW)
+    assert plan.proposals == [] and "하루 상한" in plan.left_out[0][1]
+
+
+def test_without_minutes_the_default_applies():
+    plan = plan_week([Task("작업", "기본", date(2026, 10, 18))], [], NOW)
+    assert (plan.proposals[0].end - plan.proposals[0].start).seconds // 60 == 60
+
+
+def test_load_tasks_reads_the_estimate_from_the_document():
+    root = Path(tempfile.mkdtemp())
+    d = root / "vault" / "작업"
+    d.mkdir(parents=True)
+    (d / "2000 시간 있는 일.md").write_text(
+        "# 시간 있는 일\n- 번호: 2000\n- 목적: 작업\n- 마감: 2026-10-16\n- 상태: 진행\n- 예상 시간: 90분\n", encoding="utf-8")
+    (d / "2001 시간 없는 일.md").write_text(
+        "# 시간 없는 일\n- 번호: 2001\n- 목적: 작업\n- 마감: 2026-10-16\n- 상태: 진행\n", encoding="utf-8")
+    got = {t.name: t.minutes for t in load_tasks(root)}
+    assert got == {"시간 있는 일": 90, "시간 없는 일": None}
+
+
 def run_all():
     tests = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     for t in tests:

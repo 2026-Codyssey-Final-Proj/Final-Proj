@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
+from duration import read_estimate
 from listing import _read
 
 DAILY_MINUTES = 180  # Q11
@@ -23,6 +24,7 @@ class Task:
     purpose: str
     name: str
     deadline: date
+    minutes: int | None = None  # 할 일 문서의 `예상 시간`(30분 단위). 없으면 기본값
 
 
 @dataclass(frozen=True)
@@ -78,20 +80,24 @@ def plan_week(tasks, busy, now, *, daily_minutes=DAILY_MINUTES, weekly_max=WEEKL
         if len(plan.proposals) >= weekly_max:
             plan.left_out.append((task.name, f"한 주 상한({weekly_max}개)을 넘음"))
             continue
+        need = task.minutes or task_minutes
+        if need > daily_minutes:
+            plan.left_out.append((task.name, f"하루 상한({daily_minutes}분)보다 길어 한 번에 놓지 못함"))
+            continue
         overdue = task.deadline < today
         last = sunday if overdue else min(task.deadline, sunday)
         slot = None
-        for day in (d for d in days if d <= last and used[d] + task_minutes <= daily_minutes):
-            slot = _first_free(day, task_minutes, taken, now)
+        for day in (d for d in days if d <= last and used[d] + need <= daily_minutes):
+            slot = _first_free(day, need, taken, now)
             if slot:
                 break
         if not slot:
             plan.left_out.append((task.name, "마감 전에 빈 시간이 없음"))
             continue
-        end = slot + timedelta(minutes=task_minutes)
+        end = slot + timedelta(minutes=need)
         plan.proposals.append(Proposal(slot, end, task.purpose, task.name, task.deadline, overdue))
         taken.append((slot, end))
-        used[slot.date()] += task_minutes
+        used[slot.date()] += need
     plan.proposals.sort(key=lambda p: p.start)
     return plan
 
@@ -126,5 +132,5 @@ def load_tasks(root):
         except ValueError:
             continue
         if status != "완료" and not archived:
-            tasks.append(Task(purpose, name, deadline))
+            tasks.append(Task(purpose, name, deadline, read_estimate(f)))
     return tasks
