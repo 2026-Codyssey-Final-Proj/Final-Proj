@@ -32,6 +32,8 @@ def build_list(root, today):
     root = Path(root)
     rows, bad = [], []
     for f in sorted((root / "vault").rglob("*.md")) if (root / "vault").is_dir() else []:
+        if f.relative_to(root / "vault").parts[0] == "지식":  # ADR-0008: 지식 문서는 할 일이 아니다
+            continue
         try:
             rows.append(_read(root, f))
         except ValueError:

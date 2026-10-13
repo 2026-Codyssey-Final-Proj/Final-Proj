@@ -34,11 +34,11 @@ def _section(text, title):
 def test_t1_grouped_by_purpose_and_ordered_by_number():
     r = _root()
     _doc(r, "작업", 2000, "보고서", "2026-10-31")
-    _doc(r, "학교", 1001, "클라우드", "2026-10-31")
-    _doc(r, "생활", 0, "장보기", "2026-10-31")
-    _doc(r, "학교", 1000, "자료구조", "2026-10-31")
+    _doc(r, "학교", 1001, "예시 나", "2026-10-31")
+    _doc(r, "생활", 0, "예시 심부름", "2026-10-31")
+    _doc(r, "학교", 1000, "예시 가", "2026-10-31")
     sec = _section(build_list(r, TODAY), "진행")
-    assert [sec.index(n) for n in ("장보기", "자료구조", "클라우드", "보고서")] == sorted(sec.index(n) for n in ("장보기", "자료구조", "클라우드", "보고서"))
+    assert [sec.index(n) for n in ("예시 심부름", "예시 가", "예시 나", "보고서")] == sorted(sec.index(n) for n in ("예시 심부름", "예시 가", "예시 나", "보고서"))
 
 
 def test_t2_overdue_imminent_open_done_sections_in_that_order():
@@ -62,7 +62,7 @@ def test_t2_overdue_count_is_stated_for_q1():  # Q1의 (가): 마감이 지났�
 
 def test_t3_body_text_is_never_in_the_list():
     r = _root()
-    _doc(r, "학교", 1000, "과제", "2026-10-30", body="트리 구현 3문제")
+    _doc(r, "학교", 1000, "과제", "2026-10-30", body="예시 내용 3문제")
     assert "트리 구현" not in build_list(r, TODAY)
 
 
@@ -85,17 +85,17 @@ def test_t5_empty_or_missing_vault_gives_an_empty_list_not_an_error():
 
 def test_t6_same_input_gives_the_same_text():
     r = _root()
-    _doc(r, "학교", 1000, "자료구조", "2026-10-30")
-    _doc(r, "생활", 0, "장보기", "2026-10-10")
+    _doc(r, "학교", 1000, "예시 가", "2026-10-30")
+    _doc(r, "생활", 0, "예시 심부름", "2026-10-10")
     assert build_list(r, TODAY) == build_list(r, TODAY)
 
 
 def test_t7_each_row_links_to_the_exact_path():
     r = _root()
-    _doc(r, "학교", 1001, "클라우드 컴퓨팅", "2026-10-30")
+    _doc(r, "학교", 1001, "예시 수업", "2026-10-30")
     t = build_list(r, TODAY)
     links = [unquote(s.split("](")[1].split(")")[0]) for s in t.splitlines() if "](" in s]
-    assert links == ["vault/학교/1001 클라우드 컴퓨팅.md"] and (r / links[0]).exists()
+    assert links == ["vault/학교/1001 예시 수업.md"] and (r / links[0]).exists()
 
 
 def test_t8_archived_docs_stay_in_done_and_keep_their_number():
@@ -107,9 +107,9 @@ def test_t8_archived_docs_stay_in_done_and_keep_their_number():
 
 def test_write_list_writes_the_file_next_to_the_vault():
     r = _root()
-    _doc(r, "학교", 1000, "자료구조", "2026-10-30")
+    _doc(r, "학교", 1000, "예시 가", "2026-10-30")
     p = write_list(r, TODAY)
-    assert p == r / "목록.md" and "자료구조" in p.read_text(encoding="utf-8") and "만든 날짜: 2026-10-09" in p.read_text(encoding="utf-8")
+    assert p == r / "목록.md" and "예시 가" in p.read_text(encoding="utf-8") and "만든 날짜: 2026-10-09" in p.read_text(encoding="utf-8")
 
 
 def run_all():
