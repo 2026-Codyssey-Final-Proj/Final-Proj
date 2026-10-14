@@ -9,6 +9,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
+from config import data_dir
 from listing import SOON_DAYS
 from planning import load_tasks
 
@@ -72,12 +73,16 @@ def default_session(base):
 def main(argv):
     """python3 briefing.py [데이터 폴더] [--today YYYY-MM-DD] — 세션 시작에 부를 수 있게 실패해도 0으로 끝난다."""
     here = Path(__file__).resolve()
-    args = [a for a in argv[1:] if not a.startswith("--")]
-    today = date.fromisoformat(argv[argv.index("--today") + 1]) if "--today" in argv else date.today()
-    data = Path(args[0]) if args else here.parents[2] / "data"
+    rest, today = list(argv[1:]), date.today()
+    if "--today" in rest:  # 옵션 값(날짜)이 폴더 인자로 읽히지 않게 값과 함께 뺀다
+        i = rest.index("--today")
+        today = date.fromisoformat(rest[i + 1])
+        del rest[i:i + 2]
+    args = [a for a in rest if not a.startswith("--")]
+    data = Path(args[0]) if args else data_dir(here.parents[2] / "data")  # 인자 > 환경변수 > 기본 자리(ADR-0010)
     session = default_session(here.parents[2])
     if not data.is_dir():  # 데이터 작업 폴더(data 브랜치)가 없다 — 일이 없다는 뜻이 아니다
-        print("데이터 폴더(data 브랜치 작업 폴더)를 찾지 못했습니다 — 브리핑을 건너뜁니다")
+        print("데이터 폴더(SECOND_BRAIN_DATA 또는 data 작업 폴더)를 찾지 못했습니다 — 브리핑을 건너뜁니다")
         return 0
     try:
         print(build_briefing(data, today, projects=[("second-brain", session)]), end="")
