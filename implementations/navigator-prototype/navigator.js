@@ -143,145 +143,105 @@
     return `${when} ${s.n}단계 할 일 ${n}개 중 ${met}개까지 하셨어요. 이어서 해요!`;
   }
 
+  // 응답 모양(JSON 스키마) — 칸은 모두 꼭 있어야 한다
   const str = { type: "string", minLength: 1 };
-  const JUDGE_SCHEMA = {
-    type: "object", required: ["stage", "reason", "criteria", "next"],
-    properties: {
-      stage: { type: "integer", minimum: 0, maximum: 7 },
-      reason: str,
-      criteria: { type: "array", items: { type: "object", required: ["met", "evidence"], properties: { met: { type: "boolean" }, evidence: { type: "string" } } } },
-      next: { type: "object", required: ["what", "why", "question", "options", "action"], properties: {
-        what: str, why: str, question: str, action: str,
-        options: { type: "array", minItems: 2, maxItems: 4, items: str } } },
-    },
-  };
-  const ANSWER_SCHEMA = { type: "object", required: ["answer"], properties: { answer: str } };
-  const DRAFT_SCHEMA = { type: "object", required: ["draft", "say"], properties: { draft: str, say: str } };
-  const REVIEW_SCHEMA = {
-    type: "object", required: ["say", "good", "fix", "ready"],
-    properties: {
-      say: str, ready: { type: "boolean" },
-      good: { type: "array", maxItems: 3, items: str },
-      fix: { type: "array", maxItems: 3, items: { type: "object", required: ["where", "why", "hint"], properties: { where: str, why: str, hint: str } } },
-    },
-  };
+  const obj = (properties) => ({ type: "object", required: Object.keys(properties), properties });
+  const list = (items, min, max) => ({ type: "array", items, ...(min ? { minItems: min } : {}), ...(max ? { maxItems: max } : {}) });
+  const JUDGE_SCHEMA = obj({
+    stage: { type: "integer", minimum: 0, maximum: 7 }, reason: str,
+    criteria: list(obj({ met: { type: "boolean" }, evidence: { type: "string" } })),
+    next: obj({ what: str, why: str, question: str, options: list(str, 2, 4), action: str }),
+  });
+  const ANSWER_SCHEMA = obj({ answer: str });
+  const DRAFT_SCHEMA = obj({ draft: str, say: str });
+  const REVIEW_SCHEMA = obj({ say: str, good: list(str, 0, 3), fix: list(obj({ where: str, why: str, hint: str }), 0, 3), ready: { type: "boolean" } });
 
-  const stageTable = () => STAGES.map((s) => `${s.n}단계 ${s.title}: ${s.does}. 할 일: ${s.criteria.map((x, i) => `(${i + 1}) ${x.text}${x.term ? ` [${x.term}]` : ""}`).join(" ")}`).join("\n");
-
+  // ── 요청문 — [역할 · 상황] · 규칙 · 쉬운 말 규칙 · 넘길 글. 네 요청이 같은 틀을 쓴다 ──
+  const ROLE = "너는 앱을 만드는 사람 옆에서 길을 알려 주는 동료다.";
+  const SHORT = `두 문장 이내, ${SAY_MAX}자 안쪽`;   // 나비 말풍선에 그대로 나오는 말의 길이
   const PLAIN = [
-    "- 읽는 사람은 개발을 모르는 사람이다. 중학생도 알아듣는 말로, '~해요' 말투로 짧게 쓴다.",
-    "- 전문 용어와 영어 약어를 쓰지 않는다. 꼭 필요하면 쉬운 말을 먼저 쓰고 괄호 안에 용어를 넣는다.",
-    "- 사용자의 작업 내용에 나온 말을 예로 든다.",
-  ].join("\n");
+    "읽는 사람은 개발을 모르는 사람이다. 중학생도 알아듣는 말로, '~해요' 말투로 짧게 쓴다.",
+    "전문 용어와 영어 약어를 쓰지 않는다. 꼭 필요하면 쉬운 말을 먼저 쓰고 괄호 안에 용어를 넣는다.",
+    "사용자의 작업 내용에 나온 말을 예로 든다.",
+  ];
+  const tag = (name, t) => [`<${name}>`, String(t), `</${name}>`];
+  const prompt = (intro, rules, ...tags) =>
+    [`${ROLE} ${intro[0]}`, ...intro.slice(1), "", "규칙:", ...[...rules, ...PLAIN].map((r) => `- ${r}`), "", ...tags.flat()].join("\n");
+  // 단계의 할 일 — "(1) … (2) …". terms면 [용어]까지
+  const todoOf = (s, terms) => s.criteria.map((x, i) => `(${i + 1}) ${x.text}${terms && x.term ? ` [${x.term}]` : ""}`).join(" ");
+  const stageTable = () => STAGES.map((s) => `${s.n}단계 ${s.title}: ${s.does}. 할 일: ${todoOf(s, true)}`).join("\n");
 
-  function judgePrompt(text) {
-    return [
-      "너는 앱을 만드는 사람 옆에서 길을 알려 주는 동료다. 아래 0~7단계로 사용자가 지금 어디쯤인지 알려 준다.",
-      stageTable(),
-      "",
-      "규칙:",
-      "- 작업 내용에 적힌 것만 근거로 쓴다. 적혀 있지 않으면 met=false이고 evidence는 빈 문자열이다. 지어내지 않는다.",
-      "- evidence는 작업 내용에서 그대로 따온 짧은 구절이다.",
-      "- criteria는 고른 단계의 할 일과 같은 개수, 같은 순서로 낸다.",
-      `- reason은 지금 어디쯤인지와 잘한 점을 두 문장 이내, ${SAY_MAX}자 안쪽으로 말한다(나비의 말풍선에 그대로 나온다).`,
-      "- next는 아직 안 한 일 중 가장 먼저 할 하나다. 모두 했으면 다음 단계로 넘어가기 전 확인을 해 보자고 안내한다.",
-      "- next.what은 20자 안팎의 짧은 할 일 이름이다(예: '빠르게'를 숫자로 바꾸기). 설명은 why, 방법은 action에 쓴다.",
-      "- next.question은 그 일을 하려면 사용자가 정해야 할 것 하나를 묻는 짧은 질문이다.",
-      "- next.options는 그 질문의 선택지 2~4개다. 하나에 25자 안팎. 모르면 고를 수 있게 '아직 모름'류를 하나 넣는다. 고르는 건 사용자다.",
-      "- 작업 내용에 '→ …로 정했어요.'라고 적힌 줄은 사용자가 이미 고른 것이다. 그 일은 했다고 보고 다음 일로 넘어간다.",
-      PLAIN,
-      "",
-      "<작업내용>",
-      String(text),
-      "</작업내용>",
-    ].join("\n");
-  }
+  const judgePrompt = (text) => prompt(["아래 0~7단계로 사용자가 지금 어디쯤인지 알려 준다.", stageTable()], [
+    "작업 내용에 적힌 것만 근거로 쓴다. 적혀 있지 않으면 met=false이고 evidence는 빈 문자열이다. 지어내지 않는다.",
+    "evidence는 작업 내용에서 그대로 따온 짧은 구절이다.",
+    "criteria는 고른 단계의 할 일과 같은 개수, 같은 순서로 낸다.",
+    `reason은 지금 어디쯤인지와 잘한 점을 ${SHORT}으로 말한다(나비의 말풍선에 그대로 나온다).`,
+    "next는 아직 안 한 일 중 가장 먼저 할 하나다. 모두 했으면 다음 단계로 넘어가기 전 확인을 해 보자고 안내한다.",
+    "next.what은 20자 안팎의 짧은 할 일 이름이다(예: '빠르게'를 숫자로 바꾸기). 설명은 why, 방법은 action에 쓴다.",
+    "next.question은 그 일을 하려면 사용자가 정해야 할 것 하나를 묻는 짧은 질문이다.",
+    "next.options는 그 질문의 선택지 2~4개다. 하나에 25자 안팎. 모르면 고를 수 있게 '아직 모름'류를 하나 넣는다. 고르는 건 사용자다.",
+    "작업 내용에 '→ …로 정했어요.'라고 적힌 줄은 사용자가 이미 고른 것이다. 그 일은 했다고 보고 다음 일로 넘어간다.",
+  ], tag("작업내용", text));
 
   function answerPrompt(stage, hard, question, text) {
     const s = STAGES[stage];
-    return [
-      `너는 앱을 만드는 사람 옆에서 길을 알려 주는 동료다. 사용자가 ${s.n}단계 "${s.title}"(${s.does})를 마치고 "잘 모르겠다"고 했다.`,
-      `헷갈린 부분: ${hard.join(", ") || "(고르지 않음)"}`,
-      "다섯 문장 이내로 답한다. 모르면 모른다고 한다.",
-      PLAIN,
-      "<작업내용>", String(text), "</작업내용>",
-      "<질문>", String(question), "</질문>",
-    ].join("\n");
+    return prompt([`사용자가 ${s.n}단계 "${s.title}"(${s.does})를 마치고 "잘 모르겠다"고 했다.`, `헷갈린 부분: ${hard.join(", ") || "(고르지 않음)"}`],
+      ["다섯 문장 이내로 답한다. 모르면 모른다고 한다."], tag("작업내용", text), tag("질문", question));
   }
 
   // FR-3 설계도: AI가 초안을 먼저 쓰고 → 사용자가 고치고 → AI가 다시 봐 준다. 확정은 사람만 한다(화면의 버튼).
-  const todoOf = (s) => s.criteria.map((x, i) => `(${i + 1}) ${x.text}`).join(" ");
   function draftPrompt(stage, text) {
     const s = STAGES[stage];
-    return [
-      `너는 앱을 만드는 사람 옆에서 길을 알려 주는 동료다. 사용자는 ${s.n}단계 "${s.title}"(${s.does})를 하고 있다.`,
-      `아래 작업 내용만 보고 이 단계에서 만들 "${s.doc}"의 초안을 쓴다. 초안은 사용자가 직접 고쳐서 완성한다.`,
-      `이 단계에서 챙길 것: ${todoOf(s)}`,
-      "",
-      "규칙:",
-      "- 작업 내용에 없는 사실(숫자, 사람, 기능, 날짜)은 지어내지 않는다. 모르는 자리는 [채워 주세요: 무엇을] 으로 비워 둔다.",
-      "- 한 줄에 한 가지만 쓴다. 전체 1200자 이내. 표·기호 장식 없이 줄글과 번호만 쓴다.",
-      `- say는 초안을 건네며 하는 말이다. 두 문장 이내, ${SAY_MAX}자 안쪽으로, 빈칸이 몇 개인지 알려 준다.`,
-      PLAIN,
-      "",
-      "<작업내용>", String(text), "</작업내용>",
-    ].join("\n");
+    return prompt([`사용자는 ${s.n}단계 "${s.title}"(${s.does})를 하고 있다.`,
+      `아래 작업 내용만 보고 이 단계에서 만들 "${s.doc}"의 초안을 쓴다. 초안은 사용자가 직접 고쳐서 완성한다.`, `이 단계에서 챙길 것: ${todoOf(s)}`], [
+      "작업 내용에 없는 사실(숫자, 사람, 기능, 날짜)은 지어내지 않는다. 모르는 자리는 [채워 주세요: 무엇을] 으로 비워 둔다.",
+      "한 줄에 한 가지만 쓴다. 전체 1200자 이내. 표·기호 장식 없이 줄글과 번호만 쓴다.",
+      `say는 초안을 건네며 하는 말이다. ${SHORT}으로, 빈칸이 몇 개인지 알려 준다.`,
+    ], tag("작업내용", text));
   }
   function reviewPrompt(stage, text, doc) {
     const s = STAGES[stage];
-    return [
-      `너는 앱을 만드는 사람 옆에서 길을 알려 주는 동료다. 사용자가 ${s.n}단계의 "${s.doc}"을 고쳐 썼다. 다시 봐 준다.`,
-      `이 단계에서 챙길 것: ${todoOf(s)}`,
-      "",
-      "규칙:",
-      "- 대신 고쳐 쓰지 않는다. 고칠 곳과 방향만 말한다. 정답 문장을 주지 않는다.",
-      "- good은 잘한 점 3개 이내. 설계도에 실제로 있는 것만 말한다.",
-      "- fix는 고칠 곳 3개 이내. where는 설계도에서 그대로 따온 짧은 구절, why는 왜 고쳐야 하는지, hint는 어떻게 고칠지 방향이다.",
-      "- [채워 주세요: …] 빈칸이 남아 있으면 fix에 넣는다.",
-      "- ready는 fix가 비어 있을 때만 true다.",
-      `- say는 두 문장 이내, ${SAY_MAX}자 안쪽이다.`,
-      PLAIN,
-      "",
-      "<작업내용>", String(text), "</작업내용>",
-      "<설계도>", String(doc), "</설계도>",
-    ].join("\n");
+    return prompt([`사용자가 ${s.n}단계의 "${s.doc}"을 고쳐 썼다. 다시 봐 준다.`, `이 단계에서 챙길 것: ${todoOf(s)}`], [
+      "대신 고쳐 쓰지 않는다. 고칠 곳과 방향만 말한다. 정답 문장을 주지 않는다.",
+      "good은 잘한 점 3개 이내. 설계도에 실제로 있는 것만 말한다.",
+      "fix는 고칠 곳 3개 이내. where는 설계도에서 그대로 따온 짧은 구절, why는 왜 고쳐야 하는지, hint는 어떻게 고칠지 방향이다.",
+      "[채워 주세요: …] 빈칸이 남아 있으면 fix에 넣는다.",
+      "ready는 fix가 비어 있을 때만 true다.",
+      `say는 ${SHORT}이다.`,
+    ], tag("작업내용", text), tag("설계도", doc));
   }
 
+  // ── Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함") ──
   const filled = (x) => typeof x === "string" && x.trim() !== "";
+  const has = (o, keys) => !!o && keys.every((k) => filled(o[k]));        // 글자 칸이 모두 채워졌나
+  const pick = (o, keys) => Object.fromEntries(keys.map((k) => [k, o[k]])); // 그 칸만 옮긴다(다른 칸은 버린다)
+  const NEXT = ["what", "why", "question", "action"], FIX = ["where", "why", "hint"];
 
-  function parseDraft(o) {
-    if (!o || !filled(o.draft) || !filled(o.say)) return null;
-    return { draft: o.draft.slice(0, 4000), say: o.say };
-  }
-  // 다시 봐 준 결과도 믿지 않는다. 고칠 곳이 하나라도 있으면 ready는 우리 쪽에서 false로 둔다
+  const parseDraft = (o) => (has(o, ["draft", "say"]) ? { draft: o.draft.slice(0, 4000), say: o.say } : null);
+  // 고칠 곳이 하나라도 있으면 ready는 우리 쪽에서 false로 둔다
   function parseReview(o) {
-    if (!o || !filled(o.say) || typeof o.ready !== "boolean" || !Array.isArray(o.good) || !Array.isArray(o.fix)) return null;
-    if (!o.good.every(filled) || !o.fix.every((f) => f && ["where", "why", "hint"].every((k) => filled(f[k])))) return null;
-    const fix = o.fix.slice(0, 3).map((f) => ({ where: f.where, why: f.why, hint: f.hint }));
+    if (!has(o, ["say"]) || typeof o.ready !== "boolean" || !Array.isArray(o.good) || !Array.isArray(o.fix)) return null;
+    if (!o.good.every(filled) || !o.fix.every((f) => has(f, FIX))) return null;
+    const fix = o.fix.slice(0, 3).map((f) => pick(f, FIX));
     return { say: o.say, good: o.good.slice(0, 3), fix, ready: o.ready && fix.length === 0 };
   }
-
-  // Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함"). 할 일 문장은 우리 데이터로 덮는다.
+  // 할 일 문장은 우리 데이터로 덮는다
   function parseJudgement(o) {
-    if (!o || typeof o !== "object") return null;
-    const s = STAGES[o.stage];
-    if (!Number.isInteger(o.stage) || !s) return null;
-    if (!Array.isArray(o.criteria) || o.criteria.length !== s.criteria.length) return null;
-    if (o.criteria.some((x) => !x || typeof x.met !== "boolean")) return null;
-    if (!filled(o.reason)) return null;
-    const n = o.next || {};
-    if (!["what", "why", "question", "action"].every((k) => filled(n[k]))) return null;
-    if (!Array.isArray(n.options) || n.options.length < 2 || n.options.length > 4 || !n.options.every(filled)) return null;
+    const s = o && STAGES[o.stage];
+    if (!s || !Number.isInteger(o.stage) || !filled(o.reason)) return null;
+    if (!Array.isArray(o.criteria) || o.criteria.length !== s.criteria.length || o.criteria.some((x) => !x || typeof x.met !== "boolean")) return null;
+    const n = o.next;
+    if (!has(n, NEXT) || !Array.isArray(n.options) || n.options.length < 2 || n.options.length > 4 || !n.options.every(filled)) return null;
     return {
       stage: o.stage, reason: o.reason,
       criteria: s.criteria.map((x, i) => ({ text: x.text, term: x.term, met: o.criteria[i].met, evidence: String(o.criteria[i].evidence || "") })),
-      next: { what: n.what, why: n.why, question: n.question, options: n.options.slice(), action: n.action },
+      next: { ...pick(n, NEXT), options: n.options.slice() },
     };
   }
 
   const api = { STAGES, JARGON, SAY_MAX, canAdvance, reorder, nextView, ticker, face, docFace, decisionLine, blanks, welcome,
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt,
-    parseJudgement, parseDraft, parseReview };
+    parseJudgement, parseDraft, parseReview, filled };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
 })(typeof window !== "undefined" ? window : globalThis);

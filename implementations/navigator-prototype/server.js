@@ -75,12 +75,14 @@ function readJson(req) {
 }
 
 const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); };
+const refuse = (res, reason, code = 400) => send(res, code, { ok: false, reason });
+const as = (key, read) => (d) => { const v = read(d); return v && { [key]: v }; };   // 확인한 결과를 화면이 읽는 칸 이름으로
 
 // Claude에게 묻고, 답의 모양을 확인한 것만 돌려준다. read: 확인해서 화면에 줄 칸들을 만든다(모양이 틀리면 null)
 async function ask(res, prompt, schema, read, what) {
   const r = await callClaude(prompt, schema);
   const out = r.data && read(r.data);
-  return out ? send(res, 200, { ok: true, ...out, tokens: r.tokens }) : send(res, 502, { ok: false, reason: r.error || `${what} 형식이 맞지 않음` });
+  return out ? send(res, 200, { ok: true, ...out, tokens: r.tokens }) : refuse(res, r.error || `${what} 형식이 맞지 않음`, 502);
 }
 
 // ── Claude Code 연결 ──
@@ -113,7 +115,7 @@ function addEvent(body) {
 }
 
 async function handle(req, res) {
-  if (!allowed(req.headers)) return send(res, 403, { ok: false, reason: "이 컴퓨터의 화면에서만 부를 수 있음" });
+  if (!allowed(req.headers)) return refuse(res, "이 컴퓨터의 화면에서만 부를 수 있음", 403);
   if (req.method === "GET" && FILES[req.url]) {
     const [file, type] = FILES[req.url];
     res.writeHead(200, { "Content-Type": `${type}; charset=utf-8` });
@@ -123,33 +125,29 @@ async function handle(req, res) {
     const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
     return send(res, 200, { ok: true, latest: seq, events: events.filter((e) => e.seq > since) });
   }
-  if (req.method !== "POST") return send(res, 404, { ok: false });
+  if (req.method !== "POST") return refuse(res, "없는 주소", 404);
   const body = await readJson(req);
   if (req.url === "/api/event") {
     const ev = body && addEvent(body);
-    return ev ? send(res, 200, { ok: true, seq: ev.seq }) : send(res, 400, { ok: false, reason: "알 수 없는 알림" });
+    return ev ? send(res, 200, { ok: true, seq: ev.seq }) : refuse(res, "알 수 없는 알림");
   }
-  if (!body || typeof body.text !== "string" || !body.text.trim()) return send(res, 400, { ok: false, reason: "작업 내용이 비어 있음" });
+  if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
 
-  if (req.url === "/api/judge") {
-    return ask(res, Nav.judgePrompt(body.text), Nav.JUDGE_SCHEMA, (d) => { const j = Nav.parseJudgement(d); return j && { judgement: j }; }, "판정");
-  }
+  if (req.url === "/api/judge") return ask(res, Nav.judgePrompt(body.text), Nav.JUDGE_SCHEMA, as("judgement", Nav.parseJudgement), "판정");
   if (req.url === "/api/answer") {
-    const stage = body.stage, hard = Array.isArray(body.hard) ? body.hard.map(String) : [];
-    if (!Nav.STAGES[stage] || typeof body.question !== "string" || !body.question.trim()) return send(res, 400, { ok: false, reason: "질문이 비어 있음" });
-    return ask(res, Nav.answerPrompt(stage, hard, body.question, body.text), Nav.ANSWER_SCHEMA,
-      (d) => typeof d.answer === "string" && { answer: d.answer }, "답");
+    const hard = Array.isArray(body.hard) ? body.hard.map(String) : [];
+    if (!Nav.STAGES[body.stage] || !Nav.filled(body.question)) return refuse(res, "질문이 비어 있음");
+    return ask(res, Nav.answerPrompt(body.stage, hard, body.question, body.text), Nav.ANSWER_SCHEMA, as("answer", (d) => d.answer), "답");
   }
   // FR-3 설계도 — 설계도를 만드는 단계(1~4)만
   if (req.url === "/api/draft" || req.url === "/api/review") {
     const s = Nav.STAGES[body.stage];
-    if (!s || !s.doc) return send(res, 400, { ok: false, reason: "설계도를 만드는 단계가 아님" });
+    if (!s || !s.doc) return refuse(res, "설계도를 만드는 단계가 아님");
     if (req.url === "/api/draft") return ask(res, Nav.draftPrompt(s.n, body.text), Nav.DRAFT_SCHEMA, Nav.parseDraft, "초안");
-    if (typeof body.doc !== "string" || !body.doc.trim()) return send(res, 400, { ok: false, reason: "설계도가 비어 있음" });
-    return ask(res, Nav.reviewPrompt(s.n, body.text, body.doc), Nav.REVIEW_SCHEMA, (d) => { const v = Nav.parseReview(d); return v && { review: v }; },
-      "다시 봐 준 결과의");
+    if (!Nav.filled(body.doc)) return refuse(res, "설계도가 비어 있음");
+    return ask(res, Nav.reviewPrompt(s.n, body.text, body.doc), Nav.REVIEW_SCHEMA, as("review", Nav.parseReview), "다시 봐 준 결과의");
   }
-  send(res, 404, { ok: false });
+  refuse(res, "없는 주소", 404);
 }
 
 if (require.main === module) {

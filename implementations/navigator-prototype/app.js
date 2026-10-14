@@ -156,11 +156,15 @@
   const mapBody = () => `<div class="list">${N.STAGES.map((x) => `<div>
       <span class="dot ${stepClass(x.n)}"></span><span style="flex:1;padding:8px 0"><b>${x.n} · ${esc(x.title)}</b><span class="sub">${esc(x.does)}</span></span>
       ${stepClass(x.n) === "cur" ? `<span class="meta">${metCount()}/${met().length}</span>` : ""}</div>`).join("")}</div>`;
-  const learnBody = () => `<div class="card"><span class="kicker">지나온 단계</span>${st.history.length ? st.history.map((x) => `<span class="meta">${esc(x.text)}</span>`).join("") : `<span class="meta">아직 없어요. 한 단계를 마치면 여기 남아요.</span>`}</div>
-    <div class="card"><span class="kicker">배운 말</span>${st.learned.length ? st.learned.map((x) => `<div><b>${esc(x.term)}</b><span class="sub">${esc(x.text)}</span></div>`).join("")
-      : `<span class="meta">할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.</span>`}</div>
-    <div class="card"><span class="kicker">내가 확정한 설계도</span>${st.docs.length ? st.docs.map((x) => `<details><summary>${x.stage}단계 · ${esc(x.name)} · ${esc(x.at)}</summary><pre class="doc-view">${esc(x.text)}</pre></details>`).join("")
-      : `<span class="meta">설계도를 확정하면 여기 모여요.</span>`}</div>`;
+  // 카드 하나 — 제목, 목록(없으면 안내 한 줄)
+  const section = (kicker, items, row, empty) =>
+    `<div class="card"><span class="kicker">${kicker}</span>${items.length ? items.map(row).join("") : `<span class="meta">${empty}</span>`}</div>`;
+  const learnBody = () =>
+    section("지나온 단계", st.history, (x) => `<span class="meta">${esc(x.text)}</span>`, "아직 없어요. 한 단계를 마치면 여기 남아요.") +
+    section("배운 말", st.learned, (x) => `<div><b>${esc(x.term)}</b><span class="sub">${esc(x.text)}</span></div>`,
+      "할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.") +
+    section("내가 확정한 설계도", st.docs, (x) => `<details><summary>${x.stage}단계 · ${esc(x.name)} · ${esc(x.at)}</summary><pre class="doc-view">${esc(x.text)}</pre></details>`,
+      "설계도를 확정하면 여기 모여요.");
   const TABS = [["today", "지금", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["learn", "내 배움", "내 배움", "learn"]];  // [id, PC 이름, iPhone 이름, 아이콘]
   // 설계도(FR-3) — 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만. PC 패널과 iPhone 탭이 같이 쓴다
   function docBody(size) {
