@@ -317,6 +317,8 @@ test("다시 왔을 때 인사: 언제였는지와 몇 개까지 했는지 말�
   assert.match(Nav.welcome({ j, at: at(14, 9) }, now), /^아까 /);
   assert.match(Nav.welcome({ j, at: at(11, 9) }, now), /^3일 전에 /);
   assert.match(Nav.welcome({ j: Nav.parseJudgement(S.examples[1].judgement), at: at(13, 9) }, now), /다 하셨어요/);
+  const none = { ...j, criteria: j.criteria.map((c) => ({ ...c, met: false })) };
+  assert.equal(Nav.welcome({ j: none, at: at(13, 9) }, now), "어제 2단계를 시작하셨어요. 첫 할 일부터 해 봐요!", "0개까지 하셨어요라고 하지 않는다");
   for (const bad of [null, {}, { j, at: 0 }, { j: { stage: 9, criteria: [] }, at: at(13, 9) }, { j: { stage: 2 }, at: at(13, 9) }]) assert.equal(Nav.welcome(bad, now), "");
   assert.ok(Nav.welcome({ j, at: at(1, 9) }, now).length <= Nav.SAY_MAX);
   assert.deepEqual(Nav.face({ back: "어제 …", reason: "r" }), ["happy", "어제 …"], "돌아온 인사가 평소 말보다 먼저");
