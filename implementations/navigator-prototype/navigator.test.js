@@ -49,6 +49,14 @@ test("쉬운 말: 나비의 말풍선에 전문 용어가 없다", () => {
   for (const t of says) assert.deepEqual(jargonIn(t), [], t);
 });
 
+test("집중: 나비 말풍선(미리 만든 말·연습 예시의 설명)은 한 번에 읽히는 길이다", () => {
+  const says = ["ask", "which", "question", "plan", "next"].map((step) => Nav.face({ gate: true, step })[1]);
+  says.push(Nav.face({ busy: true })[1], Nav.face({ warn: ["x"] })[1], Nav.face({ error: "x" })[1], Nav.face({})[1], Nav.face({ reason: "r", allDone: true })[1]);
+  for (const ex of S.examples) says.push(ex.judgement.reason);
+  for (const t of says) assert.ok(t.length <= Nav.SAY_MAX, `${t.length}자: ${t}`);
+  assert.ok(Nav.judgePrompt("x").includes(`${Nav.SAY_MAX}자 안쪽`), "AI에게도 같은 길이를 알려 준다");
+});
+
 test("nextView: 띠 → 한 줄 → 펼침, 시간이 지나면 한 칸씩 접힌다 (CouCou 방식)", () => {
   assert.equal(Nav.nextView("hidden", "enter", false), "petit");
   assert.equal(Nav.nextView("petit", "click", false), "home");

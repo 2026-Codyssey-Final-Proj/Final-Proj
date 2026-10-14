@@ -59,16 +59,20 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 /* ── 함께 쓰는 조각 ── */
 .say{display:flex;gap:12px;align-items:center}
-.bubble{flex:1;background:var(--acc-soft);border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:15px;line-height:1.55}
+.bubble{flex:1;background:var(--acc-soft);border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:15px;line-height:1.55;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}   /* 말풍선은 짧게 — 넘치면 3줄에서 자른다 */
+/* 집중 모드(PC) — 위: 탭+톱니, 아래: 접힌 링크들과 상태 한 줄 */
+.tabs-row{display:flex;gap:8px;align-items:center}.tabs-row .segctl{flex:1}
+.more{display:flex;flex-direction:column;border-top:1px solid var(--line);padding-top:4px}
+.more details[open]{padding-bottom:10px}
+.status{display:flex;justify-content:flex-start}
+.foot.settings{padding:12px;border-radius:14px;background:var(--soft)}.foot.settings .link{background:var(--card)}
 .stage-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .stage-title{font-size:17px;font-weight:700}
 .meta{font-size:13px;color:var(--mute)}
 .seg{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:8px 0}
 .seg span{height:6px;border-radius:3px;background:var(--seg)}.seg .done{background:var(--acc)}.seg .cur{background:var(--acc-mid)}
 .label{font-size:12px;font-weight:600;color:var(--mute);margin:0 0 6px}
-.ticker{background:var(--soft);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
-.ticker div{display:flex;gap:10px}.ticker .k{width:84px;flex:none;font-size:12px;padding-top:2px}
-.ticker .past{color:var(--mute)}.ticker .now{font-weight:600}.ticker .now .k{color:var(--acc)}
 .choose{border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--card)}
 .choose .q{font-size:16px;font-weight:700}
 .opt{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:15px;text-align:left}
@@ -98,6 +102,8 @@ ul.crit li:first-child{border-top:0}
 textarea{width:100%;min-height:100px;font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;resize:vertical}
 select{font:inherit;font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
 details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--mute);min-height:32px;display:flex;align-items:center}
+details summary::after{content:"▾";margin-left:6px;font-size:11px}details[open]>summary::after{content:"▴"}
+details summary:hover{color:var(--acc)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--card);color:var(--mute);border:1px solid var(--line)}
 .chip.done{background:var(--okbg);color:var(--ok);border-color:transparent}.chip.cur{background:var(--acc);color:var(--acc-ink);border-color:transparent;font-weight:700}

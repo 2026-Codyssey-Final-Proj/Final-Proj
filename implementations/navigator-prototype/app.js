@@ -15,6 +15,7 @@
     choice: null, later: false, picking: false,
     step: "ask", hard: [], question: "", answer: "", noCount: 0, history: [], learned: [],
     auto: false, feed: { at: 0, project: "" },   // Claude Code 연결: 자동으로 살펴보기(기본 꺼짐), 마지막 알림
+    settings: false,                               // PC: 설정(보기 방식·연결·자동 살펴보기)은 톱니를 눌러야 보인다
   };
   const $nav = document.getElementById("nav"), $phone = document.getElementById("phone"), $chat = document.getElementById("chat");
 
@@ -47,6 +48,7 @@
     today: icon('<circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.5l-2 5-5 2 2-5z"></path>', 24),
     map: icon('<path d="M4 19h4V5H4zM10 19h4V9h-4zM16 19h4v-6h-4z"></path>', 24),
     learn: icon('<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"></path>', 24),
+    gear: icon('<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path>', 16),
   };
 
   // ── 접힘·펼침 (Mac 화면만) ──
@@ -68,14 +70,6 @@
   // ── 두 화면이 함께 쓰는 조각 ──
   const sayRow = (size) => { const [mood, say] = face(); return `<div class="say">${cat(mood, size)}<div class="bubble" aria-live="polite">${esc(say)}</div></div>`; };
   const seg = () => `<div class="seg" aria-hidden="true">${N.STAGES.map((x) => `<span class="${stepClass(x.n)}"></span>`).join("")}</div>`;
-  const stageBlock = () => `<div><div class="stage-head"><span class="stage-title">${esc(stage().title)}</span><span class="meta">${stage().n} / 7단계</span></div>
-    ${seg()}<span class="meta">이 단계에서 할 일 ${met().length}개 중 ${metCount()}개 했어요</span></div>`;
-  function tickerBlock() {
-    const t = tick();
-    return `<div class="ticker">${t.done ? `<div class="past"><span class="k">✓ 방금 한 일</span><span>${esc(t.done)}</span></div>` : ""}
-      <div class="now"><span class="k">● 지금 할 일</span><span>${esc(t.now)}</span></div>
-      <div class="past"><span class="k">○ 그다음</span><span>${esc(t.after)}</span></div></div>`;
-  }
   // 골라 주세요 — 고르는 건 사용자다. 고르면 작업 글에 한 줄로 적고 다시 살펴본다
   function chooseCard() {
     if (st.todos) return `<div><p class="label">내가 정한 순서</p><ol class="todo">${st.todos.map((x, i) => `<li><span class="i">${i + 1}</span><span>${esc(x)}</span></li>`).join("")}</ol></div>`;
@@ -90,9 +84,6 @@
   const critList = (terms) => `<ul class="crit">${st.j.criteria.map((c) => `<li><span class="ck ${c.met ? "y" : "n"}">${c.met ? "✓" : "○"}</span><span>${esc(c.text)}${
     terms && c.term ? `<span class="tag" title="전문가들이 부르는 이름이에요">용어: ${esc(c.term)}</span>` : ""}${
     c.evidence ? `<span class="sub">적어 주신 글: "${esc(c.evidence)}"</span>` : ""}</span></li>`).join("")}</ul>`;
-  const critBlock = () => `<div><p class="label">이 단계에서 할 일 ${met().length}개</p>${critList(true)}</div>`;
-  const gateButton = () => `<div><button class="btn pri wide" data-act="gate" ${allDone() ? "" : "disabled"}>다음 단계로 넘어가기</button>
-    <p class="meta" style="text-align:center;margin:6px 0 0">${allDone() ? "할 일을 다 했어요. 넘어가기 전에 한 번만 같이 확인해요." : `아직 ${left()}개 남았어요. 다 하면 넘어갈 수 있어요.`}</p></div>`;
   const soon = () => `<div><p class="label">설계도 함께 쓰기</p><div class="soon"><span class="badge tmp">곧 열려요</span> AI가 설계도 초안을 먼저 써 드리고, 고치시면 다시 봐 드리는 자리예요.</div></div>`;
   const notes = () => (st.notice ? `<div class="note n-ok">${esc(st.notice)}</div>` : "");
   function inputBox() {
@@ -106,21 +97,22 @@
     return `<div class="stack">${h}</div>`;
   }
   const inputDetails = () => `<details ${st.error || st.warn || st.openInput ? "open" : ""}><summary>바뀐 작업 다시 보여 주기</summary>${inputBox()}</details>`;
-  const historyBlock = () => (st.history.length ? `<div><p class="label">지나온 단계</p>${st.history.map((x) => `<div class="meta">${esc(x.text)}</div>`).join("")}</div>` : "");
-  function footer() {
-    const b = st.mode === "live"
-      ? `<span class="badge live">진짜 AI(Claude)가 봤어요${st.tokens ? ` · 읽고 쓴 양 약 ${st.tokens.toLocaleString()}토큰` : ""}</span>`
-      : `<span class="badge fix">연습용 예시예요 — 진짜 AI가 아니에요</span>`;
+  const modeBadge = () => (st.mode === "live"
+    ? `<span class="badge live">진짜 AI(Claude)가 봤어요${st.tokens ? ` · 읽고 쓴 양 약 ${st.tokens.toLocaleString()}토큰` : ""}</span>`
+    : `<span class="badge fix">연습용 예시예요 — 진짜 AI가 아니에요</span>`);
+  // 설정 — 보기 방식, Claude Code 연결 상태, 자동으로 살펴보기. PC는 톱니 뒤에, iPhone은 화면 맨 아래에
+  function settingsBody() {
     const link = canLive ? `<div class="link"><div class="row"><span class="led ${st.feed.at ? "on" : ""}"></span><span class="grow">${st.feed.at
         ? `Claude Code와 연결됨 · ${esc(st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}`
         : "Claude Code 알림을 기다리는 중 — 프로젝트 폴더에서 connect.js로 연결해 주세요"}</span></div>
       <label class="chk"><input type="checkbox" data-act="auto" ${st.auto ? "checked" : ""}>Claude Code가 작업을 마치면 자동으로 살펴보기</label>
       <span>켜면 그때마다 최근 작업 대화가 AI(Claude)로 보내져요. 비밀번호처럼 보이는 게 있으면 보내기 전에 멈춰요.</span></div>` : "";
-    return `<div class="foot">${link}<div class="row">${b}<span class="grow">안내 기준은 아직 시험판이에요</span>${countdownOn() ? "<span>곧 접혀요</span>" : ""}</div>
+    return `${link}<div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>
       <div class="row">보기 방식 <select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
-        <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div></div>`;
+        <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div>`;
   }
+  const footer = () => `<div class="foot">${settingsBody()}</div>`;
 
   // 단계 지도 · 내 배움 — PC 패널의 탭과 iPhone 탭이 같이 쓴다
   const mapBody = () => `<div class="list">${N.STAGES.map((x) => `<div>
@@ -138,7 +130,7 @@
     const s = stage(), nx = nextStage();
     const yesNo = `<span class="ask">이번 단계에서 한 일, 이해되셨나요?</span>
       <button class="btn pri wide" data-act="yes">네, 이해했어요</button><button class="btn wide" data-act="no">아니요, 잘 모르겠어요</button>
-      <span class="meta" style="text-align:center">모르는 게 당연해요. "아니요"를 누르면 헷갈린 부분을 같이 풀어 봐요.${st.noCount ? ` · 다시 물어본 횟수 ${st.noCount}번` : ""}</span>`;
+      <span class="meta" style="text-align:center">"아니요"를 누르면 같이 풀어 봐요.${st.noCount ? ` · 다시 물어본 횟수 ${st.noCount}번` : ""}</span>`;
     if (st.step === "which") return [`<span class="ask">어디가 헷갈렸나요?</span><span class="meta">여러 개 골라도 돼요.</span>` +
       s.criteria.map((c, i) => `<label class="chk"><input type="checkbox" data-act="hard" data-i="${i}" ${st.hard.includes(i) ? "checked" : ""}>${esc(c.text)}</label>`).join(""),
       `<button class="btn pri wide" data-act="to-question" ${st.hard.length ? "" : "disabled"}>다음</button>`];
@@ -168,30 +160,50 @@
     if (st.busy) stageTxt = "살펴보는 중이에요…";
     else if (st.ping) stageTxt = st.ping;
     else if (!st.j) { stageTxt = "Navigator"; now = "눌러서 지금 만드는 걸 보여 주세요"; }
-    else { stageTxt = `${allDone() ? "할 일을 다 했어요! · " : ""}${stage().n}단계 · ${stage().short}`; count = `${met().length}개 중 ${metCount()}개 했어요`; now = `지금: ${tick().now}`; }
+    else { stageTxt = `${allDone() ? "다 했어요! · " : ""}${stage().n}단계`; count = `${metCount()}/${met().length}`; now = `지금: ${tick().now}`; }
     const open = st.ui === "home";
     return `<div class="pill glass">
       <button class="pill-main" data-act="pill" aria-expanded="${open}">${cat(st.ping ? "happy" : face()[0], 34)}
-        <span class="pill-stage">${esc(stageTxt)}</span>${count ? `<span class="pill-count">${esc(count)}</span>` : ""}<span class="pill-now">${esc(now)}</span></button>
+        <span class="pill-stage">${esc(stageTxt)}</span>${count ? `<span class="pill-count">${esc(count)}</span>` : ""}<span class="pill-now">${esc(now)}</span>
+        ${st.feed.at ? `<span class="led on" title="Claude Code와 연결됨"></span>` : ""}</button>
       ${open ? `<button class="round" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>` : ""}
       <button class="round" data-act="pill" aria-label="${open ? "접기" : "펼치기"}">${open ? I.up : I.down}</button></div>`;
   }
+  // 집중 모드 — 처음 보이는 건 [나비 한마디 · 진행 한 줄 · 지금 결정할 것 하나]. 나머지는 눌러야 펼쳐진다
+  const progressLine = () => `<div><div class="stage-head"><span class="stage-title">${stage().n}단계 · ${esc(stage().title)}</span>
+    <span class="meta">할 일 ${met().length}개 중 ${metCount()}개</span></div>${seg()}</div>`;
+  // 지금 결정할 것 하나 — 다 했으면 "넘어가기", 순서를 정했으면 그 첫 일, 아니면 골라 주세요. 파란 버튼은 이 카드에만
+  function focusCard() {
+    if (allDone()) return `<div class="choose"><span class="label" style="margin:0">다 했어요</span><span class="q">${stage().n}단계에서 할 일을 모두 했어요</span>
+      <span class="why">넘어가기 전에 이번 단계를 이해했는지 한 번만 같이 확인해요.</span><button class="btn pri wide" data-act="gate">다음 단계로 넘어가기</button></div>`;
+    if (st.todos) return `<div class="choose"><span class="label" style="margin:0">지금 할 일</span><span class="q">${esc(st.todos[0])}</span>
+      <span class="why">정한 순서대로 하나씩 해 봐요. 하고 나서 바뀐 작업을 다시 보여 주세요.</span></div>`;
+    return chooseCard();
+  }
+  const more = () => `<div class="more">
+    <details><summary>이 단계 할 일 ${met().length}개 보기</summary>${critList(true)}</details>
+    ${st.todos ? `<details><summary>내가 정한 순서 보기</summary><ol class="todo">${st.todos.map((x, i) => `<li><span class="i">${i + 1}</span><span>${esc(x)}</span></li>`).join("")}</ol></details>` : ""}
+    ${inputDetails()}</div>`;
+  const status = () => `<div class="status">${modeBadge()}</div>`;   // 가상 데이터인지 진짜 AI인지는 늘 보인다(FR-10)
+  const topRow = () => `<div class="tabs-row">${tabsBar()}<button class="round" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, Claude Code 연결">${I.gear}</button></div>
+    ${st.settings ? `<div class="foot settings">${settingsBody()}</div>` : ""}`;
   function deskMain() {
-    if (st.tab === "map") return tabsBar() + mapBody() + footer();
-    if (st.tab === "learn") return tabsBar() + learnBody() + footer();
-    return tabsBar() + deskToday();
+    if (st.tab === "map") return topRow() + mapBody() + soon() + status();
+    if (st.tab === "learn") return topRow() + learnBody() + status();
+    return topRow() + deskToday() + status();
   }
   function deskToday() {
-    if (!st.j) return `${sayRow(64)}<div><div class="stage-title">지금 만들고 있는 걸 보여 주세요</div>
-      <p class="meta" style="margin:4px 0 0">무엇을 만들고 있고, 어디까지 했는지 편하게 적어 주세요. 연습용 예시 버튼을 눌러 봐도 돼요.</p></div>
-      <div><p class="label">${esc(S.PROJECT)} (연습용 예시)</p>${inputBox()}</div>${footer()}`;
-    return sayRow(64) + stageBlock() + tickerBlock() + notes() + chooseCard() + critBlock() + gateButton() + soon() + inputDetails() + historyBlock() + footer();
+    if (!st.j) return `${sayRow(56)}<div><div class="stage-title">지금 만들고 있는 걸 보여 주세요</div>
+      <p class="meta" style="margin:4px 0 0">무엇을 만들고 있는지, 어디까지 했는지 편하게 적어 주세요.</p></div>${inputBox()}`;
+    return sayRow(56) + progressLine() + notes() + focusCard() + more();
   }
+  // 넘어가기 전 확인 — 처음에는 [한 일 그림 + 이해되셨나요?]만. 한 일 목록은 접어 두고, 다음 단계들에서는 그 단계 내용만
   function deskCheck() {
-    const s = stage(), [body, actions] = checkStep();
-    return `<div class="row"><span class="meta grow">넘어가기 전에 함께 확인해요${st.mode === "fixture" ? " · 연습용 예시" : ""}</span><button class="btn" data-act="close-gate">나중에 할게요</button></div>
-      ${sayRow(64)}<div class="stage-title">${s.n}단계 "${esc(s.title)}"에서 이렇게 했어요</div>${chips()}${flow()}${critList(false)}
-      ${body ? `<div class="stack">${body}</div>` : ""}<div class="stack">${actions}</div>`;
+    const s = stage(), [body, actions] = checkStep(), first = st.step === "ask";
+    return `<div class="row"><span class="meta grow">넘어가기 전에 함께 확인해요</span><button class="btn" data-act="close-gate">나중에 할게요</button></div>
+      ${sayRow(56)}<div class="stage-title">${s.n}단계 "${esc(s.title)}"에서 이렇게 했어요</div>
+      ${first ? `${flow()}<details><summary>이번 단계에서 한 일 ${met().length}개 보기</summary>${critList(false)}</details>` : ""}
+      ${body ? `<div class="stack">${body}</div>` : ""}<div class="stack">${actions}</div>${status()}`;
   }
   const countdownOn = () => !isPhone() && st.ui === "home" && !hovering && !pinned() && !!timer;
   const countdown = () => (countdownOn() ? `<div class="countdown" title="곧 접혀요 — 핀을 누르면 열어 둬요"><i style="animation-duration:${DELAY.home}ms;animation-delay:-${Date.now() - idleAt}ms"></i></div>` : "");
@@ -350,6 +362,7 @@
     later: () => set({ later: true, choice: null, picking: false }),
     again: () => set({ later: false, picking: true }),
     pick: () => set({ picking: true }),
+    settings: () => set({ settings: !st.settings }),
     tab: (i) => set({ tab: TABS[i][0] }),
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "" }),
     "close-gate": () => set({ screen: "main" }),

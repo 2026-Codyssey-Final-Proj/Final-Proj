@@ -42,6 +42,9 @@
         c("배운 것을 다음에 쓸 수 있게 남기기", "체크리스트·지식 창고")] },
   ];
 
+  // 나비 말풍선은 짧게 — 한 번에 읽히는 길이(집중 모드). AI 안내문과 미리 만든 말 모두 이 안에서
+  const SAY_MAX = 60;
+
   // 화면에 크게 보이면 안 되는 말 — 비개발자가 모르는 말. term 칸에만 둔다.
   const JARGON = ["EARS", "MoSCoW", "Kano", "ADR", "TDD", "RTM", "PRD", "Planguage", "Skeleton", "스모크", "게이트", "판정",
     "Recycle", "DoD", "요구사항", "명세", "트레이드오프", "회고", "Whys"];
@@ -140,7 +143,7 @@
       "- 작업 내용에 적힌 것만 근거로 쓴다. 적혀 있지 않으면 met=false이고 evidence는 빈 문자열이다. 지어내지 않는다.",
       "- evidence는 작업 내용에서 그대로 따온 짧은 구절이다.",
       "- criteria는 고른 단계의 할 일과 같은 개수, 같은 순서로 낸다.",
-      "- reason은 지금 어디쯤인지와 잘한 점을 한두 문장으로 말한다.",
+      `- reason은 지금 어디쯤인지와 잘한 점을 두 문장 이내, ${SAY_MAX}자 안쪽으로 말한다(나비의 말풍선에 그대로 나온다).`,
       "- next는 아직 안 한 일 중 가장 먼저 할 하나다. 모두 했으면 다음 단계로 넘어가기 전 확인을 해 보자고 안내한다.",
       "- next.what은 20자 안팎의 짧은 할 일 이름이다(예: '빠르게'를 숫자로 바꾸기). 설명은 why, 방법은 action에 쓴다.",
       "- next.question은 그 일을 하려면 사용자가 정해야 할 것 하나를 묻는 짧은 질문이다.",
@@ -186,7 +189,7 @@
     };
   }
 
-  const api = { STAGES, JARGON, canAdvance, reorder, nextView, ticker, face, decisionLine,
+  const api = { STAGES, JARGON, SAY_MAX, canAdvance, reorder, nextView, ticker, face, decisionLine,
     JUDGE_SCHEMA, ANSWER_SCHEMA, judgePrompt, answerPrompt, parseJudgement };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
