@@ -14,6 +14,7 @@
     j: null, tokens: 0, busy: false, error: "", warn: null, notice: "", todos: null, userPin: false, ping: "", openInput: false,
     choice: null, later: false, picking: false,
     step: "ask", hard: [], question: "", answer: "", noCount: 0, history: [], learned: [],
+    auto: false, feed: { at: 0, project: "" },   // Claude Code 연결: 자동으로 살펴보기(기본 꺼짐), 마지막 알림
   };
   const $nav = document.getElementById("nav"), $phone = document.getElementById("phone"), $chat = document.getElementById("chat");
 
@@ -104,7 +105,12 @@
     const b = st.mode === "live"
       ? `<span class="badge live">진짜 AI(Claude)가 봤어요${st.tokens ? ` · 읽고 쓴 양 약 ${st.tokens.toLocaleString()}토큰` : ""}</span>`
       : `<span class="badge fix">연습용 예시예요 — 진짜 AI가 아니에요</span>`;
-    return `<div class="foot"><div class="row">${b}<span class="grow">안내 기준은 아직 시험판이에요</span>${countdownOn() ? "<span>곧 접혀요</span>" : ""}</div>
+    const link = canLive ? `<div class="link"><div class="row"><span class="led ${st.feed.at ? "on" : ""}"></span><span class="grow">${st.feed.at
+        ? `Claude Code와 연결됨 · ${esc(st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}`
+        : "Claude Code 알림을 기다리는 중 — 프로젝트 폴더에서 connect.js로 연결해 주세요"}</span></div>
+      <label class="chk"><input type="checkbox" data-act="auto" ${st.auto ? "checked" : ""}>Claude Code가 작업을 마치면 자동으로 살펴보기</label>
+      <span>켜면 그때마다 최근 작업 대화가 AI(Claude)로 보내져요. 비밀번호처럼 보이는 게 있으면 보내기 전에 멈춰요.</span></div>` : "";
+    return `<div class="foot">${link}<div class="row">${b}<span class="grow">안내 기준은 아직 시험판이에요</span>${countdownOn() ? "<span>곧 접혀요</span>" : ""}</div>
       <div class="row">보기 방식 <select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div></div>`;
@@ -361,6 +367,7 @@
     $root.addEventListener("change", (e) => {
       const a = e.target.dataset.act;
       if (a === "mode") set({ mode: e.target.value, error: "", warn: null });
+      if (a === "auto") set({ auto: e.target.checked });
       if (a === "hard") { const i = Number(e.target.dataset.i); set({ hard: e.target.checked ? [...st.hard, i].sort() : st.hard.filter((x) => x !== i) }); }
     });
     $root.addEventListener("input", (e) => {
@@ -368,6 +375,35 @@
       if (e.target.dataset.act === "question") st.question = e.target.value;
     });
   }
+
+  // ── Claude Code 연결 — 서버에 2초마다 새 알림을 묻는다(서버로 열었을 때만) ──
+  const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? `${s}초 전` : `${Math.round(s / 60)}분 전`; };
+  let lastSeq = -1;   // -1: 아직 한 번도 안 물음 — 처음에는 지난 알림을 다시 띄우지 않고 기준만 잡는다
+  async function poll() {
+    let r;
+    try { r = await (await fetch(`/api/events?since=${Math.max(lastSeq, 0)}`)).json(); } catch { return; }
+    if (!r.ok) return;
+    const first = lastSeq < 0, ev = r.events[r.events.length - 1];
+    lastSeq = r.latest;
+    if (!ev) return;
+    st.feed = { at: ev.at, project: ev.project };
+    if (first) return render();
+    onEvent(ev);
+  }
+  // 작업을 알아챈다: 글 칸에 최근 작업을 채우고 한 줄로 알린다. 자동으로 살펴보기를 켰으면 작업을 마칠 때 바로 살펴본다
+  async function onEvent(ev) {
+    if (st.busy) return render();
+    if (ev.work) st.text = ev.work;
+    if (ev.kind === "stop" && st.auto && st.mode === "live") {
+      st.ping = "";
+      await judge(false);
+      if (st.warn) go(N.nextView(st.ui, "alert", pinned()));
+      return;
+    }
+    st.ping = ev.kind === "stop" ? "Claude Code가 방금 작업을 마쳤어요 — 눌러서 어디쯤인지 볼까요?" : "Claude Code에서 새 작업을 시작했어요";
+    go(st.ui === "hidden" || st.ui === "greet" ? "petit" : st.ui);
+  }
+  if (canLive) { poll(); setInterval(poll, 2000); }
 
   // ── 뒤쪽 예시 화면: AI 도구로 작업하는 장면 ──
   const LINES = [

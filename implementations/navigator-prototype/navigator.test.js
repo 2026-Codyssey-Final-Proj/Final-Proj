@@ -7,7 +7,8 @@ const path = require("node:path");
 const Nav = require("./navigator.js");
 const S = require("./scenario.js");
 const Cat = require("./cat.js");
-const { allowed } = require("./server.js");
+const { allowed, recent, addEvent } = require("./server.js");
+const Connect = require("./connect.js");
 
 test("단계 0~7이 순서대로 있고 단계마다 할 일이 있다", () => {
   assert.deepEqual(Nav.STAGES.map((s) => s.n), [0, 1, 2, 3, 4, 5, 6, 7]);
@@ -190,6 +191,52 @@ test("서버는 이 컴퓨터의 화면에서 온 요청만 받는다", () => {
   assert.equal(allowed({ host: "localhost:4317", origin: "http://localhost:4317" }, 4317), true);
   assert.equal(allowed({ host: "127.0.0.1:4317", origin: "https://evil.example" }, 4317), false, "다른 사이트");
   assert.equal(allowed({ host: "evil.example:4317" }, 4317), false, "DNS 리바인딩");
+});
+
+// ── Claude Code 연결 ──
+test("연결: 세션마다 사용자의 요청과 Claude의 마지막 답을 차례로 모은다", () => {
+  const a1 = addEvent({ hook_event_name: "UserPromptSubmit", session_id: "t-a", cwd: "/work/club-app", prompt: "기능 정리해 줘" });
+  assert.deepEqual([a1.kind, a1.project, a1.work], ["prompt", "club-app", "[사용자] 기능 정리해 줘"]);
+  addEvent({ hook_event_name: "UserPromptSubmit", session_id: "t-b", prompt: "다른 세션" });
+  const a2 = addEvent({ hook_event_name: "Stop", session_id: "t-a", cwd: "/work/club-app", last_assistant_message: "기능 6개를 정리했어요." });
+  assert.equal(a2.kind, "stop");
+  assert.equal(a2.work, "[사용자] 기능 정리해 줘\n[Claude] 기능 6개를 정리했어요.", "다른 세션 말은 섞이지 않는다");
+  assert.ok(a2.seq > a1.seq);
+  assert.equal(addEvent({ hook_event_name: "PreToolUse", session_id: "t-a" }), null, "모르는 알림은 받지 않는다");
+  assert.equal(addEvent({ hook_event_name: "Stop", session_id: "t-c" }).work, "", "답이 없으면 빈 글");
+});
+
+test("연결: 글자 수가 넘치면 오래된 말부터 버린다", () => {
+  const cut = recent(["1".repeat(50), "2".repeat(50), "3".repeat(50)], 70);
+  assert.equal(cut, "2".repeat(20) + "\n" + "3".repeat(50));
+  assert.equal(recent([], 70), "");
+});
+
+test("연결: 훅은 두 개만 더하고, 두 번 해도 하나씩이고, 다른 설정·훅은 그대로 둔다", () => {
+  const mine = { hooks: [{ type: "command", command: "echo 내 훅" }] };
+  const before = { model: "sonnet", hooks: { Stop: [mine] } };
+  const once = Connect.addHooks(before), twice = Connect.addHooks(once);
+  assert.deepEqual(Object.keys(once.hooks).sort(), ["Stop", "UserPromptSubmit"]);
+  assert.deepEqual(twice, once, "두 번 해도 같다");
+  assert.equal(once.model, "sonnet");
+  assert.deepEqual(once.hooks.Stop[0], mine, "원래 있던 훅은 그대로");
+  assert.equal(before.hooks.Stop.length, 1, "원본은 안 바뀐다");
+  const removed = Connect.removeHooks(once);
+  assert.deepEqual(removed, before, "빼면 원래대로");
+  assert.deepEqual(Connect.removeHooks({ model: "x" }), { model: "x" });
+  assert.deepEqual(Connect.removeHooks(Connect.addHooks({})), {}, "우리 것만 있었으면 hooks 칸까지 지운다");
+});
+
+test("연결: Navigator 서버가 꺼져 있어도 훅은 Claude Code를 막지 않는다(바로, 조용히, 0으로 끝남)", () => {
+  const { spawnSync } = require("node:child_process");
+  const input = JSON.stringify({ hook_event_name: "UserPromptSubmit", prompt: "안녕", cwd: "/x" });
+  for (const stdin of [input, "깨진 입력"]) {
+    const t0 = Date.now();
+    const r = spawnSync(process.execPath, [path.join(__dirname, "hook.js")], { input: stdin, env: { ...process.env, NAV_PORT: "9" }, timeout: 10_000 });
+    assert.equal(r.status, 0);
+    assert.equal(r.stdout.toString(), "", "출력이 있으면 Claude에게 전달된다");
+    assert.ok(Date.now() - t0 < 5000, `너무 오래 걸림: ${Date.now() - t0}ms`);
+  }
 });
 
 test("외부 AI(claude) 호출은 server.js 한 곳에서만 한다", () => {

@@ -90,6 +90,9 @@ ul.crit li:first-child{border-top:0}
 .badge{display:inline-block;font-size:12px;border-radius:999px;padding:3px 10px}
 .badge.fix{background:var(--warnbg);color:var(--warn)}.badge.live{background:var(--okbg);color:var(--ok)}.badge.tmp{background:var(--seg);color:var(--mute)}
 .foot{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute)}
+.link{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:var(--soft)}
+.link label.chk{min-height:32px;font-size:13px;color:var(--ink)}
+.led{width:8px;height:8px;border-radius:50%;flex:none;background:#B8BDC7}.led.on{background:#28C840}
 .note{border-radius:12px;padding:10px 12px;font-size:14px}
 .n-warn{background:var(--warnbg);color:var(--warn)}.n-bad{background:var(--badbg);color:var(--bad)}.n-acc{background:var(--acc-soft);color:var(--ink)}.n-ok{background:var(--okbg);color:var(--ok)}
 .soon{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;color:var(--mute);font-size:13px}

@@ -6,6 +6,11 @@
 // API 키를 쓰지 않는다. 이 컴퓨터에 로그인된 Claude Code(`claude -p`)의 구독으로 부른다.
 // 잠금: 도구 없음, MCP 없음, 사용자 설정 안 읽음, 대화 기록 안 남김 — 입력 글만 판정한다.
 // 입력 글은 Claude(AI 서비스)로 전송된다(security-records.md 1절). 서버가 꺼져 있으면 화면은 미리 만든 응답으로 움직인다.
+// 사용자 설정을 안 읽으므로(--setting-sources "") 여기서 부르는 claude는 사용자가 단 Navigator 훅을 다시 부르지 않는다.
+//
+// Claude Code 연결(connect.js로 훅을 단 경우): hook.js가 /api/event로 "요청 받음(사용자의 요청)·작업 마침(Claude의 마지막 답)"을
+// 알리면 세션마다 최근 대화를 메모리에만 모아 둔다 — 파일을 읽지도 남기지도 않는다.
+// 화면은 /api/events를 2초마다 물어 새 알림을 받는다. 알림만으로는 AI에 보내지 않는다 — 보내는 건 화면에서 사용자가 정한다.
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
@@ -15,6 +20,8 @@ const Nav = require("./navigator.js");
 const PORT = Number(process.env.NAV_PORT) || 4317;
 const TIMEOUT_MS = 90_000;
 const MAX_BODY = 20_000;
+const MAX_WORK = 4000;   // 알림 하나에 담는 작업 글 최대 글자 수
+const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
 
 // 정해진 파일만 내준다 — 경로를 요청에서 만들지 않는다.
 const FILES = {
@@ -69,6 +76,32 @@ function readJson(req) {
 
 const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); };
 
+// ── Claude Code 연결 ──
+// 최근 말부터 max 글자까지 — 넘치면 오래된 것부터 버린다
+function recent(log, max = MAX_WORK) {
+  const out = [];
+  let n = 0;
+  for (let i = log.length - 1; i >= 0 && n < max; i--) { const m = log[i].slice(0, max - n); out.unshift(m); n += m.length; }
+  return out.join("\n");
+}
+const sessions = new Map();   // 세션별 최근 대화 — 메모리에만. 세션 10개·말 20개까지
+const events = [];
+let seq = 0;
+function addEvent(body) {
+  const kind = HOOK_KINDS[body.hook_event_name];
+  if (!kind) return null;
+  const id = String(body.session_id || ""), log = sessions.get(id) || [];
+  const said = kind === "prompt" ? body.prompt : body.last_assistant_message;
+  if (typeof said === "string" && said.trim()) log.push(`[${kind === "prompt" ? "사용자" : "Claude"}] ${said.trim()}`);
+  if (log.length > 20) log.shift();
+  sessions.delete(id); sessions.set(id, log);   // 최근에 쓴 세션을 맨 뒤로
+  if (sessions.size > 10) sessions.delete(sessions.keys().next().value);
+  const ev = { seq: ++seq, at: Date.now(), kind, project: path.basename(String(body.cwd || "")), work: recent(log) };
+  events.push(ev);
+  if (events.length > 20) events.shift();
+  return ev;
+}
+
 async function handle(req, res) {
   if (!allowed(req.headers)) return send(res, 403, { ok: false, reason: "이 컴퓨터의 화면에서만 부를 수 있음" });
   if (req.method === "GET" && FILES[req.url]) {
@@ -76,8 +109,16 @@ async function handle(req, res) {
     res.writeHead(200, { "Content-Type": `${type}; charset=utf-8` });
     return fs.createReadStream(path.join(__dirname, file)).pipe(res);
   }
+  if (req.method === "GET" && req.url.startsWith("/api/events")) {
+    const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
+    return send(res, 200, { ok: true, latest: seq, events: events.filter((e) => e.seq > since) });
+  }
   if (req.method !== "POST") return send(res, 404, { ok: false });
   const body = await readJson(req);
+  if (req.url === "/api/event") {
+    const ev = body && addEvent(body);
+    return ev ? send(res, 200, { ok: true, seq: ev.seq }) : send(res, 400, { ok: false, reason: "알 수 없는 알림" });
+  }
   if (!body || typeof body.text !== "string" || !body.text.trim()) return send(res, 400, { ok: false, reason: "작업 내용이 비어 있음" });
 
   if (req.url === "/api/judge") {
@@ -97,4 +138,4 @@ async function handle(req, res) {
 if (require.main === module) {
   http.createServer(handle).listen(PORT, "127.0.0.1", () => console.log(`Navigator 프로토타입: http://127.0.0.1:${PORT}`));
 }
-module.exports = { allowed };
+module.exports = { allowed, recent, addEvent };
