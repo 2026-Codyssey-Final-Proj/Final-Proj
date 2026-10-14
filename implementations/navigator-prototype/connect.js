@@ -1,13 +1,17 @@
 // claude-drafted: 2026-10-14
-// Claude Code와 Navigator 연결하기 — 바이브 코딩하는 프로젝트 폴더의 Claude Code에 훅 두 개를 더한다.
+// Claude Code·Codex와 Navigator 연결하기 — 바이브 코딩할 때 쓰는 도구에 훅 두 개를 더한다.
 //
 //   node connect.js [폴더]            무엇을 어디에 더할지 보여 주기만 한다 (아무것도 바꾸지 않음)
 //   node connect.js [폴더] --apply    백업을 만든 뒤 더한다
 //   node connect.js [폴더] --remove   백업을 만든 뒤 우리가 더한 것만 뺀다
+//   node connect.js --codex [--apply|--remove]   Codex(GPT) 쪽 — 위와 같고 대상 파일만 다르다
 //
-// 대상 파일: [폴더]/.claude/settings.local.json — 그 사람만 쓰는 개인 설정 자리라 보통 저장소에 올라가지 않는다.
-// 폴더를 안 주면 지금 있는 폴더. 다른 설정과 다른 훅은 건드리지 않는다.
+// Claude Code 대상: [폴더]/.claude/settings.local.json — 그 사람만 쓰는 개인 설정 자리라 보통 저장소에 올라가지 않는다.
+// Codex 대상: $CODEX_HOME(없으면 ~/.codex)/hooks.json — Codex 전체에 적용된다(2026-10-14 시험에서 프로젝트 폴더의
+// .codex/hooks.json은 읽히지 않았다). Codex는 새 훅을 처음 쓸 때 믿을지 확인을 받을 수 있다.
+// 폴더를 안 주면 지금 있는 폴더. 다른 설정과 다른 훅은 건드리지 않는다. 모양이 같아서 더하고 빼는 규칙도 같다.
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const HOOK = path.join(__dirname, "hook.js").replace(/\\/g, "/");
@@ -42,15 +46,16 @@ function removeHooks(settings) {
 }
 
 function main(argv) {
-  const apply = argv.includes("--apply"), remove = argv.includes("--remove");
+  const apply = argv.includes("--apply"), remove = argv.includes("--remove"), codex = argv.includes("--codex");
   const dir = path.resolve(argv.find((a) => !a.startsWith("--")) || process.cwd());
-  const file = path.join(dir, ".claude", "settings.local.json");
+  const file = codex ? path.join(process.env.CODEX_HOME || path.join(os.homedir(), ".codex"), "hooks.json")
+    : path.join(dir, ".claude", "settings.local.json");
   let before = {};
   if (fs.existsSync(file)) {
     try { before = JSON.parse(fs.readFileSync(file, "utf8")); }
     catch { console.error(`${file} 를 읽을 수 없어요(JSON 모양이 아니에요). 아무것도 바꾸지 않았어요.`); return 1; }
   }
-  const after = remove ? removeHooks(before) : addHooks(before);
+  const after = remove ? removeHooks(before) : addHooks(before, codex ? `${COMMAND} codex` : COMMAND);
   console.log(`대상: ${file}`);
   console.log(`${remove ? "뺀 뒤" : "더한 뒤"}의 hooks 칸:\n${JSON.stringify(after.hooks || {}, null, 2)}`);
   if (!apply && !remove) { console.log("\n확인만 했어요. 실제로 더하려면 --apply 를 붙여 다시 실행하세요."); return 0; }
@@ -61,7 +66,8 @@ function main(argv) {
   }
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(after, null, 2) + "\n");
-  console.log(remove ? "Navigator 연결을 뺐어요." : "연결했어요. 이 폴더에서 Claude Code를 새로 열면 Navigator가 작업을 알아채요. (Navigator 서버: node server.js)");
+  const tool = codex ? "Codex" : "이 폴더에서 Claude Code";
+  console.log(remove ? "Navigator 연결을 뺐어요." : `연결했어요. ${tool}를 새로 열면 Navigator가 작업을 알아채요. (Navigator 서버: node server.js)`);
   return 0;
 }
 

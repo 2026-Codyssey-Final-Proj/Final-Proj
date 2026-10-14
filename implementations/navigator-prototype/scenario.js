@@ -81,6 +81,39 @@
     ],
   };
 
+  // 설계도 연습 — 2단계 "꼭 필요한 기능 목록"의 미리 만든 초안. 모르는 자리는 빈칸으로 비워 뒀다
+  const drafts = {
+    2: {
+      say: "초안을 써 봤어요. 빈칸 3개는 직접 채워 주세요.",
+      draft: [
+        "꼭 필요한 기능 목록 — 동아리 행사 등록 앱",
+        "",
+        "1. 회원이 신청 버튼을 누르면, 앱은 신청서를 보여 준다. (꼭 필요)",
+        "2. 회원이 신청서를 내면, 앱은 신청 완료를 알려 준다. 신청서를 연 뒤 30초 안에 끝난다. (꼭 필요)",
+        "3. 행사 목록을 열면, 앱은 다가오는 행사를 날짜순으로 보여 준다. (꼭 필요)",
+        "4. 마감 [채워 주세요: 몇 시간] 전이 되면, 앱은 신청한 회원에게 마감 알림을 보낸다. (있으면 좋음)",
+        "5. 자리가 다 차면, 앱은 [채워 주세요: 대기 순서로 받을지, 신청을 막을지] 한다.",
+        "",
+        "어디서 나온 생각인지",
+        "- 1~4: 동아리장(응답자 A)과 나눈 이야기",
+        "- 5: [채워 주세요: 누구에게서 나온 생각인지]",
+      ].join("\n"),
+    },
+  };
+
+  // 연습용으로 다시 봐 주기 — AI가 아니라 빈칸이 남았는지만 본다(화면에도 그렇게 적는다)
+  function reviewFixture(doc) {
+    const left = N.blanks(doc);
+    if (left.length) return {
+      say: `빈칸이 ${left.length}개 남았어요. 하나씩 채워 봐요.`,
+      good: ["기능을 '~하면, 앱은 ~한다' 문장으로 썼어요"],
+      fix: left.map((w) => ({ where: `[채워 주세요: ${w}]`, why: "아직 정하지 않은 자리예요",
+        hint: `정해서 적어 보세요: ${w}. 모르면 '아직 모름'과 언제 정할지를 써도 돼요` })),
+      ready: false,
+    };
+    return { say: "빈칸을 다 채웠어요! 마음에 들면 확정해 주세요.", good: ["빈칸을 모두 채웠어요", "기능마다 꼭 필요한지 표시했어요"], fix: [], ready: true };
+  }
+
   // 글이 장면과 같으면 그 장면의 응답. "하나 정함" 장면은 연습 1 글 + 선택지 중 아무거나 고른 줄이면 맞는다.
   function judgeFixture(text) {
     const t = String(text).trim();
@@ -94,7 +127,7 @@
     return null;
   }
 
-  const api = { PROJECT, examples, answers, judgeFixture };
+  const api = { PROJECT, examples, answers, drafts, reviewFixture, judgeFixture };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavScenario = api;
 })(typeof window !== "undefined" ? window : globalThis);

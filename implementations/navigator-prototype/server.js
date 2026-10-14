@@ -8,7 +8,7 @@
 // 입력 글은 Claude(AI 서비스)로 전송된다(security-records.md 1절). 서버가 꺼져 있으면 화면은 미리 만든 응답으로 움직인다.
 // 사용자 설정을 안 읽으므로(--setting-sources "") 여기서 부르는 claude는 사용자가 단 Navigator 훅을 다시 부르지 않는다.
 //
-// Claude Code 연결(connect.js로 훅을 단 경우): hook.js가 /api/event로 "요청 받음(사용자의 요청)·작업 마침(Claude의 마지막 답)"을
+// Claude Code·Codex 연결(connect.js로 훅을 단 경우): hook.js가 /api/event로 "요청 받음(사용자의 요청)·작업 마침(AI의 마지막 답)"을
 // 알리면 세션마다 최근 대화를 메모리에만 모아 둔다 — 파일을 읽지도 남기지도 않는다.
 // 화면은 /api/events를 2초마다 물어 새 알림을 받는다. 알림만으로는 AI에 보내지 않는다 — 보내는 건 화면에서 사용자가 정한다.
 const http = require("node:http");
@@ -19,7 +19,7 @@ const Nav = require("./navigator.js");
 
 const PORT = Number(process.env.NAV_PORT) || 4317;
 const TIMEOUT_MS = 90_000;
-const MAX_BODY = 20_000;
+const MAX_BODY = 40_000;   // 작업 글 + 설계도
 const MAX_WORK = 4000;   // 알림 하나에 담는 작업 글 최대 글자 수
 const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
 
@@ -76,6 +76,13 @@ function readJson(req) {
 
 const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); };
 
+// Claude에게 묻고, 답의 모양을 확인한 것만 돌려준다. read: 확인해서 화면에 줄 칸들을 만든다(모양이 틀리면 null)
+async function ask(res, prompt, schema, read, what) {
+  const r = await callClaude(prompt, schema);
+  const out = r.data && read(r.data);
+  return out ? send(res, 200, { ok: true, ...out, tokens: r.tokens }) : send(res, 502, { ok: false, reason: r.error || `${what} 형식이 맞지 않음` });
+}
+
 // ── Claude Code 연결 ──
 // 최근 말부터 max 글자까지 — 넘치면 오래된 것부터 버린다
 function recent(log, max = MAX_WORK) {
@@ -90,13 +97,16 @@ let seq = 0;
 function addEvent(body) {
   const kind = HOOK_KINDS[body.hook_event_name];
   if (!kind) return null;
-  const id = String(body.session_id || ""), log = sessions.get(id) || [];
-  const said = kind === "prompt" ? body.prompt : body.last_assistant_message;
-  if (typeof said === "string" && said.trim()) log.push(`[${kind === "prompt" ? "사용자" : "Claude"}] ${said.trim()}`);
+  // Codex(GPT)도 Claude Code와 같은 모양으로 알린다(2026-10-14 실측) — 어느 도구인지만 hook.js가 붙여 준다
+  const tool = body.tool === "codex" ? "codex" : "claude";
+  const id = `${tool}:${String(body.session_id || "")}`, log = sessions.get(id) || [];
+  for (const [who, said] of [["사용자", body.prompt], [tool === "codex" ? "Codex" : "Claude", body.last_assistant_message]]) {
+    if (typeof said === "string" && said.trim()) log.push(`[${who}] ${said.trim()}`);
+  }
   if (log.length > 20) log.shift();
   sessions.delete(id); sessions.set(id, log);   // 최근에 쓴 세션을 맨 뒤로
   if (sessions.size > 10) sessions.delete(sessions.keys().next().value);
-  const ev = { seq: ++seq, at: Date.now(), kind, project: path.basename(String(body.cwd || "")), work: recent(log) };
+  const ev = { seq: ++seq, at: Date.now(), kind, tool, project: path.basename(String(body.cwd || "")), work: recent(log) };
   events.push(ev);
   if (events.length > 20) events.shift();
   return ev;
@@ -122,15 +132,22 @@ async function handle(req, res) {
   if (!body || typeof body.text !== "string" || !body.text.trim()) return send(res, 400, { ok: false, reason: "작업 내용이 비어 있음" });
 
   if (req.url === "/api/judge") {
-    const r = await callClaude(Nav.judgePrompt(body.text), Nav.JUDGE_SCHEMA);
-    const j = r.data && Nav.parseJudgement(r.data);
-    return j ? send(res, 200, { ok: true, judgement: j, tokens: r.tokens }) : send(res, 502, { ok: false, reason: r.error || "판정 형식이 맞지 않음" });
+    return ask(res, Nav.judgePrompt(body.text), Nav.JUDGE_SCHEMA, (d) => { const j = Nav.parseJudgement(d); return j && { judgement: j }; }, "판정");
   }
   if (req.url === "/api/answer") {
     const stage = body.stage, hard = Array.isArray(body.hard) ? body.hard.map(String) : [];
     if (!Nav.STAGES[stage] || typeof body.question !== "string" || !body.question.trim()) return send(res, 400, { ok: false, reason: "질문이 비어 있음" });
-    const r = await callClaude(Nav.answerPrompt(stage, hard, body.question, body.text), Nav.ANSWER_SCHEMA);
-    return r.data && typeof r.data.answer === "string" ? send(res, 200, { ok: true, answer: r.data.answer, tokens: r.tokens }) : send(res, 502, { ok: false, reason: r.error || "답 형식이 맞지 않음" });
+    return ask(res, Nav.answerPrompt(stage, hard, body.question, body.text), Nav.ANSWER_SCHEMA,
+      (d) => typeof d.answer === "string" && { answer: d.answer }, "답");
+  }
+  // FR-3 설계도 — 설계도를 만드는 단계(1~4)만
+  if (req.url === "/api/draft" || req.url === "/api/review") {
+    const s = Nav.STAGES[body.stage];
+    if (!s || !s.doc) return send(res, 400, { ok: false, reason: "설계도를 만드는 단계가 아님" });
+    if (req.url === "/api/draft") return ask(res, Nav.draftPrompt(s.n, body.text), Nav.DRAFT_SCHEMA, Nav.parseDraft, "초안");
+    if (typeof body.doc !== "string" || !body.doc.trim()) return send(res, 400, { ok: false, reason: "설계도가 비어 있음" });
+    return ask(res, Nav.reviewPrompt(s.n, body.text, body.doc), Nav.REVIEW_SCHEMA, (d) => { const v = Nav.parseReview(d); return v && { review: v }; },
+      "다시 봐 준 결과의");
   }
   send(res, 404, { ok: false });
 }

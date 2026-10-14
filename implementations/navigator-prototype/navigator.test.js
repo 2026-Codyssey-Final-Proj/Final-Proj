@@ -254,3 +254,105 @@ test("외부 AI(claude) 호출은 server.js 한 곳에서만 한다", () => {
     .filter((f) => f !== path.basename(__filename));
   assert.deepEqual(callers, ["server.js"]);
 });
+
+// ── 설계도(FR-3) · 기록 · Codex — 2026-10-14 "아직 안 된 것도 모두 만들어" ──
+test("설계도: 1~4단계만 설계도가 있고, 이름은 쉬운 말이다", () => {
+  assert.deepEqual(Nav.STAGES.filter((s) => s.doc).map((s) => s.n), [1, 2, 3, 4]);
+  for (const s of Nav.STAGES.filter((x) => x.doc)) assert.deepEqual(jargonIn(s.doc), [], s.doc);
+});
+
+test("설계도: 빈칸 [채워 주세요: …]을 찾아낸다", () => {
+  assert.deepEqual(Nav.blanks("마감 [채워 주세요: 몇 시간] 전, [채워 주세요:누구]"), ["몇 시간", "누구"]);
+  assert.deepEqual(Nav.blanks("빈칸 없음"), []);
+});
+
+test("설계도 연습: 빈칸이 남으면 고칠 곳으로 알려 주고, 다 채우면 확정해도 된다고 한다", () => {
+  const d = S.drafts[2];
+  assert.equal(Nav.blanks(d.draft).length, 3);
+  const first = S.reviewFixture(d.draft);
+  assert.equal(first.ready, false);
+  assert.equal(first.fix.length, 3);
+  const filled = d.draft.replace(/\[채워 주세요:[^\]]*\]/g, "아직 모름 — 회의 뒤 정함");
+  const second = S.reviewFixture(filled);
+  assert.deepEqual([second.ready, second.fix.length], [true, 0]);
+  assert.ok(Nav.parseReview(first) && Nav.parseReview(second), "연습용 결과도 진짜 AI 결과와 같은 모양");
+  for (const t of [d.say, first.say, second.say, ...first.fix.map((f) => f.hint), d.draft]) assert.deepEqual(jargonIn(t), [], t);
+});
+
+test("설계도: AI의 초안·다시 봐 준 결과는 모양이 맞을 때만 쓰고, 고칠 곳이 있으면 '확정해도 됨'을 믿지 않는다", () => {
+  assert.deepEqual(Nav.parseDraft({ draft: "1. 기능", say: "써 봤어요" }), { draft: "1. 기능", say: "써 봤어요" });
+  for (const bad of [null, {}, { draft: " ", say: "x" }, { draft: "x" }]) assert.equal(Nav.parseDraft(bad), null);
+  const fix = [{ where: "빠르게", why: "애매해요", hint: "숫자로" }];
+  assert.equal(Nav.parseReview({ say: "s", good: [], fix, ready: true }).ready, false, "고칠 곳이 있는데 ready=true");
+  assert.equal(Nav.parseReview({ say: "s", good: ["a"], fix: [], ready: true }).ready, true);
+  assert.equal(Nav.parseReview({ say: "s", good: [], fix: [{ where: "x", why: "", hint: "h" }], ready: false }), null, "빈 칸이 있는 지적");
+  assert.equal(Nav.parseReview({ say: "s", good: "a", fix: [], ready: true }), null);
+  assert.equal(Nav.parseReview({ say: "s", good: [], fix: [], ready: "yes" }), null);
+});
+
+test("설계도: 요청문에 단계·작업 글·빈칸 표시가 들어가고, 다시 봐 줄 때 대신 고쳐 쓰지 않게 한다", () => {
+  const d = Nav.draftPrompt(2, "동아리 앱");
+  assert.ok(d.includes("꼭 필요한 기능 목록") && d.includes("동아리 앱") && d.includes("[채워 주세요:"));
+  assert.ok(d.includes(`${Nav.SAY_MAX}자 안쪽`));
+  const r = Nav.reviewPrompt(2, "동아리 앱", "1. 신청");
+  assert.ok(r.includes("<설계도>") && r.includes("1. 신청") && r.includes("대신 고쳐 쓰지 않는다"));
+});
+
+test("설계도 나비: 상황마다 말이 짧고 쉬운 말이며, 표정은 나비에게 있는 것이다", () => {
+  const vs = [{ busy: true }, { warn: ["x"] }, { error: "e" }, { review: { ready: true, say: "좋아요" } }, { review: { ready: false, say: "음" } },
+    { draftSay: "써 봤어요" }, { done: true }, {}];
+  for (const v of vs) {
+    const [mood, say] = Nav.docFace(v);
+    assert.ok(Cat.MOODS.includes(mood), mood);
+    assert.ok(say.length <= Nav.SAY_MAX, say);
+    assert.deepEqual(jargonIn(say), [], say);
+  }
+  assert.equal(Nav.docFace({ busy: true, review: { ready: true, say: "x" } })[0], "look", "읽는 중이 먼저");
+});
+
+test("다시 왔을 때 인사: 언제였는지와 몇 개까지 했는지 말하고, 기록이 이상하면 말하지 않는다", () => {
+  const j = Nav.parseJudgement(S.examples[0].judgement), now = new Date(2026, 9, 14, 21).getTime();
+  const at = (d, h) => new Date(2026, 9, d, h).getTime();
+  assert.equal(Nav.welcome({ j, at: at(13, 23) }, now), "어제 2단계 할 일 4개 중 1개까지 하셨어요. 이어서 해요!");
+  assert.match(Nav.welcome({ j, at: at(14, 9) }, now), /^아까 /);
+  assert.match(Nav.welcome({ j, at: at(11, 9) }, now), /^3일 전에 /);
+  assert.match(Nav.welcome({ j: Nav.parseJudgement(S.examples[1].judgement), at: at(13, 9) }, now), /다 하셨어요/);
+  for (const bad of [null, {}, { j, at: 0 }, { j: { stage: 9, criteria: [] }, at: at(13, 9) }, { j: { stage: 2 }, at: at(13, 9) }]) assert.equal(Nav.welcome(bad, now), "");
+  assert.ok(Nav.welcome({ j, at: at(1, 9) }, now).length <= Nav.SAY_MAX);
+  assert.deepEqual(Nav.face({ back: "어제 …", reason: "r" }), ["happy", "어제 …"], "돌아온 인사가 평소 말보다 먼저");
+  assert.equal(Nav.face({ back: "어제 …", busy: true })[0], "look");
+});
+
+test("연결: Codex(GPT) 알림도 받고, 말한 쪽을 Codex로 적고, Claude Code 세션과 섞지 않는다", () => {
+  addEvent({ hook_event_name: "UserPromptSubmit", session_id: "same", tool: "codex", cwd: "C:\work\club", prompt: "목록 만들어 줘" });
+  const ev = addEvent({ hook_event_name: "Stop", session_id: "same", tool: "codex", cwd: "C:\work\club", last_assistant_message: "만들었어요" });
+  assert.equal(ev.tool, "codex");
+  assert.equal(ev.work, "[사용자] 목록 만들어 줘\n[Codex] 만들었어요");
+  assert.equal(addEvent({ hook_event_name: "Stop", session_id: "same", last_assistant_message: "다른 도구" }).work, "[Claude] 다른 도구", "같은 세션 번호라도 도구가 다르면 따로");
+  assert.equal(addEvent({ hook_event_name: "Stop", session_id: "x", tool: "이상한값" }).tool, "claude");
+});
+
+test("연결: hook.js에 codex를 붙이면 서버로 도구 이름이 같이 간다", async () => {
+  const http = require("node:http"), { spawn } = require("node:child_process");
+  let got;
+  const srv = http.createServer((req, res) => { let b = ""; req.on("data", (d) => (b += d)); req.on("end", () => { got = JSON.parse(b); res.end("{}"); }); });
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const run = (args) => new Promise((resolve) => {
+    const c = spawn(process.execPath, [path.join(__dirname, "hook.js"), ...args], { env: { ...process.env, NAV_PORT: String(srv.address().port) } });
+    c.on("close", resolve);
+    c.stdin.end(JSON.stringify({ hook_event_name: "Stop", session_id: "s", cwd: "/w", last_assistant_message: "끝", turn_id: "t" }));
+  });
+  try {
+    await run(["codex"]);
+    assert.deepEqual([got.tool, got.last_assistant_message, got.turn_id], ["codex", "끝", undefined], "필요한 칸만 넘긴다");
+    await run([]);
+    assert.equal(got.tool, "claude");
+  } finally { srv.close(); }
+});
+
+test("연결: Codex용 명령(… hook.js codex)도 우리 것으로 알아보고 뺄 수 있다", () => {
+  const once = Connect.addHooks({}, `${Connect.COMMAND} codex`);
+  assert.match(once.hooks.Stop[0].hooks[0].command, /hook\.js" codex$/);
+  assert.deepEqual(Connect.addHooks(once, `${Connect.COMMAND} codex`), once);
+  assert.deepEqual(Connect.removeHooks(once), {});
+});

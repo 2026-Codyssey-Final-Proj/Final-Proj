@@ -1,5 +1,6 @@
 // claude-drafted: 2026-10-14 — 사용자 요청("동아리 행사 등록 앱 가상 프로젝트로, 설계도 루프는 준비 중",
-// "CouCou UX를 더 가져오고, 비개발자가 알아듣는 쉬운 말로", "목업으로 구현")으로 Claude가 썼다.
+// "CouCou UX를 더 가져오고, 비개발자가 알아듣는 쉬운 말로", "목업으로 구현", "아직 안 된 것도 모두 만들어")으로 Claude가 썼다.
+// 설계도(FR-3)는 2026-10-14에 "준비 중"에서 실제 동작으로 바꿨다 — 초안은 AI, 고치기·확정은 사람.
 // Navigator 규칙 — 단계 데이터와 판단 규칙. 서버·DB 없이 순수 함수만. 화면(app.js)과 서버(server.js)가 같이 쓴다.
 // 단계 표는 requirements.md 1절, 할 일은 gates.md DoD·checklist.md를 쉬운 말로 줄인 것 — **임시**.
 // 판단 규칙·프롬프트의 확정본은 이슈 #7(이재엽). 확정되면 이 파일의 STAGES와 프롬프트만 바꾼다.
@@ -14,19 +15,19 @@
       criteria: [c("어떤 불편을 풀고 싶은지 한 문장으로 쓰기"), c("다 만들면 무엇이 달라지는지 쓰기"),
         c("누가 쓰는지 쓰기"), c("얼마나 크게 만들지 정하기", "규모 등급")] },
     { n: 1, name: "문제 저장", title: "아이디어 적어 두기", short: "적어 두기",
-      gets: "한 문장 목표", does: "빈칸을 질문으로 하나씩 채워요", gives: "정리된 아이디어",
+      gets: "한 문장 목표", does: "빈칸을 질문으로 하나씩 채워요", gives: "정리된 아이디어", doc: "아이디어 정리표",
       criteria: [c("정해진 빈칸에 아이디어 채우기", "의도명세 캔버스"), c("왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기"),
         c("한 문장에 한 가지 일만, 애매한 말 없이 쓰기"), c("자세한 기획서로 키울지 직접 정하기 (큰 프로젝트만)", "PRD")] },
     { n: 2, name: "문제 분석", title: "꼭 필요한 기능 정리하기", short: "기능 정리",
-      gets: "정리된 아이디어", does: "기능을 문장으로 쓰고, 숫자로 정하고, 순서를 매겨요", gives: "꼭 필요한 기능 목록",
+      gets: "정리된 아이디어", does: "기능을 문장으로 쓰고, 숫자로 정하고, 순서를 매겨요", gives: "꼭 필요한 기능 목록", doc: "꼭 필요한 기능 목록",
       criteria: [c("기능을 '~하면, 앱은 ~한다' 문장으로 쓰기", "EARS"), c("'빠르게' 같은 애매한 말을 숫자로 바꾸기 (모르면 '아직 모름')", "Planguage"),
         c("기능마다 꼭 필요한지, 있으면 좋은지 표시하기", "MoSCoW·Kano"), c("기능마다 어디서 나온 생각인지 표로 잇기 (기능이 5개 이상일 때)", "추적표 RTM")] },
     { n: 3, name: "패턴 분석", title: "만드는 방법 고르기", short: "방법 고르기",
-      gets: "기능 목록", does: "만드는 방법을 비교해서 하나 골라요", gives: "고른 방법과 그 이유",
+      gets: "기능 목록", does: "만드는 방법을 비교해서 하나 골라요", gives: "고른 방법과 그 이유", doc: "방법을 고른 기록",
       criteria: [c("만드는 방법 후보를 2개 이상 찾기"), c("후보끼리 좋은 점과 아쉬운 점 비교하기", "트레이드오프"),
         c("고른 방법을 기록으로 남기기", "ADR"), c("왜 골랐는지 한 줄 쓰기")] },
     { n: 4, name: "패턴 구현", title: "뼈대 먼저 이어 보기", short: "뼈대",
-      gets: "고른 방법", does: "가장 단순한 흐름부터 처음부터 끝까지 이어 봐요", gives: "돌아가는 뼈대, 할 일 목록",
+      gets: "고른 방법", does: "가장 단순한 흐름부터 처음부터 끝까지 이어 봐요", gives: "돌아가는 뼈대, 할 일 목록", doc: "작은 할 일 목록",
       criteria: [c("가장 단순한 흐름을 처음부터 끝까지 이어 보기", "Walking Skeleton"), c("이어진 게 실제로 도는지 확인하기", "스모크 테스트"),
         c("남은 일을 작은 할 일로 나누기", "작업 분해")] },
     { n: 5, name: "구현", title: "하나씩 만들고 확인하기", short: "만들기",
@@ -99,18 +100,47 @@
     plan: ["think", "한 장으로 정리했어요. 이제 어때요?"],
     next: ["happy", "좋아요! 다음에 할 일 순서를 정해 봐요."],
   };
+  // 두 화면이 같이 쓰는 앞부분 — 기다리는 중 > 잠깐! > 오류
+  const trouble = (v, busySay) => (v.busy ? ["look", busySay] : v.warn ? ["alert", "보내기 전에 잠깐! 아래 안내를 봐 주세요."]
+    : v.error ? ["think", "음, 잘 안 됐어요. 아래 안내를 봐 주세요."] : null);
   function face(v) {
-    if (v.busy) return ["look", "어디쯤인지 살펴보고 있어요…"];
-    if (v.warn) return ["alert", "보내기 전에 잠깐! 아래 안내를 봐 주세요."];
-    if (v.error) return ["think", "음, 잘 안 됐어요. 아래 안내를 봐 주세요."];
+    const t = trouble(v, "어디쯤인지 살펴보고 있어요…");
+    if (t) return t;
     if (v.gate) return GATE_FACE[v.step] || GATE_FACE.ask;
+    if (v.back) return ["happy", v.back];
     if (!v.reason) return ["idle", "지금 만들고 있는 걸 보여 주시면, 어디쯤인지와 다음에 할 일을 알려 드릴게요."];
     if (v.allDone) return ["done", "할 일을 다 했어요! 넘어가기 전에 같이 확인해 봐요."];
     return ["idle", v.reason];
   }
 
+  // 설계도 화면의 나비 — 초안을 받기 전, 받은 뒤, 다시 봐 준 뒤, 확정한 뒤
+  function docFace(v) {
+    const t = trouble(v, "설계도를 읽고 있어요…");
+    if (t) return t;
+    if (v.review) return [v.review.ready ? "happy" : "think", v.review.say];
+    if (v.draftSay) return ["happy", v.draftSay];
+    if (v.done) return ["done", "확정한 설계도예요. 고치고 싶으면 언제든 다시 열어요."];
+    return ["idle", "초안은 제가 먼저 써 볼게요. 고치고 확정하는 건 직접 해요."];
+  }
+
   // 사용자가 고른 것을 작업 글에 남기는 한 줄 — 다시 살펴볼 때 AI가 읽는다
   const decisionLine = (question, option) => `${question} → '${option}'로 정했어요.`;
+
+  // 설계도의 빈칸 — AI 초안과 연습용 초안이 모르는 자리를 이렇게 비워 둔다
+  const BLANK = /\[채워 주세요:\s*([^\]]*)\]/g;
+  const blanks = (text) => [...String(text).matchAll(BLANK)].map((m) => m[1].trim());
+
+  // 다시 왔을 때 인사 — 저장해 둔 기록(saved.at: 마지막으로 본 때)으로 "어제 2단계 할 일 4개 중 2개까지" 같이 말한다
+  const day = (t) => new Date(t).setHours(0, 0, 0, 0);
+  function welcome(saved, now) {
+    const j = saved && saved.j, s = j && STAGES[j.stage];
+    if (!s || !saved.at || !Array.isArray(j.criteria)) return "";
+    const d = Math.round((day(now) - day(saved.at)) / 864e5);
+    const when = d <= 0 ? "아까" : d === 1 ? "어제" : `${d}일 전에`;
+    const met = j.criteria.filter((c) => c && c.met).length, n = j.criteria.length;
+    return met === n ? `${when} ${s.n}단계 할 일을 다 하셨어요. 넘어가기 전 확인부터 해요!`
+      : `${when} ${s.n}단계 할 일 ${n}개 중 ${met}개까지 하셨어요. 이어서 해요!`;
+  }
 
   const str = { type: "string", minLength: 1 };
   const JUDGE_SCHEMA = {
@@ -125,6 +155,15 @@
     },
   };
   const ANSWER_SCHEMA = { type: "object", required: ["answer"], properties: { answer: str } };
+  const DRAFT_SCHEMA = { type: "object", required: ["draft", "say"], properties: { draft: str, say: str } };
+  const REVIEW_SCHEMA = {
+    type: "object", required: ["say", "good", "fix", "ready"],
+    properties: {
+      say: str, ready: { type: "boolean" },
+      good: { type: "array", maxItems: 3, items: str },
+      fix: { type: "array", maxItems: 3, items: { type: "object", required: ["where", "why", "hint"], properties: { where: str, why: str, hint: str } } },
+    },
+  };
 
   const stageTable = () => STAGES.map((s) => `${s.n}단계 ${s.title}: ${s.does}. 할 일: ${s.criteria.map((x, i) => `(${i + 1}) ${x.text}${x.term ? ` [${x.term}]` : ""}`).join(" ")}`).join("\n");
 
@@ -169,7 +208,57 @@
     ].join("\n");
   }
 
+  // FR-3 설계도: AI가 초안을 먼저 쓰고 → 사용자가 고치고 → AI가 다시 봐 준다. 확정은 사람만 한다(화면의 버튼).
+  const todoOf = (s) => s.criteria.map((x, i) => `(${i + 1}) ${x.text}`).join(" ");
+  function draftPrompt(stage, text) {
+    const s = STAGES[stage];
+    return [
+      `너는 앱을 만드는 사람 옆에서 길을 알려 주는 동료다. 사용자는 ${s.n}단계 "${s.title}"(${s.does})를 하고 있다.`,
+      `아래 작업 내용만 보고 이 단계에서 만들 "${s.doc}"의 초안을 쓴다. 초안은 사용자가 직접 고쳐서 완성한다.`,
+      `이 단계에서 챙길 것: ${todoOf(s)}`,
+      "",
+      "규칙:",
+      "- 작업 내용에 없는 사실(숫자, 사람, 기능, 날짜)은 지어내지 않는다. 모르는 자리는 [채워 주세요: 무엇을] 으로 비워 둔다.",
+      "- 한 줄에 한 가지만 쓴다. 전체 1200자 이내. 표·기호 장식 없이 줄글과 번호만 쓴다.",
+      `- say는 초안을 건네며 하는 말이다. 두 문장 이내, ${SAY_MAX}자 안쪽으로, 빈칸이 몇 개인지 알려 준다.`,
+      PLAIN,
+      "",
+      "<작업내용>", String(text), "</작업내용>",
+    ].join("\n");
+  }
+  function reviewPrompt(stage, text, doc) {
+    const s = STAGES[stage];
+    return [
+      `너는 앱을 만드는 사람 옆에서 길을 알려 주는 동료다. 사용자가 ${s.n}단계의 "${s.doc}"을 고쳐 썼다. 다시 봐 준다.`,
+      `이 단계에서 챙길 것: ${todoOf(s)}`,
+      "",
+      "규칙:",
+      "- 대신 고쳐 쓰지 않는다. 고칠 곳과 방향만 말한다. 정답 문장을 주지 않는다.",
+      "- good은 잘한 점 3개 이내. 설계도에 실제로 있는 것만 말한다.",
+      "- fix는 고칠 곳 3개 이내. where는 설계도에서 그대로 따온 짧은 구절, why는 왜 고쳐야 하는지, hint는 어떻게 고칠지 방향이다.",
+      "- [채워 주세요: …] 빈칸이 남아 있으면 fix에 넣는다.",
+      "- ready는 fix가 비어 있을 때만 true다.",
+      `- say는 두 문장 이내, ${SAY_MAX}자 안쪽이다.`,
+      PLAIN,
+      "",
+      "<작업내용>", String(text), "</작업내용>",
+      "<설계도>", String(doc), "</설계도>",
+    ].join("\n");
+  }
+
   const filled = (x) => typeof x === "string" && x.trim() !== "";
+
+  function parseDraft(o) {
+    if (!o || !filled(o.draft) || !filled(o.say)) return null;
+    return { draft: o.draft.slice(0, 4000), say: o.say };
+  }
+  // 다시 봐 준 결과도 믿지 않는다. 고칠 곳이 하나라도 있으면 ready는 우리 쪽에서 false로 둔다
+  function parseReview(o) {
+    if (!o || !filled(o.say) || typeof o.ready !== "boolean" || !Array.isArray(o.good) || !Array.isArray(o.fix)) return null;
+    if (!o.good.every(filled) || !o.fix.every((f) => f && ["where", "why", "hint"].every((k) => filled(f[k])))) return null;
+    const fix = o.fix.slice(0, 3).map((f) => ({ where: f.where, why: f.why, hint: f.hint }));
+    return { say: o.say, good: o.good.slice(0, 3), fix, ready: o.ready && fix.length === 0 };
+  }
 
   // Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함"). 할 일 문장은 우리 데이터로 덮는다.
   function parseJudgement(o) {
@@ -189,8 +278,9 @@
     };
   }
 
-  const api = { STAGES, JARGON, SAY_MAX, canAdvance, reorder, nextView, ticker, face, decisionLine,
-    JUDGE_SCHEMA, ANSWER_SCHEMA, judgePrompt, answerPrompt, parseJudgement };
+  const api = { STAGES, JARGON, SAY_MAX, canAdvance, reorder, nextView, ticker, face, docFace, decisionLine, blanks, welcome,
+    JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt,
+    parseJudgement, parseDraft, parseReview };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
 })(typeof window !== "undefined" ? window : globalThis);
