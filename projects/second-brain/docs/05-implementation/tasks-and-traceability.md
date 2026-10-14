@@ -7,7 +7,7 @@
 어긋나면 코드와 시험이 맞다. 상태의 원천(게이트 로그)은 [PROGRESS.md](../../PROGRESS.md)다(V1에서는 세션 파일이었다).
 
 **읽는 법.** `✓` 코드와 시험이 있다 · `부분` 코드가 일부만 본다 · `절차` 코드로 증명되지 않고 세션에서 Claude가 지키는 약속이다 ·
-`해당 없음` 이 프로젝트에는 그 동작이 없다(이유를 적음, 사용자 승인 대기) · `전` 구현 전.
+`해당 없음` 이 프로젝트에는 그 동작이 없다(이유를 적음, 사용자 승인 2026-10-14) · `전` 구현 전.
 
 ## 1. 작업 목록
 
@@ -43,23 +43,23 @@ V1(`gamercross/my-workspace`)의 PR #85(T01~T07)·#86(T08·T09)·#88(T10~T13)·#
 | 요구 | 구현 | 시험 (파일 · 대표 이름) | Then의 수치·결과 | 상태 |
 |---|---|---|---|---|
 | **F13b** 사용자 태그를 바꾸거나 지우지 않음 | `knowledge.add_claude_tags` | `test_knowledge` · `test_claude_never_changes_or_removes_user_tags` | 사용자 태그 목록이 그대로, 같은 말은 Claude 태그로 또 붙지 않음 | ✓ |
-| **S1a** 원문에 없는 정보를 쓰지 않음 | `summary_rules.ungrounded` | `test_summary_rules` 7개 · `test_date_not_in_the_source_is_flagged`, `test_number_inside_a_longer_number_does_not_count_as_grounded` | 원문에 없는 날짜·숫자·주소가 순서대로 한 번씩 표시됨 | **부분** — 사람 이름·사실 관계는 코드가 못 봄(절차) |
+| **S1a** 원문에 없는 정보를 쓰지 않음 | `summary_rules.ungrounded` | `test_summary_rules` 7개 · `test_date_not_in_the_source_is_flagged`, `test_number_inside_a_longer_number_does_not_count_as_grounded` | 원문에 없는 날짜·숫자·주소가 순서대로 한 번씩 표시됨 | **부분 — 인정(사용자 2026-10-14)**: 사람 이름·사실 관계는 코드가 못 봄(절차) |
 | **S1b** 기한이 없으면 "확인 필요" | `intake.parse_issue_title`, `knowledge.action_issue_title` | `test_intake` · `test_parse_rejects_missing_deadline_without_inventing_one` / `test_knowledge` · `test_action_without_a_deadline_is_not_turned_into_a_task` | 마감을 지어내지 않고 거부함 | ✓ |
-| **S1c** 부족하면 질문 최대 Q6개 | `summary_rules.limit_questions` | `test_summary_rules` · `test_at_most_two_questions_are_asked_now` | Q6 = 2 (나머지는 뒤로 미룸) | **부분** — 질문을 만드는 쪽은 절차 |
+| **S1c** 부족하면 질문 최대 Q6개 | `summary_rules.limit_questions` | `test_summary_rules` · `test_at_most_two_questions_are_asked_now` | Q6 = 2 (나머지는 뒤로 미룸) | **부분 — 인정(사용자 2026-10-14)**: 질문을 만드는 쪽은 절차 |
 | **S2a** 자동화가 실패하면 알림 | `intake.process_issue`(실패 결과·메시지), `resilience.retry` | `test_intake` · `test_failure_is_logged_and_reported_not_hidden` / `test_resilience` · `test_gives_up_after_three_retries_and_says_so` | 실패 결과와 이유가 반환되고 실행 기록에 "실패"로 남음 | ✓ (알리는 말은 세션) |
-| **S2b** Q5 상한·간격 안에서만 재시도 | `resilience.retry` | `test_resilience` 5개 · `test_transient_errors_are_retried_with_growing_gaps`, `test_request_errors_fail_immediately_without_retry` | 1·2·4초, 첫 시도 뒤 3번, 4xx·모르는 오류는 바로 실패 | ✓ (모듈) — 세션의 캘린더 호출은 절차 |
-| **S2c** 일부만 성공하면 빠진 부분 표시 | `resilience.run_steps` | `test_resilience` · `test_partial_success_names_what_is_missing` | "완료: … / 빠진 것: …(이유)" | ✓ (모듈) |
-| **S3** 팀원은 이름·직책·한 줄만 | — | — | — | **절차** — 사용자 인정 여부 결정 필요 |
+| **S2b** Q5 상한·간격 안에서만 재시도 | `resilience.retry` | `test_resilience` 5개 · `test_transient_errors_are_retried_with_growing_gaps`, `test_request_errors_fail_immediately_without_retry` | 1·2·4초, 첫 시도 뒤 3번, 4xx·모르는 오류는 바로 실패 | ✓ (모듈) — 세션의 캘린더 호출은 **세션 절차로 인정(사용자 2026-10-14)** |
+| **S2c** 일부만 성공하면 빠진 부분 표시 | `resilience.run_steps` | `test_resilience` · `test_partial_success_names_what_is_missing` | "완료: … / 빠진 것: …(이유)" | ✓ (모듈) — 세션 절차로 인정(사용자 2026-10-14) |
+| **S3** 팀원은 이름·직책·한 줄만 | — | — | — | **절차 — 인정(사용자 2026-10-14)** |
 | **S4** 정해진 곳 밖으로 안 보냄 | `intake`(값을 다시 안 보임), `bundle.mask_sensitive`, 훅 | `test_intake` · `test_errors_never_echo_the_title` / `test_architecture` 3개 / `test_calendar_invite_hook` 8개(V1 전용) | 코드가 네트워크·외부 실행 모듈을 못 가져옴, 오류·기록에 값이 안 나옴, 참석자는 사용자 확인 | ✓ |
 | **S5** 비밀값이 있으면 커밋을 막음 | `.claude/hooks/check-secrets.sh` | `test_check_secrets` 12개 | 막고 값을 가려서 알림 | ✓ |
-| **S6** 인증 없이 밖에 공개하지 않음 | — | — | 서버·API·페이지를 공개하지 않음(ADR-0003) | **해당 없음** — 승인 대기 |
-| **S8** 팀 저장소는 내 몫 중심 | — | — | F5(깃허브 진행도)가 없어 이 동작 자체가 없음 | **해당 없음(전)** — F5 구현 때 다시 |
+| **S6** 인증 없이 밖에 공개하지 않음 | — | — | 서버·API·페이지를 공개하지 않음(ADR-0003) | **해당 없음 — 승인(사용자 2026-10-14)** |
+| **S8** 팀 저장소는 내 몫 중심 | — | — | F5(깃허브 진행도)가 없어 이 동작 자체가 없음 | **해당 없음(전) — 승인(사용자 2026-10-14)**, F5 구현 때 다시 |
 | **F18b** 겹치면 기존 일정은 두고 새 일정만 다른 시간 | `planning.place_on` | `test_planning` · `test_overlapping_slot_is_refused_and_another_time_is_offered` | 기존 일정 목록이 그대로, 겹침 목록과 대안 시각 | ✓ (실제 캘린더 시험은 아직) |
 | **F15c** 추정한 줄 표시와 개수 | `bundle.transcript_document` | `test_bundle` · `test_transcript_marks_estimated_lines_and_counts_them_in_the_header` | 줄 끝 `[추정]`, 머리 "추정 N줄" | ✓ |
 | **F16c** 어느 목적에도 안 닿으면 "목적에 답하지 않음" | `bundle.fit_report` | `test_bundle` · `test_nothing_fits_means_not_answering_the_purpose_and_asks` | 표시하고 "저장할지" 사용자에게 물음 | ✓ |
-| **S9** 키·도메인·IP·남의 정보는 가리고 기록 | `bundle.mask_sensitive`, `transcript_document` | `test_bundle` 4개 · `test_domains_ips_emails_urls_and_phones_are_masked` | 자리표시로 바꾸고 종류·개수를 적음 | **부분** — 남의 이름은 코드가 못 찾음(절차) |
+| **S9** 키·도메인·IP·남의 정보는 가리고 기록 | `bundle.mask_sensitive`, `transcript_document` | `test_bundle` 4개 · `test_domains_ips_emails_urls_and_phones_are_masked` | 자리표시로 바꾸고 종류·개수를 적음 | **부분 — 인정(사용자 2026-10-14)**: 남의 이름은 코드가 못 찾음(절차) |
 
-**소계(16개):** ✓ 10개(F13b·S1b·S2a·S2b·S2c·S4·S5·F18b·F15c·F16c) · 부분 3개(S1a·S1c·S9) · 절차 1개(S3) · 해당 없음 2개(S6·S8). 별도로 S2b·S2c(✓는 모듈까지)를 실제 흐름에 끼우는 일은 아직이다.
+**소계(16개):** ✓ 10개(F13b·S1b·S2a·S2b·S2c·S4·S5·F18b·F15c·F16c) · 부분 3개(S1a·S1c·S9) · 절차 1개(S3) · 해당 없음 2개(S6·S8). 별도로 S2b·S2c(✓는 모듈까지)는 캘린더 호출이 세션이라 **세션 절차로 두기로 했다(사용자 2026-10-14)**.
 
 ## 3. 그 밖의 5단계 요구와 측정값 — Then의 수치가 확정 값과 같은가
 
@@ -91,16 +91,28 @@ V1(`gamercross/my-workspace`)의 PR #85(T01~T07)·#86(T08·T09)·#88(T10~T13)·#
 | EARS → Given-When-Then, Then의 수치가 확정 값과 같음 | ✓ (2·3절) | Q3·Q4 목표치는 6단계 실측 |
 | 제약은 위반 시도로 확인 | ✓ | 시험 이름이 위반 시도를 먼저 보임(`..._is_refused`, `..._never_...`, `test_overlapping_slot...`). 멱등: 목록·점검·계획 시험이 "같은 입력 같은 결과" |
 | 아키텍처 규칙은 도구로 강제 | ✓ | `test_architecture` — 코드가 네트워크·외부 실행을 못 가져옴 |
-| (화면이 있으면) 접근성 검사 | **해당 없음** | 첫 버전은 화면 없이 대화·마크다운(3단계 판정). 승인 대기 |
+| (화면이 있으면) 접근성 검사 | **해당 없음** | 첫 버전은 화면 없이 대화·마크다운(3단계 판정). 승인(사용자 2026-10-14) |
 
 ## 5. 5→6 게이트 전에 남은 일
 
 | 일 | 누가 | 비고 |
 |---|---|---|
-| S3(팀원은 한 줄)를 세션 절차로 인정할지 | 사용자 | 코드로 증명할 방법이 마땅치 않음 |
-| S6·S8·접근성 "해당 없음" 승인 | 사용자 | 위 표의 이유가 맞는지 |
-| S1a·S1c·S9 `부분`을 게이트에서 어떻게 볼지 | 사용자 | 이름·사실 관계는 코드 밖 |
-| S2b·S2c를 실제 흐름에 끼울지, 세션 절차로 둘지 | 사용자 + Claude | 캘린더 호출이 세션(MCP)이라 코드에 걸 자리가 없음 |
+| S3(팀원은 한 줄)를 세션 절차로 인정할지 | 사용자 | **인정 (2026-10-14)** — 코드로 증명할 방법이 마땅치 않음 |
+| S6·S8·접근성 "해당 없음" 승인 | 사용자 | **승인 (2026-10-14)** |
+| S1a·S1c·S9 `부분`을 게이트에서 어떻게 볼지 | 사용자 | **인정 (2026-10-14)** — 이름·사실 관계는 코드 밖 |
+| S2b·S2c를 실제 흐름에 끼울지, 세션 절차로 둘지 | 사용자 + Claude | **세션 절차로 둠 (2026-10-14)** [해석: "2~5 전부 예" — 캘린더 호출이 세션(MCP)이라 코드에 걸 자리가 없음] |
 | 실사용 확인 | 사용자 | 오늘 20:00 당일 알림 도착(D11), F18b 겹침을 실제 캘린더에서 시험, 지식 찾기·인용 한 번 |
 | 5단계 종료일 | 사용자 | 관리계획서 부록 B에 미정으로 남음 |
 | 자기 판정(Go/Recycle/Hold/Kill + 한 줄 근거) | 사용자 | 리뷰 모드: 사용자 판정을 먼저 적은 뒤 Claude 판정을 본다 |
+
+## 6. 게이트 결정 기록 (사용자 2026-10-14, "EARS 결정 다하고 GO", "2~5 전부 예")
+
+| # | 결정 | 내용 |
+|---|---|---|
+| 1 | 자기 판정 | **Go** |
+| 2 | S3 | 세션 절차로 **인정** — 저장 전 사용자 승인 단계로 통제하고, 6단계 사용 중 남의 정보가 들어오는지 관찰한다 |
+| 3 | S6·S8·접근성 | **해당 없음 승인** — 서버 없음(ADR-0003), F5 구현 전, 화면 없음 |
+| 4 | S1a·S1c·S9 | **부분 커버 인정** — 코드가 보는 범위(날짜·숫자·주소, 질문 수, 가리기)와 사람이 보는 범위를 구분해 적었다 |
+| 5 | S2b·S2c | 모듈은 ✓, 실제 흐름은 **세션 절차**로 둔다 |
+
+이 표는 대응표의 제안 상태를 확정한 것이다. 사용자가 다르게 읽었다면 이 문서와 게이트 로그의 같은 날짜 줄을 함께 고친다.
