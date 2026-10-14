@@ -1,0 +1,172 @@
+/* claude-drafted: 2026-10-14 — Navigator 프로토타입 모양. 목업(Mac·iPhone 느낌: 반투명 유리, 크게 둥근 모서리, 파란색 하나)을 따른다.
+   넓은 화면 = Mac(코딩 도구 창 위에 떠 있는 옆자리 동료), 600px 이하 = iPhone(오늘의 길잡이 앱). */
+
+:root{
+  --desk:#DCE4EE; --win:#FFFFFF; --winbar:#F7F7F8; --side:#F5F6F8; --line:#E6E8EC;
+  --ink:#1D1D1F; --ink2:#3A3A3C; --mute:#6E6E73;
+  --glass:rgba(255,255,255,.80); --glass2:rgba(255,255,255,.88); --soft:#F5F6F8; --card:#FFFFFF; --phone:#F2F3F7;
+  --acc:#2F6BFF; --acc-ink:#FFFFFF; --acc-soft:#EEF3FF; --acc-mid:#9DB8F7; --seg:#E3E6EB;
+  --ok:#1E7A47; --okbg:#E3F4EA; --warn:#8A5A00; --warnbg:#FFF4DE; --bad:#A32D2D; --badbg:#FDEAEA;
+  --shadow:0 24px 60px rgba(30,40,60,.20),0 0 0 .5px rgba(0,0,0,.10);
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{
+  --desk:#1B1D22; --win:#1F2024; --winbar:#26272C; --side:#222328; --line:#34363C;
+  --ink:#F2F2F5; --ink2:#D6D6DC; --mute:#A1A1AA;
+  --glass:rgba(40,41,46,.80); --glass2:rgba(40,41,46,.92); --soft:#2A2B30; --card:#1C1C1E; --phone:#111214;
+  --acc:#5B8CFF; --acc-ink:#FFFFFF; --acc-soft:#22305A; --acc-mid:#3D5BA8; --seg:#3A3C42;
+  --ok:#5DCAA5; --okbg:#10332A; --warn:#F0B955; --warnbg:#3A2D10; --bad:#F09595; --badbg:#3D1C1C;
+  --shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.08);
+}}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--desk);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+/* ── 뒤쪽: 사용자의 AI 코딩 도구 창 (예시) ── */
+.window{width:min(1200px,calc(100% - 64px));height:min(690px,calc(100vh - 180px));min-height:420px;margin:150px auto 40px;background:var(--win);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.winbar{height:44px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px 0 16px;border-bottom:1px solid var(--line);background:var(--winbar)}
+.winbar .light{width:12px;height:12px;border-radius:50%}
+.winbar .title{flex:1;text-align:center;font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.winbar .play{border:1px solid var(--line);background:var(--win);border-radius:8px;padding:4px 10px;font-size:12px;color:var(--ink2)}
+.winbody{flex:1;min-height:0;display:grid;grid-template-columns:220px minmax(0,1fr)}
+.files{background:var(--side);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--ink2)}
+.files .head{font-size:11px;font-weight:600;color:var(--mute);padding:0 8px 6px}
+.files div{padding:6px 8px;border-radius:6px}.files .on{background:var(--acc-soft)}
+.chat{padding:24px 40px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;font:14px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink2);overflow:hidden}
+.chat .me{color:var(--acc)}.chat .dim{opacity:.55}
+
+/* ── 앞쪽: 옆자리 동료 ── */
+.nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(560px,calc(100vw - 32px));z-index:10;display:flex;flex-direction:column;align-items:center;gap:12px}
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%)}
+.strip{width:140px;height:24px;display:flex;align-items:flex-start;justify-content:center;background:none;border:0;padding:0}
+.strip i{display:block;width:96px;height:6px;border-radius:99px;background:var(--mute);opacity:.45}
+.pill{width:100%;height:52px;display:flex;align-items:center;gap:4px;padding:0 8px 0 6px;border-radius:999px;box-shadow:0 10px 30px rgba(30,40,60,.16),0 0 0 .5px rgba(0,0,0,.10)}
+.pill-main{flex:1;min-width:0;height:44px;display:flex;align-items:center;gap:10px;border:0;background:none;padding:0 4px;text-align:left;border-radius:999px}
+.pill-stage{font-size:14px;font-weight:700;white-space:nowrap}
+.pill-count{font-size:13px;color:var(--mute);white-space:nowrap}
+.pill-now{flex:1;min-width:0;font-size:13px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.round{width:32px;height:32px;flex:none;border:0;border-radius:50%;background:rgba(127,127,127,.12);display:flex;align-items:center;justify-content:center}
+.round[aria-pressed=true]{background:var(--acc-soft);color:var(--acc)}
+.panel{position:relative;width:100%;padding:20px;display:flex;flex-direction:column;gap:16px;border-radius:22px;box-shadow:var(--shadow);max-height:calc(100vh - 100px);overflow:auto;background:var(--glass2);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%)}
+.countdown{position:absolute;left:22px;right:22px;bottom:0;height:3px;border-radius:3px;background:var(--seg)}
+.countdown i{display:block;height:3px;border-radius:3px;background:var(--acc);animation:shrink linear forwards}
+@keyframes shrink{from{width:100%}to{width:0}}
+@keyframes drop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+.enter{animation:drop .22s ease-out}
+
+/* ── 함께 쓰는 조각 ── */
+.say{display:flex;gap:12px;align-items:center}
+.bubble{flex:1;background:var(--acc-soft);border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:15px;line-height:1.55}
+.stage-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.stage-title{font-size:17px;font-weight:700}
+.meta{font-size:13px;color:var(--mute)}
+.seg{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px;margin:8px 0}
+.seg span{height:6px;border-radius:3px;background:var(--seg)}.seg .done{background:var(--acc)}.seg .cur{background:var(--acc-mid)}
+.label{font-size:12px;font-weight:600;color:var(--mute);margin:0 0 6px}
+.ticker{background:var(--soft);border-radius:14px;padding:10px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.ticker div{display:flex;gap:10px}.ticker .k{width:84px;flex:none;font-size:12px;padding-top:2px}
+.ticker .past{color:var(--mute)}.ticker .now{font-weight:600}.ticker .now .k{color:var(--acc)}
+.choose{border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--card)}
+.choose .q{font-size:16px;font-weight:700}
+.choose .why{font-size:14px;color:var(--ink2);line-height:1.55}
+.opt{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:15px;text-align:left}
+.opt .radio{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid #B8BDC7}
+.opt[aria-pressed=true]{border:2px solid var(--acc);background:var(--acc-soft)}
+.opt[aria-pressed=true] .radio{border:5px solid var(--acc);background:#fff}
+.btn{min-height:44px;border:0;border-radius:12px;padding:0 18px;font-size:15px;background:rgba(127,127,127,.14)}
+.btn.pri{background:var(--acc);color:var(--acc-ink);font-weight:700}
+.btn.wide{width:100%}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row .grow{flex:1}
+ul.crit{list-style:none;margin:0;padding:0}
+ul.crit li{display:flex;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
+ul.crit li:first-child{border-top:0}
+.ck{width:18px;flex:none;text-align:center}.ck.y{color:var(--ok)}.ck.n{color:var(--mute)}
+.sub{display:block;font-size:12px;color:var(--mute)}
+.tag{display:inline-block;font-size:11px;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:0 7px;margin-left:6px;vertical-align:1px}
+.badge{display:inline-block;font-size:12px;border-radius:999px;padding:3px 10px}
+.badge.fix{background:var(--warnbg);color:var(--warn)}.badge.live{background:var(--okbg);color:var(--ok)}.badge.tmp{background:var(--seg);color:var(--mute)}
+.foot{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute)}
+.note{border-radius:12px;padding:10px 12px;font-size:14px}
+.n-warn{background:var(--warnbg);color:var(--warn)}.n-bad{background:var(--badbg);color:var(--bad)}.n-acc{background:var(--acc-soft);color:var(--ink)}.n-ok{background:var(--okbg);color:var(--ok)}
+.soon{border:1px dashed var(--line);border-radius:12px;padding:10px 12px;color:var(--mute);font-size:13px}
+textarea{width:100%;min-height:100px;font:inherit;font-size:14px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;resize:vertical}
+select{font:inherit;font-size:13px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+details summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--mute);min-height:32px;display:flex;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--card);color:var(--mute);border:1px solid var(--line)}
+.chip.done{background:var(--okbg);color:var(--ok);border-color:transparent}.chip.cur{background:var(--acc);color:var(--acc-ink);border-color:transparent;font-weight:700}
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center}
+.flow .box{border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:13px;min-height:64px;background:var(--card)}
+.flow .box b{display:block;font-size:11px;color:var(--mute);font-weight:600}
+.flow .arrow{color:var(--acc-mid);font-size:13px;text-align:center}
+.ask{font-size:18px;font-weight:700}
+ol.todo{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+ol.todo li{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px 6px 12px;font-size:14px;background:var(--card)}
+ol.todo li span{flex:1}ol.todo .i{flex:none;width:18px;color:var(--mute)}
+ol.todo .round{background:transparent;border:1px solid var(--line)}
+.plan{background:var(--soft);border-radius:14px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:4px}
+label.chk{display:flex;gap:10px;align-items:center;min-height:40px;font-size:14px}
+/* 카드·목록 — PC 패널의 단계 지도·내 배움과 iPhone 화면이 같이 쓴다 */
+.card{background:var(--card);border-radius:18px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:10px}
+.card .kicker{font-size:13px;font-weight:700;color:var(--acc)}
+.list{background:var(--card);border-radius:18px;padding:4px 18px}
+.list>div{display:flex;align-items:center;gap:12px;min-height:48px;font-size:15px;border-top:1px solid var(--line)}
+.list>div:first-child{border-top:0}
+.list .dot{width:22px;height:22px;flex:none;border-radius:50%;border:1.5px solid #B8BDC7}
+.list .dot.y{border:0;background:var(--ok)}.list .dot.c{border:2px solid var(--acc)}
+/* Mac식 탭 (지금 / 단계 지도 / 내 배움) */
+.segctl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:2px;border-radius:10px;background:rgba(127,127,127,.14)}
+.segctl button{min-height:32px;border:0;border-radius:8px;background:none;font-size:13px;color:var(--ink2)}
+.segctl button[aria-selected=true]{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+label.chk input{width:18px;height:18px;accent-color:var(--acc)}
+
+/* ── 고양이 나비 — 표정은 눈으로만(m-*), 상태는 머리 밖 작은 표시(s-*). 마우스를 올리면 그르릉 ── */
+.cat{flex:none;overflow:visible}
+.cat .c-eyes circle{fill:#2A2A2E}
+.cat .c-eyes path{fill:none;stroke:#2A2A2E;stroke-width:5;stroke-linecap:round}
+.cat .c-mouth{fill:none;stroke:#2A2A2E;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.cat .s-dots circle{fill:#8FA9D6}.cat .s-spark{fill:#F5A524}.cat .s-heart{fill:#FF6F86}
+.cat .s-q{font:800 30px -apple-system,sans-serif;fill:#2F6BFF}
+.cat .s-bang circle{fill:#F5A524}.cat .s-bang path{stroke:#fff;stroke-width:4;stroke-linecap:round}.cat .s-bang circle:last-child{fill:#fff}
+.cat .c-eyes>*,.cat [class^="s-"]{display:none}
+.m-idle .e-dot,.m-look .e-dot,.m-alert .e-wide,.m-happy .e-happy,.m-done .e-happy,.m-think .e-think{display:inline}
+.m-look .s-dots,.m-done .s-spark,.m-think .s-q,.m-alert .s-bang{display:inline}
+.m-look .e-dot{transform:translateY(-6px)}.m-look .s-dots{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.small .c-mouth{display:none}
+.blink .m-idle .e-dot,.blink .m-look .e-dot{display:none}
+.blink .m-idle .e-blink,.blink .m-look .e-blink{display:inline}
+.cat:hover .c-eyes>*,.cat:hover [class^="s-"]{display:none}
+.cat:hover .e-closed,.cat:hover .s-heart{display:inline}
+
+/* ── iPhone: 600px 이하에서는 오늘의 길잡이 앱 ── */
+.phone{display:none}
+@media (max-width:600px){
+  body{background:var(--phone)}
+  .window,.nav{display:none}
+  .phone{display:block;max-width:480px;margin:0 auto;padding:44px 20px 120px;min-height:100vh}
+  .phone.check{padding-bottom:24px}
+  .ph-date{font-size:13px;font-weight:600;color:var(--mute)}
+  .ph-title{font-size:32px;font-weight:700;letter-spacing:-.6px;margin:0 0 14px}
+  .phone .say{align-items:flex-end;margin-bottom:14px}
+  .phone .bubble{background:var(--card);border-radius:18px 18px 18px 4px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .card,.list{margin-bottom:14px}
+  .card .big{font-size:20px;font-weight:700;letter-spacing:-.3px}
+  .proj{display:flex;align-items:center;gap:14px}
+  .ring text{font:700 15px -apple-system,sans-serif;fill:var(--ink)}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:8px 24px calc(8px + env(safe-area-inset-bottom));border-top:.5px solid var(--line);z-index:5}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;border:0;background:none;font-size:11px;color:var(--mute)}
+  .tab[aria-current=page]{color:var(--acc);font-weight:600}
+  .back{display:inline-flex;align-items:center;gap:4px;min-height:44px;border:0;background:none;color:var(--acc);font-size:16px;padding:0}
+  .ph-head{display:flex;gap:12px;align-items:center;margin:6px 0 14px}
+  .ph-head .t{font-size:24px;font-weight:700;letter-spacing:-.4px}
+  .flow{grid-template-columns:1fr}.flow .arrow{transform:rotate(90deg)}
+  .bottom{position:sticky;bottom:0;margin:16px -20px 0;padding:16px 20px calc(18px + env(safe-area-inset-bottom));border-top:.5px solid var(--line);display:flex;flex-direction:column;gap:10px}
+  .bottom .ask{text-align:center;font-size:19px}
+  .bottom .btn{min-height:52px;font-size:16px}
+  .phone .chips,.phone>.note{margin-bottom:14px}
+}

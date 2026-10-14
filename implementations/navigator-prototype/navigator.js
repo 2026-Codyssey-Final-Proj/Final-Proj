@@ -1,8 +1,8 @@
 // claude-drafted: 2026-10-14 — 사용자 요청("동아리 행사 등록 앱 가상 프로젝트로, 설계도 루프는 준비 중",
-// "CouCou UX를 더 가져오고, 비개발자가 알아듣는 쉬운 말로")으로 Claude가 썼다.
-// Navigator 규칙 — 단계 데이터와 판정 규칙. 서버·DB 없이 순수 함수만. 화면(index.html)과 서버(server.js)가 같이 쓴다.
+// "CouCou UX를 더 가져오고, 비개발자가 알아듣는 쉬운 말로", "목업으로 구현")으로 Claude가 썼다.
+// Navigator 규칙 — 단계 데이터와 판단 규칙. 서버·DB 없이 순수 함수만. 화면(app.js)과 서버(server.js)가 같이 쓴다.
 // 단계 표는 requirements.md 1절, 할 일은 gates.md DoD·checklist.md를 쉬운 말로 줄인 것 — **임시**.
-// 판정 규칙·프롬프트의 확정본은 이슈 #7(이재엽). 확정되면 이 파일의 STAGES와 프롬프트만 바꾼다.
+// 판단 규칙·프롬프트의 확정본은 이슈 #7(이재엽). 확정되면 이 파일의 STAGES와 프롬프트만 바꾼다.
 //
 // 쉬운 말 규칙: 화면에 크게 보이는 말(title·short·gets·does·gives·criteria[].text)에는 전문 용어를 쓰지 않는다.
 // 전문 용어는 criteria[].term에만 두고 작게 보인다 — 배우고 싶은 사람만 본다. navigator.test.js가 확인한다.
@@ -74,6 +74,41 @@
     return view;
   }
 
+  // 진행 세 줄 — 방금 한 일 / 지금 할 일 / 그다음. todos는 사용자가 정한 순서(있으면 그것을 따른다)
+  function ticker(j, todos, lastDone) {
+    const s = STAGES[j.stage], nx = STAGES[s.n + 1];
+    const done = j.criteria.filter((x) => x.met).pop();
+    const todo = todos || j.criteria.filter((x) => !x.met).map((x) => x.text);
+    const now = todos ? todo[0] : (j.next ? j.next.what : todo[0]);
+    const after = todos || j.next ? todo[1] : null;
+    return {
+      done: done ? done.text : lastDone || "",
+      now: now || "다음 단계로 넘어가기 전에 함께 확인하기",
+      after: after || (nx ? `${nx.n}단계 ${nx.title}` : "마무리"),
+    };
+  }
+
+  // 나비의 [표정, 말풍선] — 위에 있는 상황이 먼저다. v: 화면 상태를 요약한 것
+  const GATE_FACE = {
+    ask: ["done", "이번 단계에서 한 일, 같이 볼까요?"],
+    which: ["think", "모르는 게 당연해요. 어디가 헷갈렸어요?"],
+    question: ["think", "편하게 물어보세요. 쉬운 말로 답할게요."],
+    plan: ["think", "한 장으로 정리했어요. 이제 어때요?"],
+    next: ["happy", "좋아요! 다음에 할 일 순서를 정해 봐요."],
+  };
+  function face(v) {
+    if (v.busy) return ["look", "어디쯤인지 살펴보고 있어요…"];
+    if (v.warn) return ["alert", "보내기 전에 잠깐! 아래 안내를 봐 주세요."];
+    if (v.error) return ["think", "음, 잘 안 됐어요. 아래 안내를 봐 주세요."];
+    if (v.gate) return GATE_FACE[v.step] || GATE_FACE.ask;
+    if (!v.reason) return ["idle", "지금 만들고 있는 걸 보여 주시면, 어디쯤인지와 다음에 할 일을 알려 드릴게요."];
+    if (v.allDone) return ["done", "할 일을 다 했어요! 넘어가기 전에 같이 확인해 봐요."];
+    return ["idle", v.reason];
+  }
+
+  // 사용자가 고른 것을 작업 글에 남기는 한 줄 — 다시 살펴볼 때 AI가 읽는다
+  const decisionLine = (question, option) => `${question} → '${option}'로 정했어요.`;
+
   const str = { type: "string", minLength: 1 };
   const JUDGE_SCHEMA = {
     type: "object", required: ["stage", "reason", "criteria", "next"],
@@ -81,7 +116,9 @@
       stage: { type: "integer", minimum: 0, maximum: 7 },
       reason: str,
       criteria: { type: "array", items: { type: "object", required: ["met", "evidence"], properties: { met: { type: "boolean" }, evidence: { type: "string" } } } },
-      next: { type: "object", required: ["what", "why", "decision", "action"], properties: { what: str, why: str, decision: str, action: str } },
+      next: { type: "object", required: ["what", "why", "question", "options", "action"], properties: {
+        what: str, why: str, question: str, action: str,
+        options: { type: "array", minItems: 2, maxItems: 4, items: str } } },
     },
   };
   const ANSWER_SCHEMA = { type: "object", required: ["answer"], properties: { answer: str } };
@@ -103,9 +140,12 @@
       "- 작업 내용에 적힌 것만 근거로 쓴다. 적혀 있지 않으면 met=false이고 evidence는 빈 문자열이다. 지어내지 않는다.",
       "- evidence는 작업 내용에서 그대로 따온 짧은 구절이다.",
       "- criteria는 고른 단계의 할 일과 같은 개수, 같은 순서로 낸다.",
+      "- reason은 지금 어디쯤인지와 잘한 점을 한두 문장으로 말한다.",
       "- next는 아직 안 한 일 중 가장 먼저 할 하나다. 모두 했으면 다음 단계로 넘어가기 전 확인을 해 보자고 안내한다.",
       "- next.what은 20자 안팎의 짧은 할 일 이름이다(예: '빠르게'를 숫자로 바꾸기). 설명은 why, 방법은 action에 쓴다.",
-      "- decision은 사용자가 고를 선택지 A/B/C 한 줄이다. 고르는 건 사용자다.",
+      "- next.question은 그 일을 하려면 사용자가 정해야 할 것 하나를 묻는 짧은 질문이다.",
+      "- next.options는 그 질문의 선택지 2~4개다. 하나에 25자 안팎. 모르면 고를 수 있게 '아직 모름'류를 하나 넣는다. 고르는 건 사용자다.",
+      "- 작업 내용에 '→ …로 정했어요.'라고 적힌 줄은 사용자가 이미 고른 것이다. 그 일은 했다고 보고 다음 일로 넘어간다.",
       PLAIN,
       "",
       "<작업내용>",
@@ -126,6 +166,8 @@
     ].join("\n");
   }
 
+  const filled = (x) => typeof x === "string" && x.trim() !== "";
+
   // Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함"). 할 일 문장은 우리 데이터로 덮는다.
   function parseJudgement(o) {
     if (!o || typeof o !== "object") return null;
@@ -133,17 +175,19 @@
     if (!Number.isInteger(o.stage) || !s) return null;
     if (!Array.isArray(o.criteria) || o.criteria.length !== s.criteria.length) return null;
     if (o.criteria.some((x) => !x || typeof x.met !== "boolean")) return null;
+    if (!filled(o.reason)) return null;
     const n = o.next || {};
-    if (typeof o.reason !== "string" || !o.reason.trim()) return null;
-    if (!["what", "why", "decision", "action"].every((k) => typeof n[k] === "string" && n[k].trim())) return null;
+    if (!["what", "why", "question", "action"].every((k) => filled(n[k]))) return null;
+    if (!Array.isArray(n.options) || n.options.length < 2 || n.options.length > 4 || !n.options.every(filled)) return null;
     return {
       stage: o.stage, reason: o.reason,
       criteria: s.criteria.map((x, i) => ({ text: x.text, term: x.term, met: o.criteria[i].met, evidence: String(o.criteria[i].evidence || "") })),
-      next: { what: n.what, why: n.why, decision: n.decision, action: n.action },
+      next: { what: n.what, why: n.why, question: n.question, options: n.options.slice(), action: n.action },
     };
   }
 
-  const api = { STAGES, JARGON, canAdvance, reorder, nextView, JUDGE_SCHEMA, ANSWER_SCHEMA, judgePrompt, answerPrompt, parseJudgement };
+  const api = { STAGES, JARGON, canAdvance, reorder, nextView, ticker, face, decisionLine,
+    JUDGE_SCHEMA, ANSWER_SCHEMA, judgePrompt, answerPrompt, parseJudgement };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
 })(typeof window !== "undefined" ? window : globalThis);
