@@ -16,7 +16,7 @@
 
 1. **데이터를 어디에 둘지** — V1은 `data` 고아 브랜치였다(ADR-0007). 팀 레포에서는 *개인 데이터를 이 레포에 두지 않는다.* 사람마다 따로 저장하는 구조를 정한다([team-sharing-security.md](../../docs/00-overview/team-sharing-security.md) 조건 1). **→ 2026-10-14 결정: 각자 로컬 폴더, 자리는 환경변수 `SECOND_BRAIN_DATA` 한 곳([ADR-0010](docs/03-pattern-analysis/adr/0010-personal-data-location.md)).**
 2. **분류(목적) 일반화** — `intake.py`의 목적 5개와 번호 범위는 코드에 고정돼 있다. 설정값으로 바꾼다. (테스트 값의 실제 과목명은 2026-10-13에 가상 값으로 바꿨다.)
-3. **6단계 실측 · 7단계 회고** — 게이트 로그의 빈 행. 5→6은 2026-10-14에 Go. 6단계 계획은 [stage6-plan.md](docs/06-service/stage6-plan.md), Q3 측정은 [q3-measurement.md](docs/06-service/q3-measurement.md). 5단계 진행은 아래 "5단계 진행 기록".
+3. **6단계 실측 · 7단계 회고** — 게이트 로그의 빈 행. 5→6은 2026-10-14에 Go. 6단계 계획은 [stage6-plan.md](docs/06-service/stage6-plan.md), Q3 측정은 [q3-measurement.md](docs/06-service/q3-measurement.md), 관리계획서 일정표 갱신 초안은 [management-plan-schedule-update.md](docs/06-service/management-plan-schedule-update.md). 5단계 진행은 아래 "5단계 진행 기록".
 
 ## 5단계 진행 기록 (V1에서 2026-10-13까지 — 이 레포로 옮김)
 
