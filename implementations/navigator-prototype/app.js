@@ -40,7 +40,6 @@
   // 단계 n이 지금 단계보다 앞(done)인지, 지금(cur)인지 — 단계 막대·칩·단계 지도가 같이 쓴다
   const stepClass = (n) => { const cur = st.j ? st.j.stage : -1; return n < cur ? "done" : n === cur ? "cur" : ""; };
   const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? `${s}초 전` : `${Math.round(s / 60)}분 전`; };
-  const reasonOf = (r) => r.reason || "이유를 알 수 없어요";
   const cat = C.svg;
   const toolName = (t) => ({ claude: "Claude Code", codex: "Codex" })[t] || "AI 코딩 도구";
   const ymd = () => new Date().toLocaleDateString("sv");   // 이 컴퓨터 시간으로 YYYY-MM-DD
@@ -375,32 +374,35 @@
     // 다 했으면 스스로 펼쳐서 알린다(CouCou의 alert), 아니면 접혀 있던 것만 한 줄로 보인다
     if (allDone()) go(N.nextView(st.ui, "alert", pinned())); else peek();
   }
-  async function judge(skipCheck) {
-    st.error = ""; st.warn = null;
-    if (!st.text.trim()) { st.error = "지금 만드는 걸 적어 주세요."; return render(); }
-    if (st.mode === "fixture") {
-      const raw = S.judgeFixture(st.text), j = raw && N.parseJudgement(raw);
-      if (!j) { st.error = "연습용 예시는 정해진 장면만 알아요. '연습 2 · 다 했어요'를 눌러 다음 장면을 보거나, 직접 쓴 글은 보기 방식을 '진짜 AI'로 바꿔 주세요."; return render(); }
-      return landed(j, 0);
-    }
-    if (!skipCheck && guard(st.text, "judge")) return;
-    const r = await callAI("/api/judge", { text: st.text });
-    if (r.ok) return landed(r.judgement, r.tokens);
-    st.error = `살펴보지 못했어요 — ${reasonOf(r)}. 아무 답이나 지어내지 않고 비워 둘게요.`;
+  const stop = (msg) => { st.error = msg; render(); };   // 보낼 수 없을 때 — 이유를 보여 주고 멈춘다
+  // 진짜 AI에게 묻는 네 가지(어디쯤·물어보기·초안·다시 봐 주기)가 같이 쓰는 흐름:
+  // [check가 있으면 비밀번호 같은 게 보일 때 먼저 멈춤] → 호출 → 성공이면 done(r), 실패면 지어내지 않고 이유만 보여 준다
+  async function askAI(url, body, what, done, check) {
+    if (check && guard(...check)) return;
+    const r = await callAI(url, body);
+    if (r.ok) { st.tokens = r.tokens || 0; done(r); } else st.error = `${what} — ${r.reason || "이유를 알 수 없어요"}. 지어내지 않고 비워 둘게요.`;
     render();
   }
-  async function answer() {
-    st.error = "";
+  function judge(skipCheck) {
+    Object.assign(st, { error: "", warn: null });
+    if (!st.text.trim()) return stop("지금 만드는 걸 적어 주세요.");
+    if (st.mode === "fixture") {
+      const raw = S.judgeFixture(st.text), j = raw && N.parseJudgement(raw);
+      return j ? landed(j, 0) : stop("연습용 예시는 정해진 장면만 알아요. '연습 2 · 다 했어요'를 눌러 다음 장면을 보거나, 직접 쓴 글은 보기 방식을 '진짜 AI'로 바꿔 주세요.");
+    }
+    return askAI("/api/judge", { text: st.text }, "살펴보지 못했어요", (r) => landed(r.judgement, r.tokens), !skipCheck && [st.text, "judge"]);
+  }
+  function answer() {
     const s = stage();
+    st.error = "";
     if (st.mode === "fixture") {
       const a = (S.answers[s.n] || [])[st.hard[0]];
       st.answer = a ? `${a} (연습용으로 미리 써 둔 답이라, 질문 내용은 반영되지 않아요)` : "연습용 답이 없어요. 보기 방식을 '진짜 AI'로 바꿔 물어보세요.";
       return render();
     }
-    if (!st.question.trim()) { st.error = "궁금한 걸 적어 주세요."; return render(); }
-    const r = await callAI("/api/answer", { stage: s.n, hard: st.hard.map((i) => s.criteria[i].text), question: st.question, text: st.text });
-    if (r.ok) { st.answer = r.answer; st.tokens = r.tokens; } else st.error = `답을 받지 못했어요 — ${reasonOf(r)}`;
-    render();
+    if (!st.question.trim()) return stop("궁금한 걸 적어 주세요.");
+    return askAI("/api/answer", { stage: s.n, hard: st.hard.map((i) => s.criteria[i].text), question: st.question, text: st.text },
+      "답을 받지 못했어요", (r) => { st.answer = r.answer; });
   }
   // 고른 것을 작업 글에 한 줄로 적고 다시 살펴본다 — 정하는 건 사용자, 받아 적는 건 나비
   function decide() {
@@ -411,32 +413,24 @@
   }
   // 설계도 — 초안 받기 / 다시 봐 주세요. 연습용은 미리 써 둔 초안과 빈칸 확인만, 진짜 AI는 server.js를 거친다
   const newDoc = (n, text, say) => ({ stage: n, text, say, review: null, rounds: 0 });
-  async function draft(skipCheck) {
-    const s = stage();
+  function draft(skipCheck) {
+    const s = stage(), made = (text, say) => { st.doc = newDoc(s.n, text, say); };
     Object.assign(st, { error: "", warn: null });
     if (st.mode === "fixture") {
       const d = S.drafts[s.n];
-      if (!d) st.error = "연습용 초안은 2단계에만 있어요. 직접 쓴 작업은 보기 방식을 '진짜 AI'로 바꿔 주세요.";
-      else st.doc = newDoc(s.n, d.draft, d.say);
-      return render();
+      if (!d) return stop("연습용 초안은 2단계에만 있어요. 직접 쓴 작업은 보기 방식을 '진짜 AI'로 바꿔 주세요.");
+      made(d.draft, d.say); return render();
     }
-    if (!st.text.trim()) { st.error = "'지금' 탭에서 만들고 있는 걸 먼저 보여 주세요."; return render(); }
-    if (!skipCheck && guard(st.text, "draft")) return;
-    const r = await callAI("/api/draft", { stage: s.n, text: st.text });
-    if (r.ok) Object.assign(st, { doc: newDoc(s.n, r.draft, r.say), tokens: r.tokens });
-    else st.error = `초안을 받지 못했어요 — ${reasonOf(r)}. 아무 내용이나 지어내지 않고 비워 둘게요.`;
-    render();
+    if (!st.text.trim()) return stop("'지금' 탭에서 만들고 있는 걸 먼저 보여 주세요.");
+    return askAI("/api/draft", { stage: s.n, text: st.text }, "초안을 받지 못했어요", (r) => made(r.draft, r.say), !skipCheck && [st.text, "draft"]);
   }
-  async function review(skipCheck) {
-    const d = st.doc;
+  function review(skipCheck) {
+    const d = st.doc, reviewed = (v) => { Object.assign(d, { review: v, say: "" }); d.rounds++; };
     Object.assign(st, { error: "", warn: null });
-    if (!d.text.trim()) { st.error = "설계도가 비어 있어요."; return render(); }
-    if (st.mode === "fixture") { Object.assign(d, { review: S.reviewFixture(d.text), say: "" }); d.rounds++; return render(); }
-    if (!skipCheck && guard(`${st.text}\n${d.text}`, "review")) return;
-    const r = await callAI("/api/review", { stage: d.stage, text: st.text, doc: d.text });
-    if (r.ok) { Object.assign(d, { review: r.review, say: "" }); d.rounds++; st.tokens = r.tokens; }
-    else st.error = `다시 봐 드리지 못했어요 — ${reasonOf(r)}`;
-    render();
+    if (!d.text.trim()) return stop("설계도가 비어 있어요.");
+    if (st.mode === "fixture") { reviewed(S.reviewFixture(d.text)); return render(); }
+    return askAI("/api/review", { stage: d.stage, text: st.text, doc: d.text }, "다시 봐 드리지 못했어요", (r) => reviewed(r.review),
+      !skipCheck && [`${st.text}\n${d.text}`, "review"]);
   }
   // 확정은 사람만 한다(FR-3). 같은 단계의 예전 확정본은 새것으로 바꾼다
   function confirmDoc() {
