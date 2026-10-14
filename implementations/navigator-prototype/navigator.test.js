@@ -194,6 +194,62 @@ test("나비: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가 �
   assert.deepEqual([still.x, still.y], [0, 0]);
 });
 
+// ── 나비와 교감 — 2026-10-15 "고양이 캐릭터와 교감 요소를 많이" ──
+test("나비: 안내 화면이 쓰는 표정과 교감 표정이 모두 그림에 있고, 앞발·땀방울을 붙일 수 있다", () => {
+  for (const m of ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow"]) {
+    assert.ok(Cat.MOODS.includes(m), m);
+    assert.match(Cat.svg(m, 64), new RegExp(`class="cat m-${m}"`));
+  }
+  assert.match(Cat.svg("think", 108, { extra: "oops" }), /class="cat m-think oops"/);
+  assert.match(Cat.svg("idle", 36, { paws: true }), /c-paws/);
+  assert.doesNotMatch(Cat.svg("idle", 36), /c-paws/);
+  assert.match(Cat.svg("idle", 64), /c-tail/, "크면 꼬리");
+  assert.doesNotMatch(Cat.svg("idle", 40), /c-tail/, "작으면 꼬리 없음");
+});
+
+test("쓰다듬기: 좌우로 네 번 오가면 한 번 쓰다듬은 것, 작게 떨거나 멈췄다 하면 세지 않는다", () => {
+  const rub = (xs, gap = 50) => { let s = null, n = 0; xs.forEach((x, i) => { s = Cat.stroke(s, x, i * gap); if (s.petted) n++; }); return n; };
+  assert.equal(rub([0, 20, 0, 20, 0, 20]), 1, "네 번 방향을 바꿈");
+  assert.equal(rub([0, 20, 0, 20, 0]), 0, "세 번은 아직");
+  assert.equal(rub([0, 5, 0, 5, 0, 5, 0, 5, 0]), 0, "12px보다 작게 떠는 건 쓰다듬기가 아님");
+  assert.equal(rub([0, 20, 0, 20, 0, 20], 800), 0, "0.7초 넘게 멈추면 처음부터");
+  assert.equal(rub([0, 20, 0, 20, 0, 20, 0, 20, 0, 20]), 2, "계속 문지르면 또 센다");
+});
+
+test("친해진 정도: 쓰다듬은 횟수로 네 칸, 다음 칸까지 남은 횟수를 안다", () => {
+  assert.deepEqual(Cat.bond(0), { level: 0, name: "처음 만난 사이", need: 5 });
+  assert.deepEqual(Cat.bond(5), { level: 1, name: "친해지는 중", need: 15 });
+  assert.equal(Cat.bond(49).level, 2);
+  assert.deepEqual(Cat.bond(50), { level: 3, name: "둘도 없는 단짝", need: 0 });
+  assert.equal(Cat.bond(-3).level, 0, "이상한 값은 0으로");
+});
+
+test("나비의 한마디(쓰다듬기·인사)는 짧고 쉬운 말이다", () => {
+  const lines = [...Cat.PET_LINES.flat(), ...[0, 6, 12, 16, 20, 23].map(Cat.greeting)];
+  for (const t of lines) {
+    assert.ok(t.length <= 24, `${t.length}자: ${t}`);
+    assert.deepEqual(jargonIn(t), [], t);
+  }
+  assert.equal(Cat.petLine(0), Cat.PET_LINES[0][0]);
+  assert.equal(Cat.petLine(21), Cat.PET_LINES[2][0], "단짝이 되면 단짝의 말");
+});
+
+test("인사: 시간에 맞는 말을 한다(경계 포함)", () => {
+  assert.equal(Cat.greeting(5), "좋은 아침이에요!");
+  assert.equal(Cat.greeting(10), "좋은 아침이에요!");
+  assert.equal(Cat.greeting(11), "점심은 드셨어요?");
+  assert.equal(Cat.greeting(14), "오후도 같이 힘내요!");
+  assert.equal(Cat.greeting(18), "오늘 하루도 수고했어요!");
+  assert.equal(Cat.greeting(22), "늦은 밤이네요, 무리하지 마요.");
+  assert.equal(Cat.greeting(3), "늦은 밤이네요, 무리하지 마요.");
+});
+
+test("졸음: 1분 가만히 있으면 하품, 1분 30초면 잠든다", () => {
+  assert.equal(Cat.sleepy(59_999), "awake");
+  assert.equal(Cat.sleepy(60_000), "yawn");
+  assert.equal(Cat.sleepy(90_000), "sleep");
+});
+
 test("서버는 이 컴퓨터의 화면에서 온 요청만 받는다", () => {
   assert.equal(allowed({ host: "127.0.0.1:4317" }, 4317), true);
   assert.equal(allowed({ host: "localhost:4317", origin: "http://localhost:4317" }, 4317), true);

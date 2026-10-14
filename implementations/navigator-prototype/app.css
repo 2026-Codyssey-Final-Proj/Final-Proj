@@ -1,32 +1,46 @@
-/* claude-drafted: 2026-10-14 — Navigator 프로토타입 모양. 목업(Mac·iPhone 느낌: 반투명 유리, 크게 둥근 모서리, 파란색 하나)을 따른다.
-   넓은 화면 = Mac(코딩 도구 창 위에 떠 있는 옆자리 동료), 600px 이하 = iPhone(오늘의 길잡이 앱). */
+/* claude-drafted: 2026-10-14, 2026-10-15 — Navigator 프로토타입 모양. 목업(Mac·iPhone 느낌: 반투명 유리, 크게 둥근 모서리, 파란색 하나)을 따른다.
+   넓은 화면 = 코딩 도구 창 위에 떠 있는 옆자리 동료 — 2026-10-15 가로 카드 시안대로: 위 아이콘 줄 + 지금 결정할 것 하나를 담은 가로 카드.
+   카드 색은 상황(tone-*)마다 다르고, 다크 모드도 같은 이름의 색을 다시 정한다. 600px 이하 = iPhone(오늘의 길잡이 앱) — 이번에 바꾸지 않았다. */
 
 :root{
   --desk:#DCE4EE; --win:#FFFFFF; --winbar:#F7F7F8; --side:#F5F6F8; --line:#E6E8EC;
-  --ink:#1D1D1F; --ink2:#3A3A3C; --mute:#6E6E73;
-  --glass:rgba(255,255,255,.80); --glass2:rgba(255,255,255,.88); --soft:#F5F6F8; --card:#FFFFFF; --phone:#F2F3F7;
-  --acc:#2F6BFF; --acc-ink:#FFFFFF; --acc-soft:#EEF3FF; --acc-mid:#9DB8F7; --seg:#E3E6EB;
+  --ink:#1D1D1F; --ink2:#3A3A3C; --mute:#6E6E73; --sub:#4A5260;
+  --glass:rgba(255,255,255,.80); --glass2:rgba(255,255,255,.90); --soft:#F5F6F8; --card:#FFFFFF; --phone:#F2F3F7;
+  --acc:#2F6BFF; --acc-ink:#FFFFFF; --acc-soft:#EEF3FF; --acc-mid:#9DB8F7; --seg:#D5DBE5;
   --ok:#1E7A47; --okbg:#E3F4EA; --warn:#8A5A00; --warnbg:#FFF4DE; --bad:#A32D2D; --badbg:#FDEAEA;
+  /* 카드 색 — 바탕(t-*)과 그 위의 글·뱃지(t-*-ink), 진한 버튼 바탕 */
+  --t-blue:#EEF3FF; --t-blue-ink:#2F6BFF;
+  --t-green:#E4F3EA; --t-green-ink:#1E7A47; --ok-btn:#1E7A47;
+  --t-amber:#FFF3DC; --t-amber-ink:#8A5A00;
+  --t-gray:#EDF0F5; --t-gray-ink:#3D4656;
+  --t-red:#FDEAEA; --t-red-ink:#A32D2D; --bad-btn:#A32D2D;
+  --fur:#F4A950; --fur-hi:#F9C88C; --fur-dk:#DE8636; --cat-ink:#2A2A2E; --paw-ink:#A2561A;
   --shadow:0 24px 60px rgba(30,40,60,.20),0 0 0 .5px rgba(0,0,0,.10);
   color-scheme:light dark;
 }
 @media (prefers-color-scheme:dark){:root{
   --desk:#1B1D22; --win:#1F2024; --winbar:#26272C; --side:#222328; --line:#34363C;
-  --ink:#F2F2F5; --ink2:#D6D6DC; --mute:#A1A1AA;
-  --glass:rgba(40,41,46,.80); --glass2:rgba(40,41,46,.92); --soft:#2A2B30; --card:#1C1C1E; --phone:#111214;
-  --acc:#5B8CFF; --acc-ink:#FFFFFF; --acc-soft:#22305A; --acc-mid:#3D5BA8; --seg:#3A3C42;
+  --ink:#F2F2F5; --ink2:#D6D6DC; --mute:#A1A1AA; --sub:#C3C8D2;
+  --glass:rgba(40,41,46,.80); --glass2:rgba(36,37,42,.94); --soft:#2A2B30; --card:#2A2C32; --phone:#111214;
+  --acc:#5B8CFF; --acc-ink:#FFFFFF; --acc-soft:#22305A; --acc-mid:#3D5BA8; --seg:#43464E;
   --ok:#5DCAA5; --okbg:#10332A; --warn:#F0B955; --warnbg:#3A2D10; --bad:#F09595; --badbg:#3D1C1C;
+  --t-blue:#1C2747; --t-blue-ink:#8DB0FF;
+  --t-green:#14301F; --t-green-ink:#6FD3A6; --ok-btn:#238A57;
+  --t-amber:#33270F; --t-amber-ink:#F0B955;
+  --t-gray:#2A2D34; --t-gray-ink:#C2C9D6;
+  --t-red:#3A1B1B; --t-red-ink:#F4A3A3; --bad-btn:#B33A3A;
+  --cat-ink:#202024; --paw-ink:#F2B36E;
   --shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 .5px rgba(255,255,255,.08);
 }}
 
 *{box-sizing:border-box}
-body{margin:0;background:var(--desk);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--desk);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 button{font:inherit;color:inherit;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 
 /* ── 뒤쪽: 사용자의 AI 코딩 도구 창 (예시) ── */
-.window{width:min(1200px,calc(100% - 64px));height:min(690px,calc(100vh - 180px));min-height:420px;margin:150px auto 40px;background:var(--win);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.window{width:min(1200px,calc(100% - 64px));height:min(640px,calc(100vh - 260px));min-height:380px;margin:230px auto 40px;background:var(--win);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
 .winbar{height:44px;flex:none;display:flex;align-items:center;gap:8px;padding:0 12px 0 16px;border-bottom:1px solid var(--line);background:var(--winbar)}
 .winbar .light{width:12px;height:12px;border-radius:50%}
 .winbar .title{flex:1;text-align:center;font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -38,35 +52,171 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .chat{padding:24px 40px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;font:14px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink2);overflow:hidden}
 .chat .me{color:var(--acc)}.chat .dim{opacity:.55}
 
-/* ── 앞쪽: 옆자리 동료 ── */
-.nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(560px,calc(100vw - 32px));z-index:10;display:flex;flex-direction:column;align-items:center;gap:12px}
+/* ── 앞쪽: 옆자리 동료 (PC) ── */
+.nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(940px,calc(100vw - 32px));z-index:10;display:flex;flex-direction:column;align-items:center}
 .glass{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%)}
-.strip{width:140px;height:24px;display:flex;align-items:flex-start;justify-content:center;background:none;border:0;padding:0}
-.strip i{display:block;width:96px;height:6px;border-radius:99px;background:var(--mute);opacity:.45}
-.pill{width:100%;height:52px;display:flex;align-items:center;gap:4px;padding:0 8px 0 6px;border-radius:999px;box-shadow:0 10px 30px rgba(30,40,60,.16),0 0 0 .5px rgba(0,0,0,.10)}
-.pill-main{flex:1;min-width:0;height:44px;display:flex;align-items:center;gap:10px;border:0;background:none;padding:0 4px;text-align:left;border-radius:999px}
-.pill-stage{font-size:14px;font-weight:700;white-space:nowrap}
-.pill-count{font-size:13px;color:var(--mute);white-space:nowrap}
-.pill-now{flex:1;min-width:0;font-size:13px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.round{width:32px;height:32px;flex:none;border:0;border-radius:50%;background:rgba(127,127,127,.12);display:flex;align-items:center;justify-content:center}
-.round[aria-pressed=true]{background:var(--acc-soft);color:var(--acc)}
-.panel{position:relative;width:100%;padding:20px;display:flex;flex-direction:column;gap:16px;border-radius:22px;box-shadow:var(--shadow);max-height:calc(100vh - 100px);overflow:auto;background:var(--glass2);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%)}
-.countdown{position:absolute;left:22px;right:22px;bottom:0;height:3px;border-radius:3px;background:var(--seg)}
-.countdown i{display:block;height:3px;border-radius:3px;background:var(--acc);animation:shrink linear forwards}
-@keyframes shrink{from{width:100%}to{width:0}}
 @keyframes drop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
-.enter{animation:drop .22s ease-out}
+.enter{animation:drop .24s ease-out}
 
-/* ── 함께 쓰는 조각 ── */
+/* 띠 — 귀만 빼꼼 */
+.strip{position:relative;width:150px;height:30px;border:0;background:none;padding:0}
+.strip i{position:absolute;left:27px;bottom:10px;width:96px;height:6px;border-radius:99px;background:var(--mute);opacity:.45}
+.strip .ears{position:absolute;left:50%;bottom:15px;width:44px;height:12px;transform:translate(-50%,6px);transition:transform .25s ease}
+.strip .ears::before,.strip .ears::after{content:"";position:absolute;bottom:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid var(--fur)}
+.strip .ears::before{left:4px;transform:rotate(-8deg)}.strip .ears::after{right:4px;transform:rotate(8deg)}
+.strip:hover .ears,.strip:focus-visible .ears,.dozing .strip .ears{transform:translate(-50%,0)}
+.strip .zz{display:none;position:absolute;left:calc(50% + 26px);bottom:16px;font:800 11px/1 -apple-system,sans-serif;color:#7C8BA8}
+.strip .zz b{font-size:14px;margin-left:1px;vertical-align:4px}
+.dozing .strip .zz{display:block}
+
+/* 한 줄 */
+.pill{height:50px;max-width:100%;display:inline-flex;align-items:center;gap:10px;padding:0 20px 0 6px;border:0;border-radius:999px;background:var(--glass2);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);box-shadow:0 10px 30px rgba(30,40,60,.16),0 0 0 .5px rgba(0,0,0,.10);color:var(--ink)}
+.pill b{font-size:14px;white-space:nowrap}
+.pill .pl-now{min-width:0;max-width:420px;font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill .pl-cta{font-size:13px;font-weight:600;color:var(--acc);white-space:nowrap}
+.pill.ping{box-shadow:0 10px 30px rgba(30,40,60,.16),0 0 0 2px var(--acc)}
+.pill .pet{display:inline-flex;margin-top:4px}
+
+/* 펼침 — 섬 하나: 위 아이콘 줄, 아래 카드 */
+.isl{position:relative;width:100%;padding:8px 12px 14px;display:flex;flex-direction:column;gap:8px;border-radius:28px;background:var(--glass2);
+  -webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--shadow);max-height:calc(100vh - 28px);overflow:auto}
+.isl.greet{padding:12px}
+.tb{display:flex;align-items:center;gap:4px;min-height:46px}
+.tb .grow{flex:1}
+.tabs{display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(127,127,127,.12)}
+.ti{width:40px;height:40px;flex:none;border:0;border-radius:50%;background:transparent;color:var(--mute);display:grid;place-items:center;transition:background .15s,color .15s}
+.ti svg{width:19px;height:19px}
+.ti:hover{color:var(--ink);background:rgba(127,127,127,.14)}
+.ti[aria-selected=true]{background:var(--card);color:var(--acc);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.ti[aria-pressed=true]{background:var(--acc-soft);color:var(--acc)}
+.ti.bond{width:auto;padding:0 10px;border-radius:999px}
+.tb-tab{font-size:13px;font-weight:700;margin-left:6px;white-space:nowrap}
+.tb-proj{font-size:13px;color:var(--mute);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mode{font-size:12px;border-radius:999px;padding:3px 10px;white-space:nowrap;margin:0 2px}
+.mode.fix{background:var(--warnbg);color:var(--warn)}.mode.live{background:var(--okbg);color:var(--ok)}
+.hearts{display:inline-flex;gap:1px}
+.hearts svg{fill:var(--seg);display:block}.hearts .on svg{fill:#FF6F86}
+.led{width:8px;height:8px;border-radius:50%;flex:none;background:#B8BDC7}.led.on{background:#28C840;box-shadow:0 0 0 3px rgba(40,200,64,.18)}
+
+/* 설정 — 톱니를 누르면 오른쪽 위에 */
+.pop{position:absolute;z-index:3;right:12px;top:58px;width:min(400px,calc(100% - 24px));padding:14px;display:flex;flex-direction:column;gap:10px;border-radius:16px;
+  background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);font-size:13px;color:var(--mute);animation:drop .18s ease-out}
+.pop .link{background:var(--soft)}
+
+/* 가로 카드 — 상황마다 색 */
+.tone-blue{--tint:var(--t-blue);--tink:var(--t-blue-ink);--pb:var(--acc);--pi:#FFFFFF}
+.tone-green{--tint:var(--t-green);--tink:var(--t-green-ink);--pb:var(--ok-btn);--pi:#FFFFFF}
+.tone-amber{--tint:var(--t-amber);--tink:var(--t-amber-ink);--pb:var(--ink);--pi:var(--win)}
+.tone-gray{--tint:var(--t-gray);--tink:var(--t-gray-ink);--pb:var(--acc);--pi:#FFFFFF}
+.tone-red{--tint:var(--t-red);--tink:var(--t-red-ink);--pb:var(--bad-btn);--pi:#FFFFFF}
+.mc{display:flex;gap:22px;align-items:center;padding:18px 24px 20px 16px;border-radius:22px;background:var(--tint);transition:background .3s}
+.mc-cat{position:relative;flex:none;width:124px;display:grid;place-items:center;align-self:center}
+.mc-badge{position:absolute;left:6px;top:4px;width:30px;height:30px;border-radius:50%;background:var(--pb);color:var(--pi);border:3px solid var(--tint);
+  display:grid;place-items:center;font-size:14px;font-weight:800;line-height:1;pointer-events:none}
+.mc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
+.mc-say{margin:0;align-self:flex-start;max-width:100%;padding:7px 13px;border-radius:4px 16px 16px 16px;background:var(--card);color:var(--ink2);font-size:14px;line-height:1.5;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.mc-notice{margin:0;display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600;color:var(--ok)}
+.mc-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:13px;color:var(--sub)}
+.mm-stage{font-weight:700;color:var(--ink)}
+.mini{display:inline-flex;gap:3px}.mini i{width:16px;height:5px;border-radius:3px;background:var(--seg)}.mini i.on{background:var(--tink,var(--acc))}
+.mc-title{margin:0;font-size:21px;font-weight:800;letter-spacing:-.3px;line-height:1.35;text-wrap:balance}
+.mc-sub{margin:0;font-size:14px;color:var(--sub);line-height:1.55}
+.mc-foot{margin:0;font-size:13px;color:var(--sub)}
+.mc-fine{margin:-4px 0 0;font-size:12px;color:var(--sub)}
+.mc-input{width:100%;min-height:84px;resize:vertical;font:inherit;font-size:14px;line-height:1.6;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.mc-input:focus{outline:2px solid var(--tink);outline-offset:0;border-color:transparent}
+.opts,.acts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.b{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 18px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:14px;
+  transition:transform .12s ease,box-shadow .15s ease,background .15s}
+.b:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(30,40,60,.12)}
+.b:active:not(:disabled){transform:scale(.97)}
+.b.pri{background:var(--pb,var(--acc));color:var(--pi,#FFFFFF);border-color:transparent;font-weight:700}
+.b.ghost{background:transparent;border-color:transparent;color:var(--sub);padding:0 12px}
+.b.ghost:hover:not(:disabled){box-shadow:none;background:rgba(127,127,127,.10)}
+.b.soft{background:transparent;border-style:dashed}
+.b.opt{padding-left:8px;text-align:left}
+.b.opt:hover:not(:disabled){border-color:var(--tink)}
+.b.toggle[aria-pressed=true]{border:2px solid var(--tink);background:var(--card);font-weight:600}
+.b kbd{min-width:22px;height:22px;padding:0 6px;border-radius:6px;border:1px solid currentColor;opacity:.6;display:inline-flex;align-items:center;justify-content:center;
+  font-family:inherit;font-size:11px;font-weight:500;line-height:1;letter-spacing:0}
+.b.toggle[aria-pressed=true] kbd{background:var(--tink);color:var(--card);border-color:var(--tink);opacity:1}
+.answer{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:var(--card);font-size:14px}
+.answer b,.sheet dt{font-size:12px;color:var(--tink)}
+.sheet{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin:0;padding:12px 14px;border-radius:14px;background:var(--card);font-size:14px}
+.sheet dt{font-weight:700;padding-top:2px}.sheet dd{margin:0}
+ol.steps{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+ol.steps li{display:flex;align-items:center;gap:6px;padding:4px 12px 4px 6px;border-radius:999px;background:var(--card);font-size:13px;color:var(--sub)}
+ol.steps li b{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;background:var(--seg);color:var(--ink)}
+ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(--tink)}ol.steps li.now b{background:var(--tink);color:var(--card)}
+.flowline{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--tink)}
+.flowline>span{padding:2px 10px;border-radius:999px;background:var(--card);color:var(--sub);font-size:13px}
+.flowline>span.meta{background:none;padding:0}
+.okchip,.nowchip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.okchip{background:var(--okbg);color:var(--ok)}.nowchip{background:var(--acc-soft);color:var(--acc)}
+.dots{display:inline-flex;gap:4px;margin-left:6px;vertical-align:middle}
+.dots i{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.3}
+.isl .todo li{background:var(--card)}
+
+/* 카드 아래 작은 줄 */
+.more-row{display:flex;gap:4px;padding:0 6px}
+.lnk{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 10px;border:0;border-radius:8px;background:none;font-size:13px;font-weight:600;color:var(--mute)}
+.lnk:hover{color:var(--acc);background:rgba(127,127,127,.08)}
+.crit-grid{padding:4px 14px 2px;background:var(--card);border:1px solid var(--line);border-radius:16px}
+.crit-grid ul.crit{columns:2;column-gap:28px}.crit-grid ul.crit li{break-inside:avoid;border-top:0}
+
+/* 곧 접혀요 */
+.cd{position:absolute;left:30px;right:30px;bottom:5px;height:3px;border-radius:3px;background:var(--seg);overflow:hidden}
+.cd i{display:block;height:3px;border-radius:3px;background:var(--acc);animation:shrink linear forwards}
+@keyframes shrink{from{width:100%}to{width:0}}
+
+/* 처음 인사 */
+.hint{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--paw-ink);font-weight:600}
+
+/* 설계도 — 왼쪽 나비와 버튼, 오른쪽 글 */
+.docx{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;padding:6px 4px 2px}
+.doc-side{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.doc-say{margin:0;padding:8px 12px;border-radius:16px;background:var(--t-blue);font-size:14px;line-height:1.5;color:var(--ink2)}
+.doc-acts{width:100%;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.doc-acts .b{justify-content:center}
+.doc-main{min-width:0;display:flex;flex-direction:column;gap:10px}
+.doc-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.doc-head h3,.md-head h3{margin:0;font-size:17px}
+.doc-empty{flex:1;min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;border:1.5px dashed var(--line);border-radius:18px;color:var(--mute);text-align:center;font-size:14px}
+.doc-empty b{color:var(--ink);font-size:16px}
+.isl textarea.doc{min-height:300px}
+
+/* 단계 지도 — 여덟 단계를 한 줄로, 나비는 지금 단계 위에 */
+.map{display:flex;flex-direction:column;gap:14px;padding:4px 4px 2px}
+ol.track{list-style:none;margin:0;padding:34px 0 0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));position:relative}
+ol.track::before{content:"";position:absolute;left:6.25%;right:6.25%;top:52px;height:3px;border-radius:3px;background:var(--seg)}
+.node button{position:relative;width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 2px 4px;border:0;background:none;border-radius:12px}
+.node .dot{position:relative;z-index:1;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:2px solid var(--line);font-size:14px;font-weight:800;color:var(--mute);transition:transform .15s}
+.node.done .dot{background:var(--ok);border-color:transparent;color:#FFFFFF}
+.node.cur .dot{border:3px solid var(--acc);color:var(--acc)}
+.node.sel .dot{box-shadow:0 0 0 5px var(--acc-soft)}
+.node button:hover .dot{transform:scale(1.08)}
+.node .nm{font-size:12px;color:var(--mute);white-space:nowrap}
+.node.sel .nm{color:var(--ink);font-weight:700}
+.perch{position:absolute;top:-33px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none}
+.map-detail{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+.md-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+
+/* 내 배움 */
+.learn{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:4px 2px 2px}
+.isl .card{border:1px solid var(--line);box-shadow:none}
+.bond-row{display:flex;gap:14px;align-items:center}
+.bond-row .hearts svg{width:16px;height:16px}
+
+/* ── 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·내 배움·설정) ── */
 .say{display:flex;gap:12px;align-items:center}
 .bubble{flex:1;background:var(--acc-soft);border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:15px;line-height:1.55;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}   /* 말풍선은 짧게 — 넘치면 3줄에서 자른다 */
-/* 집중 모드(PC) — 위: 탭+톱니, 아래: 접힌 링크들과 상태 한 줄 */
-.tabs-row{display:flex;gap:8px;align-items:center}.tabs-row .segctl{flex:1}
+.round{width:32px;height:32px;flex:none;border:0;border-radius:50%;background:rgba(127,127,127,.12);display:flex;align-items:center;justify-content:center}
+.round[aria-pressed=true]{background:var(--acc-soft);color:var(--acc)}
 .more{display:flex;flex-direction:column;border-top:1px solid var(--line);padding-top:4px}
 .more details[open]{padding-bottom:10px}
 .card .more{border-top:0;padding-top:0}
-.status{display:flex;justify-content:flex-start}
 .foot.settings{padding:12px;border-radius:14px;background:var(--soft)}.foot.settings .link{background:var(--card)}
 .stage-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
 .stage-title{font-size:17px;font-weight:700}
@@ -85,7 +235,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .btn.pri{background:var(--acc);color:var(--acc-ink);font-weight:700}
 .btn.wide{width:100%}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.row .grow{flex:1}
+.row .grow,.grow{flex:1}
 ul.crit{list-style:none;margin:0;padding:0}
 ul.crit li{display:flex;gap:8px;padding:7px 0;border-top:1px solid var(--line);font-size:14px}
 ul.crit li:first-child{border-top:0}
@@ -97,7 +247,6 @@ ul.crit li:first-child{border-top:0}
 .foot{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mute)}
 .link{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:12px;background:var(--soft)}
 .link label.chk{min-height:32px;font-size:13px;color:var(--ink)}
-.led{width:8px;height:8px;border-radius:50%;flex:none;background:#B8BDC7}.led.on{background:#28C840}
 .note{border-radius:12px;padding:10px 12px;font-size:14px}
 .n-warn{background:var(--warnbg);color:var(--warn)}.n-bad{background:var(--badbg);color:var(--bad)}.n-acc{background:var(--acc-soft);color:var(--ink)}.n-ok{background:var(--okbg);color:var(--ok)}
 textarea.doc{min-height:240px;font:13px/1.65 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
@@ -122,7 +271,6 @@ ol.todo li span{flex:1}ol.todo .i{flex:none;width:18px;color:var(--mute)}
 ol.todo .round{background:transparent;border:1px solid var(--line)}
 .plan{background:var(--soft);border-radius:14px;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:4px}
 label.chk{display:flex;gap:10px;align-items:center;min-height:40px;font-size:14px}
-/* 카드·목록 — PC 패널의 단계 지도·내 배움과 iPhone 화면이 같이 쓴다 */
 .card{background:var(--card);border-radius:18px;padding:16px 18px;box-shadow:0 1px 2px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:10px}
 .card .kicker{font-size:13px;font-weight:700;color:var(--acc)}
 .list{background:var(--card);border-radius:18px;padding:4px 18px}
@@ -132,30 +280,93 @@ label.chk{display:flex;gap:10px;align-items:center;min-height:40px;font-size:14p
 .list .dot.done{border:0;background:var(--ok)}.list .dot.cur{border:2px solid var(--acc)}
 .stack{display:flex;flex-direction:column;gap:8px}
 .why{font-size:14px;color:var(--ink2);line-height:1.55}
-/* Mac식 탭 (지금 / 설계도 / 단계 지도 / 내 배움) */
-.segctl{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;padding:2px;border-radius:10px;background:rgba(127,127,127,.14)}
-.segctl button{min-height:32px;border:0;border-radius:8px;background:none;font-size:13px;color:var(--ink2)}
-.segctl button[aria-selected=true]{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
 label.chk input{width:18px;height:18px;accent-color:var(--acc)}
 
-/* ── 고양이 나비 — 표정은 눈으로만(m-*), 상태는 머리 밖 작은 표시(s-*). 마우스를 올리면 그르릉 ── */
-.cat{flex:none;overflow:visible}
-.cat .c-eyes circle{fill:#2A2A2E}
-.cat .c-eyes path{fill:none;stroke:#2A2A2E;stroke-width:5;stroke-linecap:round}
-.cat .c-mouth{fill:none;stroke:#2A2A2E;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+/* ── 고양이 나비 — 표정은 눈·입(m-*), 상태는 머리 밖 작은 표시(s-*) ── */
+.cat{flex:none;overflow:visible;display:block}
+.cat .c-fur{fill:var(--fur)}
+.cat .c-shine{fill:var(--fur-hi);opacity:.8}
+.cat .c-stripe{fill:none;stroke:var(--fur-dk);stroke-width:3;stroke-linecap:round}
+.cat .c-ear{fill:#F6B5A4}
+.cat .c-blush ellipse{fill:#FF8F80;opacity:.3;transition:opacity .2s}
+.cat .c-whisk{fill:none;stroke:#8A5A2E;stroke-opacity:.42;stroke-width:1.8;stroke-linecap:round}
+.cat .c-nose{fill:#E57A6A}
+.cat .c-tail{fill:none;stroke:#E8953F;stroke-width:9;stroke-linecap:round}
+.cat .c-eyes circle{fill:var(--cat-ink)}
+.cat .c-eyes .e-glint{fill:#FFFFFF}
+.cat .c-eyes path{fill:none;stroke:var(--cat-ink);stroke-width:5;stroke-linecap:round}
+.cat .c-eyes .e-heart path{fill:#FF5D73;stroke:none}
+.cat .c-mouth{fill:none;stroke:var(--cat-ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.cat .c-open{fill:#7A3B33;display:none}
+.cat .c-paws ellipse{fill:var(--fur);stroke:var(--fur-dk);stroke-width:1.5}
+.cat .c-paws path{stroke:var(--fur-dk);stroke-width:1.6;stroke-linecap:round}
 .cat .s-dots circle{fill:#8FA9D6}.cat .s-spark{fill:#F5A524}.cat .s-heart{fill:#FF6F86}
 .cat .s-q{font:800 30px -apple-system,sans-serif;fill:#2F6BFF}
 .cat .s-bang circle{fill:#F5A524}.cat .s-bang path{stroke:#fff;stroke-width:4;stroke-linecap:round}.cat .s-bang circle:last-child{fill:#fff}
+.cat .s-zzz text{font:800 13px -apple-system,sans-serif;fill:#7C8BA8}
+.cat .s-zzz text:nth-child(2){font-size:16px}.cat .s-zzz text:nth-child(3){font-size:20px}
+.cat .s-sweat{fill:#7FB3FF}
 .cat .c-eyes>*,.cat [class^="s-"]{display:none}
-.m-idle .e-dot,.m-look .e-dot,.m-alert .e-wide,.m-happy .e-happy,.m-done .e-happy,.m-think .e-think{display:inline}
-.m-look .s-dots,.m-done .s-spark,.m-think .s-q,.m-alert .s-bang{display:inline}
-.m-look .e-dot{transform:translateY(-6px)}.m-look .s-dots{animation:blink 1s infinite}
-@keyframes blink{50%{opacity:.25}}
-.small .c-mouth{display:none}
+.m-idle .e-dot,.m-look .e-dot,.m-alert .e-wide,.m-wow .e-wow,.m-happy .e-happy,.m-done .e-happy,.m-think .e-think,
+.m-love .e-heart,.m-purr .e-closed,.m-sleep .e-closed,.m-yawn .e-closed{display:inline}
+.m-look .s-dots,.m-done .s-spark,.m-think .s-q,.m-alert .s-bang,.m-love .s-heart,.m-purr .s-heart,.m-sleep .s-zzz{display:inline}
+.cat.oops .s-sweat{display:inline}.cat.oops .s-q{display:none}
+.m-yawn .c-mouth,.m-wow .c-mouth,.m-alert .c-mouth{display:none}
+.m-yawn .c-open,.m-wow .c-open,.m-alert .c-open{display:inline}
+.m-love .c-blush ellipse,.m-purr .c-blush ellipse,.m-happy .c-blush ellipse,.m-done .c-blush ellipse{opacity:.62}
+.m-look .e-dot{transform:translateY(-6px)}
+.small .c-mouth,.small .c-open,.small .c-whisk,.small .c-stripe{display:none}
 .blink .m-idle .e-dot,.blink .m-look .e-dot{display:none}
 .blink .m-idle .e-blink,.blink .m-look .e-blink{display:inline}
-.cat:hover .c-eyes>*,.cat:hover [class^="s-"]{display:none}
-.cat:hover .e-closed,.cat:hover .s-heart{display:inline}
+/* 쓰다듬을 수 있는 나비 — 마우스를 올리면 눈을 감고 하트 */
+.pet{border:0;background:none;padding:0;border-radius:50%;cursor:pointer;display:inline-grid;place-items:center;touch-action:none}
+button.pet:focus-visible{outline-offset:4px}
+.pet:hover .cat:not(.m-sleep):not(.m-love) .c-eyes>*{display:none}
+.pet:hover .cat:not(.m-sleep):not(.m-love) .e-closed{display:inline}
+.pet:hover .cat .s-heart{display:inline}
+.pet:hover .cat .c-blush ellipse{opacity:.62}
+
+/* 하트·별·발자국과 나비의 한마디 — 화면 맨 위 층 */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:30}
+.fx{position:fixed;transform:translate(-50%,-50%);animation:fly 1s cubic-bezier(.2,.7,.3,1) forwards;opacity:0}
+.fx svg{display:block}
+@keyframes fly{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}15%{opacity:1}70%{opacity:1}
+  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--r)) scale(1.05)}}
+.pop-say{position:fixed;max-width:280px;padding:8px 13px;border-radius:16px 16px 16px 4px;background:var(--ink);color:var(--win);font-size:13px;font-weight:600;line-height:1.45;
+  box-shadow:0 8px 24px rgba(0,0,0,.18);translate:0 -100%;opacity:0;pointer-events:none}
+.pop-say.below{translate:0 0;border-radius:4px 16px 16px 16px}
+.pop-say.side{translate:-100% 0;max-width:230px;border-radius:16px 4px 16px 16px}
+.pop-say.show{animation:sayin 2.9s ease forwards}
+@keyframes sayin{0%{opacity:0;scale:.85}7%{opacity:1;scale:1.03}12%{scale:1}85%{opacity:1}100%{opacity:0}}
+
+/* 움직임 — '움직임 줄이기'를 켠 사람에게는 하지 않는다 */
+@media (prefers-reduced-motion:no-preference){
+  .cat .c-tail{transform-origin:96px 98px;animation:sway 3.2s ease-in-out infinite}
+  .m-look .c-tail,.m-alert .c-tail{animation-duration:1.1s}
+  .m-sleep .c-tail,.m-yawn .c-tail{animation:none}
+  .m-sleep .c-head{transform-origin:60px 104px;animation:breathe 3.4s ease-in-out infinite}
+  .m-sleep .s-zzz text{animation:zz 2.6s ease-in-out infinite}
+  .m-sleep .s-zzz text:nth-child(2){animation-delay:.35s}.m-sleep .s-zzz text:nth-child(3){animation-delay:.7s}
+  .m-look .s-dots{animation:blinkdot 1s infinite}
+  .cat.m-wow{animation:jump .4s ease}
+  .pet.squish svg{animation:squish .45s ease}
+  .pet.purring svg{animation:purr .09s linear 16}
+  .pet.hop svg{animation:hop .65s cubic-bezier(.3,1.6,.5,1)}
+  .mc-badge{animation:bob 2.6s ease-in-out infinite}
+  .pill.ping{animation:nudge .6s ease 2}
+  .dots i{animation:dot 1.2s infinite}.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+}
+@keyframes sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-14deg)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025,.985)}}
+@keyframes zz{0%,100%{opacity:.25;transform:translateY(2px)}50%{opacity:1;transform:translateY(-2px)}}
+@keyframes blinkdot{50%{opacity:.25}}
+@keyframes jump{0%,100%{transform:none}40%{transform:translateY(-8px)}}
+@keyframes squish{0%{transform:none}30%{transform:scale(1.1,.88)}60%{transform:scale(.95,1.07)}100%{transform:none}}
+@keyframes purr{0%,100%{transform:translateX(0)}50%{transform:translateX(.9px)}}
+@keyframes hop{0%{transform:none}35%{transform:translateY(-14px) scale(1.04)}70%{transform:translateY(0) scale(1.05,.95)}100%{transform:none}}
+@keyframes bob{0%,100%{transform:none}50%{transform:translateY(-3px)}}
+@keyframes nudge{0%,100%{transform:none}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+@keyframes dot{0%,100%{opacity:.25}50%{opacity:1}}
 
 /* ── iPhone: 600px 이하에서는 오늘의 길잡이 앱 ── */
 .phone{display:none}
