@@ -1,0 +1,278 @@
+<!doctype html>
+<!-- claude-drafted: 2026-10-14 — Navigator 프로토타입 화면. 규칙은 navigator.js, 가상 시나리오는 scenario.js, 실제 Claude 호출은 server.js -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Navigator 프로토타입</title>
+<style>
+:root{--bg:#fafaf7;--card:#fff;--ink:#1d1d1b;--mute:#615f58;--line:#e2e0d8;--ok:#0f6e56;--okbg:#e1f5ee;--warn:#8a5a00;--warnbg:#fff3d6;--bad:#a32d2d;--badbg:#fdeaea;--acc:#534ab7;--accbg:#eeedfe;--term:#24231f;--termink:#d9d7cc}
+@media (prefers-color-scheme:dark){:root{--bg:#161614;--card:#1f1f1c;--ink:#ecebe4;--mute:#a3a198;--line:#34332e;--ok:#5dcaa5;--okbg:#10332a;--warn:#f0b955;--warnbg:#3a2d10;--bad:#f09595;--badbg:#3d1c1c;--acc:#afa9ec;--accbg:#26243d;--term:#0f0f0d;--termink:#c9c7bc}}
+:root{color-scheme:light dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+button{font:inherit;cursor:pointer}
+/* 뒤쪽: 사용자의 AI 코딩 도구 자리 (예시) */
+.tool{max-width:960px;margin:84px auto 40px;padding:0 16px}
+.tool .label{font-size:12px;color:var(--mute);margin-bottom:6px}
+.term{background:var(--term);color:var(--termink);border-radius:10px;padding:16px;font:13px/1.7 ui-monospace,Consolas,monospace;min-height:340px}
+.term .me{color:#8fb8ff}.term .dim{opacity:.6}
+/* 앞쪽: Navigator (옆자리 동료) */
+.nav{position:fixed;top:12px;left:50%;transform:translateX(-50%);width:min(600px,calc(100vw - 32px));z-index:10}
+.pill{width:100%;display:flex;align-items:center;gap:10px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:9px 16px;box-shadow:0 4px 18px rgba(0,0,0,.12);text-align:left}
+.pill .txt{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--mute)}
+.dot.unmet{background:var(--warn)}.dot.met{background:var(--ok)}.dot.gate{background:var(--acc)}.dot.busy{animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.panel{margin-top:8px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 8px 28px rgba(0,0,0,.14);max-height:calc(100vh - 90px);overflow:auto}
+h2{font-size:16px;margin:0 0 4px}h3{font-size:13px;color:var(--mute);margin:16px 0 6px;font-weight:600}
+.badge{display:inline-block;font-size:12px;border-radius:99px;padding:2px 9px;margin:0 4px 4px 0}
+.b-fix{background:var(--warnbg);color:var(--warn)}.b-live{background:var(--okbg);color:var(--ok)}.b-tmp{background:var(--line);color:var(--mute)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+textarea{width:100%;min-height:96px;font:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;resize:vertical}
+select{font:inherit;font-size:13px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:6px 11px;font-size:14px}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.small{font-size:12px;color:var(--mute)}
+.note{border-radius:8px;padding:8px 10px;font-size:13px;margin-top:8px}
+.n-warn{background:var(--warnbg);color:var(--warn)}.n-bad{background:var(--badbg);color:var(--bad)}.n-acc{background:var(--accbg);color:var(--acc)}
+ul.crit{list-style:none;margin:0;padding:0}ul.crit li{display:flex;gap:8px;padding:4px 0;border-top:1px solid var(--line);font-size:14px}
+ul.crit li:first-child{border-top:0}.ck{flex:none;width:18px;text-align:center}.ck.y{color:var(--ok)}.ck.n{color:var(--mute)}
+.next{display:grid;grid-template-columns:64px 1fr;gap:4px 8px;font-size:14px;background:var(--bg);border-radius:8px;padding:10px}
+.next b{color:var(--mute);font-weight:600}
+.soon{border:1px dashed var(--line);border-radius:8px;padding:10px;color:var(--mute);font-size:13px}
+/* 게이트 다이어그램 */
+.stages{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:8px 0}
+.st{font-size:12px;border:1px solid var(--line);border-radius:6px;padding:3px 7px;color:var(--mute)}
+.st.done{background:var(--okbg);color:var(--ok);border-color:transparent}.st.cur{background:var(--acc);color:var(--card);border-color:var(--acc);font-weight:600}
+.arrow{color:var(--mute);font-size:11px}
+.flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center;margin:10px 0}
+.flow .box{border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;min-height:64px}
+.flow .box b{display:block;font-size:11px;color:var(--mute)}
+@media(max-width:520px){.flow{grid-template-columns:1fr}.flow .arrow{text-align:center}}
+.ask{font-size:16px;font-weight:600;margin:14px 0 8px}
+ol.todo{margin:0;padding:0;list-style:none}ol.todo li{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:6px;font-size:14px}
+ol.todo li span{flex:1}ol.todo .i{flex:none;width:20px;color:var(--mute)}
+.plan{background:var(--bg);border-radius:8px;padding:10px;font-size:14px}
+label.chk{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:14px}
+</style>
+</head>
+<body>
+<div class="tool">
+  <div class="label">사용자의 AI 코딩 도구 자리 — 예시 화면 (실제 도구가 아님, 가상 프로젝트)</div>
+  <div class="term" aria-hidden="true">
+    <div class="me">&gt; 동아리 행사 등록 앱 만들고 싶어. 회원이 행사 보고 신청하는 거</div>
+    <div>좋아요. 요구사항부터 정리해 볼까요? 신청 화면, 행사 목록, 마감 알림…</div>
+    <div class="me">&gt; 요구사항 EARS로 6개 써 줘</div>
+    <div>1. 회원이 신청 버튼을 누르면, 시스템은 신청서를 보여 준다.</div>
+    <div>2. 등록은 빠르게 끝나야 한다.</div>
+    <div class="dim">…</div>
+    <div class="me">&gt; 좋아 바로 화면 만들자</div>
+    <div class="dim">▍</div>
+  </div>
+</div>
+
+<div class="nav" id="nav"></div>
+
+<script src="navigator.js"></script>
+<script src="scenario.js"></script>
+<script src="share-rules.js" onerror="this.remove()"></script>
+<script src="../share-prototype/share-rules.js" onerror="this.remove()"></script>
+<script>
+(function(){
+  const N = window.NavRules, S = window.NavScenario;
+  const canLive = location.protocol.startsWith("http");
+  const st = { mode: canLive ? "live" : "fixture", open: true, view: "panel", text: S.examples[0].text,
+    j: null, tokens: 0, busy: false, error: "", warn: null, todos: null,
+    step: "ask", hard: [], question: "", answer: "", noCount: 0, history: [] };
+  const $nav = document.getElementById("nav");
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
+  const met = () => st.j ? st.j.criteria.map((c) => c.met) : [];
+  const metCount = () => met().filter(Boolean).length;
+  const stage = () => st.j && N.STAGES[st.j.stage];
+
+  function pillText(){
+    if (st.busy) return "판정하는 중…";
+    if (!st.j) return "Navigator · 작업 내용을 넣으면 지금 단계를 알려 드려요";
+    const nx = st.todos ? st.todos[0] : st.j.next && st.j.next.what;
+    return `${stage().n}단계 ${stage().name} · 완료 기준 ${metCount()}/${met().length}` + (nx ? ` · 다음: ${nx}` : "");
+  }
+  function dotClass(){
+    if (st.busy) return "dot busy";
+    if (st.view === "gate") return "dot gate";
+    if (!st.j) return "dot";
+    return metCount() === met().length ? "dot met" : "dot unmet";
+  }
+
+  function modeBadge(){
+    const sel = `<select data-act="mode" aria-label="응답 방식">
+      <option value="live" ${st.mode==="live"?"selected":""} ${canLive?"":"disabled"}>실제 Claude</option>
+      <option value="fixture" ${st.mode==="fixture"?"selected":""}>미리 만든 응답</option></select>`;
+    const b = st.mode === "live"
+      ? `<span class="badge b-live">실제 Claude 판정${st.tokens?` · 이번 호출 약 ${st.tokens.toLocaleString()}토큰`:""}</span>`
+      : `<span class="badge b-fix">가상 데이터 · 미리 만든 응답</span>`;
+    return `<div class="row">${b}<span class="badge b-tmp">판정 규칙 임시본 (#7 확정 전)</span><span style="flex:1"></span>${sel}</div>`;
+  }
+
+  function panelView(){
+    const s = stage();
+    let h = modeBadge();
+    h += `<h3>지금 작업 내용 — ${esc(S.PROJECT)} (가상)</h3>
+      <textarea data-act="text" aria-label="작업 내용">${esc(st.text)}</textarea>
+      <div class="row" style="margin-top:6px">
+        ${S.examples.map((e,i)=>`<button class="btn" data-act="ex" data-i="${i}">${esc(e.label)}</button>`).join("")}
+        <span style="flex:1"></span><button class="btn pri" data-act="judge" ${st.busy?"disabled":""}>판정 받기</button></div>`;
+    if (st.mode === "live") h += `<div class="small" style="margin-top:4px">입력한 글은 Claude(AI 서비스)로 전송됩니다. 키·비밀번호·남의 연락처는 넣지 마세요.</div>`;
+    if (st.warn) h += `<div class="note n-warn">보내기 전에 확인하세요 — ${esc(st.warn.join(", "))}이(가) 보입니다.
+      <div class="row" style="margin-top:6px"><button class="btn" data-act="send-anyway">그대로 보내기</button><button class="btn" data-act="edit">수정하기</button></div></div>`;
+    if (st.error) h += `<div class="note n-bad">${esc(st.error)}</div>`;
+    if (!st.j) return h;
+
+    h += `<h3>지금 단계</h3><h2>${s.n}단계 ${esc(s.name)}</h2><div class="small">${esc(st.j.reason)}</div>`;
+    h += `<h3>어디까지 해야 하나 — 완료 기준 ${metCount()}/${met().length}</h3><ul class="crit">` +
+      st.j.criteria.map((c)=>`<li><span class="ck ${c.met?"y":"n"}">${c.met?"✔":"○"}</span><span>${esc(c.text)}${c.evidence?` <span class="small">— ${esc(c.evidence)}</span>`:""}</span></li>`).join("") + `</ul>`;
+    if (st.todos) {
+      h += `<h3>다음 할 일 — 내가 정한 순서</h3><ol class="todo">${st.todos.map((t,i)=>`<li><span class="i">${i+1}</span><span>${esc(t)}</span></li>`).join("")}</ol>`;
+    } else if (st.j.next) {
+      const n = st.j.next;
+      h += `<h3>다음 할 일</h3><div class="next"><b>무엇</b><span>${esc(n.what)}</span><b>왜</b><span>${esc(n.why)}</span><b>결정</b><span>${esc(n.decision)}</span><b>실행</b><span>${esc(n.action)}</span></div>`;
+    }
+    h += `<h3>설계도 — 초안 → 수정 → 리뷰</h3><div class="soon"><span class="badge b-tmp">준비 중</span> 명세·계획·설계서를 Claude가 초안으로 만들고, 사용자가 고친 것을 다시 리뷰하는 자리입니다 (FR-3).</div>`;
+    const all = metCount() === met().length;
+    h += `<div class="row" style="margin-top:14px"><button class="btn pri" data-act="gate" ${all?"":"disabled"}>게이트 열기</button>
+      <span class="small">${all ? "완료 기준을 모두 채웠어요." : `남은 기준 ${met().length - metCount()}개를 채우면 열려요 (지금 열면 Recycle — 보완).`}</span></div>`;
+    if (st.history.length) h += `<h3>게이트 기록</h3>` + st.history.map((x)=>`<div class="small">${esc(x)}</div>`).join("");
+    return h;
+  }
+
+  function diagram(){
+    const s = stage();
+    const chips = N.STAGES.map((x)=>`<span class="st ${x.n<s.n?"done":x.n===s.n?"cur":""}">${x.n} ${esc(x.name)}</span>`).join(`<span class="arrow">→</span>`);
+    return `<div class="stages">${chips}</div>
+      <div class="flow"><div class="box"><b>받은 것</b>${esc(s.gets)}</div><span class="arrow">→</span>
+      <div class="box"><b>한 일</b>${esc(s.does)}</div><span class="arrow">→</span>
+      <div class="box"><b>나가는 것</b>${esc(s.gives)}</div></div>
+      <ul class="crit">${st.j.criteria.map((c)=>`<li><span class="ck y">✔</span><span>${esc(c.text)}${c.evidence?` <span class="small">— ${esc(c.evidence)}</span>`:""}</span></li>`).join("")}</ul>`;
+  }
+
+  function gateView(){
+    const s = stage(), nx = N.STAGES[s.n + 1];
+    let h = `<div class="row"><span class="badge b-tmp">게이트</span>${st.mode==="fixture"?`<span class="badge b-fix">가상 데이터</span>`:""}<span style="flex:1"></span><button class="btn" data-act="close-gate">닫기</button></div>
+      <h2>${s.n}단계 ${esc(s.name)} — 이렇게 작업했어요</h2>${diagram()}`;
+    const askYN = `<div class="ask">이 단계가 끝나고 이렇게 작업했는데, 이해하셨나요?</div>
+      <div class="row"><button class="btn pri" data-act="yes">예</button><button class="btn" data-act="no">아니요</button>
+      ${st.noCount?`<span class="small">아니요 ${st.noCount}회</span>`:""}</div>`;
+    if (st.step === "ask") return h + askYN;
+    if (st.step === "which") return h + `<div class="ask">어디가 어려웠나요? (여러 개 골라도 돼요)</div>` +
+      s.criteria.map((c,i)=>`<label class="chk"><input type="checkbox" data-act="hard" data-i="${i}" ${st.hard.includes(i)?"checked":""}>${esc(c)}</label>`).join("") +
+      `<div class="row" style="margin-top:8px"><button class="btn pri" data-act="to-question" ${st.hard.length?"":"disabled"}>다음</button></div>`;
+    if (st.step === "question") return h + `<div class="ask">궁금한 걸 물어보세요</div>
+      <textarea data-act="question" placeholder="예) 우선순위는 왜 두 가지로 나눠서 매겨요?">${esc(st.question)}</textarea>
+      <div class="row" style="margin-top:6px"><button class="btn pri" data-act="answer" ${st.busy?"disabled":""}>질문하기</button>
+      ${st.answer?`<button class="btn" data-act="plan">요약 계획서 보기</button>`:""}</div>
+      ${st.answer?`<div class="note n-acc">${esc(st.answer)}</div>`:""}${st.error?`<div class="note n-bad">${esc(st.error)}</div>`:""}`;
+    if (st.step === "plan") return h + `<div class="ask">이 게이트 요약 계획서</div><div class="plan">
+      <div><b>받은 것</b> ${esc(s.gets)}</div><div><b>한 일</b> ${esc(s.does)}</div><div><b>나가는 것</b> ${esc(s.gives)}</div>
+      <div style="margin-top:6px"><b>어려웠던 부분</b> ${esc(st.hard.map((i)=>s.criteria[i]).join(", "))}</div>
+      <div style="margin-top:6px"><b>받은 답</b> ${esc(st.answer)}</div>
+      ${nx?`<div style="margin-top:6px"><b>다음 단계</b> ${nx.n}단계 ${esc(nx.name)} — ${esc(nx.does)}</div>`:""}</div>` + askYN;
+    if (st.step === "next") return h + `<div class="ask">다음 할 일 — ${nx?`${nx.n}단계 ${esc(nx.name)}`:"마무리"}</div>
+      <div class="small" style="margin-bottom:6px">순서는 직접 정하세요. ↑↓로 옮깁니다.</div>
+      <ol class="todo">${st.todos.map((t,i)=>`<li><span class="i">${i+1}</span><span>${esc(t)}</span>
+        <button class="btn" data-act="up" data-i="${i}" aria-label="위로" ${i===0?"disabled":""}>↑</button>
+        <button class="btn" data-act="down" data-i="${i}" aria-label="아래로" ${i===st.todos.length-1?"disabled":""}>↓</button></li>`).join("")}</ol>
+      <div class="row" style="margin-top:8px"><button class="btn pri" data-act="go" ${N.canAdvance(met(),"yes")?"":"disabled"}>이 순서로 다음 단계로 (Go)</button></div>`;
+    return h;
+  }
+
+  function render(){
+    $nav.innerHTML = `<button class="pill" data-act="toggle" aria-expanded="${st.open}"><span class="${dotClass()}"></span><span class="txt">${esc(pillText())}</span><span>${st.open?"▴":"▾"}</span></button>` +
+      (st.open ? `<div class="panel">${st.view==="gate"?gateView():panelView()}</div>` : "");
+  }
+
+  async function post(url, body){
+    try {
+      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      return await r.json();
+    } catch { return { ok: false, reason: "서버에 연결하지 못했어요 — server.js를 켜거나 '미리 만든 응답'으로 바꾸세요" }; }
+  }
+
+  function sensitive(text){
+    if (!window.ShareRules) return [];
+    const f = window.ShareRules.scan(text).findings.filter((x)=>x.severity !== "warn");
+    return [...new Set(f.map((x)=>x.label))];   // 값은 다시 보이지 않고 종류만 말한다
+  }
+
+  async function judge(skipCheck){
+    st.error = ""; st.warn = null;
+    if (!st.text.trim()) { st.error = "작업 내용을 넣어 주세요."; return render(); }
+    if (st.mode === "fixture") {
+      const raw = S.judgeFixture(st.text), j = raw && N.parseJudgement(raw);
+      if (!j) { st.j = null; st.error = "판정 못 함 — 미리 만든 응답은 예시 1·2에만 있어요. 직접 쓴 글은 '실제 Claude'로 판정하세요."; return render(); }
+      st.j = j; st.todos = null; st.tokens = 0; return render();
+    }
+    if (!skipCheck) { const w = sensitive(st.text); if (w.length) { st.warn = w; return render(); } }
+    st.busy = true; render();
+    const r = await post("/api/judge", { text: st.text });
+    st.busy = false;
+    if (r.ok) { st.j = r.judgement; st.tokens = r.tokens; st.todos = null; }
+    else st.error = `판정 못 함 — ${r.reason || "알 수 없는 오류"}. 지어내지 않고 비워 둡니다.`;
+    render();
+  }
+
+  async function answer(){
+    st.error = "";
+    const s = stage();
+    if (st.mode === "fixture") {
+      const a = (S.answers[s.n] || [])[st.hard[0]];
+      st.answer = a ? `${a} (미리 만든 답 — 질문 내용은 반영되지 않아요)` : "미리 만든 답이 없어요. '실제 Claude'로 물어보세요.";
+      return render();
+    }
+    if (!st.question.trim()) { st.error = "질문을 적어 주세요."; return render(); }
+    st.busy = true; render();
+    const r = await post("/api/answer", { stage: s.n, hard: st.hard.map((i)=>s.criteria[i]), question: st.question, text: st.text });
+    st.busy = false;
+    if (r.ok) { st.answer = r.answer; st.tokens = r.tokens; } else st.error = `답을 받지 못했어요 — ${r.reason || "알 수 없는 오류"}`;
+    render();
+  }
+
+  function go(){
+    const s = stage(), nx = N.STAGES[s.n + 1];
+    st.history.push(`${s.n}단계 → ${nx ? nx.n + "단계" : "마무리"} Go · 이해 확인 '아니요' ${st.noCount}회 · ${new Date().toISOString().slice(0,10)}`);
+    st.view = "panel";
+    if (nx) st.j = { stage: nx.n, reason: `${s.n}단계 게이트를 통과했어요. 이제 ${nx.name} 단계예요.`, criteria: nx.criteria.map((text)=>({ text, met: false, evidence: "" })), next: null };
+    render();
+  }
+
+  $nav.addEventListener("click", (e) => {
+    const t = e.target.closest("[data-act]"); if (!t) return;
+    const a = t.dataset.act, i = Number(t.dataset.i);
+    if (a === "toggle") { st.open = !st.open; return render(); }
+    if (a === "ex") { st.text = S.examples[i].text; st.error = ""; st.warn = null; return judge(true); }
+    if (a === "judge") return judge(false);
+    if (a === "send-anyway") return judge(true);
+    if (a === "edit") { st.warn = null; render(); return $nav.querySelector("[data-act=text]").focus(); }
+    if (a === "gate") { Object.assign(st, { view: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "" }); return render(); }
+    if (a === "close-gate") { st.view = "panel"; return render(); }
+    if (a === "no") { st.noCount++; Object.assign(st, { step: "which", hard: [], answer: "", question: "" }); return render(); }
+    if (a === "to-question") { st.step = "question"; return render(); }
+    if (a === "answer") return answer();
+    if (a === "plan") { st.step = "plan"; return render(); }
+    if (a === "yes") { const nx = N.STAGES[stage().n + 1]; st.todos = nx ? nx.criteria.slice() : []; st.step = "next"; return render(); }
+    if (a === "up" || a === "down") { st.todos = N.reorder(st.todos, i, a === "up" ? -1 : 1); return render(); }
+    if (a === "go") return go();
+  });
+  $nav.addEventListener("change", (e) => {
+    const a = e.target.dataset.act;
+    if (a === "mode") { st.mode = e.target.value; st.error = ""; st.warn = null; render(); }
+    if (a === "hard") { const i = Number(e.target.dataset.i); st.hard = e.target.checked ? [...st.hard, i].sort() : st.hard.filter((x)=>x!==i); render(); }
+  });
+  $nav.addEventListener("input", (e) => {
+    if (e.target.dataset.act === "text") st.text = e.target.value;
+    if (e.target.dataset.act === "question") st.question = e.target.value;
+  });
+  render();
+})();
+</script>
+</body>
+</html>
