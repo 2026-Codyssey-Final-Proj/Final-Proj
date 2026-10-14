@@ -32,7 +32,11 @@
   const face = () => N.face({ busy: st.busy, warn: st.warn, error: st.error, gate: st.screen === "gate", step: st.step,
     reason: st.j && st.j.reason, allDone: allDone() });
   const tick = () => N.ticker(st.j, st.todos, st.history.length ? st.history[st.history.length - 1].short : "");
-  const cat = (mood, size) => C.svg(mood, size);
+  // 단계 n이 지금 단계보다 앞(done)인지, 지금(cur)인지 — 단계 막대·칩·단계 지도가 같이 쓴다
+  const stepClass = (n) => { const cur = st.j ? st.j.stage : -1; return n < cur ? "done" : n === cur ? "cur" : ""; };
+  const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? `${s}초 전` : `${Math.round(s / 60)}분 전`; };
+  const reasonOf = (r) => r.reason || "이유를 알 수 없어요";
+  const cat = C.svg;
 
   // ── 아이콘 (선 그림) ──
   const icon = (d, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -55,13 +59,15 @@
     timer = setTimeout(() => { timer = null; go(N.nextView(st.ui, "idle", pinned())); }, DELAY[st.ui]);
   }
   function go(ui) { if (ui !== st.ui) { st.ui = ui; clearIdle(); } render(); }
+  // 알릴 일이 생기면 접혀 있던 것(띠·인사)만 한 줄로 살짝 보인다 — 펼쳐져 있으면 그대로
+  const peek = () => go(st.ui === "hidden" || st.ui === "greet" ? "petit" : st.ui);
   $nav.addEventListener("mouseenter", () => { hovering = true; if (st.ui !== "greet") clearIdle(); go(N.nextView(st.ui, "enter", pinned())); });
   $nav.addEventListener("mouseleave", () => { hovering = false; render(); });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !isPhone()) go(N.nextView(st.ui, "esc", pinned())); });
 
   // ── 두 화면이 함께 쓰는 조각 ──
-  const sayRow = (size, m) => { const [mood, say] = face(); return `<div class="say">${cat(m || mood, size)}<div class="bubble" aria-live="polite">${esc(say)}</div></div>`; };
-  const seg = () => `<div class="seg" aria-hidden="true">${N.STAGES.map((x) => `<span class="${x.n < stage().n ? "done" : x.n === stage().n ? "cur" : ""}"></span>`).join("")}</div>`;
+  const sayRow = (size) => { const [mood, say] = face(); return `<div class="say">${cat(mood, size)}<div class="bubble" aria-live="polite">${esc(say)}</div></div>`; };
+  const seg = () => `<div class="seg" aria-hidden="true">${N.STAGES.map((x) => `<span class="${stepClass(x.n)}"></span>`).join("")}</div>`;
   const stageBlock = () => `<div><div class="stage-head"><span class="stage-title">${esc(stage().title)}</span><span class="meta">${stage().n} / 7단계</span></div>
     ${seg()}<span class="meta">이 단계에서 할 일 ${met().length}개 중 ${metCount()}개 했어요</span></div>`;
   function tickerBlock() {
@@ -97,7 +103,7 @@
     if (st.warn) h += `<div class="note n-warn"><b>보내기 전에 잠깐!</b> 글 안에 ${esc(st.warn.join(", "))}처럼 보이는 게 있어요. 그래도 AI에게 보낼까요?
       <div class="row" style="margin-top:8px"><button class="btn" data-act="send-anyway">괜찮아요, 보낼게요</button><button class="btn pri" data-act="edit">고칠게요</button></div></div>`;
     if (st.error) h += `<div class="note n-bad">${esc(st.error)}</div>`;
-    return `<div style="display:flex;flex-direction:column;gap:8px">${h}</div>`;
+    return `<div class="stack">${h}</div>`;
   }
   const inputDetails = () => `<details ${st.error || st.warn || st.openInput ? "open" : ""}><summary>바뀐 작업 다시 보여 주기</summary>${inputBox()}</details>`;
   const historyBlock = () => (st.history.length ? `<div><p class="label">지나온 단계</p>${st.history.map((x) => `<div class="meta">${esc(x.text)}</div>`).join("")}</div>` : "");
@@ -117,12 +123,9 @@
   }
 
   // 단계 지도 · 내 배움 — PC 패널의 탭과 iPhone 탭이 같이 쓴다
-  function mapBody() {
-    const cur = st.j ? st.j.stage : -1;
-    return `<div class="list">${N.STAGES.map((x) => `<div>
-      <span class="dot ${x.n < cur ? "y" : x.n === cur ? "c" : ""}"></span><span style="flex:1;padding:8px 0"><b>${x.n} · ${esc(x.title)}</b><span class="sub">${esc(x.does)}</span></span>
-      ${x.n === cur ? `<span class="meta">${metCount()}/${met().length}</span>` : ""}</div>`).join("")}</div>`;
-  }
+  const mapBody = () => `<div class="list">${N.STAGES.map((x) => `<div>
+      <span class="dot ${stepClass(x.n)}"></span><span style="flex:1;padding:8px 0"><b>${x.n} · ${esc(x.title)}</b><span class="sub">${esc(x.does)}</span></span>
+      ${stepClass(x.n) === "cur" ? `<span class="meta">${metCount()}/${met().length}</span>` : ""}</div>`).join("")}</div>`;
   const learnBody = () => `<div class="card"><span class="kicker">지나온 단계</span>${st.history.length ? st.history.map((x) => `<span class="meta">${esc(x.text)}</span>`).join("") : `<span class="meta">아직 없어요. 한 단계를 마치면 여기 남아요.</span>`}</div>
     <div class="card"><span class="kicker">배운 말</span>${st.learned.length ? st.learned.map((x) => `<div><b>${esc(x.term)}</b><span class="sub">${esc(x.text)}</span></div>`).join("")
       : `<span class="meta">할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.</span>`}</div>`;
@@ -155,7 +158,7 @@
       `<button class="btn pri wide" data-act="go" ${N.canAdvance(met(), "yes") ? "" : "disabled"}>이 순서로 시작하기</button>`];
     return ["", yesNo];
   }
-  const chips = () => `<div class="chips">${N.STAGES.map((x) => `<span class="chip ${x.n < stage().n ? "done" : x.n === stage().n ? "cur" : ""}">${x.n < stage().n ? "✓ " : ""}${x.n} ${esc(x.short)}</span>`).join("")}</div>`;
+  const chips = () => `<div class="chips">${N.STAGES.map((x) => `<span class="chip ${stepClass(x.n)}">${stepClass(x.n) === "done" ? "✓ " : ""}${x.n} ${esc(x.short)}</span>`).join("")}</div>`;
   const flow = () => { const s = stage(); return `<div class="flow"><div class="box"><b>받은 것</b>${esc(s.gets)}</div><span class="arrow">→</span>
     <div class="box"><b>한 일</b>${esc(s.does)}</div><span class="arrow">→</span><div class="box"><b>만든 것</b>${esc(s.gives)}</div></div>`; };
 
@@ -188,7 +191,7 @@
     const s = stage(), [body, actions] = checkStep();
     return `<div class="row"><span class="meta grow">넘어가기 전에 함께 확인해요${st.mode === "fixture" ? " · 연습용 예시" : ""}</span><button class="btn" data-act="close-gate">나중에 할게요</button></div>
       ${sayRow(64)}<div class="stage-title">${s.n}단계 "${esc(s.title)}"에서 이렇게 했어요</div>${chips()}${flow()}${critList(false)}
-      ${body ? `<div style="display:flex;flex-direction:column;gap:10px">${body}</div>` : ""}<div style="display:flex;flex-direction:column;gap:8px">${actions}</div>`;
+      ${body ? `<div class="stack">${body}</div>` : ""}<div class="stack">${actions}</div>`;
   }
   const countdownOn = () => !isPhone() && st.ui === "home" && !hovering && !pinned() && !!timer;
   const countdown = () => (countdownOn() ? `<div class="countdown" title="곧 접혀요 — 핀을 누르면 열어 둬요"><i style="animation-duration:${DELAY.home}ms;animation-delay:-${Date.now() - idleAt}ms"></i></div>` : "");
@@ -281,7 +284,7 @@
     Object.assign(st, { j, tokens: tokens || 0, todos: null, openInput: false, choice: null, later: false, picking: false });
     learn(j);
     // 다 했으면 스스로 펼쳐서 알린다(CouCou의 alert), 아니면 접혀 있던 것만 한 줄로 보인다
-    go(allDone() ? N.nextView(st.ui, "alert", pinned()) : st.ui === "hidden" ? "petit" : st.ui);
+    if (allDone()) go(N.nextView(st.ui, "alert", pinned())); else peek();
   }
   async function judge(skipCheck) {
     st.error = ""; st.warn = null;
@@ -294,7 +297,7 @@
     if (!skipCheck) { const w = sensitive(st.text); if (w.length) { st.warn = w; return render(); } }
     const r = await callAI("/api/judge", { text: st.text });
     if (r.ok) return landed(r.judgement, r.tokens);
-    st.error = `살펴보지 못했어요 — ${r.reason || "이유를 알 수 없어요"}. 아무 답이나 지어내지 않고 비워 둘게요.`;
+    st.error = `살펴보지 못했어요 — ${reasonOf(r)}. 아무 답이나 지어내지 않고 비워 둘게요.`;
     render();
   }
   async function answer() {
@@ -307,7 +310,7 @@
     }
     if (!st.question.trim()) { st.error = "궁금한 걸 적어 주세요."; return render(); }
     const r = await callAI("/api/answer", { stage: s.n, hard: st.hard.map((i) => s.criteria[i].text), question: st.question, text: st.text });
-    if (r.ok) { st.answer = r.answer; st.tokens = r.tokens; } else st.error = `답을 받지 못했어요 — ${r.reason || "이유를 알 수 없어요"}`;
+    if (r.ok) { st.answer = r.answer; st.tokens = r.tokens; } else st.error = `답을 받지 못했어요 — ${reasonOf(r)}`;
     render();
   }
   // 고른 것을 작업 글에 한 줄로 적고 다시 살펴본다 — 정하는 건 사용자, 받아 적는 건 나비
@@ -377,7 +380,6 @@
   }
 
   // ── Claude Code 연결 — 서버에 2초마다 새 알림을 묻는다(서버로 열었을 때만) ──
-  const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? `${s}초 전` : `${Math.round(s / 60)}분 전`; };
   let lastSeq = -1;   // -1: 아직 한 번도 안 물음 — 처음에는 지난 알림을 다시 띄우지 않고 기준만 잡는다
   async function poll() {
     let r;
@@ -401,7 +403,7 @@
       return;
     }
     st.ping = ev.kind === "stop" ? "Claude Code가 방금 작업을 마쳤어요 — 눌러서 어디쯤인지 볼까요?" : "Claude Code에서 새 작업을 시작했어요";
-    go(st.ui === "hidden" || st.ui === "greet" ? "petit" : st.ui);
+    peek();
   }
   if (canLive) { poll(); setInterval(poll, 2000); }
 
@@ -423,7 +425,7 @@
       if (k < LINES.length) { line(LINES[k++]); return setTimeout(step, 700); }
       // 작업이 바뀐 걸 알아채고 한 줄로 살짝 나타난다 — 글을 AI에게 보내는 건 사용자가 누를 때만
       st.text = S.examples[0].text; st.ping = "방금 작업이 바뀌었어요 — 눌러서 어디쯤인지 볼까요?";
-      go(st.ui === "hidden" || st.ui === "greet" ? "petit" : st.ui);
+      peek();
     };
     step();
   });

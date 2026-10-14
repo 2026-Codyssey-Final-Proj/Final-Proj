@@ -71,7 +71,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .ticker .past{color:var(--mute)}.ticker .now{font-weight:600}.ticker .now .k{color:var(--acc)}
 .choose{border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--card)}
 .choose .q{font-size:16px;font-weight:700}
-.choose .why{font-size:14px;color:var(--ink2);line-height:1.55}
 .opt{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-size:15px;text-align:left}
 .opt .radio{width:18px;height:18px;flex:none;border-radius:50%;border:1.5px solid #B8BDC7}
 .opt[aria-pressed=true]{border:2px solid var(--acc);background:var(--acc-soft)}
@@ -120,7 +119,9 @@ label.chk{display:flex;gap:10px;align-items:center;min-height:40px;font-size:14p
 .list>div{display:flex;align-items:center;gap:12px;min-height:48px;font-size:15px;border-top:1px solid var(--line)}
 .list>div:first-child{border-top:0}
 .list .dot{width:22px;height:22px;flex:none;border-radius:50%;border:1.5px solid #B8BDC7}
-.list .dot.y{border:0;background:var(--ok)}.list .dot.c{border:2px solid var(--acc)}
+.list .dot.done{border:0;background:var(--ok)}.list .dot.cur{border:2px solid var(--acc)}
+.stack{display:flex;flex-direction:column;gap:8px}
+.why{font-size:14px;color:var(--ink2);line-height:1.55}
 /* Mac식 탭 (지금 / 단계 지도 / 내 배움) */
 .segctl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;padding:2px;border-radius:10px;background:rgba(127,127,127,.14)}
 .segctl button{min-height:32px;border:0;border-radius:8px;background:none;font-size:13px;color:var(--ink2)}
