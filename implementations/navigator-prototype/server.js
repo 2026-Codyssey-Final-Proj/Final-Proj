@@ -54,11 +54,13 @@ function callClaude(prompt, schema) {
   });
 }
 
+// 너무 크거나 끊긴 요청은 null — 끊겨도 기다리던 쪽이 멈춰 있지 않게 close에서도 끝낸다
 function readJson(req) {
   return new Promise((resolve) => {
     let body = "";
     req.on("data", (d) => { body += d; if (body.length > MAX_BODY) req.destroy(); });
     req.on("end", () => { try { resolve(JSON.parse(body)); } catch { resolve(null); } });
+    req.on("close", () => resolve(null));
   });
 }
 

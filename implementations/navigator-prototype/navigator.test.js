@@ -8,9 +8,50 @@ const Nav = require("./navigator.js");
 const S = require("./scenario.js");
 const { allowed } = require("./server.js");
 
-test("단계 0~7이 순서대로 있고 단계마다 완료 기준이 있다", () => {
+test("단계 0~7이 순서대로 있고 단계마다 할 일이 있다", () => {
   assert.deepEqual(Nav.STAGES.map((s) => s.n), [0, 1, 2, 3, 4, 5, 6, 7]);
   for (const s of Nav.STAGES) assert.ok(s.criteria.length > 0, s.name);
+});
+
+// 비개발자 대상 — 크게 보이는 말에 전문 용어가 없어야 한다. 용어는 term 칸에만.
+const jargonIn = (text) => Nav.JARGON.filter((w) => String(text).includes(w));
+
+test("쉬운 말: 단계 이름·설명·할 일에 전문 용어가 없다", () => {
+  for (const s of Nav.STAGES) {
+    for (const t of [s.title, s.short, s.gets, s.does, s.gives, ...s.criteria.map((x) => x.text)]) {
+      assert.deepEqual(jargonIn(t), [], `${s.n}단계: ${t}`);
+    }
+  }
+});
+
+test("쉬운 말: 연습 예시의 안내와 미리 만든 답에 전문 용어가 없다", () => {
+  for (const ex of S.examples) {
+    const j = ex.judgement;
+    for (const t of [ex.label, ex.text, j.reason, ...Object.values(j.next), ...j.criteria.map((x) => x.evidence)]) {
+      assert.deepEqual(jargonIn(t), [], t);
+    }
+  }
+  for (const a of S.answers[2]) assert.deepEqual(jargonIn(a), [], a);
+});
+
+test("쉬운 말: 화면 파일에 전문 용어가 없다 (HTML 주석 제외)", () => {
+  const html = fs.readFileSync(path.join(__dirname, "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+  assert.deepEqual(jargonIn(html), []);
+});
+
+test("nextView: 띠 → 한 줄 → 펼침, 시간이 지나면 한 칸씩 접힌다 (CouCou 방식)", () => {
+  assert.equal(Nav.nextView("hidden", "enter", false), "petit");
+  assert.equal(Nav.nextView("petit", "click", false), "home");
+  assert.equal(Nav.nextView("greet", "idle", false), "petit");
+  assert.equal(Nav.nextView("home", "idle", false), "petit");
+  assert.equal(Nav.nextView("petit", "idle", false), "hidden");
+  assert.equal(Nav.nextView("home", "esc", false), "petit");
+});
+
+test("nextView: 답을 기다리는 중이면 저절로 접히지 않고, 알릴 일은 어디서든 펼친다", () => {
+  assert.equal(Nav.nextView("home", "idle", true), "home");
+  assert.equal(Nav.nextView("petit", "idle", true), "petit");
+  for (const v of ["hidden", "petit", "greet", "home"]) assert.equal(Nav.nextView(v, "alert", false), "home");
 });
 
 test("canAdvance: 완료 기준을 다 채우고 '예'일 때만 다음 단계로", () => {
@@ -29,11 +70,11 @@ test("reorder: 사용자가 정한 대로 한 칸 옮기고, 끝에서는 그대
   assert.deepEqual(a, ["가", "나", "다"]);
 });
 
-test("parseJudgement: 가상 시나리오의 응답은 모두 통과하고 기준 문장은 우리 데이터로 채워진다", () => {
+test("parseJudgement: 연습 예시의 응답은 모두 통과하고 할 일 문장은 우리 데이터로 채워진다", () => {
   for (const ex of S.examples) {
     const j = Nav.parseJudgement(ex.judgement);
     assert.ok(j, ex.label);
-    assert.deepEqual(j.criteria.map((c) => c.text), Nav.STAGES[ex.judgement.stage].criteria);
+    assert.deepEqual(j.criteria.map((c) => c.text), Nav.STAGES[ex.judgement.stage].criteria.map((c) => c.text));
   }
 });
 
@@ -62,13 +103,13 @@ test("가상 시나리오: 미리 만든 응답에 없는 입력은 판정하지
   assert.ok(S.judgeFixture(S.examples[1].text + "\n"));
 });
 
-test("미리 만든 답은 2단계 완료 기준과 개수가 같다", () => {
+test("미리 만든 답은 2단계 할 일과 개수가 같다", () => {
   assert.equal(S.answers[2].length, Nav.STAGES[2].criteria.length);
 });
 
 test("judgePrompt: 모든 단계와 사용자 글이 들어간다", () => {
   const p = Nav.judgePrompt("동아리 앱");
-  for (const s of Nav.STAGES) assert.ok(p.includes(`${s.n} ${s.name}`));
+  for (const s of Nav.STAGES) assert.ok(p.includes(`${s.n}단계 ${s.title}`));
   assert.ok(p.includes("동아리 앱"));
 });
 
