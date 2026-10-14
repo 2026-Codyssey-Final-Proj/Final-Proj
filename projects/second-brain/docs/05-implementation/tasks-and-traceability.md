@@ -54,7 +54,7 @@ V1(`gamercross/my-workspace`)의 PR #85(T01~T07)·#86(T08·T09)·#88(T10~T13)·#
 | **S5** 비밀값이 있으면 커밋을 막음 | `.claude/hooks/check-secrets.sh` | `test_check_secrets` 12개 | 막고 값을 가려서 알림 | ✓ |
 | **S6** 인증 없이 밖에 공개하지 않음 | — | — | 서버·API·페이지를 공개하지 않음(ADR-0003) | **해당 없음 — 승인(사용자 2026-10-14)** |
 | **S8** 팀 저장소는 내 몫 중심 | — | — | F5(깃허브 진행도)가 없어 이 동작 자체가 없음 | **해당 없음(전) — 승인(사용자 2026-10-14)**, F5 구현 때 다시 |
-| **F18b** 겹치면 기존 일정은 두고 새 일정만 다른 시간 | `planning.place_on` | `test_planning` · `test_overlapping_slot_is_refused_and_another_time_is_offered` | 기존 일정 목록이 그대로, 겹침 목록과 대안 시각 | ✓ (실제 캘린더 시험은 아직) |
+| **F18b** 겹치면 기존 일정은 두고 새 일정만 다른 시간 | `planning.place_on` | `test_planning` · `test_overlapping_slot_is_refused_and_another_time_is_offered` | 기존 일정 목록이 그대로, 겹침 목록과 대안 시각 | ✓ (실제 캘린더 값으로 시험 — 2026-10-14, [stage6-plan](../06-service/stage6-plan.md) S-1) |
 | **F15c** 추정한 줄 표시와 개수 | `bundle.transcript_document` | `test_bundle` · `test_transcript_marks_estimated_lines_and_counts_them_in_the_header` | 줄 끝 `[추정]`, 머리 "추정 N줄" | ✓ |
 | **F16c** 어느 목적에도 안 닿으면 "목적에 답하지 않음" | `bundle.fit_report` | `test_bundle` · `test_nothing_fits_means_not_answering_the_purpose_and_asks` | 표시하고 "저장할지" 사용자에게 물음 | ✓ |
 | **S9** 키·도메인·IP·남의 정보는 가리고 기록 | `bundle.mask_sensitive`, `transcript_document` | `test_bundle` 4개 · `test_domains_ips_emails_urls_and_phones_are_masked` | 자리표시로 바꾸고 종류·개수를 적음 | **부분 — 인정(사용자 2026-10-14)**: 남의 이름은 코드가 못 찾음(절차) |
