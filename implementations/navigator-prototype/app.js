@@ -100,14 +100,15 @@
   function clearIdle() { clearTimeout(timer); timer = null; }
   function scheduleIdle() {
     clearIdle();
-    if (isPhone() || st.ui === "hidden" || (st.ui !== "greet" && (hovering || pinned()))) return;
+    // 마우스가 올라가 있으면 인사도 접지 않는다(나비를 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
+    if (isPhone() || st.ui === "hidden" || hovering || (st.ui !== "greet" && pinned())) return;
     idleAt = Date.now();
     timer = setTimeout(() => { timer = null; go(N.nextView(st.ui, "idle", pinned())); }, DELAY[st.ui]);
   }
   function go(ui) { if (ui !== st.ui) { st.ui = ui; clearIdle(); } render(); }
   // 알릴 일이 생기면 접혀 있던 것(띠·인사)만 한 줄로 살짝 보인다 — 펼쳐져 있으면 그대로
   const peek = () => go(st.ui === "hidden" || st.ui === "greet" ? "petit" : st.ui);
-  $nav.addEventListener("mouseenter", () => { hovering = true; if (st.ui !== "greet") clearIdle(); go(N.nextView(st.ui, "enter", pinned())); });
+  $nav.addEventListener("mouseenter", () => { hovering = true; clearIdle(); go(N.nextView(st.ui, "enter", pinned())); });
   $nav.addEventListener("mouseleave", () => { hovering = false; render(); });
 
   // ── 두 화면이 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·내 배움·설정이 쓴다) ──
