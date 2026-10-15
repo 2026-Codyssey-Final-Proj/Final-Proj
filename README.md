@@ -9,7 +9,7 @@
 
 | 알고 싶은 것 | 어디 |
 |---|---|
-| 무엇을 만드나, 요구사항 12개 | [requirements.md](docs/00-overview/requirements.md) — **요구의 원천** |
+| 무엇을 만드나, 요구사항 13개 | [requirements.md](docs/00-overview/requirements.md) — **요구의 원천** |
 | 기획안 | [final-project-plan.md](docs/00-overview/final-project-plan.md) |
 | **일정 · 역할 · 평가 기준** | [schedule.md](docs/00-overview/schedule.md) — 제출 11/8(일) 18:00, 평가 11/12~13 |
 | **우선순위 · 누가 무엇을 이어 받나** | [team-priorities.md](docs/00-overview/team-priorities.md) — 길잡이(원천은 requirements.md 10절·이슈) |
@@ -221,7 +221,7 @@ Final-Proj/
 
 ```mermaid
 flowchart LR
-    A["기획안 수정"] --> B["요구사항 12개"]
+    A["기획안 수정"] --> B["요구사항 13개"]
     B --> C["V1 워크 프로세스 이전"]
     C --> D["공유 시험 화면"]
     D --> E["2단계 마무리<br/>우선순위 · 숫자 · 추적표"]
