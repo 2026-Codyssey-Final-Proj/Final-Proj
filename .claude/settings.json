@@ -29,6 +29,19 @@
             "if": "Bash(git *)"
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*__(create|update)_event",
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/calendar-owner-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/ask-calendar-invite.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -69,6 +82,10 @@
           {
             "type": "command",
             "command": ".claude/hooks/unreviewed-commits.sh"
+          },
+          {
+            "type": "command",
+            "command": ".claude/hooks/session-briefing.sh"
           }
         ]
       }

@@ -114,6 +114,9 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 | `require-tests-before-commit.sh` | 테스트가 실패한 상태에서 `git commit` |
 | `check-secrets.sh` | 비밀값 파일(`.env`·`*.pem` 등)이나 키·토큰·비밀번호로 보이는 줄이 든 채로 `git commit` |
 | `check-links.sh` / `check-mermaid.sh` / `check-skills.sh` | `*.md`·`SKILL.md` 편집 후 깨진 링크·그려지지 않는 Mermaid·명세 위반 |
+| `calendar-owner-guard.sh` | 이 컴퓨터에 캘린더 소유자 표시(`.claude/calendar-owner.local`, 저장소에 안 올라감)가 없을 때 일정 만들기·고치기 — **기본이 막힘**이라 가져간 사본이 다른 사람의 캘린더에 일정을 등록하지 못한다 (이재엽의 개인 프로젝트에서 가져옴) |
+| `ask-calendar-invite.sh` | 캘린더 일정에 참석자(초대)를 넣으려는 것 — 막지 않고 확인을 요구한다 (개인 프로젝트에서 가져옴) |
+| `session-briefing.sh` (세션 시작) | (막지 않음) 마감 지남·3일 이내 할 일, 진행 중인 프로젝트를 먼저 말한다. 데이터 폴더는 환경변수 `SECOND_BRAIN_DATA`(ADR-0010), 없으면 조용히 지나감 |
 | `unreviewed-commits.sh` (세션 시작) | 리뷰 없이 지나간 사람 커밋을 알린다(막지는 않는다) |
 
 훅이 차단하면 이유가 stderr로 온다 — 그 이유를 고친 뒤 재시도한다. 훅을 피하려고 우회하지 않는다.
@@ -123,7 +126,8 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 - [`dev-workflow`](.claude/skills/dev-workflow/SKILL.md) — 7단계 진행, 게이트, PRD. 모든 프로젝트가 공유한다.
 - [`qa-prep`](.claude/skills/qa-prep/SKILL.md) — 발표 Q&A 준비(V1에서 만든 결과물). 발표를 앞두면 쓴다.
 - [`reference-library`](.claude/skills/reference-library/SKILL.md) — 코딩마라톤 가이드를 단계별 후보표로 꺼낸다. 원문은 이재엽의 로컬 폴더에 있어 **다른 팀원 컴퓨터에는 없다**(스킬의 `references/`에 정리본이 있다).
-- **외부에서 가져온 스킬** — `frontend-design`, `theme-factory`, `canvas-design`, `mcp-builder`, `karpathy-guidelines`, `ponytail-review`.
+- **외부에서 가져온 스킬** — `frontend-design`, `theme-factory`, `canvas-design`, `mcp-builder`, `karpathy-guidelines`, `ponytail-review`,
+  `tdd`·`owasp-security`·`impeccable-review`와 Emil Kowalski의 `emil-design-eng`·`review-animations`·`improve-animations`·`find-animation-opportunities`·`break-ui`·`animation-vocabulary`(개인 프로젝트에서 가져옴 — 사용 규칙은 [skill-authoring.md](.claude/rules/skill-authoring.md)).
   고치지 않고 그대로 쓴다. 출처·라이선스는 [VENDORED.md](.claude/skills/VENDORED.md).
 
 ## 브랜치·커밋 (팀 결정 2026-10-12 — 이재엽)

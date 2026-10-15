@@ -56,6 +56,31 @@
   정확성·보안·테스트는 karpathy-guidelines와 implementations.md(TDD)로 따로 본다. **ponytail 플러그인
   전체(훅 3개, 나머지 스킬)는 들이지 않았다** — 모든 프로젝트에 세션마다 규칙을 주입하고, "묻지 말고 먼저
   만든다"·"확인 하나면 충분"이 우리 질문 규칙·TDD와 정반대라서다(external-tools.md).
+- **Emil Kowalski 스킬은 화면의 움직임·마감을 리뷰할 때 쓴다**(이재엽 결정 2026-10-14). `review-animations`(모션 코드 리뷰),
+  `improve-animations`·`find-animation-opportunities`(읽기 전용 점검 — 코드를 고치지 않고 계획·제안만),
+  `break-ui`(긴 이름·빈 목록 같은 최악 데이터로 시험), `animation-vocabulary`(움직임을 정확한 용어로 말하기),
+  `emil-design-eng`(판단 기준). 리뷰 모드와 같은 방향이라 그대로 쓴다. **움직임을 직접 만들어 주는 스킬은 들이지 않았다** —
+  디자인 결과물은 사용자의 작업물이므로 "써줘"라고 할 때만 Claude가 쓴다. `frontend-design`과 겹치면: 전체 미적 방향은
+  `frontend-design`, 움직임·마감 점검은 Emil 스킬. 원본 README의 `npx skills add`는 쓰지 않는다(무엇을 쓰는지 문서에 없음).
+  `emil-design-eng`는 674줄·`review-animations`는 명세 밖 필드가 있어 `check-skills.sh` 경고가 나지만 원본을 고치지 않는다.
+- **`impeccable-review`는 만든 화면을 점검할 때 쓴다**(이재엽 결정 2026-10-14). 원본 스킬은 첫 단계가 내려받은 실행 파일을 돌려서
+  들이지 않고, **참고 마크다운(`reference/`)만 복사하고 `SKILL.md`는 우리가 새로 썼다.** 이 스킬은 원본을 "그대로 복사"하는
+  다른 외부 스킬과 달리 안내문이 우리 것이다. 실행 파일(`scripts/impeccable`)·`npx impeccable`·훅·`live`는 실행하지 않는다.
+  디자인 결과물은 사용자의 작업물이라 **지적·제안만 하고 "써줘"라고 할 때만 고친다.** 역할 분담은 `frontend-design`(미적 방향) /
+  `impeccable-review`(점검) / Emil 스킬(움직임·마감).
+- **`tdd`는 테스트를 먼저 쓰는 코드 작업에서 쓴다**(이재엽 결정 2026-10-14). 코드를 Claude에게 맡긴 프로젝트(세컨드 브레인)에서는
+  Claude가 이 스킬의 루프를 따르고, 이재엽이 코드를 쓰는 곳에서는 **변경 리뷰의 렌즈**(경계에서 테스트하는가, 구현에 묶인 테스트·
+  같은 값을 되풀이하는 단언이 없는가)로만 쓴다. 원본과 우리 규칙의 차이: ① 원본은 "리팩터링은 루프 밖(리뷰 단계)"인데
+  [implementations.md](implementations.md)는 Red-Green-Refactor라 **우리 규칙이 우선**이다(리팩터링을 루프 끝에서 한다).
+  ② 원본이 부르는 `codebase-design`·`code-review` 스킬과 `GLOSSARY.md`는 우리에 없으므로 부르지 않고, 용어는 해당 프로젝트
+  문서·ADR을 읽는다. ③ 테스트 경계를 사용자와 먼저 합의하라는 원본 문구는 [review-mode.md](review-mode.md)와 같은 방향이라 그대로 따른다.
+- **`owasp-security`는 보안 점검과 변경 리뷰에서 쓴다**(이재엽 결정 2026-10-15). [security-records.md](security-records.md) 6-4의
+  "Top 10 + ASVS 둘 다"를 코드에 대어 보는 용도다. 사용 규칙: ① 스킬 안의 **ASVS 장 번호·항목은 요약일 뿐이다 — 쓸 때 원문을
+  열어 확인한다**(6-4가 이미 정한 규칙이고, 표준 버전이 바뀐다). ② `reference/`(약 2,200줄)는 필요한 부분만 읽는다 — SKILL.md의
+  안내대로 언어 절·해당 항목만. ③ **출처가 개인 한 명이므로**(미확인 출처) 점검 결과를 그대로 믿지 않고 지적마다 근거 항목을
+  붙이게 하며, "문제 없음"을 안전 보증으로 쓰지 않는다. ④ 지적만 하고 **코드를 고치지 않는다** — 고치는 일은 이재엽이 "써줘"라고 할
+  때 또는 코드를 Claude에게 맡긴 프로젝트(세컨드 브레인)에서만 한다. ⑤ `allowed-tools`가 선언돼 있지 않아 도구 제한이 없으므로,
+  이 스킬로 점검할 때도 우리 쓰기 금지·외부 전송 금지 규칙이 그대로 적용된다.
 - **`mcp-builder/scripts/evaluation.py`는 Anthropic API를 직접 호출한다**(API 키 필요, 호출마다
   요금). 사용자가 그 자리에서 명시적으로 동의하기 전에는 실행하지 않는다.
 
