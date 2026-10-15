@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from bash_path import BASH
+
 HOOK = Path(__file__).resolve().parents[2] / ".claude" / "hooks" / "check-secrets.sh"
 FAKE_ANTHROPIC = "sk-" + "ant-" + "api03-" + "A1b2C3d4E5f6G7h8I9j0K1l2"
 FAKE_GITHUB = "gh" + "p_" + "a" * 36
@@ -29,12 +31,12 @@ def _repo():
 
 
 def _staged(repo):
-    return subprocess.run(["bash", str(HOOK), "--staged"], cwd=repo, capture_output=True, text=True)
+    return subprocess.run([BASH, str(HOOK), "--staged"], cwd=repo, capture_output=True, text=True)
 
 
 def _hook(repo, command):
     payload = json.dumps({"tool_input": {"command": command}})
-    return subprocess.run(["bash", str(HOOK)], cwd=repo, input=payload, capture_output=True, text=True)
+    return subprocess.run([BASH, str(HOOK)], cwd=repo, input=payload, capture_output=True, text=True)
 
 
 def test_clean_change_passes():
