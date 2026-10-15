@@ -1,14 +1,14 @@
 // claude-drafted: 2026-10-14, 2026-10-15 — Navigator 프로토타입 화면 동작.
-// 규칙·문구 판단은 navigator.js, 연습 예시는 scenario.js, 고양이 그림·교감 도구는 cat.js, 실제 Claude 호출은 server.js.
+// 규칙·문구 판단은 navigator.js, 연습 예시는 scenario.js, 몽돌 그림·교감 도구는 seal.js, 실제 Claude 호출은 server.js.
 // 넓은 화면(PC) = 코딩 도구 창 위에 떠 있는 옆자리 동료. 2026-10-15 "가로 카드 시안대로" 다시 짬:
-//   띠 → 한 줄 → 펼침(위: 아이콘 줄, 아래: 지금 결정할 것 하나를 담은 가로 카드). 카드는 상황마다 색·고양이 표정·뱃지가 다르다
+//   띠 → 한 줄 → 펼침(위: 아이콘 줄, 아래: 지금 결정할 것 하나를 담은 가로 카드). 카드는 상황마다 색·몽돌 표정·뱃지가 다르다
 //   (골라 주세요=파랑, 다 했어요=초록, 넘어가기 전 확인=주황, 작업 알림·살펴보는 중=회색, 오류=빨강). 버튼마다 단축키(1·2·3, Enter, Esc, Y·N).
-//   교감: 나비를 누르면(또는 좌우로 문지르면) 하트와 한마디, 친해진 정도가 쌓인다. 가만히 두면 졸다가 잠들고, 움직이면 깬다.
+//   교감: 몽돌을 누르면(또는 좌우로 문지르면) 하트와 한마디, 친해진 정도가 쌓인다. 가만히 두면 졸다가 잠들고, 움직이면 깬다.
 //   할 일을 다 하거나 단계를 넘어가면 별이 튀며 축하한다. 작은 소리는 설정에서 켠 사람에게만.
 // 600px 이하 = iPhone: 오늘 / 설계도 / 단계 지도 / 내 배움 탭과 넘어가기 전 확인 화면 — 이번에 바꾸지 않았다(PC 먼저). 두 화면은 같은 상태(st)를 쓴다.
-// 기록(작업 글·진행·배운 말·설계도·나비와 친해진 정도)은 이 브라우저(localStorage)에만 남는다.
+// 기록(작업 글·진행·배운 말·설계도·몽돌과 친해진 정도)은 이 브라우저(localStorage)에만 남는다.
 (function () {
-  const N = window.NavRules, S = window.NavScenario, C = window.NavCat;
+  const N = window.NavRules, S = window.NavScenario, C = window.NavSeal;
   const canLive = location.protocol.startsWith("http");
   const DELAY = { greet: 6000, home: 15000, petit: 30000 };   // 저절로 접히기까지(밀리초)
   const PHONE = matchMedia("(max-width: 600px)");
@@ -24,7 +24,7 @@
     settings: false,                               // 설정(보기 방식·연결·자동 살펴보기·소리·기록)은 톱니를 눌러야 보인다
     doc: null, docs: [],                           // 설계도: 고치는 중인 것 {stage, text, say, review, rounds}, 확정한 것들
     project: "", back: "",                         // 알림에서 받은 프로젝트 폴더 이름, 다시 왔을 때 인사
-    pets: 0, since: "", sound: false,              // 나비와 교감: 쓰다듬은 횟수, 처음 만난 날, 작은 소리(기본 꺼짐)
+    pets: 0, since: "", sound: false,              // 몽돌과 교감: 쓰다듬은 횟수, 처음 만난 날, 작은 소리(기본 꺼짐)
     mapSel: null, showCrit: false,                 // 단계 지도에서 고른 단계, 펼침 카드 아래 '이 단계 할 일' 펼침
   };
   const $nav = document.getElementById("nav"), $phone = document.getElementById("phone"), $chat = document.getElementById("chat");
@@ -103,7 +103,7 @@
     gear: icon('<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path>', 16),
     check: icon('<path d="M5 12.5l4.5 4.5L19 7.5"></path>', 14),
     arrow: icon('<path d="M5 12h14M13 6l6 6-6 6"></path>', 13),
-    paw: '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><ellipse cx="12" cy="16" rx="5.5" ry="4.5"></ellipse><circle cx="5.5" cy="10" r="2.4"></circle><circle cx="9.5" cy="6" r="2.4"></circle><circle cx="14.5" cy="6" r="2.4"></circle><circle cx="18.5" cy="10" r="2.4"></circle></g></svg>',
+    bubble: icon('<circle cx="12" cy="13" r="7"></circle><circle cx="9.5" cy="10.5" r="1.2"></circle><circle cx="19" cy="5" r="2"></circle>', 15),
   };
   const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
   const hearts = (level) => `<span class="hearts">${[0, 1, 2, 3].map((i) => `<i class="${i <= level ? "on" : ""}">${HEART}</i>`).join("")}</span>`;
@@ -113,7 +113,7 @@
   function clearIdle() { clearTimeout(timer); timer = null; }
   function scheduleIdle() {
     clearIdle();
-    // 마우스가 올라가 있으면 인사도 접지 않는다(나비를 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
+    // 마우스가 올라가 있으면 인사도 접지 않는다(몽돌을 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
     if (isPhone() || st.ui === "hidden" || hovering || (st.ui !== "greet" && pinned())) return;
     idleAt = Date.now();
     timer = setTimeout(() => { timer = null; view("idle"); }, DELAY[st.ui]);
@@ -187,7 +187,7 @@
       <div class="row">보기 방식 <select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div>
-      <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>나비가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>${keep}`;
+      <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>몽돌이 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>${keep}`;
   }
   const settingsCard = () => (st.settings ? `<div class="foot settings">${settingsBody()}</div>` : "");
   const gearBtn = () => `<button class="round" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 기록">${I.gear}</button>`;
@@ -226,7 +226,7 @@
       ${reviewList(d.review)}${docNotes()}<div class="row">${again}${confirm}</div>
       <span class="meta">고친 뒤 '다시 봐 주세요'를 누르면 고칠 곳을 알려 드려요. 대신 고쳐 쓰지는 않아요.</span></div>`;
   }
-  // 이 단계의 설계도 — 확정한 것(done), 고치는 중인 것(d), 나비의 표정과 한마디(face)
+  // 이 단계의 설계도 — 확정한 것(done), 고치는 중인 것(d), 몽돌의 표정과 한마디(face)
   function docState(s) {
     const done = docDone(s.n), d = st.doc && st.doc.stage === s.n ? st.doc : null;
     return { done, d, face: N.docFace({ busy: st.busy, warn: st.warn, error: st.error, review: d && d.review, draftSay: d && d.say, done }) };
@@ -290,13 +290,13 @@
       : `<button class="${cls}" ${data}${tip}>${esc(a.label)}${kbd(a.key)}</button>`;
   }
 
-  // 나비 — 기분은 [잠깐 짓는 표정(쓰다듬기·축하) > 졸음 > 안내 화면의 표정] 순서. 졸음은 편한 표정일 때만
+  // 몽돌 — 기분은 [잠깐 짓는 표정(쓰다듬기·축하) > 졸음 > 안내 화면의 표정] 순서. 졸음은 편한 표정일 때만
   let flashMood = { mood: "", until: 0 }, sleepState = "awake";
   const CALM = ["idle", "happy", "done"];
   const liveMood = (base) => (flashMood.until > Date.now() ? flashMood.mood : sleepState !== "awake" && CALM.includes(base) ? sleepState : base);
-  // 쓰다듬을 수 있는 나비 — 누르거나 좌우로 문지르면 된다. data-live는 기분이 바뀌면 같이 바뀌는 나비
-  const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="나비 쓰다듬기"
-    title="나비 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra })}</button>`;
+  // 쓰다듬을 수 있는 몽돌 — 누르거나 좌우로 문지르면 된다. data-live는 기분이 바뀌면 같이 바뀌는 몽돌
+  const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="몽돌 쓰다듬기"
+    title="몽돌 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true })}</button>`;
 
   const mini = () => `<span class="mini" aria-hidden="true">${met().map((m) => `<i class="${m ? "on" : ""}"></i>`).join("")}</span>`;
   const stageMeta = () => { const s = stage(); return `<span class="mm-stage">${s.n}단계 · ${esc(s.title)}</span><span>${allDone() ? `할 일 ${met().length}개 모두 했어요` : progress()}</span>${mini()}`; };
@@ -308,7 +308,7 @@
   const exampleActs = () => S.examples.filter((e) => !e.hidden).map((e) => ({ label: e.label, act: "ex", i: S.examples.indexOf(e), kind: "soft" }));
 
   // 지금 결정할 것 하나 — 위에 있는 상황이 먼저다.
-  // 돌려주는 것: {tone, mood, badge, say(나비의 한마디), meta, title, sub, body, acts, foot} — 글은 이미 esc 한 것
+  // 돌려주는 것: {tone, mood, badge, say(몽돌의 한마디), meta, title, sub, body, acts, foot} — 글은 이미 esc 한 것
   function momentToday() {
     const s = st.j && stage(), f = face();
     if (st.busy) return { tone: "gray", mood: "look", badge: "…", meta: s ? stageMeta() : "", title: `살펴보고 있어요${dots}`,
@@ -366,7 +366,7 @@
     if (st.step === "question") return { tone: "amber", mood: face()[0], badge: "?", meta,
       title: "궁금한 걸 편하게 물어보세요", sub: `헷갈린 곳: ${esc(hardTexts().join(", "))}`,
       body: `<textarea class="mc-input" data-act="question" rows="2" aria-label="궁금한 것" placeholder="예) 꼭 필요한지 표시하는 건 왜 해요?">${esc(st.question)}</textarea>${
-        st.answer ? `<div class="answer"><b>나비의 답</b>${esc(st.answer)}</div>` : ""}`,
+        st.answer ? `<div class="answer"><b>몽돌의 답</b>${esc(st.answer)}</div>` : ""}`,
       acts: [{ label: "물어보기", act: "answer", key: "c-Enter", pri: !st.answer }, ...(st.answer ? [{ label: "한 장 요약 보기", act: "plan", key: "Enter", pri: true }] : []), later] };
     if (st.step === "plan") return { tone: "amber", mood: face()[0], badge: "!", meta: `<span class="mm-stage">${s.n}단계 한 장 요약</span>`,
       title: "이렇게 정리해 봤어요. 이제 어때요?", sub: "",
@@ -379,7 +379,7 @@
       sub: `잘 모르겠으면 헷갈린 곳을 골라 같이 풀어요. 몇 번이고 괜찮아요.${st.noCount ? ` (다시 물어본 횟수 ${st.noCount}번)` : ""}`,
       acts: [yes, no, later] };
   }
-  // 가로 카드 하나 — 왼쪽 나비, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
+  // 가로 카드 하나 — 왼쪽 몽돌, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
   function card(v) {
     for (const a of v.acts) if (a.key) deskKeys[a.key] = a;
     let opts = v.acts.filter(isOpt), rest = v.acts.filter((a) => !isOpt(a));
@@ -407,7 +407,7 @@
       st.openInput || st.screen === "gate" ? "" : `<button class="lnk" data-act="open-input">바뀐 작업 다시 보여 주기</button>`}</div>${
       open ? `<div class="crit-grid">${critList(true)}</div>` : ""}`;
   }
-  // 설계도 — 왼쪽 나비와 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
+  // 설계도 — 왼쪽 몽돌과 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
   const docShell = (mood, say, side, main) => `<div class="docx"><div class="doc-side">${petCat(mood, 92)}<p class="doc-say">${esc(say)}</p>
     <div class="doc-acts">${side}</div></div><div class="doc-main">${main}</div></div>`;
   function deskDoc() {
@@ -428,7 +428,7 @@
         <span class="meta">고칠 곳만 알려 드려요. 대신 고쳐 쓰지는 않아요.</span>`,
       `<div class="doc-head"><h3>${esc(s.doc)}</h3><span class="meta">${s.n}단계</span></div><textarea class="doc" data-act="doc" aria-label="설계도">${esc(d.text)}</textarea>${reviewList(d.review)}${docNotes()}`);
   }
-  // 단계 지도 — 여덟 단계를 한 줄로. 나비는 지금 단계 위에 앉아 있다. 누르면 그 단계를 자세히 본다
+  // 단계 지도 — 여덟 단계를 한 줄로. 몽돌은 지금 단계 위에 앉아 있다. 누르면 그 단계를 자세히 본다
   function deskMap() {
     const cur = st.j ? st.j.stage : -1, sel = st.mapSel ?? Math.max(cur, 0), s = N.STAGES[sel];
     const track = N.STAGES.map((x) => { const c = stepClass(x.n); return `<li class="node ${c}${x.n === sel ? " sel" : ""}">
@@ -443,10 +443,10 @@
         <span class="flowline"><span>받은 것 · ${esc(s.gets)}</span>${I.arrow}<span>만든 것 · ${esc(s.gives)}</span>${s.doc ? `<span class="meta">설계도: ${esc(s.doc)}</span>` : ""}</span>
         <ul class="crit">${crit}</ul></div></div>`;
   }
-  // 내 배움 — 지나온 단계 · 배운 말 · 확정한 설계도 · 나비와 나
+  // 내 배움 — 지나온 단계 · 배운 말 · 확정한 설계도 · 몽돌과 나
   function deskLearn() {
     const b = C.bond(st.pets);
-    return `<div class="learn">${learnBody()}<div class="card bondcard"><span class="kicker">나비와 나</span>
+    return `<div class="learn">${learnBody()}<div class="card bondcard"><span class="kicker">몽돌과 나</span>
       <div class="bond-row">${petCat("love", 64)}<div class="stack"><b>${esc(b.name)}</b>${hearts(b.level)}
         <span class="sub">쓰다듬은 횟수 ${st.pets}번${b.need ? ` · 더 친해지기까지 ${b.need}번` : ""}</span>
         <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div></div></div>`;
@@ -460,7 +460,7 @@
       ${st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
       <span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>
       ${st.mode === "live" ? `<span class="mode live" title="보여 주신 글을 진짜 AI(Claude)가 읽어요">진짜 AI</span>` : `<span class="mode fix" title="미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요">연습용 예시</span>`}
-      <button class="ti bond" data-act="bond" aria-label="나비와 친해진 정도: ${esc(b.name)}" title="나비와 친해진 정도: ${esc(b.name)}">${hearts(b.level)}</button>
+      <button class="ti bond" data-act="bond" aria-label="몽돌과 친해진 정도: ${esc(b.name)}" title="몽돌과 친해진 정도: ${esc(b.name)}">${hearts(b.level)}</button>
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 소리, 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
@@ -468,29 +468,29 @@
   const settingsPop = () => (st.settings ? `<div class="pop" role="dialog" aria-label="설정">${settingsBody()}</div>` : "");
   const countdownOn = () => st.ui === "home" && !hovering && !pinned() && !!timer;
   const countdown = () => (countdownOn() ? `<div class="cd" title="곧 접혀요 — 핀을 누르면 열어 둬요"><i style="animation-duration:${DELAY.home}ms;animation-delay:-${Date.now() - idleAt}ms"></i></div>` : "");
-  // 한 줄 — 나비가 앞발을 걸치고 있다. 알릴 일이 있으면 파란 테두리로 살짝 흔든다
+  // 한 줄 — 몽돌이 앞지느러미를 걸치고 있다. 알릴 일이 있으면 파란 테두리로 살짝 흔든다
   function pillHTML() {
     const s = st.j && stage();
     let main;
     if (st.ping) main = `<b>${esc(pingHead())}</b><span class="pl-cta">볼까요?</span>`;
     else if (st.busy) main = `<b>살펴보는 중이에요</b>${dots}`;
     else if (st.warn) main = `<b>보내기 전에 잠깐!</b><span class="pl-cta">눌러서 보기</span>`;
-    else if (!s) main = `<b>나비</b><span class="pl-now">눌러서 지금 만드는 걸 보여 주세요</span>`;
+    else if (!s) main = `<b>몽돌</b><span class="pl-now">눌러서 지금 만드는 걸 보여 주세요</span>`;
     else main = `<b>${allDone() ? "다 했어요! · " : ""}${s.n}단계</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
     const base = st.ping ? "look" : face()[0];
-    return `<button class="pill${st.ping || st.warn ? " ping" : ""}" data-act="pill" aria-expanded="false" aria-label="나비 펼치기">
+    return `<button class="pill${st.ping || st.warn ? " ping" : ""}" data-act="pill" aria-expanded="false" aria-label="몽돌 펼치기">
       <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { paws: true })}</span>${main}${st.feed.at ? `<span class="led on"></span>` : ""}</button>`;
   }
   // 띠 — 귀만 빼꼼. 마우스를 올리면 한 줄로 나온다
-  const stripHTML = () => `<button class="strip" data-act="strip" aria-label="나비 부르기" title="마우스를 올리면 나와요"><span class="ears" aria-hidden="true"></span><span class="zz" aria-hidden="true">z<b>z</b></span><i></i></button>`;
+  const stripHTML = () => `<button class="strip" data-act="strip" aria-label="몽돌 부르기" title="마우스를 올리면 나와요"><span class="ears" aria-hidden="true"></span><span class="zz" aria-hidden="true">z<b>z</b></span><i></i></button>`;
   function greetHTML(enter) {
     deskKeys = { Enter: { act: "open" } };
     return `<div class="isl greet${enter}"><section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
       <div class="mc-main"><p class="mc-say">${esc(C.greeting(new Date().getHours()))}</p>
-        <h2 class="mc-title">${st.back ? "다시 오셨네요!" : "안녕하세요! 저는 길잡이 고양이 나비예요."}</h2>
+        <h2 class="mc-title">${st.back ? "다시 오셨네요!" : "안녕하세요! 저는 길잡이 물범 몽돌이에요."}</h2>
         <p class="mc-sub">${st.back ? esc(st.back) : "지금 만들고 있는 걸 보여 주시면, 몇 단계쯤인지와 다음에 할 일을 알려 드려요. 평소엔 화면 위에 작게 있을게요."}</p>
         <div class="acts"><button class="b pri" data-act="open">${st.back ? "이어서 하기" : "보여 주기"}<kbd aria-hidden="true">Enter</kbd></button>
-          <span class="hint">${I.paw}${st.pets ? `우리는 ${esc(C.bond(st.pets).name)}예요` : "나비를 눌러 쓰다듬어 보세요"}</span></div></div></section></div>`;
+          <span class="hint">${I.bubble}${st.pets ? `우리는 ${esc(C.bond(st.pets).name)}예요` : "몽돌을 눌러 쓰다듬어 보세요"}</span></div></div></section></div>`;
   }
   function islandHTML(enter) {
     let body;
@@ -519,7 +519,7 @@
       <circle cx="30" cy="30" r="${r}" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${part.toFixed(1)} ${len.toFixed(1)}" transform="rotate(-90 30 30)"></circle>
       <text x="30" y="35" text-anchor="middle">${metCount()}/${met().length}</text></svg>`;
   }
-  // 집중 모드(iPhone) — [날짜·제목 + 톱니] · 나비 한마디 · 진행 카드 · 지금 결정할 것 하나. 나머지는 접힌 카드 하나에
+  // 집중 모드(iPhone) — [날짜·제목 + 톱니] · 몽돌 한마디 · 진행 카드 · 지금 결정할 것 하나. 나머지는 접힌 카드 하나에
   const phoneHead = (kicker, title) => `<div class="ph-top"><div class="ph-date">${esc(kicker)}</div>${gearBtn()}</div><h1 class="ph-title">${esc(title)}</h1>${settingsCard()}`;
   function phoneToday() {
     let h = phoneHead(today(), "오늘의 길잡이") + sayRow(72);
@@ -545,6 +545,47 @@
       `<nav class="tabbar glass" aria-label="화면">${TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" ${st.tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
   }
 
+  // ── 리퀴드 글래스 굴절 (PC, 크롬 계열만) ──
+  // 유리 가장자리에서 뒤 화면이 휘어 보이게 한다: 유리 크기에 맞춘 '밀어낼 방향 지도'(R=가로, G=세로, 128이 제자리)를 그려
+  // SVG 필터(feDisplacementMap)에 넣고 app.css가 backdrop-filter로 건다. 다른 브라우저는 이 필터를 무시하거나 유리째 지워서 크롬 계열만 켠다.
+  // 투명도 줄이기를 켠 사람에게는 켜지 않는다(app.css가 불투명한 판으로 바꾼다).
+  const REFRACT = !!navigator.userAgentData?.brands?.some((b) => b.brand === "Chromium") && !matchMedia("(prefers-reduced-transparency: reduce)").matches;
+  const BEZEL = 28;   // ponytail: 휘는 가장자리 폭(px) 하나로 고정 — 유리마다 다르게 하려면 refract의 표에 칸을 늘린다
+  function lensMap(w, h, r) {
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const g = c.getContext("2d"), img = g.createImageData(w, h), d = img.data, hx = w / 2 - r, hy = h / 2 - r;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      // 둥근 사각형의 가장자리까지 안쪽으로 잰 거리(depth)와 가장자리에서 바깥을 향하는 방향(nx, ny)
+      const dx = x + 0.5 - w / 2, dy = y + 0.5 - h / 2, px = Math.abs(dx) - hx, py = Math.abs(dy) - hy;
+      let depth, nx = 0, ny = 0;
+      if (px > 0 && py > 0) { const l = Math.hypot(px, py) || 1; depth = r - l; nx = px / l * Math.sign(dx); ny = py / l * Math.sign(dy); }
+      else if (px > py) { depth = r - px; nx = Math.sign(dx); } else { depth = r - py; ny = Math.sign(dy); }
+      const k = depth < BEZEL ? (1 - Math.max(depth, 0) / BEZEL) ** 2 : 0, i = (y * w + x) * 4;   // 가장자리에 가까울수록 세게
+      d[i] = 128 + nx * k * 127; d[i + 1] = 128 + ny * k * 127; d[i + 2] = 128; d[i + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    return c.toDataURL();
+  }
+  const lensKey = {};
+  if (REFRACT) {
+    document.body.insertAdjacentHTML("beforeend", `<svg width="0" height="0" style="position:absolute" aria-hidden="true">${["isl", "pill"].map((k) =>
+      `<filter id="lg-${k}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage result="map" preserveAspectRatio="none"></feImage>
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="70" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap></filter>`).join("")}</svg>`);
+    document.documentElement.classList.add("lg-on");
+  }
+  // 다시 그린 뒤 유리 크기가 바뀌었으면 지도를 새로 그린다 [이름, 고르는 말, 모서리 반지름]
+  function refract() {
+    if (!REFRACT || isPhone()) return;
+    for (const [k, sel, r] of [["isl", ".isl", 28], ["pill", ".pill", 25]]) {
+      const el = $nav.querySelector(sel), w = el ? el.offsetWidth : 0, h = el ? el.offsetHeight : 0;
+      if (!w || lensKey[k] === `${w}x${h}`) continue;
+      lensKey[k] = `${w}x${h}`;
+      const fe = document.querySelector(`#lg-${k} feImage`);
+      fe.setAttribute("width", w); fe.setAttribute("height", h); fe.setAttribute("href", lensMap(w, h, Math.min(r, h / 2)));
+    }
+  }
+  addEventListener("resize", refract);
+
   // 다시 그려도 쓰던 글 칸은 그대로 — 커서 자리와 스크롤까지 되돌린다
   function render() {
     save();
@@ -557,10 +598,11 @@
       if (b && b !== a) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; }
     }
     if (point) C.follow(isPhone() ? $phone : $nav, point);
+    refract();
   }
   PHONE.addEventListener("change", render);
 
-  // ── 나비와 교감 ──
+  // ── 몽돌과 교감 ──
   // 기분 바꾸기 — 다시 그리지 않고 그림의 class만 바꾼다(쓰다듬는 중에 그림이 사라지지 않게)
   function applyMood() {
     document.body.classList.toggle("dozing", sleepState === "sleep");   // 띠만 보일 때도 귀 옆에 z가 뜬다
@@ -571,7 +613,7 @@
   }
   function flash(mood, ms) { flashMood = { mood, until: Date.now() + ms }; applyMood(); setTimeout(applyMood, ms + 30); }
   const liveCat = () => (isPhone() ? $phone : $nav).querySelector("[data-live]");
-  // 나비의 한마디 — 잠깐 떴다 사라지는 말풍선. 화면 위쪽에 있으면 아래로 띄운다
+  // 몽돌의 한마디 — 잠깐 떴다 사라지는 말풍선. 화면 위쪽에 있으면 아래로 띄운다
   let sayTimer = 0;
   function say(text) {
     const host = liveCat();
@@ -579,7 +621,7 @@
     const r = host.getBoundingClientRect();
     let b = $fx.querySelector(".pop-say");
     if (!b) { b = document.createElement("div"); b.className = "pop-say"; b.setAttribute("role", "status"); $fx.appendChild(b); }
-    // 왼쪽에 빈자리가 있으면 나비 왼쪽(카드 글을 가리지 않게), 없으면 위, 화면 맨 위면 아래
+    // 왼쪽에 빈자리가 있으면 몽돌 왼쪽(카드 글을 가리지 않게), 없으면 위, 화면 맨 위면 아래
     const side = r.left > 250, below = !side && r.top < 90;
     b.textContent = text;
     b.classList.toggle("side", side);
@@ -592,7 +634,7 @@
   }
   const playOn = (host, cls) => { if (STILL || !host) return; host.classList.remove("squish", "purring", "hop"); void host.offsetWidth; host.classList.add(cls); };
   const center = (el, fy = 0.5) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height * fy]; };
-  // 쓰다듬기 — 눌렀으면 하트 몇 개와 한마디, 문질렀으면 그르릉. 친해진 정도가 올라가면 별이 튄다
+  // 쓰다듬기 — 눌렀으면 하트 몇 개와 한마디, 문질렀으면 흥얼흥얼. 친해진 정도가 올라가면 별이 튄다
   function pet(kind) {
     activity();
     const before = C.bond(st.pets).level;
@@ -603,12 +645,12 @@
     playOn(host, kind === "stroke" ? "purring" : "squish");
     if (host && !STILL) C.burst(...center(host, 0.3), "heart", kind === "stroke" ? 7 : 4);
     if (b.level > before) {
-      say(`나비와 더 친해졌어요! 이제 '${b.name}'`);
+      say(`몽돌과 더 친해졌어요! 이제 '${b.name}'`);
       if (host && !STILL) C.burst(...center(host), "star", 14, 360);
       if (st.sound) C.chime("level");
       setTimeout(render, 1800);   // 위쪽 줄의 하트를 새로
     } else {
-      say(kind === "stroke" ? "그르릉… 그르릉…" : C.petLine(st.pets));
+      say(kind === "stroke" ? "흥얼흥얼… 기분 좋아요" : C.petLine(st.pets));
       if (st.sound) C.chime("pet");
       if (st.tab === "learn") setTimeout(render, 1800);
     }
@@ -624,7 +666,7 @@
       if (STILL || !host) return;
       const big = kind === "stage" || kind === "finish";
       C.burst(...center(host), "star", big ? 16 : 10, big ? 360 : 160);
-      if (big) C.burst(...center(host), "paw", 6, 220);
+      if (big) C.burst(...center(host), "bubble", 6, 220);
       playOn(host, "hop");
     });
   }
@@ -634,7 +676,12 @@
   if (!STILL) {
     document.addEventListener("mousemove", (e) => {
       point = { x: e.clientX, y: e.clientY };
-      if (!raf) raf = requestAnimationFrame(() => { raf = 0; activity(); C.follow(isPhone() ? $phone : $nav, point); });
+      if (!raf) raf = requestAnimationFrame(() => {
+        raf = 0; activity(); C.follow(isPhone() ? $phone : $nav, point);
+        // 유리 위 반사광이 마우스를 따라온다 (app.css의 --lx·--ly)
+        const r = $nav.getBoundingClientRect();
+        $nav.style.setProperty("--lx", `${Math.round(point.x - r.left)}px`); $nav.style.setProperty("--ly", `${Math.round(point.y - r.top)}px`);
+      });
     });
     (function blink() {
       setTimeout(() => {
@@ -651,7 +698,7 @@
     point = { x: r.left + r.width * 0.35, y: r.top + 20 };
     C.follow($nav, point);
   });
-  // 좌우로 문지르면 쓰다듬은 것 (cat.js의 stroke가 센다)
+  // 좌우로 문지르면 쓰다듬은 것 (seal.js의 stroke가 센다)
   let strokeState = null;
   $nav.addEventListener("pointermove", (e) => {
     if (!e.target.closest("[data-pet]")) { strokeState = null; return; }
@@ -676,7 +723,7 @@
     if (s === "sleep") say("쿨… 쿨…");
   }, 3000);
 
-  // ── AI 호출 — 기다리는 동안 나비가 "살펴보는 중" ──
+  // ── AI 호출 — 기다리는 동안 몽돌이 "살펴보는 중" ──
   async function callAI(url, body) {
     st.busy = true; render();
     try {
@@ -742,7 +789,7 @@
     return askAI("/api/answer", { stage: s.n, hard: hardTexts(), question: st.question, text: st.text },
       "답을 받지 못했어요", (r) => { st.answer = r.answer; });
   }
-  // 고른 것을 작업 글에 한 줄로 적고 다시 살펴본다 — 정하는 건 사용자, 받아 적는 건 나비
+  // 고른 것을 작업 글에 한 줄로 적고 다시 살펴본다 — 정하는 건 사용자, 받아 적는 건 몽돌
   function decide() {
     const n = st.j.next, o = n.options[st.choice];
     st.text = `${st.text.trim()}\n${N.decisionLine(n.question, o)}`;
@@ -816,12 +863,12 @@
     "send-anyway": () => RETRY[st.warn.then](),
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
-    // 선택지를 한 번 누르면 정해진다 — 누른 자리에서 발자국이 튄다
+    // 선택지를 한 번 누르면 정해진다 — 누른 자리에서 물방울이 튄다
     "pick-opt": (i, el) => {
       if (st.busy || !st.j || !st.j.next) return;
       st.choice = i;
       const from = el || liveCat();
-      if (from && !STILL) C.burst(...center(from, 0.2), "paw", 5);
+      if (from && !STILL) C.burst(...center(from, 0.2), "bubble", 5);
       flash("happy", 1300);
       decide();
     },

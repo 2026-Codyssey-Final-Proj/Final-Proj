@@ -28,7 +28,7 @@ const FILES = {
   "/": ["index.html", "text/html"],
   "/app.css": ["app.css", "text/css"],
   "/app.js": ["app.js", "text/javascript"],
-  "/cat.js": ["cat.js", "text/javascript"],
+  "/seal.js": ["seal.js", "text/javascript"],
   "/navigator.js": ["navigator.js", "text/javascript"],
   "/scenario.js": ["scenario.js", "text/javascript"],
   "/share-rules.js": ["../share-prototype/share-rules.js", "text/javascript"],
