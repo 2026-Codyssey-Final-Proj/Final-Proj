@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from bash_path import BASH
+
 ROOT = Path(__file__).resolve().parents[2]
 HOOK = ROOT / ".claude" / "hooks" / "calendar-owner-guard.sh"
 SETTINGS = ROOT / ".claude" / "settings.json"
@@ -26,7 +28,7 @@ def _run(marker_exists=False, env_ok=None, tool_input=None):
     if env_ok is not None:
         env["CALENDAR_OWNER_OK"] = env_ok
     r = subprocess.run(
-        ["bash", str(HOOK)],
+        [BASH, str(HOOK)],
         input=json.dumps({"tool_input": tool_input or {"summary": "학교 / 과제 / 10/30까지"}}),
         capture_output=True, text=True, env=env,
     )

@@ -7,6 +7,8 @@ import json
 import subprocess
 from pathlib import Path
 
+from bash_path import BASH
+
 ROOT = Path(__file__).resolve().parents[2]
 HOOK = ROOT / ".claude" / "hooks" / "ask-calendar-invite.sh"
 SETTINGS = ROOT / ".claude" / "settings.json"
@@ -14,7 +16,7 @@ SETTINGS = ROOT / ".claude" / "settings.json"
 
 def _run(tool_input):
     r = subprocess.run(
-        ["bash", str(HOOK)],
+        [BASH, str(HOOK)],
         input=json.dumps({"tool_input": tool_input}),
         capture_output=True,
         text=True,

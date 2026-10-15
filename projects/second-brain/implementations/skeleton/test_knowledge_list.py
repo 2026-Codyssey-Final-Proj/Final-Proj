@@ -3,6 +3,7 @@
 원천은 지식 문서 하나하나이고, 목록은 고치지 않고 다시 만든다. 관찰·해석 본문은 담지 않고 행동 한 줄만 보인다(S4).
 인용이 2번 이상이면 "승격 후보" — Q4(다) 체크리스트로 올릴 후보를 7단계 회고에서 바로 쓰려는 표시다.
 """
+import os
 import tempfile
 from datetime import date
 from pathlib import Path
@@ -57,7 +58,8 @@ def test_long_or_multiline_action_is_cut_to_one_short_line():
 
 def test_pipes_in_text_do_not_break_the_table():
     r = _root()
-    _save(r, "파이프 | 이름", action="가 | 나")
+    name = "파이프 이름" if os.name == "nt" else "파이프 | 이름"  # Windows는 파일 이름에 '|'를 쓸 수 없다 — 그때는 행동 칸만 본다
+    _save(r, name, action="가 | 나")
     out = build_knowledge_list(r, TODAY)
     row = [l for l in out.splitlines() if "파이프" in l and l.startswith("|")][0]
     assert row.count("|") - row.count("\\|") == 7  # 6칸의 경계선 7개
