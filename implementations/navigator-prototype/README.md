@@ -50,6 +50,37 @@ node --env-file=.env server.js   # 화면 켜기
 - 한 번 부를 때 대략 2,000~3,000토큰이다(추정 — 시작 로그와 `smoke.js`가 실제 값을 보여 준다).
 - 모델은 더 싼 것(`claude-sonnet-5-5`, `claude-haiku-5-5`)으로 바꿔도 된다. 판정이 달라질 수 있으니 바꾼 뒤 한 번 확인한다.
 
+## 예산 통 — 용도별로 몫을 나눠 쓰기
+
+`.env`에 `NAV_PLAN=default`를 두면 한도가 **네 통**으로 나뉜다. 한 통을 다 쓰면 그 용도만 멈추고, **예비는 잠겨 있다.**
+
+| 통 | 몫 | 하는 일 | 켜는 법 |
+|---|---|---|---|
+| `dev` 규칙·프롬프트 | 40만 | 판정 규칙·프롬프트 다듬기, `live-check` | (기본) `node --env-file=.env live-check.js` |
+| `test` 사용자 테스트 | 20만 | 테스터 5명 — **한 명 몫 4만** | `NAV_PURPOSE=test NAV_TESTER=A node --env-file=.env server.js` |
+| `demo` 리허설·녹화 | 20만 | 시연용 진짜 답 녹화, 리허설 | `NAV_PURPOSE=demo node --env-file=.env record-demo.js` |
+| `reserve` 예비 | 20만 | 위 통이 다 찼을 때만 | `NAV_USE_RESERVE=1` 을 붙여야 쓴다 |
+
+- `NAV_PLAN`은 직접 적을 수도 있다: `NAV_PLAN=dev=300000,test=150000,demo=150000,reserve=100000`. 합이 전체 한도가 되고, `NAV_TOKEN_BUDGET`을 따로 주면 그것이 전체 상한이다.
+- **테스터**는 `NAV_TESTER=A`, `B`…로 이름을 줘서 사람마다 센다. 한 명이 자기 몫을 다 쓰면 그 사람만 막히고 다른 테스터는 계속된다(`NAV_TESTER_BUDGET`으로 직접 정할 수도 있다).
+- Windows PowerShell: `$env:NAV_PURPOSE="test"; $env:NAV_TESTER="A"; node --env-file=.env server.js`
+- 오타(`NAV_PURPOSE=dve`)는 "예산에 없어요"로 알려 준다.
+- **얼마나 썼나:** `node --env-file=.env usage.js` — 전체·통별·테스터별.
+
+## 녹화·재생 — 시연은 토큰 0으로
+
+진짜 AI의 답을 **한 번 받아 파일에 두고**, 리허설·시연·팀원 시험에서는 그 답을 재생한다. 재생하는 동안은 **키도 토큰도 필요 없다**(대회 장소에서 네트워크가 불안할 때의 백업이기도 하다).
+
+```bash
+node --env-file=.env record-demo.js --list     # 무엇을 녹화할지만 보기 (호출 없음)
+NAV_PURPOSE=demo node --env-file=.env record-demo.js   # 녹화 — 이미 한 것은 건너뜀, demo 통에서 차감
+NAV_REPLAY=recordings/demo.json node server.js         # 재생 — 키 없이 진짜 AI 답으로 시연
+```
+
+- 녹화 대상: 판정 9개와 1~4단계 설계도 초안·리뷰. 파일은 `recordings/demo.json`이고 **AI의 답만** 들어간다(키·사용자 글 없음). 팀이 같이 쓰도록 커밋해도 된다.
+- 재생은 **요청이 글자까지 같을 때만** 된다. 녹화에 없는 요청(직접 쓴 새 글, 직접 고친 설계도, 직접 한 질문)은 "녹화에 없는 요청이에요"로 알려 준다 → **시연 대본을 정해진 글로** 하면 된다.
+- 프롬프트·판정 규칙을 고쳤다면 요청이 달라지므로 `--again`으로 다시 녹화한다.
+
 ## 실제 AI 점검 — 토큰으로 제품을 시험하기
 
 ```bash
