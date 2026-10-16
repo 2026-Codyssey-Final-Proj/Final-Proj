@@ -77,3 +77,58 @@ test("사례는 연습 예시에서 만든다 — 글이 있는 예시마다 단
     assert.ok(c.text.length > 0 && Number.isInteger(c.stage) && Array.isArray(c.expect) && c.expect.length > 0, c.label);
   }
 });
+
+// ── --report: 결과를 기록 파일로 — 2026-10-17 ──
+const baseEnv = { provider: "api", model: "claude-sonnet-4", relay: true, compat: true };
+const sampleResult = {
+  rows: [
+    { label: "연습 1 · 하는 중", stage: 2, status: "ok", agree: 4, total: 4, diff: [], next: "'빠르게'를 숫자로 바꾸기", tokens: 1800 },
+    { label: "3단계 · 하는 중", stage: 3, status: "ok", agree: 1, total: 2, diff: [2], next: "x", tokens: 1700 },
+    { label: "4단계 · 하는 중", stage: 4, status: "format", tokens: 1500 },
+    { label: "5단계 · 하는 중", stage: 5, status: "error", error: "잠시 너무 많이 불렀어요 (429) — 조금 뒤에 다시 눌러 주세요", tokens: 0 },
+  ],
+  tokens: 5000, stoppedEarly: false,
+};
+
+test("기록: 환경·결과표·요약과 사람이 채울 두 칸이 있다", () => {
+  const sum = L.summarize(sampleResult, { budget: 100000, used: 5000 });
+  const md = L.reportMarkdown({ date: "2026-10-17", env: baseEnv, result: sampleResult, summary: sum, stages: [2, 3, 4, 5] });
+  assert.match(md, /^# 실제 AI 판정 점검 — 2026-10-17/m);
+  assert.match(md, /\| 모델 \| claude-sonnet-4 \|/);
+  assert.match(md, /\| 보내는 곳 \| 중계 서버 \|/);
+  assert.match(md, /\| 호환 모드 \| 예 \|/);
+  assert.match(md, /\| 2 \| 연습 1 · 하는 중 \| ✅ \| 4\/4 \| — \| 1,800 \|/);
+  assert.match(md, /\| 3 \| 3단계 · 하는 중 \| 🟡 \| 1\/2 \| 2번 \| 1,700 \|/);
+  assert.match(md, /\| 4 \| 4단계 · 하는 중 \| ❌ 형식 \|/);
+  assert.match(md, /\| 5 \| 5단계 · 하는 중 \| ❌ 호출 실패 \(429\)/);
+  assert.match(md, /성공 2 · 형식 오류 1 · 호출 실패 1/);
+  assert.match(md, /평균 1,250토큰/);
+  assert.match(md, /^## 발견해 고친 것/m);
+  assert.match(md, /^## 하지 못한 것/m);
+});
+
+test("기록에는 주소(호스트)·키·글 내용이 들어가지 않는다 — 중계 서버인지만 적는다", () => {
+  const md = L.reportMarkdown({ date: "2026-10-17", env: { ...baseEnv, host: "copa.example.test", key: "sk-ant-SECRET" }, result: sampleResult, summary: L.summarize(sampleResult, {}), stages: [2] });
+  assert.ok(!md.includes("copa.example.test") && !md.includes("sk-ant"));
+  const official = L.reportMarkdown({ date: "d", env: { ...baseEnv, relay: false, compat: false }, result: sampleResult, summary: L.summarize(sampleResult, {}), stages: [2] });
+  assert.match(official, /\| 보내는 곳 \| 공식 주소 \|/);
+  assert.match(official, /\| 호환 모드 \| 아니오 \|/);
+});
+
+test("기록: 중간에 멈췄으면 그 사실을 적는다", () => {
+  const md = L.reportMarkdown({ date: "d", env: baseEnv, result: { ...sampleResult, stoppedEarly: true }, summary: L.summarize(sampleResult, {}), stages: [2] });
+  assert.match(md, /되풀이될 것 같아 남은 예시는 부르지 않았/);
+});
+
+test("파일 쓰기: 이미 있으면 덮어쓰지 않고, --force면 덮어쓰고, 없는 폴더는 만든다", () => {
+  const fs = require("node:fs"), os = require("node:os"), path = require("node:path");
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "nav-rep-")), "docs", "v", "r.md");
+  assert.equal(L.writeReport(file, "첫째").ok, true);
+  assert.equal(fs.readFileSync(file, "utf8"), "첫째");
+  const again = L.writeReport(file, "둘째");
+  assert.equal(again.ok, false);
+  assert.match(again.reason, /이미 있는/);
+  assert.equal(fs.readFileSync(file, "utf8"), "첫째", "덮어쓰지 않았다");
+  assert.equal(L.writeReport(file, "둘째", { force: true }).ok, true);
+  assert.equal(fs.readFileSync(file, "utf8"), "둘째");
+});

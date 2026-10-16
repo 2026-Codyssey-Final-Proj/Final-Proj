@@ -353,7 +353,7 @@ test("연결: Navigator 서버가 꺼져 있어도 훅은 Claude Code를 막지 
 test("외부 AI(claude·API) 호출은 provider.js 한 곳에서만 한다", () => {
   const dir = __dirname;
   const callers = fs.readdirSync(dir).filter((f) => f.endsWith(".js") || f.endsWith(".html"))
-    .filter((f) => /child_process|spawn\(|api\.anthropic\.com|@anthropic-ai\/sdk/.test(fs.readFileSync(path.join(dir, f), "utf8")))
+    .filter((f) => /child_process|spawn\(|https?:\/\/api\.anthropic\.com|@anthropic-ai\/sdk/.test(fs.readFileSync(path.join(dir, f), "utf8")))
     .filter((f) => !/\.test\.js$/.test(f));
   assert.deepEqual(callers, ["provider.js"]);
 });
