@@ -33,7 +33,7 @@ test("쉬운 말: 연습 예시의 안내·선택지와 미리 만든 답에 전
       assert.deepEqual(jargonIn(t), [], t);
     }
   }
-  for (const a of S.answers[2]) assert.deepEqual(jargonIn(a), [], a);
+  for (const a of Object.values(S.answers).flat()) assert.deepEqual(jargonIn(a), [], a);
 });
 
 test("쉬운 말: 화면 파일(index.html·app.js·seal.js)에 전문 용어가 없다 (주석 제외)", () => {
@@ -167,11 +167,27 @@ test("가상 시나리오: 연습 1에서 선택지를 하나 고르면 '하나 
     assert.equal(j.criteria.filter((c) => c.met).length, 2);
   }
   assert.equal(S.judgeFixture(`${base.text}\n${Nav.decisionLine(q.question, "목록에 없는 답")}`), null);
-  assert.equal(S.examples.filter((e) => !e.hidden).length, 2, "버튼으로 보이는 연습은 두 개");
+  assert.equal(S.examples.filter((e) => !e.hidden && e.judgement.stage === 2).length, 2, "2단계 버튼으로 보이는 연습은 두 개");
 });
 
-test("미리 만든 답은 2단계 할 일과 개수가 같다", () => {
-  assert.equal(S.answers[2].length, Nav.STAGES[2].criteria.length);
+test("미리 만든 답은 0~7단계마다 할 일과 개수가 같다", () => {
+  for (let n = 0; n <= 7; n++) assert.equal((S.answers[n] || []).length, Nav.STAGES[n].criteria.length, `${n}단계`);
+});
+
+test("가상 시나리오: 2단계 밖의 0~7단계마다 '하는 중'은 못 넘어가고, 선택지를 고르면 '다 했어요'가 되어 넘어갈 수 있다", () => {
+  assert.equal(S.first.judgement.stage, 0, "시연은 0단계에서 시작");
+  for (const n of [0, 1, 3, 4, 5, 6, 7]) {
+    const shown = S.examples.filter((e) => !e.hidden && e.judgement.stage === n);
+    assert.equal(shown.length, 1, `${n}단계 버튼 하나`);
+    const base = shown[0], q = base.judgement.next;
+    assert.equal(Nav.canAdvance(base.judgement.criteria.map((c) => c.met), "yes"), false, `${n}단계 하는 중`);
+    for (const o of q.options) {
+      const j = Nav.parseJudgement(S.judgeFixture(`${base.text}
+${Nav.decisionLine(q.question, o)}`));
+      assert.ok(j && j.stage === n, `${n}단계: ${o}`);
+      assert.equal(Nav.canAdvance(j.criteria.map((c) => c.met), "yes"), true, `${n}단계: ${o}`);
+    }
+  }
 });
 
 test("judgePrompt: 모든 단계와 사용자 글이 들어가고, 고른 줄을 읽는 법을 알려 준다", () => {
@@ -322,17 +338,19 @@ test("설계도: 빈칸 [채워 주세요: …]을 찾아낸다", () => {
   assert.deepEqual(Nav.blanks("빈칸 없음"), []);
 });
 
-test("설계도 연습: 빈칸이 남으면 고칠 곳으로 알려 주고, 다 채우면 확정해도 된다고 한다", () => {
-  const d = S.drafts[2];
+test("설계도 연습: 1~4단계 초안마다 빈칸이 남으면 고칠 곳으로 알려 주고, 다 채우면 확정해도 된다고 한다", () => {
+  assert.deepEqual(Object.keys(S.drafts).map(Number), Nav.STAGES.filter((s) => s.doc).map((s) => s.n));
+  for (const [n, d] of Object.entries(S.drafts)) {
   assert.equal(Nav.blanks(d.draft).length, 3);
-  const first = S.reviewFixture(d.draft);
+  const first = S.reviewFixture(d.draft, n);
   assert.equal(first.ready, false);
   assert.equal(first.fix.length, 3);
   const filled = d.draft.replace(/\[채워 주세요:[^\]]*\]/g, "아직 모름 — 회의 뒤 정함");
-  const second = S.reviewFixture(filled);
+  const second = S.reviewFixture(filled, n);
   assert.deepEqual([second.ready, second.fix.length], [true, 0]);
   assert.ok(Nav.parseReview(first) && Nav.parseReview(second), "연습용 결과도 진짜 AI 결과와 같은 모양");
-  for (const t of [d.say, first.say, second.say, ...first.fix.map((f) => f.hint), d.draft]) assert.deepEqual(jargonIn(t), [], t);
+  for (const t of [d.say, first.say, second.say, ...first.good, ...second.good, ...first.fix.map((f) => f.hint), d.draft]) assert.deepEqual(jargonIn(t), [], t);
+  }
 });
 
 test("설계도: AI의 초안·다시 봐 준 결과는 모양이 맞을 때만 쓰고, 고칠 곳이 있으면 '확정해도 됨'을 믿지 않는다", () => {
