@@ -83,6 +83,8 @@ node implementations/navigator-prototype/server.js   # 🦭 → http://127.0.0.1
 python3 implementations/run_all_tests.py             # 🧪
 ```
 
+📘 **처음이라면 → [팀 작업 가이드](docs/00-overview/team-guide.md)** (내 키는 어디에 두고, 작업은 어디에 올리나)
+
 🔑 **각자 자기 것으로** 동작: 내 API 키(`ANTHROPIC_API_KEY`) → 없으면 이 컴퓨터의 Claude 구독 → 없으면 미리 만든 응답으로 시연 모드 · 켜는 법 → [프로토타입 README](implementations/navigator-prototype/README.md)
 
 ---
