@@ -1,4 +1,4 @@
-// claude-drafted: 2026-10-14, 2026-10-15, 2026-10-16(0~7단계 연습·마무리·빈칸 확인·지금 단계 계산) — Navigator 프로토타입 화면 동작.
+// claude-drafted: 2026-10-14, 2026-10-15, 2026-10-16(0~7단계 연습·마무리·빈칸 확인·지금 단계 계산·리퀴드 글래스 굴절) — Navigator 프로토타입 화면 동작.
 // 규칙·문구 판단은 navigator.js, 연습 예시는 scenario.js, 몽돌 그림·교감 도구는 seal.js, 실제 Claude 호출은 server.js.
 // 넓은 화면(PC) = 코딩 도구 창 위에 떠 있는 옆자리 동료. 2026-10-15 "가로 카드 시안대로" 다시 짬:
 //   띠 → 한 줄 → 펼침(위: 아이콘 줄, 아래: 지금 결정할 것 하나를 담은 가로 카드). 카드는 상황마다 색·몽돌 표정·뱃지가 다르다
@@ -571,7 +571,11 @@
   // SVG 필터(feDisplacementMap)에 넣고 app.css가 backdrop-filter로 건다. 다른 브라우저는 이 필터를 무시하거나 유리째 지워서 크롬 계열만 켠다.
   // 투명도 줄이기를 켠 사람에게는 켜지 않는다(app.css가 불투명한 판으로 바꾼다).
   const REFRACT = !!navigator.userAgentData?.brands?.some((b) => b.brand === "Chromium") && !matchMedia("(prefers-reduced-transparency: reduce)").matches;
-  const BEZEL = 28;   // ponytail: 휘는 가장자리 폭(px) 하나로 고정 — 유리마다 다르게 하려면 refract의 표에 칸을 늘린다
+  const BEZEL = 14, SCALE = 50;   // ponytail: 휘는 가장자리 폭(px)·가장 세게 미는 거리(SCALE/2 px) 하나로 고정 — 유리마다 다르게 하려면 refract의 표에 칸을 늘린다
+  // 볼록한 가장자리(애플식 곡선 h=3·(1-(1-t)⁴)^¼ — 높이는 테두리 폭의 3배, t=가장자리에서 안쪽으로 0→1)를 지나는 빛이 유리(굴절률 1.5)에서 꺾이는 정도.
+  // 바깥 끝에서 가장 세고 안쪽 끝에서 0 — 바깥 끝 값으로 나눠 0~1로 쓴다
+  const bend = (t) => { const a = Math.atan(3 * (1 - t) ** 3 / (1 - (1 - t) ** 4) ** 0.75); return Math.tan(a - Math.asin(Math.sin(a) / 1.5)); };
+  const BEND0 = bend(0);
   function lensMap(w, h, r) {
     const c = document.createElement("canvas"); c.width = w; c.height = h;
     const g = c.getContext("2d"), img = g.createImageData(w, h), d = img.data, hx = w / 2 - r, hy = h / 2 - r;
@@ -581,8 +585,9 @@
       let depth, nx = 0, ny = 0;
       if (px > 0 && py > 0) { const l = Math.hypot(px, py) || 1; depth = r - l; nx = px / l * Math.sign(dx); ny = py / l * Math.sign(dy); }
       else if (px > py) { depth = r - px; nx = Math.sign(dx); } else { depth = r - py; ny = Math.sign(dy); }
-      const k = depth < BEZEL ? (1 - Math.max(depth, 0) / BEZEL) ** 2 : 0, i = (y * w + x) * 4;   // 가장자리에 가까울수록 세게
-      d[i] = 128 + nx * k * 127; d[i + 1] = 128 + ny * k * 127; d[i + 2] = 128; d[i + 3] = 255;
+      const k = depth < BEZEL ? bend(Math.max(depth, 0) / BEZEL) / BEND0 : 0, i = (y * w + x) * 4;
+      // 안쪽 화면을 끌어온다(- 방향) — 바깥은 유리 밖이라 필터가 볼 수 없어 바깥으로 끌면 거의 안 보였다(2026-10-16 화면 비교)
+      d[i] = 128 - nx * k * 127; d[i + 1] = 128 - ny * k * 127; d[i + 2] = 128; d[i + 3] = 255;
     }
     g.putImageData(img, 0, 0);
     return c.toDataURL();
@@ -591,7 +596,7 @@
   if (REFRACT) {
     document.body.insertAdjacentHTML("beforeend", `<svg width="0" height="0" style="position:absolute" aria-hidden="true">${["isl", "pill"].map((k) =>
       `<filter id="lg-${k}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feImage result="map" preserveAspectRatio="none"></feImage>
-        <feDisplacementMap in="SourceGraphic" in2="map" scale="70" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap></filter>`).join("")}</svg>`);
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="${SCALE}" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap></filter>`).join("")}</svg>`);
     document.documentElement.classList.add("lg-on");
   }
   // 다시 그린 뒤 유리 크기가 바뀌었으면 지도를 새로 그린다 [이름, 고르는 말, 모서리 반지름]
@@ -699,9 +704,6 @@
       point = { x: e.clientX, y: e.clientY };
       if (!raf) raf = requestAnimationFrame(() => {
         raf = 0; activity(); C.follow(isPhone() ? $phone : $nav, point);
-        // 유리 위 반사광이 마우스를 따라온다 (app.css의 --lx·--ly)
-        const r = $nav.getBoundingClientRect();
-        $nav.style.setProperty("--lx", `${Math.round(point.x - r.left)}px`); $nav.style.setProperty("--ly", `${Math.round(point.y - r.top)}px`);
       });
     });
     (function blink() {
