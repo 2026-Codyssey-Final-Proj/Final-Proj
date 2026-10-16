@@ -2,8 +2,7 @@
 .claude/identity.local.md
 
 # 비밀값
-.env
-.env.*
+.env*
 *.pem
 *.key
 

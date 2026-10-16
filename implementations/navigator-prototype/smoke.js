@@ -7,7 +7,7 @@ const SCHEMA = { type: "object", properties: { ok: { type: "boolean" } }, requir
 
 (async () => {
   const u = usage();
-  console.log(`공급자: ${u.provider === "api" ? `내 API 키 (${u.model})` : "이 컴퓨터에 로그인된 Claude Code"}`);
+  console.log(`공급자: ${u.provider === "api" ? `내 API 키 (${u.model}) · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}` : "이 컴퓨터에 로그인된 Claude Code"}`);
   const r = await callClaude("ok 칸을 true로 답하세요.", SCHEMA);
   if (r.error) { console.error(`실패: ${r.error}`); process.exit(1); }
   const after = usage();
