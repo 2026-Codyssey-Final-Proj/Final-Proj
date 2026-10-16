@@ -1,4 +1,4 @@
-/* claude-drafted: 2026-10-14, 2026-10-15 — Navigator 프로토타입 모양. 목업(Mac·iPhone 느낌: 반투명 유리, 크게 둥근 모서리, 파란색 하나)을 따른다.
+/* claude-drafted: 2026-10-14, 2026-10-15, 2026-10-16 — Navigator 프로토타입 모양. 목업(Mac·iPhone 느낌: 반투명 유리, 크게 둥근 모서리, 파란색 하나)을 따른다.
    넓은 화면 = 코딩 도구 창 위에 떠 있는 옆자리 동료 — 2026-10-15 가로 카드 시안대로: 위 아이콘 줄 + 지금 결정할 것 하나를 담은 가로 카드.
    카드 색은 상황(tone-*)마다 다르고, 다크 모드도 같은 이름의 색을 다시 정한다. 600px 이하 = iPhone(오늘의 길잡이 앱) — 이번에 바꾸지 않았다.
    2026-10-15 길잡이를 물범 '몽돌'로, PC는 리퀴드 글래스(네이비+아이스 블루)로 — 맨 아래 "PC 리퀴드 글래스"가 위의 색을 PC에서만 덮어쓴다. */
@@ -397,16 +397,16 @@ button.pet:focus-visible{outline-offset:4px}
     linear-gradient(80deg,transparent 58%,rgba(140,190,255,.08) 63%,transparent 70%) fixed,
     radial-gradient(ellipse at 70% -10%,#3556C9 0%,transparent 55%) fixed,linear-gradient(180deg,#1A2A86 0%,#0E1850 55%,#091142 100%) fixed}
   .window{border:1px solid rgba(255,255,255,.08)}
-  /* 유리 — 섬과 한 줄. 블러 한 겹이 아니라 빛의 층을 쌓는다 (velog 「[Web] Apple Liquid Glass UI 패턴」, 2026-10-15):
-     ① 아주 옅은 바탕 + 블러(진하면 젖빛 플라스틱이 된다) ② 위가 밝은 프레넬 ③ 마우스를 따라오는 반사광(app.js가 --lx·--ly)
-     ④ 얇은 테두리 + 위 하이라이트·아래 그림자 ⑤ 크롬 계열이면 가장자리 굴절(app.js의 refract → #lg-isl·#lg-pill) */
-  .isl,.pill{background:radial-gradient(circle 380px at var(--lx,28%) var(--ly,-30%),rgba(255,255,255,.15),transparent 70%),
-      linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,0) 34%),rgba(26,42,116,.26);
-    -webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);border:1px solid rgba(255,255,255,.16);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,20,.35),inset 0 0 28px rgba(255,255,255,.06),0 24px 60px rgba(0,4,30,.55)}
-  .lg-on .isl{-webkit-backdrop-filter:url(#lg-isl) blur(7px) saturate(150%);backdrop-filter:url(#lg-isl) blur(7px) saturate(150%)}
-  .lg-on .pill{-webkit-backdrop-filter:url(#lg-pill) blur(4px) saturate(150%);backdrop-filter:url(#lg-pill) blur(4px) saturate(150%)}
-  .pill.ping{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,20,.35),0 10px 30px rgba(0,4,30,.45),0 0 0 2px var(--acc)}
+  /* 유리 — 섬과 한 줄. 2026-10-16 Threads @dddesign.io 「리퀴드 글래스 구현하기」 네 조건대로:
+     ① 표면은 볼록(애플식) ② 휘는 곳은 가장자리 14px만 ③ 왜곡은 은은하지만 보이게 — 그래서 블러를 낮춰 굴절이 뭉개지지 않게
+     ④ 빛은 테두리에만 얇게(왼쪽 위가 밝고 오른쪽 아래가 옅다). 면 전체를 덮던 반사광·프레넬 띠는 뺐다.
+     굴절은 크롬 계열에서만(app.js의 refract → #lg-isl·#lg-pill). 다른 브라우저는 옅은 바탕 + 블러 + 테두리 빛까지만. */
+  .isl,.pill{background:rgba(26,42,116,.26);border:0;
+    -webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);
+    box-shadow:inset 1px 1px 0 rgba(255,255,255,.6),inset -1px -1px 0 rgba(255,255,255,.2),inset 0 0 0 .5px rgba(255,255,255,.14),0 24px 60px rgba(0,4,30,.55)}
+  .lg-on .isl{-webkit-backdrop-filter:url(#lg-isl) blur(3px) saturate(150%);backdrop-filter:url(#lg-isl) blur(3px) saturate(150%)}
+  .lg-on .pill{-webkit-backdrop-filter:url(#lg-pill) blur(2px) saturate(150%);backdrop-filter:url(#lg-pill) blur(2px) saturate(150%)}
+  .pill.ping{box-shadow:inset 1px 1px 0 rgba(255,255,255,.6),inset -1px -1px 0 rgba(255,255,255,.2),0 10px 30px rgba(0,4,30,.45),0 0 0 2px var(--acc)}
   /* 스프링 — 끝에서 살짝 넘쳤다 돌아온다(cubic-bezier 두 번째 값이 1보다 큼) */
   .enter{animation:drop .42s cubic-bezier(.34,1.56,.64,1)}
   .b{transition:transform .35s cubic-bezier(.34,1.56,.64,1),box-shadow .15s ease,background .15s}

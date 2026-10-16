@@ -133,7 +133,10 @@ async function handle(req, res) {
   }
   if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
 
-  if (req.url === "/api/judge") return ask(res, Nav.judgePrompt(body.text), Nav.JUDGE_SCHEMA, as("judgement", Nav.parseJudgement), "판정");
+  if (req.url === "/api/judge") {
+    if (!Number.isInteger(body.stage) || !Nav.STAGES[body.stage]) return refuse(res, "지금 단계가 없음");
+    return ask(res, Nav.judgePrompt(body.text, body.stage), Nav.JUDGE_SCHEMA, as("judgement", (d) => Nav.parseJudgement(d, body.text, body.stage)), "판정");
+  }
   if (req.url === "/api/answer") {
     const hard = Array.isArray(body.hard) ? body.hard.map(String) : [];
     if (!Nav.STAGES[body.stage] || !Nav.filled(body.question)) return refuse(res, "질문이 비어 있음");

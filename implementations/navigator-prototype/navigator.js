@@ -1,4 +1,4 @@
-// claude-drafted: 2026-10-14 — 사용자 요청("동아리 행사 등록 앱 가상 프로젝트로, 설계도 루프는 준비 중",
+// claude-drafted: 2026-10-14, 2026-10-16(판정 규칙 ①·② — 근거 구절 확인, 지금 단계는 코드가 정함) — 사용자 요청("동아리 행사 등록 앱 가상 프로젝트로, 설계도 루프는 준비 중",
 // "CouCou UX를 더 가져오고, 비개발자가 알아듣는 쉬운 말로", "목업으로 구현", "아직 안 된 것도 모두 만들어")으로 Claude가 썼다.
 // 설계도(FR-3)는 2026-10-14에 "준비 중"에서 실제 동작으로 바꿨다 — 초안은 AI, 고치기·확정은 사람.
 // Navigator 규칙 — 단계 데이터와 판단 규칙. 서버·DB 없이 순수 함수만. 화면(app.js)과 서버(server.js)가 같이 쓴다.
@@ -148,7 +148,7 @@
   const obj = (properties) => ({ type: "object", required: Object.keys(properties), properties });
   const list = (items, min, max) => ({ type: "array", items, ...(min ? { minItems: min } : {}), ...(max ? { maxItems: max } : {}) });
   const JUDGE_SCHEMA = obj({
-    stage: { type: "integer", minimum: 0, maximum: 7 }, reason: str,
+    reason: str,
     criteria: list(obj({ met: { type: "boolean" }, evidence: { type: "string" } })),
     next: obj({ what: str, why: str, question: str, options: list(str, 2, 4), action: str }),
   });
@@ -169,19 +169,20 @@
     [`${ROLE} ${intro[0]}`, ...intro.slice(1), "", "규칙:", ...[...rules, ...PLAIN].map((r) => `- ${r}`), "", ...tags.flat()].join("\n");
   // 단계의 할 일 — "(1) … (2) …". terms면 [용어]까지
   const todoOf = (s, terms) => s.criteria.map((x, i) => `(${i + 1}) ${x.text}${terms && x.term ? ` [${x.term}]` : ""}`).join(" ");
-  const stageTable = () => STAGES.map((s) => `${s.n}단계 ${s.title}: ${s.does}. 할 일: ${todoOf(s, true)}`).join("\n");
 
-  const judgePrompt = (text) => prompt(["아래 0~7단계로 사용자가 지금 어디쯤인지 알려 준다.", stageTable()], [
+  // 단계는 코드가 정한다(게이트를 통과한 다음 단계) — AI는 그 단계의 할 일만 본다
+  const judgePrompt = (text, stage) => { const s = STAGES[stage]; return prompt([`사용자는 지금 ${s.n}단계 "${s.title}"(${s.does})를 하고 있다. 이 단계의 할 일을 했는지 알려 준다.`,
+    `할 일: ${todoOf(s, true)}`], [
     "작업 내용에 적힌 것만 근거로 쓴다. 적혀 있지 않으면 met=false이고 evidence는 빈 문자열이다. 지어내지 않는다.",
-    "evidence는 작업 내용에서 그대로 따온 짧은 구절이다.",
-    "criteria는 고른 단계의 할 일과 같은 개수, 같은 순서로 낸다.",
-    `reason은 지금 어디쯤인지와 잘한 점을 ${SHORT}으로 말한다(몽돌의 말풍선에 그대로 나온다).`,
+    "evidence는 작업 내용에서 글자 그대로 따온 짧은 구절이다. 바꿔 쓰면 근거로 치지 않는다.",
+    `criteria는 이 단계의 할 일과 같은 개수(${s.criteria.length}개), 같은 순서로 낸다.`,
+    `reason은 이 단계에서 어디쯤인지와 잘한 점을 ${SHORT}으로 말한다(몽돌의 말풍선에 그대로 나온다).`,
     "next는 아직 안 한 일 중 가장 먼저 할 하나다. 모두 했으면 다음 단계로 넘어가기 전 확인을 해 보자고 안내한다.",
     "next.what은 20자 안팎의 짧은 할 일 이름이다(예: '빠르게'를 숫자로 바꾸기). 설명은 why, 방법은 action에 쓴다.",
     "next.question은 그 일을 하려면 사용자가 정해야 할 것 하나를 묻는 짧은 질문이다.",
     "next.options는 그 질문의 선택지 2~4개다. 하나에 25자 안팎. 모르면 고를 수 있게 '아직 모름'류를 하나 넣는다. 고르는 건 사용자다.",
     "작업 내용에 '→ …로 정했어요.'라고 적힌 줄은 사용자가 이미 고른 것이다. 그 일은 했다고 보고 다음 일로 넘어간다.",
-  ], tag("작업내용", text));
+  ], tag("작업내용", text)); };
 
   function answerPrompt(stage, hard, question, text) {
     const s = STAGES[stage];
@@ -225,16 +226,23 @@
     const fix = o.fix.slice(0, 3).map((f) => pick(f, FIX));
     return { say: o.say, good: o.good.slice(0, 3), fix, ready: o.ready && fix.length === 0 };
   }
-  // 할 일 문장은 우리 데이터로 덮는다
-  function parseJudgement(o) {
-    const s = o && STAGES[o.stage];
-    if (!s || !Number.isInteger(o.stage) || !filled(o.reason)) return null;
+  // 근거 구절이 사용자 글에 실제로 있는가 — 띄어쓰기·줄바꿈 차이만 봐준다. 빈 구절은 근거가 아니다
+  const squash = (t) => String(t || "").replace(/\s+/g, " ").trim();
+  const found = (quote, text) => !!squash(quote) && squash(text).includes(squash(quote));
+  // 할 일 문장은 우리 데이터로 덮는다. text: 판정에 넘긴 사용자 글 — 거기 없는 근거로는 '했다'가 되지 않는다
+  // stage: 코드가 정한 지금 단계 — AI가 다른 단계를 말해도 따르지 않는다
+  function parseJudgement(o, text, stage) {
+    const s = Number.isInteger(stage) && STAGES[stage];
+    if (!s || !o || !filled(o.reason)) return null;
     if (!Array.isArray(o.criteria) || o.criteria.length !== s.criteria.length || o.criteria.some((x) => !x || typeof x.met !== "boolean")) return null;
     const n = o.next;
     if (!has(n, NEXT) || !Array.isArray(n.options) || n.options.length < 2 || n.options.length > 4 || !n.options.every(filled)) return null;
     return {
-      stage: o.stage, reason: o.reason,
-      criteria: s.criteria.map((x, i) => ({ text: x.text, term: x.term, met: o.criteria[i].met, evidence: String(o.criteria[i].evidence || "") })),
+      stage, reason: o.reason,
+      criteria: s.criteria.map((x, i) => {
+        const ev = found(o.criteria[i].evidence, text) ? squash(o.criteria[i].evidence) : "";
+        return { text: x.text, term: x.term, met: o.criteria[i].met && !!ev, evidence: ev };
+      }),
       next: { ...pick(n, NEXT), options: n.options.slice() },
     };
   }
