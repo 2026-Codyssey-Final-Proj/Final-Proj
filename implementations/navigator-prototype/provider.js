@@ -14,9 +14,11 @@ const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const REC = require("./recording.js");
 
 const TIMEOUT_MS = 90_000;
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
+const OFFICIAL_HOST = "api.anthropic.com";
 const DEFAULTS = { model: "claude-opus-5-5", maxTokens: 2048, effort: "low" };
 
 const positive = (v, fallback) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : fallback; };
@@ -26,25 +28,84 @@ const settings = (env) => ({
   effort: env.NAV_EFFORT || DEFAULTS.effort,
   fallback: env.NAV_FALLBACK !== "off",
   budget: positive(env.NAV_TOKEN_BUDGET, null),
-  compat: env.NAV_COMPAT === "1" || (env.NAV_COMPAT !== "0" && Boolean(env.ANTHROPIC_BASE_URL)),
+  compat: env.NAV_COMPAT === "1" || (env.NAV_COMPAT !== "0" && Boolean(env.ANTHROPIC_BASE_URL) && hostOf(env) !== OFFICIAL_HOST),   // 중계 서버일 때만 자동
+  plan: parsePlan(env.NAV_PLAN),
+  purpose: env.NAV_PURPOSE || "dev",
+  tester: env.NAV_TESTER || null,
+  useReserve: env.NAV_USE_RESERVE === "1",
 });
+// 테스터 한 명의 몫: 직접 정하거나, 계획이 있으면 사용자 테스트 몫을 5명으로 나눈다
+const testerBudgetOf = (env) => positive(env.NAV_TESTER_BUDGET, (() => { const pl = parsePlan(env.NAV_PLAN); return pl && pl.test ? Math.floor(pl.test / TESTERS) : null; })());
 // 어디로 보내는지 호스트만 알린다 — 경로·쿼리에 비밀이 섞여 있어도 새지 않게
-const hostOf = (env) => { try { return new URL(env.ANTHROPIC_BASE_URL || "https://api.anthropic.com").host; } catch { return "(주소 형식 오류)"; } };
+function hostOf(env) { try { return new URL(env.ANTHROPIC_BASE_URL || `https://${OFFICIAL_HOST}`).host; } catch { return "(주소 형식 오류)"; } }
 const providerOf = (env) => (env.ANTHROPIC_API_KEY ? "api" : "cli");
 
+// 예산 통 — 용도별로 몫을 나눈다. 'default'는 규칙·프롬프트 40만 / 사용자 테스트 20만 / 리허설·녹화 20만 / 예비 20만.
+// 예비는 잠겨 있다가 NAV_USE_RESERVE=1일 때만 쓴다.
+const DEFAULT_PLAN = { dev: 400000, test: 200000, demo: 200000, reserve: 200000 };
+function parsePlan(text) {
+  if (!text) return null;
+  if (String(text).trim() === "default") return { ...DEFAULT_PLAN };
+  const plan = {};
+  for (const part of String(text).split(",")) {
+    const [k, v] = part.split("=").map((s) => s.trim());
+    const n = Number(v);
+    if (k && Number.isFinite(n) && n > 0) plan[k] = n;
+  }
+  return Object.keys(plan).length ? plan : null;
+}
+const TESTERS = 5;   // 사용자 테스트 5명 기준으로 테스터 한 명의 몫을 정한다
+
 // ── 사용량 — 이 사람의 키로 쓴 토큰 수. 서버를 다시 켜도 이어지게 파일에 숫자만 남긴다 ──
+const blank = () => ({ used: 0, byPurpose: {}, byTester: {} });
+function normalize(x) {   // 예전 숫자·{used}만 있는 파일도 읽는다
+  if (typeof x === "number") return { ...blank(), used: Number.isFinite(x) && x >= 0 ? x : 0 };
+  if (!x || typeof x !== "object") return blank();
+  const num = (o) => Object.fromEntries(Object.entries(o && typeof o === "object" ? o : {}).filter(([, v]) => Number.isFinite(v) && v >= 0));
+  return { used: Number.isFinite(x.used) && x.used >= 0 ? x.used : 0, byPurpose: num(x.byPurpose), byTester: num(x.byTester) };
+}
 const fileStore = (file) => ({
-  load() { try { const n = JSON.parse(fs.readFileSync(file, "utf8")).used; return Number.isFinite(n) && n >= 0 ? n : 0; } catch { return 0; } },
-  save(n) { try { fs.writeFileSync(file, JSON.stringify({ used: n }), { mode: 0o600 }); } catch { /* 못 써도 호출은 계속 */ } },
+  load() { try { return normalize(JSON.parse(fs.readFileSync(file, "utf8"))); } catch { return blank(); } },
+  save(state) { try { fs.writeFileSync(file, JSON.stringify(state), { mode: 0o600 }); } catch { /* 못 써도 호출은 계속 */ } },
 });
-function createMeter(budget, store) {
-  let used = store.load();
-  return {
-    get used() { return used; },
-    budget,
-    state() { return !budget ? "ok" : used >= budget ? "full" : used >= budget * 0.8 ? "warn" : "ok"; },
-    add(n) { used += n; store.save(used); },
+
+function createMeter(budget, store, { plan = null, testerBudget = null } = {}) {
+  let s = normalize(store.load());
+  const total = budget || (plan ? Object.values(plan).reduce((n, v) => n + v, 0) : null);
+  const spent = (bucket) => s.byPurpose[bucket] || 0;
+  const fmt = (n) => n.toLocaleString();
+  const meter = {
+    get used() { return s.used; },
+    budget: total,
+    state() { return !total ? "ok" : s.used >= total ? "full" : s.used >= total * 0.8 ? "warn" : "ok"; },
+    // 부르기 전에: 이 용도·테스터가 더 써도 되나? 어느 통에 쌓을지도 알려 준다
+    gate({ purpose = "dev", tester = null, reserve = false } = {}) {
+      if (tester && testerBudget && (s.byTester[tester] || 0) >= testerBudget) return { ok: false, reason: `테스터 '${tester}'의 몫(${fmt(testerBudget)}토큰)을 다 썼어요` };
+      if (!plan) return meter.state() === "full"
+        ? { ok: false, reason: "이 키의 토큰 한도에 다다랐어요 — 보기 방식을 '연습용 예시'로 바꾸거나 NAV_TOKEN_BUDGET을 확인하세요" }
+        : { ok: true, bucket: null };
+      if (total && s.used >= total) return { ok: false, reason: "이 키의 전체 토큰 한도에 다다랐어요 — NAV_TOKEN_BUDGET을 확인하세요" };
+      const limit = plan[purpose];
+      if (limit === undefined || purpose === "reserve") return { ok: false, reason: `NAV_PURPOSE '${purpose}'는 예산에 없어요 (${Object.keys(plan).filter((k) => k !== "reserve").join("·")})` };
+      if (spent(purpose) < limit) return { ok: true, bucket: purpose };
+      if (reserve && plan.reserve && spent("reserve") < plan.reserve) return { ok: true, bucket: "reserve" };
+      return { ok: false, reason: reserve ? "예비까지 다 썼어요 — 한도를 다시 정해야 해요" : `'${purpose}' 몫(${fmt(limit)}토큰)을 다 썼어요 — 예비를 쓰려면 NAV_USE_RESERVE=1` };
+    },
+    add(n, { bucket = null, tester = null } = {}) {
+      s.used += n;
+      if (bucket) s.byPurpose[bucket] = spent(bucket) + n;
+      if (tester) s.byTester[tester] = (s.byTester[tester] || 0) + n;
+      store.save(s);
+    },
+    snapshot() {
+      return {
+        used: s.used, budget: total,
+        buckets: plan ? Object.fromEntries(Object.entries(plan).map(([k, limit]) => [k, { used: spent(k), limit }])) : null,
+        testers: { ...s.byTester },
+      };
+    },
   };
+  return meter;
 }
 
 // ── API 호출 ──
@@ -107,26 +168,50 @@ function callCli(prompt, schema) {
   });
 }
 
+// 녹화 파일을 환경에서 읽는다 — NAV_REPLAY: 재생(토큰 0), NAV_RECORD: 진짜로 부른 답을 저장
+const replayFrom = (env) => (env.NAV_REPLAY ? REC.load(env.NAV_REPLAY) : null);
+const recorderFrom = (env) => (env.NAV_RECORD ? (key, data) => { const items = REC.load(env.NAV_RECORD); items[key] = data; REC.save(env.NAV_RECORD, items); } : null);
+
 // 호출 함수를 만든다. makeClient는 키가 있을 때만, 처음 부를 때 한 번 SDK를 읽는다(SDK가 없는 사람도 다른 방식은 쓴다)
-function createCaller({ env = process.env, callCli: cli = callCli, makeClient, meter }) {
+function createCaller({ env = process.env, callCli: cli = callCli, makeClient, meter, replay = replayFrom(env), record = recorderFrom(env) }) {
   const cfg = settings(env);
   let client = null;
   return async function callClaude(prompt, schema) {
-    if (providerOf(env) === "cli") return cli(prompt, schema);
-    if (meter.state() === "full") return { error: "이 키의 토큰 한도에 다다랐어요 — 보기 방식을 '연습용 예시'로 바꾸거나 NAV_TOKEN_BUDGET을 확인하세요" };
-    try { client = client || makeClient(); } catch { return { error: "API 호출 도구가 없어요 — implementations/navigator-prototype에서 npm install을 한 번 해 주세요" }; }
-    const r = await callApi(client, cfg, prompt, schema);
-    if (r.tokens) meter.add(r.tokens);
+    const key = REC.keyOf(prompt, schema);
+    if (replay) {   // 재생 중에는 AI를 부르지 않는다 — 키도 한도도 필요 없다
+      return replay[key] !== undefined ? { data: replay[key], tokens: 0, replayed: true }
+        : { error: "녹화에 없는 요청이에요 — 같은 글·같은 단계로 node --env-file=.env record-demo.js를 다시 돌려 녹화하세요" };
+    }
+    let r;
+    if (providerOf(env) === "cli") r = await cli(prompt, schema);
+    else {
+      const gate = meter.gate({ purpose: cfg.purpose, tester: cfg.tester, reserve: cfg.useReserve });
+      if (!gate.ok) return { error: gate.reason };
+      try { client = client || makeClient(); } catch { return { error: "API 호출 도구가 없어요 — implementations/navigator-prototype에서 npm install을 한 번 해 주세요" }; }
+      r = await callApi(client, cfg, prompt, schema);
+      if (r.tokens) meter.add(r.tokens, { bucket: gate.bucket, tester: cfg.tester });
+    }
+    if (record && r.data !== undefined) record(key, r.data);
     return r;
   };
 }
 
-const describe = (env, meter) => ({ provider: providerOf(env), model: settings(env).model, host: hostOf(env), compat: settings(env).compat, used: meter.used, budget: meter.budget, state: meter.state() });
+const describe = (env, meter) => {
+  const snap = meter.snapshot();
+  return {
+    provider: providerOf(env), model: settings(env).model, host: hostOf(env), compat: settings(env).compat,
+    used: meter.used, budget: meter.budget, state: meter.state(),
+    ...(snap.buckets ? { buckets: snap.buckets } : {}),
+    ...(Object.keys(snap.testers).length ? { testers: snap.testers } : {}),
+    ...(env.NAV_REPLAY ? { replay: true } : {}),
+    ...(env.NAV_RECORD ? { record: true } : {}),
+  };
+};
 
 // 이 프로세스의 기본값 — 환경과 파일 저장소를 읽는다
 const usageFile = process.env.NAV_USAGE_FILE || path.join(os.homedir(), ".navigator-usage.json");
-const meter = createMeter(settings(process.env).budget, fileStore(usageFile));
+const meter = createMeter(settings(process.env).budget, fileStore(usageFile), { plan: settings(process.env).plan, testerBudget: testerBudgetOf(process.env) });
 const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); return new Anthropic(); };   // 키는 ANTHROPIC_API_KEY에서 SDK가 읽는다
 const callClaude = createCaller({ makeClient, meter });
 
-module.exports = { callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe };
+module.exports = { callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN };
