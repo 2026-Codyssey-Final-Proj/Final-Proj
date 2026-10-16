@@ -1,0 +1,54 @@
+<!-- claude-drafted: 2026-10-17 — 이재엽의 요청("각자의 토큰을 사용할 수 있도록")으로 Claude가 썼다. -->
+
+# Navigator 프로토타입
+
+단계 판정·설계도·알림을 보여 주는 로컬 화면이다. 서버는 이 컴퓨터(`127.0.0.1`)에서만 열린다.
+
+```bash
+node server.js          # → http://127.0.0.1:4317
+node --test             # 테스트 (서버 없이, 실제 AI 호출 없이)
+```
+
+## 누구의 토큰으로 부르나 — 각자 자기 것
+
+키와 로그인은 **저장소에 없다.** 각자 컴퓨터의 환경에만 있고, 그래서 한도와 사용량도 각자 것이다.
+
+| 내 컴퓨터 상태 | 어떻게 부르나 | 비용·한도 |
+|---|---|---|
+| `ANTHROPIC_API_KEY`가 있다 | **내 API 키**로 Claude API 호출 | 내 키의 한도 |
+| 키는 없고 Claude Code에 로그인했다 | `claude -p` (이 컴퓨터의 로그인) | 내 구독 |
+| 둘 다 없다 | 화면의 **연습용 예시** (미리 만든 응답, 전송 없음) | 없음 |
+
+### 내 키로 쓰기 — 세 줄
+
+```bash
+cd implementations/navigator-prototype
+npm install                      # 한 번만 (API 호출 도구를 받는다 — 키 없이 쓰면 필요 없다)
+cp .env.example .env             # 그리고 .env의 ANTHROPIC_API_KEY= 뒤에 내 키를 붙여 넣는다
+node --env-file=.env smoke.js    # 되는지 확인 (아주 작은 호출 1번)
+node --env-file=.env server.js   # 화면 켜기
+```
+
+- `.env`는 `.gitignore`에 있고 커밋 때 `check-secrets.sh`가 한 번 더 막는다. **키를 채팅·이슈·PR·스크린샷에 붙이지 않는다.**
+- `--env-file`은 Node 20.6 이상이다. 대신 `export ANTHROPIC_API_KEY=...`를 해도 된다.
+- 시작할 때 `AI: 내 API 키(...)`라고 나오면 내 키로 부르는 중이다. 주소 `http://127.0.0.1:4317/api/usage`에서도 보인다(키 값은 없다).
+
+## 한도 지키기
+
+| 환경변수 | 뜻 | 기본 |
+|---|---|---|
+| `NAV_TOKEN_BUDGET` | 이 키로 쓸 토큰 한도. **80%에서 알리고 100%에서 멈춘다**(화면은 '연습용 예시'로 바꾸라고 안내) | 없음(막지 않음) |
+| `NAV_MODEL` | 모델 | `claude-opus-5-5` |
+| `NAV_EFFORT` | 생각의 깊이(`low`·`medium`·`high`…) — 높을수록 토큰이 더 든다 | `low` |
+| `NAV_MAX_TOKENS` | 한 번에 받을 답의 최대 토큰 | `2048` |
+| `NAV_FALLBACK` | `off`로 두면 거절 때 대체 모델로 다시 시도하는 기능을 끈다 | 켜짐 |
+| `NAV_USAGE_FILE` | 사용량을 적는 파일 | `~/.navigator-usage.json` |
+
+- 사용량은 **토큰 수만** 홈 폴더 파일에 남긴다(글 내용은 남기지 않는다). 키를 바꾸거나 새 한도로 시작하려면 그 파일을 지운다.
+- 한 번 부를 때 대략 2,000~3,000토큰이다(추정 — 시작 로그와 `smoke.js`가 실제 값을 보여 준다).
+- 모델은 더 싼 것(`claude-sonnet-5-5`, `claude-haiku-5-5`)으로 바꿔도 된다. 판정이 달라질 수 있으니 바꾼 뒤 한 번 확인한다.
+
+## 보내는 것
+
+키가 있으면 **작업 글이 Claude(AI 서비스)로 전송된다**([기록·보안 기준](../../.claude/rules/security-records.md) 1절). 화면에도 그렇게 안내된다.
+비밀번호·다른 사람 연락처는 넣지 않는다. 외부 호출은 `provider.js` 한 곳에서만 한다(`navigator.test.js`가 확인).

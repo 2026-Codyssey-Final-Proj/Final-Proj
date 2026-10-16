@@ -1,10 +1,10 @@
 // claude-drafted: 2026-10-14
-// 로컬 서버 — 화면을 열고, 실제 Claude 판정을 붙인다. **외부 AI 호출은 이 파일 한 곳에서만** 한다(implementations.md 6번, 테스트로 확인).
+// 로컬 서버 — 화면을 열고, 실제 Claude 판정을 붙인다. **외부 AI 호출은 provider.js 한 곳에서만** 한다(implementations.md 6번, 테스트로 확인).
 //
 //   node implementations/navigator-prototype/server.js   →  http://127.0.0.1:4317
 //
-// API 키를 쓰지 않는다. 이 컴퓨터에 로그인된 Claude Code(`claude -p`)의 구독으로 부른다.
-// 잠금: 도구 없음, MCP 없음, 사용자 설정 안 읽음, 대화 기록 안 남김 — 입력 글만 판정한다.
+// 누구의 것으로 부르는지는 provider.js가 정한다 — 각자 자기 ANTHROPIC_API_KEY, 없으면 이 컴퓨터에 로그인된 Claude Code(`claude -p`).
+// claude -p 잠금: 도구 없음, MCP 없음, 사용자 설정 안 읽음, 대화 기록 안 남김 — 입력 글만 판정한다.
 // 입력 글은 Claude(AI 서비스)로 전송된다(security-records.md 1절). 서버가 꺼져 있으면 화면은 미리 만든 응답으로 움직인다.
 // 사용자 설정을 안 읽으므로(--setting-sources "") 여기서 부르는 claude는 사용자가 단 Navigator 훅을 다시 부르지 않는다.
 //
@@ -14,11 +14,10 @@
 const http = require("node:http");
 const fs = require("node:fs");
 const path = require("node:path");
-const { spawn } = require("node:child_process");
 const Nav = require("./navigator.js");
+const { callClaude, usage } = require("./provider.js");
 
 const PORT = Number(process.env.NAV_PORT) || 4317;
-const TIMEOUT_MS = 90_000;
 const MAX_BODY = 40_000;   // 작업 글 + 설계도
 const MAX_WORK = 4000;   // 알림 하나에 담는 작업 글 최대 글자 수
 const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
@@ -39,29 +38,6 @@ function allowed(headers, port = PORT) {
   const hosts = [`127.0.0.1:${port}`, `localhost:${port}`];
   if (!hosts.includes(headers.host)) return false;
   return !headers.origin || hosts.some((h) => headers.origin === `http://${h}`);
-}
-
-function callClaude(prompt, schema) {
-  return new Promise((resolve) => {
-    const args = ["-p", "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence",
-      "--output-format", "json", "--json-schema", JSON.stringify(schema)];
-    const child = spawn("claude", args, { env: { ...process.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
-    let out = "";
-    const timer = setTimeout(() => { child.kill(); resolve({ error: "시간 초과" }); }, TIMEOUT_MS);
-    child.stdout.on("data", (d) => (out += d));
-    child.on("error", () => { clearTimeout(timer); resolve({ error: "claude 명령을 찾지 못함 — Claude Code가 설치·로그인됐는지 확인" }); });
-    child.on("close", () => {
-      clearTimeout(timer);
-      try {
-        const r = JSON.parse(out);
-        if (r.is_error || !r.structured_output) return resolve({ error: "Claude가 정해진 형식으로 답하지 않음" });
-        const u = r.usage || {};
-        const tokens = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.output_tokens || 0);
-        resolve({ data: r.structured_output, tokens });
-      } catch { resolve({ error: "Claude 응답을 읽지 못함" }); }
-    });
-    child.stdin.end(prompt);
-  });
 }
 
 // 너무 크거나 끊긴 요청은 null — 끊겨도 기다리던 쪽이 멈춰 있지 않게 close에서도 끝낸다
@@ -125,6 +101,7 @@ async function handle(req, res) {
     const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
     return send(res, 200, { ok: true, latest: seq, events: events.filter((e) => e.seq > since) });
   }
+  if (req.method === "GET" && req.url === "/api/usage") return send(res, 200, { ok: true, ...usage() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다
   if (req.method !== "POST") return refuse(res, "없는 주소", 404);
   const body = await readJson(req);
   if (req.url === "/api/event") {
@@ -151,6 +128,10 @@ async function handle(req, res) {
 }
 
 if (require.main === module) {
-  http.createServer(handle).listen(PORT, "127.0.0.1", () => console.log(`Navigator 프로토타입: http://127.0.0.1:${PORT}`));
+  http.createServer(handle).listen(PORT, "127.0.0.1", () => {
+    const u = usage();
+    console.log(`Navigator 프로토타입: http://127.0.0.1:${PORT}`);
+    console.log(u.provider === "api" ? `AI: 내 API 키(${u.model}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
+  });
 }
 module.exports = { allowed, recent, addEvent };
