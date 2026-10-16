@@ -31,3 +31,6 @@ projects/second-brain/data/
 
 # 이 컴퓨터의 캘린더 소유자 표시 — calendar-owner-guard.sh. 사본·새 클론에는 없어서 처음엔 일정 쓰기가 막힌다
 .claude/calendar-owner.local
+
+# 의존성
+node_modules/

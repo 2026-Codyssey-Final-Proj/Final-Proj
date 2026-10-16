@@ -62,7 +62,7 @@ flowchart LR
 | 📋 | 요구사항 13개 · 우선순위 | ✅ |
 | 🏛 | 구조 결정 ADR | 🟡 결정 대기 |
 | 🖼 | 캔버스 · 화면 구조 | ✅ 초안 |
-| 🦭 | **프로토타입** (단계 · 이해 확인 · 설계도 · Claude 연결) | ✅ 시험 44개 |
+| 🦭 | **프로토타입** (단계 · 이해 확인 · 설계도 · Claude 연결) | ✅ 시험 58개 |
 | 🔒 | 공유 규칙 시험 화면 | ✅ 시험 17개 |
 | 🎤 | 인터뷰 질문지 | ✅ 초안 |
 | 📚 | 서재 책장 · 역량 지도 | 🔵 목업 |
@@ -83,7 +83,9 @@ node implementations/navigator-prototype/server.js   # 🦭 → http://127.0.0.1
 python3 implementations/run_all_tests.py             # 🧪
 ```
 
-🔑 API 키 없이, 이 컴퓨터의 **Claude 구독**으로 동작 · 서버를 끄면 미리 만든 응답으로 시연 모드
+📘 **처음이라면 → [팀 작업 가이드](docs/00-overview/team-guide.md)** (내 키는 어디에 두고, 작업은 어디에 올리나)
+
+🔑 **각자 자기 것으로** 동작: 내 API 키(`ANTHROPIC_API_KEY`) → 없으면 이 컴퓨터의 Claude 구독 → 없으면 미리 만든 응답으로 시연 모드 · 켜는 법 → [프로토타입 README](implementations/navigator-prototype/README.md)
 
 ---
 
