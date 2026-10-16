@@ -148,6 +148,80 @@ test("SDK가 없으면 npm install 안내를 준다", async () => {
 test("describe: 어느 공급자·모델·사용량인지 알려 주되 키는 담지 않는다", () => {
   const meter = P.createMeter(2000, memStore(500));
   const d = P.describe({ ANTHROPIC_API_KEY: KEY, NAV_TOKEN_BUDGET: "2000" }, meter);
-  assert.deepEqual(d, { provider: "api", model: "claude-opus-5-5", used: 500, budget: 2000, state: "ok" });
+  assert.deepEqual(d, { provider: "api", model: "claude-opus-5-5", host: "api.anthropic.com", compat: false, used: 500, budget: 2000, state: "ok" });
   assert.ok(!JSON.stringify(d).includes(KEY));
+});
+
+// ── 중계 서버(코디세이 가상 키) · 호환 모드 — 2026-10-17 ──
+const PROXY = { ANTHROPIC_API_KEY: KEY, ANTHROPIC_BASE_URL: "https://proxy.example.test", NAV_MODEL: "claude-sonnet-4" };
+
+test("호환 모드: 주소(ANTHROPIC_BASE_URL)를 바꾸면 자동으로 켜진다 — 새 기능 없이 JSON만 요청한다", async () => {
+  const t = make(PROXY, ok());
+  await t.callClaude("작업 글", SCHEMA);
+  const req = t.calls[0];
+  assert.equal(req.via, "messages", "베타·폴백을 쓰지 않는다");
+  assert.equal(req.model, "claude-sonnet-4");
+  assert.equal(req.output_config, undefined, "구조화 출력·effort는 새 모델에만 있다");
+  assert.equal(req.betas, undefined);
+  assert.equal(req.fallbacks, undefined);
+  const sent = req.messages[0].content;
+  assert.ok(sent.startsWith("작업 글"));
+  assert.ok(sent.includes(JSON.stringify(SCHEMA)), "스키마를 글로 알려 준다");
+});
+
+test("호환 모드: NAV_COMPAT=0이면 주소가 있어도 끄고, =1이면 주소가 없어도 켠다", async () => {
+  const off = make({ ...PROXY, NAV_COMPAT: "0" }, ok());
+  await off.callClaude("x", SCHEMA);
+  assert.equal(off.calls[0].via, "beta");
+  assert.ok(off.calls[0].output_config);
+  const on = make({ ANTHROPIC_API_KEY: KEY, NAV_COMPAT: "1" }, ok());
+  await on.callClaude("x", SCHEMA);
+  assert.equal(on.calls[0].via, "messages");
+  assert.equal(on.calls[0].output_config, undefined);
+});
+
+test("호환 모드 답 읽기: 코드 블록이나 앞뒤 설명이 붙어도 JSON만 꺼낸다", async () => {
+  for (const text of ["```json\n{\"ok\": true}\n```", "답입니다: {\"ok\": true} 끝", "{\"ok\": true}"]) {
+    const t = make(PROXY, ok({ content: [{ type: "text", text }] }));
+    const r = await t.callClaude("x", SCHEMA);
+    assert.deepEqual(r.data, { ok: true }, text);
+  }
+});
+
+test("호환 모드: JSON이 하나도 없으면 형식 오류", async () => {
+  const t = make(PROXY, ok({ content: [{ type: "text", text: "죄송해요, 모르겠어요" }] }));
+  assert.match((await t.callClaude("x", SCHEMA)).error, /형식/);
+});
+
+test("오류 문구에 응답 코드가 붙고, 400·404는 모델 이름과 호환 모드를 안내한다 — 키·메시지는 안 나온다", async () => {
+  for (const [status, want] of [[401, /\(401\)/], [403, /\(403\)/], [400, /\(400\).*(모델|호환)/], [404, /\(404\).*(모델|호환)/]]) {
+    const err = Object.assign(new Error(`boom ${KEY}`), { status });
+    const r = await make(PROXY, err).callClaude("x", SCHEMA);
+    assert.match(r.error, want, String(status));
+    assert.ok(!JSON.stringify(r).includes(KEY));
+  }
+});
+
+test("describe: 어느 주소로 보내는지(호스트만)와 호환 모드 여부를 알린다 — 주소 전체나 키는 담지 않는다", () => {
+  const meter = P.createMeter(null, memStore(0));
+  const d = P.describe({ ...PROXY, ANTHROPIC_BASE_URL: "https://proxy.example.test/v1?token=SECRET" }, meter);
+  assert.equal(d.host, "proxy.example.test");
+  assert.equal(d.compat, true);
+  assert.ok(!JSON.stringify(d).includes("SECRET") && !JSON.stringify(d).includes(KEY));
+  assert.equal(P.describe({ ANTHROPIC_API_KEY: KEY, ANTHROPIC_BASE_URL: "이상한 값" }, meter).host, "(주소 형식 오류)");
+});
+
+// ── 비밀값 파일이 실수로 올라가지 않게 ──
+test(".gitignore는 .env뿐 아니라 .envtab·.env.bak 같은 변형도 막고, 틀 파일만 허용한다", () => {
+  const fs = require("node:fs"), path = require("node:path");
+  const lines = fs.readFileSync(path.join(__dirname, "../../.gitignore"), "utf8").split("\n").map((l) => l.trim());
+  assert.ok(lines.includes(".env*"), ".env* 규칙이 있어야 한다");
+  for (const keep of ["!.env.example", "!.env.sample", "!.env.template"]) assert.ok(lines.includes(keep), keep);
+});
+
+test(".env.example은 키 칸이 비어 있고 키처럼 생긴 값이 없다", () => {
+  const fs = require("node:fs"), path = require("node:path");
+  const text = fs.readFileSync(path.join(__dirname, ".env.example"), "utf8");
+  assert.match(text, /^ANTHROPIC_API_KEY=\s*$/m);
+  assert.ok(!/sk-[A-Za-z0-9_-]{10,}/.test(text));
 });
