@@ -54,7 +54,7 @@ test("집중: 몽돌 말풍선(미리 만든 말·연습 예시의 설명)은 �
   says.push(Nav.face({ busy: true })[1], Nav.face({ warn: ["x"] })[1], Nav.face({ error: "x" })[1], Nav.face({})[1], Nav.face({ reason: "r", allDone: true })[1]);
   for (const ex of S.examples) says.push(ex.judgement.reason);
   for (const t of says) assert.ok(t.length <= Nav.SAY_MAX, `${t.length}자: ${t}`);
-  assert.ok(Nav.judgePrompt("x").includes(`${Nav.SAY_MAX}자 안쪽`), "AI에게도 같은 길이를 알려 준다");
+  assert.ok(Nav.judgePrompt("x", 0).includes(`${Nav.SAY_MAX}자 안쪽`), "AI에게도 같은 길이를 알려 준다");
 });
 
 test("nextView: 띠 → 한 줄 → 펼침, 시간이 지나면 한 칸씩 접힌다 (CouCou 방식)", () => {
@@ -87,14 +87,14 @@ test("face: 살펴보는 중 > 잠깐! > 오류 > 확인 화면 > 시작 > 다 �
 });
 
 test("ticker: 방금 한 일 / 지금 할 일 / 그다음", () => {
-  const j = Nav.parseJudgement(S.examples[0].judgement);
+  const j = Nav.parseJudgement(S.examples[0].judgement, S.examples[0].text, 2);
   const t = Nav.ticker(j, null, "");
   assert.equal(t.done, Nav.STAGES[2].criteria[0].text);
   assert.equal(t.now, j.next.what, "지금 할 일은 AI가 고른 것");
   assert.equal(t.after, Nav.STAGES[2].criteria[2].text);
   const mine = Nav.ticker({ ...j, next: null }, ["나", "가"], "");
   assert.deepEqual([mine.now, mine.after], ["나", "가"], "사용자가 정한 순서를 따른다");
-  const done = Nav.ticker(Nav.parseJudgement(S.examples[1].judgement), null, "");
+  const done = Nav.ticker(Nav.parseJudgement(S.examples[1].judgement, S.examples[1].text, 2), null, "");
   assert.equal(done.after, "3단계 만드는 방법 고르기");
 });
 
@@ -116,7 +116,7 @@ test("reorder: 사용자가 정한 대로 한 칸 옮기고, 끝에서는 그대
 
 test("parseJudgement: 연습 예시의 응답은 모두 통과하고 할 일 문장은 우리 데이터로 채워진다", () => {
   for (const ex of S.examples) {
-    const j = Nav.parseJudgement(ex.judgement);
+    const j = Nav.parseJudgement(ex.judgement, ex.text, ex.judgement.stage);
     assert.ok(j, ex.label);
     assert.deepEqual(j.criteria.map((c) => c.text), Nav.STAGES[ex.judgement.stage].criteria.map((c) => c.text));
     assert.ok(j.next.options.length >= 2 && j.next.options.length <= 4, ex.label);
@@ -127,8 +127,6 @@ test("parseJudgement: 모양이 틀린 Claude 응답은 버린다(살펴보지 �
   const ok = S.examples[0].judgement;
   const bad = [
     null, "문자열", {},
-    { ...ok, stage: 9 },
-    { ...ok, stage: 1.5 },
     { ...ok, criteria: ok.criteria.slice(1) },
     { ...ok, criteria: [{ met: "yes" }, ...ok.criteria.slice(1)] },
     { ...ok, reason: " " },
@@ -138,12 +136,34 @@ test("parseJudgement: 모양이 틀린 Claude 응답은 버린다(살펴보지 �
     { ...ok, next: { ...ok.next, options: ["가", " "] } },
     { ...ok, next: { ...ok.next, options: "가/나" } },
   ];
-  for (const b of bad) assert.equal(Nav.parseJudgement(b), null, JSON.stringify(b));
+  for (const b of bad) assert.equal(Nav.parseJudgement(b, S.examples[0].text, 2), null, JSON.stringify(b));
+  for (const n of [9, 1.5, -1, undefined]) assert.equal(Nav.parseJudgement(ok, S.examples[0].text, n), null, `단계 ${n}`);
+});
+
+// 판정 규칙 ①(navigator-prototype-rules-review.md 4절): 근거 구절이 사용자 글에 실제로 있어야만 '했다'로 친다
+test("parseJudgement: 지어낸 근거를 주면 거부된다 — 글에 없는 구절·빈 근거로는 '했다'가 되지 않는다", () => {
+  const ex = S.examples[0], raw = JSON.parse(JSON.stringify(ex.judgement));
+  raw.criteria[1] = { met: true, evidence: "30초 안에 제출" };          // 연습 1 글에는 없는 구절
+  raw.criteria[2] = { met: true, evidence: "" };                        // 근거 없이 '했다'
+  raw.criteria[3] = { met: true, evidence: "필요한  기능을\n6개" };      // 띄어쓰기·줄바꿈만 다른 실제 구절
+  const j = Nav.parseJudgement(raw, ex.text, 2);
+  assert.deepEqual(j.criteria.map((c) => c.met), [true, false, false, true]);
+  assert.equal(j.criteria[1].evidence, "", "지어낸 구절은 화면에 보이지 않는다");
+  assert.equal(Nav.parseJudgement(raw, "", 2).criteria.some((c) => c.met), false, "글이 없으면 아무것도 '했다'가 아니다");
+});
+
+test("가상 시나리오: 연습 장면의 근거 구절은 모두 그 장면의 글에 실제로 있다", () => {
+  for (const ex of S.examples) {
+    const base = ex.from !== undefined ? S.examples[ex.from] : ex, q = base.judgement.next;
+    const text = ex.from !== undefined ? `${base.text}\n${Nav.decisionLine(q.question, q.options[0])}` : ex.text;
+    const j = Nav.parseJudgement(ex.judgement, text, ex.judgement.stage);
+    assert.deepEqual(j.criteria.map((c) => c.met), ex.judgement.criteria.map((c) => c.met), ex.label);
+  }
 });
 
 test("parseJudgement: Claude가 보낸 선택지 목록을 바꿔도 우리 쪽 결과는 그대로다", () => {
   const raw = JSON.parse(JSON.stringify(S.examples[0].judgement));
-  const j = Nav.parseJudgement(raw);
+  const j = Nav.parseJudgement(raw, S.examples[0].text, 2);
   raw.next.options.push("나중에 끼어든 것");
   assert.equal(j.next.options.length, 3);
 });
@@ -155,18 +175,19 @@ test("가상 시나리오: 보완 전은 못 넘어가고, 보완 후는 '예'�
 });
 
 test("가상 시나리오: 미리 만든 응답에 없는 입력은 살펴보지 않는다", () => {
-  assert.equal(S.judgeFixture("아무 글"), null);
-  assert.ok(S.judgeFixture(S.examples[1].text + "\n"));
+  assert.equal(S.judgeFixture("아무 글", 2), null);
+  assert.ok(S.judgeFixture(S.examples[1].text + "\n", 2));
+  assert.equal(S.judgeFixture(S.examples[1].text, 0), null, "다른 단계의 장면은 고르지 않는다");
 });
 
 test("가상 시나리오: 연습 1에서 선택지를 하나 고르면 '하나 정함' 장면(2/4)으로 간다", () => {
   const base = S.examples[0], q = base.judgement.next;
   for (const o of q.options) {
-    const j = S.judgeFixture(`${base.text}\n${Nav.decisionLine(q.question, o)}`);
+    const j = S.judgeFixture(`${base.text}\n${Nav.decisionLine(q.question, o)}`, 2);
     assert.ok(j, o);
     assert.equal(j.criteria.filter((c) => c.met).length, 2);
   }
-  assert.equal(S.judgeFixture(`${base.text}\n${Nav.decisionLine(q.question, "목록에 없는 답")}`), null);
+  assert.equal(S.judgeFixture(`${base.text}\n${Nav.decisionLine(q.question, "목록에 없는 답")}`, 2), null);
   assert.equal(S.examples.filter((e) => !e.hidden && e.judgement.stage === 2).length, 2, "2단계 버튼으로 보이는 연습은 두 개");
 });
 
@@ -182,17 +203,27 @@ test("가상 시나리오: 2단계 밖의 0~7단계마다 '하는 중'은 못 �
     const base = shown[0], q = base.judgement.next;
     assert.equal(Nav.canAdvance(base.judgement.criteria.map((c) => c.met), "yes"), false, `${n}단계 하는 중`);
     for (const o of q.options) {
-      const j = Nav.parseJudgement(S.judgeFixture(`${base.text}
-${Nav.decisionLine(q.question, o)}`));
+      const text = `${base.text}\n${Nav.decisionLine(q.question, o)}`;
+      const j = Nav.parseJudgement(S.judgeFixture(text, n), text, n);
       assert.ok(j && j.stage === n, `${n}단계: ${o}`);
       assert.equal(Nav.canAdvance(j.criteria.map((c) => c.met), "yes"), true, `${n}단계: ${o}`);
     }
   }
 });
 
-test("judgePrompt: 모든 단계와 사용자 글이 들어가고, 고른 줄을 읽는 법을 알려 준다", () => {
-  const p = Nav.judgePrompt("동아리 앱");
-  for (const s of Nav.STAGES) assert.ok(p.includes(`${s.n}단계 ${s.title}`));
+// 판정 규칙 ②(rules-review 4절, 두승현 결정 2026-10-16): 지금 단계는 코드가 정한다 — 게이트를 통과한 다음 단계. AI는 그 단계만 본다
+test("parseJudgement: AI가 다른 단계를 말해도 코드가 넘긴 단계로 판정한다", () => {
+  const ex = S.examples[0], raw = { ...ex.judgement, stage: 5 };
+  assert.equal(Nav.parseJudgement(raw, ex.text, 2).stage, 2);
+  assert.deepEqual(Nav.parseJudgement(raw, ex.text, 2).criteria.map((c) => c.text), Nav.STAGES[2].criteria.map((c) => c.text));
+  assert.ok(!("stage" in Nav.JUDGE_SCHEMA.properties), "AI에게 단계를 묻지 않는다");
+});
+
+test("judgePrompt: 코드가 정한 단계와 그 할 일, 사용자 글이 들어가고, 고른 줄을 읽는 법을 알려 준다", () => {
+  const p = Nav.judgePrompt("동아리 앱", 3);
+  assert.ok(p.includes("3단계 \"만드는 방법 고르기\""));
+  for (const c of Nav.STAGES[3].criteria) assert.ok(p.includes(c.text), c.text);
+  assert.ok(!p.includes(Nav.STAGES[5].title), "다른 단계는 판정하지 않는다");
   assert.ok(p.includes("동아리 앱"));
   assert.ok(p.includes("로 정했어요."));
 });
@@ -385,12 +416,12 @@ test("설계도 몽돌: 상황마다 말이 짧고 쉬운 말이며, 표정은 �
 });
 
 test("다시 왔을 때 인사: 언제였는지와 몇 개까지 했는지 말하고, 기록이 이상하면 말하지 않는다", () => {
-  const j = Nav.parseJudgement(S.examples[0].judgement), now = new Date(2026, 9, 14, 21).getTime();
+  const j = Nav.parseJudgement(S.examples[0].judgement, S.examples[0].text, 2), now = new Date(2026, 9, 14, 21).getTime();
   const at = (d, h) => new Date(2026, 9, d, h).getTime();
   assert.equal(Nav.welcome({ j, at: at(13, 23) }, now), "어제 2단계 할 일 4개 중 1개까지 하셨어요. 이어서 해요!");
   assert.match(Nav.welcome({ j, at: at(14, 9) }, now), /^아까 /);
   assert.match(Nav.welcome({ j, at: at(11, 9) }, now), /^3일 전에 /);
-  assert.match(Nav.welcome({ j: Nav.parseJudgement(S.examples[1].judgement), at: at(13, 9) }, now), /다 하셨어요/);
+  assert.match(Nav.welcome({ j: Nav.parseJudgement(S.examples[1].judgement, S.examples[1].text, 2), at: at(13, 9) }, now), /다 하셨어요/);
   const none = { ...j, criteria: j.criteria.map((c) => ({ ...c, met: false })) };
   assert.equal(Nav.welcome({ j: none, at: at(13, 9) }, now), "어제 2단계를 시작하셨어요. 첫 할 일부터 해 봐요!", "0개까지 하셨어요라고 하지 않는다");
   for (const bad of [null, {}, { j, at: 0 }, { j: { stage: 9, criteria: [] }, at: at(13, 9) }, { j: { stage: 2 }, at: at(13, 9) }]) assert.equal(Nav.welcome(bad, now), "");

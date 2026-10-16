@@ -60,9 +60,11 @@
   const hardTexts = () => st.hard.map((i) => stage().criteria[i].text);   // 넘어가기 전 확인에서 헷갈린다고 고른 할 일
   const docDone = (n) => st.docs.find((x) => x.stage === n);              // 그 단계에서 확정한 설계도
   const pingHead = () => st.ping.split(" — ")[0];
-  // 지금 단계의 연습 버튼 — 아직 안 봤으면 첫 장면(0단계)
-  const stageExamples = () => S.examples.filter((e) => !e.hidden && e.judgement.stage === (st.j ? st.j.stage : S.first.judgement.stage));
-  const restart = () => ({ label: "연습 처음부터 다시", act: "ex", i: S.examples.indexOf(S.first) });
+  // 지금 단계 — 코드가 정한다: 게이트를 통과한 다음 단계(처음엔 0단계). AI는 이 단계의 할 일만 본다
+  const atStage = () => (st.j ? st.j.stage : 0);
+  // 지금 단계의 연습 버튼
+  const stageExamples = () => S.examples.filter((e) => !e.hidden && e.judgement.stage === atStage());
+  const RESTART = { label: "연습 처음부터 다시", act: "restart" };
   // 화면 두 곳(PC·iPhone)이 같이 쓰는 문구
   const PLACEHOLDER = "예) 동아리 행사 등록 앱을 만들고 있어요. 필요한 기능을 문장으로 써 봤어요.";
   const SENT = "보여 주신 글은 AI(Claude)에게 보내져요. 비밀번호나 다른 사람 연락처는 빼 주세요.";
@@ -71,6 +73,9 @@
     none: "설계도는 1~4단계에서 만들어요. 확정한 설계도는 '내 배움'에 모여 있어요.",
     draft: "지금까지 작업을 보고 AI가 초안을 먼저 써 드려요. 고치고 완성하는 건 직접 해요. 확정도 직접 눌러야만 돼요.",
   };
+  // 7단계까지 마쳤을 때 — last: 마지막 확인에서 "예" 뒤, title·sub: 마무리 카드
+  const END = { last: "좋아요! 이걸로 모든 단계를 마쳐요", title: "여덟 단계를 끝까지 왔어요!",
+    sub: "지나온 단계와 배운 말, 확정한 설계도는 '내 배움'에 모여 있어요." };
 
   // ── 기록 — 이 브라우저에만. 못 쓰는 환경(사생활 보호 창 등)이면 조용히 기록 없이 동작한다 ──
   const KEY = "navigator-prototype:v1";
@@ -258,7 +263,7 @@
       `<button class="btn pri wide" data-act="answer" ${st.busy ? "disabled" : ""}>물어보기</button>${st.answer ? `<button class="btn wide" data-act="plan">한 장 요약 보기</button>` : ""}`];
     if (st.step === "plan") return [`<span class="ask">이번 단계 한 장 요약</span><div class="plan">
       ${planRows().map(([k, v]) => `<div><b>${k}</b> ${esc(v)}</div>`).join("")}</div>`, yesNo];
-    if (st.step === "next" && !nx) return [`<span class="ask">좋아요! 이걸로 모든 단계를 마쳐요</span>`, `<button class="btn pri wide" data-act="go">마치기</button>`];
+    if (st.step === "next" && !nx) return [`<span class="ask">${END.last}</span>`, `<button class="btn pri wide" data-act="go">마치기</button>`];
     if (st.step === "next") return [`<span class="ask">좋아요! 다음은 ${nx ? `${nx.n}단계 "${esc(nx.title)}"` : "마무리"}예요</span>
       <span class="meta">무엇부터 할지 순서를 정해 보세요.</span>${todoList(true)}`,
       `<button class="btn pri wide" data-act="go" ${N.canAdvance(met(), "yes") ? "" : "disabled"}>이 순서로 시작하기</button>`];
@@ -271,8 +276,8 @@
   // iPhone의 지금 결정할 것 하나 — 다 했으면 "넘어가기", 순서를 정했으면 그 첫 일, 아니면 같이 정하기
   function focusCard() {
     const n = st.j.next, now = esc(tick().now);
-    if (st.finished) return box("다 했어요", "여덟 단계를 끝까지 왔어요!", "지나온 단계와 배운 말, 확정한 설계도는 '내 배움'에 모여 있어요.",
-      st.mode === "fixture" ? `<button class="btn wide" data-act="ex" data-i="${restart().i}">${restart().label}</button>` : "");
+    if (st.finished) return box("다 했어요", END.title, END.sub,
+      st.mode === "fixture" ? `<button class="btn wide" data-act="${RESTART.act}">${RESTART.label}</button>` : "");
     if (allDone()) return box("다 했어요", `${stage().n}단계 할 일을 모두 했어요`, "넘어가기 전에 이번 단계를 이해했는지 한 번만 같이 확인해요.",
       `<button class="btn pri wide" data-act="gate">다음 단계로 넘어가기</button>`);
     if (st.todos) return box("지금 할 일", esc(st.todos[0]), "정한 순서대로 하나씩 해 봐요. 하고 나서 바뀐 작업을 다시 보여 주세요.");
@@ -349,8 +354,8 @@
           ...(first ? [] : [{ label: "닫기", act: "close-input", key: "Escape", kind: "ghost" }])] };
     }
     if (st.finished) return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">모든 단계를 마쳤어요</span>`,
-      title: "여덟 단계를 끝까지 왔어요!", sub: "지나온 단계와 배운 말, 확정한 설계도는 '내 배움'에 모여 있어요.",
-      acts: [{ label: "내 배움 보기", act: "tab", i: 3, key: "Enter", pri: true }, ...(st.mode === "fixture" ? [restart()] : [])] };
+      title: END.title, sub: END.sub,
+      acts: [{ label: "내 배움 보기", act: "tab", i: 3, key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
     if (allDone()) return { tone: "green", mood: f[0], badge: "✓", meta: stageMeta(), title: `${s.n}단계 할 일을 모두 했어요!`,
       sub: "다음 단계로 가기 전에, 이번 단계를 이해했는지 한 번만 같이 확인해요.",
       acts: [{ label: "확인하고 넘어가기", act: "gate", key: "Enter", pri: true }, { label: "나중에", act: "fold", key: "Escape", kind: "ghost" }] };
@@ -386,7 +391,7 @@
       body: `<dl class="sheet">${planRows().map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`,
       acts: [yes, { ...no, label: "아직 잘 모르겠어요" }, later] };
     if (st.step === "next" && !nx) return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">마무리</span>`,
-      title: "좋아요! 이걸로 모든 단계를 마쳐요", sub: "", acts: [{ label: "마치기", act: "go", key: "Enter", pri: true }, later] };
+      title: END.last, sub: "", acts: [{ label: "마치기", act: "go", key: "Enter", pri: true }, later] };
     if (st.step === "next") return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">${nx ? `다음은 ${nx.n}단계 · ${esc(nx.title)}` : "마무리"}</span>`,
       title: "좋아요! 무엇부터 할지 순서를 정해 볼까요?", sub: "위아래 화살표로 순서를 바꿀 수 있어요. 정한 순서대로 하나씩 안내할게요.",
       body: todoList(true), acts: [{ label: "이 순서로 시작하기", act: "go", key: "Enter", pri: true }, later] };
@@ -788,10 +793,10 @@
     Object.assign(st, { error: "", warn: null });
     if (!st.text.trim()) return stop("지금 만드는 걸 적어 주세요.");
     if (st.mode === "fixture") {
-      const raw = S.judgeFixture(st.text), j = raw && N.parseJudgement(raw);
+      const raw = S.judgeFixture(st.text, atStage()), j = raw && N.parseJudgement(raw, st.text, atStage());
       return j ? landed(j, 0) : stop("연습용 예시는 정해진 장면만 알아요. 위의 연습 버튼으로 이 단계 장면을 보거나, 직접 쓴 글은 보기 방식을 '진짜 AI'로 바꿔 주세요.");
     }
-    return askAI("/api/judge", { text: st.text }, "살펴보지 못했어요", (r) => landed(r.judgement, r.tokens), !skipCheck && [st.text, "judge"]);
+    return askAI("/api/judge", { text: st.text, stage: atStage() }, "살펴보지 못했어요", (r) => landed(r.judgement, r.tokens), !skipCheck && [st.text, "judge"]);
   }
   function answer() {
     const s = stage();
@@ -878,6 +883,7 @@
       render(); focusText(); say("예시 글을 넣었어요. 보내려면 '어디쯤인지 보기'를 눌러요");
     },
     judge: () => { st.notice = ""; judge(false); },
+    restart: () => { Object.assign(st, { j: null, finished: false, todos: null }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => RETRY[st.warn.then](),
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
@@ -1033,7 +1039,7 @@
     const step = () => {
       if (k < LINES.length) { line(LINES[k++]); return setTimeout(step, 700); }
       // 작업이 바뀐 걸 알아채고 한 줄로 살짝 나타난다 — 글을 AI에게 보내는 건 사용자가 누를 때만
-      st.text = S.examples[0].text; st.ping = "방금 작업이 바뀌었어요 — 눌러서 어디쯤인지 볼까요?";
+      st.text = stageExamples()[0].text; st.ping = "방금 작업이 바뀌었어요 — 눌러서 어디쯤인지 볼까요?";
       activity();
       peek();
     };

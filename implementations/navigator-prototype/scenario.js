@@ -293,10 +293,10 @@
     return { say: "빈칸을 다 채웠어요! 마음에 들면 확정해 주세요.", good: ["빈칸을 모두 채웠어요", good[1]], fix: [], ready: true };
   }
 
-  // 글이 장면과 같으면 그 장면의 응답. "하나 정함" 장면은 연습 1 글 + 선택지 중 아무거나 고른 줄이면 맞는다.
-  function judgeFixture(text) {
+  // 지금 단계(stage)의 장면 중 글이 같은 것의 응답. "하나 정함"·"다 했어요" 장면은 그 장면의 글 + 선택지 중 아무거나 고른 줄이면 맞는다.
+  function judgeFixture(text, stage) {
     const t = String(text).trim();
-    for (const ex of examples) {
+    for (const ex of examples.filter((e) => e.judgement.stage === stage)) {
       if (ex.text && ex.text.trim() === t) return ex.judgement;
       if (ex.from !== undefined) {
         const base = examples[ex.from], q = base.judgement.next;
