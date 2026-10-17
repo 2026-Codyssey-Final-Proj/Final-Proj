@@ -1,0 +1,60 @@
+// claude-drafted: 2026-10-17 — 도서관 시안의 더미 데이터. 실제 사용자 데이터가 아니다.
+// 모양은 library-constellation-plan-2026-10-17.md의 그래프 설계(Book · Bookmark · Stage)를 화면용으로 펼친 것이다.
+(function (root) {
+  const STAGES = ["생각하기", "적어 두기", "기능 정리", "방법 고르기", "뼈대", "만들기", "써 보기", "돌아보기"];
+
+  // 지금 열어 둔 책 4권 = 열어 둔 세션 4개 (오버레이 위젯이 보여 준다)
+  const OPEN = [
+    { id: "s1", title: "동아리 행사 등록 앱", stage: 2, updated: "오늘 14:20", tone: "#7FB6FF",
+      decided: ["신청 버튼을 누르면 3초 안에 등록된다", "마감 하루 전에 신청자에게 알림이 간다", "운영진이 승인하면 신청자가 바로 안다"],
+      bookmarks: ["EARS로 기능 한 줄씩", "마감 알림은 하루 전", "승인 상태는 세 가지"] },
+    { id: "s2", title: "스터디 출석 체크 앱", stage: 1, updated: "어제", tone: "#9BE0D6",
+      decided: ["출석은 버튼 한 번", "지각 기준은 10분"],
+      bookmarks: ["문제를 한 문장으로"] },
+    { id: "s3", title: "가계부 위젯", stage: 5, updated: "3일 전", tone: "#B9A8FF",
+      decided: ["지출 입력은 금액·분류 두 칸", "한 달 합계는 위젯 맨 위", "분류는 내가 만든 다섯 개만"],
+      bookmarks: ["MoSCoW로 줄이기", "입력 칸은 적을수록", "숫자는 오른쪽 정렬", "빈 달은 0원으로", "분류 이름은 내 말로", "새로 고침 없이 합계"] },
+    { id: "s4", title: "포트폴리오 사이트", stage: 3, updated: "10/15", tone: "#FFC98A",
+      decided: ["정적 사이트로 간다", "프로젝트 카드는 세 줄 요약"],
+      bookmarks: ["결정은 선택지와 함께", "서버 없이 가는 이유", "카드 요약은 세 줄"] },
+  ];
+
+  // 다 끝낸 책 = 서고에 꽂힌 책 (내 서고가 보여 준다)
+  const SHELF = [
+    { id: "f1", title: "동아리 행사 등록 앱", sub: "v1", shelf: 0, date: "10.15", tags: ["EARS", "얼음 보내기"], links: ["f2", "f3"],
+      steps: ["행사 신청이 카톡으로 흩어진다", "신청·마감·승인 세 가지만", "기능 4줄을 EARS로", "웹 폼 + 시트 저장", "신청 버튼 하나가 끝까지", "폼·목록·알림 3화면", "동아리원 5명이 써 봄", "알림이 늦었던 이유를 적음"],
+      insights: ["기능을 한 줄씩 쓰니 빠진 게 바로 보였다", "알림은 '언제'를 숫자로 정해야 한다"],
+      made: ["신청서.html", "행사-목록.html", "마감-알림.js"] },
+    { id: "f2", title: "독서 기록 봇", shelf: 0, date: "09.28", tags: ["EARS", "숫자로 말하기"], links: ["f1"],
+      steps: ["읽은 책을 자꾸 잊는다", "한 줄 기록만", "기록·찾기·통계 3개", "메신저 봇", "한 줄 저장", "기록·검색 완성", "2주 동안 매일 씀", "통계는 안 봤다 — 뺄 것"],
+      insights: ["쓰지 않는 기능은 다음엔 처음부터 빼자"], made: ["bot.js", "records.csv"] },
+    { id: "f3", title: "동네 날씨 알림", shelf: 1, date: "10.02", tags: ["얼음 보내기", "재시도"], links: ["f1"],
+      steps: ["우산을 자꾸 안 챙긴다", "아침 7시 알림", "비 올 때만 알림", "예보 API + 예약 실행", "알림 한 번 오기", "비·눈·강풍 3종", "한 달 사용", "실패했을 때 조용했다 — 알림 추가"],
+      insights: ["자동화는 실패를 알려야 믿을 수 있다"], made: ["weather.js", "schedule.json"] },
+    { id: "f4", title: "용돈 기록표", shelf: 2, date: "09.20", tags: ["MoSCoW", "숫자로 말하기"], links: ["f5"],
+      steps: ["어디 썼는지 모른다", "하루 한 번 적기", "Must 3 · Could 4", "시트 하나", "입력 한 줄", "월별 합계", "한 달 사용", "Could는 하나도 안 씀"],
+      insights: ["Must만 만들어도 충분했다"], made: ["용돈.xlsx"] },
+    { id: "f5", title: "사진 정리 도우미", shelf: 3, date: "10.10", tags: ["MoSCoW", "한 번에 하나만"], links: ["f4"],
+      steps: ["사진이 너무 많다", "날짜별 폴더만", "정리·중복 찾기", "로컬 스크립트", "한 폴더 정리", "중복 찾기 추가", "가족 사진 2천 장", "중복 판정이 느렸다"],
+      insights: ["한 번에 하나만 묻는 화면이 덜 헷갈린다"], made: ["sort.py"] },
+  ];
+
+  // 내가 모아 둔 레퍼런스 — 링크와 한 줄만 (본문은 가져오지 않는다)
+  const REFS = [
+    { id: "r1", title: "EARS로 요구사항 쓰기", kind: "글", line: "'~하면 ~한다' 다섯 가지 틀", tag: "EARS", used: ["f1", "f2"] },
+    { id: "r2", title: "MoSCoW 우선순위", kind: "글", line: "꼭·하면 좋음·있으면 좋음·이번엔 안 함", tag: "MoSCoW", used: ["f4", "f5"] },
+    { id: "r3", title: "실패하면 알리는 자동화", kind: "메모", line: "조용히 멈추지 않기, 재시도 1·2·4초", tag: "재시도", used: ["f3"] },
+    { id: "r4", title: "한 번에 하나만 묻는 화면", kind: "링크", line: "선택지 카드와 '기타'로만 열리는 입력창", tag: "한 번에 하나만", used: ["f5"] },
+  ];
+
+  // 플로로에게 물어볼 수 있는 것 — 화면은 이 표에서만 답한다(지어내지 않는다)
+  const ASK = [
+    { q: "지난번엔 EARS를 어떻게 썼지?", tag: "EARS" },
+    { q: "알림 만든 책 찾아 줘", tag: "얼음 보내기" },
+    { q: "내 레퍼런스 보여 줘", refs: true },
+  ];
+
+  const api = { STAGES, OPEN, SHELF, REFS, ASK };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.LibData = api;
+})(typeof window !== "undefined" ? window : globalThis);

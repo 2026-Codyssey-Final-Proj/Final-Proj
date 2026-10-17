@@ -1,0 +1,227 @@
+// claude-drafted: 2026-10-17 — 도서관 시안의 동작. 저장·서버·AI 호출 없음 — 더미 데이터(books.js)를 화면 안에서만 바꾼다.
+// 장면: ① 입구(큰 책) → 시안 고르기 → ② 작업 화면 위 오버레이의 도서관 위젯 → ③ 플로로의 얼음 서고 → 펼친 책.
+(function () {
+  const D = window.LibData, Seal = window.NavSeal;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const seal = (mood, size, opts) => (Seal ? Seal.svg(mood, size, opts) : "");
+
+  // 화면 안에서만 바뀌는 상태 (새로 고침하면 처음으로)
+  const st = { open: D.OPEN.map((b) => ({ ...b })), shelved: [], tab: "lib", sel: null, confirm: false, answer: null, reading: null };
+
+  // ── 배경 별 ──
+  let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  $("sky").innerHTML = Array.from({ length: 110 }, () => `<i style="left:${rnd() * 100}%;top:${rnd() * 80}%;opacity:${(rnd() * .6 + .2).toFixed(2)};transform:scale(${(rnd() * 1.2 + .4).toFixed(2)})"></i>`).join("");
+
+  // ── 장면 전환 ──
+  const CAPTIONS = {
+    hall: "큰 책을 누르면 도서관 시안 두 가지가 펼쳐져요",
+    pick: "시안 ① 오버레이의 작은 도서관 · 시안 ② 나만의 서고",
+    desk: "오버레이의 도서관 — 열어 둔 책 4권 중 하나를 골라요",
+    deskOpen: "펼쳐 보고 덮거나, 세션을 덮어 서고에 꽂아요",
+    lib: "내 서고 — 같은 배움을 쓴 책끼리 별자리처럼 이어져요",
+    read: "책을 펼치면 단계마다 정한 것 · 배운 것이 그대로",
+    ask: "기억 안 날 땐 플로로에게 — 찾은 책을 바로 펼쳐요",
+  };
+  const ORDER = ["hall", "pick", "desk", "deskOpen", "lib", "read", "ask"];
+  function caption(key) { $("caption").innerHTML = `<b>${ORDER.indexOf(key) + 1}</b>${CAPTIONS[key]}`; }
+  function show(screen) { for (const s of ["hall", "desk", "lib"]) $(`s-${s}`).classList.toggle("on", s === screen); }
+  function setHash(h) { history.replaceState(null, "", `#${h}`); }
+
+  function go(where, arg) {
+    $("spread").classList.remove("on"); $("reader").classList.remove("on");
+    if (where === "hall") { show("hall"); caption("hall"); setHash("hall"); $("tome").focus(); return; }
+    if (where === "pick") { show("hall"); $("spread").classList.add("on"); caption("pick"); setHash("pick"); $("spread").querySelector(".go").focus(); return; }
+    if (where === "desk") { show("desk"); st.tab = "lib"; st.sel = arg || null; st.confirm = false; renderDesk(); setHash(arg ? `desk-${arg}` : "desk"); return; }
+    if (where === "lib") { show("lib"); st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
+  }
+  document.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
+  $("tome").onclick = () => go("pick");
+  $("spread").addEventListener("click", (e) => { if (e.target === $("spread")) go("hall"); });
+
+  // ── ① 입구 ──
+  $("hall-seal").innerHTML = seal("happy", 150);
+  $("mini-a").innerHTML = `<div style="display:flex;gap:8px">${D.OPEN.map((b) => `<span style="width:44px;height:60px;border-radius:3px 6px 6px 3px;background:${b.tone};box-shadow:inset 3px 0 0 rgba(0,0,0,.18)"></span>`).join("")}</div>`;
+  $("mini-b").innerHTML = `<div style="display:flex;align-items:flex-end;gap:22px">${[0, 1].map(() => `<div style="display:flex;gap:3px;align-items:flex-end;border-bottom:5px solid #cdd8f5;padding:0 4px">${[46, 38, 52, 30, 44].map((h) => `<i style="width:7px;height:${h}px;background:#7d9df0;border-radius:1px"></i>`).join("")}</div>`).join(`<div>${seal("idle", 64)}</div>`)}</div>`;
+
+  // ── ② 오버레이 위젯 ──
+  const ICONS = {
+    now: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+    doc: '<svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5v4h4M9.5 12h6M9.5 15.5h6"/></svg>',
+    map: '<svg viewBox="0 0 24 24"><path d="M4 18h3V11H4zM10.5 18h3V6h-3zM17 18h3V13h-3z"/></svg>',
+    lib: '<svg viewBox="0 0 24 24"><path d="M3.5 6.5C6 5.5 9 5.5 12 7c3-1.5 6-1.5 8.5-.5V18c-2.5-1-5.5-1-8.5.5-3-1.5-6-1.5-8.5-.5z"/><path d="M12 7v11.5"/></svg>',
+  };
+  const TABS = [["now", "지금"], ["doc", "설계도"], ["map", "단계 지도"], ["lib", "도서관"]];
+  function renderTabs() {
+    $("tabs").innerHTML = TABS.map(([id, name]) => `<button role="tab" aria-selected="${st.tab === id}" aria-label="${name}" title="${name}" data-tab="${id}">${ICONS[id]}</button>`).join("");
+    $("tab-name").textContent = TABS.find((t) => t[0] === st.tab)[1];
+  }
+  $("tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (!b) return; st.tab = b.dataset.tab; st.sel = null; st.confirm = false; renderDesk(); });
+
+  function renderDesk() {
+    renderTabs();
+    const ob = $("ob");
+    if (st.tab !== "lib") {
+      ob.innerHTML = `<div class="ob-body"><div class="who">${seal("look", 110, { hole: true })}</div><div>
+        <div class="ob-say">${esc(TABS.find((t) => t[0] === st.tab)[1])}</div><p class="ob-title">이 시안에서는 도서관만 움직여요</p>
+        <button class="pillbtn pri" data-tab-go="lib">도서관 열기</button></div></div>`;
+      ob.querySelector("[data-tab-go]").onclick = () => { st.tab = "lib"; renderDesk(); };
+      caption("desk"); return;
+    }
+    const book = st.open.find((b) => b.id === st.sel);
+    if (!book) { renderShelf4(ob); caption("desk"); return; }
+    caption("deskOpen");
+    ob.innerHTML = `<div class="minispread" aria-label="${esc(book.title)} 펼침">
+        <section><div class="stg">지금 ${book.stage}단계 · ${D.STAGES[book.stage]}</div><h3>${esc(book.title)}</h3>
+          <div class="ob-say" style="color:#5b6789">이 세션에서 정한 것</div><ul>${book.decided.map((d) => `<li>${esc(d)}</li>`).join("")}</ul></section>
+        <section><div class="stg">꽂은 책갈피 ${book.bookmarks.length}장</div><h3>배운 것</h3>
+          <div class="marks">${book.bookmarks.map((m) => `<span>${esc(m)}</span>`).join("")}</div>
+          <div class="ob-say" style="color:#5b6789;margin-top:12px">마지막으로 연 때 · ${esc(book.updated)}</div></section>
+      </div>
+      ${st.confirm ? `<div class="confirm" role="alertdialog" aria-label="세션 덮기 확인">${seal("think", 34)}<span><b>‘${esc(book.title)}’</b> 세션을 덮고 서고에 꽂을까요? 언제든 다시 펼칠 수 있어요.</span><span style="flex:1"></span>
+          <button class="pillbtn pri" id="do-shelve">덮고 꽂기<span class="kbd">Enter</span></button><button class="pillbtn" id="no-shelve">그대로 두기</button></div>`
+        : `<div class="ob-foot"><button class="pillbtn" id="close-book">책 덮기<span class="kbd">Esc</span></button>
+          <button class="pillbtn pri" id="ask-shelve">세션 덮기</button><span class="grow"></span><span class="note">책 덮기는 목록으로 · 세션 덮기는 서고로</span></div>`}`;
+    if (st.confirm) { $("do-shelve").onclick = shelve; $("no-shelve").onclick = () => { st.confirm = false; renderDesk(); $("ask-shelve").focus(); }; $("do-shelve").focus(); }
+    else { $("close-book").onclick = closeBook; $("ask-shelve").onclick = () => { st.confirm = true; renderDesk(); }; }
+  }
+  function renderShelf4(ob) {
+    const n = st.open.length;
+    ob.innerHTML = `<div class="ob-body"><div class="who">${seal(n ? "idle" : "sleep", 110, { hole: true })}</div><div>
+        <div class="ob-say">도서관 · 열어 둔 책 ${n}권</div>
+        <p class="ob-title">${n ? "어떤 책을 볼까요?" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
+        ${n ? `<div class="shelf4">${st.open.map((b) => `<button class="cover" style="--tone:${b.tone}" data-book="${b.id}" aria-label="${esc(b.title)}, ${b.stage}단계 ${D.STAGES[b.stage]}, 책갈피 ${b.bookmarks.length}장">
+            <span class="t">${esc(b.title)}</span><span class="s">${b.stage}단계 · ${D.STAGES[b.stage]}</span><span class="m"><span>▮ ${b.bookmarks.length}장</span><span>${esc(b.updated)}</span></span></button>`).join("")}</div>`
+          : `<p style="margin:0;color:var(--ink-2)">새 세션을 열면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요.</p>`}
+      </div></div>
+      <div class="ob-foot"><span class="note">책을 고르면 펼쳐져요 · 세션을 덮으면 서고에 꽂혀요</span><span class="grow"></span>
+        <button class="enter-lib" data-go="lib"><span class="mb"></span>내 서고 들어가기</button></div>`;
+    ob.querySelectorAll("[data-book]").forEach((b) => (b.onclick = () => { st.sel = b.dataset.book; st.confirm = false; setHash(`desk-${st.sel}`); renderDesk(); $("close-book").focus(); }));
+  }
+  function closeBook() { const id = st.sel; st.sel = null; st.confirm = false; setHash("desk"); renderDesk(); document.querySelector(`[data-book="${id}"]`)?.focus(); }
+  function shelve() {
+    const book = st.open.find((b) => b.id === st.sel);
+    st.sel = null; st.confirm = false; renderDesk();
+    const el = document.querySelector(`[data-book="${book.id}"]`);
+    const finish = () => { st.open = st.open.filter((b) => b.id !== book.id); st.shelved.push(book); setHash("desk"); renderDesk(); toast(`‘${book.title}’ 책을 서고에 꽂았어요 · 열어 둔 책 ${st.open.length}권`); };
+    if (el && !matchMedia("(prefers-reduced-motion: reduce)").matches) { el.classList.add("leaving"); setTimeout(finish, 480); } else finish();
+  }
+  let toastTimer;
+  function toast(text) { const t = $("toast"); t.textContent = text; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2600); }
+
+  // ── ③ 내 서고 ──
+  const SHELVES = [
+    { label: "기록 · 폼", style: "left:5vw;top:2%" }, { label: "알림", style: "right:5vw;top:2%" },
+    { label: "숫자 · 돈", style: "left:2vw;top:40%" }, { label: "정리 도구", style: "right:2vw;top:40%" },
+  ];
+  const CHIPS = [["EARS", "left:24vw;top:30%"], ["MoSCoW", "left:22vw;top:66%"], ["숫자로 말하기", "left:30vw;top:12%"], ["얼음 보내기", "right:26vw;top:28%"],
+    ["재시도", "right:23vw;top:12%"], ["한 번에 하나만", "right:24vw;top:66%"]];
+  function renderLib() {
+    const marks = D.SHELF.reduce((n, b) => n + b.steps.length + b.insights.length, 0);
+    $("lib-count").textContent = `끝낸 프로젝트 ${D.SHELF.length + st.shelved.length}권 · 책갈피 ${marks + st.shelved.reduce((n, b) => n + b.bookmarks.length, 0)}장`;
+    const stage = $("stage");
+    stage.querySelectorAll(".shelfbox,.chip").forEach((n) => n.remove());
+    SHELVES.forEach((sh, i) => {
+      let h = 7; const spines = (k) => Array.from({ length: k }, () => `<i class="spine" style="height:${60 + ((h = (h * 37) % 41))}px"></i>`).join("");
+      const box = document.createElement("div"); box.className = "shelfbox"; box.style.cssText = sh.style;
+      const books = D.SHELF.filter((b) => b.shelf === i);
+      box.innerHTML = `<div class="row">${spines(3)}${books.map((b) => `<button class="front" data-read="${b.id}" aria-label="${esc(b.title)} 펼치기">${esc(b.title)}${b.sub ? ` ${esc(b.sub)}` : ""}</button>`).join("")}${spines(4)}</div>
+        <div class="board"></div><div class="label">${sh.label}</div>`;
+      stage.appendChild(box);
+    });
+    CHIPS.forEach(([t, s]) => { const c = document.createElement("span"); c.className = "chip"; c.style.cssText = s; c.textContent = t; stage.appendChild(c); });
+    const last = st.shelved[st.shelved.length - 1];
+    $("slot").innerHTML = last ? `방금 꽂은 책<br><b style="color:var(--ink)">${esc(last.title)}</b>` : `지금 쓰는 책 ${st.open.length}권<br>끝내면 여기 꽂혀요`;
+    stage.querySelectorAll("[data-read]").forEach((b) => {
+      b.onclick = () => openReader(b.dataset.read);
+      b.onmouseenter = b.onfocus = () => drawArcs(b.dataset.read);
+      b.onmouseleave = b.onblur = () => drawArcs(null);
+    });
+    $("lib-seal").innerHTML = seal(st.answer ? "look" : "idle", 170);
+    $("floro-say").textContent = st.answer ? "찾았어요! 오른쪽에 펼쳐 둘게요." : "기억 안 나는 게 있으면 저한테 물어봐요.";
+    $("asks").innerHTML = D.ASK.map((a, i) => `<button class="pillbtn glass" data-ask="${i}">${esc(a.q)}</button>`).join("");
+    $("asks").querySelectorAll("[data-ask]").forEach((b) => (b.onclick = () => { st.answer = D.ASK[+b.dataset.ask]; renderLib(); setHash("lib-ask"); }));
+    renderAnswer();
+    caption(st.answer ? "ask" : "lib");
+    drawArcs(null);
+  }
+  $("refs-btn").onclick = () => { st.answer = D.ASK.find((a) => a.refs); renderLib(); };
+
+  // 같은 배움(태그)을 쓴 책끼리 금빛 선으로 잇는다 — 영상 7번 장면
+  function drawArcs(id) {
+    const svg = $("arcs"), box = $("stage").getBoundingClientRect();
+    document.querySelectorAll(".front").forEach((f) => f.classList.toggle("lit", Boolean(st.answer && st.answer.tag && D.SHELF.find((b) => b.id === f.dataset.read)?.tags.includes(st.answer.tag))));
+    if (!id) { svg.innerHTML = ""; return; }
+    const from = D.SHELF.find((b) => b.id === id);
+    document.querySelectorAll(".front").forEach((f) => { if (f.dataset.read === id || from.links.includes(f.dataset.read)) f.classList.add("lit"); });
+    const at = (bid) => { const r = document.querySelector(`[data-read="${bid}"]`)?.getBoundingClientRect(); return r && { x: r.left + r.width / 2 - box.left, y: r.top - box.top }; };
+    const a = at(id);
+    svg.innerHTML = from.links.map((lid) => {
+      const to = D.SHELF.find((b) => b.id === lid), b = at(lid); if (!a || !b) return "";
+      const shared = from.tags.find((t) => to.tags.includes(t)) || "이어짐", n = D.SHELF.filter((x) => x.tags.includes(shared)).length;
+      const mx = (a.x + b.x) / 2, my = Math.max(-40, Math.min(a.y, b.y) - 60), ly = Math.max(14, (Math.min(a.y, b.y) + my) / 2 + 4);   // 선 꼭대기는 화면 안, 이름표는 선 위에
+      return `<path d="M${a.x} ${a.y} Q${mx} ${my} ${b.x} ${b.y}"></path><text x="${mx}" y="${ly}" text-anchor="middle">★ ${esc(shared)} · ${n}권</text>`;
+    }).join("");
+  }
+
+  function renderAnswer() {
+    const box = $("answer"), a = st.answer;
+    if (!a) { box.hidden = true; return; }
+    box.hidden = false;
+    if (a.refs) {
+      box.innerHTML = `<h3>${seal("happy", 28)}플로로가 찾은 레퍼런스 ${D.REFS.length}개</h3><ul>${D.REFS.map((r) => `<li><button data-read="${r.used[0]}"><i></i><span>${esc(r.title)} · ${esc(r.kind)}</span><small>${esc(r.line)} — 쓰인 책: ${r.used.map((u) => esc(D.SHELF.find((b) => b.id === u).title)).join(", ")}</small></button></li>`).join("")}</ul>
+        <div class="foot">링크와 한 줄만 모아 둬요. 본문은 열 때 원래 자리에서 가져와요.</div>`;
+    } else {
+      const found = D.SHELF.filter((b) => b.tags.includes(a.tag));
+      box.innerHTML = `<h3>${seal("happy", 28)}플로로가 찾은 책 ${found.length}권</h3><ul>${found.map((b) => `<li><button data-read="${b.id}"><i></i><span>${esc(b.title)} · ${D.STAGES.length - 1}단계까지</span><small>${esc(b.insights[0])}</small></button></li>`).join("")}</ul>
+        <div class="foot">모두 <b>‘${esc(a.tag)}’</b> 책갈피가 꽂힌 책이에요. 이번 책에도 꺼내 쓸까요? <button class="pillbtn" id="ans-close" style="margin-left:6px">닫기</button></div>`;
+      $("ans-close").onclick = () => { st.answer = null; renderLib(); setHash("lib"); };
+    }
+    box.querySelectorAll("[data-read]").forEach((b) => (b.onclick = () => openReader(b.dataset.read)));
+  }
+
+  // ── 펼친 책 (영상 8번 장면) ──
+  let lastFocus = null;
+  function openReader(id) {
+    const b = D.SHELF.find((x) => x.id === id); if (!b) return;
+    lastFocus = document.activeElement; st.reading = id;
+    $("rd-title").textContent = `${b.title}${b.sub ? ` ${b.sub}` : ""} — 단계마다 내가 정한 것`;
+    $("rd-steps").innerHTML = b.steps.map((s, i) => `<li><b>${i}</b><span>${D.STAGES[i]}</span><em>${esc(s)}</em></li>`).join("");
+    $("rd-tags").innerHTML = b.tags.map((t) => `<span>${esc(t)}</span>`).join("");
+    $("rd-ins").innerHTML = b.insights.map((t) => `<li>${esc(t)}</li>`).join("");
+    $("rd-made").innerHTML = b.made.map((t) => `<span>${esc(t)}</span>`).join("");
+    $("rd-links").innerHTML = b.links.map((l) => `<button data-read="${l}">${esc(D.SHELF.find((x) => x.id === l).title)}</button>`).join("");
+    $("rd-links").querySelectorAll("[data-read]").forEach((x) => (x.onclick = () => openReader(x.dataset.read)));
+    $("rd-stamp").innerHTML = `${b.date}<br>완독`;
+    show("lib"); $("reader").classList.add("on"); caption("read"); setHash(`lib-${id}`);
+    $("rd-close").focus();
+  }
+  function closeReader() { $("reader").classList.remove("on"); st.reading = null; caption(st.answer ? "ask" : "lib"); setHash(st.answer ? "lib-ask" : "lib"); lastFocus?.focus?.(); }
+  $("rd-close").onclick = closeReader;
+  $("reader").addEventListener("click", (e) => { if (e.target === $("reader")) closeReader(); });
+
+  // ── 키보드: Esc는 한 겹씩 닫고, Enter는 세션 덮기 확인 ──
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      if ($("reader").classList.contains("on")) return closeReader();
+      if ($("spread").classList.contains("on")) return go("hall");
+      if (st.confirm) { st.confirm = false; return renderDesk(); }
+      if (st.sel && $("s-desk").classList.contains("on")) return closeBook();
+    }
+    if (e.key === "Enter" && st.confirm && document.activeElement?.id !== "no-shelve") { e.preventDefault(); shelve(); }
+  });
+
+  // ── 주소 끝으로 장면 바로 열기 (시연·녹화용) ──
+  function fromHash() {
+    const h = location.hash.slice(1);
+    if (h === "pick") return go("pick");
+    if (h === "desk") return go("desk");
+    if (h.startsWith("desk-")) return go("desk", h.slice(5));
+    if (h === "lib") return go("lib");
+    if (h === "lib-ask") return go("lib", "ask");
+    if (h === "lib-hover") { go("lib"); return drawArcs("f1"); }
+    if (h.startsWith("lib-")) { go("lib"); return openReader(h.slice(4)); }
+    go("hall");
+  }
+  fromHash();
+})();
