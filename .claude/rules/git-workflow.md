@@ -30,8 +30,8 @@ git 명령을 실행하기 전에 읽는다. 위험한 명령 일부는 훅(`.cl
 
 ## 커밋 규칙
 
-- 커밋 전에 `python3 implementations/run_all_tests.py`와 링크 체크([docs-editing.md](docs-editing.md))가 통과하는지 확인한다.
-  `implementations/share-prototype`은 `node --test`로 따로 돌린다.
+- 커밋 전에 `python3 04-tests/run_all_tests.py`와 링크 체크([docs-editing.md](docs-editing.md))가 통과하는지 확인한다.
+  이 명령이 노드 시험(`04-tests/**/*.test.js`)까지 함께 돌린다.
 - 커밋 제목은 `타입(범위): 설명` — 타입은 docs · feat · fix · chore · refactor · project 중 하나, 범위는 영역(`second-brain`, `hooks` …).
 - 커밋 메시지에는 무엇이 어디서 나온 변경인지 적고, Claude가 공동 작성했으면 세션이 지정한 `Co-Authored-By:` 줄로 끝낸다.
   세션 시작 훅(`unreviewed-commits.sh`)이 이 줄로 "리뷰할 사람 커밋"과 구분한다.

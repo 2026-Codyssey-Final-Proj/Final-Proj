@@ -4,7 +4,7 @@
 # - 직접 실행 / verify 에이전트: `bash .claude/hooks/check-mermaid.sh --all` 로 저장소 전체 검사
 # 렌더러는 @mermaid-js/mermaid-cli(npx 캐시, 버전 고정)이고, Chrome은 이미 설치된 것을 쓴다
 # (PUPPETEER_SKIP_DOWNLOAD). 문법만 확인한다 — 순서가 뒤집히는 등 배치 문제는 사람이 그림을
-# 보고 확인해야 한다(docs/04-pattern-implementation/03-diagramming-guide.md "도구 환경").
+# 보고 확인해야 한다(01-docs/04-pattern-implementation/03-diagramming-guide.md "도구 환경").
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 0
 
 CHROME="${MERMAID_CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
@@ -16,7 +16,7 @@ fi
 if [ "$1" = "--all" ]; then
   files=$(grep -rl --include='*.md' '```mermaid' . | grep -v '/node_modules/' | sort)
 else
-  f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null)
+  f=$(json_field tool_input.file_path)
   [ -n "$f" ] && [ -f "$f" ] && grep -q '```mermaid' "$f" || exit 0
   files="$f"
 fi

@@ -1,7 +1,7 @@
 <!-- claude-drafted: 2026-10-16, 2026-10-17 갱신 — 이재엽의 요청으로 Claude가 README를 새로 썼고, 10/17에 이름 확정(이슈 #51)과 진행 상황을 반영했다. -->
 
 <p align="center">
-  <img src="assets/mascot/mascot-v1.webp" alt="플로로" width="150">
+  <img src="02-frontend/assets/mascot/mascot-v1.webp" alt="플로로" width="150">
 </p>
 
 <h1 align="center">🧊 Floe</h1>
@@ -64,7 +64,7 @@ flowchart LR
 | | 영역 | 상태 |
 |---|---|---|
 | 📋 | 요구사항 13개 · 우선순위 | ✅ |
-| 🏛 | 구조 결정 ADR | 🟡 채택 결정됨 · 병합 대기 (PR #80) |
+| 🏛 | 구조 결정 ADR | ✅ 확정 (0002~0006 · 0008 · 0009, 10/17) |
 | 🖼 | 캔버스 · 화면 구조 | ✅ 초안 |
 | 🦭 | **프로토타입** (단계 · 이해 확인 · 설계도 · Claude 연결) | ✅ 시험 104개 |
 | 🔒 | 공유 규칙 시험 화면 | ✅ 시험 17개 |
@@ -78,18 +78,31 @@ flowchart LR
 
 ---
 
+## 📁 폴더 안내
+
+| | 폴더 | 무엇 |
+|---|---|---|
+| 📄 | [`01-docs/`](01-docs/README.md) | 문서 — 문서 지도부터 |
+| 🖥 | [`02-frontend/`](02-frontend/README.md) | 화면 |
+| ⚙️ | [`03-backend/`](03-backend/README.md) | 서버 · 판정 규칙 · AI 연결 |
+| 🧪 | [`04-tests/`](04-tests/README.md) | 시험 |
+| 📦 | [`05-projects/`](05-projects/README.md) | 팀 제품 밖 프로젝트 (세컨드 브레인) |
+| 🤖 | [`.claude/`](.claude/README.md) | Claude가 읽는 설정 — 사람은 안 고쳐도 됨 |
+
+---
+
 ## 🚀 써 보기
 
 ```bash
 git clone https://github.com/2026-Codyssey-Final-Proj/Final-Proj.git
 cd Final-Proj
-node implementations/navigator-prototype/server.js   # 🦭 → http://127.0.0.1:4317
-python3 implementations/run_all_tests.py             # 🧪
+node 03-backend/navigator/server.js   # 🦭 → http://127.0.0.1:4317
+python3 04-tests/run_all_tests.py             # 🧪
 ```
 
-📘 **처음이라면 → [팀 작업 가이드](docs/00-overview/team-guide.md)** (내 키는 어디에 두고, 작업은 어디에 올리나)
+📘 **처음이라면 → [팀 작업 가이드](01-docs/00-overview/team-guide.md)** (내 키는 어디에 두고, 작업은 어디에 올리나)
 
-🔑 **각자 자기 것으로** 동작: 내 API 키(`ANTHROPIC_API_KEY`) → 없으면 이 컴퓨터의 Claude 구독 → 없으면 미리 만든 응답으로 시연 모드 · 켜는 법 → [프로토타입 README](implementations/navigator-prototype/README.md)
+🔑 **각자 자기 것으로** 동작: 내 API 키(`ANTHROPIC_API_KEY`) → 없으면 이 컴퓨터의 Claude 구독 → 없으면 미리 만든 응답으로 시연 모드 · 켜는 법 → [프로토타입 README](03-backend/navigator/README.md)
 
 ---
 
@@ -108,4 +121,4 @@ python3 implementations/run_all_tests.py             # 🧪
 
 ## 🔗 더 보기
 
-📋 [요구사항](docs/00-overview/requirements.md) &nbsp;·&nbsp; 🗓 [일정](docs/00-overview/schedule.md) &nbsp;·&nbsp; 🎯 [우선순위](docs/00-overview/team-priorities.md) &nbsp;·&nbsp; 🏛 [ADR](docs/03-pattern-analysis/adr/) &nbsp;·&nbsp; 🔒 [공유·보안](docs/00-overview/team-sharing-security.md) &nbsp;·&nbsp; 🧭 [시작하기](GETTING_STARTED.md)
+📋 [요구사항](01-docs/00-overview/requirements.md) &nbsp;·&nbsp; 🗓 [일정](01-docs/00-overview/schedule.md) &nbsp;·&nbsp; 🎯 [우선순위](01-docs/00-overview/team-priorities.md) &nbsp;·&nbsp; 🏛 [ADR](01-docs/03-pattern-analysis/adr/) &nbsp;·&nbsp; 🔒 [공유·보안](01-docs/00-overview/team-sharing-security.md) &nbsp;·&nbsp; 🧭 [시작하기](GETTING_STARTED.md)

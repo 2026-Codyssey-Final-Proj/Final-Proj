@@ -14,7 +14,7 @@ __pycache__/
 *.pyc
 
 # 비밀값 파일 — .claude/hooks/check-secrets.sh의 금지 경로와 같은 목록 (어긋나면
-# implementations/hooks/test_check_secrets.py가 잡는다).
+# 04-tests/hooks/test_check_secrets.py가 잡는다).
 # 훅은 "무시된 파일은 보지 않는다"는 전제라, 여기서 먼저 막아야 untracked .env가 커밋을 막지 않는다.
 !.env.example
 !.env.sample
@@ -26,6 +26,8 @@ credentials.json
 *.pfx
 
 # 세컨드 브레인 데이터 브랜치(data)의 작업 폴더 — ADR-0007
+05-projects/second-brain/data/
+# 폴더 번호를 붙이기 전(2026-10-17)의 자리 — 각자 컴퓨터에 남아 있을 수 있는 개인 데이터라 계속 무시한다
 projects/second-brain/data/
 
 # 이 컴퓨터의 캘린더 소유자 표시 — calendar-owner-guard.sh. 사본·새 클론에는 없어서 처음엔 일정 쓰기가 막힌다

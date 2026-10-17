@@ -24,6 +24,6 @@ if [ -z "${CALENDAR_OWNER_FILE:-}" ]; then
   fi
 fi
 
-jq -n '{hookSpecificOutput: {hookEventName: "PreToolUse", permissionDecision: "deny",
-  permissionDecisionReason: "이 컴퓨터에는 캘린더 소유자 표시(.claude/calendar-owner.local)가 없어 일정 등록·수정을 막았습니다. 다른 사람이 이 환경을 가져다 쓸 때 저장소 주인의 캘린더에 일정이 등록되지 않게 하는 안전장치입니다. 이 컴퓨터에서 연결된 캘린더가 본인 것이 맞다면 그 파일을 만들어 주세요(예: touch .claude/calendar-owner.local). 파일은 저장소에 올라가지 않습니다."}}'
+printf '%s\n' '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "deny",
+  "permissionDecisionReason": "이 컴퓨터에는 캘린더 소유자 표시(.claude/calendar-owner.local)가 없어 일정 등록·수정을 막았습니다. 다른 사람이 이 환경을 가져다 쓸 때 저장소 주인의 캘린더에 일정이 등록되지 않게 하는 안전장치입니다. 이 컴퓨터에서 연결된 캘린더가 본인 것이 맞다면 그 파일을 만들어 주세요(예: touch .claude/calendar-owner.local). 파일은 저장소에 올라가지 않습니다."}}'
 exit 0

@@ -3,7 +3,7 @@
 # 5단계 — 구현 실행 (Implement): 화면과 운영 로그
 
 원문: `~/proj/coding_marathon_result/코딩마라톤 가이드/5. 구현 실행/<폴더>/README.md` (폴더 5개). 화면을 만들 때는 먼저 루트 `CLAUDE.md` 라우팅의
-"화면(UI)" 줄을 따르고([patterns.md](../../../../docs/catalog/patterns.md) UI 패턴 카드, 미적 방향은
+"화면(UI)" 줄을 따르고([patterns.md](../../../../01-docs/catalog/patterns.md) UI 패턴 카드, 미적 방향은
 `frontend-design`), 이 표는 **라이브러리·패턴 후보를 넓게 볼 때** 쓴다.
 
 ## 디자인 시스템 — UI 컴포넌트 라이브러리 (8)
@@ -53,7 +53,7 @@
 | Material Design 3 | 고급 | 안드로이드와 비슷한 느낌 |
 | Apple HIG 기준 | 고급 | iOS/macOS 앱이거나 그 느낌 |
 
-토큰은 한 곳에서만 정의한다 — [patterns.md](../../../../docs/catalog/patterns.md) "디자인 토큰 단일 원천 + 라이트/다크".
+토큰은 한 곳에서만 정의한다 — [patterns.md](../../../../01-docs/catalog/patterns.md) "디자인 토큰 단일 원천 + 라이트/다크".
 
 ## 컬러 팔레트 (10)
 

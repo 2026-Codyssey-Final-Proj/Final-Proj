@@ -4,7 +4,7 @@
 # "커밋/PR 시점 리뷰"(.claude/rules/review-mode.md)를 기억에만 맡기지 않는다.
 # stdout은 세션 컨텍스트에 들어간다. 실패해도 세션을 막지 않는다(항상 exit 0).
 cd "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || exit 0
-log=docs/00-overview/growth-log.md
+log=01-docs/00-overview/growth-log.md
 [ -f "$log" ] || exit 0
 
 base=$(sed -n 's/^last-reviewed: *\([0-9a-f]\{7,40\}\).*/\1/p' "$log" | head -1)

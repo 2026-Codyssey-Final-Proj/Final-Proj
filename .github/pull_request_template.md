@@ -6,7 +6,7 @@
 
 - [ ] **리뷰어를 한 명 지정했다** (본인 외, 코멘트 한 줄이면 충분 — 협업 증빙)
 - [ ] 관련 이슈에 이 PR 링크를 남겼다
-- [ ] `python3 implementations/run_all_tests.py` 통과 (코드를 바꾼 경우)
+- [ ] `python3 04-tests/run_all_tests.py` 통과 (코드를 바꾼 경우)
 - [ ] 비밀값·인터뷰 응답자 이름·연락처가 없다
 - [ ] Claude가 쓴 부분에는 `claude-drafted` 표시가 있다
 - [ ] 병합 뒤 이 브랜치를 지운다

@@ -10,18 +10,18 @@ PRD의 `Security & Compliance` 칸을 쓸 때 읽는다.
 
 ## 1. 전제
 
-- 이 레포는 **비공개**이지만 **협업자 전원이 읽는다.** 나중에 공개로 바꾸면 이력째 보인다([migration.md](../../docs/00-overview/migration.md)).
+- 이 레포는 **비공개**이지만 **협업자 전원이 읽는다.** 나중에 공개로 바꾸면 이력째 보인다([migration.md](../../01-docs/00-overview/migration.md)).
 - **Claude Code로 작업하는 모든 내용은 AI 서비스로 전송된다.** 무엇을 넣을지는 사람이 이 사실을 알고 정한다. 남의 원문을 내 세션에
-  붙이면 그 글도 전송된다 — 공유본만 붙인다([team-sharing-security.md](../../docs/00-overview/team-sharing-security.md)).
+  붙이면 그 글도 전송된다 — 공유본만 붙인다([team-sharing-security.md](../../01-docs/00-overview/team-sharing-security.md)).
 
 ## 2. 기록하지 않는 것
 
 | 무엇 | 대신 | 출처 |
 |---|---|---|
-| API 키, 토큰, 비밀번호 | 환경변수로만 참조. 코드·문서·커밋에 쓰지 않는다 | [Twelve-Factor Config](../../docs/06-service/01-twelve-factor-app.md), [external-integration.md](external-integration.md) |
+| API 키, 토큰, 비밀번호 | 환경변수로만 참조. 코드·문서·커밋에 쓰지 않는다 | [Twelve-Factor Config](../../01-docs/06-service/01-twelve-factor-app.md), [external-integration.md](external-integration.md) |
 | 실제 이메일 주소(커밋 작성자) | 각자 GitHub noreply 주소 | [git-workflow.md](git-workflow.md) |
 | 서버 주소(도메인·IP·포트), DB 이름, 배포 계정·경로 | `<자리표시자>` | 코딩마라톤 결과를 옮길 때의 기준 |
-| 인터뷰 응답자의 이름·연락처·식별 가능한 사연 | `응답자 A` 요약 | [team-sharing-security.md](../../docs/00-overview/team-sharing-security.md) |
+| 인터뷰 응답자의 이름·연락처·식별 가능한 사연 | `응답자 A` 요약 | [team-sharing-security.md](../../01-docs/00-overview/team-sharing-security.md) |
 | 개인적인 말·감정이 든 원문 | 나만 보기 → 팀에는 요약만 | 같은 곳 |
 
 ## 3. 밖으로 나가는 것
@@ -47,7 +47,7 @@ PRD의 `Security & Compliance` 칸을 쓸 때 읽는다.
 
 | 칸 | 왜 필요한가 | 언제 정하나 |
 |---|---|---|
-| 기록의 민감도 구분 (저장 가능 / 조심해서 저장 / 저장 금지) | 무엇을 어디까지 적을지 판단하는 기준. V1 세컨드 브레인은 세 단계로 정했다 | 공유 규칙 확정 때 — [team-sharing-security.md](../../docs/00-overview/team-sharing-security.md) |
+| 기록의 민감도 구분 (저장 가능 / 조심해서 저장 / 저장 금지) | 무엇을 어디까지 적을지 판단하는 기준. V1 세컨드 브레인은 세 단계로 정했다 | 공유 규칙 확정 때 — [team-sharing-security.md](../../01-docs/00-overview/team-sharing-security.md) |
 | 인터뷰 기록의 보관 기간과 지우는 방법 | 쌓이기만 한다 | 인터뷰 설계 때 |
 | 백업과 복구 | 저장소가 유일한 사본이 되면 잃을 위험 | 개인 데이터 저장 구조를 정할 때 |
 | 서버가 생길 때의 인증·접근 권한 | 대회 시연은 서버 없이 한다. 서비스로 낼 때는 인증이 필요하다 | 서버를 올리기 전 — 6-3의 요청 판정 순서로 확인 |
@@ -103,9 +103,9 @@ Top 10 항목 이름으로 묶고, 6단계 보안 점검에서 ASVS의 해당 �
 
 ## 언제 이 기준을 꺼내는가 — 게이트마다
 
-단계마다 무엇을 확인할지는 [`docs/catalog/checklist.md`](../../docs/catalog/checklist.md)의
+단계마다 무엇을 확인할지는 [`01-docs/catalog/checklist.md`](../../01-docs/catalog/checklist.md)의
 "단계별 보안 점검 체크리스트"에 있고, 모든 게이트 리뷰에서 대조한다
-([gates.md](../../docs/00-overview/gates.md) "보안 점검", 사용자 결정 2026-10-01). 5절의 빈칸도 이
+([gates.md](../../01-docs/00-overview/gates.md) "보안 점검", 사용자 결정 2026-10-01). 5절의 빈칸도 이
 체크리스트가 가리키는 단계에서 채워진다.
 
 ## 이 기준이 하지 않는 것

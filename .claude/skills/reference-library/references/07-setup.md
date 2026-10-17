@@ -6,7 +6,7 @@
 
 **이 표는 들이는 목록이 아니다.** 하나라도 쓰려면 `dev-workflow` 명령 4로 분석하고
 [external-integration.md](../../../rules/external-integration.md)에 따라 판정해
-[external-tools.md](../../../../docs/catalog/external-tools.md)에 남긴다. 사용자는 **개인 데이터를 밖으로 보내는
+[external-tools.md](../../../../01-docs/catalog/external-tools.md)에 남긴다. 사용자는 **개인 데이터를 밖으로 보내는
 도구를 원하지 않는다** — 데이터가 나가는 도구는 그 점을 먼저 말한다.
 
 ## Claude 스킬 (16)
@@ -43,7 +43,7 @@
 | claude-opus-4-5-migration | Sonnet 4.x·Opus 4.1 → Opus 4.5 이전 | 지난 모델 이전용 — 지금은 해당 없음 |
 | explanatory-output-style | 설명형 출력 스타일 | 출력 스타일은 앱 설정으로도 바꿀 수 있음 |
 | learning-output-style | 학습형 출력 스타일 | 원문제("배운 게 재사용되지 않는다")와 맞닿음 — 명령 4 후보 |
-| ralph-wiggum | 반복·자기참조 실행 기법 | 자기 참조 도구 체크리스트(implementations.md 4번)와 같이 본다 |
+| ralph-wiggum | 반복·자기참조 실행 기법 | 자기 참조 도구 체크리스트(code.md 4번)와 같이 본다 |
 
 ## MCP 서버 (4)
 
