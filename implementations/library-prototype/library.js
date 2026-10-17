@@ -34,7 +34,7 @@
     if (where === "hall") { show("hall"); caption("hall"); setHash("hall"); $("tome").focus(); return; }
     if (where === "pick") { show("hall"); $("spread").classList.add("on"); caption("pick"); setHash("pick"); $("spread").querySelector(".go").focus(); return; }
     if (where === "desk") { show("desk"); st.tab = "lib"; st.sel = arg || null; st.confirm = false; renderDesk(); setHash(arg ? `desk-${arg}` : "desk"); return; }
-    if (where === "lib") { show("lib"); $("q").value = ""; st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
+    if (where === "lib") { show("lib"); spot.clear(); spot.close(); st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
   }
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
   $("tome").onclick = () => go("pick");
@@ -138,23 +138,35 @@
       b.onmouseenter = b.onfocus = () => drawArcs(b.dataset.read);
       b.onmouseleave = b.onblur = () => drawArcs(null);
     });
-    st.results = st.answer && st.answer.search ? window.LibSearch.searchLibrary(st.answer.search, D) : null;
+    st.results = st.search ? window.LibSearch.searchLibrary(st.search, D) : null;
     const none = st.results && !st.results.length;
     $("lib-seal").innerHTML = seal(none ? "think" : st.answer ? "look" : "idle", 170);
-    $("floro-say").textContent = none ? `서고에는 ‘${st.answer.search.trim()}’ 이야기가 없어요. 다른 말로 찾아볼까요?`
-      : st.results ? `찾았어요! ${st.results.length}곳에 있어요.` : st.answer ? "찾았어요! 오른쪽에 펼쳐 둘게요." : "기억 안 나는 게 있으면 저한테 물어봐요.";
+    $("floro-say").textContent = none ? `서고에는 ‘${st.search.trim()}’ 이야기가 없어요. 다른 말로 찾아볼까요?`
+      : st.results ? `찾았어요! 검색창 밑에 ${st.results.length}곳을 펼쳐 뒀어요.` : st.answer ? "찾았어요! 오른쪽에 펼쳐 둘게요." : "기억 안 나는 게 있으면 저한테 물어봐요.";
     $("asks").innerHTML = D.ASK.map((a, i) => `<button class="pillbtn glass" data-ask="${i}">${esc(a.q)}</button>`).join("");
-    $("asks").querySelectorAll("[data-ask]").forEach((b) => (b.onclick = () => { $("q").value = ""; st.answer = D.ASK[+b.dataset.ask]; renderLib(); setHash("lib-ask"); }));
+    $("asks").querySelectorAll("[data-ask]").forEach((b) => (b.onclick = () => { spot.clear(); spot.close(); st.answer = D.ASK[+b.dataset.ask]; renderLib(); setHash("lib-ask"); }));
     renderAnswer();
     caption(st.results ? "search" : st.answer ? "ask" : "lib");
     drawArcs(null);
   }
-  $("refs-btn").onclick = () => { $("q").value = ""; st.answer = D.ASK.find((a) => a.refs); renderLib(); };
+  $("refs-btn").onclick = () => { spot.clear(); spot.close(); st.answer = D.ASK.find((a) => a.refs); renderLib(); };
 
-  // ── 서고에서 찾기 — 글자를 칠 때마다 찾고(0.12초 뒤), 결과는 플로로의 카드로 ──
-  let typing;
-  $("q").addEventListener("input", () => { clearTimeout(typing); typing = setTimeout(() => { const q = $("q").value; st.answer = q.trim() ? { search: q } : null; renderLib(); }, 120); });
-  $("search").addEventListener("submit", (e) => { e.preventDefault(); clearTimeout(typing); const q = $("q").value; st.answer = q.trim() ? { search: q } : null; renderLib(); $("answer").querySelector("li button")?.focus(); });
+  // ── 서고에서 찾기 — 결과는 검색창 바로 밑에 펼친다(spotlight.js). 오른쪽 열은 "어디에 있는지" ──
+  const KIND = { shelf: "끝낸 책", open: "열어 둔 책", ref: "레퍼런스" };
+  const WHERE = (x) => x.kind === "shelf" ? `서고 › ${SHELVES[D.SHELF.find((b) => b.id === x.id).shelf].label} 책장` : x.kind === "open" ? "작업 화면 › 도서관 위젯" : "서고 › 레퍼런스 서가";
+  const ICON = (x) => x.kind === "ref" ? '<span class="ic-ref">🔖</span>'
+    : `<i class="ic-book" style="background:linear-gradient(160deg,${x.kind === "open" ? D.OPEN.find((b) => b.id === x.id).tone : "#cfe6ff"},#6f9cf0)"></i>`;
+  const spot = window.Spotlight.attach({
+    form: $("search"), input: $("q"), placeholderHint: "펼치기",
+    search: (q) => window.LibSearch.searchLibrary(q, D).map((x) => ({
+      icon: ICON(x), plain: x.title, hint: "펼치기",
+      title: window.LibSearch.highlight(x.title, q),
+      sub: `${KIND[x.kind]} · ${x.byTitle ? "이름에 있어요" : `${esc(x.where)} · ${window.LibSearch.highlight(x.text, q)}`}${x.count > 1 ? ` 외 ${x.count - 1}곳` : ""}`,
+      right: esc(WHERE(x)),
+      open: () => x.kind === "shelf" ? openReader(x.id) : x.kind === "open" ? go("desk", x.id) : openReader(D.REFS.find((r) => r.id === x.id).used[0]),
+    })),
+    onChange: (q) => { st.search = q.trim() ? q : ""; if (st.search) st.answer = null; renderLib(); },
+  });
 
   // 같은 배움(태그)을 쓴 책끼리 금빛 선으로 잇는다 — 영상 7번 장면
   function drawArcs(id) {
@@ -178,22 +190,6 @@
     const box = $("answer"), a = st.answer;
     if (!a) { box.hidden = true; return; }
     box.hidden = false;
-    if (a.search) {
-      const KIND = { shelf: "끝낸 책", open: "열어 둔 책", ref: "레퍼런스" }, H = window.LibSearch.highlight;
-      const list = st.results;
-      box.innerHTML = `<h3>${seal(list.length ? "happy" : "think", 28)}‘${esc(a.search.trim())}’ 찾은 곳 ${list.length}개</h3>${list.length
-        ? `<ul>${list.map((x) => `<li><button data-hit="${x.kind}:${x.id}"><i></i><span>${H(x.title, a.search)}<span class="kind">${KIND[x.kind]}</span></span><small>${x.byTitle ? "이름에 있어요" : `${esc(x.where)} · ${H(x.text, a.search)}`}${x.count > 1 ? ` 외 ${x.count - 1}곳` : ""}</small></button></li>`).join("")}</ul>`
-        : `<p style="margin:0;font-size:13.5px;color:var(--ink-2)">책 이름 · 배운 것 · 단계마다 정한 것 · 만든 파일 이름에서 찾아요. 더 짧은 말로 찾아보세요.</p>`}
-        <div class="foot">표지에 있는 글만 찾아요 — 본문은 책을 펼칠 때 가져와요. <button class="pillbtn" id="ans-close" style="margin-left:6px">지우기</button></div>`;
-      $("ans-close").onclick = () => { $("q").value = ""; st.answer = null; renderLib(); $("q").focus(); };
-      box.querySelectorAll("[data-hit]").forEach((b) => (b.onclick = () => {
-        const [kind, id] = b.dataset.hit.split(":");
-        if (kind === "shelf") openReader(id);
-        else if (kind === "open") go("desk", id);   // 열어 둔 책은 위젯에서 펼친다
-        else openReader(D.REFS.find((x) => x.id === id).used[0]);   // 레퍼런스는 그것을 쓴 책을 펼친다
-      }));
-      return;
-    }
     if (a.refs) {
       box.innerHTML = `<h3>${seal("happy", 28)}플로로가 찾은 레퍼런스 ${D.REFS.length}개</h3><ul>${D.REFS.map((r) => `<li><button data-read="${r.used[0]}"><i></i><span>${esc(r.title)} · ${esc(r.kind)}</span><small>${esc(r.line)} — 쓰인 책: ${r.used.map((u) => esc(D.SHELF.find((b) => b.id === u).title)).join(", ")}</small></button></li>`).join("")}</ul>
         <div class="foot">링크와 한 줄만 모아 둬요. 본문은 열 때 원래 자리에서 가져와요.</div>`;
@@ -230,7 +226,6 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       if ($("reader").classList.contains("on")) return closeReader();
-      if (document.activeElement === $("q") && $("q").value) { $("q").value = ""; st.answer = null; return renderLib(); }
       if ($("spread").classList.contains("on")) return go("hall");
       if (st.confirm) { st.confirm = false; return renderDesk(); }
       if (st.sel && $("s-desk").classList.contains("on")) return closeBook();
@@ -248,7 +243,7 @@
     if (h === "lib") return go("lib");
     if (h === "lib-ask") return go("lib", "ask");
     if (h === "lib-hover") { go("lib"); return drawArcs("f1"); }
-    if (h.startsWith("lib-q=")) { go("lib"); const q = decodeURIComponent(h.slice(6)); $("q").value = q; st.answer = { search: q }; return renderLib(); }
+    if (h.startsWith("lib-q=")) { go("lib"); spot.set(decodeURIComponent(h.slice(6))); return $("q").focus(); }
     if (h.startsWith("lib-")) { go("lib"); return openReader(h.slice(4)); }
     go("hall");
   }

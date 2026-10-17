@@ -167,7 +167,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lib-head { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); padding: 8px 32px; border-radius: 999px; text-align: center; z-index: 3; }
 .lib-head b { display: block; font-size: 15px; } .lib-head span { font-size: 12px; color: var(--ink-2); }
 .lib-out { position: absolute; top: 22px; left: 22px; z-index: 3; }
-.lib-refs { position: absolute; top: 22px; right: 22px; z-index: 3; }
+.lib-refs { position: absolute; top: 22px; right: 22px; z-index: 3; display: flex; gap: 8px; }
+.skylink { color: var(--gold); text-decoration: none; border-color: rgba(255, 217, 138, .5); }
 .stage { position: absolute; inset: 150px 0 0 0; }
 .search { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); width: min(520px, calc(100% - 32px)); height: 42px; border-radius: 999px; display: flex; align-items: center; gap: 8px; padding: 0 14px; z-index: 5; }
 .search svg { width: 18px; height: 18px; flex: none; stroke: var(--ink-2); fill: none; stroke-width: 2; stroke-linecap: round; }
@@ -236,3 +237,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .shelfbox { transform: scale(.7); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ── 검색창 밑으로 펼치는 결과 (Spotlight 방식, spotlight.js) ── */
+.spot { flex-wrap: wrap; height: auto !important; min-height: 46px; border-radius: 22px !important; padding: 0 14px !important; align-content: flex-start; }
+.spot > svg, .spot > input, .spot > .kbd { margin: 12px 0; }
+.spot input { position: relative; z-index: 1; }
+.spot .spot-ghost { position: absolute; top: 12px; line-height: 22px; font-size: 14.5px; color: var(--mute); pointer-events: none; white-space: nowrap; overflow: hidden; max-width: 60%; text-overflow: ellipsis; }
+.spot.open { background: rgba(14, 24, 72, .86); }
+.spot-list { list-style: none; width: 100%; margin: 0 0 10px; padding: 8px 0 0; border-top: 1px solid var(--edge); max-height: min(420px, 55vh); overflow-y: auto; }
+.spot-list li { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 12px; cursor: pointer; }
+.spot-list li[aria-selected="true"] { background: rgba(207, 230, 255, .16); }
+.spot-list .spot-ic { width: 36px; height: 36px; display: grid; place-items: center; }
+.spot-list .spot-tx { min-width: 0; display: flex; flex-direction: column; }
+.spot-list .spot-tx b { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spot-list .spot-tx small { font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spot-list .spot-rt { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+.spot-list .spot-key { font-size: 11.5px; padding: 2px 8px; border-radius: 6px; background: rgba(255, 255, 255, .14); color: var(--ink); }
+.spot-list .spot-none { display: block; cursor: default; color: var(--ink-2); font-size: 13.5px; padding: 12px 10px; }
+.spot-list mark { background: rgba(255, 217, 138, .35); color: inherit; border-radius: 3px; padding: 0 1px; }
+.ic-book { width: 26px; height: 34px; border-radius: 2px 5px 5px 2px; box-shadow: inset 3px 0 0 rgba(0, 0, 0, .18); }
+.ic-ref { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: rgba(207, 230, 255, .18); font-size: 15px; }
+.ic-star { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle, rgba(255, 246, 220, .9) 0 22%, rgba(255, 217, 138, .35) 23% 45%, transparent 46%); }
