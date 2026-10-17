@@ -69,11 +69,15 @@ Michael Nygard가 2011년에 제안한 개념으로, **하나의 아키텍처적
 | [0005](../../../projects/second-brain/docs/03-pattern-analysis/adr/0005-issue-format-and-vault-folders.md) | (second-brain) 이슈 제목 틀과 창고 폴더 — `목적 / 이름 / 내용 / 마감` | Accepted |
 | [0006](../../../projects/second-brain/docs/03-pattern-analysis/adr/0006-serial-numbers.md) | (second-brain) 할 일 일련번호 — 목적마다 범위, 다시 쓰지 않음 | Accepted |
 | [0007](../../../projects/second-brain/docs/03-pattern-analysis/adr/0007-data-branch.md) | (second-brain) 데이터는 `data` 브랜치에 바로 커밋 — 병합은 코드·규칙만 | Accepted |
+| [0008](0008-sequential-coding-protocol.md) | (팀) 요구사항 하나씩 도는 순차 코딩 프로토콜("한 바퀴") | Accepted |
+| [0009](0009-ai-provider-subscription-first.md) | (팀) AI 호출은 사용자 본인의 Claude 구독이 기본 — Claude만 구매한 사람도 쓴다 | Accepted |
+
+> **번호가 두 갈래다.** 위 표의 `(second-brain)`·`(qa-prep-system)` 항목은 V1(개인) 번호이고, 이 폴더의 `0002-*`~`0006-*` 파일은 **팀 ADR**(시연 구조·AI 경계·장기 기억·저장 분리·통합, 모두 Accepted 2026-10-17)이다. 팀 ADR은 `(팀)`으로 구분하고, V1 ADR을 인용할 때는 `V1-ADR-NNNN`으로 쓴다.
 
 ADR-0001은 이 시스템 자체(어떻게 만들어졌는지)를 설명하는 결정입니다. **번호는
 워크스페이스 전체에서 하나의 연번**을 씁니다 — 프로젝트 전용 ADR은 파일을
 `projects/<슬러그>/docs/03-pattern-analysis/adr/`에 두더라도 이 표에 행을 추가하고
-다음 번호(지금은 `0008`)를 받습니다(실무 규칙 2번 — 한 번 쓴 번호는 재사용하지 않는다).
+다음 번호(지금은 `0010`)를 받습니다(실무 규칙 2번 — 한 번 쓴 번호는 재사용하지 않는다).
 
 ## 출처
 - Nygard, M., *Documenting Architecture Decisions* (2011) — [템플릿 정리](https://github.com/joelparkerhenderson/architecture-decision-record/blob/main/locales/en/templates/decision-record-template-by-michael-nygard/index.md)
