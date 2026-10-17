@@ -602,10 +602,12 @@
     else main = `<b>${allDone() ? "다 했어요! · " : ""}${s.n}단계</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
     const base = st.ping ? "look" : face()[0];
     return `<button class="pill${st.ping || st.warn ? " ping" : ""}" data-act="pill" aria-expanded="false" aria-label="플로로 펼치기">
-      <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { paws: true })}</span>${main}${st.feed.at ? `<span class="led on"></span>` : ""}</button>`;
+      <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { face: true })}</span>${main}${st.feed.at ? `<span class="led on"></span>` : ""}</button>`;
   }
-  // 띠 — 귀만 빼꼼. 마우스를 올리면 한 줄로 나온다
-  const stripHTML = () => `<button class="strip" data-act="strip" aria-label="플로로 부르기" title="마우스를 올리면 나와요"><span class="ears" aria-hidden="true"></span><span class="zz" aria-hidden="true">z<b>z</b></span><i></i></button>`;
+  // 띠 — 물결 선 위로 얼굴 위쪽만 빼꼼. 마우스를 올리면 한 줄로 나온다. 졸면 body.dozing으로 눈을 감는다(app.css)
+  const WAVE = `<svg class="wl" viewBox="0 0 150 12" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="strip-wl" x2="1"><stop offset="0" stop-color="#A9DDFF" stop-opacity="0"></stop><stop offset=".5" stop-color="#A9DDFF" stop-opacity=".9"></stop><stop offset="1" stop-color="#A9DDFF" stop-opacity="0"></stop></linearGradient></defs>
+    <path d="M6 5 Q40 2 75 5 Q110 8 144 5" fill="none" stroke="url(#strip-wl)" stroke-width="2" stroke-linecap="round"></path><path d="M40 9 Q58 7.5 72 9 M84 9.5 Q98 8 112 9.5" fill="none" stroke="#A9DDFF" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg>`;
+  const stripHTML = () => `<button class="strip" data-act="strip" aria-label="플로로 부르기" title="마우스를 올리면 나와요"><span class="head" aria-hidden="true">${cat("idle", 58, { face: true })}</span>${WAVE}<span class="zz" aria-hidden="true">z<b>z</b></span></button>`;
   function greetHTML(enter) {
     deskKeys = { Enter: { act: "open" } };
     return `<div class="isl greet${enter}"><section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
@@ -763,7 +765,12 @@
     clearTimeout(sayTimer);
     sayTimer = setTimeout(() => b.classList.remove("show"), 2900);
   }
-  const playOn = (host, cls) => { if (STILL || !host) return; host.classList.remove("squish", "purring", "hop"); void host.offsetWidth; host.classList.add(cls); };
+  // 한 번 하는 움직임(seal.css · app.css). 끝나면 떼어 낸다 — 헤엄의 물방울처럼 붙어 있는 동안 계속 보이는 것이 있어서
+  const playOn = (host, cls) => {
+    if (STILL || !host) return;
+    host.classList.remove("squish", "purring", "hop", "swim"); void host.offsetWidth; host.classList.add(cls);
+    setTimeout(() => host.classList.remove(cls), 3600);
+  };
   const center = (el, fy = 0.5) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height * fy]; };
   // 쓰다듬기 — 눌렀으면 하트 몇 개와 한마디, 문질렀으면 흥얼흥얼. 친해진 정도가 올라가면 별이 튄다
   function pet(kind) {
@@ -833,10 +840,17 @@
     strokeState = C.stroke(strokeState, e.clientX, e.timeStamp);
     if (strokeState.petted) pet("stroke");
   });
+  function lookAround() {
+    const host = liveCat();
+    if (!host) return;
+    const [x, y] = center(host, 0.4);
+    [[-400, -40], [400, -40], [0, 0]].forEach(([dx, dy], i) => setTimeout(() => { if (!looked) return; C.follow(host, { x: x + dx, y: y + dy }); }, i * 900));
+  }
   // 가만히 두면 졸다가 잠든다. 움직이면 깬다
-  let lastActive = Date.now();
+  let lastActive = Date.now(), swam = false, looked = false;
   function activity() {
     lastActive = Date.now();
+    swam = false; looked = false;
     if (sleepState === "awake") return;
     const was = sleepState;
     sleepState = "awake";
@@ -844,6 +858,10 @@
   }
   setInterval(() => {
     if (isPhone() || st.busy) return;
+    // 20초쯤 가만히 있으면 졸기 전에 숨구멍에서 한 바퀴 헤엄친다(쉴 때마다 한 번)
+    if (!swam && sleepState === "awake" && Date.now() - lastActive >= 20_000) { swam = true; playOn(liveCat(), "swim"); }
+    // 8초쯤 가만히 있으면 두리번 — 왼쪽 → 오른쪽 → 앞(쉴 때마다 한 번). 마우스를 움직이면 눈이 다시 마우스를 따라간다
+    if (!looked && !STILL && sleepState === "awake" && Date.now() - lastActive >= 8_000) { looked = true; lookAround(); }
     const s = C.sleepy(Date.now() - lastActive);
     if (s === sleepState) return;
     sleepState = s;

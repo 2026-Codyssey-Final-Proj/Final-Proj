@@ -2,7 +2,7 @@
 // 2026-10-15 "몽돌-도서관-연동-데모-리퀴드글래스.mp4의 물범과 똑같이, cat.js의 방식은 무시해도 된다" 요청으로 처음부터 다시 그림
 // (그 전에는 치즈 고양이 '나비'였고 파일도 cat.js·NavCat이었다).
 // 영상 속 플로로: 푸른 기 도는 하얀 강낭콩 몸(왼쪽은 곧게, 아래 오른쪽이 불룩, 오른쪽 아래에 옅은 그늘) · 작은 남색 점 눈 · 아주 작은 코와 ω 입 ·
-// 하늘색 Y자 앞지느러미와 그 아래 받치는 곡선 · 오른쪽 아래로 뻗은 꽃잎 두 장 꼬리 · 기쁘거나 잘 때만 분홍 볼 · 살필 때만 수염.
+// 하늘색 Y자 앞지느러미와 그 아래 받치는 곡선 · 오른쪽 아래로 뻗은 꽃잎 두 장 꼬리 · 기쁘거나 잘 때만 분홍 볼 · 수염은 늘(2026-10-17, 전에는 살필 때만).
 // 카드 속 플로로(opts.hole)은 울퉁불퉁한 얼음 테두리를 두른 별밤 숨구멍에서 가슴까지 내밀고, 아래는 물 띠에 잠겨 있다.
 // 표정은 눈·입(m-*)으로, 상태는 머리 밖 작은 표시(s-*)로. 보이고 숨기는 건 app.css가 한다(다시 그리지 않고 class만 바꿔 표정을 바꾸려고).
 // 그림 말고도 교감에 쓰는 순수 함수(쓰다듬기 알아채기·친해진 정도·인사·졸음)와 화면 효과(하트·별·물방울 튀기기·작은 소리)가 여기 있다.
@@ -15,19 +15,21 @@
   const EYE = [39, 60], EY = 35;
   const heart = (x, y) => `M${x} ${y + 3.6} C${x - 4.4} ${y + 0.6} ${x - 4.4} ${y - 3.4} ${x - 1.6} ${y - 3.4} C${x - 0.6} ${y - 3.4} ${x} ${y - 2.4} ${x} ${y - 1.8} C${x} ${y - 2.4} ${x + 0.6} ${y - 3.4} ${x + 1.6} ${y - 3.4} C${x + 4.4} ${y - 3.4} ${x + 4.4} ${y + 0.6} ${x} ${y + 3.6} Z`;
   const both = (f) => EYE.map(f).join(" ");
-  // 숨구멍의 얼음 테두리 — 반지름이 조금씩 다른 꼭짓점 14개(울퉁불퉁), 가운데는 반지름 49로 뚫는다
-  const RING = [58, 56.5, 59, 57, 58.5, 56, 58, 59, 56.5, 58, 57, 59, 56.5, 58].map((r, i, a) => {
-    const t = (i / a.length) * 2 * Math.PI - Math.PI / 2;
-    return `${i ? "L" : "M"}${(60 + r * Math.cos(t)).toFixed(1)} ${(60 + r * Math.sin(t)).toFixed(1)}`;
-  }).join(" ") + " Z M60 11 A49 49 0 1 0 60 109 A49 49 0 1 0 60 11 Z";
 
   // 플로로 한 마리 — size가 32px보다 작으면 입·지느러미·수염을 빼고(.small) 눈을 키운다. tail: 꼬리지느러미, paws: 앞지느러미를 걸친 모습(한 줄 표시)
-  function body(small, tail, paws) {
+  // 입체감(2026-10-17): 가장자리로 갈수록 어두워지는 둥근 그늘(c-vol)과 왼쪽 위 반짝임(c-shine) — Coucou의 Mochi와 같은 방식(MIT, 그림은 우리 것).
+  // id: 그러데이션 이름. 한 화면에 여러 마리가 있어 마리마다 다르게 준다
+  function body(small, tail, paws, id) {
     const r = small ? 5.5 : 3.4;
-    return `${tail ? `<g class="c-tail"><ellipse cx="100" cy="110" rx="9" ry="3.6" transform="rotate(25 100 110)"></ellipse><ellipse cx="94" cy="115" rx="8.5" ry="3.4" transform="rotate(65 94 115)"></ellipse></g>` : ""}
+    // c-body: 몸 전체를 한 덩이로 — 숨쉬기·헤엄은 이 덩이를 움직인다(seal.css). c-head에는 고개 돌리기(follow)가 따로 붙는다
+    return `<g class="c-body"><defs><radialGradient id="${id}v" cx=".42" cy=".36" r=".68"><stop offset=".6" stop-color="#1A2350" stop-opacity="0"></stop><stop offset="1" stop-color="#1A2350" stop-opacity=".2"></stop></radialGradient>
+        <radialGradient id="${id}s"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop></radialGradient></defs>
+      ${tail ? `<g class="c-tail"><ellipse cx="100" cy="110" rx="9" ry="3.6" transform="rotate(25 100 110)"></ellipse><ellipse cx="94" cy="115" rx="8.5" ry="3.4" transform="rotate(65 94 115)"></ellipse></g>` : ""}
       <g class="c-head">
         <path class="c-fur" d="${BODY}"></path>
         <path class="c-shade" d="${SHADE}"></path>
+        <path class="c-vol" d="${BODY}" fill="url(#${id}v)"></path>
+        <ellipse class="c-shine" cx="36" cy="22" rx="12" ry="7" transform="rotate(-25 36 22)" fill="url(#${id}s)"></ellipse>
         <path class="c-fin" d="M37 62 Q45 64 49 74 M62 59 Q54 64 49 74 M31 72 Q49 85 69 71"></path>
         <g class="c-blush"><ellipse cx="33" cy="42" rx="4.2" ry="2.6"></ellipse><ellipse cx="66" cy="42" rx="4.2" ry="2.6"></ellipse></g>
         <path class="c-whisk" d="M31 41 L22 39.5 M31 43.5 L22 44.5 M68 41 L77 39.5 M68 43.5 L77 44.5"></path>
@@ -47,47 +49,67 @@
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
       </g>
-      ${paws ? `<g class="c-paws"><ellipse cx="36" cy="114" rx="9" ry="4"></ellipse><ellipse cx="58" cy="114" rx="9" ry="4"></ellipse></g>` : ""}`;
+      ${paws ? `<g class="c-paws"><ellipse cx="36" cy="114" rx="9" ry="4"></ellipse><ellipse cx="58" cy="114" rx="9" ry="4"></ellipse></g>` : ""}</g>`;
   }
-  // 머리 밖 작은 표시 — 살펴보는 중(점점), 다 했어요(반짝), 생각(?), 깜짝(!), 하트, 잠(z), 땀방울
+  // 머리 밖 작은 표시 — 살펴보는 중(점점), 다 했어요(반짝), 생각(?), 깜짝(!), 하트, 잠(z), 땀방울, 헤엄칠 때 오르는 물방울(s-bub)
   const MARKS = `<g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
-      <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>`;
+      <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g>`;
 
-  // opts.paws: 한 줄 표시용, opts.extra: 덧붙일 class (예: "oops" — 땀방울), opts.noTail: 꼬리 없이, opts.hole: 카드 속 숨구멍
+  // 숨구멍(2026-10-17 B안): 얼음 테 · 동그란 틀 대신 물빛이 번진 웅덩이에서 몸을 내민다. 머리는 웅덩이 밖으로 나오고
+  // 몸 아래는 물결 아래로 잠긴다. 물 아래(y 110 밑)만 잘라서, 헤엄치며 잠수하면 물속으로 사라진다. 꼬리는 물속이라 그리지 않는다
+  // 2026-10-17 어깨까지 담금: 몸이 먼저 보여 표정이 묻힌다는 의견으로 몸을 14칸 내리고 1.12배 키웠다. 머리 밖 표시도 같이 내린다(HOLE_MARKS)
+  const hole = (id, small) => `<defs><radialGradient id="${id}p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
+      <linearGradient id="${id}w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
+      <clipPath id="${id}c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
+    <ellipse class="h-pool" cx="60" cy="88" rx="58" ry="40" fill="url(#${id}p)"></ellipse>
+    <g class="h-stars"><circle cx="20" cy="74" r=".9"></circle><circle cx="100" cy="68" r="1.1"></circle><circle cx="92" cy="92" r=".7"></circle></g>
+    <g clip-path="url(#${id}c)"><g transform="translate(0 18) scale(1.12)">${body(small, false, false, id)}</g></g>
+    <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#${id}w)"></path>
+    <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path>`;
+  // 얼굴만(2026-10-17, 접힌 알약): 얼굴 가운데 (50, 40)을 둥글게 잘라 크게 보인다. 몸 · 지느러미 · 꼬리 · 머리 밖 표시(MARKS)는 뺀다
+  const HOLE_MARKS = `<g transform="translate(-2 12)">${MARKS}</g>`;
+  const FACE_BOX = "18 8 64 64";
+  const face = (id) => `<defs><clipPath id="${id}f"><circle cx="50" cy="40" r="32"></circle></clipPath></defs><g clip-path="url(#${id}f)">${body(false, false, false, id)}</g>`;
+
+  // opts.paws: 한 줄 표시용, opts.face: 얼굴만(접힌 알약), opts.hole: 카드 속 숨구멍, opts.extra: 덧붙일 class (예: "oops" — 땀방울), opts.noTail: 꼬리 없이
+  let uid = 0;
   function svg(mood, size, opts = {}) {
-    const m = MOODS.includes(mood) ? mood : "idle";
-    const small = size < 32, tail = size >= 56 && !opts.noTail;
-    const seal = opts.hole
-      ? `<clipPath id="seal-hole"><circle cx="60" cy="60" r="49"></circle></clipPath>
-        <circle class="h-sky" cx="60" cy="60" r="49"></circle>
-        <g class="h-stars"><circle cx="30" cy="38" r=".9"></circle><circle cx="86" cy="30" r="1.1"></circle><circle cx="78" cy="56" r=".7"></circle><circle cx="38" cy="22" r=".7"></circle><circle cx="96" cy="70" r=".9"></circle></g>
-        <g clip-path="url(#seal-hole)"><g transform="translate(7.5 11.5) scale(1.05)">${body(small, tail, false)}</g>
-          <path class="h-water" d="M0 99 H120 V120 H0 Z"></path><path class="h-line" d="M12 99 H108"></path></g>
-        <path class="h-ring" fill-rule="evenodd" d="${RING}"></path><circle class="h-rim" cx="60" cy="60" r="49"></circle>`
-      : body(small, tail, opts.paws);
-    return `<svg class="cat m-${m}${small ? " small" : ""}${opts.extra ? ` ${opts.extra}` : ""}" width="${size}" height="${size}" viewBox="0 0 120 120" aria-hidden="true">
-      ${seal}${MARKS}</svg>`;
+    const m = MOODS.includes(mood) ? mood : "idle", id = `fl${++uid}`;
+    const small = size < 32 && !opts.face, tail = size >= 56 && !opts.noTail;
+    const cls = ["cat", `m-${m}`, small && "small", opts.face && "face", opts.hole && !opts.face && "hole", opts.extra].filter(Boolean).join(" ");
+    const inner = opts.face ? face(id) : opts.hole ? hole(id, small) + HOLE_MARKS : body(small, tail, opts.paws, id) + MARKS;
+    return `<svg class="${cls}" width="${size}" height="${size}" viewBox="${opts.face ? FACE_BOX : "0 0 120 120"}" aria-hidden="true">
+      ${inner}</svg>`;
   }
 
-  // 눈 따라오기 — 커서 쪽으로 눈은 통째로(gaze 최대 7칸의 0.35배), 코·입은 그 절반, 몸은 조금 기운다. 단위는 그림 안의 좌표(120칸)
+  // 눈 따라오기 — 커서가 있는 쪽과 거리를 그림 안의 칸(120칸)으로, 최대 7칸. 얼굴을 얼마나 돌릴지는 turn()이 정한다
   function gaze(dx, dy) {
     const d = Math.hypot(dx, dy) || 1, m = 7 * Math.min(1, d / 220);
     return { x: dx / d * m, y: dy / d * m * 0.8 };
+  }
+  // 고개 돌리기(2026-10-17) — 머리를 반지름 30칸짜리 공으로 보고 눈·코를 그 겉면에 붙인다(Coucou의 Mochi 방식).
+  // 옆으로 돌면 얼굴이 그쪽으로 미끄러지면서 가로로 좁아지고(원근), 위아래도 같다. 머리 윤곽은 그대로 둔다.
+  // 돌려주는 것: 얼굴이 옮겨 갈 칸(x, y)과 좁아지는 비율(sx, sy). 최대 좌우 0.35·위아래 0.25 라디안(약 20°·14°)
+  function turn(g) {
+    const yaw = (g.x / 7) * 0.35, pitch = (g.y / 7) * 0.25;
+    return { x: 30 * Math.sin(yaw), y: 30 * Math.sin(pitch), sx: Math.cos(yaw), sy: Math.cos(pitch) };
   }
   function follow(container, point) {
     for (const el of container.querySelectorAll("svg.cat")) {
       const b = el.getBoundingClientRect();
       if (!b.width) continue;
       const k = 120 / b.width;
-      const g = gaze((point.x - (b.left + b.width / 2)) * k, (point.y - (b.top + b.height * 0.4)) * k);
-      el.querySelector(".c-eyes").setAttribute("transform", `translate(${(g.x * 0.35).toFixed(2)} ${(g.y * 0.35).toFixed(2)})`);
-      el.querySelector(".c-snout").setAttribute("transform", `translate(${(g.x * 0.18).toFixed(2)} ${(g.y * 0.18).toFixed(2)})`);
-      el.querySelector(".c-head").setAttribute("transform", `rotate(${(g.x * 0.5).toFixed(1)} 55 108)`);
+      const t = turn(gaze((point.x - (b.left + b.width / 2)) * k, (point.y - (b.top + b.height * 0.4)) * k));
+      // depth: 코는 공의 맨 앞이라 다 옮겨 가고, 눈·볼은 조금 옆이라 0.9만. 얼굴 가운데 (50, 38)을 기준으로 좁힌다
+      const face = (depth) => `translate(${(50 + t.x * depth).toFixed(2)} ${(38 + t.y * depth).toFixed(2)}) scale(${t.sx.toFixed(3)} ${t.sy.toFixed(3)}) translate(-50 -38)`;
+      for (const [sel, depth] of [[".c-eyes", 0.9], [".c-blush", 0.9], [".c-snout", 1], [".c-whisk", 1]]) el.querySelector(sel).setAttribute("transform", face(depth));
+      el.querySelector(".c-head").setAttribute("transform", `rotate(${(t.x * 0.3).toFixed(1)} 55 108)`);
     }
   }
 
@@ -182,7 +204,7 @@
     } catch {}
   }
 
-  const api = { MOODS, svg, gaze, follow, stroke, bond, petLine, PET_LINES, greeting, sleepy, burst, chime };
+  const api = { MOODS, svg, gaze, turn, follow, stroke, bond, petLine, PET_LINES, greeting, sleepy, burst, chime };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavSeal = api;
 })(typeof window !== "undefined" ? window : globalThis);

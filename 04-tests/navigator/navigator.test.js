@@ -234,6 +234,14 @@ test("플로로: 표정 이름이 그림에 들어가고, 작으면 입을 빼�
   assert.match(Cat.svg("done", 64), /class="cat m-done"/);
   assert.match(Cat.svg("idle", 28), /class="cat m-idle small"/);
   assert.match(Cat.svg("없는표정", 64), /m-idle/);
+  // 얼굴만(접힌 알약): 얼굴 쪽만 보이고, 머리 밖 표시(s-)는 없다
+  const face = Cat.svg("idle", 36, { face: true });
+  assert.match(face, /class="cat m-idle face" width="36" height="36" viewBox="18 8 64 64"/);
+  assert.doesNotMatch(face, /class="s-/);
+  // 숨구멍: 표정 동작(seal.css)이 붙도록 hole 표시가 있고, 머리 밖 표시는 내려간 머리를 따라 함께 내려간다
+  const hole = Cat.svg("think", 64, { hole: true });
+  assert.match(hole, /class="cat m-think hole"/);
+  assert.match(hole, /<g transform="translate\(-2 12\)">\s*<g class="s-dots"/);
 });
 
 test("플로로: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가 가까우면 조금만 움직인다", () => {
@@ -241,6 +249,17 @@ test("플로로: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가
   assert.ok(Math.abs(far.x - 7) < 1e-9 && far.y === 0);
   assert.ok(near.x > 0 && near.x < 1);
   assert.deepEqual([still.x, still.y], [0, 0]);
+});
+
+test("플로로: 고개를 돌리면 얼굴이 그쪽으로 가며 가로로 좁아지고, 가운데를 보면 그대로다", () => {
+  assert.deepEqual(Cat.turn({ x: 0, y: 0 }), { x: 0, y: 0, sx: 1, sy: 1 });
+  const right = Cat.turn(Cat.gaze(1000, 0)), down = Cat.turn(Cat.gaze(0, 1000));
+  assert.ok(right.x > 9 && right.x < 11 && right.sx < 1 && right.sx > 0.9, JSON.stringify(right));
+  assert.ok(down.y > 0 && down.sy < 1 && down.x === 0);
+  assert.equal(Cat.turn(Cat.gaze(-1000, 0)).x, -right.x);
+  // 마리마다 그러데이션 이름이 달라야 한 화면의 여러 마리가 서로의 그늘을 빌려 쓰지 않는다
+  const ids = [Cat.svg("idle", 64), Cat.svg("idle", 64)].map((s) => s.match(/radialGradient id="(\w+)v"/)[1]);
+  assert.notEqual(ids[0], ids[1]);
 });
 
 // ── 플로로와 교감 — 2026-10-15 "캐릭터와 교감 요소를 많이" (2026-10-15 고양이 나비 → 물범 플로로) ──
