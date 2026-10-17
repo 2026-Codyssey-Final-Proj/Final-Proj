@@ -4,7 +4,7 @@
 
 ## 공통
 
-- 시연 화면 초안: `implementations/navigator-demo/index.html` — 파일 하나로 열리고 서버가 필요 없다. 값은 전부 가상이다.
+- 시연 화면 초안: `implementations/navigator-demo/index.html` — 파일 하나로 열리고 서버가 필요 없다. 값은 전부 가상이다. **(옛 시안 — 2026-10-17부터 시연은 `implementations/index.html` 입구의 내비게이터 · 서고 · 지식 은하로 한다)**
 - 연결표: `docs/00-overview/migration.md` 6절 — 세컨드 브레인에서 있는 것이 FR의 어디에 닿는지.
 - **초안일 뿐이다.** 구조와 문구는 각 담당이 정한다. 그대로 쓰라는 것이 아니라 출발점이다.
 - 시험은 `python3 implementations/run_all_tests.py`로 한 번에 돈다.

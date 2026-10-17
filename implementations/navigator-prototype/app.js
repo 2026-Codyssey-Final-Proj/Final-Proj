@@ -1,12 +1,12 @@
 // claude-drafted: 2026-10-14, 2026-10-15, 2026-10-16(0~7단계 연습·마무리·빈칸 확인·지금 단계 계산·리퀴드 글래스 굴절) — Navigator 프로토타입 화면 동작.
-// 규칙·문구 판단은 navigator.js, 연습 예시는 scenario.js, 몽돌 그림·교감 도구는 seal.js, 실제 Claude 호출은 server.js.
+// 규칙·문구 판단은 navigator.js, 연습 예시는 scenario.js, 플로로 그림·교감 도구는 seal.js, 실제 Claude 호출은 server.js.
 // 넓은 화면(PC) = 코딩 도구 창 위에 떠 있는 옆자리 동료. 2026-10-15 "가로 카드 시안대로" 다시 짬:
-//   띠 → 한 줄 → 펼침(위: 아이콘 줄, 아래: 지금 결정할 것 하나를 담은 가로 카드). 카드는 상황마다 색·몽돌 표정·뱃지가 다르다
+//   띠 → 한 줄 → 펼침(위: 아이콘 줄, 아래: 지금 결정할 것 하나를 담은 가로 카드). 카드는 상황마다 색·플로로 표정·뱃지가 다르다
 //   (골라 주세요=파랑, 다 했어요=초록, 넘어가기 전 확인=주황, 작업 알림·살펴보는 중=회색, 오류=빨강). 버튼마다 단축키(1·2·3, Enter, Esc, Y·N).
-//   교감: 몽돌을 누르면(또는 좌우로 문지르면) 하트와 한마디, 친해진 정도가 쌓인다. 가만히 두면 졸다가 잠들고, 움직이면 깬다.
+//   교감: 플로로를 누르면(또는 좌우로 문지르면) 하트와 한마디, 친해진 정도가 쌓인다. 가만히 두면 졸다가 잠들고, 움직이면 깬다.
 //   할 일을 다 하거나 단계를 넘어가면 별이 튀며 축하한다. 작은 소리는 설정에서 켠 사람에게만.
 // 600px 이하 = iPhone: 오늘 / 설계도 / 단계 지도 / 내 배움 탭과 넘어가기 전 확인 화면 — 이번에 바꾸지 않았다(PC 먼저). 두 화면은 같은 상태(st)를 쓴다.
-// 기록(작업 글·진행·배운 말·설계도·몽돌과 친해진 정도)은 이 브라우저(localStorage)에만 남는다.
+// 기록(작업 글·진행·배운 말·설계도·플로로와 친해진 정도)은 이 브라우저(localStorage)에만 남는다.
 (function () {
   const N = window.NavRules, S = window.NavScenario, C = window.NavSeal;
   const canLive = location.protocol.startsWith("http");
@@ -26,8 +26,9 @@
     project: "", back: "",                         // 알림에서 받은 프로젝트 폴더 이름, 다시 왔을 때 인사
     finished: false,                               // 7단계까지 모두 마쳤는가
     askConfirm: 0,                                 // 빈칸이 남은 설계도를 확정하려 할 때 — 남은 빈칸 수(한 번 더 묻는 중)
-    pets: 0, since: "", sound: false,              // 몽돌과 교감: 쓰다듬은 횟수, 처음 만난 날, 작은 소리(기본 꺼짐)
+    pets: 0, since: "", sound: false,              // 플로로와 교감: 쓰다듬은 횟수, 처음 만난 날, 작은 소리(기본 꺼짐)
     mapSel: null, showCrit: false,                 // 단계 지도에서 고른 단계, 펼침 카드 아래 '이 단계 할 일' 펼침
+    libSel: null, libConfirm: false, libGone: [],  // 도서관 탭: 펼친 책, 세션 덮기 확인 중, 서고로 보낸 책 (2026-10-17 서고 시안의 위젯을 옮김)
   };
   const $nav = document.getElementById("nav"), $phone = document.getElementById("phone"), $chat = document.getElementById("chat");
   const $fx = document.getElementById("fx");
@@ -79,7 +80,11 @@
 
   // ── 기록 — 이 브라우저에만. 못 쓰는 환경(사생활 보호 창 등)이면 조용히 기록 없이 동작한다 ──
   const KEY = "navigator-prototype:v1";
-  const KEEP = ["mode", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished"];
+  // 한 권으로 엮어 서고로 보낸 책 — 서고 시안(../library-prototype)도 같은 열쇠를 읽어 처음부터 책장에 꽂아 둔다
+  const BOUND_KEY = "floe-demo:bound";
+  const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
+  const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
+  const KEEP = ["mode", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone"];
   let forgotten = false;
   function load() {
     let s;
@@ -89,6 +94,7 @@
     for (const k of KEEP) if (k in s) st[k] = s[k];
     if (st.mode === "live" && !canLive) st.mode = "fixture";
     st.pets = Math.max(0, Number(st.pets) || 0);
+    st.libGone = [...new Set([...(Array.isArray(st.libGone) ? st.libGone.map(String) : []), ...readBound()])];
     st.back = N.welcome(s, Date.now());
   }
   function save() {
@@ -114,6 +120,8 @@
     check: icon('<path d="M5 12.5l4.5 4.5L19 7.5"></path>', 14),
     arrow: icon('<path d="M5 12h14M13 6l6 6-6 6"></path>', 13),
     bubble: icon('<circle cx="12" cy="13" r="7"></circle><circle cx="9.5" cy="10.5" r="1.2"></circle><circle cx="19" cy="5" r="2"></circle>', 15),
+    all: icon('<rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect>', 24),
+    lib: icon('<path d="M3.5 6.5C6 5.5 9 5.5 12 7c3-1.5 6-1.5 8.5-.5V18c-2.5-1-5.5-1-8.5.5-3-1.5-6-1.5-8.5-.5z"></path><path d="M12 7v11.5"></path>', 24),
   };
   const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
   const hearts = (level) => `<span class="hearts">${[0, 1, 2, 3].map((i) => `<i class="${i <= level ? "on" : ""}">${HEART}</i>`).join("")}</span>`;
@@ -123,7 +131,7 @@
   function clearIdle() { clearTimeout(timer); timer = null; }
   function scheduleIdle() {
     clearIdle();
-    // 마우스가 올라가 있으면 인사도 접지 않는다(몽돌을 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
+    // 마우스가 올라가 있으면 인사도 접지 않는다(플로로를 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
     if (isPhone() || st.ui === "hidden" || hovering || (st.ui !== "greet" && pinned())) return;
     idleAt = Date.now();
     timer = setTimeout(() => { timer = null; view("idle"); }, DELAY[st.ui]);
@@ -199,7 +207,7 @@
       <div class="row">보기 방식 <select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div>
-      <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>몽돌이 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>${keep}`;
+      <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>${keep}`;
   }
   const settingsCard = () => (st.settings ? `<div class="foot settings">${settingsBody()}</div>` : "");
   const gearBtn = () => `<button class="round" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 기록">${I.gear}</button>`;
@@ -217,7 +225,10 @@
       "할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.") +
     section("내가 확정한 설계도", st.docs, (x) => `<details><summary>${x.stage}단계 · ${esc(x.name)} · ${esc(x.at)}</summary><pre class="doc-view">${esc(x.text)}</pre></details>`,
       "설계도를 확정하면 여기 모여요.");
-  const TABS = [["today", "지금", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["learn", "내 배움", "내 배움", "learn"]];  // [id, PC 이름, iPhone 이름, 아이콘]
+  // [id, PC 이름, iPhone 이름, 아이콘]. 뒤의 둘(한곳에서 보기·도서관)은 PC에만 있다 — iPhone은 앞의 넷
+  const TABS = [["today", "지금", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["learn", "내 배움", "내 배움", "learn"],
+    ["all", "한곳에서 보기", "한곳에서", "all"], ["lib", "도서관", "도서관", "lib"]];
+  const PHONE_TABS = TABS.slice(0, 4);
   // 설계도(FR-3, iPhone) — 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
   function docBody(size) {
     const s = st.j && stage();
@@ -238,7 +249,7 @@
       ${reviewList(d.review)}${docNotes()}<div class="row">${again}${confirm}</div>
       <span class="meta">고친 뒤 '다시 봐 주세요'를 누르면 고칠 곳을 알려 드려요. 대신 고쳐 쓰지는 않아요.</span></div>`;
   }
-  // 이 단계의 설계도 — 확정한 것(done), 고치는 중인 것(d), 몽돌의 표정과 한마디(face)
+  // 이 단계의 설계도 — 확정한 것(done), 고치는 중인 것(d), 플로로의 표정과 한마디(face)
   function docState(s) {
     const done = docDone(s.n), d = st.doc && st.doc.stage === s.n ? st.doc : null;
     return { done, d, face: N.docFace({ busy: st.busy, warn: st.warn, error: st.error, review: d && d.review, draftSay: d && d.say, done }) };
@@ -305,13 +316,13 @@
       : `<button class="${cls}" ${data}${tip}>${esc(a.label)}${kbd(a.key)}</button>`;
   }
 
-  // 몽돌 — 기분은 [잠깐 짓는 표정(쓰다듬기·축하) > 졸음 > 안내 화면의 표정] 순서. 졸음은 편한 표정일 때만
+  // 플로로 — 기분은 [잠깐 짓는 표정(쓰다듬기·축하) > 졸음 > 안내 화면의 표정] 순서. 졸음은 편한 표정일 때만
   let flashMood = { mood: "", until: 0 }, sleepState = "awake";
   const CALM = ["idle", "happy", "done"];
   const liveMood = (base) => (flashMood.until > Date.now() ? flashMood.mood : sleepState !== "awake" && CALM.includes(base) ? sleepState : base);
-  // 쓰다듬을 수 있는 몽돌 — 누르거나 좌우로 문지르면 된다. data-live는 기분이 바뀌면 같이 바뀌는 몽돌
-  const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="몽돌 쓰다듬기"
-    title="몽돌 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true })}</button>`;
+  // 쓰다듬을 수 있는 플로로 — 누르거나 좌우로 문지르면 된다. data-live는 기분이 바뀌면 같이 바뀌는 플로로
+  const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="플로로 쓰다듬기"
+    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true })}</button>`;
 
   const mini = () => `<span class="mini" aria-hidden="true">${met().map((m) => `<i class="${m ? "on" : ""}"></i>`).join("")}</span>`;
   const stageMeta = () => { const s = stage(); return `<span class="mm-stage">${s.n}단계 · ${esc(s.title)}</span><span>${allDone() ? `할 일 ${met().length}개 모두 했어요` : progress()}</span>${mini()}`; };
@@ -323,7 +334,7 @@
   const exampleActs = () => stageExamples().map((e) => ({ label: e.label, act: "ex", i: S.examples.indexOf(e), kind: "soft" }));
 
   // 지금 결정할 것 하나 — 위에 있는 상황이 먼저다.
-  // 돌려주는 것: {tone, mood, badge, say(몽돌의 한마디), meta, title, sub, body, acts, foot} — 글은 이미 esc 한 것
+  // 돌려주는 것: {tone, mood, badge, say(플로로의 한마디), meta, title, sub, body, acts, foot} — 글은 이미 esc 한 것
   function momentToday() {
     const s = st.j && stage(), f = face();
     if (st.busy) return { tone: "gray", mood: "look", badge: "…", meta: s ? stageMeta() : "", title: `살펴보고 있어요${dots}`,
@@ -384,7 +395,7 @@
     if (st.step === "question") return { tone: "amber", mood: face()[0], badge: "?", meta,
       title: "궁금한 걸 편하게 물어보세요", sub: `헷갈린 곳: ${esc(hardTexts().join(", "))}`,
       body: `<textarea class="mc-input" data-act="question" rows="2" aria-label="궁금한 것" placeholder="예) 꼭 필요한지 표시하는 건 왜 해요?">${esc(st.question)}</textarea>${
-        st.answer ? `<div class="answer"><b>몽돌의 답</b>${esc(st.answer)}</div>` : ""}`,
+        st.answer ? `<div class="answer"><b>플로로의 답</b>${esc(st.answer)}</div>` : ""}`,
       acts: [{ label: "물어보기", act: "answer", key: "c-Enter", pri: !st.answer }, ...(st.answer ? [{ label: "한 장 요약 보기", act: "plan", key: "Enter", pri: true }] : []), later] };
     if (st.step === "plan") return { tone: "amber", mood: face()[0], badge: "!", meta: `<span class="mm-stage">${s.n}단계 한 장 요약</span>`,
       title: "이렇게 정리해 봤어요. 이제 어때요?", sub: "",
@@ -399,7 +410,7 @@
       sub: `잘 모르겠으면 헷갈린 곳을 골라 같이 풀어요. 몇 번이고 괜찮아요.${st.noCount ? ` (다시 물어본 횟수 ${st.noCount}번)` : ""}`,
       acts: [yes, no, later] };
   }
-  // 가로 카드 하나 — 왼쪽 몽돌, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
+  // 가로 카드 하나 — 왼쪽 플로로, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
   function card(v) {
     for (const a of v.acts) if (a.key) deskKeys[a.key] = a;
     let opts = v.acts.filter(isOpt), rest = v.acts.filter((a) => !isOpt(a));
@@ -427,7 +438,7 @@
       st.openInput || st.screen === "gate" ? "" : `<button class="lnk" data-act="open-input">바뀐 작업 다시 보여 주기</button>`}</div>${
       open ? `<div class="crit-grid">${critList(true)}</div>` : ""}`;
   }
-  // 설계도 — 왼쪽 몽돌과 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
+  // 설계도 — 왼쪽 플로로와 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
   const docShell = (mood, say, side, main) => `<div class="docx"><div class="doc-side">${petCat(mood, 92)}<p class="doc-say">${esc(say)}</p>
     <div class="doc-acts">${side}</div></div><div class="doc-main">${main}</div></div>`;
   function deskDoc() {
@@ -448,7 +459,7 @@
         <span class="meta">고칠 곳만 알려 드려요. 대신 고쳐 쓰지는 않아요.</span>`,
       `<div class="doc-head"><h3>${esc(s.doc)}</h3><span class="meta">${s.n}단계</span></div><textarea class="doc" data-act="doc" aria-label="설계도">${esc(d.text)}</textarea>${reviewList(d.review)}${docNotes()}`);
   }
-  // 단계 지도 — 여덟 단계를 한 줄로. 몽돌은 지금 단계 위에 앉아 있다. 누르면 그 단계를 자세히 본다
+  // 단계 지도 — 여덟 단계를 한 줄로. 플로로는 지금 단계 위에 앉아 있다. 누르면 그 단계를 자세히 본다
   function deskMap() {
     const cur = st.j ? st.j.stage : -1, sel = st.mapSel ?? Math.max(cur, 0), s = N.STAGES[sel];
     const track = N.STAGES.map((x) => { const c = stepClass(x.n); return `<li class="node ${c}${x.n === sel ? " sel" : ""}">
@@ -463,15 +474,106 @@
         <span class="flowline"><span>받은 것 · ${esc(s.gets)}</span>${I.arrow}<span>만든 것 · ${esc(s.gives)}</span>${s.doc ? `<span class="meta">설계도: ${esc(s.doc)}</span>` : ""}</span>
         <ul class="crit">${crit}</ul></div></div>`;
   }
-  // 내 배움 — 지나온 단계 · 배운 말 · 확정한 설계도 · 몽돌과 나
+  // 내 배움 — 지나온 단계 · 배운 말 · 확정한 설계도 · 플로로와 나
   function deskLearn() {
     const b = C.bond(st.pets);
-    return `<div class="learn">${learnBody()}<div class="card bondcard"><span class="kicker">몽돌과 나</span>
+    return `<div class="learn">${learnBody()}<div class="card bondcard"><span class="kicker">플로로와 나</span>
       <div class="bond-row">${petCat("love", 64)}<div class="stack"><b>${esc(b.name)}</b>${hearts(b.level)}
         <span class="sub">쓰다듬은 횟수 ${st.pets}번${b.need ? ` · 더 친해지기까지 ${b.need}번` : ""}</span>
         <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div></div></div>`;
   }
-  // 위쪽 아이콘 줄 — 지금·설계도·단계 지도·내 배움 | 연결·프로젝트·보기 방식·친해진 정도·설정·열어 두기·접기
+  // ── 도서관(FR-8 위젯) · 한곳에서 보기(FR-6) — 서고 시안(../library-prototype)의 더미 책(books.js)과 마감 계산(schedule.js)을 같이 쓴다.
+  // 같은 화면이 둘이 되지 않게 서고 시안의 작업 화면 위젯을 여기로 옮겼다(2026-10-17). 첫 책(s1)은 이 화면의 단계·할 일을 그대로 따른다.
+  const L = () => window.LibData, SCH = () => window.Schedule;
+  const LIB_URL = "../library-prototype/index.html";
+  const libMissing = () => `<div class="libtab"><div class="doc-empty">${I.lib}<b>서고 데이터를 못 읽었어요</b><span>../library-prototype/books.js와 schedule.js가 같이 있어야 해요.</span></div></div>`;
+  // 열어 둔 책 — 서고로 보낸 책은 빼고, 첫 책은 지금 이 화면의 단계·할 일·확정한 설계도를 따른다
+  function openBooks() {
+    return L().OPEN.filter((b) => !st.libGone.includes(b.id)).map((b) => (b.id === "s1" && st.j
+      ? { ...b, mine: true, stage: st.j.stage, todos: st.j.criteria.map((c) => ({ t: c.text, done: c.met })),
+          decided: st.docs.length ? st.docs.map((d) => `${d.stage}단계 ${d.name} — ${d.at}에 확정`) : b.decided }
+      : b));
+  }
+  const bookDone = (b) => b.stage === 7 && b.todos.every((t) => t.done);
+  const libSelected = () => openBooks().find((b) => b.id === st.libSel);
+  const mmdd = (d) => d.slice(5).replace("-", "/");
+  // 마감 칩 — 지남(금 간 얼음) · 오늘 · 3일 이내 · 여유
+  const dueChip = (due) => { const d = SCH().dueStatus(due, L().TODAY); return `<span class="due ${d.state}">${d.state === "late" ? "❄ " : ""}${mmdd(due)} · ${d.label}</span>`; };
+  const coverBtn = (b, i) => `<button class="cover" style="--tone:${b.tone}" data-act="lib-book" data-i="${i}" data-id="${b.id}" aria-label="${esc(b.title)}, ${b.stage}단계 ${esc(L().STAGES[b.stage])}, 책갈피 ${b.bookmarks.length}장">
+    <span class="t">${esc(b.title)}</span><span class="s">${b.mine ? "이 화면 · " : ""}${b.stage}단계 · ${esc(L().STAGES[b.stage])}</span>
+    <span class="m"><span>▮ ${b.bookmarks.length}장</span>${bookDone(b) ? '<span class="due ok">완주 · 엮기 대기</span>' : dueChip(b.dues[b.stage])}</span></button>`;
+  function deskLib() {
+    if (!L() || !SCH()) return libMissing();
+    const books = openBooks(), b = libSelected();
+    if (!b) return `<div class="libtab"><div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
+        <div class="ob-say">도서관 · 열어 둔 책 ${books.length}권</div>
+        <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
+        ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요.</p>`}</div></div>
+      <div class="ob-foot"><span class="note">책을 고르면 펼쳐져요 · 세션을 덮으면 서고에 꽂혀요 · 완주한 책은 한 권으로 엮어요</span><span class="grow"></span>
+        <a class="enter-lib" href="${LIB_URL}#lib"><span class="mb"></span>내 서고 들어가기</a></div></div>`;
+    const fin = bookDone(b);
+    deskKeys.Escape = { act: "lib-close" };
+    deskKeys.Enter = { act: st.libConfirm ? "lib-shelve" : fin ? "lib-bind" : "lib-shelve-ask" };
+    return `<div class="libtab"><div class="minispread" data-spread>
+        <section><div class="stg">${fin ? "돌아보기까지 끝" : `지금 ${b.stage}단계 · ${esc(L().STAGES[b.stage])}`}${b.mine ? " · 이 화면의 프로젝트" : ""}</div><h3>${esc(b.title)}</h3>
+          <div class="stg soft">이 세션에서 정한 것</div><ul>${b.decided.map((d) => `<li>${esc(d)}</li>`).join("")}</ul></section>
+        <section><div class="stg">꽂은 책갈피 ${b.bookmarks.length}장</div><h3>배운 것</h3>
+          <div class="marks">${b.bookmarks.map((m) => `<span>${esc(m)}</span>`).join("")}</div>
+          <div class="stg soft" style="margin-top:12px">마지막으로 연 때 · ${esc(b.updated)}</div></section></div>
+      ${st.libConfirm ? `<div class="confirm" role="alertdialog" aria-label="세션 덮기 확인">${cat("think", 34)}<span><b>‘${esc(b.title)}’</b> 세션을 덮고 서고에 꽂을까요? 언제든 다시 펼칠 수 있어요.</span><span class="grow"></span>
+          <button class="b pri" data-act="lib-shelve">덮고 꽂기${kbd("Enter")}</button><button class="b" data-act="lib-shelve-no">그대로 두기</button></div>`
+        : `<div class="ob-foot"><button class="b" data-act="lib-close">책 덮기${kbd("Escape")}</button>
+          ${fin ? `<button class="b pri" data-act="lib-bind">📖 한 권의 책으로 엮기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">세션 덮기${kbd("Enter")}</button>`}
+          <span class="grow"></span><span class="note">${fin ? "엮으면 서고 책장에 꽂히고, 서고로 넘어가요" : "책 덮기는 목록으로 · 세션 덮기는 서고로"}</span></div>`}</div>`;
+  }
+  // 한곳에서 보기 — 진행 상황 · 내가 할 일 · 일정 충돌 · 토큰 사용. 시연은 가상 숫자(FR-10), 옮기는 결정은 사람이
+  function deskAll() {
+    if (!L() || !SCH()) return libMissing();
+    const D = L(), live = openBooks(), fmt = (n) => n.toLocaleString();
+    const progress = live.map((p, i) => `<li><button class="prow" data-act="all-goto" data-i="${i}"><span class="nm">${esc(p.title)}${p.mine ? ' <span class="okchip">이 화면</span>' : ""}</span>
+        <span class="pdots" aria-hidden="true">${D.STAGES.map((_, k) => `<i class="${k < p.stage || bookDone(p) ? "on" : k === p.stage ? "cur" : ""}"></i>`).join("")}</span>
+        <span>${bookDone(p) ? '<span class="due ok">완주</span>' : `${p.stage}단계 ${esc(D.STAGES[p.stage])} ${dueChip(p.dues[p.stage])}`}</span></button></li>`).join("");
+    const todos = live.map((p) => ({ p, t: p.todos.find((x) => !x.done), due: p.dues[p.stage] })).sort((a, b) => a.due.localeCompare(b.due))
+      .map(({ p, t, due }) => `<li><span>${t ? `○ ${esc(t.t)}` : "📖 책으로 엮기"}</span><small>${esc(p.title)} · ${t ? dueChip(due) : "완주"}</small></li>`).join("");
+    const clashes = SCH().findClashes({ projects: live, events: D.CALENDAR, pins: D.TEAM_PINS, today: D.TODAY });
+    const ICON = { "같은 날 마감": "⚑", "일정과 겹침": "📅", "팀 일정 뒤": "📌" };
+    const clashHtml = clashes.length ? clashes.map((c) => `<li><b>${ICON[c.kind]} ${mmdd(c.date)} ${esc(c.kind)}</b><small>${
+        c.kind === "같은 날 마감" ? `${c.titles.map(esc).join(" · ")} — 마감이 같은 날이에요`
+        : c.kind === "일정과 겹침" ? `${esc(c.titles[0])} 마감 · 캘린더 ‘${esc(c.event)}’와 겹쳐요`
+        : `${esc(c.titles[0])} 마감이 팀 ${esc(c.pin)}(${mmdd(c.pinDate)}) 뒤예요`}</small></li>`).join("")
+      : `<li><small>14일 안에 겹치는 일정이 없어요</small></li>`;
+    const T = D.TOKENS, total = Object.values(T.plan).reduce((a, b) => a + b, 0), used = Object.values(T.used).reduce((a, b) => a + b, 0);
+    const tokens = Object.keys(T.plan).map((k) => `<li><span>${esc(T.names[k])}</span><i class="tbar"><i style="width:${(T.used[k] / T.plan[k]) * 100}%"></i></i><small>${fmt(T.used[k])} / ${fmt(T.plan[k])}</small></li>`).join("");
+    return `<div class="alltab"><div class="allhead"><b>한곳에서 보기</b><span class="fake">가상 숫자예요 · 시연용</span><span class="grow"></span>
+        <small>오늘 ${mmdd(D.TODAY)} · 캘린더 일정 ${D.CALENDAR.length}개 읽음(제목·날짜만)${st.tokens ? ` · 이 화면의 마지막 호출 ${fmt(st.tokens)}토큰` : ""}</small></div>
+      <div class="allgrid">
+        <section><h4>진행 상황</h4><ol class="plist">${progress}</ol></section>
+        <section><h4>내가 할 일 <small>마감 가까운 순</small></h4><ul class="alltodo">${todos}</ul></section>
+        <section class="${clashes.length ? "hot" : ""}"><h4>일정 충돌 ${clashes.length ? `<span class="due late">${clashes.length}개</span>` : ""}</h4><ul class="clash">${clashHtml}</ul>
+          <p class="hint">옮길지는 직접 정해요 — 프로젝트를 누르면 단계 지도나 책으로 가요</p></section>
+        <section><h4>토큰 사용 <small>${fmt(used)} / ${fmt(total)} · ${Math.round((used / total) * 100)}%</small></h4><ul class="tok">${tokens}</ul></section>
+      </div></div>`;
+  }
+  // 한 권의 책으로 엮기 — 책이 작아지며 서고로 넘어간다(서고 시안이 #lib-bound-<id>로 받아 책장에 꽂는다)
+  function bindBook() {
+    const b = libSelected(); if (!b || !bookDone(b)) return;
+    st.libGone.push(b.id); save(); writeBound(b.id);
+    const open = () => { location.href = `${LIB_URL}#lib-bound-${b.id}`; };
+    const el = $nav.querySelector("[data-spread]");
+    if (!el || STILL) return open();
+    el.classList.add("binding"); C.burst(...center(el), "star", 16, 360);
+    if (st.sound) C.chime("level");
+    setTimeout(open, 950);
+  }
+  // 세션 덮기 — 목록으로 돌아가 그 책이 작아지며 사라진다
+  function shelveBook() {
+    const b = libSelected(); if (!b) return;
+    set({ libSel: null, libConfirm: false });
+    const el = $nav.querySelector(`[data-act="lib-book"][data-id="${b.id}"]`);
+    const finish = () => { st.libGone.push(b.id); render(); say(`‘${b.title}’ 책을 서고에 꽂았어요`); };
+    if (el && !STILL) { el.classList.add("leaving"); setTimeout(finish, 480); } else finish();
+  }
+  // 위쪽 아이콘 줄 — 지금·설계도·단계 지도·내 배움·한곳에서 보기·도서관 | 연결·프로젝트·보기 방식·친해진 정도·설정·열어 두기·접기
   function topbar() {
     const b = C.bond(st.pets), tab = TABS.find((x) => x[0] === st.tab);
     return `<div class="tb"><div class="tabs" role="tablist" aria-label="보기">${TABS.map(([id, label, , ic], i) =>
@@ -480,7 +582,7 @@
       ${st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
       <span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>
       ${st.mode === "live" ? `<span class="mode live" title="보여 주신 글을 진짜 AI(Claude)가 읽어요">진짜 AI</span>` : `<span class="mode fix" title="미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요">연습용 예시</span>`}
-      <button class="ti bond" data-act="bond" aria-label="몽돌과 친해진 정도: ${esc(b.name)}" title="몽돌과 친해진 정도: ${esc(b.name)}">${hearts(b.level)}</button>
+      <button class="ti bond" data-act="bond" aria-label="플로로와 친해진 정도: ${esc(b.name)}" title="플로로와 친해진 정도: ${esc(b.name)}">${hearts(b.level)}</button>
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 소리, 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
@@ -488,7 +590,7 @@
   const settingsPop = () => (st.settings ? `<div class="pop" role="dialog" aria-label="설정">${settingsBody()}</div>` : "");
   const countdownOn = () => st.ui === "home" && !hovering && !pinned() && !!timer;
   const countdown = () => (countdownOn() ? `<div class="cd" title="곧 접혀요 — 핀을 누르면 열어 둬요"><i style="animation-duration:${DELAY.home}ms;animation-delay:-${Date.now() - idleAt}ms"></i></div>` : "");
-  // 한 줄 — 몽돌이 앞지느러미를 걸치고 있다. 알릴 일이 있으면 파란 테두리로 살짝 흔든다
+  // 한 줄 — 플로로가 앞지느러미를 걸치고 있다. 알릴 일이 있으면 파란 테두리로 살짝 흔든다
   function pillHTML() {
     const s = st.j && stage();
     let main;
@@ -496,28 +598,30 @@
     else if (st.busy) main = `<b>살펴보는 중이에요</b>${dots}`;
     else if (st.warn) main = `<b>보내기 전에 잠깐!</b><span class="pl-cta">눌러서 보기</span>`;
     else if (st.finished) main = `<b>모든 단계를 마쳤어요</b>`;
-    else if (!s) main = `<b>몽돌</b><span class="pl-now">눌러서 지금 만드는 걸 보여 주세요</span>`;
+    else if (!s) main = `<b>플로로</b><span class="pl-now">눌러서 지금 만드는 걸 보여 주세요</span>`;
     else main = `<b>${allDone() ? "다 했어요! · " : ""}${s.n}단계</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
     const base = st.ping ? "look" : face()[0];
-    return `<button class="pill${st.ping || st.warn ? " ping" : ""}" data-act="pill" aria-expanded="false" aria-label="몽돌 펼치기">
+    return `<button class="pill${st.ping || st.warn ? " ping" : ""}" data-act="pill" aria-expanded="false" aria-label="플로로 펼치기">
       <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { paws: true })}</span>${main}${st.feed.at ? `<span class="led on"></span>` : ""}</button>`;
   }
   // 띠 — 귀만 빼꼼. 마우스를 올리면 한 줄로 나온다
-  const stripHTML = () => `<button class="strip" data-act="strip" aria-label="몽돌 부르기" title="마우스를 올리면 나와요"><span class="ears" aria-hidden="true"></span><span class="zz" aria-hidden="true">z<b>z</b></span><i></i></button>`;
+  const stripHTML = () => `<button class="strip" data-act="strip" aria-label="플로로 부르기" title="마우스를 올리면 나와요"><span class="ears" aria-hidden="true"></span><span class="zz" aria-hidden="true">z<b>z</b></span><i></i></button>`;
   function greetHTML(enter) {
     deskKeys = { Enter: { act: "open" } };
     return `<div class="isl greet${enter}"><section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
       <div class="mc-main"><p class="mc-say">${esc(C.greeting(new Date().getHours()))}</p>
-        <h2 class="mc-title">${st.back ? "다시 오셨네요!" : "안녕하세요! 저는 길잡이 물범 몽돌이에요."}</h2>
+        <h2 class="mc-title">${st.back ? "다시 오셨네요!" : "안녕하세요! 저는 길잡이 물범 플로로예요."}</h2>
         <p class="mc-sub">${st.back ? esc(st.back) : "지금 만들고 있는 걸 보여 주시면, 몇 단계쯤인지와 다음에 할 일을 알려 드려요. 평소엔 화면 위에 작게 있을게요."}</p>
         <div class="acts"><button class="b pri" data-act="open">${st.back ? "이어서 하기" : "보여 주기"}<kbd aria-hidden="true">Enter</kbd></button>
-          <span class="hint">${I.bubble}${st.pets ? `우리는 ${esc(C.bond(st.pets).name)}예요` : "몽돌을 눌러 쓰다듬어 보세요"}</span></div></div></section></div>`;
+          <span class="hint">${I.bubble}${st.pets ? `우리는 ${esc(C.bond(st.pets).name)}예요` : "플로로를 눌러 쓰다듬어 보세요"}</span></div></div></section></div>`;
   }
   function islandHTML(enter) {
     let body;
     if (st.tab === "doc") body = deskDoc();
     else if (st.tab === "map") body = deskMap();
     else if (st.tab === "learn") body = deskLearn();
+    else if (st.tab === "all") body = deskAll();
+    else if (st.tab === "lib") body = deskLib();
     else body = card(momentToday()) + deskMore();
     return `<div class="isl${enter}">${topbar()}${settingsPop()}${body}${countdown()}</div>`;
   }
@@ -540,7 +644,7 @@
       <circle cx="30" cy="30" r="${r}" fill="none" stroke="var(--acc)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${part.toFixed(1)} ${len.toFixed(1)}" transform="rotate(-90 30 30)"></circle>
       <text x="30" y="35" text-anchor="middle">${metCount()}/${met().length}</text></svg>`;
   }
-  // 집중 모드(iPhone) — [날짜·제목 + 톱니] · 몽돌 한마디 · 진행 카드 · 지금 결정할 것 하나. 나머지는 접힌 카드 하나에
+  // 집중 모드(iPhone) — [날짜·제목 + 톱니] · 플로로 한마디 · 진행 카드 · 지금 결정할 것 하나. 나머지는 접힌 카드 하나에
   const phoneHead = (kicker, title) => `<div class="ph-top"><div class="ph-date">${esc(kicker)}</div>${gearBtn()}</div><h1 class="ph-title">${esc(title)}</h1>${settingsCard()}`;
   function phoneToday() {
     let h = phoneHead(today(), "오늘의 길잡이") + sayRow(72);
@@ -562,8 +666,9 @@
   function renderPhone() {
     const gate = st.screen === "gate";
     $phone.className = "phone" + (gate ? " check" : "");
-    $phone.innerHTML = gate ? phoneCheck() : ({ today: phoneToday, doc: phoneDoc, map: phoneMap, learn: phoneLearn }[st.tab])() +
-      `<nav class="tabbar glass" aria-label="화면">${TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" ${st.tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
+    const views = { today: phoneToday, doc: phoneDoc, map: phoneMap, learn: phoneLearn }, tab = views[st.tab] ? st.tab : "today";   // 한곳에서 보기·도서관은 PC에서만
+    $phone.innerHTML = gate ? phoneCheck() : views[tab]() +
+      `<nav class="tabbar glass" aria-label="화면">${PHONE_TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" ${tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
   }
 
   // ── 리퀴드 글래스 굴절 (PC, 크롬 계열만) ──
@@ -628,7 +733,7 @@
   }
   PHONE.addEventListener("change", render);
 
-  // ── 몽돌과 교감 ──
+  // ── 플로로와 교감 ──
   // 기분 바꾸기 — 다시 그리지 않고 그림의 class만 바꾼다(쓰다듬는 중에 그림이 사라지지 않게)
   function applyMood() {
     document.body.classList.toggle("dozing", sleepState === "sleep");   // 띠만 보일 때도 귀 옆에 z가 뜬다
@@ -639,7 +744,7 @@
   }
   function flash(mood, ms) { flashMood = { mood, until: Date.now() + ms }; applyMood(); setTimeout(applyMood, ms + 30); }
   const liveCat = () => (isPhone() ? $phone : $nav).querySelector("[data-live]");
-  // 몽돌의 한마디 — 잠깐 떴다 사라지는 말풍선. 화면 위쪽에 있으면 아래로 띄운다
+  // 플로로의 한마디 — 잠깐 떴다 사라지는 말풍선. 화면 위쪽에 있으면 아래로 띄운다
   let sayTimer = 0;
   function say(text) {
     const host = liveCat();
@@ -647,7 +752,7 @@
     const r = host.getBoundingClientRect();
     let b = $fx.querySelector(".pop-say");
     if (!b) { b = document.createElement("div"); b.className = "pop-say"; b.setAttribute("role", "status"); $fx.appendChild(b); }
-    // 왼쪽에 빈자리가 있으면 몽돌 왼쪽(카드 글을 가리지 않게), 없으면 위, 화면 맨 위면 아래
+    // 왼쪽에 빈자리가 있으면 플로로 왼쪽(카드 글을 가리지 않게), 없으면 위, 화면 맨 위면 아래
     const side = r.left > 250, below = !side && r.top < 90;
     b.textContent = text;
     b.classList.toggle("side", side);
@@ -671,7 +776,7 @@
     playOn(host, kind === "stroke" ? "purring" : "squish");
     if (host && !STILL) C.burst(...center(host, 0.3), "heart", kind === "stroke" ? 7 : 4);
     if (b.level > before) {
-      say(`몽돌과 더 친해졌어요! 이제 '${b.name}'`);
+      say(`플로로와 더 친해졌어요! 이제 '${b.name}'`);
       if (host && !STILL) C.burst(...center(host), "star", 14, 360);
       if (st.sound) C.chime("level");
       setTimeout(render, 1800);   // 위쪽 줄의 하트를 새로
@@ -746,7 +851,7 @@
     if (s === "sleep") say("쿨… 쿨…");
   }, 3000);
 
-  // ── AI 호출 — 기다리는 동안 몽돌이 "살펴보는 중" ──
+  // ── AI 호출 — 기다리는 동안 플로로가 "살펴보는 중" ──
   async function callAI(url, body) {
     st.busy = true; render();
     try {
@@ -812,7 +917,7 @@
     return askAI("/api/answer", { stage: s.n, hard: hardTexts(), question: st.question, text: st.text },
       "답을 받지 못했어요", (r) => { st.answer = r.answer; });
   }
-  // 고른 것을 작업 글에 한 줄로 적고 다시 살펴본다 — 정하는 건 사용자, 받아 적는 건 몽돌
+  // 고른 것을 작업 글에 한 줄로 적고 다시 살펴본다 — 정하는 건 사용자, 받아 적는 건 플로로
   function decide() {
     const n = st.j.next, o = n.options[st.choice];
     st.text = `${st.text.trim()}\n${N.decisionLine(n.question, o)}`;
@@ -905,7 +1010,15 @@
     pick: () => set({ picking: true }),
     settings: () => set({ settings: !st.settings }),
     bond: () => set({ tab: "learn", settings: false }),
-    tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0 }),
+    tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
+    // 도서관 탭 — 책 고르기 · 덮기 · 세션 덮기(확인 뒤) · 한 권으로 엮기. 한곳에서 보기 — 프로젝트를 누르면 단계 지도(이 화면 것)나 그 책으로
+    "lib-book": (i, el) => set({ libSel: (el && el.dataset.id) || openBooks()[i].id, libConfirm: false }),
+    "lib-close": () => set({ libSel: null, libConfirm: false }),
+    "lib-shelve-ask": () => set({ libConfirm: true }),
+    "lib-shelve-no": () => set({ libConfirm: false }),
+    "lib-shelve": () => shelveBook(),
+    "lib-bind": () => bindBook(),
+    "all-goto": (i) => { const p = openBooks()[i]; if (p) set(p.mine ? { tab: "map", mapSel: null } : { tab: "lib", libSel: p.id, libConfirm: false }); },
     "map-sel": (i) => set({ mapSel: i }),
     crit: () => set({ showCrit: !st.showCrit }),
     "open-input": () => { set({ openInput: true, showCrit: false }); focusText(); },
@@ -921,7 +1034,7 @@
     "confirm-anyway": () => confirmDoc(true),
     "confirm-cancel": () => set({ askConfirm: 0 }),
     "reopen-doc": () => { const x = docDone(st.j.stage); set({ doc: newDoc(x.stage, x.text, "") }); },
-    forget: () => { forgotten = true; try { localStorage.removeItem(KEY); } catch {} location.reload(); },
+    forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); } catch {} location.reload(); },
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false }),
     "close-gate": () => set({ screen: "main" }),
     no: () => { set({ noCount: st.noCount + 1, step: "which", hard: [], answer: "", question: "" }); say("모르는 게 당연해요. 같이 풀어요"); },
@@ -1047,6 +1160,32 @@
     };
     step();
   });
+
+  // ── 주소 끝으로 장면 바로 열기 (시연·녹화용 — tour.js가 쓴다). 진짜 AI를 부르지 않고 연습 예시로만 장면을 만든다 ──
+  //   #start · #ex=<단계>(그 단계 '하는 중' 예시) · &done(그 단계를 다 한 예시) · &tab=<탭> · &crit(할 일 펼침) · &gate(넘어가기 전 확인) · &book=<책>
+  function fromHash() {
+    const h = location.hash.slice(1);
+    if (!h) return;
+    const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(decodeURIComponent)).map(([k, v]) => [k, v === undefined ? true : v]));
+    Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false });
+    if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today" });
+    if (q.ex !== undefined) {
+      const n = Number(q.ex), mine = S.examples.filter((e) => e.judgement.stage === n);
+      const ex = q.done ? mine.find((e) => e.judgement.criteria.every((c) => c.met)) : mine.find((e) => !e.hidden);
+      if (ex) {
+        const base = ex.from !== undefined ? S.examples[ex.from] : null, nx = base && base.judgement.next;
+        const text = base ? `${base.text}\n${N.decisionLine(nx.question, nx.options[0])}` : ex.text;
+        const raw = S.judgeFixture(text, n), j = raw && N.parseJudgement(raw, text, n);
+        if (j) { Object.assign(st, { text, j, todos: null, choice: null, later: false, picking: false, finished: false, notice: "", tab: "today" }); learn(j); }
+      }
+    }
+    if (q.tab && TABS.some((t) => t[0] === q.tab)) st.tab = q.tab;
+    if (q.book) st.libSel = String(q.book);
+    if (q.crit) st.showCrit = true;
+    if (q.gate && st.j && allDone()) Object.assign(st, { screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0 });
+  }
+  fromHash();
+  addEventListener("hashchange", () => { fromHash(); render(); });
 
   render();
 })();

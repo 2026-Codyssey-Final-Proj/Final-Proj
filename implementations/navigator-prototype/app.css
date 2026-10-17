@@ -1,7 +1,7 @@
 /* claude-drafted: 2026-10-14, 2026-10-15, 2026-10-16 — Navigator 프로토타입 모양. 목업(Mac·iPhone 느낌: 반투명 유리, 크게 둥근 모서리, 파란색 하나)을 따른다.
    넓은 화면 = 코딩 도구 창 위에 떠 있는 옆자리 동료 — 2026-10-15 가로 카드 시안대로: 위 아이콘 줄 + 지금 결정할 것 하나를 담은 가로 카드.
    카드 색은 상황(tone-*)마다 다르고, 다크 모드도 같은 이름의 색을 다시 정한다. 600px 이하 = iPhone(오늘의 길잡이 앱) — 이번에 바꾸지 않았다.
-   2026-10-15 길잡이를 물범 '몽돌'로, PC는 리퀴드 글래스(네이비+아이스 블루)로 — 맨 아래 "PC 리퀴드 글래스"가 위의 색을 PC에서만 덮어쓴다. */
+   2026-10-15 길잡이를 물범 '플로로'로, PC는 리퀴드 글래스(네이비+아이스 블루)로 — 맨 아래 "PC 리퀴드 글래스"가 위의 색을 PC에서만 덮어쓴다. */
 
 :root{
   --desk:#DCE4EE; --win:#FFFFFF; --winbar:#F7F7F8; --side:#F5F6F8; --line:#E6E8EC;
@@ -58,7 +58,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 @keyframes drop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 .enter{animation:drop .24s ease-out}
 
-/* 띠 — 숨구멍(가는 막대)에서 몽돌의 머리 꼭대기만 빼꼼 */
+/* 띠 — 숨구멍(가는 막대)에서 플로로의 머리 꼭대기만 빼꼼 */
 .strip{position:relative;width:150px;height:30px;border:0;background:none;padding:0}
 .strip i{position:absolute;left:27px;bottom:10px;width:96px;height:6px;border-radius:99px;background:var(--mute);opacity:.45}
 .strip .ears{position:absolute;left:50%;bottom:15px;width:42px;height:14px;border-radius:21px 21px 0 0;background:var(--seal);box-shadow:inset 0 0 0 1.5px var(--seal-line);
@@ -174,7 +174,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 /* 처음 인사 */
 .hint{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--acc);font-weight:600}
 
-/* 설계도 — 왼쪽 몽돌과 버튼, 오른쪽 글 */
+/* 설계도 — 왼쪽 플로로와 버튼, 오른쪽 글 */
 .docx{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;padding:6px 4px 2px}
 .doc-side{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 .doc-say{margin:0;padding:8px 12px;border-radius:16px;background:var(--t-blue);font-size:14px;line-height:1.5;color:var(--ink2)}
@@ -187,7 +187,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .doc-empty b{color:var(--ink);font-size:16px}
 .isl textarea.doc{min-height:300px}
 
-/* 단계 지도 — 여덟 단계를 한 줄로, 몽돌은 지금 단계 위에 */
+/* 단계 지도 — 여덟 단계를 한 줄로, 플로로는 지금 단계 위에 */
 .map{display:flex;flex-direction:column;gap:14px;padding:4px 4px 2px}
 ol.track{list-style:none;margin:0;padding:34px 0 0;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));position:relative}
 ol.track::before{content:"";position:absolute;left:6.25%;right:6.25%;top:52px;height:3px;border-radius:3px;background:var(--seg)}
@@ -283,7 +283,7 @@ label.chk{display:flex;gap:10px;align-items:center;min-height:40px;font-size:14p
 .why{font-size:14px;color:var(--ink2);line-height:1.55}
 label.chk input{width:18px;height:18px;accent-color:var(--acc)}
 
-/* ── 길잡이 물범 몽돌 (seal.js) — 표정은 눈·입(m-*), 상태는 머리 밖 작은 표시(s-*), 카드 속 숨구멍은 h-* ── */
+/* ── 길잡이 물범 플로로 (seal.js) — 표정은 눈·입(m-*), 상태는 머리 밖 작은 표시(s-*), 카드 속 숨구멍은 h-* ── */
 .cat{flex:none;overflow:visible;display:block}
 .cat .c-fur{fill:var(--seal);stroke:var(--seal-line);stroke-width:1.5}
 .cat .c-shade{fill:var(--seal-shade)}
@@ -321,7 +321,7 @@ label.chk input{width:18px;height:18px;accent-color:var(--acc)}
 .small .c-mouth,.small .c-open,.small .c-fin,.small .c-whisk{display:none}
 .blink .m-idle .e-dot,.blink .m-look .e-dot{display:none}
 .blink .m-idle .e-blink,.blink .m-look .e-blink{display:inline}
-/* 쓰다듬을 수 있는 몽돌 — 마우스를 올리면 눈을 감고 하트 */
+/* 쓰다듬을 수 있는 플로로 — 마우스를 올리면 눈을 감고 하트 */
 .pet{border:0;background:none;padding:0;border-radius:50%;cursor:pointer;display:inline-grid;place-items:center;touch-action:none}
 button.pet:focus-visible{outline-offset:4px}
 .pet:hover .cat:not(.m-sleep):not(.m-love) .c-eyes>*{display:none}
@@ -329,7 +329,7 @@ button.pet:focus-visible{outline-offset:4px}
 .pet:hover .cat .s-heart{display:inline}
 .pet:hover .cat .c-blush ellipse{opacity:.62}
 
-/* 하트·별·물방울과 몽돌의 한마디 — 화면 맨 위 층 */
+/* 하트·별·물방울과 플로로의 한마디 — 화면 맨 위 층 */
 #fx{position:fixed;inset:0;pointer-events:none;z-index:30}
 .fx{position:fixed;transform:translate(-50%,-50%);animation:fly 1s cubic-bezier(.2,.7,.3,1) forwards;opacity:0}
 .fx svg{display:block}

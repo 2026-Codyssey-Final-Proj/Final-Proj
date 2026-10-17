@@ -22,16 +22,25 @@ const MAX_BODY = 40_000;   // 작업 글 + 설계도
 const MAX_WORK = 4000;   // 알림 하나에 담는 작업 글 최대 글자 수
 const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
 
-// 정해진 파일만 내준다 — 경로를 요청에서 만들지 않는다.
-const FILES = {
-  "/": ["index.html", "text/html"],
-  "/app.css": ["app.css", "text/css"],
-  "/app.js": ["app.js", "text/javascript"],
-  "/seal.js": ["seal.js", "text/javascript"],
-  "/navigator.js": ["navigator.js", "text/javascript"],
-  "/scenario.js": ["scenario.js", "text/javascript"],
-  "/share-rules.js": ["../share-prototype/share-rules.js", "text/javascript"],
+// 정해진 파일만 내준다 — 경로를 요청에서 만들지 않는다. 시연 페이지 셋(내비게이터·서고·공유 시험)과 입구를 같이 내준다(2026-10-17 시연 연결):
+//   /                     내비게이터     /index.html            시연 입구(../index.html)
+//   /library-prototype/…  서고·하늘      /share-prototype/…     공유 시험
+const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
+const STATIC = {
+  "navigator-prototype": ["index.html", "app.css", "app.js", "seal.js", "navigator.js", "scenario.js", "tour.js", "tour.css", "library-tab.css"],
+  "library-prototype": ["index.html", "library.css", "library.js", "books.js", "schedule.js", "skills.js", "search.js", "spotlight.js",
+    "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
+  "share-prototype": ["index.html", "share-rules.js", "scenarios.js", "environment-checks.js"],
 };
+const FILES = {};
+for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
+  const type = TYPES[f.split(".").pop()];
+  FILES[`/${dir}/${f}`] = [`../${dir}/${f}`, type];
+  if (dir === "navigator-prototype") FILES[`/${f}`] = [f, type];
+}
+FILES["/"] = ["index.html", TYPES.html];
+FILES["/index.html"] = ["../index.html", TYPES.html];
+FILES["/share-rules.js"] = ["../share-prototype/share-rules.js", TYPES.js];
 
 // 다른 웹페이지가 내 구독으로 Claude를 부르지 못하게: Host는 이 컴퓨터, Origin은(있으면) 이 서버만.
 function allowed(headers, port = PORT) {
