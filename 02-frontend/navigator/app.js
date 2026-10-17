@@ -840,11 +840,17 @@
     strokeState = C.stroke(strokeState, e.clientX, e.timeStamp);
     if (strokeState.petted) pet("stroke");
   });
+  function lookAround() {
+    const host = liveCat();
+    if (!host) return;
+    const [x, y] = center(host, 0.4);
+    [[-400, -40], [400, -40], [0, 0]].forEach(([dx, dy], i) => setTimeout(() => { if (!looked) return; C.follow(host, { x: x + dx, y: y + dy }); }, i * 900));
+  }
   // 가만히 두면 졸다가 잠든다. 움직이면 깬다
-  let lastActive = Date.now(), swam = false;
+  let lastActive = Date.now(), swam = false, looked = false;
   function activity() {
     lastActive = Date.now();
-    swam = false;
+    swam = false; looked = false;
     if (sleepState === "awake") return;
     const was = sleepState;
     sleepState = "awake";
@@ -854,6 +860,8 @@
     if (isPhone() || st.busy) return;
     // 20초쯤 가만히 있으면 졸기 전에 숨구멍에서 한 바퀴 헤엄친다(쉴 때마다 한 번)
     if (!swam && sleepState === "awake" && Date.now() - lastActive >= 20_000) { swam = true; playOn(liveCat(), "swim"); }
+    // 8초쯤 가만히 있으면 두리번 — 왼쪽 → 오른쪽 → 앞(쉴 때마다 한 번). 마우스를 움직이면 눈이 다시 마우스를 따라간다
+    if (!looked && !STILL && sleepState === "awake" && Date.now() - lastActive >= 8_000) { looked = true; lookAround(); }
     const s = C.sleepy(Date.now() - lastActive);
     if (s === sleepState) return;
     sleepState = s;

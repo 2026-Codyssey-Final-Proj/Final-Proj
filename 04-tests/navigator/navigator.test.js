@@ -238,6 +238,10 @@ test("플로로: 표정 이름이 그림에 들어가고, 작으면 입을 빼�
   const face = Cat.svg("idle", 36, { face: true });
   assert.match(face, /class="cat m-idle face" width="36" height="36" viewBox="18 8 64 64"/);
   assert.doesNotMatch(face, /class="s-/);
+  // 숨구멍: 표정 동작(seal.css)이 붙도록 hole 표시가 있고, 머리 밖 표시는 내려간 머리를 따라 함께 내려간다
+  const hole = Cat.svg("think", 64, { hole: true });
+  assert.match(hole, /class="cat m-think hole"/);
+  assert.match(hole, /<g transform="translate\(-2 12\)">\s*<g class="s-dots"/);
 });
 
 test("플로로: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가 가까우면 조금만 움직인다", () => {

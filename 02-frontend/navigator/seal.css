@@ -56,6 +56,7 @@
 
   /* 숨쉬기 — 깨어 있을 땐 살짝, 잘 땐 크게 */
   .cat .c-body { transform-origin: 55px 112px; animation: breath 4.2s ease-in-out infinite; }
+  .hole .c-body { transform-origin: 55px 60px; animation: float 5s ease-in-out infinite; }   /* 숨구멍에서는 물결 따라 둥실 */
   .m-sleep .c-body { animation: breathe 3.4s ease-in-out infinite; }
   .m-sleep .s-zzz text { animation: zz 2.6s ease-in-out infinite; }
   .m-sleep .s-zzz text:nth-child(2) { animation-delay: .35s; } .m-sleep .s-zzz text:nth-child(3) { animation-delay: .7s; }
@@ -63,35 +64,42 @@
   /* 앞지느러미 박수 — 기쁠 때 · 다 했을 때 · 깜짝 놀랐을 때 몇 번 */
   .m-happy .c-fin, .m-done .c-fin, .m-wow .c-fin { transform-origin: 49px 72px; animation: flap .16s ease-in-out 6 alternate; }
 
+  /* 숨구멍에서 물 위로 얼굴 내밀기(2026-10-17) — 표정이 바뀌면 저절로. 물방울(s-bub)이 같이 오른다
+     빼꼼 솟기: 깜짝 · 알림 / 코까지 잠수: 생각 · 살펴보는 중 / 물 뿜기: 다 했을 때 (두리번은 app.js가 고개만 돌린다) */
+  .hole.m-wow .c-body, .hole.m-alert .c-body { animation: popup 1s ease-out; }
+  .hole.m-think .c-body, .hole.m-look .c-body { animation: dip 3s ease-in-out infinite; }
+  .hole.m-wow .s-bub, .hole.m-alert .s-bub, .hole.m-think .s-bub, .hole.m-look .s-bub, .hole.m-done .s-bub, .swim .cat .s-bub { display: inline; }
+  .cat .s-bub circle { animation: rise 1.3s ease-in infinite; }
+  .cat .s-bub circle:nth-child(2) { animation-delay: .45s; } .cat .s-bub circle:nth-child(3) { animation-delay: .9s; }
+
   .m-look .s-dots { animation: blinkdot 1s infinite; }
   .cat.m-wow { animation: jump .4s ease; }
 
   /* 헤엄 — 숨구멍 안에서 머리만 내놓고 이리저리 헤엄치다 쏙 잠수하고 뿅 올라온다. 부르는 쪽이 감싼 요소에 .swim을 붙인다 */
-  .swim .c-body { transform-origin: 55px 60px; animation: swim 3.6s ease-in-out; }
-  .swim .c-tail { animation: kick .18s ease-in-out infinite alternate; }
-  .swim .cat .s-bub { display: inline; }
-  .swim .s-bub circle { animation: rise 1.3s ease-in infinite; }
-  .swim .s-bub circle:nth-child(2) { animation-delay: .45s; } .swim .s-bub circle:nth-child(3) { animation-delay: .9s; }
+  .swim .cat .c-body { transform-origin: 55px 60px; animation: swim 3.6s ease-in-out; }   /* 표정 동작보다 앞선다 */
 
   /* 배로 통통 — 물범이 땅에서 걷는 법(배로 튀며 나아간다). 부르는 쪽이 감싼 요소에 .galumph를 붙인다 */
   .galumph svg.cat { transform-origin: 50% 100%; animation: galumph 1.4s ease-in-out; }
 }
 @keyframes sway { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
 @keyframes wag { from { transform: rotate(10deg); } to { transform: rotate(-18deg); } }
-@keyframes kick { from { transform: rotate(16deg); } to { transform: rotate(-22deg); } }
 @keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012, .992); } }
 @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025, .985); } }
 @keyframes zz { 0%, 100% { opacity: .25; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-2px); } }
 @keyframes blinkdot { 50% { opacity: .25; } }
 @keyframes jump { 0%, 100% { transform: none; } 40% { transform: translateY(-8px); } }
 @keyframes flap { to { transform: scale(1.12, .9) translateY(-1px); } }
+/* 숨구멍의 몸은 1.12배로 그려져 있어 아래 칸 수는 그 안의 칸이다 — 물 아래(그림 y 110)로 사라지려면 72칸 넘게 내려간다 */
+@keyframes float { 0%, 100% { transform: none; } 30% { transform: translateY(-1.5px) rotate(-3deg); } 70% { transform: translateY(1px) rotate(3deg); } }
+@keyframes popup { 0% { transform: translateY(15px); } 50% { transform: translateY(-13px) scale(.97, 1.04); } 75% { transform: translateY(2px); } 100% { transform: none; } }
+@keyframes dip { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(10px); } }
 @keyframes swim {
   0% { transform: none; }
-  14% { transform: translate(0, 32px); }
-  32% { transform: translate(-16px, 34px) rotate(-9deg); }
-  52% { transform: translate(15px, 32px) rotate(9deg); }
-  64% { transform: translate(0, 34px); }
-  76% { transform: translate(0, 104px); }
+  14% { transform: translate(0, 19px); }
+  32% { transform: translate(-14px, 21px) rotate(-9deg); }
+  52% { transform: translate(13px, 19px) rotate(9deg); }
+  64% { transform: translate(0, 21px); }
+  76% { transform: translate(0, 82px); }
   90% { transform: translate(0, -6px) scale(.97, 1.05); }
   100% { transform: none; }
 }

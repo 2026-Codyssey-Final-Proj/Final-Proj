@@ -63,15 +63,17 @@
 
   // 숨구멍(2026-10-17 B안): 얼음 테 · 동그란 틀 대신 물빛이 번진 웅덩이에서 몸을 내민다. 머리는 웅덩이 밖으로 나오고
   // 몸 아래는 물결 아래로 잠긴다. 물 아래(y 110 밑)만 잘라서, 헤엄치며 잠수하면 물속으로 사라진다. 꼬리는 물속이라 그리지 않는다
+  // 2026-10-17 어깨까지 담금: 몸이 먼저 보여 표정이 묻힌다는 의견으로 몸을 14칸 내리고 1.12배 키웠다. 머리 밖 표시도 같이 내린다(HOLE_MARKS)
   const hole = (id, small) => `<defs><radialGradient id="${id}p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
       <linearGradient id="${id}w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
       <clipPath id="${id}c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
     <ellipse class="h-pool" cx="60" cy="88" rx="58" ry="40" fill="url(#${id}p)"></ellipse>
     <g class="h-stars"><circle cx="20" cy="74" r=".9"></circle><circle cx="100" cy="68" r="1.1"></circle><circle cx="92" cy="92" r=".7"></circle></g>
-    <g clip-path="url(#${id}c)"><g transform="translate(6 4) scale(.98)">${body(small, false, false, id)}</g></g>
+    <g clip-path="url(#${id}c)"><g transform="translate(0 18) scale(1.12)">${body(small, false, false, id)}</g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#${id}w)"></path>
     <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path>`;
   // 얼굴만(2026-10-17, 접힌 알약): 얼굴 가운데 (50, 40)을 둥글게 잘라 크게 보인다. 몸 · 지느러미 · 꼬리 · 머리 밖 표시(MARKS)는 뺀다
+  const HOLE_MARKS = `<g transform="translate(-2 12)">${MARKS}</g>`;
   const FACE_BOX = "18 8 64 64";
   const face = (id) => `<defs><clipPath id="${id}f"><circle cx="50" cy="40" r="32"></circle></clipPath></defs><g clip-path="url(#${id}f)">${body(false, false, false, id)}</g>`;
 
@@ -80,8 +82,8 @@
   function svg(mood, size, opts = {}) {
     const m = MOODS.includes(mood) ? mood : "idle", id = `fl${++uid}`;
     const small = size < 32 && !opts.face, tail = size >= 56 && !opts.noTail;
-    const cls = ["cat", `m-${m}`, small && "small", opts.face && "face", opts.extra].filter(Boolean).join(" ");
-    const inner = opts.face ? face(id) : `${opts.hole ? hole(id, small) : body(small, tail, opts.paws, id)}${MARKS}`;
+    const cls = ["cat", `m-${m}`, small && "small", opts.face && "face", opts.hole && !opts.face && "hole", opts.extra].filter(Boolean).join(" ");
+    const inner = opts.face ? face(id) : opts.hole ? hole(id, small) + HOLE_MARKS : body(small, tail, opts.paws, id) + MARKS;
     return `<svg class="${cls}" width="${size}" height="${size}" viewBox="${opts.face ? FACE_BOX : "0 0 120 120"}" aria-hidden="true">
       ${inner}</svg>`;
   }

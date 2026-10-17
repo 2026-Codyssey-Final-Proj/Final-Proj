@@ -46,10 +46,25 @@
 
   // ── ① 입구 ──
   $("hall-seal").innerHTML = seal("happy", 150);
-  // 얼음판 위 플로로는 가끔 배로 통통 뛴다(물범 걸음, ../navigator/seal.css). 움직임 줄이기면 CSS가 막는다
-  setInterval(() => {
-    for (const h of [$("hall-seal"), $("lib-seal")]) { h.classList.remove("galumph"); void h.offsetWidth; h.classList.add("galumph"); }
-  }, 9000);
+  // 얼음판 위 플로로(2026-10-17 자연스럽게) — 얼음판과 함께 둥실 뜨고(index.html의 .ice.bob), 눈은 마우스를 따라가며,
+  // 12~20초마다 배로 통통(물범 걸음, ../navigator/seal.css)이나 두리번 중 하나를 한다. 움직임 줄이기면 하지 않는다
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    let raf = 0, point = null;
+    document.addEventListener("mousemove", (e) => {
+      point = { x: e.clientX, y: e.clientY };
+      if (!raf) raf = requestAnimationFrame(() => { raf = 0; Seal.follow(document.body, point); });
+    });
+    const play = () => {
+      for (const h of [$("hall-seal"), $("lib-seal")]) {
+        if (Math.random() < 0.5) { h.classList.remove("galumph"); void h.offsetWidth; h.classList.add("galumph"); continue; }
+        // 두리번: 왼쪽 → 오른쪽 → 다시 마우스 쪽(없으면 앞)
+        const b = h.getBoundingClientRect(), x = b.left + b.width / 2, y = b.top + b.height * 0.4;
+        [{ x: x - 400, y: y - 40 }, { x: x + 400, y: y - 40 }, point || { x, y }].forEach((p, i) => setTimeout(() => Seal.follow(h, p), i * 900));
+      }
+      setTimeout(play, 12000 + Math.random() * 8000);
+    };
+    setTimeout(play, 6000);
+  }
   $("mini-a").innerHTML = `<div style="display:flex;gap:8px">${D.OPEN.map((b) => `<span style="width:44px;height:60px;border-radius:3px 6px 6px 3px;background:${b.tone};box-shadow:inset 3px 0 0 rgba(0,0,0,.18)"></span>`).join("")}</div>`;
   $("mini-b").innerHTML = `<div style="display:flex;align-items:flex-end;gap:22px">${[0, 1].map(() => `<div style="display:flex;gap:3px;align-items:flex-end;border-bottom:5px solid #cdd8f5;padding:0 4px">${[46, 38, 52, 30, 44].map((h) => `<i style="width:7px;height:${h}px;background:#7d9df0;border-radius:1px"></i>`).join("")}</div>`).join(`<div>${seal("idle", 64)}</div>`)}</div>`;
 
