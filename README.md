@@ -1,4 +1,4 @@
-<!-- claude-drafted: 2026-10-16 — 이재엽의 요청("글은 적게, 이모지 많이, 우리 내용으로")으로 Claude가 README를 새로 썼다. 이름(Floe·플로로)은 이슈 #51에서 동의를 받는 중이다(기한 10/17 18:00). -->
+<!-- claude-drafted: 2026-10-16, 2026-10-17 갱신 — 이재엽의 요청으로 Claude가 README를 새로 썼고, 10/17에 이름 확정(이슈 #51)과 진행 상황을 반영했다. -->
 
 <p align="center">
   <img src="assets/mascot/mascot-v1.webp" alt="플로로" width="150">
@@ -17,6 +17,10 @@
 
 <p align="center">
   <sub>코디세이 Final-Project · 🗓 제출 11/8 18:00 · 🧊 동결 11/1 · 작업 이름 Project Navigator</sub>
+</p>
+
+<p align="center">
+  <sub>🏷 이름: <b>Floe</b>(제품) · <b>플로로</b>(마스코트, Floro) — 2026-10-17 확정 · 이슈 <a href="https://github.com/2026-Codyssey-Final-Proj/Final-Proj/issues/51">#51</a></sub>
 </p>
 
 ---
@@ -60,9 +64,9 @@ flowchart LR
 | | 영역 | 상태 |
 |---|---|---|
 | 📋 | 요구사항 13개 · 우선순위 | ✅ |
-| 🏛 | 구조 결정 ADR | 🟡 결정 대기 |
+| 🏛 | 구조 결정 ADR | 🟡 채택 결정됨 · 병합 대기 (PR #80) |
 | 🖼 | 캔버스 · 화면 구조 | ✅ 초안 |
-| 🦭 | **프로토타입** (단계 · 이해 확인 · 설계도 · Claude 연결) | ✅ 시험 58개 |
+| 🦭 | **프로토타입** (단계 · 이해 확인 · 설계도 · Claude 연결) | ✅ 시험 104개 |
 | 🔒 | 공유 규칙 시험 화면 | ✅ 시험 17개 |
 | 🎤 | 인터뷰 질문지 | ✅ 초안 |
 | 📚 | 서재 책장 · 역량 지도 | 🔵 목업 |
