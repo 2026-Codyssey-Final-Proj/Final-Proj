@@ -243,6 +243,17 @@ test("플로로: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가
   assert.deepEqual([still.x, still.y], [0, 0]);
 });
 
+test("플로로: 고개를 돌리면 얼굴이 그쪽으로 가며 가로로 좁아지고, 가운데를 보면 그대로다", () => {
+  assert.deepEqual(Cat.turn({ x: 0, y: 0 }), { x: 0, y: 0, sx: 1, sy: 1 });
+  const right = Cat.turn(Cat.gaze(1000, 0)), down = Cat.turn(Cat.gaze(0, 1000));
+  assert.ok(right.x > 9 && right.x < 11 && right.sx < 1 && right.sx > 0.9, JSON.stringify(right));
+  assert.ok(down.y > 0 && down.sy < 1 && down.x === 0);
+  assert.equal(Cat.turn(Cat.gaze(-1000, 0)).x, -right.x);
+  // 마리마다 그러데이션 이름이 달라야 한 화면의 여러 마리가 서로의 그늘을 빌려 쓰지 않는다
+  const ids = [Cat.svg("idle", 64), Cat.svg("idle", 64)].map((s) => s.match(/radialGradient id="(\w+)v"/)[1]);
+  assert.notEqual(ids[0], ids[1]);
+});
+
 // ── 플로로와 교감 — 2026-10-15 "캐릭터와 교감 요소를 많이" (2026-10-15 고양이 나비 → 물범 플로로) ──
 test("플로로: 안내 화면이 쓰는 표정과 교감 표정이 모두 그림에 있고, 앞지느러미·땀방울을 붙일 수 있다", () => {
   for (const m of ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow"]) {
