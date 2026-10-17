@@ -37,3 +37,26 @@ test("핀까지 남은 날", () => {
 test("날짜 형식이 틀리면 조용히 넘기지 않고 오류", () => {
   assert.throws(() => S.dueStatus("10/19", "2026-10-17"), /날짜/);
 });
+
+// ── FR-6 일정 충돌: 다른 프로젝트 마감 · 캘린더 일정 · 팀 핀 ──
+const P = (id, stage, dues, done = false) => ({ id, title: id, stage, dues, todos: [{ t: "x", done }] });
+const D8 = (d) => Array(8).fill(d);
+test("두 프로젝트의 마감이 같은 날이면 충돌", () => {
+  const c = S.findClashes({ projects: [P("a", 2, D8("2026-10-20")), P("b", 1, D8("2026-10-20"))], events: [], pins: [], today: "2026-10-17" });
+  assert.equal(c.length, 1);
+  assert.equal(c[0].kind, "같은 날 마감");
+  assert.deepEqual(c[0].with.sort(), ["a", "b"]);
+});
+test("마감이 여러 날짜 일정(시험 기간) 안이거나 같은 날 일정이 있으면 충돌", () => {
+  const ev = [{ title: "중간고사", from: "2026-10-19", to: "2026-10-23" }];
+  const c = S.findClashes({ projects: [P("a", 2, D8("2026-10-21"))], events: ev, pins: [], today: "2026-10-17" });
+  assert.deepEqual(c.map((x) => [x.kind, x.date, x.event]), [["일정과 겹침", "2026-10-21", "중간고사"]]);
+});
+test("14일 넘게 남았거나 이미 끝난 프로젝트는 세지 않는다", () => {
+  const far = P("a", 2, D8("2026-11-20")), fin = P("b", 7, D8("2026-10-20"), true), near = P("c", 2, D8("2026-10-20"));
+  assert.deepEqual(S.findClashes({ projects: [far, fin, near], events: [], pins: [], today: "2026-10-17" }), []);
+});
+test("지금 단계 마감이 팀 기능 동결 뒤면 충돌", () => {
+  const c = S.findClashes({ projects: [P("a", 2, D8("2026-10-30"))], events: [], pins: [{ date: "2026-10-28", label: "기능 동결" }], today: "2026-10-17" });
+  assert.deepEqual(c.map((x) => x.kind), ["팀 일정 뒤"]);
+});

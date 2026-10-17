@@ -349,3 +349,31 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .rv .ins { margin: 0 0 14px; padding-left: 18px; font-size: 13px; line-height: 1.7; }
 .rv .ins small { color: var(--ink-2); }
 @media (max-width: 760px) { .stagemap span, .stagemap em { font-size: 10px; } .tiles, .rv-grid { grid-template-columns: 1fr 1fr; } .ob-body.now { grid-template-columns: 1fr; } }
+
+/* ── FR-6 한곳에서 보기 · FR-8 역량 지도 ── */
+.allhead { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; font-size: 14px; }
+.allhead small { color: var(--ink-2); font-size: 12px; }
+.fake { font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: rgba(255, 217, 138, .2); color: #ffe3a6; }
+.allgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.allgrid section { border-radius: 14px; padding: 10px 12px; background: rgba(255, 255, 255, .05); border: 1px solid var(--edge); min-width: 0; }
+.allgrid section.hot { border-color: rgba(255, 160, 175, .55); }
+.allgrid h4 { margin: 0 0 8px; font-size: 13.5px; display: flex; gap: 8px; align-items: center; }
+.allgrid h4 small { color: var(--ink-2); font-weight: 400; font-size: 12px; }
+.allgrid .paths button { grid-template-columns: minmax(0, 1fr) auto auto; font-size: 12.5px; padding: 6px 8px; }
+.alltodo, .clash, .tok { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.alltodo li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.alltodo small, .clash small { color: var(--ink-2); font-size: 12px; }
+.clash li { display: flex; flex-direction: column; gap: 1px; }
+.clash b { font-size: 13px; }
+.allgrid .hint { margin: 8px 0 0; font-size: 11.5px; color: var(--mute); }
+.tok li { display: grid; grid-template-columns: 96px 1fr auto; gap: 8px; align-items: center; }
+.tok small { font-size: 11.5px; color: var(--ink-2); }
+.tbar { height: 8px; border-radius: 4px; background: rgba(207, 230, 255, .14); overflow: hidden; display: block; }
+.tbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--ice-2), var(--gold)); }
+.bars.skills li { grid-template-columns: 96px 1fr 76px; }
+.lv { display: flex; align-items: center; gap: 4px; }
+.lv i { width: 12px; height: 12px; border-radius: 50%; background: rgba(207, 230, 255, .16); }
+.lv i.on { background: var(--gold); box-shadow: 0 0 6px rgba(255, 217, 138, .6); }
+.lv em { font-style: normal; font-size: 12px; color: var(--ink-2); margin-left: 6px; }
+.rv h3 small { font-weight: 400; font-size: 11.5px; color: var(--mute); margin-left: 4px; }
+@media (max-width: 760px) { .allgrid { grid-template-columns: 1fr; } }

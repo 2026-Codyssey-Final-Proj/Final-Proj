@@ -27,9 +27,10 @@
     map: "단계 지도 — 0단계부터 7단계 돌아보기까지 지나온 길",
     bind: "끝낸 프로젝트는 한 권의 책으로 엮여요",
     cover: "서고에 꽂힌 책 — 표지를 넘기면 단계마다 정한 것이 그대로",
-    review: "전체 돌아보기 — 끝낸 책과 열어 둔 책을 한눈에",
+    review: "전체 돌아보기 — 끝낸 책과 열어 둔 책, 역량 지도를 한눈에",
+    all: "한곳에서 보기 — 진행 · 할 일 · 일정 충돌 · 토큰을 한 화면에",
   };
-  const ORDER = ["hall", "pick", "now", "map", "bind", "desk", "deskOpen", "lib", "cover", "read", "ask", "search", "review"];
+  const ORDER = ["hall", "pick", "now", "map", "all", "bind", "desk", "deskOpen", "lib", "cover", "read", "ask", "search", "review"];
   function caption(key) { $("caption").innerHTML = `<b>${ORDER.indexOf(key) + 1}</b>${CAPTIONS[key]}`; }
   function show(screen) { for (const s of ["hall", "desk", "lib"]) $(`s-${s}`).classList.toggle("on", s === screen); }
   function setHash(h) { history.replaceState(null, "", `#${h}`); }
@@ -39,7 +40,7 @@
     if (where === "hall") { show("hall"); caption("hall"); setHash("hall"); $("tome").focus(); return; }
     if (where === "pick") { show("hall"); $("spread").classList.add("on"); caption("pick"); setHash("pick"); $("spread").querySelector(".go").focus(); return; }
     if (where === "desk") { show("desk"); st.tab = "lib"; st.sel = arg || null; st.confirm = false; renderDesk(); setHash(arg ? `desk-${arg}` : "desk"); return; }
-    if (where === "now" || where === "map") { show("desk"); st.tab = where; if (arg) st.proj = arg; st.mapSel = null; renderDesk(); setHash(`desk-${where}${arg ? `-${arg}` : ""}`); return; }
+    if (where === "now" || where === "map" || where === "all") { show("desk"); st.tab = where; if (arg) st.proj = arg; st.mapSel = null; renderDesk(); setHash(`desk-${where}${arg ? `-${arg}` : ""}`); return; }
     if (where === "lib") { show("lib"); spot.clear(); spot.close(); st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
   }
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
@@ -56,9 +57,10 @@
     now: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
     doc: '<svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5v4h4M9.5 12h6M9.5 15.5h6"/></svg>',
     map: '<svg viewBox="0 0 24 24"><path d="M4 18h3V11H4zM10.5 18h3V6h-3zM17 18h3V13h-3z"/></svg>',
+    all: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
     lib: '<svg viewBox="0 0 24 24"><path d="M3.5 6.5C6 5.5 9 5.5 12 7c3-1.5 6-1.5 8.5-.5V18c-2.5-1-5.5-1-8.5.5-3-1.5-6-1.5-8.5-.5z"/><path d="M12 7v11.5"/></svg>',
   };
-  const TABS = [["now", "지금"], ["doc", "설계도"], ["map", "단계 지도"], ["lib", "도서관"]];
+  const TABS = [["now", "지금"], ["doc", "설계도"], ["map", "단계 지도"], ["all", "한곳에서 보기"], ["lib", "도서관"]];
   function renderTabs() {
     $("tabs").innerHTML = TABS.map(([id, name]) => `<button role="tab" aria-selected="${st.tab === id}" aria-label="${name}" title="${name}" data-tab="${id}">${ICONS[id]}</button>`).join("");
     $("tab-name").textContent = TABS.find((t) => t[0] === st.tab)[1];
@@ -70,6 +72,7 @@
     const ob = $("ob");
     if (st.tab === "now") return renderNow(ob);
     if (st.tab === "map") return renderMap(ob);
+    if (st.tab === "all") return renderAll(ob);
     if (st.tab !== "lib") {
       ob.innerHTML = `<div class="ob-body"><div class="who">${seal("look", 110, { hole: true })}</div><div>
         <div class="ob-say">설계도</div><p class="ob-title">설계도는 내비게이터 프로토타입에 있어요</p>
@@ -166,6 +169,37 @@
     ob.querySelectorAll("[data-tab-go]").forEach((b) => (b.onclick = () => { st.tab = b.dataset.tabGo; renderDesk(); }));
     wirePills(ob);
   }
+  // ── FR-6 한곳에서 보기 — 진행 상황 · 내가 할 일 · 일정 충돌 · 토큰 사용 (시연은 가상 숫자, FR-10) ──
+  function renderAll(ob) {
+    caption("all");
+    const live = st.open, fmt = (n) => n.toLocaleString();
+    const finished = (p) => p.stage === 7 && p.todos.every((t) => t.done);
+    const progress = live.map((p) => `<li><button data-goto="${p.id}"><span class="nm">${esc(p.title)}</span>
+        <span class="dots">${D.STAGES.map((_, i) => `<i class="${i < p.stage || finished(p) ? "on" : i === p.stage ? "cur" : ""}"></i>`).join("")}</span>
+        <span>${finished(p) ? '<span class="due ok">완주</span>' : `${p.stage}단계 ${D.STAGES[p.stage]} ${dueChip(p.dues[p.stage])}`}</span></button></li>`).join("");
+    const todos = live.map((p) => ({ p, t: p.todos.find((x) => !x.done), due: p.dues[p.stage] }))
+      .sort((a, b) => a.due.localeCompare(b.due))
+      .map(({ p, t, due }) => `<li><span>${t ? `○ ${esc(t.t)}` : "📖 책으로 엮기"}</span><small>${esc(p.title)} · ${t ? dueChip(due) : "완주"}</small></li>`).join("");
+    const clashes = S.findClashes({ projects: live, events: D.CALENDAR, pins: D.TEAM_PINS, today: D.TODAY });
+    const ICON = { "같은 날 마감": "⚑", "일정과 겹침": "📅", "팀 일정 뒤": "📌" };
+    const clashHtml = clashes.length ? clashes.map((c) => `<li><b>${ICON[c.kind]} ${c.date.slice(5).replace("-", "/")} ${esc(c.kind)}</b><small>${
+        c.kind === "같은 날 마감" ? `${c.titles.map(esc).join(" · ")} — 마감이 같은 날이에요`
+        : c.kind === "일정과 겹침" ? `${esc(c.titles[0])} 마감 · 캘린더 ‘${esc(c.event)}’와 겹쳐요`
+        : `${esc(c.titles[0])} 마감이 팀 ${esc(c.pin)}(${c.pinDate.slice(5).replace("-", "/")}) 뒤예요`}</small></li>`).join("")
+      : `<li><small>14일 안에 겹치는 일정이 없어요</small></li>`;
+    const T = D.TOKENS, total = Object.values(T.plan).reduce((a, b) => a + b, 0), used = Object.values(T.used).reduce((a, b) => a + b, 0);
+    const tokens = Object.keys(T.plan).map((k) => `<li><span>${T.names[k]}</span><i class="tbar"><i style="width:${(T.used[k] / T.plan[k]) * 100}%"></i></i><small>${fmt(T.used[k])} / ${fmt(T.plan[k])}</small></li>`).join("");
+    ob.innerHTML = `<div class="allhead"><b>한곳에서 보기</b><span class="fake">가상 숫자예요 · 시연용</span><span class="grow"></span><small>오늘 ${D.TODAY.slice(5).replace("-", "/")} · 캘린더 일정 ${D.CALENDAR.length}개 읽음(제목·날짜만)</small></div>
+      <div class="allgrid">
+        <section><h4>진행 상황</h4><ol class="paths">${progress}</ol></section>
+        <section><h4>내가 할 일 <small>마감 가까운 순</small></h4><ul class="alltodo">${todos}</ul></section>
+        <section class="${clashes.length ? "hot" : ""}"><h4>일정 충돌 ${clashes.length ? `<span class="due late">${clashes.length}개</span>` : ""}</h4><ul class="clash">${clashHtml}</ul>
+          <p class="hint">옮길지는 직접 정해요 — 프로젝트를 누르면 단계 지도로 가요</p></section>
+        <section><h4>토큰 사용 <small>${fmt(used)} / ${fmt(total)} · ${Math.round((used / total) * 100)}%</small></h4><ul class="tok">${tokens}</ul></section>
+      </div>`;
+    ob.querySelectorAll("[data-goto]").forEach((b) => (b.onclick = () => { st.proj = b.dataset.goto; st.tab = "map"; st.mapSel = null; renderDesk(); }));
+  }
+
   // 한 권의 책으로 엮기 — 종이가 모여 책이 되고, 서고에 꽂힌다
   function bindBook(p) {
     const papers = $("papers");
@@ -344,10 +378,11 @@
       const [k, id] = x.dataset.rv.split(":"); closeReview(false);
       if (k === "f") openReader(id); else go("map", id);
     }));
-    const count = {};
-    for (const b of fin) for (const t of b.tags) count[t] = (count[t] || 0) + 1;
-    const top = Object.entries(count).sort((a, b) => b[1] - a[1]).slice(0, 5), max = top[0]?.[1] || 1;
-    $("rv-tags").innerHTML = top.map(([t, n]) => `<li><span>${esc(t)}</span><i style="width:${(n / max) * 100}%"></i><b>${n}권</b></li>`).join("");
+    // FR-8 역량 지도 — 배운 것마다 레벨 4단계와 노력(책 수 · 날 수). 레벨 규칙은 가설(skills.js)
+    const SK = window.Skills;
+    $("rv-tags").innerHTML = SK.skillMap(fin, open).slice(0, 7).map((x) => `<li><span>${esc(x.skill)}</span>
+      <span class="lv" aria-label="${SK.LEVELS[x.level]}">${SK.LEVELS.map((_, i) => `<i class="${i <= x.level ? "on" : ""}"></i>`).join("")}<em>${SK.LEVELS[x.level]}</em></span>
+      <b>${x.books ? `${x.books}권 · ${x.days}일` : "열어 둔 책"}</b></li>`).join("");
     $("rv-ins").innerHTML = fin.flatMap((b) => b.insights.map((t) => `<li>${esc(t)} <small>— ${esc(b.title)}</small></li>`)).slice(0, 5).join("");
     $("review").classList.add("on"); caption("review"); setHash("lib-review"); $("rv-close").focus();
   }
@@ -377,7 +412,7 @@
     const h = location.hash.slice(1);
     if (h === "pick") return go("pick");
     if (h === "desk") return go("desk");
-    let mt; if ((mt = /^desk-(now|map)(?:-(s\d))?$/.exec(h))) return go(mt[1], mt[2]);
+    let mt; if ((mt = /^desk-(now|map|all)(?:-(s\d))?$/.exec(h))) return go(mt[1], mt[2]);
     if (h.startsWith("desk-")) return go("desk", h.slice(5));
     if (h === "lib") return go("lib");
     if (h === "lib-ask") return go("lib", "ask");

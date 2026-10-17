@@ -39,7 +39,26 @@
 
   const pinsFrom = (pins, today) => pins.map((p) => ({ ...p, days: daysBetween(today, p.date) }));
 
-  const api = { dueStatus, alertsFor, pinClashes, pinsFrom, daysBetween };
+  // FR-6 일정 충돌 — 진행 중인 프로젝트의 지금 단계 마감(오늘~horizon일)을 서로 · 캘린더 일정 · 팀 핀과 맞대어 본다.
+  // 끝난 프로젝트와 이미 지난 마감은 충돌이 아니라 "늦음"이라 여기서 세지 않는다. 옮기는 결정은 사람이 한다(보여 주기만).
+  function findClashes({ projects, events = [], pins = [], today, horizon = 14 }) {
+    const live = projects
+      .filter((p) => !(p.stage === 7 && p.todos.every((t) => t.done)))
+      .map((p) => ({ p, due: p.dues[p.stage] }))
+      .filter(({ due }) => { const d = daysBetween(today, due); return d >= 0 && d <= horizon; });
+    const out = [];
+    const byDay = {};
+    for (const x of live) (byDay[x.due] = byDay[x.due] || []).push(x.p);
+    for (const [date, ps] of Object.entries(byDay)) if (ps.length > 1) out.push({ kind: "같은 날 마감", date, with: ps.map((p) => p.id), titles: ps.map((p) => p.title) });
+    for (const { p, due } of live) {
+      for (const e of events) if (toUtc(e.from) <= toUtc(due) && toUtc(due) <= toUtc(e.to || e.from)) out.push({ kind: "일정과 겹침", date: due, event: e.title, with: [p.id], titles: [p.title] });
+      const pin = [...pins].sort((a, b) => toUtc(a.date) - toUtc(b.date)).find((x) => toUtc(due) > toUtc(x.date));
+      if (pin) out.push({ kind: "팀 일정 뒤", date: due, pin: pin.label, pinDate: pin.date, with: [p.id], titles: [p.title] });
+    }
+    return out.sort((a, b) => toUtc(a.date) - toUtc(b.date));
+  }
+
+  const api = { dueStatus, alertsFor, pinClashes, pinsFrom, daysBetween, findClashes };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.Schedule = api;
 })(typeof window !== "undefined" ? window : globalThis);
