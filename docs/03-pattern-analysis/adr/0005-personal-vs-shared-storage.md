@@ -1,6 +1,6 @@
 # ADR-0005: 개인 원문과 공유본의 저장 분리
 
-- Status: **Proposed** (이재엽 결정 전)
+- Status: **Accepted** (이재엽 결정 2026-10-17 — 제안대로 채택)
 - Deciders: 이재엽 (팀원 동의가 필요한 부분은 표시)
 - Date: 2026-10-15 (초안)
 - 관련: FR-9, [team-sharing-security.md](../../00-overview/team-sharing-security.md) 3·4절, V1 [ADR-0010](../../../projects/second-brain/docs/03-pattern-analysis/adr/0010-personal-data-location.md)
@@ -31,5 +31,5 @@
 
 ## 이재엽이 정할 것 (팀원 동의 필요)
 
-- [ ] 1 / 2 / 3
+- [x] **1** — 각자 로컬 폴더 + 공유본만 팀 레포
 - [ ] 팀원 세 명이 첫 사용 절차(폴더·환경변수)를 받아들이는가 — 각자의 확인이 필요하다

@@ -1,6 +1,6 @@
 # ADR-0002: 시연 구조 — 서버 없이 도는 화면, 실제 Claude 호출은 몇 경로까지
 
-- Status: **Proposed** (이재엽 결정 전)
+- Status: **Accepted** (이재엽 결정 2026-10-17 — 제안대로 채택)
 - Deciders: 이재엽 (Claude는 후보와 비교를 쓰고, 고르는 것은 이재엽)
 - Date: 2026-10-15 (초안)
 - 관련: FR-10, [requirements.md](../../00-overview/requirements.md) 4절, [navigator-architecture-draft.md](../navigator-architecture-draft.md)
@@ -37,5 +37,5 @@
 
 ## 이재엽이 정할 것
 
-- [ ] 1만 / 1 + 2 / 3 — 멘토링(10/17) 전이라도 기본값을 정할 수 있다
-- [ ] 2라면 어느 장면을 실제 호출로 할지
+- [x] **1 + 2** — 미리 만든 응답 + 실제 Claude 호출(2026-10-15 "시연에서도 실제 대화"와 같은 방향)
+- [ ] 2라면 어느 장면을 실제 호출로 할지 — **멘토링(10/17) 결과 뒤 정한다**

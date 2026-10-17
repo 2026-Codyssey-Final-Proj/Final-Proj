@@ -1,0 +1,12 @@
+Floe (Project Navigator)
+Copyright (c) 2026 the authors listed in AUTHORS.md. Licensed under the MIT License (see LICENSE).
+
+This repository also contains third-party material that keeps its own license:
+
+- Agent skills copied unmodified from external repositories under .claude/skills/ —
+  see .claude/skills/VENDORED.md for each source, commit and license
+  (Apache-2.0, MIT, SIL Open Font License for bundled fonts). Each folder carries
+  its original LICENSE file where required.
+- Fonts bundled with those skills keep their *-OFL.txt notices.
+
+Anything not listed above was written by the project authors.
