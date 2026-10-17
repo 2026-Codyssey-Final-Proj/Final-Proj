@@ -1,12 +1,12 @@
 <!-- claude-drafted: 2026-10-12 — 이재엽의 요청으로 Claude가 `final-project-상세계획서.pdf`(붙임1, 기획안)를 옮기고 고쳤다. 같은 날 이재엽의 답변(대상=바이브 코딩, 루틴 통합, 이해 확인=예/아니요)으로 다시 고쳤다. 요구의 원천은 [requirements.md](requirements.md)이고 어긋나면 그쪽이 맞다. [제안]·[확인 필요]는 사람이 확정하기 전의 초안이다. -->
 
-# Project Navigator — Final-Project 기획안 (수정판)
+# Floe (작업 이름 Project Navigator) — Final-Project 기획안 (수정판)
 
 | | |
 |---|---|
 | 프로그램 | 코디세이 AI 네이티브 응용 학습 Final-Project |
 | 도메인 | 에듀테크 — **AI로 바이브 코딩을 하는 사람의 성장** (원안: 에듀테크(AI 코딩 교육)) |
-| 프로젝트명 | Project Navigator |
+| 프로젝트명 | **Floe**(플로) — 작업 이름 Project Navigator. 마스코트 플로로(Floro), 이름 확정 2026-10-17 |
 | 팀장 | 이재엽 (총괄) |
 | 팀원 | 고한결 · 임유정 · 두승현 — 역할은 [TEAM.md](../../TEAM.md) |
 | 원안 | `final-project-상세계획서.pdf` (2쪽, 이 문서가 대체한다) |
