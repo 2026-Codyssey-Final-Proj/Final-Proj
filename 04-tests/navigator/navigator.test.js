@@ -234,6 +234,10 @@ test("플로로: 표정 이름이 그림에 들어가고, 작으면 입을 빼�
   assert.match(Cat.svg("done", 64), /class="cat m-done"/);
   assert.match(Cat.svg("idle", 28), /class="cat m-idle small"/);
   assert.match(Cat.svg("없는표정", 64), /m-idle/);
+  // 얼굴만(접힌 알약): 얼굴 쪽만 보이고, 머리 밖 표시(s-)는 없다
+  const face = Cat.svg("idle", 36, { face: true });
+  assert.match(face, /class="cat m-idle face" width="36" height="36" viewBox="18 8 64 64"/);
+  assert.doesNotMatch(face, /class="s-/);
 });
 
 test("플로로: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가 가까우면 조금만 움직인다", () => {

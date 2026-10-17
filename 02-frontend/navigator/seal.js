@@ -2,7 +2,7 @@
 // 2026-10-15 "몽돌-도서관-연동-데모-리퀴드글래스.mp4의 물범과 똑같이, cat.js의 방식은 무시해도 된다" 요청으로 처음부터 다시 그림
 // (그 전에는 치즈 고양이 '나비'였고 파일도 cat.js·NavCat이었다).
 // 영상 속 플로로: 푸른 기 도는 하얀 강낭콩 몸(왼쪽은 곧게, 아래 오른쪽이 불룩, 오른쪽 아래에 옅은 그늘) · 작은 남색 점 눈 · 아주 작은 코와 ω 입 ·
-// 하늘색 Y자 앞지느러미와 그 아래 받치는 곡선 · 오른쪽 아래로 뻗은 꽃잎 두 장 꼬리 · 기쁘거나 잘 때만 분홍 볼 · 살필 때만 수염.
+// 하늘색 Y자 앞지느러미와 그 아래 받치는 곡선 · 오른쪽 아래로 뻗은 꽃잎 두 장 꼬리 · 기쁘거나 잘 때만 분홍 볼 · 수염은 늘(2026-10-17, 전에는 살필 때만).
 // 카드 속 플로로(opts.hole)은 울퉁불퉁한 얼음 테두리를 두른 별밤 숨구멍에서 가슴까지 내밀고, 아래는 물 띠에 잠겨 있다.
 // 표정은 눈·입(m-*)으로, 상태는 머리 밖 작은 표시(s-*)로. 보이고 숨기는 건 app.css가 한다(다시 그리지 않고 class만 바꿔 표정을 바꾸려고).
 // 그림 말고도 교감에 쓰는 순수 함수(쓰다듬기 알아채기·친해진 정도·인사·졸음)와 화면 효과(하트·별·물방울 튀기기·작은 소리)가 여기 있다.
@@ -15,11 +15,6 @@
   const EYE = [39, 60], EY = 35;
   const heart = (x, y) => `M${x} ${y + 3.6} C${x - 4.4} ${y + 0.6} ${x - 4.4} ${y - 3.4} ${x - 1.6} ${y - 3.4} C${x - 0.6} ${y - 3.4} ${x} ${y - 2.4} ${x} ${y - 1.8} C${x} ${y - 2.4} ${x + 0.6} ${y - 3.4} ${x + 1.6} ${y - 3.4} C${x + 4.4} ${y - 3.4} ${x + 4.4} ${y + 0.6} ${x} ${y + 3.6} Z`;
   const both = (f) => EYE.map(f).join(" ");
-  // 숨구멍의 얼음 테두리 — 반지름이 조금씩 다른 꼭짓점 14개(울퉁불퉁), 가운데는 반지름 49로 뚫는다
-  const RING = [58, 56.5, 59, 57, 58.5, 56, 58, 59, 56.5, 58, 57, 59, 56.5, 58].map((r, i, a) => {
-    const t = (i / a.length) * 2 * Math.PI - Math.PI / 2;
-    return `${i ? "L" : "M"}${(60 + r * Math.cos(t)).toFixed(1)} ${(60 + r * Math.sin(t)).toFixed(1)}`;
-  }).join(" ") + " Z M60 11 A49 49 0 1 0 60 109 A49 49 0 1 0 60 11 Z";
 
   // 플로로 한 마리 — size가 32px보다 작으면 입·지느러미·수염을 빼고(.small) 눈을 키운다. tail: 꼬리지느러미, paws: 앞지느러미를 걸친 모습(한 줄 표시)
   // 입체감(2026-10-17): 가장자리로 갈수록 어두워지는 둥근 그늘(c-vol)과 왼쪽 위 반짝임(c-shine) — Coucou의 Mochi와 같은 방식(MIT, 그림은 우리 것).
@@ -66,24 +61,32 @@
       <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
       <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g>`;
 
-  // opts.paws: 한 줄 표시용, opts.extra: 덧붙일 class (예: "oops" — 땀방울), opts.noTail: 꼬리 없이, opts.hole: 카드 속 숨구멍
+  // 숨구멍(2026-10-17 B안): 얼음 테 · 동그란 틀 대신 물빛이 번진 웅덩이에서 몸을 내민다. 머리는 웅덩이 밖으로 나오고
+  // 몸 아래는 물결 아래로 잠긴다. 물 아래(y 110 밑)만 잘라서, 헤엄치며 잠수하면 물속으로 사라진다. 꼬리는 물속이라 그리지 않는다
+  const hole = (id, small) => `<defs><radialGradient id="${id}p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
+      <linearGradient id="${id}w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
+      <clipPath id="${id}c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
+    <ellipse class="h-pool" cx="60" cy="88" rx="58" ry="40" fill="url(#${id}p)"></ellipse>
+    <g class="h-stars"><circle cx="20" cy="74" r=".9"></circle><circle cx="100" cy="68" r="1.1"></circle><circle cx="92" cy="92" r=".7"></circle></g>
+    <g clip-path="url(#${id}c)"><g transform="translate(6 4) scale(.98)">${body(small, false, false, id)}</g></g>
+    <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#${id}w)"></path>
+    <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path>`;
+  // 얼굴만(2026-10-17, 접힌 알약): 얼굴 가운데 (50, 40)을 둥글게 잘라 크게 보인다. 몸 · 지느러미 · 꼬리 · 머리 밖 표시(MARKS)는 뺀다
+  const FACE_BOX = "18 8 64 64";
+  const face = (id) => `<defs><clipPath id="${id}f"><circle cx="50" cy="40" r="32"></circle></clipPath></defs><g clip-path="url(#${id}f)">${body(false, false, false, id)}</g>`;
+
+  // opts.paws: 한 줄 표시용, opts.face: 얼굴만(접힌 알약), opts.hole: 카드 속 숨구멍, opts.extra: 덧붙일 class (예: "oops" — 땀방울), opts.noTail: 꼬리 없이
   let uid = 0;
   function svg(mood, size, opts = {}) {
-    const m = MOODS.includes(mood) ? mood : "idle";
-    const small = size < 32, tail = size >= 56 && !opts.noTail, id = `fl${++uid}`;
-    const seal = opts.hole
-      ? `<clipPath id="seal-hole"><circle cx="60" cy="60" r="49"></circle></clipPath>
-        <circle class="h-sky" cx="60" cy="60" r="49"></circle>
-        <g class="h-stars"><circle cx="30" cy="38" r=".9"></circle><circle cx="86" cy="30" r="1.1"></circle><circle cx="78" cy="56" r=".7"></circle><circle cx="38" cy="22" r=".7"></circle><circle cx="96" cy="70" r=".9"></circle></g>
-        <g clip-path="url(#seal-hole)"><g transform="translate(7.5 11.5) scale(1.05)">${body(small, tail, false, id)}</g>
-          <path class="h-water" d="M0 99 H120 V120 H0 Z"></path><path class="h-line" d="M12 99 H108"></path></g>
-        <path class="h-ring" fill-rule="evenodd" d="${RING}"></path><circle class="h-rim" cx="60" cy="60" r="49"></circle>`
-      : body(small, tail, opts.paws, id);
-    return `<svg class="cat m-${m}${small ? " small" : ""}${opts.extra ? ` ${opts.extra}` : ""}" width="${size}" height="${size}" viewBox="0 0 120 120" aria-hidden="true">
-      ${seal}${MARKS}</svg>`;
+    const m = MOODS.includes(mood) ? mood : "idle", id = `fl${++uid}`;
+    const small = size < 32 && !opts.face, tail = size >= 56 && !opts.noTail;
+    const cls = ["cat", `m-${m}`, small && "small", opts.face && "face", opts.extra].filter(Boolean).join(" ");
+    const inner = opts.face ? face(id) : `${opts.hole ? hole(id, small) : body(small, tail, opts.paws, id)}${MARKS}`;
+    return `<svg class="${cls}" width="${size}" height="${size}" viewBox="${opts.face ? FACE_BOX : "0 0 120 120"}" aria-hidden="true">
+      ${inner}</svg>`;
   }
 
-  // 눈 따라오기 — 커서 쪽으로 눈은 통째로(gaze 최대 7칸의 0.35배), 코·입은 그 절반, 몸은 조금 기운다. 단위는 그림 안의 좌표(120칸)
+  // 눈 따라오기 — 커서가 있는 쪽과 거리를 그림 안의 칸(120칸)으로, 최대 7칸. 얼굴을 얼마나 돌릴지는 turn()이 정한다
   function gaze(dx, dy) {
     const d = Math.hypot(dx, dy) || 1, m = 7 * Math.min(1, d / 220);
     return { x: dx / d * m, y: dy / d * m * 0.8 };

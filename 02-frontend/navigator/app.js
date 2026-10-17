@@ -602,10 +602,12 @@
     else main = `<b>${allDone() ? "다 했어요! · " : ""}${s.n}단계</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
     const base = st.ping ? "look" : face()[0];
     return `<button class="pill${st.ping || st.warn ? " ping" : ""}" data-act="pill" aria-expanded="false" aria-label="플로로 펼치기">
-      <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { paws: true })}</span>${main}${st.feed.at ? `<span class="led on"></span>` : ""}</button>`;
+      <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { face: true })}</span>${main}${st.feed.at ? `<span class="led on"></span>` : ""}</button>`;
   }
-  // 띠 — 귀만 빼꼼. 마우스를 올리면 한 줄로 나온다
-  const stripHTML = () => `<button class="strip" data-act="strip" aria-label="플로로 부르기" title="마우스를 올리면 나와요"><span class="ears" aria-hidden="true"></span><span class="zz" aria-hidden="true">z<b>z</b></span><i></i></button>`;
+  // 띠 — 물결 선 위로 얼굴 위쪽만 빼꼼. 마우스를 올리면 한 줄로 나온다. 졸면 body.dozing으로 눈을 감는다(app.css)
+  const WAVE = `<svg class="wl" viewBox="0 0 150 12" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="strip-wl" x2="1"><stop offset="0" stop-color="#A9DDFF" stop-opacity="0"></stop><stop offset=".5" stop-color="#A9DDFF" stop-opacity=".9"></stop><stop offset="1" stop-color="#A9DDFF" stop-opacity="0"></stop></linearGradient></defs>
+    <path d="M6 5 Q40 2 75 5 Q110 8 144 5" fill="none" stroke="url(#strip-wl)" stroke-width="2" stroke-linecap="round"></path><path d="M40 9 Q58 7.5 72 9 M84 9.5 Q98 8 112 9.5" fill="none" stroke="#A9DDFF" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg>`;
+  const stripHTML = () => `<button class="strip" data-act="strip" aria-label="플로로 부르기" title="마우스를 올리면 나와요"><span class="head" aria-hidden="true">${cat("idle", 58, { face: true })}</span>${WAVE}<span class="zz" aria-hidden="true">z<b>z</b></span></button>`;
   function greetHTML(enter) {
     deskKeys = { Enter: { act: "open" } };
     return `<div class="isl greet${enter}"><section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
