@@ -7,14 +7,14 @@ Claude가 이 레포에서 처음 세션을 열었다면 [CLAUDE.md](CLAUDE.md)�
 
 | 이름 | 역할 | 담당 | 주로 만지는 곳 | GitHub |
 |---|---|---|---|---|
-| 이재엽 | **팀장 · 총괄 · 제출 · AI 에이전트 제작 · API 연동** | 방향·일정·멘토링, **11/8 제출**, 워크 프로세스 판정 규칙·프롬프트·장기 기억, 에이전트 API | `docs/00-overview/`, `agent/`(예정), `projects/second-brain/` | `gamercross` |
-| 고한결 | **UI/UX · 인터뷰 · 발표 흐름** | 화면 설계, 인터뷰 설계·기록, 발표 스토리와 자료 디자인, 사용자 테스트 진행 | `docs/04-pattern-implementation/`, [`docs/interviews/`](docs/interviews/README.md) | `rhgksruf472` |
-| 임유정 | **프론트엔드** | 시연 화면, 구동 GIF 제작, API를 호출하는 화면 쪽 연결 | [`frontend/`](frontend/README.md) | `dbdlf` |
-| 두승현 | **테스트 · 검증 · 문서 · 협업 증빙** | 수용 테스트, 사용 전후 검증, 기획서 취합·편집, 이슈·리뷰 기록 정리 | `tests/`(예정), `docs/06-service/`, `docs/verification/`(예정) | `Frost0313z` |
+| 이재엽 | **팀장 · 총괄 · 제출 · AI 에이전트 제작 · API 연동** | 방향·일정·멘토링, **11/8 제출**, 워크 프로세스 판정 규칙·프롬프트·장기 기억, 에이전트 API | `01-docs/00-overview/`, `agent/`(예정), `05-projects/second-brain/` | `gamercross` |
+| 고한결 | **UI/UX · 인터뷰 · 발표 흐름** | 화면 설계, 인터뷰 설계·기록, 발표 스토리와 자료 디자인, 사용자 테스트 진행 | `01-docs/04-pattern-implementation/`, [`01-docs/interviews/`](01-docs/interviews/README.md) | `rhgksruf472` |
+| 임유정 | **프론트엔드** | 시연 화면, 구동 GIF 제작, API를 호출하는 화면 쪽 연결 | [`02-frontend/`](02-frontend/README.md) | `dbdlf` |
+| 두승현 | **테스트 · 검증 · 문서 · 협업 증빙** | 수용 테스트, 사용 전후 검증, 기획서 취합·편집, 이슈·리뷰 기록 정리 | `tests/`(예정), `01-docs/06-service/`, `01-docs/verification/`(예정) | `Frost0313z` |
 
 > **2026-10-12 역할 수정.** 대회 평가 기준(팀 구성·협업 30점: 균형 있는 기여, 협업 증빙)에 맞춰 고쳤다.
 > 달라진 점: 발표 흐름(고한결)·제출(이재엽)·협업 증빙(두승현)을 명시. 이재엽의 백엔드는 **API 연동**으로 이름을 바꿔 이재엽이 계속 맡는다.
-> 이유와 일정: [schedule.md](docs/00-overview/schedule.md).
+> 이유와 일정: [schedule.md](01-docs/00-overview/schedule.md).
 
 ### 역할 동의 기록
 
@@ -34,5 +34,5 @@ Claude가 이 레포에서 처음 세션을 열었다면 [CLAUDE.md](CLAUDE.md)�
 ## 역할을 바꾸거나 사람이 더 생기면
 
 1. 이 표를 고친다 (PR).
-2. [최종 기획안](docs/00-overview/final-project-plan.md) 머리의 팀 줄이 맞는지 본다.
+2. [최종 기획안](01-docs/00-overview/final-project-plan.md) 머리의 팀 줄이 맞는지 본다.
 3. 개인 신원 파일(`.claude/identity.local.md`)은 각자 로컬에서 다시 만든다.

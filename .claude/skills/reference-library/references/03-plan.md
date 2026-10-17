@@ -8,7 +8,7 @@
 ## 쓰는 법
 
 - 3단계에서 **"왜 이 스택·구조인가"에 답할 후보 비교**가 필요할 때 연다. 후보를 2~3개 고르면
-  ADR의 "고려한 선택지" 칸 재료가 된다([docs/03-pattern-analysis/](../../../../docs/03-pattern-analysis/README.md)).
+  ADR의 "고려한 선택지" 칸 재료가 된다([01-docs/03-pattern-analysis/](../../../../01-docs/03-pattern-analysis/README.md)).
 - 서버·포트·도메인 값은 원 라이브러리 작성자의 인프라 기준이다 — 옮기기 전에 지금 환경을 확인한다.
 
 ## 웹 스택 프리셋 (8)
@@ -116,4 +116,4 @@
 | 배포 | 고급 | UML 2.5 | 어떤 서버·컨테이너에 무엇이 뜨나 | 4·6단계 |
 | ArchiMate | 고급 | ArchiMate 3.2 | 비즈니스·애플리케이션·기술 계층을 한꺼번에 | 큰 조직 단위일 때만 |
 
-그림 도구와 규칙은 [diagramming-guide](../../../../docs/04-pattern-implementation/03-diagramming-guide.md) "도구 환경"을 따른다.
+그림 도구와 규칙은 [diagramming-guide](../../../../01-docs/04-pattern-implementation/03-diagramming-guide.md) "도구 환경"을 따른다.

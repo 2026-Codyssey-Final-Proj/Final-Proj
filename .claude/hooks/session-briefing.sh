@@ -5,17 +5,20 @@
 # 코드나 데이터 폴더가 없으면 "일이 없다"고 말하지 않고 조용히 지나간다.
 # 이름·날짜·개수만 나가고 할 일 문서 본문은 나가지 않는다(briefing.py).
 top=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
-script="$top/projects/second-brain/implementations/skeleton/briefing.py"
+script="$top/05-projects/second-brain/implementations/skeleton/briefing.py"
 [ -f "$script" ] || exit 0
 
 data="${SECOND_BRAIN_DATA:-}"  # 설정 한 곳(ADR-0010) — 있으면 그 폴더
 if [ -z "$data" ]; then
-  data="$top/projects/second-brain/data"
+  data="$top/05-projects/second-brain/data"
+  # 폴더 번호를 붙이기 전(2026-10-17)의 자리 — git이 무시하는 폴더라 pull로 옮겨지지 않는다
+  [ -d "$data" ] || data="$top/projects/second-brain/data"
 fi
 if [ -z "${SECOND_BRAIN_DATA:-}" ] && [ ! -d "$data" ]; then
   # worktree에서 시작한 세션 — 데이터(git이 무시하는 폴더)는 본 작업 폴더에 있다
   common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null) || exit 0
-  data="$(dirname "$common")/projects/second-brain/data"
+  data="$(dirname "$common")/05-projects/second-brain/data"
+  [ -d "$data" ] || data="$(dirname "$common")/projects/second-brain/data"
 fi
 [ -d "$data" ] || exit 0
 

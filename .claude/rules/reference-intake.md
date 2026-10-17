@@ -3,9 +3,9 @@
 <!-- claude-drafted: 2026-10-04 — 사용자 요청("자료가 너무 많아서 매번 헷갈려, 네가 초안 써줘. 워크플레이스에 더 추가할 수 있는지. 프로젝트를 준비할때 더 많은 스킬 아니면 내용들을 넣어서 준비할 수 있게")으로 Claude가 썼다. 세컨드 브레인 CLAUDE.md "자료가 많을 때"의 ①~④를 루트로 옮기고 ⑤ 꺼내 쓰기를 더했다. 확정은 사용자가 한다. -->
 
 다음 경우에만 읽으세요: 사용자가 파일·스크린샷·저장소 링크를 **참고 자료로** 줄 때, 후보 장부
-([`docs/catalog/reference-candidates.md`](../../docs/catalog/reference-candidates.md))를 고칠 때,
+([`01-docs/catalog/reference-candidates.md`](../../01-docs/catalog/reference-candidates.md))를 고칠 때,
 새 프로젝트를 준비하며 재료를 꺼낼 때(`dev-workflow` 명령 1의 1-1). GitHub 링크 하나를 참고 자료로 넣는 형식은
-[세컨드 브레인 CLAUDE.md](../../projects/second-brain/CLAUDE.md) "참고 자료 넣기"에 있다.
+[세컨드 브레인 CLAUDE.md](../../05-projects/second-brain/CLAUDE.md) "참고 자료 넣기"에 있다.
 
 ## 왜 헷갈렸나 — 이 절차가 막는 두 가지
 
@@ -15,9 +15,9 @@
    | 무엇의 상태 | 유일한 자리 |
    |---|---|
    | 묶음을 어디까지 받았나 (받음 → 문서화 → 비교 → 반영) | 큰 묶음: `~/proj/coding_marathon_result/코딩마라톤 가이드/README.md` 받은 기록표 (저장소 밖 — 2026-10-06 사용자 결정으로 워크스페이스 `레프런스/`에서 옮김). 릴스·게시물처럼 한 장씩 오는 **짧은 자료**: `~/proj/references/짧은자료/README.md` 받은 기록표 (저장소 밖, 2026-10-12 사용자 결정 — 한 자료 한 파일, 링크의 추적 꼬리를 떼고, 목록·문장은 원칙만 옮긴다) |
-   | 워크스페이스로 가는 후보를 어떻게 판정했나 (후보 → 채택/보류/버림 → 반영됨) | [후보 장부](../../docs/catalog/reference-candidates.md) |
+   | 워크스페이스로 가는 후보를 어떻게 판정했나 (후보 → 채택/보류/버림 → 반영됨) | [후보 장부](../../01-docs/catalog/reference-candidates.md) |
 
-   나머지 문서(묶음 README, `docs/references/*.md`)는 **근거와 상세**만 담고 상태를 적지 않는다 — 장부 ID로 가리킨다.
+   나머지 문서(묶음 README, `01-docs/references/*.md`)는 **근거와 상세**만 담고 상태를 적지 않는다 — 장부 ID로 가리킨다.
 2. **목적지가 섞였다.** 한 자료에서 워크스페이스(방법론·규칙·스킬)로 갈 것과 특정 프로젝트로 갈 것이 같이 나온다.
    → ③ 비교에서 **목적지를 먼저 나눈다.**
 
@@ -58,15 +58,15 @@
 
 ## ③ 비교 — 겹침/새로움, 그리고 목적지
 
-- 비교 대상: 워크스페이스 기준([gates.md](../../docs/00-overview/gates.md),
-  [checklist.md](../../docs/catalog/checklist.md), `docs/02~07`, `.claude/rules/**`, `.claude/skills/**`)과 관련 프로젝트의 결정.
+- 비교 대상: 워크스페이스 기준([gates.md](../../01-docs/00-overview/gates.md),
+  [checklist.md](../../01-docs/catalog/checklist.md), `01-docs/02~07`, `.claude/rules/**`, `.claude/skills/**`)과 관련 프로젝트의 결정.
 - **겹침**은 "우리 쪽 근거"만 남긴다. 장부에 넣지 않는다 — 새로 만들 것이 없다.
 - **새로움**은 목적지를 하나 고른다:
 
   | 목적지 | 어디에 적나 |
   |---|---|
   | 워크스페이스 (모든 프로젝트에 쓰일 방법·규칙·스킬) | 장부에 행 추가 (`W-NN`) |
-  | 특정 프로젝트 | `projects/<슬러그>/docs/references/<묶음>.md` |
+  | 특정 프로젝트 | `05-projects/<슬러그>/docs/references/<묶음>.md` |
   | 둘 다 | 장부에 쓰고, 프로젝트 문서는 장부 ID로 가리킨다 |
 
 - **같은 후보가 다른 자료에서 또 나오면** 새 행을 만들지 않고 장부 "출처" 칸에 더한다. 출처가 둘 이상이면 판정 우선순위를 올리는 신호다.
@@ -80,9 +80,9 @@
   |---|---|
   | 매번 지켜야 하고 기계로 확인할 수 있다 | 훅 `.claude/hooks/` |
   | 매번 지켜야 하는 작업 방식 | `.claude/rules/*.md` |
-  | 단계를 넘어가는 조건 | [gates.md](../../docs/00-overview/gates.md) DoR/DoD |
-  | 잊기 쉬운 확인 항목 | [checklist.md](../../docs/catalog/checklist.md) |
-  | 문서의 틀(칸) | `docs/0X-*/` 템플릿 |
+  | 단계를 넘어가는 조건 | [gates.md](../../01-docs/00-overview/gates.md) DoR/DoD |
+  | 잊기 쉬운 확인 항목 | [checklist.md](../../01-docs/catalog/checklist.md) |
+  | 문서의 틀(칸) | `01-docs/0X-*/` 템플릿 |
   | 반복되는 작업 절차 | 스킬 — [skill-authoring.md](skill-authoring.md), 외부 스킬이면 `dev-workflow` 명령 4 |
   | 한 프로젝트에만 | 그 프로젝트 `CLAUDE.md` |
 
@@ -95,7 +95,7 @@
 
 1. **이미 반영된 것** — 장부 "반영됨" 중 이 프로젝트가 밟을 단계에 닿는 것. 규칙에 들어가 있어 자동으로 적용된다는 안내만 한다.
 2. **출발점 자료** — 레프런스 묶음 ↔ 단계 대응표(받은 기록표)에서 그 단계의 묶음 README — 지금은 [`reference-library`](../skills/reference-library/SKILL.md) 스킬이 단계별로 꺼내 준다. 템플릿·프리셋을 처음부터 만들지 않기 위해서다.
-3. **스킬** — `.claude/skills/`와 [external-tools.md](../../docs/catalog/external-tools.md) "채택" 중 이 프로젝트에 맞는 것. 필요한데 없으면 명령 4 후보로 적는다.
+3. **스킬** — `.claude/skills/`와 [external-tools.md](../../01-docs/catalog/external-tools.md) "채택" 중 이 프로젝트에 맞는 것. 필요한데 없으면 명령 4 후보로 적는다.
 4. **시험해 볼 후보** — 장부 "보류" 중 이 프로젝트에서 써 보고 판정할 수 있는 것.
 
 고르는 것은 사용자다. 고른 목록은 사용자가 세션 파일에 "준비 재료"로 적고, 7단계 회고에서 실제로 도움이 됐는지 본다 —

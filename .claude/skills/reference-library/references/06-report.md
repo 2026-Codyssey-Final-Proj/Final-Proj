@@ -3,7 +3,7 @@
 # 6·7단계 — 품질 분석 (Report): 문서 템플릿 11개
 
 원문: `~/proj/coding_marathon_result/코딩마라톤 가이드/6. 품질 분석/<폴더>/README.md` (폴더 5개). 원문에는 카드만 있고 템플릿 본문은 없다 —
-아래 "최소 목차"는 처음 쓸 때의 뼈대 후보다. 6단계 검증 기록 형식은 [06-service/README.md](../../../../docs/06-service/README.md)를 먼저 따른다.
+아래 "최소 목차"는 처음 쓸 때의 뼈대 후보다. 6단계 검증 기록 형식은 [06-service/README.md](../../../../01-docs/06-service/README.md)를 먼저 따른다.
 
 | 문서 | 폴더 | 난이도 | 태그 | 언제 쓰나 | 최소 목차 |
 |---|---|---|---|---|---|
@@ -21,6 +21,6 @@
 
 ## 우리 쪽 연결
 
-- 테스트 계획서의 "EARS 요구 ↔ 테스트 ID" 표는 [02-specification-ears.md](../../../../docs/02-problem-analysis/02-specification-ears.md) "EARS → 수용 테스트" 규칙과 같다(장부 W-01).
+- 테스트 계획서의 "EARS 요구 ↔ 테스트 ID" 표는 [02-specification-ears.md](../../../../01-docs/02-problem-analysis/02-specification-ears.md) "EARS → 수용 테스트" 규칙과 같다(장부 W-01).
 - 배포 가이드·릴리스 노트의 "고친 결함·하지 못한 것"은 6단계 검증 기록 형식의 칸과 같다(장부 W-04).
-- 원문 태그의 `required`는 원 라이브러리 기준이다. 개인 프로젝트에서 무엇을 필수로 쓸지는 등급([scope-tiers.md](../../../../docs/00-overview/scope-tiers.md))에 맞춰 사용자가 정한다.
+- 원문 태그의 `required`는 원 라이브러리 기준이다. 개인 프로젝트에서 무엇을 필수로 쓸지는 등급([scope-tiers.md](../../../../01-docs/00-overview/scope-tiers.md))에 맞춰 사용자가 정한다.

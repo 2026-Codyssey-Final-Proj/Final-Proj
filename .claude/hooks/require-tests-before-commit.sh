@@ -8,11 +8,11 @@ if ! echo "$cmd" | grep -q 'git commit'; then
   exit 0
 fi
 
-if [ ! -f implementations/run_all_tests.py ]; then
+if [ ! -f 04-tests/run_all_tests.py ]; then
   exit 0
 fi
 
-output=$(python3 implementations/run_all_tests.py 2>&1)
+output=$(python3 04-tests/run_all_tests.py 2>&1)
 status=$?
 
 if [ "$status" -ne 0 ]; then

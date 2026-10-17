@@ -33,7 +33,7 @@ description: 새 문제/프로젝트를 저장하거나, 과거 패턴을 검색
 
 ## 트랙 자동 인식 (ADR-0001의 Supportability 제약 반영)
 
-`docs/01-problem-save/` 안에서 **`README.md`와 `prd-template.md`를 제외한 모든
+`01-docs/01-problem-save/` 안에서 **`README.md`와 `prd-template.md`를 제외한 모든
 `*.md` 파일**이 하나의 "트랙 템플릿"입니다. 새 트랙을 추가하고 싶으면 이
 폴더에 파일 하나만 추가하면 되고, **이 스킬의 로직·문구를 바꿀 필요가
 없습니다** — 항상 그 순간의 폴더 내용을 다시 나열하세요.
@@ -51,7 +51,7 @@ description: 새 문제/프로젝트를 저장하거나, 과거 패턴을 검색
 총 8개 항목이 명령 1·2·3 절차 그대로 1→7단계를 완주했다. 이 워크스페이스에서는
 qa-prep-system *(V1에만 있음)*이 1→6단계를 진행했고
 (PRD 3-1 규칙은 그 과정에서 보강된 것), 이후 기록은
-[worklog.md](../../../docs/00-overview/worklog.md)에 쌓인다.
+[worklog.md](../../../01-docs/00-overview/worklog.md)에 쌓인다.
 
 ## 이 스킬과 헷갈리기 쉬운 스킬
 

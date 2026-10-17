@@ -23,7 +23,7 @@ import os, re, subprocess, sys
 from pathlib import Path
 
 mode = os.environ["MODE"]
-SELF = {".claude/hooks/check-secrets.sh", "implementations/hooks/test_check_secrets.py"}
+SELF = {".claude/hooks/check-secrets.sh", "04-tests/hooks/test_check_secrets.py"}
 PATTERNS = [
     ("Anthropic 키", re.compile(r"sk-ant-[A-Za-z0-9_-]{20,}")),
     ("OpenAI 키", re.compile(r"sk-(?:proj-)?[A-Za-z0-9]{20,}")),

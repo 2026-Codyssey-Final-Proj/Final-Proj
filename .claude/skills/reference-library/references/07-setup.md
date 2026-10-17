@@ -6,7 +6,7 @@
 
 **이 표는 들이는 목록이 아니다.** 하나라도 쓰려면 `dev-workflow` 명령 4로 분석하고
 [external-integration.md](../../../rules/external-integration.md)에 따라 판정해
-[external-tools.md](../../../../docs/catalog/external-tools.md)에 남긴다. 사용자는 **개인 데이터를 밖으로 보내는
+[external-tools.md](../../../../01-docs/catalog/external-tools.md)에 남긴다. 사용자는 **개인 데이터를 밖으로 보내는
 도구를 원하지 않는다** — 데이터가 나가는 도구는 그 점을 먼저 말한다.
 
 ## Claude 스킬 (16)

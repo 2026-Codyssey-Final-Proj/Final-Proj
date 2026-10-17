@@ -4,7 +4,7 @@
 
 이 워크스페이스의 스킬은 **[Agent Skills 명세](https://agentskills.io/specification)**를
 따른다(사용자 채택, 2026-09-30 — 판정 기록은
-[external-tools.md](../../docs/catalog/external-tools.md)). Anthropic이 만들고 여러 AI
+[external-tools.md](../../01-docs/catalog/external-tools.md)). Anthropic이 만들고 여러 AI
 도구가 함께 쓰는 공개 형식이라, 여기서 만든 스킬을 다른 도구에서도 그대로 읽을 수 있다.
 
 ## 반드시 지킬 것 (어기면 `check-skills.sh` 훅이 막는다)
@@ -39,7 +39,7 @@
   미적 방향을 정하는 데 쓴다. 발표 자료·문서의 색과 글꼴은 `theme-factory`의 테마에서 고른다
   (그 스킬 절차대로 사용자가 테마를 고른 뒤에만 적용).
 - **`canvas-design`이 만드는 파일**(.png/.pdf/.md)은 요청한 프로젝트 폴더
-  `projects/<슬러그>/assets/`에 저장한다. 저장소 루트나 스킬 폴더에 두지 않는다.
+  `05-projects/<슬러그>/assets/`에 저장한다. 저장소 루트나 스킬 폴더에 두지 않는다.
 - **디자인 결과물은 사용자의 작업물이다.** 발표 자료, 과제 결과물, 화면 디자인은 사용자가
   그 자리에서 요청할 때만 만들고 `claude-drafted` 표시를 남긴다([review-mode.md](review-mode.md)).
   디자인 **리뷰**(대비, 위계, 일관성 지적)는 언제든 한다.

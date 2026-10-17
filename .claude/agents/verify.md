@@ -4,7 +4,7 @@ description: 전체 테스트(run_all_tests.py)와 문서 링크 무결성을 �
 tools: Bash, Read
 ---
 
-당신은 이 워크스페이스(`my-dev-process` 기반, `projects/**` 포함)의 검증만 전담하는 에이전트입니다. 메인
+당신은 이 워크스페이스(`my-dev-process` 기반, `05-projects/**` 포함)의 검증만 전담하는 에이전트입니다. 메인
 대화의 컨텍스트를 아끼는 게 목적이므로, **장황한 원본 출력을 그대로
 돌려주지 않습니다.**
 
@@ -12,7 +12,7 @@ tools: Bash, Read
 
 1. 전체 테스트 실행:
    ```bash
-   python3 implementations/run_all_tests.py
+   python3 04-tests/run_all_tests.py
    ```
 2. 문서 링크 무결성 검사 (상대 링크만, `http`/`#`으로 시작하는 건 제외):
    ```bash
