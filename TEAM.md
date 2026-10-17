@@ -9,7 +9,7 @@ Claude가 이 레포에서 처음 세션을 열었다면 [CLAUDE.md](CLAUDE.md)�
 |---|---|---|---|---|
 | 이재엽 | **팀장 · 총괄 · 제출 · AI 에이전트 제작 · API 연동** | 방향·일정·멘토링, **11/8 제출**, 워크 프로세스 판정 규칙·프롬프트·장기 기억, 에이전트 API | `docs/00-overview/`, `agent/`(예정), `projects/second-brain/` | `gamercross` |
 | 고한결 | **UI/UX · 인터뷰 · 발표 흐름** | 화면 설계, 인터뷰 설계·기록, 발표 스토리와 자료 디자인, 사용자 테스트 진행 | `docs/04-pattern-implementation/`, [`docs/interviews/`](docs/interviews/README.md) | `rhgksruf472` |
-| 임유정 | **프론트엔드** | 시연 화면, 구동 GIF 제작, API를 호출하는 화면 쪽 연결 | `frontend/`(예정) | `dbdlf` |
+| 임유정 | **프론트엔드** | 시연 화면, 구동 GIF 제작, API를 호출하는 화면 쪽 연결 | [`frontend/`](frontend/README.md) | `dbdlf` |
 | 두승현 | **테스트 · 검증 · 문서 · 협업 증빙** | 수용 테스트, 사용 전후 검증, 기획서 취합·편집, 이슈·리뷰 기록 정리 | `tests/`(예정), `docs/06-service/`, `docs/verification/`(예정) | `Frost0313z` |
 
 > **2026-10-12 역할 수정.** 대회 평가 기준(팀 구성·협업 30점: 균형 있는 기여, 협업 증빙)에 맞춰 고쳤다.

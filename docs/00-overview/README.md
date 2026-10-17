@@ -1,8 +1,8 @@
 # 개요 — 나만의 개발 워크플로우 시스템
 
-- 이 문서는 개인 워크스페이스의 버전입니다 — 시스템 자체(규칙·템플릿·스킬)는
-  공개 템플릿에서 왔고, 실제로 진행한 프로젝트는 `projects/` 아래에 있습니다
-  (루트 [`README.md`](../../README.md)의 "프로젝트" 표). 시작하는 법은
+- 이 문서는 **7단계 워크플로우 방법론**의 개요입니다. V1(이재엽 개인 워크스페이스)에서 옮겨 왔습니다
+  ([migration.md](migration.md)). 팀이 만드는 제품(Floe)의 요구는 [requirements.md](requirements.md),
+  팀의 할 일은 [team-priorities.md](team-priorities.md)에 있습니다. 시작하는 법은
   [`../../GETTING_STARTED.md`](../../GETTING_STARTED.md) 참고.
 
 이 저장소는 "문제 저장 → 문제 분석 → 패턴 분석 → 패턴 구현 → 구현 → 서비스 → 유지보수"라는
@@ -76,7 +76,7 @@ docs/
   05-implementation/    5단계: TDD + 동등분할·경계값 분석 방법론
   06-service/           6단계: Twelve-Factor App + 성능 실측 방법론
   07-maintenance/       7단계: 회고 — 5 Whys + Blameless Postmortem 방법론
-  catalog/              패턴 카탈로그, 분석 체크리스트 (지금은 비어 있음 — 회고 때마다 쌓임)
+  catalog/              패턴 카탈로그(아직 비어 있음), 분석 체크리스트 — 회고 때마다 쌓임
 ```
 
 ## 진행상황 (Progress Log)
@@ -96,7 +96,8 @@ docs/
 | 6. 서비스 | ✅ 완료 (방법론) | Twelve-Factor App + Planguage Goal 실측 규칙. [`docs/06-service/`](../06-service/README.md) |
 | 7. 유지보수 | ✅ 완료 (방법론) | 5 Whys + Blameless Postmortem. [`docs/07-maintenance/`](../07-maintenance/README.md) |
 
-**다음 액션**: 시스템은 준비됐고, 실제로 쓴 이력은 아직 없습니다. 첫 문제/
+**지금 (2026-10-17)**: 팀은 이 방법론으로 Floe를 진행 중입니다 — 2단계 마무리, 3단계 ADR 확정(10/17),
+2→3 게이트는 10/18 예정([requirements.md](requirements.md) 2-3). 새 문제/
 프로젝트를 [`dev-workflow` 스킬](../../.claude/skills/dev-workflow/SKILL.md)로
 저장하면서 시작하세요 — 자세한 절차는 [`GETTING_STARTED.md`](../../GETTING_STARTED.md).
 

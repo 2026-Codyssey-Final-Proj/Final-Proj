@@ -71,6 +71,11 @@ Michael Nygard가 2011년에 제안한 개념으로, **하나의 아키텍처적
 | [0007](../../../projects/second-brain/docs/03-pattern-analysis/adr/0007-data-branch.md) | (second-brain) 데이터는 `data` 브랜치에 바로 커밋 — 병합은 코드·규칙만 | Accepted |
 | [0008](0008-sequential-coding-protocol.md) | (팀) 요구사항 하나씩 도는 순차 코딩 프로토콜("한 바퀴") | Accepted |
 | [0009](0009-ai-provider-subscription-first.md) | (팀) AI 호출은 사용자 본인의 Claude 구독이 기본 — Claude만 구매한 사람도 쓴다 | Accepted |
+| [0002 (팀)](0002-demo-structure.md) | (팀) 시연 구조 — 서버 없이 도는 화면, 실제 Claude 호출은 몇 경로까지 | Accepted (2026-10-17) |
+| [0003 (팀)](0003-ai-boundary-and-judgement.md) | (팀) AI 호출 경계와 게이트 판정의 위치 | Accepted (2026-10-17) |
+| [0004 (팀)](0004-long-term-memory.md) | (팀) 장기 기억의 저장과 검색 | Accepted (2026-10-17) |
+| [0005 (팀)](0005-personal-vs-shared-storage.md) | (팀) 개인 원문과 공유본의 저장 분리 | Accepted (2026-10-17) |
+| [0006 (팀)](0006-second-brain-integration.md) | (팀) 세컨드 브레인(V1)과 Navigator의 통합 방식 | Accepted (2026-10-17) |
 
 > **번호가 두 갈래다.** 위 표의 `(second-brain)`·`(qa-prep-system)` 항목은 V1(개인) 번호이고, 이 폴더의 `0002-*`~`0006-*` 파일은 **팀 ADR**(시연 구조·AI 경계·장기 기억·저장 분리·통합, 모두 Accepted 2026-10-17)이다. 팀 ADR은 `(팀)`으로 구분하고, V1 ADR을 인용할 때는 `V1-ADR-NNNN`으로 쓴다.
 

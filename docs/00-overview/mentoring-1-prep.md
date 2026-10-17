@@ -1,5 +1,7 @@
 # 멘토링 1 준비 한 장 — 10/17(토)
 
+> **기록 문서 (2026-10-15 기준).** 그날의 상태를 남긴 것이라 지금과 다를 수 있다. 지금 상태는 [team-priorities.md](team-priorities.md) "내 몫"과 [requirements.md](requirements.md) 2-3절을 본다(2026-10-17 표시).
+
 <!-- claude-drafted: 2026-10-15 — 이재엽의 요청("전부 준비")으로 Claude가 schedule.md 2-1, requirements.md, team-priorities.md, 열린 이슈를 모아 쓴 준비 문서다. 멘토링 방식(방문/Zoom)은 확인하지 못했다. -->
 
 **멘토링은 점검이다.** 아래는 "무엇을 보여 주고, 무엇을 묻고, 무엇을 요청할지"다.

@@ -1,5 +1,7 @@
 # #5 점검 — 요구 우선순위·숫자 확정·출처 추적표 (2026-10-15 기준)
 
+> **기록 문서 (2026-10-15 기준).** 그날의 상태를 남긴 것이라 지금과 다를 수 있다. 지금 상태는 [team-priorities.md](team-priorities.md) "내 몫"과 [requirements.md](requirements.md) 2-3절을 본다(2026-10-17 표시).
+
 <!-- claude-drafted: 2026-10-15 — 이재엽의 요청("전부 준비")으로 Claude가 requirements.md 8·10~13절, team-priorities.md, schedule.md, README.md를 대조해 쓴 점검 결과다. requirements.md는 고치지 않았다 — 고치는 것은 이재엽이 한다. -->
 
 마감은 **10/16(금)**, 리뷰어는 두승현이다. 이 문서는 "무엇이 끝났고 무엇이 남았는가"만 말한다.

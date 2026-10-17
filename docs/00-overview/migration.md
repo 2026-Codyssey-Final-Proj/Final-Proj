@@ -109,4 +109,4 @@ flowchart LR
 | FR-12 다음 할 일 | "다음 한 걸음"(접수 1, 설계만) | 구현 전 | 설계 확정까지 |
 | FR-13 비전공자 접근 | 앱에서 폴더를 열어 말하기 + 선택 카드(접수 1, 설계만) | 구현 전 | 설계 확정까지 |
 
-**시연 화면의 위치.** `implementations/navigator-demo/index.html`은 모양을 보이는 초안이다. 값은 전부 가상이고 네트워크를 쓰지 않으며(시험으로 막음), 실제 화면의 구조와 문구는 임유정(프론트엔드)·고한결(UI/UX)이 정한다.
+**시연 화면의 위치.** 지금 시연 화면은 [`implementations/navigator-prototype/`](../../implementations/navigator-prototype/README.md)이다(2026-10-17 표시). 아래는 이 절을 쓸 때(10/14)의 첫 초안 설명이다. `implementations/navigator-demo/index.html`은 모양을 보이는 초안이다. 값은 전부 가상이고 네트워크를 쓰지 않으며(시험으로 막음), 실제 화면의 구조와 문구는 임유정(프론트엔드)·고한결(UI/UX)이 정한다.
