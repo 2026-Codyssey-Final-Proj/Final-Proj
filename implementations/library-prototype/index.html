@@ -79,6 +79,12 @@
 <section class="screen" id="s-lib" aria-label="플로로의 얼음 서고">
   <button class="pillbtn lib-out glass" data-go="desk">← 작업 화면으로</button>
   <div class="lib-head glass"><b>플로로의 얼음 서고</b><span id="lib-count"></span></div>
+  <form class="search glass" id="search" role="search" autocomplete="off">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+    <label class="sr" for="q">서고에서 찾기</label>
+    <input id="q" type="search" placeholder="서고에서 찾기 — 책 이름 · 배운 것 · 정한 것 · 만든 파일" enterkeyhint="search">
+    <span class="kbd" aria-hidden="true">/</span>
+  </form>
   <button class="pillbtn lib-refs glass" id="refs-btn">레퍼런스 서가</button>
   <div class="stage" id="stage">
     <svg class="arcs" id="arcs" aria-hidden="true"></svg>
@@ -119,6 +125,7 @@
 
 <script src="../navigator-prototype/seal.js"></script>
 <script src="books.js"></script>
+<script src="search.js"></script>
 <script src="library.js"></script>
 </body>
 </html>
