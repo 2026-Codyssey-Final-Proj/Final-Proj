@@ -46,6 +46,10 @@
 
   // ── ① 입구 ──
   $("hall-seal").innerHTML = seal("happy", 150);
+  // 얼음판 위 플로로는 가끔 배로 통통 뛴다(물범 걸음, ../navigator/seal.css). 움직임 줄이기면 CSS가 막는다
+  setInterval(() => {
+    for (const h of [$("hall-seal"), $("lib-seal")]) { h.classList.remove("galumph"); void h.offsetWidth; h.classList.add("galumph"); }
+  }, 9000);
   $("mini-a").innerHTML = `<div style="display:flex;gap:8px">${D.OPEN.map((b) => `<span style="width:44px;height:60px;border-radius:3px 6px 6px 3px;background:${b.tone};box-shadow:inset 3px 0 0 rgba(0,0,0,.18)"></span>`).join("")}</div>`;
   $("mini-b").innerHTML = `<div style="display:flex;align-items:flex-end;gap:22px">${[0, 1].map(() => `<div style="display:flex;gap:3px;align-items:flex-end;border-bottom:5px solid #cdd8f5;padding:0 4px">${[46, 38, 52, 30, 44].map((h) => `<i style="width:7px;height:${h}px;background:#7d9df0;border-radius:1px"></i>`).join("")}</div>`).join(`<div>${seal("idle", 64)}</div>`)}</div>`;
 

@@ -763,7 +763,12 @@
     clearTimeout(sayTimer);
     sayTimer = setTimeout(() => b.classList.remove("show"), 2900);
   }
-  const playOn = (host, cls) => { if (STILL || !host) return; host.classList.remove("squish", "purring", "hop"); void host.offsetWidth; host.classList.add(cls); };
+  // 한 번 하는 움직임(seal.css · app.css). 끝나면 떼어 낸다 — 헤엄의 물방울처럼 붙어 있는 동안 계속 보이는 것이 있어서
+  const playOn = (host, cls) => {
+    if (STILL || !host) return;
+    host.classList.remove("squish", "purring", "hop", "swim"); void host.offsetWidth; host.classList.add(cls);
+    setTimeout(() => host.classList.remove(cls), 3600);
+  };
   const center = (el, fy = 0.5) => { const r = el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height * fy]; };
   // 쓰다듬기 — 눌렀으면 하트 몇 개와 한마디, 문질렀으면 흥얼흥얼. 친해진 정도가 올라가면 별이 튄다
   function pet(kind) {
@@ -834,9 +839,10 @@
     if (strokeState.petted) pet("stroke");
   });
   // 가만히 두면 졸다가 잠든다. 움직이면 깬다
-  let lastActive = Date.now();
+  let lastActive = Date.now(), swam = false;
   function activity() {
     lastActive = Date.now();
+    swam = false;
     if (sleepState === "awake") return;
     const was = sleepState;
     sleepState = "awake";
@@ -844,6 +850,8 @@
   }
   setInterval(() => {
     if (isPhone() || st.busy) return;
+    // 20초쯤 가만히 있으면 졸기 전에 숨구멍에서 한 바퀴 헤엄친다(쉴 때마다 한 번)
+    if (!swam && sleepState === "awake" && Date.now() - lastActive >= 20_000) { swam = true; playOn(liveCat(), "swim"); }
     const s = C.sleepy(Date.now() - lastActive);
     if (s === sleepState) return;
     sleepState = s;

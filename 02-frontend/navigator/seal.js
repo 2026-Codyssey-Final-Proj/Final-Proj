@@ -26,7 +26,8 @@
   // id: 그러데이션 이름. 한 화면에 여러 마리가 있어 마리마다 다르게 준다
   function body(small, tail, paws, id) {
     const r = small ? 5.5 : 3.4;
-    return `<defs><radialGradient id="${id}v" cx=".42" cy=".36" r=".68"><stop offset=".6" stop-color="#1A2350" stop-opacity="0"></stop><stop offset="1" stop-color="#1A2350" stop-opacity=".2"></stop></radialGradient>
+    // c-body: 몸 전체를 한 덩이로 — 숨쉬기·헤엄은 이 덩이를 움직인다(seal.css). c-head에는 고개 돌리기(follow)가 따로 붙는다
+    return `<g class="c-body"><defs><radialGradient id="${id}v" cx=".42" cy=".36" r=".68"><stop offset=".6" stop-color="#1A2350" stop-opacity="0"></stop><stop offset="1" stop-color="#1A2350" stop-opacity=".2"></stop></radialGradient>
         <radialGradient id="${id}s"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop></radialGradient></defs>
       ${tail ? `<g class="c-tail"><ellipse cx="100" cy="110" rx="9" ry="3.6" transform="rotate(25 100 110)"></ellipse><ellipse cx="94" cy="115" rx="8.5" ry="3.4" transform="rotate(65 94 115)"></ellipse></g>` : ""}
       <g class="c-head">
@@ -53,16 +54,17 @@
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
       </g>
-      ${paws ? `<g class="c-paws"><ellipse cx="36" cy="114" rx="9" ry="4"></ellipse><ellipse cx="58" cy="114" rx="9" ry="4"></ellipse></g>` : ""}`;
+      ${paws ? `<g class="c-paws"><ellipse cx="36" cy="114" rx="9" ry="4"></ellipse><ellipse cx="58" cy="114" rx="9" ry="4"></ellipse></g>` : ""}</g>`;
   }
-  // 머리 밖 작은 표시 — 살펴보는 중(점점), 다 했어요(반짝), 생각(?), 깜짝(!), 하트, 잠(z), 땀방울
+  // 머리 밖 작은 표시 — 살펴보는 중(점점), 다 했어요(반짝), 생각(?), 깜짝(!), 하트, 잠(z), 땀방울, 헤엄칠 때 오르는 물방울(s-bub)
   const MARKS = `<g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
-      <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>`;
+      <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g>`;
 
   // opts.paws: 한 줄 표시용, opts.extra: 덧붙일 class (예: "oops" — 땀방울), opts.noTail: 꼬리 없이, opts.hole: 카드 속 숨구멍
   let uid = 0;

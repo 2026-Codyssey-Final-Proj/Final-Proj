@@ -29,7 +29,7 @@ const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
 const ROOT = "../../";
 const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
 const STATIC = {
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "tour.js", "tour.css", "library-tab.css"],
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "tour.js", "tour.css", "library-tab.css"],
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "schedule.js", "skills.js", "search.js", "spotlight.js",
     "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
   "02-frontend/share": ["index.html"],
