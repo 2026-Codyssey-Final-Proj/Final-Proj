@@ -5,36 +5,45 @@
 
   // 지금 열어 둔 책 4권 = 열어 둔 세션 4개 (오버레이 위젯이 보여 준다)
   const OPEN = [
-    { id: "s1", title: "동아리 행사 등록 앱", stage: 2, updated: "오늘 14:20", tone: "#7FB6FF",
+    { id: "s1", title: "동아리 행사 등록 앱", stage: 2, updated: "오늘 14:20", tone: "#7FB6FF", started: "2026-10-12", dues: ["2026-10-12", "2026-10-14", "2026-10-19", "2026-10-23", "2026-10-27", "2026-10-30", "2026-11-03", "2026-11-05"],
+      todos: [{ t: "신청 버튼 기능 한 줄", done: true }, { t: "마감 알림 기능 한 줄", done: true }, { t: "승인 기능 한 줄", done: true }, { t: "안 될 때 한 줄(예외)", done: false }],
+      steps: ["신청이 카톡으로 흩어진다", "신청 · 마감 · 승인 세 가지만", "기능 4줄 중 3줄을 EARS로"],
       decided: ["신청 버튼을 누르면 3초 안에 등록된다", "마감 하루 전에 신청자에게 알림이 간다", "운영진이 승인하면 신청자가 바로 안다"],
       bookmarks: ["EARS로 기능 한 줄씩", "마감 알림은 하루 전", "승인 상태는 세 가지"] },
-    { id: "s2", title: "스터디 출석 체크 앱", stage: 1, updated: "어제", tone: "#9BE0D6",
+    { id: "s2", title: "스터디 출석 체크 앱", stage: 1, updated: "어제", tone: "#9BE0D6", started: "2026-10-15", dues: ["2026-10-15", "2026-10-18", "2026-10-22", "2026-10-25", "2026-10-28", "2026-10-31", "2026-11-01", "2026-11-01"],
+      todos: [{ t: "누가 쓰는지 한 줄", done: true }, { t: "출석 규칙 적기", done: false }, { t: "지각 기준 정하기", done: false }],
+      steps: ["출석을 손으로 센다", "출석 버튼 한 번"],
       decided: ["출석은 버튼 한 번", "지각 기준은 10분"],
       bookmarks: ["문제를 한 문장으로"] },
-    { id: "s3", title: "가계부 위젯", stage: 5, updated: "3일 전", tone: "#B9A8FF",
+    { id: "s3", title: "가계부 위젯", stage: 7, updated: "오늘 09:10", tone: "#B9A8FF", started: "2026-09-29", dues: ["2026-09-29", "2026-10-01", "2026-10-03", "2026-10-05", "2026-10-07", "2026-10-11", "2026-10-15", "2026-10-17"],
+      todos: [{ t: "회고 적기", done: true }, { t: "다음에 뺄 것 적기", done: true }],
+      steps: ["어디에 썼는지 모른다", "금액 · 분류 두 칸만", "Must 3 · Could 2", "위젯 + 내 컴퓨터 저장", "입력 한 줄이 합계까지", "입력 · 합계 · 분류 3화면", "2주 동안 매일 씀", "Could 두 개는 끝내 안 씀 — 다음엔 뺀다"],
+      insights: ["입력 칸이 적을수록 매일 쓰게 된다", "Could는 써 보기 전에 만들지 않는다"], made: ["widget.html", "budget.js", "store.json"],
       decided: ["지출 입력은 금액·분류 두 칸", "한 달 합계는 위젯 맨 위", "분류는 내가 만든 다섯 개만"],
       bookmarks: ["MoSCoW로 줄이기", "입력 칸은 적을수록", "숫자는 오른쪽 정렬", "빈 달은 0원으로", "분류 이름은 내 말로", "새로 고침 없이 합계"] },
-    { id: "s4", title: "포트폴리오 사이트", stage: 3, updated: "10/15", tone: "#FFC98A",
+    { id: "s4", title: "포트폴리오 사이트", stage: 3, updated: "10/15", tone: "#FFC98A", started: "2026-10-06", dues: ["2026-10-06", "2026-10-08", "2026-10-11", "2026-10-15", "2026-10-20", "2026-10-25", "2026-10-29", "2026-10-31"],
+      todos: [{ t: "선택지 세 개 적기", done: true }, { t: "장단점 비교", done: true }, { t: "정적 사이트로 결정", done: false }],
+      steps: ["프로젝트를 보여 줄 곳이 없다", "카드 세 장만", "카드 세 줄 요약", "정적 사이트로 간다"],
       decided: ["정적 사이트로 간다", "프로젝트 카드는 세 줄 요약"],
       bookmarks: ["결정은 선택지와 함께", "서버 없이 가는 이유", "카드 요약은 세 줄"] },
   ];
 
   // 다 끝낸 책 = 서고에 꽂힌 책 (내 서고가 보여 준다)
   const SHELF = [
-    { id: "f1", title: "동아리 행사 등록 앱", sub: "v1", shelf: 0, date: "10.15", tags: ["EARS", "얼음 보내기"], links: ["f2", "f3"],
+    { id: "f1", started: "2026-09-29", days: 17, title: "동아리 행사 등록 앱", sub: "v1", shelf: 0, date: "10.15", tags: ["EARS", "얼음 보내기"], links: ["f2", "f3"],
       steps: ["행사 신청이 카톡으로 흩어진다", "신청·마감·승인 세 가지만", "기능 4줄을 EARS로", "웹 폼 + 시트 저장", "신청 버튼 하나가 끝까지", "폼·목록·알림 3화면", "동아리원 5명이 써 봄", "알림이 늦었던 이유를 적음"],
       insights: ["기능을 한 줄씩 쓰니 빠진 게 바로 보였다", "알림은 '언제'를 숫자로 정해야 한다"],
       made: ["신청서.html", "행사-목록.html", "마감-알림.js"] },
-    { id: "f2", title: "독서 기록 봇", shelf: 0, date: "09.28", tags: ["EARS", "숫자로 말하기"], links: ["f1"],
+    { id: "f2", started: "2026-09-10", days: 19, title: "독서 기록 봇", shelf: 0, date: "09.28", tags: ["EARS", "숫자로 말하기"], links: ["f1"],
       steps: ["읽은 책을 자꾸 잊는다", "한 줄 기록만", "기록·찾기·통계 3개", "메신저 봇", "한 줄 저장", "기록·검색 완성", "2주 동안 매일 씀", "통계는 안 봤다 — 뺄 것"],
       insights: ["쓰지 않는 기능은 다음엔 처음부터 빼자"], made: ["bot.js", "records.csv"] },
-    { id: "f3", title: "동네 날씨 알림", shelf: 1, date: "10.02", tags: ["얼음 보내기", "재시도"], links: ["f1"],
+    { id: "f3", started: "2026-09-15", days: 18, title: "동네 날씨 알림", shelf: 1, date: "10.02", tags: ["얼음 보내기", "재시도"], links: ["f1"],
       steps: ["우산을 자꾸 안 챙긴다", "아침 7시 알림", "비 올 때만 알림", "예보 API + 예약 실행", "알림 한 번 오기", "비·눈·강풍 3종", "한 달 사용", "실패했을 때 조용했다 — 알림 추가"],
       insights: ["자동화는 실패를 알려야 믿을 수 있다"], made: ["weather.js", "schedule.json"] },
-    { id: "f4", title: "용돈 기록표", shelf: 2, date: "09.20", tags: ["MoSCoW", "숫자로 말하기"], links: ["f5"],
+    { id: "f4", started: "2026-09-01", days: 20, title: "용돈 기록표", shelf: 2, date: "09.20", tags: ["MoSCoW", "숫자로 말하기"], links: ["f5"],
       steps: ["어디 썼는지 모른다", "하루 한 번 적기", "Must 3 · Could 4", "시트 하나", "입력 한 줄", "월별 합계", "한 달 사용", "Could는 하나도 안 씀"],
       insights: ["Must만 만들어도 충분했다"], made: ["용돈.xlsx"] },
-    { id: "f5", title: "사진 정리 도우미", shelf: 3, date: "10.10", tags: ["MoSCoW", "한 번에 하나만"], links: ["f4"],
+    { id: "f5", started: "2026-09-24", days: 17, title: "사진 정리 도우미", shelf: 3, date: "10.10", tags: ["MoSCoW", "한 번에 하나만"], links: ["f4"],
       steps: ["사진이 너무 많다", "날짜별 폴더만", "정리·중복 찾기", "로컬 스크립트", "한 폴더 정리", "중복 찾기 추가", "가족 사진 2천 장", "중복 판정이 느렸다"],
       insights: ["한 번에 하나만 묻는 화면이 덜 헷갈린다"], made: ["sort.py"] },
   ];
@@ -54,7 +63,11 @@
     { q: "내 레퍼런스 보여 줘", refs: true },
   ];
 
-  const api = { STAGES, OPEN, SHELF, REFS, ASK };
+  // 시안의 "오늘"과 팀 일정 핀 (schedule.md: 11/1 기능 동결, 11/8 제출)
+  const TODAY = "2026-10-17";
+  const TEAM_PINS = [{ date: "2026-11-01", label: "기능 동결" }, { date: "2026-11-08", label: "제출" }];
+
+  const api = { STAGES, OPEN, SHELF, REFS, ASK, TODAY, TEAM_PINS };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.LibData = api;
 })(typeof window !== "undefined" ? window : globalThis);

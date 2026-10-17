@@ -85,7 +85,7 @@
     <input id="q" type="search" placeholder="서고에서 찾기 — 책 이름 · 배운 것 · 정한 것 · 만든 파일" enterkeyhint="search">
     <span class="kbd" aria-hidden="true">/</span>
   </form>
-  <div class="lib-refs"><a class="pillbtn glass skylink" href="sky.html#m10">✦ 별자리 하늘</a> <button class="pillbtn glass" id="refs-btn">레퍼런스 서가</button></div>
+  <div class="lib-refs"><button class="pillbtn glass" id="review-btn">↺ 전체 돌아보기</button><a class="pillbtn glass skylink" href="sky.html#m10">✦ 별자리 하늘</a> <button class="pillbtn glass" id="refs-btn">레퍼런스 서가</button></div>
   <div class="stage" id="stage">
     <svg class="arcs" id="arcs" aria-hidden="true"></svg>
     <div class="slot" id="slot"></div>
@@ -102,11 +102,13 @@
 
 <!-- 서고에서 펼친 책 -->
 <div class="reader" id="reader" role="dialog" aria-modal="true" aria-labelledby="rd-title">
+  <button class="bigcover" id="rd-cover" aria-label="표지 넘기기"></button>
   <div class="book">
     <section>
       <div class="kick">지나온 단계</div>
       <h2 id="rd-title"></h2>
       <ol class="steps" id="rd-steps"></ol>
+      <div class="rd-foot" id="rd-foot"></div>
     </section>
     <section style="position:relative">
       <div class="kick">배운 것</div>
@@ -120,11 +122,27 @@
   </div>
 </div>
 
+<!-- 전체 돌아보기 -->
+<div class="reader" id="review" role="dialog" aria-modal="true" aria-labelledby="rv-title">
+  <div class="rv glass">
+    <header><div id="rv-seal"></div><div><div class="kick">전체 돌아보기</div><h2 id="rv-title">지나온 길</h2><p id="rv-sub"></p></div>
+      <button class="pillbtn glass close" id="rv-close">닫기<span class="kbd">Esc</span></button></header>
+    <div class="tiles" id="rv-tiles"></div>
+    <div class="rv-grid">
+      <section><h3>책마다 지나온 단계</h3><ol class="paths" id="rv-paths"></ol></section>
+      <section><h3>자주 꺼내 쓴 배움</h3><ol class="bars" id="rv-tags"></ol>
+        <h3>되풀이해 남긴 인사이트</h3><ul class="ins" id="rv-ins"></ul>
+        <a class="pillbtn skylink" href="sky.html#year">✦ 한 해 별자리 하늘로 보기</a></section>
+    </div>
+  </div>
+</div>
+
 <div class="toast glass" id="toast" hidden role="status"></div>
 <div class="caption glass" id="caption"></div>
 
 <script src="../navigator-prototype/seal.js"></script>
 <script src="books.js"></script>
+<script src="schedule.js"></script>
 <script src="search.js"></script>
 <script src="spotlight.js"></script>
 <script src="library.js"></script>
