@@ -12,7 +12,7 @@
 
 *(위 "한눈에"는 사람용 안내 — Claude 초안 2026-10-17, 두승현 요청. 아래는 원래 본문이다.)*
 
-> 상태: ✅ 방법론 정의 완료 — 실제 성능 실측/Planguage Goal 사례는 아직
+> 방법론 문서 상태: ✅ 방법론 정의 완료 — 실제 성능 실측/Planguage Goal 사례는 아직
 > 없습니다. 전체 목록은
 > [sessions/README.md 트래커](../01-problem-save/sessions/README.md) 참고.
 

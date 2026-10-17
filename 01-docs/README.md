@@ -8,14 +8,17 @@
 |---|---|
 | [요구사항](00-overview/requirements.md) | **제품 요구의 원본.** 기능 13개(FR-1~13), 우선순위, 접수 중인 후보 |
 | [기획안](00-overview/final-project-plan.md) | 왜 만드나 — 문제, 대상, 검증 계획 |
-| [캔버스](00-overview/canvas.md) | 기획을 한 장으로 |
+| [캔버스](00-overview/canvas.md) · [비즈니스 모델 캔버스](00-overview/business-model-canvas-2026-10-17.html) | 기획을 한 장으로 |
+| [기획 확정 한 장](00-overview/plan-confirm-2026-10-18.md) | 2→3 게이트(10/18) 전에 정할 것 |
+| [3분 시연 스토리](04-pattern-implementation/demo-story-3min.md) | 장면마다 평가 항목을 붙인 시연 순서 |
 | [구조 결정 기록(ADR) 목록](03-pattern-analysis/adr/README.md) | 시연 구조, AI 호출 위치, 기억 저장 등 정한 것과 이유 |
 | [구조 초안](03-pattern-analysis/navigator-architecture-draft.md) · [층 그림](03-pattern-analysis/navigator-archimate.md) | 전체가 어떻게 돌아가나 |
 | [유스케이스(사용 장면)](04-pattern-implementation/uc/README.md) | 사용자가 어떤 순서로 쓰나 — 시연 시나리오 |
 | [화면 흐름·와이어](04-pattern-implementation/screen-flow-wireframe.md) · [서재 설계](04-pattern-implementation/library-view-design.md) | 화면 설계 |
+| [서재·책갈피 별자리 계획](00-overview/library-constellation-plan-2026-10-17.md) · [지식 별자리 GitHub 연동](04-pattern-implementation/knowledge-sky-github.md) · [책갈피 지도 시안](04-pattern-implementation/bookmark-constellation-mock.html) | 도서관(지식 창고) 설계와 시안 |
 | [다른 API를 받으면](04-pattern-implementation/api-intake.md) | 외부 API를 받았을 때 분석하는 법 |
 | [판정 규칙 검토](00-overview/navigator-prototype-rules-review.md) | 프로토타입의 단계 판정 규칙을 기준과 비교 |
-| [인터뷰](interviews/README.md) | 사용자 인터뷰 질문지와 요약 |
+| [인터뷰](interviews/README.md) · [결과 → 결정](interviews/results-to-decisions.md) | 사용자 인터뷰 질문지·요약, 결과로 무엇을 정하나 |
 
 ## 2. 팀 운영 — 누가 언제 무엇을
 
@@ -27,6 +30,7 @@
 | [공유·보안 규칙](00-overview/team-sharing-security.md) | 무엇을 올리고 무엇을 안 올리나 |
 | [시연에서 베타까지](00-overview/roadmap-demo-to-beta.md) | 지금 목표(시연)와 제출 이후(베타) |
 | [담당별 질문](00-overview/definition-questions-2026-10-16.md) · [서재 질문](00-overview/library-questions-2026-10-16.md) | 담당이 답할 결정거리 (답 대기) |
+| [원작자](../AUTHORS.md) · [라이선스 방식 초안](00-overview/original-authors.md) · [법적 사항 장부](00-overview/legal.md) | 누가 무엇을 만들었나, 라이선스·법적으로 확인할 것 |
 | [도와준 사람](ACKNOWLEDGEMENTS.md) | 감사 명단 |
 
 ## 3. 지난 기록 — 그날의 상태 (지금과 다를 수 있음)
@@ -47,7 +51,9 @@
 
 ## 5. 참고 자료
 
-[레프런스 창고](references/README.md) — 화면 테마·스타일 후보 등. 결정은 여기서 하지 않는다.
+[레프런스 창고](references/README.md) — 화면 테마·스타일 후보 등. 결정은 여기서 하지 않는다. 도서관 시안의 출처는 [도서관 시안 레퍼런스](references/library-prototype-references.md).
+
+문서에 붙이는 그림·PDF(비즈니스 모델 캔버스, 화면 시안 캡처)는 [`assets/`](assets/)에 둔다.
 
 ## 이 저장소의 다른 폴더
 

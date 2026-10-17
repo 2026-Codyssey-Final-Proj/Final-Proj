@@ -68,7 +68,7 @@ function main(argv) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(after, null, 2) + "\n");
   const tool = codex ? "Codex" : "이 폴더에서 Claude Code";
-  console.log(remove ? "Navigator 연결을 뺐어요." : `연결했어요. ${tool}를 새로 열면 Navigator가 작업을 알아채요. (Navigator 서버: node server.js)`);
+  console.log(remove ? "Floe 연결을 뺐어요." : `연결했어요. ${tool}를 새로 열면 Floe가 작업을 알아채요. (Navigator 서버: node server.js)`);
   return 0;
 }
 

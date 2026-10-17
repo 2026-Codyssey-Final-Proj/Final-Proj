@@ -13,7 +13,7 @@
 
 *(위 "한눈에"는 사람용 안내 — Claude 초안 2026-10-17, 두승현 요청. 아래는 원래 본문이다.)*
 
-> 상태: ✅ 완료 — [ADR-0001](../03-pattern-analysis/adr/0001-storage-and-interface.md)까지
+> 방법론 문서 상태: ✅ 완료 — [ADR-0001](../03-pattern-analysis/adr/0001-storage-and-interface.md)까지
 > 확정됨. 전체 진행상황은 [`01-docs/00-overview/README.md`](../00-overview/README.md) 참고.
 
 문제 저장 단계에서 받은 원문제를, 다섯 단계로 이루어진 파이프라인을 거쳐 실제로 다룰 수

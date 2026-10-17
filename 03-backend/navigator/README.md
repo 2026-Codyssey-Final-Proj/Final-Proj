@@ -1,6 +1,6 @@
 <!-- claude-drafted: 2026-10-17 — 이재엽의 요청("각자의 토큰을 사용할 수 있도록")으로 Claude가 썼다. -->
 
-# Navigator 서버 (프로토타입)
+# Floe 서버 — navigator (프로토타입)
 
 단계 판정·설계도·알림을 보여 주는 로컬 화면의 **서버 쪽**이다. 서버는 이 컴퓨터(`127.0.0.1`)에서만 열린다.
 화면 파일은 [`02-frontend/navigator/`](../../02-frontend/navigator/README.md), 시험은 [`04-tests/navigator/`](../../04-tests/README.md)에 있다(2026-10-17 폴더 정리).
@@ -41,7 +41,7 @@ node --env-file=.env server.js   # 화면 켜기
 | `NAV_TOKEN_BUDGET` | 이 키로 쓸 토큰 한도. **80%에서 알리고 100%에서 멈춘다**(화면은 '연습용 예시'로 바꾸라고 안내) | 없음(막지 않음) |
 | `ANTHROPIC_BASE_URL` | 중계 서버 주소(코디세이 가상 키를 쓸 때). 바꾸면 **호환 모드가 자동으로 켜진다** — SDK가 이 값을 읽는다 | 공식 주소 |
 | `NAV_COMPAT` | `1`이면 새 기능(구조화 출력·effort·폴백) 없이 JSON만 요청한다. `0`이면 주소를 바꿔도 끈다 | 주소가 있으면 켜짐 |
-| `NAV_MODEL` | 모델 | `claude-opus-5-5` |
+| `NAV_MODEL` | 모델 | 공식 주소 `claude-opus-5-5` · 중계 서버 `claude-opus-4-8` |
 | `NAV_EFFORT` | 생각의 깊이(`low`·`medium`·`high`…) — 높을수록 토큰이 더 든다 | `low` |
 | `NAV_MAX_TOKENS` | 한 번에 받을 답의 최대 토큰 | `2048` |
 | `NAV_FALLBACK` | `off`로 두면 거절 때 대체 모델로 다시 시도하는 기능을 끈다 | 켜짐 |
@@ -103,8 +103,12 @@ node --env-file=.env live-check.js --all --report ../../docs/verification/live-c
 ```
 ANTHROPIC_API_KEY=<가상 키>
 ANTHROPIC_BASE_URL=<운영팀이 알려 준 주소>
-NAV_MODEL=<운영팀이 알려 준 모델 이름>
+NAV_MODEL=claude-opus-4-8   # 또는 claude-opus-4-7. 비워 두면 claude-opus-4-8
 ```
+
+- **중계 서버가 받는 모델은 `claude-opus-4-8`·`claude-opus-4-7` 두 개다**(운영팀 목록, 2026-10-17). `NAV_MODEL`을 비워 두면 `claude-opus-4-8`로 부른다 —
+  공식 기본 모델(`claude-opus-5-5`)은 중계 서버에 없어서 그대로 두면 400/404가 난다. 목록이 바뀌면 `provider.js`의 `RELAY_MODELS`를 고친다.
+- 중계 서버에서 400/404가 나면 오류 문구가 받는 모델 이름을 알려 준다.
 
 - 주소를 두면 **호환 모드**가 자동으로 켜진다 — 옛 모델·중계 서버가 못 받는 새 기능을 빼고, 스키마를 글로 알려 줘서 JSON만 받는다.
 - 시작 로그와 `smoke.js`의 첫 줄에 **보내는 곳(호스트)** 이 나온다. 중계 서버를 쓰면 **작업 글이 그 서버를 거친다**는 점을 알고 쓴다.

@@ -1,6 +1,6 @@
 <!-- claude-drafted: 2026-10-14, 2026-10-15 수정 — 임유정의 요청("README 초안 작성해줘", "README에 반영해줘")으로 Claude가 대화(2026-10-13~15)에서 정한 내용을 옮겼다. 화면·흐름·폴더 구조·레이아웃은 임유정의 가설, 7절은 이재엽의 결정(2026-10-14·15)이다. 임유정이 읽고 고친 뒤 확정한다. -->
 
-# Navigator 화면 — 구조 초안
+# Floe 화면 — 구조 초안
 
 ## 한눈에 (2026-10-17)
 
@@ -9,6 +9,7 @@
 | 폴더 | 무엇 |
 |---|---|
 | [`navigator/`](navigator/README.md) | **지금 시연에 쓰는 화면**(프로토타입) — 여는 법은 그 폴더 README |
+| [`library/`](library/README.md) | 도서관 시안 — 플로로의 얼음 서고, 지식 별자리 하늘. `library/index.html`을 바로 연다(더미 데이터) |
 | `share/` | 공유 규칙 시험 화면 — `share/index.html`을 브라우저로 바로 연다 |
 | [`assets/mascot/`](assets/mascot/README.md) | 마스코트 그림 (이용 조건 확인 전) |
 

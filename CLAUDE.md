@@ -1,6 +1,6 @@
 <!-- claude-drafted: 2026-10-12 — 이재엽의 요청으로 Claude가 V1 워크스페이스의 라우터(CLAUDE.md)와 이 레포의 이름·역할 부여 절차를 합쳤다. V1과 달라진 곳은 "팀 레포에서 달라진 점"에 모았다. -->
 
-# Final-Proj — Claude 안내 (Project Navigator)
+# Final-Proj — Claude 안내 (Floe, 작업 이름 Project Navigator)
 
 AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고, 이해하고, 배움을 쌓도록** 안내하는 서비스를 만드는 팀 레포다.
 무엇을 왜 만드는지: [requirements.md](01-docs/00-overview/requirements.md) · [기획안](01-docs/00-overview/final-project-plan.md). 팀과 역할: [TEAM.md](TEAM.md).

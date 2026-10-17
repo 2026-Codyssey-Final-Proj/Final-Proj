@@ -135,7 +135,7 @@ async function handle(req, res) {
 if (require.main === module) {
   http.createServer(handle).listen(PORT, "127.0.0.1", () => {
     const u = usage();
-    console.log(`Navigator 프로토타입: http://127.0.0.1:${PORT}`);
+    console.log(`Floe 시연 화면: http://127.0.0.1:${PORT}`);
     if (u.replay) console.log("AI: 녹화본 재생 — 토큰도 키도 쓰지 않아요 (녹화에 없는 요청은 오류로 알려 줘요)");
     else if (u.record) console.log("AI: 진짜로 부른 답을 녹화하는 중이에요");
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");

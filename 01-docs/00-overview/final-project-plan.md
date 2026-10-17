@@ -110,9 +110,9 @@
 
 | 순서 | 무엇 | 산출물(이 레포의 자리) |
 |---|---|---|
-| 1 | **의도명세 캔버스** — 개요·미션·핵심 활동·파트너·장벽·가치제안·부정적 영향·이네이블러·데이터·혜택·비용 | `01-docs/00-overview/canvas.md` [아직 없음] |
-| 2 | **유스케이스** — 누가 무엇을 하는가 (UML 2.5.1) | `01-docs/04-pattern-implementation/uc/` [아직 없음] |
-| 3 | **EARS 요구사항 명세** — 모호한 말("빠르게")을 숫자로 확정, 사람이 승인한 것만 확정 | `.specify/features/<기능>/spec.md` [아직 없음] |
+| 1 | **의도명세 캔버스** — 개요·미션·핵심 활동·파트너·장벽·가치제안·부정적 영향·이네이블러·데이터·혜택·비용 | [`01-docs/00-overview/canvas.md`](canvas.md) (있음, 2026-10-14) |
+| 2 | **유스케이스** — 누가 무엇을 하는가 (UML 2.5.1) | [`01-docs/04-pattern-implementation/uc/`](../04-pattern-implementation/uc/UC-01-demo-scenario.md) — UC-01 시연 시나리오 · UC-02 서재 보기 (초안) |
+| 3 | **EARS 요구사항 명세** — 모호한 말("빠르게")을 숫자로 확정, 사람이 승인한 것만 확정 | 지금은 [`requirements.md`](requirements.md) 2절이 EARS의 원천이다. `.specify/` 폴더는 만들지 않았다 — 기능별로 나눌지는 [기획 확정 한 장](plan-confirm-2026-10-18.md) 6번에서 정한다 |
 | 4 | **계획 → 작업 분해 → 구현 → 검증** | 같은 폴더의 plan.md, tasks.md, `01-docs/verification/` |
 
 그 과제에서 배운 것 중 이 프로젝트에 바로 쓰는 것:

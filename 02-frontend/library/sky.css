@@ -1,0 +1,96 @@
+/* claude-drafted: 2026-10-17 — 지식 별자리 하늘. library.css(밤하늘 · 유리 · 물범 · 검색)를 그대로 쓰고 이 화면에 필요한 것만 더한다. */
+body.skyview { background: radial-gradient(ellipse at 50% 30%, #1b2f86, #0a1238 60%, #050a24); }
+.back { position: fixed; top: 22px; left: 22px; z-index: 6; text-decoration: none; color: var(--ink); }
+.skyview .lib-head { position: fixed; }
+.skyview .search { position: fixed; top: 96px; z-index: 20; }
+
+/* GitHub 연동 */
+.gh { position: fixed; top: 16px; right: 20px; width: 290px; border-radius: 18px; padding: 10px 14px 12px; z-index: 6; display: flex; flex-direction: column; gap: 6px; }
+.gh-row { display: flex; align-items: center; gap: 8px; font-size: 13.5px; }
+.gh-ic { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: rgba(255, 255, 255, .12); font-size: 13px; }
+.gh-repo { color: var(--ink-2); font-size: 12.5px; margin-left: auto; font-family: ui-monospace, Menlo, monospace; }
+.gh-meta { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+.gh .pillbtn { align-self: stretch; font-size: 13px; padding: 6px 10px; }
+.gh .pillbtn:disabled { opacity: .6; cursor: default; }
+
+/* 가운데: 이 달의 별자리 + 오른쪽 목록 */
+.skymain { position: fixed; top: 156px; bottom: 112px; left: 32px; right: 32px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; }
+.story { position: relative; display: flex; flex-direction: column; min-height: 0; }
+.story-head { padding-left: 8px; }
+.story-head .mon { font-size: 13px; color: var(--ink-2); letter-spacing: .5px; }
+.story-head h1 { margin: 2px 0 2px; font-size: 26px; letter-spacing: -.5px; display: flex; align-items: baseline; gap: 10px; }
+.story-head h1 .sym { font-size: 24px; color: var(--gold); }
+.story-head p { margin: 0; color: var(--ink-2); font-size: 14px; }
+.story-head p b { color: var(--ink); }
+.const { flex: 1; min-height: 0; width: 100%; overflow: visible; }
+.const .wm { font-size: 70px; fill: rgba(190, 215, 255, .05); text-anchor: middle; }
+.const .edge { stroke: #9cc8ff; stroke-width: .45; opacity: .75; }
+.const .edge.dim { stroke-dasharray: 1.2 1.6; opacity: .3; }
+.const .st { cursor: pointer; outline: none; }
+.const .st .lab rect { fill: rgba(10, 20, 64, .82); stroke: rgba(190, 215, 255, .3); stroke-width: .2; }
+.const .st .lab text { font-size: 2.6px; fill: var(--ink); font-weight: 700; }
+.const .st .lab .pt { font-size: 1.9px; fill: var(--ink-2); font-weight: 400; }
+.const .st:hover .lab rect, .const .st:focus-visible .lab rect, .const .st.sel .lab rect { stroke: var(--gold); stroke-width: .4; }
+.const .st.sel .ring { stroke: var(--gold); stroke-width: .35; fill: none; }
+.const .empty { fill: #9fb4e8; opacity: .4; }
+.const .empty-lab { font-size: 1.9px; fill: var(--mute); opacity: .7; }
+.const .new { animation: twinkle 1.2s ease-in-out 3; transform-box: fill-box; transform-origin: center; }
+@keyframes twinkle { 50% { opacity: .2; transform: scale(1.8); } }
+
+.panel { border-radius: 20px; padding: 16px; display: flex; flex-direction: column; min-height: 0; }
+.panel h2 { margin: 0 0 4px; font-size: 15px; }
+.panel .hint { margin: 0 0 10px; font-size: 12.5px; color: var(--ink-2); }
+.plist { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.plist > li > button { width: 100%; text-align: left; border: 1px solid transparent; background: rgba(255, 255, 255, .05); border-radius: 12px; padding: 8px 10px;
+  display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 0 10px; align-items: center; }
+.plist > li > button[aria-expanded="true"] { border-color: var(--gold); background: rgba(255, 217, 138, .08); }
+.plist .no { font-weight: 800; color: var(--gold); font-size: 13px; }
+.plist .tt { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.plist .pt { grid-column: 2; font-size: 12px; color: var(--ink-2); }
+.plist .dt { font-size: 12px; color: var(--ink-2); grid-row: 1 / span 2; grid-column: 3; }
+.detail { margin: 6px 4px 4px; padding: 10px 12px; border-radius: 12px; background: rgba(8, 16, 56, .55); border: 1px solid var(--edge); font-size: 13px; display: flex; flex-direction: column; gap: 8px; }
+.detail .where { font-size: 14px; font-weight: 700; color: var(--gold); }
+.detail .line { color: var(--ink); }
+.detail .src { font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--ink-2); line-height: 1.6; word-break: break-all; }
+.detail .row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.detail .row button, .detail .row span { font-size: 12px; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--edge); background: rgba(207, 230, 255, .1); }
+.detail .ghbtn { font-size: 12.5px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--edge); background: rgba(255, 255, 255, .08); }
+.detail .ghbtn[aria-disabled="true"] { opacity: .6; cursor: not-allowed; }
+.waiting { margin-top: 10px; font-size: 12.5px; color: var(--ink-2); border-top: 1px dashed var(--edge); padding-top: 8px; }
+.void { color: var(--ink-2); font-size: 13.5px; line-height: 1.7; }
+
+/* 한 해 하늘 */
+.year { position: fixed; top: 156px; bottom: 112px; left: 32px; right: 32px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: 1fr 1fr; gap: 14px; }
+.year[hidden], .skymain[hidden] { display: none; }
+.ycard { border-radius: 16px; border: 1px solid var(--edge); background: rgba(20, 36, 110, .35); padding: 10px; display: flex; flex-direction: column; text-align: left; min-height: 0; }
+.ycard:hover, .ycard:focus-visible { border-color: var(--gold); }
+.ycard.now { box-shadow: 0 0 0 2px var(--ice); }
+.ycard svg { flex: 1; min-height: 0; width: 100%; }
+.ycard b { font-size: 13.5px; } .ycard small { font-size: 11.5px; color: var(--ink-2); }
+
+/* 아래 달 고르기 */
+.months { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 4px; padding: 6px; border-radius: 20px; z-index: 6; max-width: calc(100vw - 260px); overflow-x: auto; }
+.months button { border: 0; background: transparent; border-radius: 14px; padding: 6px 10px; min-width: 70px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 12px; color: var(--ink-2); }
+.months button b { font-size: 13px; color: var(--ink); }
+.months button .sy { font-size: 15px; color: var(--gold); }
+.months button .dots { letter-spacing: 1px; color: var(--ice-2); font-size: 10px; min-height: 12px; }
+.months button[aria-pressed="true"] { background: rgba(207, 230, 255, .2); }
+.months button.yr { min-width: 84px; border: 1px solid var(--edge); }
+.months button.off { opacity: .55; }
+
+/* 플로로 */
+.floro { position: fixed; left: 22px; bottom: 100px; display: flex; align-items: flex-end; gap: 8px; z-index: 5; pointer-events: none; }
+.floro .say { position: static; transform: none; min-width: 0; max-width: 240px; text-align: left; font-size: 13px; margin-bottom: 46px; }
+.story-head .sym, .const .wm, .months .sy, .ycard b { font-family: "Apple Symbols", "Segoe UI Symbol", "Noto Sans Symbols", sans-serif; }
+.skyview .toast { top: 150px; }
+
+@media (max-width: 900px) {
+  .skymain { grid-template-columns: minmax(0, 1fr); overflow-y: auto; }
+  .gh { position: static; width: auto; margin: 70px 16px 0; }
+  .floro { display: none; }
+  .year { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: none; overflow-y: auto; }
+  .months { max-width: calc(100vw - 24px); }
+}
+.ycard .edge { stroke: #9cc8ff; stroke-width: 1; opacity: .7; }
+.ycard .edge.dim { stroke-dasharray: 2 3; opacity: .35; }
+.ycard .empty { fill: #9fb4e8; opacity: .45; }
