@@ -4,7 +4,7 @@
 
 원문: `~/proj/coding_marathon_result/코딩마라톤 가이드/4. 작업 분해/<폴더>/README.md` (폴더 4개). 서버를 처음 세우거나 프로젝트를 서버에 올리기 전에
 **작업 목록과 점검표**로 쓴다. 보안 점검과 겹치므로 [security-records.md](../../../rules/security-records.md) 6-3과
-[checklist.md](../../../../docs/catalog/checklist.md) "단계별 보안 점검 체크리스트"를 같이 본다.
+[checklist.md](../../../../01-docs/catalog/checklist.md) "단계별 보안 점검 체크리스트"를 같이 본다.
 
 ## Git 워크플로우 (5)
 
@@ -40,12 +40,12 @@
 
 | 항목 | 설명 (원문) | 우리 쪽에서는 |
 |---|---|---|
-| .env 파일 `required` | .env 파일 생성 필수 | 키 이름만 적은 `.env.example`을 같이 둔다([Twelve-Factor Config](../../../../docs/06-service/01-twelve-factor-app.md)) |
+| .env 파일 `required` | .env 파일 생성 필수 | 키 이름만 적은 `.env.example`을 같이 둔다([Twelve-Factor Config](../../../../01-docs/06-service/01-twelve-factor-app.md)) |
 | .gitignore 추가 `required` | 시크릿 파일을 .gitignore에 | `check-secrets.sh`가 `.env`·`*.pem` 커밋을 막는다 — 훅에만 기대지 않고 무시 목록에도 |
 | 비밀번호 정책 `required` | 16자 이상, 복잡도 | 사람이 외우는 값이 아니면 생성기로 만든다 |
 | 시크릿 저장 방식 | 저장 방식 선택 | 개인 프로젝트: `.env` + 비밀번호 관리자. 서버가 생기면 보안 기준 5절 "서버 인증·접근 권한" 칸에서 정한다 |
 
 ## 작업 목록으로 바꿀 때
 
-4단계 작업 쪼개기 표기(`[P]` 병렬, 테스트 먼저 — [checklist.md](../../../../docs/catalog/checklist.md) 4·5단계)에
+4단계 작업 쪼개기 표기(`[P]` 병렬, 테스트 먼저 — [checklist.md](../../../../01-docs/catalog/checklist.md) 4·5단계)에
 맞춰, 위 `required` 항목을 하나씩 작업으로 옮기고 "확인 방법" 칸을 그 작업의 완료 조건으로 쓴다.

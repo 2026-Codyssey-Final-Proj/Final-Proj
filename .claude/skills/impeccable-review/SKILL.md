@@ -14,7 +14,7 @@ metadata:
 [Impeccable](https://github.com/pbakaus/impeccable)(Apache 2.0)의 **참고 마크다운만** 가져온 것이다.
 원본 스킬은 첫 단계에서 `scripts/impeccable`을 실행하는데, 이 스크립트가 GitHub 릴리스에서 실행 파일을 내려받아
 돌리고 편집·세션 시작·종료마다 훅으로 호출된다. 내려받은 파일 실행이라 들이지 않았다
-([external-tools.md](../../../docs/catalog/external-tools.md) 판정 기록).
+([external-tools.md](../../../01-docs/catalog/external-tools.md) 판정 기록).
 
 ## 절대 하지 않는 것
 

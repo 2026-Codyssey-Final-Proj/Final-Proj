@@ -6,7 +6,7 @@
 ## 0. 이름만 받았을 때 — 후보 표에 먼저 적는다
 
 사용자가 도구 이름만 주면(2026-10-06 사용자 요청) 설치하지 않고 조사해서
-[external-tools.md](../../docs/catalog/external-tools.md) "필요할 때 꺼낼 후보"에 한 줄 적는다 — 무엇,
+[external-tools.md](../../01-docs/catalog/external-tools.md) "필요할 때 꺼낼 후보"에 한 줄 적는다 — 무엇,
 **쓸 때(꺼낼 신호)**, 밖으로 나가는 것, 설치 주의(우리 기준 파일을 고치는가), 의견, 조사일. 이미 있는
 도구면 새 행을 만들지 않고 조사일·내용만 고친다. 작업 중 "쓸 때"에 맞는 일이 생기면 Claude가 그 행을 꺼내
 제안하고, 사용자가 들이기로 하면 아래 1~4를 거쳐 위 카탈로그로 옮긴다.
@@ -16,7 +16,7 @@
 1. **일괄 절차로 처리하지 않는다 — 도구마다 다르게 분석한다.** 가져올 때마다
    최소 이 세 가지를 먼저 확인한다:
    - 어떤 파일/경로를 읽거나 쓰는가 (자기 폴더 안에서만 동작하는가, 아니면
-     `.claude/**`나 `CLAUDE.md`, `docs/**`에 손을 대는가)
+     `.claude/**`나 `CLAUDE.md`, `01-docs/**`에 손을 대는가)
    - 우리 `.claude/rules/**`·`hooks/**`·`agents/**` 중 이미 같은 문제를
      다루는 게 있는가(중복/충돌 여부)
    - 이 도구를 쓰면 새로운 작업 경로가 생기는가(그렇다면 `CLAUDE.md` 라우팅
@@ -26,7 +26,7 @@
    스스로 변경했다면, 그 결과를 그대로 받아들이지 말고
    [`.claude/rules/consistency.md`](consistency.md)의 "기준 파일 지도"로
    무엇이 왜 바뀌었는지 검토한 뒤에만 커밋할지 사람이 정한다.
-3. **분석 결과를 판정하고 [`docs/catalog/external-tools.md`](../../docs/catalog/external-tools.md)에
+3. **분석 결과를 판정하고 [`01-docs/catalog/external-tools.md`](../../01-docs/catalog/external-tools.md)에
    기록한다** — 채택 / 격리 / 제거 중 하나 + 근거:
    - **채택**: 이 도구가 필요로 하는 작업 경로를 `CLAUDE.md` 라우팅 표에
      추가하고, `consistency.md`의 기준 파일 지도에도 이 도구 관련 파일을
@@ -38,7 +38,7 @@
      남긴다.
 4. **명령 3(회고 반영)에서 한 번 더 확인한다.** 이번 항목 진행 중 외부
    도구를 실제로 썼다면, 통합 시점의 판정과 실사용 후 느낀 도움/마찰이
-   다를 수 있다 — 다르면 `docs/catalog/checklist.md`에도 반영한다.
+   다를 수 있다 — 다르면 `01-docs/catalog/checklist.md`에도 반영한다.
 
 ## MCP 서버를 들일 때 — mcp-builder 기준 안내
 
@@ -50,7 +50,7 @@
 | 점검 | 무엇을 본다 | 우리 쪽 연결 |
 |---|---|---|
 | 전송 방식 | 로컬 한 명이면 stdio, 원격·여러 명이면 Streamable HTTP. SSE는 폐기 예정 | — |
-| 인증 | OAuth 2.1인가, API 키인가. **API 키는 환경변수에만**, 코드·저장소에 두지 않는다 | [Twelve-Factor Config](../../docs/06-service/01-twelve-factor-app.md) |
+| 인증 | OAuth 2.1인가, API 키인가. **API 키는 환경변수에만**, 코드·저장소에 두지 않는다 | [Twelve-Factor Config](../../01-docs/06-service/01-twelve-factor-app.md) |
 | 도구 목록 | 도구마다 읽기 전용인지, 되돌릴 수 없는 일(삭제·전송·**결제·구독**)을 하는지. 도구 주석(`readOnlyHint`, `destructiveHint`)은 **힌트일 뿐 보안 보장이 아니다** | 위험한 도구는 `settings.json`의 deny에 넣는 것을 제안한다 (Motion 사례, external-tools.md) |
 | 데이터 | 무엇이 컴퓨터 밖으로 나가는가(올린 파일, 대화 내용), 무료·유료인가 | [review-mode](review-mode.md)의 역할 경계, 사용자의 "유료면 안 쓴다" 결정 |
 | 인증 실패 | 연결이 안 되면 원인을 먼저 본다 — 예: 인증 서버가 동적 클라이언트 등록을 지원하지 않음 | 2026-09-30 기준 engineering 플러그인의 MCP 3개가 이 이유로 연결 실패 |

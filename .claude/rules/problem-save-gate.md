@@ -1,6 +1,6 @@
 # 1단계(문제 저장) 게이트 규칙
 
-`docs/01-problem-save/sessions/**`에 새 세션 파일을 쓰거나, `dev-workflow`
+`01-docs/01-problem-save/sessions/**`에 새 세션 파일을 쓰거나, `dev-workflow`
 스킬의 명령 1을 실행할 때만 읽으세요.
 
 ## 반드시 지킬 것 — PRD 확장 게이트

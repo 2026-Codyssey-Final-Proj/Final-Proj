@@ -4,7 +4,7 @@
 
 이 워크스페이스의 스킬은 **[Agent Skills 명세](https://agentskills.io/specification)**를
 따른다(사용자 채택, 2026-09-30 — 판정 기록은
-[external-tools.md](../../docs/catalog/external-tools.md)). Anthropic이 만들고 여러 AI
+[external-tools.md](../../01-docs/catalog/external-tools.md)). Anthropic이 만들고 여러 AI
 도구가 함께 쓰는 공개 형식이라, 여기서 만든 스킬을 다른 도구에서도 그대로 읽을 수 있다.
 
 ## 반드시 지킬 것 (어기면 `check-skills.sh` 훅이 막는다)
@@ -39,7 +39,7 @@
   미적 방향을 정하는 데 쓴다. 발표 자료·문서의 색과 글꼴은 `theme-factory`의 테마에서 고른다
   (그 스킬 절차대로 사용자가 테마를 고른 뒤에만 적용).
 - **`canvas-design`이 만드는 파일**(.png/.pdf/.md)은 요청한 프로젝트 폴더
-  `projects/<슬러그>/assets/`에 저장한다. 저장소 루트나 스킬 폴더에 두지 않는다.
+  `05-projects/<슬러그>/assets/`에 저장한다. 저장소 루트나 스킬 폴더에 두지 않는다.
 - **디자인 결과물은 사용자의 작업물이다.** 발표 자료, 과제 결과물, 화면 디자인은 사용자가
   그 자리에서 요청할 때만 만들고 `claude-drafted` 표시를 남긴다([review-mode.md](review-mode.md)).
   디자인 **리뷰**(대비, 위계, 일관성 지적)는 언제든 한다.
@@ -53,7 +53,7 @@
 - **`ponytail-review`는 karpathy-guidelines 2번(단순하게)을 지적하는 형식이다**(사용자 결정 2026-10-01).
   한 줄에 지적 하나(`L<줄>: delete:/stdlib:/native:/yagni:/shrink: …`)와 마지막 `net: -N lines`로 쓴다.
   세컨드 브레인 코드 PR의 자체 검수에서 이 결과를 PR 본문에 붙인다. 이 스킬은 과잉 설계만 보므로
-  정확성·보안·테스트는 karpathy-guidelines와 implementations.md(TDD)로 따로 본다. **ponytail 플러그인
+  정확성·보안·테스트는 karpathy-guidelines와 code.md(TDD)로 따로 본다. **ponytail 플러그인
   전체(훅 3개, 나머지 스킬)는 들이지 않았다** — 모든 프로젝트에 세션마다 규칙을 주입하고, "묻지 말고 먼저
   만든다"·"확인 하나면 충분"이 우리 질문 규칙·TDD와 정반대라서다(external-tools.md).
 - **Emil Kowalski 스킬은 화면의 움직임·마감을 리뷰할 때 쓴다**(이재엽 결정 2026-10-14). `review-animations`(모션 코드 리뷰),
@@ -71,7 +71,7 @@
 - **`tdd`는 테스트를 먼저 쓰는 코드 작업에서 쓴다**(이재엽 결정 2026-10-14). 코드를 Claude에게 맡긴 프로젝트(세컨드 브레인)에서는
   Claude가 이 스킬의 루프를 따르고, 이재엽이 코드를 쓰는 곳에서는 **변경 리뷰의 렌즈**(경계에서 테스트하는가, 구현에 묶인 테스트·
   같은 값을 되풀이하는 단언이 없는가)로만 쓴다. 원본과 우리 규칙의 차이: ① 원본은 "리팩터링은 루프 밖(리뷰 단계)"인데
-  [implementations.md](implementations.md)는 Red-Green-Refactor라 **우리 규칙이 우선**이다(리팩터링을 루프 끝에서 한다).
+  [code.md](code.md)는 Red-Green-Refactor라 **우리 규칙이 우선**이다(리팩터링을 루프 끝에서 한다).
   ② 원본이 부르는 `codebase-design`·`code-review` 스킬과 `GLOSSARY.md`는 우리에 없으므로 부르지 않고, 용어는 해당 프로젝트
   문서·ADR을 읽는다. ③ 테스트 경계를 사용자와 먼저 합의하라는 원본 문구는 [review-mode.md](review-mode.md)와 같은 방향이라 그대로 따른다.
 - **`owasp-security`는 보안 점검과 변경 리뷰에서 쓴다**(이재엽 결정 2026-10-15). [security-records.md](security-records.md) 6-4의

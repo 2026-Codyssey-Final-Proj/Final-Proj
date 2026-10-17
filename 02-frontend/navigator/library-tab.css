@@ -1,0 +1,73 @@
+/* claude-drafted: 2026-10-17 — 내비게이터의 '도서관'·'한곳에서 보기' 탭 모양. 서고 시안(../library/library.css)에 있던 작업 화면 위젯 규칙을
+   여기로 옮겼다 — 같은 화면이 둘이 되지 않게(기획 확정 한 장 4절 "두 시안 합치기"). 색은 app.css의 PC 남색 변수를 쓰고, 서고 쪽 이름 몇 개만 여기서 잇는다. */
+.libtab,.alltab{--ink-2:var(--sub);--edge:var(--line);--ice:#cfe6ff;--ice-2:#9cc8ff;--gold:#ffd98a;--navy:#13245e;display:flex;flex-direction:column;gap:10px;padding:4px 4px 2px}
+
+/* ── 도서관: 열어 둔 책 ── */
+.libtab .ob-body{display:grid;grid-template-columns:116px minmax(0,1fr);gap:18px;align-items:center;min-height:150px}
+.libtab .who{display:grid;place-items:center}
+.ob-say{font-size:12px;color:var(--ink-2);margin-bottom:2px}
+.ob-title{font-size:19px;font-weight:800;margin:0 0 10px}
+.shelf4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cover{position:relative;border:0;border-radius:6px 10px 10px 6px;padding:12px 12px 10px 18px;min-height:120px;text-align:left;display:flex;flex-direction:column;gap:6px;
+  background:linear-gradient(160deg,var(--tone,#7fb6ff),color-mix(in srgb,var(--tone,#7fb6ff) 55%,#1b2f86));color:#0f1d55;
+  box-shadow:inset 6px 0 0 rgba(0,0,0,.14),inset 7px 0 0 rgba(255,255,255,.35),0 10px 22px rgba(4,10,40,.45);transition:transform .2s ease,box-shadow .2s ease}
+.cover:hover,.cover:focus-visible{transform:translateY(-4px) rotate(-1deg);box-shadow:inset 6px 0 0 rgba(0,0,0,.14),inset 7px 0 0 rgba(255,255,255,.35),0 16px 28px rgba(4,10,40,.55)}
+.cover .t{font-weight:800;font-size:14px;line-height:1.35}
+.cover .s{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.55);align-self:flex-start}
+.cover .m{margin-top:auto;font-size:11.5px;opacity:.85;display:flex;justify-content:space-between;gap:6px;flex-wrap:wrap}
+.cover.leaving{animation:shelve .5s ease-in forwards}
+@keyframes shelve{to{transform:translateY(30px) scale(.6);opacity:0}}
+.ob-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ob-foot .note{font-size:12.5px;color:var(--ink-2)}
+.enter-lib{display:inline-flex;align-items:center;gap:10px;border:1px solid rgba(255,217,138,.6);background:rgba(255,217,138,.12);border-radius:999px;padding:6px 16px 6px 8px;font-weight:700;font-size:14px;color:var(--ink);text-decoration:none}
+.enter-lib:hover{background:rgba(255,217,138,.22)}
+.enter-lib .mb{width:34px;height:24px;border-radius:4px;background:linear-gradient(90deg,#fffaf0 49%,#c9a75a 49% 51%,#fffaf0 51%);box-shadow:0 0 14px rgba(255,217,138,.8)}
+/* 펼친 책 */
+.minispread{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-radius:12px;overflow:hidden;background:#fbf7ee;color:#22305e;min-height:190px}
+.minispread section{padding:16px 20px}
+.minispread section:first-child{background:linear-gradient(90deg,#fbf7ee,#ece4d1)}
+.minispread section:last-child{background:linear-gradient(270deg,#fbf7ee,#ece4d1)}
+.minispread h3{margin:0 0 4px;font-size:16px}
+.minispread .stg{font-size:12px;font-weight:700;color:#6b5a2e}
+.minispread .stg.soft{color:#5b6789}
+.minispread ul{margin:8px 0 0;padding-left:18px;font-size:13.5px;line-height:1.7}
+.minispread.binding{animation:bindbook .95s ease-in forwards}
+@keyframes bindbook{55%{transform:scale(.98);opacity:1}to{transform:translateY(40px) scale(.45);opacity:0}}
+.marks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.marks span{font-size:12.5px;padding:3px 10px;border-radius:999px;background:#e3ecfb;color:#22305e}
+.marks span::before{content:"▮ ";color:#4a86e8}
+.confirm{padding:10px 14px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid var(--edge);display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px}
+/* 마감 칩 — 지남(금 간 얼음) · 오늘 · 3일 이내 · 여유 */
+.due{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(207,230,255,.14);color:var(--ink);white-space:nowrap}
+.due.soon{background:rgba(255,217,138,.22);color:#ffe3a6}
+.due.today{background:rgba(255,170,120,.3);color:#ffd2b8}
+.due.late{background:rgba(255,120,140,.25);color:#ffc2cc;box-shadow:inset 0 0 0 1px rgba(255,160,175,.5)}
+.cover .due{background:rgba(255,255,255,.6);color:#0f1d55;box-shadow:none}
+.cover .due.late{background:#ffd6dd;color:#8a1f33}
+.cover .due.soon,.cover .due.today{background:#ffe9bf;color:#6b4a00}
+
+/* ── 한곳에서 보기 (FR-6, 가상 숫자) ── */
+.allhead{display:flex;align-items:center;gap:10px;margin:0 4px;font-size:14px;flex-wrap:wrap}
+.allhead small{color:var(--ink-2);font-size:12px}
+.fake{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:6px;background:rgba(255,217,138,.2);color:#ffe3a6}
+.allgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.allgrid section{border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.05);border:1px solid var(--edge);min-width:0}
+.allgrid section.hot{border-color:rgba(255,160,175,.55)}
+.allgrid h4{margin:0 0 8px;font-size:13.5px;display:flex;gap:8px;align-items:center}
+.allgrid h4 small{color:var(--ink-2);font-weight:400;font-size:12px}
+.plist,.alltodo,.clash,.tok{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.prow{width:100%;border:1px solid transparent;background:rgba(255,255,255,.05);border-radius:10px;padding:6px 8px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;text-align:left;font-size:12.5px}
+.prow:hover,.prow:focus-visible{border-color:var(--gold)}
+.prow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.pdots{display:flex;gap:4px}.pdots i{width:10px;height:10px;border-radius:50%;background:rgba(207,230,255,.18)}
+.pdots i.on{background:var(--ice)}.pdots i.cur{background:var(--gold)}
+.alltodo li{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.alltodo small,.clash small{color:var(--ink-2);font-size:12px}
+.clash li{display:flex;flex-direction:column;gap:1px}
+.clash b{font-size:13px}
+.allgrid .hint{margin:8px 0 0;font-size:11.5px;color:var(--mute)}
+.tok li{display:grid;grid-template-columns:96px 1fr auto;gap:8px;align-items:center}
+.tok small{font-size:11.5px;color:var(--ink-2)}
+.tbar{height:8px;border-radius:4px;background:rgba(207,230,255,.14);overflow:hidden;display:block}
+.tbar i{display:block;height:100%;background:linear-gradient(90deg,var(--ice-2),var(--gold))}
+@media (max-width:900px){.shelf4{grid-template-columns:repeat(2,minmax(0,1fr))}.allgrid{grid-template-columns:1fr}.minispread{grid-template-columns:minmax(0,1fr)}}

@@ -3,7 +3,9 @@
 # 기계적으로 확인해서, 깨진 링크를 놓치고 넘어가는 걸 막는다
 # (.claude/rules/docs-editing.md 참고).
 # git이 무시하는 파일(.gitignore)은 저장소 문서가 아니라서 검사하지 않는다.
-python3 - <<'EOF'
+. "$(dirname "$0")/lib.sh"
+[ -n "$PY" ] || { echo "⚠️ check-links: 파이썬을 찾지 못해 링크 검사를 건너뜁니다" >&2; exit 0; }
+"$PY" - <<'EOF'
 import re, pathlib, subprocess, sys
 
 root = pathlib.Path(".")

@@ -4,7 +4,8 @@
 # 2026-10-01(PR #11, 14개) 두 번 일어나서 규칙(git-workflow.md)에서 훅으로 승격했다.
 # 막는 조건(모두 참일 때만): 그 브랜치에 병합된 PR이 있고, 열린 PR이 없고, main에 없는 커밋이 있다.
 # gh 조회가 실패하면 막지 않고 경고만 한다.
-cmd=$(cat | jq -r '.tool_input.command // empty')
+. "$(dirname "$0")/lib.sh"
+cmd=$(json_field tool_input.command)
 echo "$cmd" | grep -qE '(^|[;&|]|\s)git\s+push(\s|$)' || exit 0
 echo "$cmd" | grep -qE -- '--delete|(\s):' && exit 0   # 브랜치 삭제 푸시는 해당 없음
 

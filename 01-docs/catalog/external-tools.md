@@ -1,0 +1,60 @@
+# 외부 스킬 / MCP 도구 카탈로그
+
+`dev-workflow` 바깥에서 가져온 공식 스킬·플러그인·MCP 서버를 추적합니다.
+분석·판정 절차는 [`.claude/rules/external-integration.md`](../../.claude/rules/external-integration.md)를
+따릅니다 — 이 표는 그 결과만 기록하는 곳입니다.
+
+## 카탈로그
+
+| 이름 | 출처 | 붙인 목적 | 우리 파일 건드림? | 판정 | 근거 |
+|---|---|---|---|---|---|
+| Agent Skills 명세 (+ 참조 검증기 skills-ref) | [agentskills/agentskills](https://github.com/agentskills/agentskills), [명세](https://agentskills.io/specification) | 스킬 작성 기준을 공개 표준에 맞춤 (세컨드 브레인을 스킬로 만들 준비) | 아니오 — 문서 명세이고, skills-ref는 읽기만 하는 검증기다. 설치하지 않았다 | **채택** (명세). skills-ref는 쓰지 않음 | 사용자 채택 2026-09-30. 기존 스킬 2개가 이미 필수 규칙을 통과. skills-ref는 README에 "시연용, 운영용 아님"이라 같은 규칙을 `.claude/hooks/check-skills.sh`로 직접 확인한다. 규칙: `.claude/rules/skill-authoring.md` |
+| Motion MCP (`https://mcp.motion.so/mcp`) | [motion.so](https://motion.so), [MCP 가이드](https://docs.motion.so/guides/mcp) | 세컨드 브레인의 디자인 도구 후보 | 해당 없음 — 연결·설치하지 않음 | **채택 안 함** | 사용자 결정 2026-09-30. 텍스트로 모션 그래픽 **영상**을 만드는 서비스이고 영상마다 유료 크레딧을 쓴다. 사용자 목적은 영상이 아니라 디자인이고 유료면 쓰지 않기로 함. 참고: 도구 목록에 크레딧 구매·플랜 구독·결제 설정 도구가 있어, 다시 검토하면 해당 도구를 settings.json deny에 넣고 연결할 것 |
+| frontend-design (스킬, 저장소에 복사) | [anthropics/skills](https://github.com/anthropics/skills) `8a1541c` | 세컨드 브레인 화면 등 UI의 미적 방향 레퍼런스 | 아니오 — 지침만. `.claude/skills/frontend-design/` 안에만 있음 | **채택** | 사용자 결정 2026-09-30. Apache 2.0. `artifact-design`과 겹쳐 우선순위를 skill-authoring.md에 정함 |
+| theme-factory (스킬, 저장소에 복사) | 같음 | 발표 자료·과제 결과물의 테마(색·글꼴 10종) | 아니오 — 지침과 테마 파일만 | **채택** | 사용자 결정 2026-09-30. Apache 2.0. 사용자가 테마를 고른 뒤에만 적용 |
+| canvas-design (스킬, 저장소에 복사) | 같음 | 포스터·표지 등 정적 디자인(.png/.pdf) | **결과 파일을 만든다** — 저장 위치를 `05-projects/<슬러그>/assets/`로 정함 | **채택** | 사용자 결정 2026-09-30. Apache 2.0, 글꼴 OFL. 글꼴 때문에 약 5.5MB |
+| mcp-builder (스킬, 저장소에 복사) | 같음 | MCP 공부, 그리고 **다른 MCP를 들일 때 Claude가 안내를 준비하는 기준** | 아니오. 단 `scripts/evaluation.py`는 Anthropic API를 호출(유료) | **채택** | 사용자 결정 2026-09-30. Apache 2.0. external-integration.md "MCP 서버를 들일 때"에 연결. evaluation.py는 명시적 동의 없이 실행하지 않음 |
+| draw.io MCP (`@drawio/mcp` 1.6.1, 프로젝트 범위 `.mcp.json`) | [jgraph/drawio-mcp](https://github.com/jgraph/drawio-mcp) | 사용자가 직접 그리고 고치는 그림 | 로컬 `.drawio` 파일을 **덮어쓰는 `set_page` 도구가 있음** — 사용자 요청 시에만. 그 밖에는 편집기를 열기만 함 | **채택** | 사용자 결정 2026-09-30. Apache-2.0, 무료, 계정 불필요, 로컬 stdio. 그림은 URL `#` 뒤에 실려 서버로 가지 않음(공식 문서). `search_shapes`는 검색어만 외부로. 도구 주석(readOnly 등)이 비어 있어 설명으로 판단. 기준: 03-diagramming-guide.md "도구 환경" |
+| mermaid-cli (`@mermaid-js/mermaid-cli` 12.0.0, npx 캐시) | [mermaid-js/mermaid-cli](https://github.com/mermaid-js/mermaid-cli) | 문서 Mermaid 검증 훅 `check-mermaid.sh`, 이미지 내보내기 | 아니오 — 임시 폴더에만 그림 | **채택** | 사용자 결정 2026-09-30. MIT. 약 130MB(npm 캐시), 설치된 Chrome을 써서 Chrome 다운로드 생략. 문법만 검사하고 배치 문제는 못 잡음 |
+| Diagrams 플러그인 (Kroki 기반) | claude.ai 플러그인 디렉터리 (작성자 Tiran Dagan, 커뮤니티) | Mermaid로 안 되는 종류의 그림을 이미지로 | 해당 없음 — 설치하지 않음 | **채택 안 함** | 2026-09-30 조건부 채택(학교 내용·개인정보 그림에는 안 씀)했으나 설치 전 2026-10-01 사용자 결정으로 뺌: "나만 쓸거라서 나중에 해도 개인정보를 가져간다면 안될거 같아". 그림 원본이 공개 서버 kroki.io로 전송되고, 세컨드 브레인 기록에는 학교 내용·팀원 정보가 섞인다. 지금 그림은 모두 Mermaid라 mermaid-cli(로컬)·draw.io로 충분 |
+| karpathy-guidelines (스킬, 저장소에 복사) | [multica-ai/andrej-karpathy-skills](https://github.com/multica-ai/andrej-karpathy-skills) `2c60614` | 코드 변경 리뷰의 "단순하게·필요한 곳만 고치기" 기준 | 아니오 — 지침 글 한 편. 스크립트·네트워크 호출 없음, 외부로 나가는 데이터 없음. 설치 방법 B(`CLAUDE.md`에 덧붙이기)는 우리 기준 파일을 고치므로 쓰지 않음 | **채택** | 사용자 결정 2026-10-01 "(가)". MIT(LICENSE 파일은 없고 머리말에 표기). 원칙 1·4는 review-mode 질문하는 법 6·7번, code.md TDD와 겹치고 2·3번이 새 기준. Claude가 코드를 쓰는 상황을 전제하므로 여기서는 리뷰 기준으로 연결(skill-authoring.md, PROCEDURE 명령 5 변경 리뷰) |
+| ponytail-review (스킬, 저장소에 복사) — ponytail 플러그인 중 이것만 | [dietrichgebert/ponytail](https://github.com/dietrichgebert/ponytail) `e3ba2aa` (v4.10.0) | 과잉 설계 지적 형식(태그 한 줄 + `net: -N lines`) — 세컨드 브레인 코드 PR 자체 검수 | 아니오 — 지침 글 한 편. 외부로 나가는 데이터 없음 | **채택** (이 스킬만). **플러그인 전체는 채택 안 함** | 사용자 결정 2026-10-01 "(가)". MIT. 플러그인 훅(SessionStart·UserPromptSubmit·SubagentStart)은 네트워크 호출은 없지만 모든 프로젝트에 세션마다 규칙을 주입하고, `~/.claude`·`~/.config/ponytail`에 상태 파일을 쓰며, `~/.claude/settings.json` 상태줄 설정을 먼저 권한다. 핵심 스킬의 "모호하면 먼저 만들고 묻는다"(karpathy 1번·질문 규칙과 정반대), "실행 가능한 확인 하나면 충분"(TDD와 충돌), "설명 3줄"이 우리 규칙과 부딪쳐 들이지 않음. karpathy-guidelines 2번에 지적 형식과 숫자 결과를 더하는 용도 |
+| skill-creator (스킬, **저장소에 복사하지 않음** — 이 Claude Code 환경에 켜져 있는 것을 평가에만 사용) | [anthropics/skills](https://github.com/anthropics/skills) 계열, 환경 기본 스킬 `anthropic-skills:skill-creator` | 스킬 **트리거 평가**와 설명 자동 개선(`scripts/run_eval.py`·`run_loop.py`) — `skill-authoring.md`가 "트리거 평가는 skill-creator로, 쓰기 전에 명령 4"로 지정 | **임시로만** — 평가 중 프로젝트의 `.claude/commands/`에 임시 명령 파일을 만들었다 지운다. 그래서 **스크래치패드에 만든 워크스페이스 사본에서만** 돌렸다(진짜 스킬은 사본에서 뺌). `claude -p`를 질문마다 띄워 API 키는 필요 없고 사용량을 쓴다. 나가는 데이터는 Claude Code 작업과 같다(기록·보안 기준 1절) | **채택 (평가 전용)** | 사용자 판정 2026-10-07 "채택 — 평가 + 자동 개선". 2026-10-07~08 `reference-library`에 사용. 알게 된 것: ① 자동 개선 루프가 설명 고치는 단계에서 `claude -p` 종료 코드 1로 두 번 멈췄다(같은 입력 직접 호출은 정상 — 도구 쪽 문제로 보고 더 쫓지 않음) ② **이 도구의 평가 숫자는 진짜 스킬보다 낮게 나온다** — 설명을 임시 명령 파일로 만들어 재서 `reference-library`가 반응 비율 0~17%로 나왔지만, 같은 스킬을 진짜로 설치한 사본에서 질문 20개 × 2회, 첫 동작이 Skill 호출인지로 세면 `CLAUDE.md`에 이름이 없어도 반응해야 할 10개 중 9개 통과(실행 40번 중 17번 반응)·반응하면 안 되는 10개는 0번 반응이었고, 라우팅 행을 더하면 20번 반응(10개 통과)이었다. (처음 이 칸에 "라우팅 행이 트리거를 좌우한다"고 적은 것은 틀렸다 — 진짜 스킬만 있는 경우를 재지 않고 도구 숫자와 비교한 것이었고, 2026-10-08에 고쳤다.) 한계: 스킬 하나, 질문당 2회, 설명 문구를 보고 만든 질문 |
+
+## 필요할 때 꺼낼 후보 — 조사만 하고 아직 들이지 않은 것
+
+<!-- claude-drafted: 2026-10-06 — 사용자 요청("내가 스킬을 주면 어디에 저장해서 너가 필요사항에 맞춰서 가져올 수 있도록")으로 Claude가 만든 표. "쓸 때"·"Claude 의견" 칸은 Claude의 조사·판단이고, 판정은 사용자가 한다. -->
+
+사용자가 도구 이름만 주면 Claude가 조사해서 **여기에 한 줄** 적는다. 작업 중 "쓸 때" 칸에 맞는 일이 생기면
+Claude가 이 표에서 꺼내 제안하고, 들이기로 하면 [external-integration.md](../../.claude/rules/external-integration.md)
+절차를 거쳐 위 카탈로그로 옮긴다. 같은 도구를 다시 조사하지 않기 위한 표다.
+
+**월말 정리** (사용자 결정 2026-10-06): 매달 마지막 날, 조사일이 **1개월** 넘은 행을 다시 확인한다 — 라이선스·사용 기록(telemetry)·설치 방식이 바뀌었는지 보고 조사일을 고친다. "쓸 때"에 맞는 일이 한 달 동안 한 번도 없었던 행은 보류로 둘지 사용자에게 묻는다.
+
+상태: **후보**(판정 전) → 보류 / 채택 안 함 → 들이면 위 카탈로그로 이동
+
+| 이름 | 무엇 | 쓸 때 (꺼낼 신호) | 밖으로 나가는 것 | 설치 주의 | Claude 의견 | 상태 · 조사일 |
+|---|---|---|---|---|---|---|
+| MarkItDown ([microsoft/markitdown](https://github.com/microsoft/markitdown)) | PDF·pptx·docx·xlsx → 마크다운. MIT | 레프런스 ② 문서화, 학교 자료를 세컨드 브레인에 넣기 | 기본 변환은 로컬. Azure·LLM 이미지 설명·YouTube만 외부 | `pip` — 필요한 형식만(`[pdf,docx,pptx,xlsx]`) | 바로 써 볼 만함 | 후보 · 2026-10-06 |
+| HyperFrames ([heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)) | HTML+CSS+GSAP → MP4 영상. Apache 2.0, 스킬 21개 | 발표·소개용 모션그래픽 영상이 필요할 때 | 기본 로컬. `telemetry` 명령이 있어 **보내는 내용·끄는 법 미확인**. 클라우드 렌더는 선택 | FFmpeg 필요(이 Mac에 없음), Node 22+ | 영상이 필요하면 Remotion보다 이쪽 | 후보 · 2026-10-06 |
+| Remotion ([remotion-dev/remotion](https://github.com/remotion-dev/remotion)) | React → 영상. 자체 라이선스(3명 이하 무료) | 위와 같음 — React 프로젝트일 때 | 라이선스 키를 넣으면 렌더 기록(키·IP) | — | HyperFrames와 둘 중 하나만 | 후보 · 2026-10-06 |
+| Impeccable ([pbakaus/impeccable](https://github.com/pbakaus/impeccable)) | frontend-design 확장. 명령 24개 + 로컬 디자인 오류 탐지 규칙 60개. Apache 2.0 | 만든 화면을 **점검·다듬을** 때 | 기본 로컬 | **설치 프로그램이 `.claude/settings.local.json`에 훅을 씀** — 파일 복사로만 | frontend-design과 겹침 — 대체할지 정해야 함 | 후보 · 2026-10-06 |
+| Taste ([Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)) | 스타일 방향 스킬 13개, 조절값 3개(변화·움직임·밀도). MIT | 화면을 **처음부터 덜 뻔하게** 만들 때 | 문서에 언급 없음. `imagegen-*`·`brandkit`은 외부 이미지 생성 전제일 수 있음 | 스킬 파일만 | Impeccable과 둘 중 하나 | 후보 · 2026-10-06 |
+| Graphify ([safishamsi/graphify](https://github.com/safishamsi/graphify)) | 코드·문서 → 질의 가능한 지식 그래프. Apache 2.0/MIT | 저장소 구조를 한눈에 보고 싶을 때 | 코드는 로컬 분석. 사용 기록 없음 명시 | **`graphify claude install`이 `CLAUDE.md`를 고치고 PreToolUse 훅을 넣음** — `graphify .`만 수동 실행 | 수동 실행으로 시험해 볼 만함 | 후보 · 2026-10-06 |
+| AgentBrowser ([vercel-labs/agent-browser](https://github.com/vercel-labs/agent-browser)) | AI용 브라우저 자동화 명령어 도구. Apache 2.0 | 내장 브라우저·Claude in Chrome으로 안 되는 자동화가 생길 때 | 로컬 Chromium | 첫 실행 때 Chrome 내려받음 | 지금은 필요 없음 | 후보 · 2026-10-06 |
+| ECC ([affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code)) | 에이전트 68·스킬 293·명령 94·규칙·훅 묶음. MIT | 특정 스킬 하나가 필요할 때 그것만 | 자동 업로드 없음 명시 | **세션마다 도는 훅을 `~/.claude/settings.json`에 씀** | 전체는 안 들이는 쪽(ponytail 플러그인과 같은 이유). 스킬 하나만 복사는 가능 | 후보 · 2026-10-06 |
+| prompts.chat ([f/awesome-chatgpt-prompts](https://github.com/f/awesome-chatgpt-prompts)) | 공개 프롬프트 모음 + MCP | — | 검색어 | MCP 설정 | 원문제와 닿는 곳이 없어 효용 낮음 | 후보 · 2026-10-06 |
+| Headroom ([chopratejas/headroom](https://github.com/chopratejas/headroom)) | 도구 출력·로그·파일·대화를 모델에 보내기 전에 압축하는 로컬 프록시(원문은 로컬에 보관, 필요하면 되찾음). Apache 2.0 | 긴 세션에서 컨텍스트가 빨리 차거나 사용량 한도에 자주 걸릴 때 | 압축은 로컬. **익명 사용 기록(압축률·횟수·모델 ID·OS)이 기본으로 켜져 있음** — 내용·코드·경로는 안 보낸다고 명시, `HEADROOM_BEACON=off`로 끔. `[ml]` 설치 때 HuggingFace에서 모델을 내려받음 | **`headroom wrap claude`가 Claude Code 설정을 바꿔 모든 요청을 프록시로 돌리고 Serena(코드 탐색 MCP)도 설치함** — 모든 세션·프로젝트에 영향 | 효과는 크지만 모든 대화가 거쳐 가는 자리라 시험한다면 사용 기록을 끄고 한 세션에서만 | 후보 · 2026-10-07 |
+| Agent-Reach ([Panniantong/Agent-Reach](https://github.com/Panniantong/Agent-Reach)) | X·Reddit·YouTube 등 검색·읽기. MIT | — | **URL·검색어가 Jina·Exa로**, X·Reddit은 **로그인 쿠키** 필요(계정 정지 위험) | — | 개인정보·계정 기준에 걸려 안 들이는 쪽 | 후보 · 2026-10-06 |
+| Jev ([Typesafe.AI](https://neo4j.com/?p=432101) 판단 모델) + jev-graph-search ([Emlembow/jev-graph-search](https://github.com/Emlembow/jev-graph-search)) | Jev는 글을 쓰지 않고 확률만 돌려주는 결정·분류 모델(호스팅 API). jev-graph-search는 Obsidian·Logseq·마크다운 폴더에서 로컬로 후보 목록을 만들고 Jev로 재정렬해 원문 구절+출처로 돌려주는 CLI·스킬. MIT, Node 20+ | 카드·색인 키워드 검색이 부족한지 질문 20개로 측정한 뒤, 출처 달린 답변(F9) 설계를 참고할 때 | **`search`가 제목·별칭·본문 발췌를 Typesafe.AI(또는 OpenRouter)로 보냄.** `--offline`(로컬 어휘 순위)과 `traverse`(JSON 스냅샷의 링크 따라가기)는 키 없이 동작. 제공자의 보존·로그 정책은 README에 없음 | Node 20+, API 키는 사용자별 설정 파일(0600). 스킬 설치는 파일을 읽지 않는다고 명시. `CLAUDE.md`·`.claude/**`를 고치는지는 **미확인** | 외부 전송 때문에 그대로는 안 씀(개인 정보를 보내는 도구 불가 결정). `--offline`·`traverse`만 시험하거나 "로컬 후보 → 재정렬, 근거 보존" 설계만 가져옴. 63.9→81.8% 재현율은 저자의 세법 그래프 벤치마크 주장 | 후보 · 2026-10-08 |
+| coucou ([Louis-CFM/coucou](https://github.com/Louis-CFM/coucou)) | AI 코딩 에이전트(Claude Code·Codex·Cursor 등) 세션을 Mac 노치·iPhone·Android에 띄우고 권한 요청·질문에 그 자리에서 답한다. 코드 MIT, 이름·캐릭터는 저작권 | 자리를 비운 채 긴 Claude Code 작업을 폰으로 지켜보거나 권한 요청에 폰으로 답하고 싶을 때 | iPhone 연동은 세션을 **내 iCloud(CloudKit)**에 올림(민감 칸 암호화), 잠금 화면 알림은 **Cloudflare 중계**(에이전트 이름·상태만). 채팅·서비스 알림·음성 명령은 각자 API 키. 사용 기록 없음 명시 | **`~/.claude/settings.json`에 훅을 합쳐 씀**(백업 + diff를 보여 준 뒤). **"Always"는 영구 허용 규칙을 Claude Code 설정에 쌓음**. 들이면 우리 훅이 여전히 막는지 위반 시도로 확인 — 절차는 [coucou.md](../../05-projects/second-brain/docs/references/coucou.md) "작업할 때" | 지금은 안 들이는 쪽 — 2주 된 앱이고, "개인 정보를 밖으로 보내는 도구는 쓰지 않는다"와 iPhone 연동을 맞대 봐야 함. 설계 원칙은 장부 W-25~W-27로 따로 | 후보 · 2026-10-12 |
+
+## 판정 기준
+
+- **채택** — 우리 rules/hooks/agents 체계에 정식으로 편입. `CLAUDE.md` 라우팅
+  표와 `.claude/rules/consistency.md`의 기준 파일 지도에도 반영됨.
+- **격리** — 자기 폴더 밖의 어떤 파일도 건드리지 않는다는 게 확인된 채로,
+  독립적으로만 동작. 우리 라우팅 표·기준 파일 지도는 그대로.
+- **제거** — 실효성 없음 또는 충돌 확인 → 삭제, 근거만 남김.
+- **보류** (후보 표 전용) — 조사는 끝났고 지금은 쓸 일이 없다. 표에 남겨 두고 "쓸 때"에 맞는 일이 생기면 다시 꺼낸다.
+- **채택 안 함** — 들이지 않기로 정했다. 같은 도구를 다시 조사하지 않도록 근거와 함께 남긴다.
