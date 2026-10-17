@@ -28,6 +28,7 @@
     askConfirm: 0,                                 // 빈칸이 남은 설계도를 확정하려 할 때 — 남은 빈칸 수(한 번 더 묻는 중)
     pets: 0, since: "", sound: false,              // 플로로와 교감: 쓰다듬은 횟수, 처음 만난 날, 작은 소리(기본 꺼짐)
     mapSel: null, showCrit: false,                 // 단계 지도에서 고른 단계, 펼침 카드 아래 '이 단계 할 일' 펼침
+    libSel: null, libConfirm: false, libGone: [],  // 도서관 탭: 펼친 책, 세션 덮기 확인 중, 서고로 보낸 책 (2026-10-17 서고 시안의 위젯을 옮김)
   };
   const $nav = document.getElementById("nav"), $phone = document.getElementById("phone"), $chat = document.getElementById("chat");
   const $fx = document.getElementById("fx");
@@ -79,7 +80,11 @@
 
   // ── 기록 — 이 브라우저에만. 못 쓰는 환경(사생활 보호 창 등)이면 조용히 기록 없이 동작한다 ──
   const KEY = "navigator-prototype:v1";
-  const KEEP = ["mode", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished"];
+  // 한 권으로 엮어 서고로 보낸 책 — 서고 시안(../library)도 같은 열쇠를 읽어 처음부터 책장에 꽂아 둔다
+  const BOUND_KEY = "floe-demo:bound";
+  const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
+  const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
+  const KEEP = ["mode", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone"];
   let forgotten = false;
   function load() {
     let s;
@@ -89,6 +94,7 @@
     for (const k of KEEP) if (k in s) st[k] = s[k];
     if (st.mode === "live" && !canLive) st.mode = "fixture";
     st.pets = Math.max(0, Number(st.pets) || 0);
+    st.libGone = [...new Set([...(Array.isArray(st.libGone) ? st.libGone.map(String) : []), ...readBound()])];
     st.back = N.welcome(s, Date.now());
   }
   function save() {
@@ -114,6 +120,8 @@
     check: icon('<path d="M5 12.5l4.5 4.5L19 7.5"></path>', 14),
     arrow: icon('<path d="M5 12h14M13 6l6 6-6 6"></path>', 13),
     bubble: icon('<circle cx="12" cy="13" r="7"></circle><circle cx="9.5" cy="10.5" r="1.2"></circle><circle cx="19" cy="5" r="2"></circle>', 15),
+    all: icon('<rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect>', 24),
+    lib: icon('<path d="M3.5 6.5C6 5.5 9 5.5 12 7c3-1.5 6-1.5 8.5-.5V18c-2.5-1-5.5-1-8.5.5-3-1.5-6-1.5-8.5-.5z"></path><path d="M12 7v11.5"></path>', 24),
   };
   const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
   const hearts = (level) => `<span class="hearts">${[0, 1, 2, 3].map((i) => `<i class="${i <= level ? "on" : ""}">${HEART}</i>`).join("")}</span>`;
@@ -217,7 +225,10 @@
       "할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.") +
     section("내가 확정한 설계도", st.docs, (x) => `<details><summary>${x.stage}단계 · ${esc(x.name)} · ${esc(x.at)}</summary><pre class="doc-view">${esc(x.text)}</pre></details>`,
       "설계도를 확정하면 여기 모여요.");
-  const TABS = [["today", "지금", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["learn", "내 배움", "내 배움", "learn"]];  // [id, PC 이름, iPhone 이름, 아이콘]
+  // [id, PC 이름, iPhone 이름, 아이콘]. 뒤의 둘(한곳에서 보기·도서관)은 PC에만 있다 — iPhone은 앞의 넷
+  const TABS = [["today", "지금", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["learn", "내 배움", "내 배움", "learn"],
+    ["all", "한곳에서 보기", "한곳에서", "all"], ["lib", "도서관", "도서관", "lib"]];
+  const PHONE_TABS = TABS.slice(0, 4);
   // 설계도(FR-3, iPhone) — 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
   function docBody(size) {
     const s = st.j && stage();
@@ -471,7 +482,98 @@
         <span class="sub">쓰다듬은 횟수 ${st.pets}번${b.need ? ` · 더 친해지기까지 ${b.need}번` : ""}</span>
         <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div></div></div>`;
   }
-  // 위쪽 아이콘 줄 — 지금·설계도·단계 지도·내 배움 | 연결·프로젝트·보기 방식·친해진 정도·설정·열어 두기·접기
+  // ── 도서관(FR-8 위젯) · 한곳에서 보기(FR-6) — 서고 시안(../library)의 더미 책(books.js)과 마감 계산(schedule.js)을 같이 쓴다.
+  // 같은 화면이 둘이 되지 않게 서고 시안의 작업 화면 위젯을 여기로 옮겼다(2026-10-17). 첫 책(s1)은 이 화면의 단계·할 일을 그대로 따른다.
+  const L = () => window.LibData, SCH = () => window.Schedule;
+  const LIB_URL = "../library/index.html";
+  const libMissing = () => `<div class="libtab"><div class="doc-empty">${I.lib}<b>서고 데이터를 못 읽었어요</b><span>../library/books.js와 schedule.js가 같이 있어야 해요.</span></div></div>`;
+  // 열어 둔 책 — 서고로 보낸 책은 빼고, 첫 책은 지금 이 화면의 단계·할 일·확정한 설계도를 따른다
+  function openBooks() {
+    return L().OPEN.filter((b) => !st.libGone.includes(b.id)).map((b) => (b.id === "s1" && st.j
+      ? { ...b, mine: true, stage: st.j.stage, todos: st.j.criteria.map((c) => ({ t: c.text, done: c.met })),
+          decided: st.docs.length ? st.docs.map((d) => `${d.stage}단계 ${d.name} — ${d.at}에 확정`) : b.decided }
+      : b));
+  }
+  const bookDone = (b) => b.stage === 7 && b.todos.every((t) => t.done);
+  const libSelected = () => openBooks().find((b) => b.id === st.libSel);
+  const mmdd = (d) => d.slice(5).replace("-", "/");
+  // 마감 칩 — 지남(금 간 얼음) · 오늘 · 3일 이내 · 여유
+  const dueChip = (due) => { const d = SCH().dueStatus(due, L().TODAY); return `<span class="due ${d.state}">${d.state === "late" ? "❄ " : ""}${mmdd(due)} · ${d.label}</span>`; };
+  const coverBtn = (b, i) => `<button class="cover" style="--tone:${b.tone}" data-act="lib-book" data-i="${i}" data-id="${b.id}" aria-label="${esc(b.title)}, ${b.stage}단계 ${esc(L().STAGES[b.stage])}, 책갈피 ${b.bookmarks.length}장">
+    <span class="t">${esc(b.title)}</span><span class="s">${b.mine ? "이 화면 · " : ""}${b.stage}단계 · ${esc(L().STAGES[b.stage])}</span>
+    <span class="m"><span>▮ ${b.bookmarks.length}장</span>${bookDone(b) ? '<span class="due ok">완주 · 엮기 대기</span>' : dueChip(b.dues[b.stage])}</span></button>`;
+  function deskLib() {
+    if (!L() || !SCH()) return libMissing();
+    const books = openBooks(), b = libSelected();
+    if (!b) return `<div class="libtab"><div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
+        <div class="ob-say">도서관 · 열어 둔 책 ${books.length}권</div>
+        <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
+        ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요.</p>`}</div></div>
+      <div class="ob-foot"><span class="note">책을 고르면 펼쳐져요 · 세션을 덮으면 서고에 꽂혀요 · 완주한 책은 한 권으로 엮어요</span><span class="grow"></span>
+        <a class="enter-lib" href="${LIB_URL}#lib"><span class="mb"></span>내 서고 들어가기</a></div></div>`;
+    const fin = bookDone(b);
+    deskKeys.Escape = { act: "lib-close" };
+    deskKeys.Enter = { act: st.libConfirm ? "lib-shelve" : fin ? "lib-bind" : "lib-shelve-ask" };
+    return `<div class="libtab"><div class="minispread" data-spread>
+        <section><div class="stg">${fin ? "돌아보기까지 끝" : `지금 ${b.stage}단계 · ${esc(L().STAGES[b.stage])}`}${b.mine ? " · 이 화면의 프로젝트" : ""}</div><h3>${esc(b.title)}</h3>
+          <div class="stg soft">이 세션에서 정한 것</div><ul>${b.decided.map((d) => `<li>${esc(d)}</li>`).join("")}</ul></section>
+        <section><div class="stg">꽂은 책갈피 ${b.bookmarks.length}장</div><h3>배운 것</h3>
+          <div class="marks">${b.bookmarks.map((m) => `<span>${esc(m)}</span>`).join("")}</div>
+          <div class="stg soft" style="margin-top:12px">마지막으로 연 때 · ${esc(b.updated)}</div></section></div>
+      ${st.libConfirm ? `<div class="confirm" role="alertdialog" aria-label="세션 덮기 확인">${cat("think", 34)}<span><b>‘${esc(b.title)}’</b> 세션을 덮고 서고에 꽂을까요? 언제든 다시 펼칠 수 있어요.</span><span class="grow"></span>
+          <button class="b pri" data-act="lib-shelve">덮고 꽂기${kbd("Enter")}</button><button class="b" data-act="lib-shelve-no">그대로 두기</button></div>`
+        : `<div class="ob-foot"><button class="b" data-act="lib-close">책 덮기${kbd("Escape")}</button>
+          ${fin ? `<button class="b pri" data-act="lib-bind">📖 한 권의 책으로 엮기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">세션 덮기${kbd("Enter")}</button>`}
+          <span class="grow"></span><span class="note">${fin ? "엮으면 서고 책장에 꽂히고, 서고로 넘어가요" : "책 덮기는 목록으로 · 세션 덮기는 서고로"}</span></div>`}</div>`;
+  }
+  // 한곳에서 보기 — 진행 상황 · 내가 할 일 · 일정 충돌 · 토큰 사용. 시연은 가상 숫자(FR-10), 옮기는 결정은 사람이
+  function deskAll() {
+    if (!L() || !SCH()) return libMissing();
+    const D = L(), live = openBooks(), fmt = (n) => n.toLocaleString();
+    const progress = live.map((p, i) => `<li><button class="prow" data-act="all-goto" data-i="${i}"><span class="nm">${esc(p.title)}${p.mine ? ' <span class="okchip">이 화면</span>' : ""}</span>
+        <span class="pdots" aria-hidden="true">${D.STAGES.map((_, k) => `<i class="${k < p.stage || bookDone(p) ? "on" : k === p.stage ? "cur" : ""}"></i>`).join("")}</span>
+        <span>${bookDone(p) ? '<span class="due ok">완주</span>' : `${p.stage}단계 ${esc(D.STAGES[p.stage])} ${dueChip(p.dues[p.stage])}`}</span></button></li>`).join("");
+    const todos = live.map((p) => ({ p, t: p.todos.find((x) => !x.done), due: p.dues[p.stage] })).sort((a, b) => a.due.localeCompare(b.due))
+      .map(({ p, t, due }) => `<li><span>${t ? `○ ${esc(t.t)}` : "📖 책으로 엮기"}</span><small>${esc(p.title)} · ${t ? dueChip(due) : "완주"}</small></li>`).join("");
+    const clashes = SCH().findClashes({ projects: live, events: D.CALENDAR, pins: D.TEAM_PINS, today: D.TODAY });
+    const ICON = { "같은 날 마감": "⚑", "일정과 겹침": "📅", "팀 일정 뒤": "📌" };
+    const clashHtml = clashes.length ? clashes.map((c) => `<li><b>${ICON[c.kind]} ${mmdd(c.date)} ${esc(c.kind)}</b><small>${
+        c.kind === "같은 날 마감" ? `${c.titles.map(esc).join(" · ")} — 마감이 같은 날이에요`
+        : c.kind === "일정과 겹침" ? `${esc(c.titles[0])} 마감 · 캘린더 ‘${esc(c.event)}’와 겹쳐요`
+        : `${esc(c.titles[0])} 마감이 팀 ${esc(c.pin)}(${mmdd(c.pinDate)}) 뒤예요`}</small></li>`).join("")
+      : `<li><small>14일 안에 겹치는 일정이 없어요</small></li>`;
+    const T = D.TOKENS, total = Object.values(T.plan).reduce((a, b) => a + b, 0), used = Object.values(T.used).reduce((a, b) => a + b, 0);
+    const tokens = Object.keys(T.plan).map((k) => `<li><span>${esc(T.names[k])}</span><i class="tbar"><i style="width:${(T.used[k] / T.plan[k]) * 100}%"></i></i><small>${fmt(T.used[k])} / ${fmt(T.plan[k])}</small></li>`).join("");
+    return `<div class="alltab"><div class="allhead"><b>한곳에서 보기</b><span class="fake">가상 숫자예요 · 시연용</span><span class="grow"></span>
+        <small>오늘 ${mmdd(D.TODAY)} · 캘린더 일정 ${D.CALENDAR.length}개 읽음(제목·날짜만)${st.tokens ? ` · 이 화면의 마지막 호출 ${fmt(st.tokens)}토큰` : ""}</small></div>
+      <div class="allgrid">
+        <section><h4>진행 상황</h4><ol class="plist">${progress}</ol></section>
+        <section><h4>내가 할 일 <small>마감 가까운 순</small></h4><ul class="alltodo">${todos}</ul></section>
+        <section class="${clashes.length ? "hot" : ""}"><h4>일정 충돌 ${clashes.length ? `<span class="due late">${clashes.length}개</span>` : ""}</h4><ul class="clash">${clashHtml}</ul>
+          <p class="hint">옮길지는 직접 정해요 — 프로젝트를 누르면 단계 지도나 책으로 가요</p></section>
+        <section><h4>토큰 사용 <small>${fmt(used)} / ${fmt(total)} · ${Math.round((used / total) * 100)}%</small></h4><ul class="tok">${tokens}</ul></section>
+      </div></div>`;
+  }
+  // 한 권의 책으로 엮기 — 책이 작아지며 서고로 넘어간다(서고 시안이 #lib-bound-<id>로 받아 책장에 꽂는다)
+  function bindBook() {
+    const b = libSelected(); if (!b || !bookDone(b)) return;
+    st.libGone.push(b.id); save(); writeBound(b.id);
+    const open = () => { location.href = `${LIB_URL}#lib-bound-${b.id}`; };
+    const el = $nav.querySelector("[data-spread]");
+    if (!el || STILL) return open();
+    el.classList.add("binding"); C.burst(...center(el), "star", 16, 360);
+    if (st.sound) C.chime("level");
+    setTimeout(open, 950);
+  }
+  // 세션 덮기 — 목록으로 돌아가 그 책이 작아지며 사라진다
+  function shelveBook() {
+    const b = libSelected(); if (!b) return;
+    set({ libSel: null, libConfirm: false });
+    const el = $nav.querySelector(`[data-act="lib-book"][data-id="${b.id}"]`);
+    const finish = () => { st.libGone.push(b.id); render(); say(`‘${b.title}’ 책을 서고에 꽂았어요`); };
+    if (el && !STILL) { el.classList.add("leaving"); setTimeout(finish, 480); } else finish();
+  }
+  // 위쪽 아이콘 줄 — 지금·설계도·단계 지도·내 배움·한곳에서 보기·도서관 | 연결·프로젝트·보기 방식·친해진 정도·설정·열어 두기·접기
   function topbar() {
     const b = C.bond(st.pets), tab = TABS.find((x) => x[0] === st.tab);
     return `<div class="tb"><div class="tabs" role="tablist" aria-label="보기">${TABS.map(([id, label, , ic], i) =>
@@ -518,6 +620,8 @@
     if (st.tab === "doc") body = deskDoc();
     else if (st.tab === "map") body = deskMap();
     else if (st.tab === "learn") body = deskLearn();
+    else if (st.tab === "all") body = deskAll();
+    else if (st.tab === "lib") body = deskLib();
     else body = card(momentToday()) + deskMore();
     return `<div class="isl${enter}">${topbar()}${settingsPop()}${body}${countdown()}</div>`;
   }
@@ -562,8 +666,9 @@
   function renderPhone() {
     const gate = st.screen === "gate";
     $phone.className = "phone" + (gate ? " check" : "");
-    $phone.innerHTML = gate ? phoneCheck() : ({ today: phoneToday, doc: phoneDoc, map: phoneMap, learn: phoneLearn }[st.tab])() +
-      `<nav class="tabbar glass" aria-label="화면">${TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" ${st.tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
+    const views = { today: phoneToday, doc: phoneDoc, map: phoneMap, learn: phoneLearn }, tab = views[st.tab] ? st.tab : "today";   // 한곳에서 보기·도서관은 PC에서만
+    $phone.innerHTML = gate ? phoneCheck() : views[tab]() +
+      `<nav class="tabbar glass" aria-label="화면">${PHONE_TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" ${tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
   }
 
   // ── 리퀴드 글래스 굴절 (PC, 크롬 계열만) ──
@@ -905,7 +1010,15 @@
     pick: () => set({ picking: true }),
     settings: () => set({ settings: !st.settings }),
     bond: () => set({ tab: "learn", settings: false }),
-    tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0 }),
+    tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
+    // 도서관 탭 — 책 고르기 · 덮기 · 세션 덮기(확인 뒤) · 한 권으로 엮기. 한곳에서 보기 — 프로젝트를 누르면 단계 지도(이 화면 것)나 그 책으로
+    "lib-book": (i, el) => set({ libSel: (el && el.dataset.id) || openBooks()[i].id, libConfirm: false }),
+    "lib-close": () => set({ libSel: null, libConfirm: false }),
+    "lib-shelve-ask": () => set({ libConfirm: true }),
+    "lib-shelve-no": () => set({ libConfirm: false }),
+    "lib-shelve": () => shelveBook(),
+    "lib-bind": () => bindBook(),
+    "all-goto": (i) => { const p = openBooks()[i]; if (p) set(p.mine ? { tab: "map", mapSel: null } : { tab: "lib", libSel: p.id, libConfirm: false }); },
     "map-sel": (i) => set({ mapSel: i }),
     crit: () => set({ showCrit: !st.showCrit }),
     "open-input": () => { set({ openInput: true, showCrit: false }); focusText(); },
@@ -921,7 +1034,7 @@
     "confirm-anyway": () => confirmDoc(true),
     "confirm-cancel": () => set({ askConfirm: 0 }),
     "reopen-doc": () => { const x = docDone(st.j.stage); set({ doc: newDoc(x.stage, x.text, "") }); },
-    forget: () => { forgotten = true; try { localStorage.removeItem(KEY); } catch {} location.reload(); },
+    forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); } catch {} location.reload(); },
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false }),
     "close-gate": () => set({ screen: "main" }),
     no: () => { set({ noCount: st.noCount + 1, step: "which", hard: [], answer: "", question: "" }); say("모르는 게 당연해요. 같이 풀어요"); },
@@ -1047,6 +1160,32 @@
     };
     step();
   });
+
+  // ── 주소 끝으로 장면 바로 열기 (시연·녹화용 — tour.js가 쓴다). 진짜 AI를 부르지 않고 연습 예시로만 장면을 만든다 ──
+  //   #start · #ex=<단계>(그 단계 '하는 중' 예시) · &done(그 단계를 다 한 예시) · &tab=<탭> · &crit(할 일 펼침) · &gate(넘어가기 전 확인) · &book=<책>
+  function fromHash() {
+    const h = location.hash.slice(1);
+    if (!h) return;
+    const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(decodeURIComponent)).map(([k, v]) => [k, v === undefined ? true : v]));
+    Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false });
+    if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today" });
+    if (q.ex !== undefined) {
+      const n = Number(q.ex), mine = S.examples.filter((e) => e.judgement.stage === n);
+      const ex = q.done ? mine.find((e) => e.judgement.criteria.every((c) => c.met)) : mine.find((e) => !e.hidden);
+      if (ex) {
+        const base = ex.from !== undefined ? S.examples[ex.from] : null, nx = base && base.judgement.next;
+        const text = base ? `${base.text}\n${N.decisionLine(nx.question, nx.options[0])}` : ex.text;
+        const raw = S.judgeFixture(text, n), j = raw && N.parseJudgement(raw, text, n);
+        if (j) { Object.assign(st, { text, j, todos: null, choice: null, later: false, picking: false, finished: false, notice: "", tab: "today" }); learn(j); }
+      }
+    }
+    if (q.tab && TABS.some((t) => t[0] === q.tab)) st.tab = q.tab;
+    if (q.book) st.libSel = String(q.book);
+    if (q.crit) st.showCrit = true;
+    if (q.gate && st.j && allDone()) Object.assign(st, { screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0 });
+  }
+  fromHash();
+  addEventListener("hashchange", () => { fromHash(); render(); });
 
   render();
 })();

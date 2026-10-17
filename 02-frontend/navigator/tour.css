@@ -1,0 +1,28 @@
+/* claude-drafted: 2026-10-17 — 3분 시연 길잡이 띠(tour.js). 남색 밤하늘 페이지들(내비게이터 PC · 서고 · 하늘 · 입구) 위에 뜬다. */
+.tour{position:fixed;right:16px;bottom:16px;z-index:60;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;
+  background:rgba(14,24,72,.86);border:1px solid rgba(190,215,255,.3);color:#eef4ff;box-shadow:0 10px 30px rgba(0,4,30,.5);
+  font:13px/1.4 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.tour button{font:inherit;color:inherit;cursor:pointer;border:0;background:transparent;border-radius:999px}
+.tour button:disabled{opacity:.3;cursor:default}
+.tour .tour-step{width:30px;height:30px;font-size:20px;line-height:1;display:grid;place-items:center}
+.tour .tour-step:hover:not(:disabled){background:rgba(207,230,255,.16)}
+.tour .tour-now{height:30px;padding:0 10px 0 6px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.tour .tour-now:hover,.tour .tour-now[aria-expanded="true"]{background:rgba(207,230,255,.12)}
+.tour .tour-now b{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#ffd98a;color:#13245e;font-size:11.5px;font-weight:800}
+.tour .tour-list{position:absolute;right:0;bottom:calc(100% + 8px);width:300px;margin:0;padding:6px;list-style:none;border-radius:16px;
+  background:rgba(14,24,72,.96);border:1px solid rgba(190,215,255,.3);box-shadow:0 20px 50px rgba(0,4,30,.6)}
+.tour .tour-list a{display:grid;grid-template-columns:24px minmax(0,1fr);gap:8px;align-items:center;padding:6px 8px;border-radius:10px;color:inherit;text-decoration:none}
+.tour .tour-list a:hover,.tour .tour-list .now a{background:rgba(207,230,255,.14)}
+.tour .tour-list b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1.5px solid rgba(207,230,255,.5);font-size:11px}
+.tour .tour-list .now b{background:#ffd98a;color:#13245e;border-color:#ffd98a}
+.tour .tour-list span{display:flex;flex-direction:column;min-width:0}
+.tour .tour-list small{font-size:11.5px;color:#b9c9f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tour .tour-list .home{border-top:1px dashed rgba(190,215,255,.3);margin-top:4px;padding-top:4px}
+.tour .tour-list .home a{display:block;font-size:12.5px;color:#b9c9f2}
+/* 페이지마다 비켜 두는 자리 — 서고는 왼쪽 아래(오른쪽 아래엔 플로로의 답 카드, 위엔 버튼 줄·닫기), 하늘은 GitHub 칸 아래(아래는 달 막대가 있다) */
+body[data-tour="lib"] .tour{left:22px;bottom:18px;right:auto}
+body[data-tour="lib"] .tour .tour-list{left:0;right:auto}
+body[data-tour="sky"] .tour{top:116px;right:20px;bottom:auto}
+body[data-tour="sky"] .tour .tour-list{top:calc(100% + 8px);bottom:auto}
+@media (max-width:600px){.tour{right:8px;bottom:auto;top:8px;font-size:12px} body[data-tour="lib"] .tour,body[data-tour="sky"] .tour{top:8px;right:8px;left:auto;bottom:auto} body[data-tour="lib"] .tour .tour-list{left:auto;right:0;top:calc(100% + 8px);bottom:auto} .tour .tour-list{width:min(300px,calc(100vw - 24px))}}
+@media (prefers-reduced-transparency:reduce){.tour,.tour .tour-list{background:#101c54;-webkit-backdrop-filter:none;backdrop-filter:none}}

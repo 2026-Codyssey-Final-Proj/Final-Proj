@@ -96,7 +96,7 @@ flowchart LR
 ```bash
 git clone https://github.com/2026-Codyssey-Final-Proj/Final-Proj.git
 cd Final-Proj
-node 03-backend/navigator/server.js   # 🦭 → http://127.0.0.1:4317
+node 03-backend/navigator/server.js   # 🦭 → http://127.0.0.1:4317 · 시연 입구 /index.html
 python3 04-tests/run_all_tests.py             # 🧪
 ```
 

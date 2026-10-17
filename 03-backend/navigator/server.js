@@ -22,18 +22,30 @@ const MAX_BODY = 40_000;   // 작업 글 + 설계도
 const MAX_WORK = 4000;   // 알림 하나에 담는 작업 글 최대 글자 수
 const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
 
-// 정해진 파일만 내준다 — 경로를 요청에서 만들지 않는다.
-// 화면은 02-frontend/navigator/, 판정 규칙은 이 폴더. 주소는 화면(index.html)의 상대 경로가 서버 기준으로 풀린 모양이다.
-const FRONT = "../../02-frontend/navigator/";
-const FILES = {
-  "/": [FRONT + "index.html", "text/html"],
-  "/app.css": [FRONT + "app.css", "text/css"],
-  "/app.js": [FRONT + "app.js", "text/javascript"],
-  "/seal.js": [FRONT + "seal.js", "text/javascript"],
-  "/03-backend/navigator/navigator.js": ["navigator.js", "text/javascript"],
-  "/03-backend/navigator/scenario.js": ["scenario.js", "text/javascript"],
-  "/03-backend/share/share-rules.js": ["../share/share-rules.js", "text/javascript"],
+// 정해진 파일만 내준다 — 경로를 요청에서 만들지 않는다. 시연 페이지 전부(내비게이터·서고·공유 시험·입구)를 같이 내준다(2026-10-17 시연 연결).
+// 주소는 화면(index.html)의 상대 경로가 서버 기준으로 풀린 모양이다: 내비게이터는 `/`에 있어 `../library/x` → `/library/x`, `../../03-backend/…` → `/03-backend/…`.
+//   /                 내비게이터        /index.html         시연 입구(02-frontend/index.html)
+//   /library/…  /navigator/…  /share/…   02-frontend의 화면들   /03-backend/…   규칙·공유 규칙
+const ROOT = "../../";
+const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
+const STATIC = {
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "tour.js", "tour.css", "library-tab.css"],
+  "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "schedule.js", "skills.js", "search.js", "spotlight.js",
+    "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
+  "02-frontend/share": ["index.html"],
+  "03-backend/navigator": ["navigator.js", "scenario.js"],
+  "03-backend/share": ["share-rules.js", "scenarios.js", "environment-checks.js"],
 };
+const FILES = {};
+for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
+  const entry = [`${ROOT}${dir}/${f}`, TYPES[f.split(".").pop()]];
+  FILES[`/${dir}/${f}`] = entry;
+  if (dir.startsWith("02-frontend/")) FILES[`/${dir.slice("02-frontend/".length)}/${f}`] = entry;   // 화면끼리 `../library/x`처럼 부른다
+  if (dir === "02-frontend/navigator") FILES[`/${f}`] = entry;
+}
+FILES["/"] = FILES["/navigator/index.html"];
+FILES["/index.html"] = [`${ROOT}02-frontend/index.html`, TYPES.html];
+FILES["/01-docs/04-pattern-implementation/bookmark-constellation-mock.html"] = [`${ROOT}01-docs/04-pattern-implementation/bookmark-constellation-mock.html`, TYPES.html];   // 입구의 설계 목업 링크
 
 // 다른 웹페이지가 내 구독으로 Claude를 부르지 못하게: Host는 이 컴퓨터, Origin은(있으면) 이 서버만.
 function allowed(headers, port = PORT) {

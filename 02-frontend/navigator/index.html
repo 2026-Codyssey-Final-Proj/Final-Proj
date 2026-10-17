@@ -4,15 +4,19 @@
      서버 없이 이 파일을 열면 연습용 예시로, `node server.js` 뒤 http://127.0.0.1:4317 로 열면 진짜 AI로 볼 수 있다.
      Claude Code 작업을 알아채게 하려면: `node connect.js <프로젝트 폴더>`로 확인 → `--apply`로 연결(백업 먼저) → `--remove`로 해제.
      화면 글은 비개발자용 쉬운 말 — 전문 용어는 작은 "용어" 표시로만 보인다(navigator.test.js가 확인).
-     2026-10-15: PC 화면을 가로 카드 시안대로 바꿈. #fx는 플로로의 한마디·하트·별이 뜨는 맨 위 층(누를 수 없음). -->
+     2026-10-15: PC 화면을 가로 카드 시안대로 바꿈. #fx는 플로로의 한마디·하트·별이 뜨는 맨 위 층(누를 수 없음).
+     2026-10-17: 서고 시안의 작업 화면 위젯을 '한곳에서 보기'·'도서관' 탭으로 옮겨 왔다(library-tab.css, 더미 책은 ../library/books.js).
+       시연 길잡이(tour.js)가 9장면을 잇는다. 주소 끝: #start · #ex=0 · #ex=0&crit · #ex=1&tab=doc · #ex=1&done&gate · #tab=all · #tab=lib&book=s3 -->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Floe — 시연 화면 (프로토타입)</title>
+<title>Floe — 내비게이터 (시연 화면)</title>
 <link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="library-tab.css">
+<link rel="stylesheet" href="tour.css">
 </head>
-<body>
+<body data-tour="nav">
 
 <div class="window" aria-label="사용자가 쓰는 AI 코딩 도구 — 예시 화면이에요 (진짜 도구가 아니에요)">
   <div class="winbar">
@@ -34,6 +38,9 @@
 <script src="../../03-backend/navigator/scenario.js"></script>
 <script src="seal.js"></script>
 <script src="../../03-backend/share/share-rules.js" onerror="this.remove()"></script>
+<script src="../library/books.js"></script>
+<script src="../library/schedule.js"></script>
 <script src="app.js"></script>
+<script src="tour.js"></script>
 </body>
 </html>

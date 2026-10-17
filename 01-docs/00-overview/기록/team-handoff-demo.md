@@ -6,7 +6,7 @@
 
 ## 공통
 
-- 시연 화면 초안: `02-frontend/navigator-demo/index.html` — 파일 하나로 열리고 서버가 필요 없다. 값은 전부 가상이다.
+- 시연 화면 초안(10/14, `navigator-demo` — 2026-10-17 폴더 정리에서 지움): 지금 시연은 `02-frontend/index.html` 입구의 내비게이터 · 서고 · 지식 은하로 한다.
 - 연결표: `01-docs/00-overview/migration.md` 6절 — 세컨드 브레인에서 있는 것이 FR의 어디에 닿는지.
 - **초안일 뿐이다.** 구조와 문구는 각 담당이 정한다. 그대로 쓰라는 것이 아니라 출발점이다.
 - 시험은 `python3 04-tests/run_all_tests.py`로 한 번에 돈다.
