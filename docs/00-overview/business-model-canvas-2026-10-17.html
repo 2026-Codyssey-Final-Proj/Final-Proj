@@ -1,0 +1,124 @@
+<!doctype html>
+<!-- claude-drafted: 2026-10-17 — 이재엽의 요청("우리 작업의 전체를 대상으로 디자인 캔버스도 채워서 … 다운 받아서 볼 수 있어야해")으로 Claude가 비즈니스 모델 캔버스 9칸 양식에 채웠다.
+     내용은 canvas.md(의도명세 12블록), requirements.md, schedule.md, library-constellation-plan-2026-10-17.md에서 가져왔다. [후보]는 문서에 근거가 없어 Claude가 제안한 것이고, 수익원은 미정이다. -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>비즈니스 모델 캔버스 — Project Navigator</title>
+<style>
+  @page { size: A4 landscape; margin: 8mm; }
+  :root { --ink: #111; --muted: #555; --tag: #0b6b78; }
+  * { box-sizing: border-box; }
+  html, body { height: auto; }
+  @media print { body { background: #fff; } .page { break-after: avoid; overflow: hidden; } }
+  body { margin: 0; background: #ececec; font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; color: var(--ink); }
+  .page { width: 281mm; height: 188mm; margin: 0 auto; background: #ececec; padding: 2mm 0; display: flex; flex-direction: column; }
+  .top { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 6px; }
+  .top h1 { font-size: 26px; margin: 0 auto 0 0; letter-spacing: -0.5px; }
+  .meta { background: #fff; padding: 4px 8px; font-size: 9.5px; min-height: 30px; }
+  .meta b { font-style: italic; font-weight: 500; display: block; font-size: 8.5px; color: var(--muted); }
+  .grid { flex: 1; display: grid; border: 3px solid #000; background: #fff;
+    grid-template-columns: repeat(10, 1fr); grid-template-rows: 1fr 1fr 0.82fr; }
+  .cell { border: 1px solid #000; padding: 7px 9px; overflow: hidden; position: relative; }
+  .cell h2 { font-size: 13.5px; margin: 0 0 5px; display: flex; justify-content: space-between; align-items: center; }
+  .cell h2 span { font-size: 15px; font-weight: 400; }
+  ul { margin: 0; padding-left: 13px; }
+  li { font-size: 11.6px; line-height: 1.5; margin-bottom: 4px; }
+  li em { font-style: normal; color: var(--tag); font-weight: 600; }
+  .kp { grid-column: 1 / 3; grid-row: 1 / 3; }
+  .ka { grid-column: 3 / 5; grid-row: 1 / 2; }
+  .kr { grid-column: 3 / 5; grid-row: 2 / 3; }
+  .vp { grid-column: 5 / 7; grid-row: 1 / 3; }
+  .cr { grid-column: 7 / 9; grid-row: 1 / 2; }
+  .ch { grid-column: 7 / 9; grid-row: 2 / 3; }
+  .cs { grid-column: 9 / 11; grid-row: 1 / 3; }
+  .cost { grid-column: 1 / 6; grid-row: 3 / 4; }
+  .rev { grid-column: 6 / 11; grid-row: 3 / 4; }
+  .vp .lead { font-size: 13px; font-weight: 700; line-height: 1.45; margin: 0 0 6px; color: var(--tag); }
+  .foot { font-size: 8px; color: var(--muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <h1>비즈니스 모델 캔버스</h1>
+    <div class="meta" style="width:210px"><b>Designed for :</b>Project Navigator (코디세이 Final-Project)</div>
+    <div class="meta" style="width:200px"><b>Designed by :</b>Final-Proj 팀 4인 (Claude 초안)</div>
+    <div class="meta" style="width:80px"><b>Date :</b>2026-10-17</div>
+    <div class="meta" style="width:150px"><b>Version :</b>0.1 초안 · [후보] = 팀 확인 전 제안</div>
+  </div>
+  <div class="grid">
+    <div class="cell kp"><h2>핵심 파트너 <span>🔗</span></h2><ul>
+      <li>코디세이 Final-Project 운영진·멘토 — 멘토링 10/17, 10/31(제안)</li>
+      <li>Anthropic — Claude API. 코디세이 <em>중계 서버</em>로 claude-opus-4-8 · 4-7 사용</li>
+      <li>Neo4j — 책갈피 지식 그래프 저장 (시연은 같은 모양의 JSON)</li>
+      <li>사용자가 쓰는 AI 코딩 도구 — Claude Code, Cursor 등 (결정을 넘겨받는 곳)</li>
+      <li>인터뷰 응답자 3~5명 — 식별 정보는 저장하지 않음</li>
+      <li>교수님·대회에서 만난 사람들 — 도와준 사람 목록(FR-11)</li>
+    </ul></div>
+
+    <div class="cell ka"><h2>핵심 활동 <span>✓</span></h2><ul>
+      <li>작업 내용 → 현재 단계·완료 기준·다음 할 일 판정 (FR-1·2)</li>
+      <li>설계도 초안 → 사용자 수정 → Claude 리뷰 (FR-3)</li>
+      <li>게이트마다 다이어그램으로 이해 확인 (FR-4·5)</li>
+      <li>서재: 책장·표지·인용, <em>책갈피 꽂기와 별자리 보기</em></li>
+      <li>시연 시나리오·녹화, 사용 전후 검증</li>
+    </ul></div>
+
+    <div class="cell kr"><h2>핵심 자원 <span>🏭</span></h2><ul>
+      <li>7단계 워크 프로세스 + 게이트 규정(DoR/DoD)</li>
+      <li>판정 규칙·프롬프트·장기 기억, API 계약</li>
+      <li>지식 창고 — 세컨드 브레인을 일반화, <em>책갈피 그래프</em></li>
+      <li>프로토타입 코드(내비게이터·서재), 마스코트·얼음 파랑 테마</li>
+      <li>팀 4인: 총괄·AI·API / UI·UX·인터뷰 / 프론트 / 테스트·검증</li>
+    </ul></div>
+
+    <div class="cell vp"><h2>가치 제안 <span>🎁</span></h2>
+      <p class="lead">"AI가 일하는 시대에도, 성장하는 건 사람이어야 한다."</p><ul>
+      <li>지금 어디이고 무엇을 해야 하는지 항상 한 줄로 보인다</li>
+      <li>이해했다고 답해야 다음 단계로 — 넘어간 단계는 설명할 수 있다</li>
+      <li>결정은 사용자가, 선택지는 장단점과 함께</li>
+      <li>결정의 이유가 기록돼 "왜 이렇게 만들었나요?"에 1분 안에 답한다</li>
+      <li><em>배운 것이 책갈피 별자리로 쌓이고, 이해할수록 별이 밝아진다</em> — 다음 프로젝트의 길잡이</li>
+      <li>프로그래밍을 배우지 않은 사람도 쉬운 말과 그림으로 끝까지 (FR-13)</li>
+    </ul></div>
+
+    <div class="cell cr"><h2>고객 관계 <span>♡</span></h2><ul>
+      <li>마스코트 안내 패널 — 한 번에 하나만 묻는 선택지 카드</li>
+      <li>코치형 관계: 대신 만들지 않고 질문·리뷰로 돕는다</li>
+      <li>게이트마다 이해 확인, 모르는 말은 그 자리에서 풀이</li>
+      <li>기본은 나만 보기, 공유는 규칙을 거친 사본만 (FR-9)</li>
+    </ul></div>
+
+    <div class="cell ch"><h2>채널 <span>🚚</span></h2><ul>
+      <li>대회 발표·시연 GIF·영상 (11/8 제출, 11/12·13 평가)</li>
+      <li>GitHub 저장소 — 각자 컴퓨터에서 도는 설치형</li>
+      <li>멘토링·교육 현장·학교 <em>[후보]</em></li>
+      <li>사용자 테스트 5명 → 입소문 <em>[후보]</em></li>
+    </ul></div>
+
+    <div class="cell cs"><h2>고객 세그먼트 <span>☺</span></h2><ul>
+      <li><b>주 고객:</b> AI로 바이브 코딩을 하지만 프로그래밍을 배우지 않은 사람</li>
+      <li>교육 현장 — 수강생 완주·이해도 확인이 필요한 강사·기관</li>
+      <li>취업 준비생 — 설명할 수 있는 포트폴리오</li>
+      <li>팀 프로젝트를 하는 학생·직장인 — 협업 소통</li>
+      <li class="foot">대상의 문제가 실제로 있는지는 인터뷰(10/16~10/25)로 확인 중</li>
+    </ul></div>
+
+    <div class="cell cost"><h2>비용 구조 <span>🏷</span></h2><ul>
+      <li>Claude API 토큰 — 키마다 예산 통: 규칙·프롬프트 40만 / 사용자 테스트 20만 / 리허설·녹화 20만 / 예비 20만. 한 번 부를 때 약 2~3천 토큰(추정)</li>
+      <li>인건비 — 팀 4인, 11/8 제출까지 (11/1 기능 동결)</li>
+      <li>Neo4j — 로컬 실행은 무료, 클라우드는 결정 전(D1)</li>
+      <li>서버·호스팅·도메인 — 시연은 서버 없이 가상 데이터라 없음 (FR-10) · 유료 도구 쓰지 않음</li>
+    </ul></div>
+
+    <div class="cell rev"><h2>수익원 <span>💰</span></h2><ul>
+      <li><b>미정</b> — 대회 후 소유·라이선스는 팀원 동의와 대회 규정 확인 뒤 (팀 전체 공동 저작권 방향)</li>
+      <li>활용 방안(기획안): 교육 현장, 취업 준비 포트폴리오, 협업 소통, 학교·직장</li>
+      <li><em>[후보]</em> 개인은 무료 설치형 · 교육 기관은 수강생 진행·이해도 보기를 묶은 기관용</li>
+      <li><em>[후보]</em> 비용 구조상 사용자가 자기 API 키로 쓰는 방식이라 서버 비용이 적다</li>
+    </ul></div>
+  </div>
+</div>
+</body>
+</html>

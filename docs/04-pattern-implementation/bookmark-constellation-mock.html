@@ -1,0 +1,274 @@
+<!doctype html>
+<!-- claude-drafted: 2026-10-17 — 이재엽의 요청("책갈피 지식 그래프를 원신의 운명의 자리처럼")으로 Claude가 만든 시안. 가상 데이터, 서버·Neo4j 없음.
+     원신의 그림은 쓰지 않았고 원리(윤곽 문장 · 꼭짓점 별 · 하나씩 켜지는 별)만 가져왔다. 윤곽 그림 3개는 자리표시이고, 실제 그림은 와이어 담당이 그린다.
+     데이터 모양은 library-constellation-plan-2026-10-17.md 5-1절의 fixture 계약과 같다. -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>책갈피 지도 시안</title>
+<style>
+  :root {
+    --sky-1: #04131c; --sky-2: #0a2a36; --nebula: #1d5f6e;
+    --line: #6fd6d9; --outline: rgba(111, 214, 217, .35);
+    --text: #e8f6f8; --muted: #a9c9cf; --panel: rgba(8, 30, 40, .86); --border: rgba(111, 214, 217, .35);
+    --star: #fff6dc; --glow: #ffd98a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 30% 20%, var(--sky-2), var(--sky-1) 70%); color: var(--text);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; }
+  header { padding: 20px 16px 8px; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .tabs button { background: transparent; color: var(--text); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer; }
+  .tabs button[aria-pressed="true"] { background: rgba(111, 214, 217, .18); border-color: var(--line); }
+  main { max-width: 1100px; margin: 0 auto; padding: 8px 16px 32px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; }
+  @media (max-width: 760px) { main { grid-template-columns: 1fr; } }
+  .sky { position: relative; aspect-ratio: 1 / 1; border-radius: 16px; overflow: hidden; border: 1px solid var(--border);
+    background: radial-gradient(circle at 60% 55%, rgba(29, 95, 110, .55), transparent 60%), radial-gradient(circle at 25% 80%, rgba(29, 95, 110, .35), transparent 50%); }
+  svg { width: 100%; height: 100%; display: block; }
+  .outline { fill: none; stroke: var(--outline); stroke-width: .45; stroke-linejoin: round; stroke-linecap: round; }
+  .link { stroke: var(--line); stroke-width: .35; opacity: .8; }
+  .star { cursor: pointer; outline: none; }
+  .star text { font-size: 2.3px; fill: var(--muted); }
+  .star:focus-visible circle.core, .star.sel circle.core { stroke: var(--line); stroke-width: .5; }
+  aside { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; align-self: start; }
+  aside h2 { font-size: 16px; margin: 0 0 8px; }
+  aside .line { color: var(--muted); font-size: 14px; line-height: 1.6; margin: 0 0 12px; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0 0 12px; font-size: 14px; }
+  dt { color: var(--muted); }
+  dd { margin: 0; }
+  .cite { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(111, 214, 217, .15); color: var(--text); font: inherit; cursor: pointer; }
+  .legend { margin-top: 16px; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; }
+  .legend i { width: 10px; height: 10px; border-radius: 50%; background: var(--star); display: inline-block; }
+  .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 15px; text-align: center; padding: 24px; }
+  /* 펼친 책 — 왼쪽 쪽: 책갈피 목차 / 오른쪽 쪽: 제목 띠 · 그림 · 지식 이야기 · 버튼 */
+  .overlay { position: fixed; inset: 0; overflow-y: auto; background: rgba(2, 10, 16, .72); display: none; place-items: center; padding: 16px; z-index: 10; }
+  .overlay.open { display: grid; }
+  .tome { --paper: #f4f1e8; --paper-2: #e9eef0; --ink: #1f3440; --ink-2: #4d6470; --ice: #2f8f9a; --ice-2: #cfe9ee; --cover: #123947;
+    position: relative; width: min(980px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--cover); padding: 14px; border-radius: 14px;
+    box-shadow: 0 30px 60px rgba(0,0,0,.5), inset 0 0 0 2px rgba(207,233,238,.35); color: var(--ink); }
+  .tome .pg { min-width: 0; min-height: 520px; padding: 28px 28px 24px; display: flex; flex-direction: column; }
+  .tome .left { background: linear-gradient(90deg, var(--paper-2), #dfe8eb 96%, #c9d6da); border-radius: 8px 0 0 8px; }
+  .tome .right { background: linear-gradient(90deg, #d9dfe0, var(--paper) 5%); border-radius: 0 8px 8px 0; }
+  .ribbon { align-self: center; margin: 0 0 18px; padding: 7px 26px; border: 1.5px solid var(--ice); border-radius: 999px; background: var(--paper);
+    font-size: 15px; font-weight: 700; color: var(--ink); position: relative; }
+  .ribbon::before, .ribbon::after { content: "◆"; position: absolute; top: 50%; transform: translateY(-50%); color: var(--ice); font-size: 9px; }
+  .ribbon::before { left: -18px; } .ribbon::after { right: -18px; }
+  .toc { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  .toc button { width: 100%; text-align: center; padding: 10px 14px; border-radius: 999px; border: 0; background: var(--ice-2); color: var(--ink); font: inherit; font-size: 15px; cursor: pointer;
+    display: flex; justify-content: center; align-items: center; gap: 8px; }
+  .toc button small { font-size: 12px; color: var(--ink-2); }
+  .toc button[aria-current="true"] { background: var(--ice); color: #fff; box-shadow: 0 0 0 3px var(--paper), 0 0 0 5px var(--ice); }
+  .toc button[aria-current="true"] small { color: #e6f6f8; }
+  .toc button:focus-visible { outline: 2px solid var(--cover); outline-offset: 2px; }
+  .plate { border-radius: 6px; overflow: hidden; aspect-ratio: 16 / 9; background: radial-gradient(ellipse at 55% 45%, #1d5f6e, #04131c 75%); box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+  .plate svg { width: 100%; height: 100%; }
+  .story { margin: 16px 0 10px; font-size: 14.5px; line-height: 1.8; color: var(--ink); flex: 1; }
+  .facts { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); padding-top: 10px; border-top: 1.5px solid var(--ink); margin-bottom: 12px; }
+  .facts b { color: var(--ink); }
+  .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .acts button { padding: 11px; border-radius: 8px; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; border: 1px solid #b9c9cd; background: #e7eef0; color: var(--ink); }
+  .acts .primary { background: var(--ice); border-color: var(--ice); color: #fff; }
+  .close { position: absolute; top: 6px; right: 8px; width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--paper); color: var(--ink); font-size: 18px; cursor: pointer; }
+  @media (max-width: 760px) { .overlay { place-items: start center; overflow-y: auto; padding: 12px; } .tome { grid-template-columns: minmax(0, 1fr); padding: 8px; } .tome .pg { padding: 20px 16px; } .acts { grid-template-columns: 1fr; } .tome .left { border-radius: 8px 8px 0 0; } .tome .right { border-radius: 0 0 8px 8px; background: var(--paper); } .tome .pg { min-height: 0; } }
+  .note { max-width: 1100px; margin: 0 auto; padding: 0 16px 24px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>책갈피 지도</h1>
+  <p>책마다 꽂아 둔 책갈피가 별이 되고, 이해할수록 밝아져요. (시안 · 가상 데이터)</p>
+  <div class="tabs" role="group" aria-label="책 고르기" id="tabs"></div>
+</header>
+<main>
+  <div class="sky" id="sky">
+    <svg viewBox="0 0 100 100" role="img" aria-label="책갈피 별자리" id="svg">
+      <defs>
+        <radialGradient id="halo"><stop offset="0" stop-color="#ffd98a" stop-opacity=".9"/><stop offset="1" stop-color="#ffd98a" stop-opacity="0"/></radialGradient>
+      </defs>
+      <g id="dust"></g><g id="outline"></g><g id="links"></g><g id="stars"></g>
+    </svg>
+  </div>
+  <aside aria-live="polite" id="card"></aside>
+</main>
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="tome-title">
+  <div class="tome">
+    <section class="pg left" aria-label="목차">
+      <div class="ribbon" id="tome-book">목차</div>
+      <ol class="toc" id="toc"></ol>
+    </section>
+    <section class="pg right">
+      <div class="ribbon" id="tome-title"></div>
+      <div class="plate"><svg viewBox="0 0 100 56.25" id="plate" aria-hidden="true"></svg></div>
+      <p class="story" id="story"></p>
+      <div class="facts" id="facts"></div>
+      <div class="acts"><button type="button" id="back">별자리로 돌아가기</button><button type="button" class="primary" id="tome-cite">이 단계에 쓰기</button></div>
+    </section>
+    <button class="close" type="button" id="close" aria-label="책 닫기">✕</button>
+  </div>
+</div>
+<p class="note">시안: 서버·Neo4j 없이 fixture JSON으로 그린다. 같은 모양을 Neo4j 질의가 돌려준다(계획 문서 5-1절). 윤곽 그림은 자리표시 — 실제 그림은 와이어 담당이 그린다.</p>
+
+<script>
+// fixture — Neo4j 질의 결과와 같은 모양 (book · stars · links)
+const BOOKS = [
+  { book: { id: "b1", title: "로그인 만들기", emblem: "key" },
+    stars: [
+      { id: "m1", title: "세션과 토큰의 차이", line: "서버가 기억하느냐, 클라이언트가 들고 다니느냐", level: 3, cited: 4, x: 24, y: 28 },
+      { id: "m2", title: "비밀번호는 해시로", line: "원문 대신 되돌릴 수 없는 값만 저장", level: 2, cited: 2, x: 40, y: 44 },
+      { id: "m3", title: "401과 403", line: "누구인지 모름 / 알지만 권한 없음", level: 1, cited: 1, x: 58, y: 56 },
+      { id: "m4", title: "환경변수에 키 두기", line: "코드·저장소에 키를 쓰지 않는다", level: 2, cited: 1, x: 72, y: 68 },
+      { id: "m5", title: "로그인 실패 횟수 제한", line: "막을 때도 이유를 정직하게", level: 0, cited: 0, x: 80, y: 82 },
+      { id: "m6", title: "OAuth로 빌려 쓰기", line: "로그인을 직접 만들지 않는 길", level: 0, cited: 0, x: 66, y: 84 },
+    ],
+    links: [["m1","m2"],["m2","m3"],["m3","m4"],["m4","m5"],["m4","m6"]] },
+  { book: { id: "b2", title: "할 일 알림", emblem: "compass" },
+    stars: [
+      { id: "n1", title: "마감 3일·1일·당일", line: "알림 시점을 숫자로 정한다", level: 3, cited: 3, x: 50, y: 18 },
+      { id: "n2", title: "실패하면 알린다", line: "조용히 멈추지 않는다", level: 2, cited: 2, x: 78, y: 46 },
+      { id: "n3", title: "재시도 1·2·4초", line: "상한을 넘으면 멈추고 알림", level: 1, cited: 0, x: 62, y: 78 },
+      { id: "n4", title: "실행 기록 한 줄", line: "언제·무엇을·성공/실패", level: 1, cited: 1, x: 34, y: 78 },
+      { id: "n5", title: "캘린더엔 제목만", line: "본문은 밖으로 보내지 않는다", level: 2, cited: 1, x: 22, y: 46 },
+    ],
+    links: [["n1","n2"],["n2","n3"],["n3","n4"],["n4","n5"],["n5","n1"]] },
+  { book: { id: "b3", title: "아직 빈 책", emblem: "book" }, stars: [], links: [] },
+];
+
+// 지식 이야기 — 책갈피를 꽂을 때 남긴 "언제·왜·무엇을 배웠나" (본문 복사가 아니라 내 말로 쓴 요약, 가상)
+const STORIES = {
+  m1: "로그인을 처음 붙일 때 '로그인 상태를 누가 기억하나'에서 막혔다. 세션은 서버가 기억하고, 토큰은 사용자가 들고 다닌다. 그래서 서버를 여러 대로 늘릴 때는 토큰이 편하지만, 강제로 로그아웃시키기는 세션이 쉽다. 이 차이를 알고 나서 시연은 세션으로 가기로 정했다.",
+  m2: "비밀번호를 그대로 저장하면 저장소가 새는 순간 모든 계정이 같이 샌다. 해시는 되돌릴 수 없는 값이라, 로그인할 때 같은 방법으로 바꿔 비교만 한다. 직접 만들지 않고 검증된 라이브러리를 쓰는 것까지가 이 책갈피의 결론이다.",
+  m3: "오류 화면을 만들다 401과 403을 헷갈렸다. 401은 '누구인지 모르겠다', 403은 '누구인지는 알지만 이건 안 된다'. 막는 이유를 다르게 말해야 사용자가 다음에 무엇을 할지 안다.",
+  m4: "키를 코드에 적어 커밋할 뻔했다. 키는 각자 컴퓨터의 환경변수에만 두고, 저장소에는 빈칸만 있는 예시 파일을 둔다. 커밋 전에 비밀값 검사가 한 번 더 막아 준다.",
+  m5: "아직 처음 본 단계. 실패를 몇 번까지 허용하고, 막았을 때 어떤 말로 알려 줄지 정해야 한다.",
+  m6: "아직 처음 본 단계. 로그인을 직접 만들지 않고 이미 있는 계정으로 들어오게 하는 방법이다. 서버를 둘 때 다시 펼쳐 볼 책갈피.",
+  n1: "알림이 너무 많으면 한꺼번에 지워 버린다는 걸 알았다. 그래서 마감 3일 전, 1일 전, 당일 아침 8시 — 할 일 하나에 세 번만 울리게 숫자로 정했다.",
+  n2: "자동화가 조용히 멈추면 놓친 줄도 모른다. 실패하면 반드시 알려 주는 것이 '놓친 일을 막는' 쪽의 보안이라는 걸 배웠다.",
+  n3: "연결이 잠깐 끊긴 것과 요청이 잘못된 것은 다르다. 앞의 것만 1초·2초·4초 간격으로 세 번까지 다시 해 보고, 그래도 안 되면 멈추고 알린다.",
+  n4: "자동화가 돌 때마다 언제·무엇을·성공했는지 한 줄씩 남긴다. 일요일 점검은 이 기록으로 센다. 기록에는 키나 다른 사람의 정보를 쓰지 않는다.",
+  n5: "캘린더는 밖의 서비스라, 일정 제목 한 줄만 보내고 할 일 원문은 보내지 않기로 했다. 무엇을 밖으로 보내는지 정하는 것도 설계다.",
+};
+// 윤곽 그림 — 자리표시(우리가 그린 단순 도형). 실제 그림은 와이어 담당이 그린다
+const EMBLEMS = {
+  key: "M18 30 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0 M30 30 m-4 0 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0 M38 38 L84 84 M70 70 l-6 6 M78 78 l-6 6 M14 52 Q8 70 22 88 Q46 98 70 92",
+  compass: "M50 10 a40 40 0 1 1 -0.1 0 M50 22 L58 50 L50 78 L42 50 Z M22 50 L78 50 M50 10 L50 4 M86 50 L92 50",
+  book: "M14 24 Q32 16 50 24 Q68 16 86 24 L86 80 Q68 72 50 80 Q32 72 14 80 Z M50 24 L50 80 M60 20 L60 40 L64 36 L68 40 L68 20",
+};
+const LEVELS = ["처음 봄", "이해함", "직접 씀", "응용함"];
+const ns = "http://www.w3.org/2000/svg";
+const $ = (id) => document.getElementById(id);
+const el = (tag, attrs = {}, parent) => { const e = document.createElementNS(ns, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); if (parent) parent.appendChild(e); return e; };
+
+// 배경 먼지별 — 고정 시드라 매번 같은 하늘
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+for (let i = 0; i < 90; i++) el("circle", { cx: rnd() * 100, cy: rnd() * 100, r: rnd() * .25 + .05, fill: rnd() > .85 ? "#9fe3ff" : "#cfe9ee", opacity: rnd() * .6 + .2 }, $("dust"));
+
+let current = 0, selected = null;
+function render() {
+  const data = BOOKS[current];
+  for (const g of ["outline", "links", "stars"]) $(g).replaceChildren();
+  document.querySelector(".empty")?.remove();
+  el("path", { d: EMBLEMS[data.book.emblem] || "", class: "outline" }, $("outline"));
+  if (!data.stars.length) {
+    const d = document.createElement("div"); d.className = "empty";
+    d.textContent = "아직 꽂은 책갈피가 없어요. 책에서 기억하고 싶은 곳에 책갈피를 꽂으면 첫 별이 떠요.";
+    $("sky").appendChild(d); showCard(null); return;
+  }
+  const byId = Object.fromEntries(data.stars.map((s) => [s.id, s]));
+  for (const [a, b] of data.links) { const s = byId[a], t = byId[b]; if (s && t) el("line", { x1: s.x, y1: s.y, x2: t.x, y2: t.y, class: "link" }, $("links")); }
+  for (const s of data.stars) {
+    const g = el("g", { class: "star", tabindex: 0, role: "button", "aria-label": `${s.title}, ${LEVELS[s.level]}` }, $("stars"));
+    const bright = [.35, .6, .85, 1][s.level];
+    if (s.cited > 0) el("circle", { cx: s.x, cy: s.y, r: 2.2 + s.level * .8, fill: "url(#halo)", opacity: bright * .8 }, g);
+    el("circle", { class: "core", cx: s.x, cy: s.y, r: .8 + s.level * .35, fill: "#fff6dc", opacity: bright }, g);
+    if (s.level >= 2) el("path", { d: `M${s.x - 2.6} ${s.y} L${s.x + 2.6} ${s.y} M${s.x} ${s.y - 2.6} L${s.x} ${s.y + 2.6}`, stroke: "#fff6dc", "stroke-width": .18, opacity: bright }, g);
+    const label = el("text", { x: s.x + 2.4, y: s.y - 1.6 }, g); label.textContent = LEVELS[s.level];
+    const pick = () => { selected = s.id; showCard(s); document.querySelectorAll(".star").forEach((n) => n.classList.toggle("sel", n === g)); openBook(s.id); };
+    g.addEventListener("click", pick);
+    g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+  }
+  showCard(data.stars.find((s) => s.id === selected) || null);
+}
+function showCard(s) {
+  const card = $("card"), book = BOOKS[current].book;
+  if (!s) {
+    card.innerHTML = `<h2>${book.title}</h2><p class="line">별을 누르면 책갈피 내용이 보여요. 밝을수록 더 깊이 이해한 지식이에요.</p>` + legend();
+    return;
+  }
+  card.innerHTML = `<h2>${s.title}</h2><p class="line">${s.line}</p>
+    <dl><dt>이해 수준</dt><dd>${LEVELS[s.level]}</dd><dt>쓰인 횟수</dt><dd>${s.cited}번</dd><dt>책</dt><dd>${book.title}</dd></dl>
+    <button class="cite" type="button" id="open">책으로 펼치기</button>` + legend();
+  $("open").onclick = () => openBook(s.id);
+}
+const legend = () => `<div class="legend">${LEVELS.map((l, i) => `<span><i style="opacity:${[.35,.6,.85,1][i]}"></i>${l}</span>`).join("")}</div>`;
+BOOKS.forEach((b, i) => {
+  const btn = document.createElement("button"); btn.type = "button"; btn.textContent = `${b.book.title} · 별 ${b.stars.length}`;
+  btn.setAttribute("aria-pressed", String(i === current));
+  btn.onclick = () => { current = i; selected = null; document.querySelectorAll(".tabs button").forEach((x, j) => x.setAttribute("aria-pressed", String(j === i))); render(); };
+  $("tabs").appendChild(btn);
+});
+render();
+
+// ── 펼친 책 ──
+let lastFocus = null;
+function openBook(id) {
+  lastFocus = document.activeElement;
+  selected = id; renderBook();
+  $("overlay").classList.add("open");
+  document.querySelector('.toc button[aria-current="true"]')?.focus();
+}
+function closeBook() {
+  $("overlay").classList.remove("open");
+  render();
+  (document.querySelector(".star.sel") || lastFocus)?.focus?.();
+}
+function renderBook() {
+  const data = BOOKS[current], s = data.stars.find((x) => x.id === selected);
+  if (!s) return;
+  $("tome-book").textContent = data.book.title;
+  $("toc").replaceChildren(...data.stars.map((x) => {
+    const li = document.createElement("li"), b = document.createElement("button");
+    b.type = "button"; b.setAttribute("aria-current", String(x.id === s.id));
+    b.innerHTML = `<span></span><small>${LEVELS[x.level]}</small>`; b.firstChild.textContent = x.title;
+    b.onclick = () => { selected = x.id; renderBook(); $("toc").querySelector('[aria-current="true"]').focus(); };
+    li.appendChild(b); return li;
+  }));
+  $("tome-title").textContent = s.title;
+  $("story").textContent = STORIES[s.id] || s.line;
+  $("facts").innerHTML = `<span>이해 수준 <b>${LEVELS[s.level]}</b></span><span>쓰인 횟수 <b>${s.cited}번</b></span><span>한 줄 <b></b></span>`;
+  $("facts").lastChild.querySelector("b").textContent = s.line;
+  drawPlate(data, s);
+}
+// 그림 칸 — 이 책의 별자리를 작게 그리고, 펼친 책갈피의 별만 크게 밝힌다
+function drawPlate(data, s) {
+  const svg = $("plate"); svg.replaceChildren();
+  const X = (v) => 22 + v * .56, Y = (v) => 1.5 + v * .53;   // 정사각 좌표 → 16:9 칸 가운데
+  for (let i = 0; i < 40; i++) el("circle", { cx: rnd() * 100, cy: rnd() * 56, r: rnd() * .22 + .05, fill: "#cfe9ee", opacity: rnd() * .6 + .2 }, svg);
+  const outline = el("path", { d: EMBLEMS[data.book.emblem] || "", class: "outline", transform: "translate(22 1.5) scale(.56 .53)" }, svg);
+  outline.style.strokeWidth = ".8";
+  const byId = Object.fromEntries(data.stars.map((x) => [x.id, x]));
+  for (const [a, b] of data.links) { const p = byId[a], q = byId[b]; if (p && q) el("line", { x1: X(p.x), y1: Y(p.y), x2: X(q.x), y2: Y(q.y), stroke: "#6fd6d9", "stroke-width": .25, opacity: .7 }, svg); }
+  for (const x of data.stars) {
+    const on = x.id === s.id;
+    if (on) el("circle", { cx: X(x.x), cy: Y(x.y), r: 5, fill: "url(#halo)" }, svg);
+    el("circle", { cx: X(x.x), cy: Y(x.y), r: on ? 1.5 : .5 + x.level * .2, fill: "#fff6dc", opacity: on ? 1 : .35 + x.level * .15 }, svg);
+  }
+}
+// 주소 끝에 #m1처럼 책갈피 번호를 붙이면 그 책을 펼친 채로 연다 (시연·녹화용)
+const hashId = location.hash.slice(1);
+const hashBook = BOOKS.findIndex((b) => b.stars.some((x) => x.id === hashId));
+if (hashBook >= 0) { current = hashBook; document.querySelectorAll(".tabs button").forEach((x, j) => x.setAttribute("aria-pressed", String(j === hashBook))); render(); openBook(hashId); }
+$("close").onclick = closeBook;
+$("back").onclick = closeBook;
+$("overlay").addEventListener("click", (e) => { if (e.target === $("overlay")) closeBook(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("overlay").classList.contains("open")) closeBook(); });
+$("tome-cite").onclick = () => {   // 시안: 화면 안에서만 +1 (실제로는 CITED_IN 관계가 생긴다)
+  const s = BOOKS[current].stars.find((x) => x.id === selected); if (!s) return;
+  s.cited += 1; renderBook();
+};
+</script>
+</body>
+</html>

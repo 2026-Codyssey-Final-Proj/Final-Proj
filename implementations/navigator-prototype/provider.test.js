@@ -387,3 +387,42 @@ test("호환 모드: 주소를 공식 주소로 적어 두었으면 켜지 않�
   assert.equal(P.describe(env, P.createMeter(null, memStore())).compat, false);
   assert.equal(P.describe({ ...env, NAV_COMPAT: "1" }, P.createMeter(null, memStore())).compat, true, "직접 켜면 켠다");
 });
+
+// ── 코디세이 중계 서버가 받는 모델(운영팀 목록, 2026-10-17: claude-opus-4-8 · claude-opus-4-7) ──
+const RELAY = { ANTHROPIC_API_KEY: KEY, ANTHROPIC_BASE_URL: "https://proxy.example.test" };
+
+test("중계 서버 모델 목록은 운영팀 표의 두 모델이다", () => {
+  assert.deepEqual(P.RELAY_MODELS, ["claude-opus-4-8", "claude-opus-4-7"]);
+});
+
+test("중계 서버: NAV_MODEL을 안 적으면 목록의 첫 모델(claude-opus-4-8)로 부른다 — 공식 기본 모델은 중계 서버에 없다", async () => {
+  const t = make(RELAY, ok());
+  await t.callClaude("x", SCHEMA);
+  assert.equal(t.calls[0].model, "claude-opus-4-8");
+  assert.equal(t.calls[0].via, "messages", "호환 모드는 그대로 켜진다");
+  assert.equal(P.describe(RELAY, P.createMeter(null, memStore(0))).model, "claude-opus-4-8");
+});
+
+test("중계 서버: NAV_MODEL=claude-opus-4-7이면 그 모델로 부른다", async () => {
+  const t = make({ ...RELAY, NAV_MODEL: "claude-opus-4-7" }, ok());
+  await t.callClaude("x", SCHEMA);
+  assert.equal(t.calls[0].model, "claude-opus-4-7");
+});
+
+test("공식 주소의 기본 모델은 바뀌지 않는다", async () => {
+  for (const env of [{ ANTHROPIC_API_KEY: KEY }, { ANTHROPIC_API_KEY: KEY, ANTHROPIC_BASE_URL: "https://api.anthropic.com" }]) {
+    const t = make(env, ok());
+    await t.callClaude("x", SCHEMA);
+    assert.equal(t.calls[0].model, "claude-opus-5-5");
+  }
+});
+
+test("중계 서버에서 400·404가 나면 받는 모델 이름을 알려 준다 — 공식 주소에서는 알리지 않는다", async () => {
+  for (const status of [400, 404]) {
+    const err = Object.assign(new Error("boom"), { status });
+    const relay = await make({ ...RELAY, NAV_MODEL: "claude-opus-5-5" }, err).callClaude("x", SCHEMA);
+    assert.match(relay.error, /claude-opus-4-8.*claude-opus-4-7/, String(status));
+    const official = await make({ ANTHROPIC_API_KEY: KEY }, err).callClaude("x", SCHEMA);
+    assert.doesNotMatch(official.error, /claude-opus-4-8/);
+  }
+});

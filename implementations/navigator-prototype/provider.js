@@ -20,15 +20,18 @@ const TIMEOUT_MS = 90_000;
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 const OFFICIAL_HOST = "api.anthropic.com";
 const DEFAULTS = { model: "claude-opus-5-5", maxTokens: 2048, effort: "low" };
+// 코디세이 중계 서버가 받는 모델(운영팀 목록, 2026-10-17). 중계 서버에서 NAV_MODEL이 없으면 첫 모델을 쓴다 — 공식 기본 모델은 중계 서버에 없다
+const RELAY_MODELS = ["claude-opus-4-8", "claude-opus-4-7"];
 
 const positive = (v, fallback) => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : fallback; };
 const settings = (env) => ({
-  model: env.NAV_MODEL || DEFAULTS.model,
+  model: env.NAV_MODEL || (isRelay(env) ? RELAY_MODELS[0] : DEFAULTS.model),
+  relay: isRelay(env),
   maxTokens: positive(env.NAV_MAX_TOKENS, DEFAULTS.maxTokens),
   effort: env.NAV_EFFORT || DEFAULTS.effort,
   fallback: env.NAV_FALLBACK !== "off",
   budget: positive(env.NAV_TOKEN_BUDGET, null),
-  compat: env.NAV_COMPAT === "1" || (env.NAV_COMPAT !== "0" && Boolean(env.ANTHROPIC_BASE_URL) && hostOf(env) !== OFFICIAL_HOST),   // 중계 서버일 때만 자동
+  compat: env.NAV_COMPAT === "1" || (env.NAV_COMPAT !== "0" && isRelay(env)),   // 중계 서버일 때만 자동
   plan: parsePlan(env.NAV_PLAN),
   purpose: env.NAV_PURPOSE || "dev",
   tester: env.NAV_TESTER || null,
@@ -38,6 +41,7 @@ const settings = (env) => ({
 const testerBudgetOf = (env) => positive(env.NAV_TESTER_BUDGET, (() => { const pl = parsePlan(env.NAV_PLAN); return pl && pl.test ? Math.floor(pl.test / TESTERS) : null; })());
 // 어디로 보내는지 호스트만 알린다 — 경로·쿼리에 비밀이 섞여 있어도 새지 않게
 function hostOf(env) { try { return new URL(env.ANTHROPIC_BASE_URL || `https://${OFFICIAL_HOST}`).host; } catch { return "(주소 형식 오류)"; } }
+const isRelay = (env) => Boolean(env.ANTHROPIC_BASE_URL) && hostOf(env) !== OFFICIAL_HOST;
 const providerOf = (env) => (env.ANTHROPIC_API_KEY ? "api" : "cli");
 
 // 예산 통 — 용도별로 몫을 나눈다. 'default'는 규칙·프롬프트 40만 / 사용자 테스트 20만 / 리허설·녹화 20만 / 예비 20만.
@@ -109,10 +113,11 @@ function createMeter(budget, store, { plan = null, testerBudget = null } = {}) {
 }
 
 // ── API 호출 ──
-const apiError = (e) => {
+const apiError = (e, cfg = {}) => {
   const s = e && e.status;
   const code = s ? ` (${s})` : "";
   if (s === 401 || s === 403) return `API 키가 맞지 않거나 권한이 없어요${code} — 키와 ANTHROPIC_BASE_URL(중계 서버를 쓴다면)을 확인하세요`;
+  if ((s === 400 || s === 404) && cfg.relay) return `요청이 받아들여지지 않았어요${code} — 중계 서버가 받는 모델은 ${RELAY_MODELS.join(", ")}예요. NAV_MODEL을 확인하세요`;
   if (s === 400 || s === 404) return `요청이 받아들여지지 않았어요${code} — 모델 이름(NAV_MODEL)이나 호환 모드(NAV_COMPAT=1)를 확인하세요`;
   if (s === 429) return `잠시 너무 많이 불렀어요${code} — 조금 뒤에 다시 눌러 주세요`;
   return `AI에 연결하지 못했어요${code}`;   // e.message는 싣지 않는다 — 요청 내용이 섞일 수 있다
@@ -135,7 +140,7 @@ async function callApi(client, cfg, prompt, schema) {
     res = !cfg.compat && cfg.fallback
       ? await client.beta.messages.create({ ...ask, betas: [FALLBACK_BETA], fallbacks: "default" })
       : await client.messages.create(ask);
-  } catch (e) { return { error: apiError(e) }; }
+  } catch (e) { return { error: apiError(e, cfg) }; }
   const u = res.usage || {};
   const tokens = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.output_tokens || 0);
   if (res.stop_reason === "refusal") return { error: "Claude가 이 글에는 답하지 않았어요", tokens };
@@ -214,4 +219,4 @@ const meter = createMeter(settings(process.env).budget, fileStore(usageFile), { 
 const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); return new Anthropic(); };   // 키는 ANTHROPIC_API_KEY에서 SDK가 읽는다
 const callClaude = createCaller({ makeClient, meter });
 
-module.exports = { callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN };
+module.exports = { RELAY_MODELS, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN };
