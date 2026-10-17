@@ -78,7 +78,7 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 | 지금 하려는 작업 | 먼저 읽을 파일 |
 |---|---|
 | `01-docs/**` 문서를 새로 쓰거나 고침 | [`.claude/rules/docs-editing.md`](.claude/rules/docs-editing.md) |
-| `02-frontend/**`·`03-backend/**`·`04-tests/**` 또는 `05-projects/*/implementations/**` 코드를 새로 쓰거나 고침 | [`.claude/rules/implementations.md`](.claude/rules/implementations.md) |
+| `02-frontend/**`·`03-backend/**`·`04-tests/**` 또는 `05-projects/*/implementations/**` 코드를 새로 쓰거나 고침 | [`.claude/rules/code.md`](.claude/rules/code.md) |
 | git 명령(커밋, 브랜치, 푸시 등) | [`.claude/rules/git-workflow.md`](.claude/rules/git-workflow.md) — **Claude는 main에 올리지 않는다** |
 | 세션 파일을 새로 저장, 또는 `dev-workflow` 명령 1 | [`.claude/rules/problem-save-gate.md`](.claude/rules/problem-save-gate.md) |
 | `CLAUDE.md`/`.claude/rules/**`/`.claude/hooks/**`/`.claude/agents/**`/`dev-workflow` 스킬 자체를 고침 | [`.claude/rules/consistency.md`](.claude/rules/consistency.md) |
@@ -118,6 +118,8 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 | `ask-calendar-invite.sh` | 캘린더 일정에 참석자(초대)를 넣으려는 것 — 막지 않고 확인을 요구한다 (개인 프로젝트에서 가져옴) |
 | `session-briefing.sh` (세션 시작) | (막지 않음) 마감 지남·3일 이내 할 일, 진행 중인 프로젝트를 먼저 말한다. 데이터 폴더는 환경변수 `SECOND_BRAIN_DATA`(ADR-0010), 없으면 조용히 지나감 |
 | `unreviewed-commits.sh` (세션 시작) | 리뷰 없이 지나간 사람 커밋을 알린다(막지는 않는다) |
+
+훅들은 공용 도우미 `.claude/hooks/lib.sh`를 불러 쓴다 — `jq`·`python3`가 없는 컴퓨터(Windows)에서도 `node`·`python`으로 돈다(2026-10-17, 그 전에는 조용히 통과했다).
 
 훅이 차단하면 이유가 stderr로 온다 — 그 이유를 고친 뒤 재시도한다. 훅을 피하려고 우회하지 않는다.
 

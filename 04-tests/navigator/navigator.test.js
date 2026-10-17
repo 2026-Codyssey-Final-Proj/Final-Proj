@@ -45,13 +45,13 @@ test("쉬운 말: 화면 파일(index.html·app.js·seal.js)에 전문 용어가
   }
 });
 
-test("쉬운 말: 몽돌의 말풍선에 전문 용어가 없다", () => {
+test("쉬운 말: 플로로의 말풍선에 전문 용어가 없다", () => {
   const says = Object.keys({ ask: 1, which: 1, question: 1, plan: 1, next: 1 }).map((step) => Nav.face({ gate: true, step })[1]);
   says.push(Nav.face({ busy: true })[1], Nav.face({ warn: ["x"] })[1], Nav.face({ error: "x" })[1], Nav.face({})[1], Nav.face({ reason: "r", allDone: true })[1]);
   for (const t of says) assert.deepEqual(jargonIn(t), [], t);
 });
 
-test("집중: 몽돌 말풍선(미리 만든 말·연습 예시의 설명)은 한 번에 읽히는 길이다", () => {
+test("집중: 플로로 말풍선(미리 만든 말·연습 예시의 설명)은 한 번에 읽히는 길이다", () => {
   const says = ["ask", "which", "question", "plan", "next"].map((step) => Nav.face({ gate: true, step })[1]);
   says.push(Nav.face({ busy: true })[1], Nav.face({ warn: ["x"] })[1], Nav.face({ error: "x" })[1], Nav.face({})[1], Nav.face({ reason: "r", allDone: true })[1]);
   for (const ex of S.examples) says.push(ex.judgement.reason);
@@ -84,7 +84,7 @@ test("face: 살펴보는 중 > 잠깐! > 오류 > 확인 화면 > 시작 > 다 �
   assert.equal(Nav.face({ reason: "r", allDone: true })[0], "done");
   assert.deepEqual(Nav.face({ reason: "잘 써 두셨어요" }), ["idle", "잘 써 두셨어요"]);
   for (const m of [...new Set(["ask", "which", "question", "plan", "next"].map((step) => Nav.face({ gate: true, step })[0]))]) {
-    assert.ok(Cat.MOODS.includes(m), `몽돌에게 없는 표정: ${m}`);
+    assert.ok(Cat.MOODS.includes(m), `플로로에게 없는 표정: ${m}`);
   }
 });
 
@@ -230,21 +230,21 @@ test("judgePrompt: 코드가 정한 단계와 그 할 일, 사용자 글이 들�
   assert.ok(p.includes("로 정했어요."));
 });
 
-test("몽돌: 표정 이름이 그림에 들어가고, 작으면 입을 빼고, 모르는 표정은 기본으로", () => {
+test("플로로: 표정 이름이 그림에 들어가고, 작으면 입을 빼고, 모르는 표정은 기본으로", () => {
   assert.match(Cat.svg("done", 64), /class="cat m-done"/);
   assert.match(Cat.svg("idle", 28), /class="cat m-idle small"/);
   assert.match(Cat.svg("없는표정", 64), /m-idle/);
 });
 
-test("몽돌: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가 가까우면 조금만 움직인다", () => {
+test("플로로: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가 가까우면 조금만 움직인다", () => {
   const far = Cat.gaze(1000, 0), near = Cat.gaze(22, 0), still = Cat.gaze(0, 0);
   assert.ok(Math.abs(far.x - 7) < 1e-9 && far.y === 0);
   assert.ok(near.x > 0 && near.x < 1);
   assert.deepEqual([still.x, still.y], [0, 0]);
 });
 
-// ── 몽돌과 교감 — 2026-10-15 "캐릭터와 교감 요소를 많이" (2026-10-15 고양이 나비 → 물범 몽돌) ──
-test("몽돌: 안내 화면이 쓰는 표정과 교감 표정이 모두 그림에 있고, 앞지느러미·땀방울을 붙일 수 있다", () => {
+// ── 플로로와 교감 — 2026-10-15 "캐릭터와 교감 요소를 많이" (2026-10-15 고양이 나비 → 물범 플로로) ──
+test("플로로: 안내 화면이 쓰는 표정과 교감 표정이 모두 그림에 있고, 앞지느러미·땀방울을 붙일 수 있다", () => {
   for (const m of ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow"]) {
     assert.ok(Cat.MOODS.includes(m), m);
     assert.match(Cat.svg(m, 64), new RegExp(`class="cat m-${m}"`));
@@ -273,7 +273,7 @@ test("친해진 정도: 쓰다듬은 횟수로 네 칸, 다음 칸까지 남은 
   assert.equal(Cat.bond(-3).level, 0, "이상한 값은 0으로");
 });
 
-test("몽돌의 한마디(쓰다듬기·인사)는 짧고 쉬운 말이다", () => {
+test("플로로의 한마디(쓰다듬기·인사)는 짧고 쉬운 말이다", () => {
   const lines = [...Cat.PET_LINES.flat(), ...[0, 6, 12, 16, 20, 23].map(Cat.greeting)];
   for (const t of lines) {
     assert.ok(t.length <= 24, `${t.length}자: ${t}`);
@@ -411,7 +411,7 @@ test("설계도: 요청문에 단계·작업 글·빈칸 표시가 들어가고,
   assert.ok(r.includes("<설계도>") && r.includes("1. 신청") && r.includes("대신 고쳐 쓰지 않는다"));
 });
 
-test("설계도 몽돌: 상황마다 말이 짧고 쉬운 말이며, 표정은 몽돌에게 있는 것이다", () => {
+test("설계도 플로로: 상황마다 말이 짧고 쉬운 말이며, 표정은 플로로에게 있는 것이다", () => {
   const vs = [{ busy: true }, { warn: ["x"] }, { error: "e" }, { review: { ready: true, say: "좋아요" } }, { review: { ready: false, say: "음" } },
     { draftSay: "써 봤어요" }, { done: true }, {}];
   for (const v of vs) {

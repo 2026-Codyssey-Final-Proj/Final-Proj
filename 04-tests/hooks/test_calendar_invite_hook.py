@@ -19,7 +19,7 @@ def _run(tool_input):
         [BASH, str(HOOK)],
         input=json.dumps({"tool_input": tool_input}),
         capture_output=True,
-        text=True,
+        text=True, encoding="utf-8",
     )
     return r.returncode, r.stdout.strip()
 

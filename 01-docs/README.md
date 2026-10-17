@@ -31,7 +31,7 @@
 
 ## 3. 지난 기록 — 그날의 상태 (지금과 다를 수 있음)
 
-[멘토링 1 준비](00-overview/mentoring-1-prep.md) · [#5 점검](00-overview/requirements-check-2026-10-15.md) · [팀원 안내문 초안](00-overview/team-handoff-demo.md) · [작업 분담 10/16](00-overview/work-split-2026-10-16.md) · [위험 3가지](00-overview/risk-plan.md) · [V1→V2 이전 기록](00-overview/migration.md) · [작업 로그](00-overview/worklog.md)
+[멘토링 1 준비](00-overview/기록/mentoring-1-prep.md) · [#5 점검](00-overview/기록/requirements-check-2026-10-15.md) · [팀원 안내문 초안](00-overview/기록/team-handoff-demo.md) · [작업 분담 10/16](00-overview/기록/work-split-2026-10-16.md) · [위험 3가지](00-overview/기록/risk-plan.md) · [V1→V2 이전 기록](00-overview/migration.md) · [작업 로그](00-overview/worklog.md)
 
 ## 4. 방법론 — 어떻게 일하나 (7단계 워크플로우)
 

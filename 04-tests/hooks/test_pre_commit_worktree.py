@@ -15,7 +15,7 @@ FAKE_KEY = "sk-" + "ant-" + "api03-" + "A1b2C3d4E5f6G7h8I9j0K1l2"
 
 
 def _git(cwd, *args, check=True):
-    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=check)
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, encoding="utf-8", check=check)
 
 
 def _setup():
@@ -26,6 +26,7 @@ def _setup():
     _git(main, "config", "user.name", "t")
     (main / ".claude" / "hooks").mkdir(parents=True)
     shutil.copy(CHECK, main / ".claude" / "hooks" / "check-secrets.sh")
+    shutil.copy(CHECK.with_name("lib.sh"), main / ".claude" / "hooks" / "lib.sh")  # check-secrets.sh가 불러 쓴다
     (main / "README.md").write_text("main\n")
     _git(main, "add", ".")
     _git(main, "commit", "-q", "-m", "init")

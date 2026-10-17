@@ -8,17 +8,22 @@
 #     추적 중인 파일의 모든 변경(git diff HEAD)과 무시되지 않은 새 파일까지 넓게 본다.
 #   - `--staged`: staged 변경만 본다(git pre-commit 훅이나 손으로 돌릴 때).
 # 일부러 남기는 예시 줄은 같은 줄에 `secret-check: allow`를 적으면 넘어간다.
+. "$(dirname "$0")/lib.sh"
 mode="hook"
 if [ "${1:-}" = "--staged" ]; then
   mode="staged"
 else
-  cmd=$(cat | jq -r '.tool_input.command // empty' 2>/dev/null)
+  cmd=$(json_field tool_input.command)
   echo "$cmd" | grep -q 'git commit' || exit 0
 fi
 
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
-MODE="$mode" python3 - <<'PY'
+if [ -z "$PY" ]; then
+  echo "🚫 차단됨: 파이썬을 찾지 못해 비밀값 검사을(를) 확인할 수 없습니다. python을 설치한 뒤 다시 하세요." >&2
+  exit 2
+fi
+MODE="$mode" "$PY" - <<'PY'
 import os, re, subprocess, sys
 from pathlib import Path
 

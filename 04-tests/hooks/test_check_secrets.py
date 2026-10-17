@@ -31,12 +31,12 @@ def _repo():
 
 
 def _staged(repo):
-    return subprocess.run([BASH, str(HOOK), "--staged"], cwd=repo, capture_output=True, text=True)
+    return subprocess.run([BASH, str(HOOK), "--staged"], cwd=repo, capture_output=True, text=True, encoding="utf-8")
 
 
 def _hook(repo, command):
     payload = json.dumps({"tool_input": {"command": command}})
-    return subprocess.run([BASH, str(HOOK)], cwd=repo, input=payload, capture_output=True, text=True)
+    return subprocess.run([BASH, str(HOOK)], cwd=repo, input=payload, capture_output=True, text=True, encoding="utf-8")
 
 
 def test_clean_change_passes():
@@ -163,7 +163,7 @@ def test_hook_blocks_every_forbidden_name_and_allows_the_examples():
 def test_root_gitignore_ignores_every_forbidden_name_and_not_the_examples():
     # 훅은 무시된 파일을 보지 않는 전제라, 여기가 비면 untracked .env 하나가 모든 커밋을 막는다.
     r = _repo()
-    (r / ".gitignore").write_text(ROOT_GITIGNORE.read_text())
+    (r / ".gitignore").write_text(ROOT_GITIGNORE.read_text(encoding="utf-8"), encoding="utf-8")
     for name in FORBIDDEN_NAMES:
         assert _ignored(r, name), f".gitignore가 안 막음: {name}"
     for name in ALLOWED_NAMES:

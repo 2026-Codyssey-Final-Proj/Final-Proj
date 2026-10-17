@@ -113,14 +113,14 @@ def test_command_line_entry_prints_the_briefing():
     import subprocess, sys
     root = _root(("작업", "일", "2026-10-14", "진행"))
     out = subprocess.run([sys.executable, str(Path(__file__).with_name("briefing.py")), str(root), "--today", "2026-10-13"],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, encoding="utf-8")
     assert out.returncode == 0 and "# 브리핑 2026-10-13(화)" in out.stdout and "내일" in out.stdout
 
 
 def test_command_line_entry_never_fails_the_session_on_a_missing_folder():
     import subprocess, sys
     out = subprocess.run([sys.executable, str(Path(__file__).with_name("briefing.py")), "/nonexistent/folder"],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, encoding="utf-8")
     assert out.returncode == 0
     assert "찾지 못했습니다" in out.stdout and "열린 할 일이 없습니다" not in out.stdout  # 폴더가 없는 것을 일이 없는 것으로 말하지 않는다
 
@@ -141,7 +141,7 @@ def test_command_line_reads_the_data_folder_from_the_environment():  # ADR-0010
     root = _root(("작업", "환경변수 일", "2026-10-14", "진행"))
     env = {**os.environ, "SECOND_BRAIN_DATA": str(root)}
     out = subprocess.run([sys.executable, str(Path(__file__).with_name("briefing.py")), "--today", "2026-10-13"],
-                         capture_output=True, text=True, env=env)
+                         capture_output=True, text=True, encoding="utf-8", env=env)
     assert out.returncode == 0 and "환경변수 일" in out.stdout
 
 
@@ -151,14 +151,14 @@ def test_an_explicit_folder_argument_beats_the_environment():
     other = _root(("작업", "환경 일", "2026-10-14", "진행"))
     env = {**os.environ, "SECOND_BRAIN_DATA": str(other)}
     out = subprocess.run([sys.executable, str(Path(__file__).with_name("briefing.py")), str(wanted), "--today", "2026-10-13"],
-                         capture_output=True, text=True, env=env)
+                         capture_output=True, text=True, encoding="utf-8", env=env)
     assert "인자 일" in out.stdout and "환경 일" not in out.stdout
 
 
 def test_environment_pointing_nowhere_says_not_found_and_not_empty():
     import os, subprocess, sys
     env = {**os.environ, "SECOND_BRAIN_DATA": "/definitely/not/here"}
-    out = subprocess.run([sys.executable, str(Path(__file__).with_name("briefing.py"))], capture_output=True, text=True, env=env)
+    out = subprocess.run([sys.executable, str(Path(__file__).with_name("briefing.py"))], capture_output=True, text=True, encoding="utf-8", env=env)
     assert out.returncode == 0 and "찾지 못했습니다" in out.stdout and "열린 할 일이 없습니다" not in out.stdout
 
 

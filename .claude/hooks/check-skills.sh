@@ -5,7 +5,9 @@
 # 공식 검증기 skills-ref는 "시연용, 운영용 아님"이라 쓰지 않고 같은 규칙을 직접 확인한다
 # (.claude/rules/skill-authoring.md, 01-docs/catalog/external-tools.md 참고).
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 0
-python3 - <<'PY'
+. "$(dirname "$0")/lib.sh"
+[ -n "$PY" ] || { echo "⚠️ check-skills: 파이썬을 찾지 못해 스킬 검사를 건너뜁니다" >&2; exit 0; }
+"$PY" - <<'PY'
 import re, sys, pathlib
 
 SPEC_FIELDS = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}

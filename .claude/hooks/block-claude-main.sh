@@ -2,10 +2,19 @@
 # PreToolUse hook on Bash. Claude가 main으로 올리는 것을 막는다 (팀 결정 2026-10-12).
 # 사람은 자기 터미널에서 main에 직접 푸시할 수 있다 — 이 훅은 Claude Code의 Bash 호출만 본다.
 # 막는 것: main/master로 가는 git push, main/master 위에서 하는 git commit, gh pr merge.
-cmd=$(cat | jq -r '.tool_input.command // empty')
+. "$(dirname "$0")/lib.sh"
+cmd=$(json_field tool_input.command)
 [ -n "$cmd" ] || exit 0
+if [ -z "$PY" ]; then
+  # 파이썬이 없으면 판정할 수 없다 — main에 닿을 수 있는 명령만 막는다(막는 쪽이 안전)
+  if echo "$cmd" | grep -qE 'git\s+(push|commit)|gh\s+pr\s+merge'; then
+    echo "🚫 차단됨: 파이썬을 찾지 못해 main 보호를 확인할 수 없습니다. python을 설치한 뒤 다시 하세요." >&2
+    exit 2
+  fi
+  exit 0
+fi
 
-python3 -I - "$cmd" <<'PY'
+"$PY" -X utf8 -I - "$cmd" <<'PY'
 import re, shlex, subprocess, sys
 PROTECTED = {"main", "master"}
 cmd = sys.argv[1]

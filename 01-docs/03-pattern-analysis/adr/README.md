@@ -86,7 +86,7 @@ Michael Nygard가 2011년에 제안한 개념으로, **하나의 아키텍처적
 > | `implementations/navigator-prototype/provider.js` 등 서버 쪽 파일 | `03-backend/navigator/` |
 > | `implementations/navigator-prototype/` 화면 파일(index.html·app.js·app.css·seal.js) | `02-frontend/navigator/` |
 > | `implementations/navigator-prototype/*.test.js` | `04-tests/navigator/` |
-> | `implementations/navigator-demo/index.html` | `02-frontend/navigator-demo/index.html` |
+> | `implementations/navigator-demo/index.html` | 삭제 (2026-10-17, 지금 화면은 `02-frontend/navigator/`) |
 > | `implementations/share-prototype/` | 화면 `02-frontend/share/` · 규칙 `03-backend/share/` · 시험 `04-tests/share/` |
 
 ADR-0001은 이 시스템 자체(어떻게 만들어졌는지)를 설명하는 결정입니다. **번호는

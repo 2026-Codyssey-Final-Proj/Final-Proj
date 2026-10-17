@@ -7,8 +7,14 @@
 test_solution.py, 프로젝트 트랙은 도구 이름을 따름 — 예: test_catalog_search.py).
 """
 import importlib
+import os
 import subprocess
 import sys
+
+# Windows에서 하위 프로세스(훅·파이썬)가 한글을 cp949로 내보내지 않게 — 시험들은 UTF-8로 읽는다
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # 결과의 한글·기호가 Windows 터미널에서 멈추지 않게
+if not os.environ.get("PYTHONIOENCODING"):
+    os.environ["PYTHONIOENCODING"] = "utf-8"
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent  # 워크스페이스 루트

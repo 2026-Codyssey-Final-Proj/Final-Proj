@@ -27,7 +27,7 @@
 
 | 대상 | 누가 쓰나 | 확인은 |
 |---|---|---|
-| 코드·테스트 (`implementations/`, 4단계 Walking Skeleton부터 — 사용자 결정 2026-10-01 "가") | **Claude** | Claude가 PR을 열기 전에 [`karpathy-guidelines`](../../.claude/skills/karpathy-guidelines/SKILL.md) 4원칙과 [implementations.md](../../.claude/rules/implementations.md)(TDD, 전체 테스트)로 스스로 검수하고, 결과를 PR 본문에 적는다. 단순성 지적은 [`ponytail-review`](../../.claude/skills/ponytail-review/SKILL.md) 형식(`net: -N lines`)으로 붙인다. 병합은 사용자가 한다 |
+| 코드·테스트 (`implementations/`, 4단계 Walking Skeleton부터 — 사용자 결정 2026-10-01 "가") | **Claude** | Claude가 PR을 열기 전에 [`karpathy-guidelines`](../../.claude/skills/karpathy-guidelines/SKILL.md) 4원칙과 [code.md](../../.claude/rules/code.md)(TDD, 전체 테스트)로 스스로 검수하고, 결과를 PR 본문에 적는다. 단순성 지적은 [`ponytail-review`](../../.claude/skills/ponytail-review/SKILL.md) 형식(`net: -N lines`)으로 붙인다. 병합은 사용자가 한다 |
 | 세션 파일·PRD·게이트 판정·회고 | 사용자 (확정·판정) | 루트 리뷰 모드 그대로 — 자기 판정을 먼저 받는다 |
 | 진행 관리 (Claude가 한 일, PR, 남은 일) | Claude | [방향 점검 페이지](https://claude.ai/artifact/NvVmaGaWVwgcH77mS35JVt)(claude.ai 비공개 스냅숏, 기록·보안 기준 3절)의 "진행 관리" 절에 보인다. 원천은 세션 파일 게이트 로그와 PR이다 |
 

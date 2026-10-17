@@ -185,7 +185,7 @@
 1. 범위를 정한다: 커밋 전이면 `git diff --staged`(없으면 `git diff`), 이미 커밋했으면
    growth-log.md의 `last-reviewed` 이후(`git log last-reviewed..HEAD`), PR이면 그 PR의 diff.
 2. 파일 경로에 맞는 규칙 파일(`CLAUDE.md` 라우팅 표)을 기준으로 본다 — 코드는
-   `implementations.md`(TDD, 테스트 존재), 문서는 `docs-editing.md`(링크, 상태 문구),
+   `code.md`(TDD, 테스트 존재), 문서는 `docs-editing.md`(링크, 상태 문구),
    세션 파일은 해당 단계 DoD. 코드 diff는 `karpathy-guidelines` 2·3번(요청 안 한 기능·추상화, 요청과
    이어지지 않는 줄)으로도 보고, 걸리면 **보완**으로 분류한다. 2번 지적은 `ponytail-review` 형식으로 쓴다(`skill-authoring.md`).
 3. 테스트·링크 검증은 `verify` 에이전트에 맡기고 결과만 받는다.

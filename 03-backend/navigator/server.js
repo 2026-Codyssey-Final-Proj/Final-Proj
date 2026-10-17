@@ -1,5 +1,5 @@
 // claude-drafted: 2026-10-14
-// 로컬 서버 — 화면을 열고, 실제 Claude 판정을 붙인다. **외부 AI 호출은 provider.js 한 곳에서만** 한다(implementations.md 6번, 테스트로 확인).
+// 로컬 서버 — 화면을 열고, 실제 Claude 판정을 붙인다. **외부 AI 호출은 provider.js 한 곳에서만** 한다(code.md 6번, 테스트로 확인).
 //
 //   node 03-backend/navigator/server.js   →  http://127.0.0.1:4317
 //

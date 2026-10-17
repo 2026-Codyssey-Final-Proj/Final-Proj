@@ -16,7 +16,7 @@ fi
 if [ "$1" = "--all" ]; then
   files=$(grep -rl --include='*.md' '```mermaid' . | grep -v '/node_modules/' | sort)
 else
-  f=$(jq -r '.tool_input.file_path // empty' 2>/dev/null)
+  f=$(json_field tool_input.file_path)
   [ -n "$f" ] && [ -f "$f" ] && grep -q '```mermaid' "$f" || exit 0
   files="$f"
 fi

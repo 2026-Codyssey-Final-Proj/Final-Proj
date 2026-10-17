@@ -30,7 +30,7 @@ def _run(marker_exists=False, env_ok=None, tool_input=None):
     r = subprocess.run(
         [BASH, str(HOOK)],
         input=json.dumps({"tool_input": tool_input or {"summary": "학교 / 과제 / 10/30까지"}}),
-        capture_output=True, text=True, env=env,
+        capture_output=True, text=True, encoding="utf-8", env=env,
     )
     return r.returncode, r.stdout.strip()
 

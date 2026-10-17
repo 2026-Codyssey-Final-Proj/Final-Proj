@@ -1,5 +1,5 @@
 // claude-drafted: 2026-10-17
-// 공급자 — **외부 AI 호출은 이 파일 한 곳에서만 한다**(implementations.md 6, navigator.test.js가 확인).
+// 공급자 — **외부 AI 호출은 이 파일 한 곳에서만 한다**(code.md 6, navigator.test.js가 확인).
 //
 // 팀원 각자 자기 것으로 쓴다 — 키나 로그인은 저장소에 없고, 각자 컴퓨터의 환경에만 있다.
 //   ANTHROPIC_API_KEY 있음 → 그 사람의 API 키로 호출 (한도·사용량도 그 사람 것)

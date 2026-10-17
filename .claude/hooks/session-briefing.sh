@@ -22,5 +22,7 @@ if [ -z "${SECOND_BRAIN_DATA:-}" ] && [ ! -d "$data" ]; then
 fi
 [ -d "$data" ] || exit 0
 
-python3 "$script" "$data" 2>/dev/null || true
+. "$(dirname "$0")/lib.sh"
+[ -n "$PY" ] || exit 0
+"$PY" "$script" "$data" 2>/dev/null || true
 exit 0

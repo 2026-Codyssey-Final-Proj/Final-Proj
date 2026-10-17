@@ -41,7 +41,7 @@ def _repo(with_code=True, with_data=True):
 
 
 def _run(cwd):
-    return subprocess.run([BASH, str(HOOK)], cwd=cwd, capture_output=True, text=True)
+    return subprocess.run([BASH, str(HOOK)], cwd=cwd, capture_output=True, text=True, encoding="utf-8")
 
 
 def test_prints_the_briefing_at_session_start():
@@ -89,7 +89,7 @@ def test_data_folder_from_the_environment_is_used_when_the_repo_has_none():  # A
     task.mkdir(parents=True)
     (task / "2000 환경 일.md").write_text(
         "# 환경 일\n- 번호: 2000\n- 목적: 작업\n- 마감: 2999-01-01\n- 상태: 진행\n", encoding="utf-8")
-    r = subprocess.run([BASH, str(HOOK)], cwd=repo, capture_output=True, text=True,
+    r = subprocess.run([BASH, str(HOOK)], cwd=repo, capture_output=True, text=True, encoding="utf-8",
                        env={**os.environ, "SECOND_BRAIN_DATA": str(data)})
     assert r.returncode == 0 and "환경 일" in r.stdout
 

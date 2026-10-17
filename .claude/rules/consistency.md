@@ -21,9 +21,9 @@
 | `05-projects/*/CLAUDE.md` | 루트 `CLAUDE.md`("프로젝트" 표), 같은 프로젝트의 `README.md`(문서 지도) |
 | `.claude/rules/git-workflow.md` | `CLAUDE.md`(라우팅 표·"브랜치·원격"), `05-projects/*/CLAUDE.md`("병합은 사용자가 한다"), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 3의 커밋 단계) |
 | `.claude/rules/docs-editing.md` | `CLAUDE.md`(라우팅 표), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 3의 링크 체크 언급) |
-| `.claude/rules/implementations.md` | `CLAUDE.md`(라우팅 표) |
+| `.claude/rules/code.md` | `CLAUDE.md`(라우팅 표) |
 | `.claude/rules/problem-save-gate.md` | `CLAUDE.md`(라우팅 표), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 1의 PRD 게이트 단계) |
-| `.claude/agents/verify.md` | `CLAUDE.md`("검증은 직접 하지 말고 위임"), `.claude/rules/implementations.md`, `.claude/skills/dev-workflow/{SKILL,PROCEDURE}.md` |
+| `.claude/agents/verify.md` | `CLAUDE.md`("검증은 직접 하지 말고 위임"), `.claude/rules/code.md`, `.claude/skills/dev-workflow/{SKILL,PROCEDURE}.md` |
 | `.claude/hooks/*.sh` | `CLAUDE.md`(훅 표), `.claude/settings.json`(등록 여부). `block-merged-branch-push.sh`는 `git-workflow.md`의 병합 확인 규칙을 코드로 옮긴 것 — 규칙을 바꾸면 훅도. `unreviewed-commits.sh`는 `git-workflow.md`의 Co-Authored-By 규칙에도 의존. `check-secrets.sh`는 `security-records.md` 6-3을 코드로 옮긴 것 — 금지 경로·패턴을 바꾸면 6-3과 `04-tests/hooks/test_check_secrets.py`, 루트 `.gitignore`의 비밀값 패턴도. `pre-commit.sample`은 사용자의 `.git/hooks/pre-commit`의 원본(`04-tests/hooks/test_pre_commit_worktree.py`가 data 브랜치 작업 폴더에서 막는지 시험) |
 | `.claude/skills/dev-workflow/SKILL.md` | `.claude/skills/dev-workflow/PROCEDURE.md`(서로 참조), `CLAUDE.md` |
 | `.claude/skills/dev-workflow/PROCEDURE.md` | `.claude/skills/dev-workflow/SKILL.md`(서로 참조), `CLAUDE.md`(PROCEDURE 줄 수 언급), `01-docs/01-problem-save/sessions/README.md`(저장 경로 규칙) |

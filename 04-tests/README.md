@@ -9,7 +9,6 @@
 | `run_all_tests.py` | **이것 하나로 전부 돌린다** (파이썬 시험 + 노드 시험) | — |
 | `navigator/` | 시연 화면과 서버 — 단계 판정, 쉬운 말, 키 보호, 녹화·재생 | [03-backend/navigator](../03-backend/navigator/README.md), [02-frontend/navigator](../02-frontend/navigator/README.md) |
 | `share/` | "나만 보기" 공유 규칙 — 글이 누구에게 보이는지 | [03-backend/share](../03-backend/README.md) |
-| `navigator-demo/` | 첫 시연 화면 초안이 서버 없이 도는지 | `02-frontend/navigator-demo/` |
 | `hooks/` | Claude가 커밋·푸시할 때 막는 자동 검사 장치(훅) | `.claude/hooks/` |
 
 수용 테스트(요구사항대로 되는지 사람 눈높이로 적은 시험, 이슈 #17)는 아직 없다. 생기면 여기에 폴더를 더한다.
@@ -30,6 +29,6 @@ python 04-tests/run_all_tests.py      # Mac은 python3
 
 - 담당: 두승현 (테스트 · 검증)
 - 코드: [backend](../03-backend/README.md) · [frontend](../02-frontend/README.md)
-- 시험 작성 규칙(AI용): [.claude/rules/implementations.md](../.claude/rules/implementations.md)
+- 시험 작성 규칙(AI용): [.claude/rules/code.md](../.claude/rules/code.md)
 
 Claude 초안 (2026-10-17, 두승현 요청). 틀린 곳은 담당이 고친다.
