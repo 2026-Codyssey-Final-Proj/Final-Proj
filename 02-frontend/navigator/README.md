@@ -11,7 +11,6 @@
 | `app.css` | 모양(얼음 파랑 테마) |
 | `seal.js` | 길잡이 물범 그림과 말풍선 |
 | `library-tab.css` | '한곳에서 보기'·'도서관' 탭 모양 (서고 시안에서 옮김, 2026-10-17) |
-| `tour.js` · `tour.css` | 3분 시연 길잡이 띠 — 서고·하늘·입구 페이지도 같이 쓴다 |
 | `dive.js` · `dive.css` | '내 서고 들어가기'의 물속 전환 — 오버레이가 화면 가득 물속이 되고 책을 안은 플로로가 내려간 뒤, 서고(`#lib-dive`)에서 물이 걷히고 플로로가 점프한다. 서고와 같이 쓴다 (2026-10-18) |
 | `notes.js` | **느낀 점 남기기**(2026-10-19 실사용) — 설정 안. 한 줄 남기면 화면 · 단계 · 탭 · 보기 방식 · 때가 저절로 붙고, 'Jira용 복사'가 시간 순 목록 글로 모아 준다(비밀값 · 연락처 모양은 공유 규칙으로 가림). 이 브라우저에만 남는다. 순수 함수, 시험 [`notes.test.js`](../../04-tests/navigator/notes.test.js) |
 | (`../library/my-books.js`) | **내 책 · 예시 책 지우기**(2026-10-19 실사용) — 도서관 탭의 첫 책이 예시(s1)를 빌려 쓰던 것을, 진짜 AI 모드이거나 예시를 지웠을 때는 이 화면의 상태로 만든 **내 책**으로 바꿨다(연습 모드에서 예시가 보일 때는 전처럼 — 시연 장면 · GIF 그대로). 예시 책에는 '예시' 꼬리표, 탭 아래 '예시 책 지우기 / 다시 보기'. 서고와 같은 열쇠(`floe:examples-hidden`)를 읽는다. 주소 끝 `&noex`는 이 화면만 예시 없이 |
@@ -48,7 +47,7 @@ iPhone(600px 이하)에는 앞의 세 탭만 있다.
 **주소 끝으로 장면 열기** (시연 · 녹화용, 진짜 AI를 부르지 않고 연습 예시로만 장면을 만든다):
 `#start` · `#ex=0`(0단계 하는 중) · `#ex=0&crit`(할 일 펼침) · `#ex=1&tab=doc` · `#ex=1&done&gate`(넘어가기 전 확인) · `#tab=all` · `#tab=lib&book=s3`.
 `&tier=Lite`(또는 `Xpress`·`Full`)를 붙이면 그 크기의 할 일로 장면을 연다 — 예: `#tier=Lite&ex=1&done&gate`.
-오른쪽 아래 **시연 길잡이**(`tour.js`)가 [3분 시연 스토리](../../01-docs/04-pattern-implementation/demo-story-3min.md)의 9장면을 ‹ › 로 잇는다 — 서고(`#lib-review`)와 지식 은하(`sky.html#year`)까지. 입구는 [`../index.html`](../index.html).
+[3분 시연 스토리](../../01-docs/04-pattern-implementation/demo-story-3min.md)의 9장면은 위 주소로 하나씩 연다 — 서고(`#lib-review`)와 지식 은하(`sky.html#year`)까지. 화면 위에 뜨던 시연 길잡이 띠(`tour.js`)는 2026-10-19에 지웠다(이재엽). 입구는 [`../index.html`](../index.html).
 
 서버(`node 03-backend/navigator/server.js`)를 켜면 시연 페이지 전부를 같이 내준다: `/`(내비게이터) · `/index.html`(입구) · `/library/…` · `/share/…`. 정해진 파일만 내주고 경로를 요청에서 만들지 않는다(`server.js`의 `STATIC`).
 

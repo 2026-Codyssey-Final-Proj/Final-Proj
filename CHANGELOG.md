@@ -17,6 +17,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v2.1 | 2026-10-19 | 이재엽 | 시연 길잡이 띠(‹ › 장면 넘기기, `tour.js` · `tour.css`)를 지움 — 장면은 주소 끝(`#ex=1&gate` 등)으로 여는 것만 남김 (F-18) | `02-frontend/` · `03-backend/navigator/` · `01-docs/04-pattern-implementation/` · `01-docs/07-maintenance/` |
 | v2.0 | 2026-10-19 | 이재엽 | **실제로 써 보기(큰 묶음)** — 한 줄로 켜기 `node 03-backend/navigator/floe.js <폴더>`(훅 연결 → 서버 → 브라우저, `--off`로 해제), 서재 · 도서관 탭에 **내 책**(이 화면의 단계 · 할 일 · 설계도 · 배운 말)과 **예시 책 지우기 / 다시 보기**, 설정에 **느낀 점 남기기**(화면 · 단계 · 때가 저절로, Jira용 복사). 책이 없어도 서고 · 전체 돌아보기가 멈추지 않음, 마감 없는 책은 충돌 계산에서 건너뜀 | `02-frontend/navigator/` · `02-frontend/library/` (담당 임유정 — 이 줄이 알림) · `03-backend/navigator/` · `04-tests/` · `01-docs/` |
 | v1.3 | 2026-10-19 | 이재엽 | 게임처럼 일하는 오버레이 목업 세 개(RPG 전투 → 친구 대화 → 레벨 오버레이)와 안내 — 지금 방향은 레벨 오버레이, 제품 코드는 그대로 | `01-docs/04-pattern-implementation/` |
 | v1.2 | 2026-10-18 | 이재엽 | Jira 잇기 — GitHub for Jira 앱(PR · 커밋, 설치 전), `main`에 올라오면 버전을 Jira 릴리스로 만드는 GitHub Action(비밀값 넣기 전에는 건너뜀), 이름에 Jira 키 넣는 규칙 | `.github/` · `.claude/rules/` · `01-docs/00-overview/` · `01-docs/catalog/` · `04-tests/repo/` |

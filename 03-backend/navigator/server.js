@@ -79,7 +79,7 @@ const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
 const STATIC = {
   // dive.js·dive.css — 내비게이터(`dive.js` → /dive.js)와 서고(`../navigator/dive.js` → /navigator/dive.js)가 같이 쓴다. 2026-10-18까지 빠져 있었다
   // notes.js — 실사용의 '느낀 점 남기기'(2026-10-19)
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "tour.js", "tour.css", "library-tab.css", "dive.js", "dive.css", "notes.js"],
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "library-tab.css", "dive.js", "dive.css", "notes.js"],
   // learn.js — 서재의 '내 배움'(2026-10-18, F-05). 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다
   // my-books.js — 내 책 · 예시 책 지우기(2026-10-19 실사용). 내비게이터(`../library/my-books.js`)와 서고가 같이 쓴다
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "my-books.js", "schedule.js", "skills.js", "search.js", "spotlight.js", "learn.js",
