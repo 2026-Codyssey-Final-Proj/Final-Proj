@@ -107,6 +107,7 @@ flowchart LR
 | | 폴더 | 무엇 |
 |---|---|---|
 | 📄 | [`01-docs/`](01-docs/README.md) | 문서 — 문서 지도부터 |
+| 🗂 | [`01-docs/features/`](01-docs/features/README.md) | **기능별 README + 시연 GIF** — 무엇 · 왜 · 어떻게 진행됐나 · 흐름 그림 |
 | 🖥 | [`02-frontend/`](02-frontend/README.md) | 화면 |
 | ⚙️ | [`03-backend/`](03-backend/README.md) | 서버 · 판정 규칙 · AI 연결 |
 | 🧪 | [`04-tests/`](04-tests/README.md) | 시험 |
