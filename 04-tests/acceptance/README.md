@@ -31,6 +31,8 @@
 - **파일로 바로 (서버 없음, 연습 예시):** 저장소의 `02-frontend/navigator/index.html`을 브라우저로 연다. 주소 끝에 `#…`을 붙이면 그 장면이 바로 열린다(진짜 AI를 부르지 않는다).
   - `#start` 첫 화면 · `#ex=<단계>` 그 단계 하는 중 · `&done` 그 단계 다 함 · `&crit` 할 일 펼침 · `&gate` 넘어가기 전 확인 · `&tab=doc`·`all`·`lib` 탭 · `&book=s3` 책 (옛 `&tab=learn`은 서재의 '내 배움'으로 간다 — 2026-10-18 F-05에서 탭을 뺌)
   - 서고: `02-frontend/library/index.html#lib-review`(전체 돌아보기) · `#lib-learn`(내 배움 — 내비게이터에서 지나온 단계 · 배운 말 · 확정한 설계도)
+  - `&noex`(2026-10-19 실사용)를 붙이면 그 화면만 예시 책 없이 — 내비게이터 `#ex=1&tab=lib&noex`는 이 화면의 내 책만, 서고 `#lib-review&noex`는 빈 책장의 전체 돌아보기(멈추지 않는지)
+- **실제 프로젝트에 붙여서:** `node 03-backend/navigator/floe.js <폴더>` 한 줄 — [팀 작업 가이드](../../01-docs/00-overview/team-guide.md) 2-b절. 느낀 점은 톱니(설정) → 느낀 점 → Jira용 복사
 - **서버로 (진짜 AI 모드):** `node 03-backend/navigator/server.js` → `http://127.0.0.1:4317`. 이 컴퓨터의 Claude 로그인이나 키가 필요하다 — [03-backend/navigator](../../03-backend/navigator/README.md).
 
 ## 한눈에

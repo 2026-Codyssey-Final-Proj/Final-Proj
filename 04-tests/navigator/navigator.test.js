@@ -471,7 +471,9 @@ test("연결: Navigator 서버가 꺼져 있어도 훅은 Claude Code를 막지 
 test("외부 AI(claude·API) 호출은 provider.js 한 곳에서만 한다", () => {
   const callers = [BACK, FRONT].flatMap((dir) => fs.readdirSync(dir).filter((f) => f.endsWith(".js") || f.endsWith(".html"))
     .filter((f) => /child_process|spawn\(|https?:\/\/api\.anthropic\.com|@anthropic-ai\/sdk/.test(fs.readFileSync(path.join(dir, f), "utf8"))));
-  assert.deepEqual(callers, ["provider.js"]);
+  // floe.js(2026-10-19, 한 줄로 켜기)도 child_process를 쓰지만 server.js · connect.js · 브라우저를 켤 뿐이다 — AI를 부르는 말이 없는지 따로 본다
+  assert.deepEqual(callers, ["floe.js", "provider.js"]);
+  assert.doesNotMatch(fs.readFileSync(path.join(BACK, "floe.js"), "utf8"), /claude -p|callClaude|anthropic|ANTHROPIC_API_KEY=/i, "floe.js는 AI를 부르지 않는다(server.js · connect.js · 브라우저만 켠다)");
 });
 
 // ── 설계도(FR-3) · 기록 · Codex — 2026-10-14 "아직 안 된 것도 모두 만들어" ──

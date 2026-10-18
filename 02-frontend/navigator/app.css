@@ -450,6 +450,11 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .alog ol{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto}
 .alog li{padding:7px 2px;border-top:1px solid var(--line);font-size:13px;color:var(--ink);line-height:1.5}
 .alog li:first-child{border-top:0}
+/* 느낀 점(2026-10-19 실사용) — 알림 기록과 같은 목록 모양에 [때 · 어디 | 지우기] 줄과 글 줄 */
+.notes li{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline}
+.notes li .lnk{min-height:24px;padding:0 6px;margin-left:auto;font-size:calc(12px * var(--ui-scale,1))}
+.notes li .ntext{flex-basis:100%;white-space:pre-wrap;overflow-wrap:anywhere}
+.notes textarea[readonly]{font-size:calc(12px * var(--ui-scale,1));min-height:64px}
 .tiers [role=radiogroup] label.chk{min-height:32px}
 /* 설정 창이 연결·알림 기록·만드는 크기로 길어져서 — 열려 있는 동안 섬을 그만큼 키우고, 그래도 넘치면 창 안에서 스크롤 */
 .isl:has(> .pop){min-height:min(600px,calc(100vh - 28px))}

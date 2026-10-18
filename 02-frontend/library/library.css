@@ -88,6 +88,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ── ③ 내 서고 ── */
 .lib-head { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 38px; border-radius: 999px; text-align: center; z-index: 3; }
 .lib-head b { display: block; font-size: 17px; } .lib-head span { font-size: 13.5px; color: var(--ink-2); }
+/* 예시 책 지우기 / 다시 보기(2026-10-19 실사용) — 머리글 안의 작은 단추. 오른쪽 위 줄에 두면 머리글을 가린다 */
+#ex-toggle { position: absolute; left: 22px; top: 70px; z-index: 3; font-size: 13px; padding: 7px 14px; }   /* "← 작업 화면으로" 아래 — 머리글 · 오른쪽 단추 줄과 겹치지 않는 빈자리 */
 .lib-out { position: absolute; top: 22px; left: 22px; z-index: 3; text-decoration: none; color: var(--ink); }
 .lib-refs { position: absolute; top: 22px; right: 22px; z-index: 3; display: flex; gap: 8px; }
 .skylink { color: var(--gold); text-decoration: none; border-color: rgba(255, 217, 138, .5); }
@@ -114,6 +116,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   box-shadow: 0 0 40px rgba(127, 182, 255, .25); }
 .slot::after { content: ""; position: absolute; left: -20px; right: -20px; bottom: -14px; height: 8px; border-radius: 50%; background: rgba(127, 182, 255, .5); filter: blur(4px); }
 .chip { position: absolute; font-size: 13.5px; padding: 5px 12px; border-radius: 6px; background: rgba(14, 26, 80, .7); border: 1px solid var(--edge); color: var(--ink-2); white-space: nowrap; }
+/* 내 책의 배운 말(2026-10-19 실사용) — 이름이 길면 두 줄로 접는다(시안의 여섯 개와 달리 길이를 모른다) */
+.chip.mine, .chip.mine.term { position: absolute; max-width: 190px; white-space: normal; line-height: 1.3; text-align: center; word-break: keep-all; }   /* 풀이가 있는 말(.term)은 relative라 right: 자리가 화면 밖으로 밀렸다 — 내 배운 말은 늘 absolute */
 .arcs { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .arcs path { fill: none; stroke: var(--gold); stroke-width: 1.6; stroke-dasharray: 5 5; opacity: .85; }
 .arcs text { fill: var(--gold); font-size: 14px; font-weight: 700; paint-order: stroke; stroke: #0e1a50; stroke-width: 4px; }
@@ -265,6 +269,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .lib-refs .pillbtn { flex: none; white-space: nowrap; font-size: 13px; padding: 6px 12px; }
   .lib-head { top: 100px; width: calc(100% - 24px); padding: 8px 14px; }
   .lib-head b { font-size: 15.5px; }
+  #ex-toggle { top: 12px; left: auto; right: 12px; padding: 6px 12px; font-size: 13px; }   /* 첫 줄 오른쪽 — "← 작업 화면으로"와 같은 줄 */
   .search { top: 172px; height: 44px; }
   .stage { inset: 232px 0 0 0; }
 }

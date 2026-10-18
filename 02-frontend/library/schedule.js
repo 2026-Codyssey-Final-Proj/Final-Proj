@@ -41,11 +41,12 @@
 
   // FR-6 일정 충돌 — 진행 중인 프로젝트의 지금 단계 마감(오늘~horizon일)을 서로 · 캘린더 일정 · 팀 핀과 맞대어 본다.
   // 끝난 프로젝트와 이미 지난 마감은 충돌이 아니라 "늦음"이라 여기서 세지 않는다. 옮기는 결정은 사람이 한다(보여 주기만).
+  // 마감이 없는 프로젝트(2026-10-19 실사용의 '내 책' — dues가 비어 있다)는 충돌이 없다 — 던지지 않고 건너뛴다
   function findClashes({ projects, events = [], pins = [], today, horizon = 14 }) {
     const live = projects
       .filter((p) => !(p.stage === 7 && p.todos.every((t) => t.done)))
-      .map((p) => ({ p, due: p.dues[p.stage] }))
-      .filter(({ due }) => { const d = daysBetween(today, due); return d >= 0 && d <= horizon; });
+      .map((p) => ({ p, due: Array.isArray(p.dues) ? p.dues[p.stage] : undefined }))
+      .filter(({ due }) => { if (!due) return false; const d = daysBetween(today, due); return d >= 0 && d <= horizon; });
     const out = [];
     const byDay = {};
     for (const x of live) (byDay[x.due] = byDay[x.due] || []).push(x.p);
