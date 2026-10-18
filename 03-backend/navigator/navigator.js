@@ -4,7 +4,7 @@
 // Navigator 규칙 — 단계 데이터와 판단 규칙. 서버·DB 없이 순수 함수만. 화면(app.js)과 서버(server.js)가 같이 쓴다.
 // 단계 표는 requirements.md 1절, 할 일은 gates.md DoD·checklist.md를 쉬운 말로 줄인 것.
 //
-// STAGES의 할 일: **확정 후보 2026-10-18 — 이재엽 확인 대기** (이슈 #7, navigator-prototype-rules-review.md 4절의 ③·④).
+// STAGES의 할 일: **확정 2026-10-18** — 이재엽 "다 GO"로 #96의 확정 질문 4개를 지금 고른 그대로 받음 [해석, requirements.md 13-1] (이슈 #7, navigator-prototype-rules-review.md 4절의 ③·④). 6단계 2번을 나눌지는 고칠 목록 F-03.
 // claude-drafted: 2026-10-18 — 이재엽의 요청(남은 요구사항 작업을 그의 권한으로 진행)으로 Claude가 ③ 빠진 할 일·보안 점검과 ④ 등급별 할 일을 넣었다.
 //   출처: gates.md 단계별 DoD·"보안 점검", checklist.md 3단계·4·5단계·"단계별 보안 점검" 체크리스트, scope-tiers.md "등급별로 뭐가 달라지는가".
 //   단계마다 할 일은 5개 이하 — 넘치는 것은 합치거나 뺐다(무엇을 왜 뺐는지는 rules-review의 반영 기록).

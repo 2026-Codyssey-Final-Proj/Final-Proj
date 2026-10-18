@@ -88,8 +88,8 @@
 |---|---|---|
 | ① 근거 구절 검증 | 반영됨 (2026-10-16) | `parseJudgement` |
 | ② 단계는 코드가 정함 | 반영됨 (2026-10-16) | `judgePrompt`·`parseJudgement` |
-| ③ 빠진 할 일·보안 점검 | **확정 후보** | `STAGES` |
-| ④ 등급별 할 일 | **확정 후보** | 할 일의 `tiers`, `criteriaFor(단계, 등급)`, 서버의 `tier` |
+| ③ 빠진 할 일·보안 점검 | **확정**(2026-10-18) | `STAGES` |
+| ④ 등급별 할 일 | **확정**(2026-10-18) | 할 일의 `tiers`, `criteriaFor(단계, 등급)`, 서버의 `tier` |
 
 **③에서 더하거나 합친 것** — 단계마다 할 일은 5개 이하. 출처는 [gates.md](gates.md) DoD·"보안 점검", [checklist.md](../catalog/checklist.md) 3단계·4·5단계·"단계별 보안 점검" 체크리스트.
 
@@ -134,3 +134,5 @@
 **이재엽이 확인할 것** — ① 7단계 '왜?' 다섯 번을 Xpress에도 둘지(scope-tiers.md는 Full 칸에만 적었고, gates.md DoD는 밟는 단계에 그대로 적용한다 — Xpress에도 둔 쪽으로 읽었다) ② 3단계 기록(ADR)을 Xpress에도 둘지(scope-tiers.md의 Xpress 3단계는 "카탈로그 검색") ③ Lite의 1단계를 두 개(한 문장 한 가지 일, 보안 줄)로 둘지 ④ 위 "넣지 않은 것" ⑤ 4·5단계에 같은 비밀값 문장을 둔 것.
 
 **함께 바뀐 것** — 연습 예시([scenario.js](../../03-backend/navigator/scenario.js))의 장면 글·미리 만든 답을 새 할 일에 맞췄다(이야기는 그대로 "동아리 행사 등록 앱"). 요청문이 바뀌어 **전에 녹화한 시연 답(`recordings/demo.json`)은 재생되지 않는다** — `record-demo.js`로 다시 녹화한다. 화면(`02-frontend/`)은 고치지 않았다 — 등급을 쓰려면 화면이 요청에 `tier`를 담고, `STAGES[n].criteria` 대신 `criteriaFor(n, 등급)`을 써야 한다.
+
+**확정 (2026-10-18):** 이재엽 "다 GO" — 위 ③ · ④를 지금 고른 그대로 확정으로 받는다 **[해석]**: Xpress에 '왜를 다섯 번' · '고른 방법 기록'을 남기고, Lite 1단계는 2개, 1단계 '트랙 · 꼬리표'는 넣지 않는다. 6단계 2번을 둘로 나눌지는 [고칠 목록](../07-maintenance/fix-map.md) F-03. *(claude-drafted)*
