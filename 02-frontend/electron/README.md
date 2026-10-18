@@ -10,7 +10,7 @@
 | `preload.js` | 화면이 앱에게 부탁할 수 있는 셋(`window.floeApp`: connect · disconnect · openSettings). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
 | `lib.js` | 순수 함수 — `.env` 읽기 · PATH 합치기 · 훅 명령(app.asar → app.asar.unpacked) · 폴더 연결(connect.js 규칙 그대로). 시험 [`electron-lib.test.js`](../../04-tests/navigator/electron-lib.test.js) |
 | `prebuild.js` | 묶기 전에 화면 · 서버를 `payload/`로 복사(node_modules · `.env*` · 문서 제외). git에 올리지 않는다 |
-| `package.json` | Electron 33.2.1 · electron-builder 25.1.8 · `@anthropic-ai/sdk`(내 키로 쓸 때) · 묶기 설정(`build`) |
+| `package.json` | Electron 44.9.0 · electron-builder 26.15.3(3.0.2에서 33 · 25에서 올림 — 이 Mac은 macOS 26이라 옛 Electron의 입력 · 창 문제를 피하려고) · `@anthropic-ai/sdk`(내 키로 쓸 때) · 묶기 설정(`build`) |
 
 ## 켜기 · 묶기
 
@@ -42,6 +42,7 @@ Actions 탭에서 손으로도 돌릴 수 있다(workflow_dispatch). 비용: 비
 
 - `npm run dist`로 `Floe-3.0.0-arm64.dmg`(100MB)가 나왔고, 묶은 앱을 켜서 서버가 켜지고(`/api/usage` 200) 화면이 확인 값 쿠키와 함께 오며(`/` 200), 앱 안에서 `window.floeApp`이 있고 뒤 창이 숨고 바탕이 투명하며 유리 흐림 · 굴절이 꺼진 것을 CDP로 봤다. 4317이 막혀 있을 때 4318로 켜지는 것도.
 - **첫 알파(0.3.0)의 문제(이재엽 2026-10-19):** 같은 포트에 먼저 켜져 있던 옛 서버에 붙어 옛 화면 · 배경이 그대로 보였고, 투명 창 위의 유리 굴절 때문에 랙이 심했다. → 앱은 늘 자기 서버를 켜고(빈 포트), 앱 안에서는 굴절 · backdrop-filter를 끈다. 아이콘도 플로로로.
+- **3.0.1 뒤에도 "클릭이 안 된다"(이재엽):** 렌더러 안의 클릭(CDP)은 정상이라 창 · 운영체제 쪽이다. 3.0.2에서 Electron을 33 → 44로 올리고 전체 화면 보조 창 옵션(`visibleOnFullScreen`)을 뺐다. **진짜 마우스 클릭은 Claude가 확인하지 못한다**(이 세션의 터미널에 손쉬운 사용 권한이 없어 AppleScript 클릭이 거부됨) — 사람이 3.0.2를 써 보고 알려 줘야 한다.
 - **3.0.0의 문제(이재엽 2026-10-19 "아직도 랙 · 기능들이 클릭이 안 됨"):** 창이 1040×760인데 보이는 건 위쪽 섬뿐이라, 투명한 빈 영역이 뒤 창(VS Code · 터미널)의 클릭을 전부 가로챘고 큰 투명 창을 매 프레임 그려 무거웠다. 렌더러 자체는 121fps · 클릭 정상(CDP로 확인). → **3.0.1: 창이 지금 보이는 섬 크기를 따라간다**(`floe:resize` — 인사 946×186, 작업 카드 946×316, 설정 열면 946×1066, 접으면 540×60). 화면 높이에 기댄 CSS 제한(`100vh`)은 앱 안에서 푼다.
 - 자동 시험에는 Electron을 넣지 않는다(묶음이 무겁다). `lib.js`만 Node 시험. 사람이 써 본 기록은 이재엽 1회(0.3.0, 위 문제 보고).
 

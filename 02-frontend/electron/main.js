@@ -56,7 +56,7 @@ function createWindow() {
     alwaysOnTop: true, resizable: false, minimizable: true, title: "Floe", useContentSize: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   win.setAlwaysOnTop(true, "floating");
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서
   win.on("closed", () => { win = null; });
   win.loadURL(URL_);
 }
