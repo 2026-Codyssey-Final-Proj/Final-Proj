@@ -60,7 +60,13 @@
     return `보류 중 · ${md(h.when)}에 다시 보기${h.who && h.who !== "나" ? ` · 다시 볼 사람: ${h.who}` : ""}`;
   }
 
-  const api = { ASK, checkQuestion, grade, record, FACE, face, HIDDEN, shownGives, HOLD_AFTER_NO, offerHold, makeHold, holdLine };
+  // ── ③ 물어보기에 같이 보낼 작업 글 (F-11, claude-drafted: 2026-10-18) ──
+  // 서버는 작업 글이 비면 400 `작업 내용이 비어 있음`으로 거절한다(API.md 4절 8번). 글 칸을 비운 뒤 물으면 마지막으로 살펴본 글(그 판정의 바탕)을 보내고,
+  // 그것도 없으면 ""(보내지 않는다) — 화면은 NEED_TEXT를 보인다. 빈 글인지는 서버와 같은 규칙(N.filled)으로 본다
+  const askText = (text, judged) => (N.filled(text) ? text : N.filled(judged) ? judged : "");
+  const NEED_TEXT = "먼저 '지금'에서 지금 한 일을 적어 주세요. 그 글을 보고 답해 드려요.";
+
+  const api = { ASK, checkQuestion, grade, record, FACE, face, HIDDEN, shownGives, HOLD_AFTER_NO, offerHold, makeHold, holdLine, askText, NEED_TEXT };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavUnderstand = api;
 })(typeof window !== "undefined" ? window : globalThis);

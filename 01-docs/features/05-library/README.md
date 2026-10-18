@@ -62,10 +62,10 @@ flowchart LR
 |---|---|
 | 화면 | [`02-frontend/library/`](../../../02-frontend/library/README.md) — `index.html` · `library.js` · `sky.html` · `sky.js`, 내비게이터 도서관 탭은 `navigator/app.js` + `library-tab.css`, 물속 전환 `navigator/dive.js` |
 | 데이터·계산 | `books.js`(더미) · `skills.js`(역량 지도) · `search.js`(찾기) · `knowledge-sky.js`(은하) · `sky-data.js`(더미 지식 파일 40개) |
-| 시험 | `04-tests/library/` 33개 — 마감 10 · 역량 지도 3 · 검색 8 · 하늘 12 |
+| 시험 | `04-tests/library/` 39개 — 마감 10 · 역량 지도 3 · 검색 8 · 하늘 12 · 내 배움 기록 6 |
 | 설계 문서 | [서재 설계](../../04-pattern-implementation/library-view-design.md) · [지식 별자리 GitHub 연동](../../04-pattern-implementation/knowledge-sky-github.md) · [책갈피 별자리 계획](../../00-overview/library-constellation-plan-2026-10-17.md) · [UC-02](../../04-pattern-implementation/uc/UC-02-library-views.md) |
 | 담당 | 화면 두승현 #15 · 역량 항목 고한결 #11(인터뷰) + 이재엽 · 시안 이재엽 |
-| 장면 주소 | `navigator/index.html#tab=lib&book=s3` → `library/index.html#lib-bound-s3` · `#lib-review` · `sky.html#year` — 시연 스토리 장면 7·8·9 |
+| 장면 주소 | `navigator/index.html#tab=lib&book=s3` → `library/index.html#lib-bound-s3` · `#lib-review` · `sky.html#year` — 시연 스토리 장면 7·8·9. 내 배움(내비게이터에서 지나온 단계 · 배운 말 · 확정한 설계도, F-05): `library/index.html#lib-learn` |
 
 ## 아직 아닌 것 · 미정
 
