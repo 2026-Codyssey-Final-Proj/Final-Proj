@@ -29,11 +29,13 @@ const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
 const ROOT = "../../";
 const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
 const STATIC = {
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "tour.js", "tour.css", "library-tab.css"],
+  // dive.js·dive.css — 내비게이터(`dive.js` → /dive.js)와 서고(`../navigator/dive.js` → /navigator/dive.js)가 같이 쓴다. 2026-10-18까지 빠져 있었다
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "tour.js", "tour.css", "library-tab.css", "dive.js", "dive.css"],
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "schedule.js", "skills.js", "search.js", "spotlight.js",
     "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
   "02-frontend/share": ["index.html"],
-  "03-backend/navigator": ["navigator.js", "scenario.js"],
+  // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js"],
   "03-backend/share": ["share-rules.js", "scenarios.js", "environment-checks.js"],
 };
 const FILES = {};
@@ -156,4 +158,4 @@ if (require.main === module) {
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
   });
 }
-module.exports = { allowed, recent, addEvent, handle };
+module.exports = { allowed, recent, addEvent, handle, FILES };
