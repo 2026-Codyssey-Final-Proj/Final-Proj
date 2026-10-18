@@ -11,8 +11,9 @@
 | `library/` | 도서관 시안 — 마감 계산, 역량 지도, 서고 검색, 별자리 하늘 | [02-frontend/library](../02-frontend/library/README.md) |
 | `share/` | "나만 보기" 공유 규칙 — 글이 누구에게 보이는지 | [03-backend/share](../03-backend/README.md) |
 | `hooks/` | Claude가 커밋·푸시할 때 막는 자동 검사 장치(훅) | `.claude/hooks/` |
+| `acceptance/` | **수용 테스트**(이슈 #17) — 요구(FR)마다 Given-When-Then 장면, 자동 시험과 사람이 화면으로 볼 것 | [acceptance/README.md](acceptance/README.md) |
 
-수용 테스트(요구사항대로 되는지 사람 눈높이로 적은 시험, 이슈 #17)는 아직 없다. 생기면 여기에 폴더를 더한다.
+수용 테스트는 2026-10-18에 Claude 초안으로 생겼다(이재엽 요청, 두승현 검토). 장면마다 상태(자동 통과 / 사람 확인 필요 / 아직 없음)가 적혀 있다.
 
 ## 처음이면
 
