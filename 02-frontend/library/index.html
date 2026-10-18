@@ -14,12 +14,11 @@
 <title>플로로의 얼음 서고 — 도서관 시안</title>
 <link rel="stylesheet" href="../navigator/seal.css">
 <link rel="stylesheet" href="library.css">
-<link rel="stylesheet" href="../navigator/tour.css">
 <link rel="stylesheet" href="../navigator/dive.css">
 <!-- 내비게이터에서 물속으로 넘어왔으면(#lib-dive) 처음 그릴 때부터 물이 덮게 한다 — 물이 걷히는 건 ../navigator/dive.js -->
 <script>if (location.hash.startsWith("#lib-dive")) document.documentElement.classList.add("dive-in");</script>
 </head>
-<body data-tour="lib">
+<body>
 <div class="dive" id="dive-cover" aria-hidden="true"></div>
 <div class="sky" id="sky" aria-hidden="true"></div>
 <div class="arches" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
@@ -151,6 +150,5 @@
 <script src="../../03-backend/navigator/glossary.js"></script>
 <script src="../navigator/dive.js"></script>
 <script src="library.js"></script>
-<script src="../navigator/tour.js"></script>
 </body>
 </html>

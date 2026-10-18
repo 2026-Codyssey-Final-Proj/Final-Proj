@@ -11,7 +11,6 @@
 | `app.css` | 모양(얼음 파랑 테마) |
 | `seal.js` | 길잡이 물범 그림과 말풍선 |
 | `library-tab.css` | '한곳에서 보기'·'도서관' 탭 모양 (서고 시안에서 옮김, 2026-10-17) |
-| `tour.js` · `tour.css` | 3분 시연 길잡이 띠 — 서고·하늘·입구 페이지도 같이 쓴다 |
 | `dive.js` · `dive.css` | '내 서고 들어가기'의 물속 전환 — 오버레이가 화면 가득 물속이 되고 책을 안은 플로로가 내려간 뒤, 서고(`#lib-dive`)에서 물이 걷히고 플로로가 점프한다. 서고와 같이 쓴다 (2026-10-18) |
 
 `index.html`은 화면 빈칸(2026-10-18, 이재엽 요청)에서 더한 규칙 파일 다섯도 불러 쓴다 — 모두 `../../03-backend/navigator/`에 있고 순수 함수만이다(시험: [`04-tests/navigator/screen-gaps.test.js`](../../04-tests/navigator/screen-gaps.test.js)).
@@ -46,7 +45,7 @@ iPhone(600px 이하)에는 앞의 세 탭만 있다.
 **주소 끝으로 장면 열기** (시연 · 녹화용, 진짜 AI를 부르지 않고 연습 예시로만 장면을 만든다):
 `#start` · `#ex=0`(0단계 하는 중) · `#ex=0&crit`(할 일 펼침) · `#ex=1&tab=doc` · `#ex=1&done&gate`(넘어가기 전 확인) · `#tab=all` · `#tab=lib&book=s3`.
 `&tier=Lite`(또는 `Xpress`·`Full`)를 붙이면 그 크기의 할 일로 장면을 연다 — 예: `#tier=Lite&ex=1&done&gate`.
-오른쪽 아래 **시연 길잡이**(`tour.js`)가 [3분 시연 스토리](../../01-docs/04-pattern-implementation/demo-story-3min.md)의 9장면을 ‹ › 로 잇는다 — 서고(`#lib-review`)와 지식 은하(`sky.html#year`)까지. 입구는 [`../index.html`](../index.html).
+[3분 시연 스토리](../../01-docs/04-pattern-implementation/demo-story-3min.md)의 9장면은 위 주소로 하나씩 연다 — 서고(`#lib-review`)와 지식 은하(`sky.html#year`)까지. 화면 위에 뜨던 시연 길잡이 띠(`tour.js`)는 2026-10-19에 지웠다(이재엽). 입구는 [`../index.html`](../index.html).
 
 서버(`node 03-backend/navigator/server.js`)를 켜면 시연 페이지 전부를 같이 내준다: `/`(내비게이터) · `/index.html`(입구) · `/library/…` · `/share/…`. 정해진 파일만 내주고 경로를 요청에서 만들지 않는다(`server.js`의 `STATIC`).
 

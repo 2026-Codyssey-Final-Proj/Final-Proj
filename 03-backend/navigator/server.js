@@ -78,7 +78,7 @@ const ROOT = "../../";
 const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
 const STATIC = {
   // dive.js·dive.css — 내비게이터(`dive.js` → /dive.js)와 서고(`../navigator/dive.js` → /navigator/dive.js)가 같이 쓴다. 2026-10-18까지 빠져 있었다
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "tour.js", "tour.css", "library-tab.css", "dive.js", "dive.css"],
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "library-tab.css", "dive.js", "dive.css"],
   // learn.js — 서재의 '내 배움'(2026-10-18, F-05). 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "schedule.js", "skills.js", "search.js", "spotlight.js", "learn.js",
     "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
