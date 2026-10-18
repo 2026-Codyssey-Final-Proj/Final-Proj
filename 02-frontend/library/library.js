@@ -2,12 +2,24 @@
 // 장면: ① 입구(큰 책) → 도서관 두 가지 고르기 → ③ 플로로의 얼음 서고 → 펼친 책 · 전체 돌아보기 · 지식 은하(sky.html).
 // 같은 날: 작업 화면 위 위젯(지금·단계 지도·한곳에서 보기·도서관 탭)은 내비게이터(../navigator/app.js)의 탭으로 옮겼다 — 같은 화면이 둘이 되지 않게.
 //   그쪽에서 "한 권의 책으로 엮기"를 누르면 #lib-bound-<id>로 이 화면에 와서 책장에 꽂힌다. 열어 둔 책 목록(D.OPEN)은 두 화면이 같이 읽는다.
+// 2026-10-18(F-05, PRD 2-7): 내비게이터의 '내 배움' 탭을 여기 '내 배움' 창으로 옮겼다(#lib-learn) — 이 창만 더미가 아니라 이 브라우저에 남은 내비게이터 기록을 읽는다(learn.js).
 (function () {
   const D = window.LibData, Seal = window.NavSeal;
   const NAV = "../navigator/index.html";
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const seal = (mood, size, opts) => (Seal ? Seal.svg(mood, size, opts) : "");
+  // 배운 말 풀이(F-10, FR-13을 서재에도) — 풀이가 있는 말(EARS · MoSCoW …)은 버튼이 되고, 누르면 그 자리에 쉬운 말 한 줄. 없으면 그냥 글
+  const termHtml = (text, cls = "") => {
+    const f = window.NavGlossary && window.NavGlossary.find(text);
+    if (!f) return `<span${cls ? ` class="${cls}"` : ""}>${esc(text)}</span>`;
+    return `<button type="button" class="${cls ? `${cls} ` : ""}term" data-term aria-expanded="false">${esc(text)}<span class="term-line" role="note">${esc(f.line)}</span></button>`;
+  };
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-term]");
+    document.querySelectorAll('[data-term][aria-expanded="true"]').forEach((x) => { if (x !== b) x.setAttribute("aria-expanded", "false"); });
+    if (b) { e.stopPropagation(); b.setAttribute("aria-expanded", String(b.getAttribute("aria-expanded") !== "true")); }
+  }, true);
 
   // 화면 안에서만 바뀌는 상태 (새로 고침하면 처음으로)
   const st = { open: D.OPEN.map((b) => ({ ...b })), shelved: [], answer: null, reading: null };
@@ -28,6 +40,7 @@
     review: "전체 돌아보기 — 끝낸 책과 열어 둔 책, 역량 지도를 한눈에",
     bound: "완주한 책이 한 권으로 엮여 서고에 꽂혔어요",
     arrive: "플로로를 따라 물속에서 서고로 올라왔어요",
+    learn: "내 배움 — 지나온 단계 · 배운 말 · 설계도",
   };
   function caption(key) { $("caption").textContent = CAPTIONS[key]; }
   function show(screen) { for (const s of ["hall", "lib"]) $(`s-${s}`).classList.toggle("on", s === screen); }
@@ -36,7 +49,7 @@
   const toNav = (hash) => { location.href = `${NAV}#${hash}`; };
 
   function go(where, arg) {
-    $("spread").classList.remove("on"); $("reader").classList.remove("on"); $("review").classList.remove("on");
+    $("spread").classList.remove("on"); $("reader").classList.remove("on"); $("review").classList.remove("on"); $("learn").classList.remove("on");
     if (where === "hall") { show("hall"); caption("hall"); setHash("hall"); $("tome").focus(); return; }
     if (where === "pick") { show("hall"); $("spread").classList.add("on"); caption("pick"); setHash("pick"); $("spread").querySelector(".go").focus(); return; }
     if (where === "lib") { show("lib"); spot.clear(); spot.close(); st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
@@ -119,7 +132,7 @@
         <div class="board"></div><div class="label">${sh.label}</div>`;
       stage.appendChild(box);
     });
-    CHIPS.forEach(([t, s]) => { const c = document.createElement("span"); c.className = "chip"; c.style.cssText = s; c.textContent = t; stage.appendChild(c); });
+    CHIPS.forEach(([t, s]) => { const w = document.createElement("div"); w.innerHTML = termHtml(t, "chip"); const c = w.firstElementChild; c.style.cssText = s; stage.appendChild(c); });
     const last = st.shelved[st.shelved.length - 1];
     $("slot").innerHTML = last ? `방금 꽂은 책<br><b style="color:var(--ink)">${esc(last.title)}</b>` : `지금 쓰는 책 ${st.open.length}권<br>끝내면 여기 꽂혀요`;
     stage.querySelectorAll("[data-read]").forEach((b) => {
@@ -210,7 +223,7 @@
     $("reader").classList.toggle("cover", cover);
     $("rd-title").textContent = `${b.title}${b.sub ? ` ${b.sub}` : ""} — 단계마다 내가 정한 것`;
     $("rd-steps").innerHTML = b.steps.map((s, i) => `<li><b>${i}</b><span>${D.STAGES[i]}</span><em>${esc(s)}</em></li>`).join("");
-    $("rd-tags").innerHTML = b.tags.map((t) => `<span>${esc(t)}</span>`).join("");
+    $("rd-tags").innerHTML = b.tags.map((t) => termHtml(t)).join("");
     $("rd-ins").innerHTML = b.insights.map((t) => `<li>${esc(t)}</li>`).join("");
     $("rd-made").innerHTML = b.made.map((t) => `<span>${esc(t)}</span>`).join("");
     $("rd-links").innerHTML = b.links.map((l) => `<button data-read="${l}">${esc(D.SHELF.find((x) => x.id === l).title)}</button>`).join("");
@@ -275,7 +288,7 @@
     }));
     // FR-8 역량 지도 — 배운 것마다 레벨 4단계와 노력(책 수 · 날 수). 레벨 규칙은 가설(skills.js)
     const SK = window.Skills;
-    $("rv-tags").innerHTML = SK.skillMap(fin, open).slice(0, 7).map((x) => `<li><span>${esc(x.skill)}</span>
+    $("rv-tags").innerHTML = SK.skillMap(fin, open).slice(0, 7).map((x) => `<li>${termHtml(x.skill)}
       <span class="lv" aria-label="${SK.LEVELS[x.level]}">${SK.LEVELS.map((_, i) => `<i class="${i <= x.level ? "on" : ""}"></i>`).join("")}<em>${SK.LEVELS[x.level]}</em></span>
       <b>${x.books ? `${x.books}권 · ${x.days}일` : "열어 둔 책"}</b></li>`).join("");
     $("rv-ins").innerHTML = fin.flatMap((b) => b.insights.map((t) => `<li>${esc(t)} <small>— ${esc(b.title)}</small></li>`)).slice(0, 5).join("");
@@ -289,9 +302,47 @@
   $("rd-close").onclick = closeReader;
   $("reader").addEventListener("click", (e) => { if (e.target === $("reader")) closeReader(); });
 
+  // ── 내 배움 (claude-drafted: 2026-10-18, F-05 — PRD 2-7 "내용들은 서재에서 확인이 가능하도록 / 오버레이에서는 간단하고 필요한 내용만, 자세한건 서재로") ──
+  // 오버레이의 '내 배움' 탭이 보여 주던 지나온 단계 · 배운 말 · 확정한 설계도를 여기서 본다. 책장의 더미 책과 달리 이 브라우저에 남은 내비게이터 기록이다(learn.js).
+  // 기록이 없거나 못 읽으면(사생활 보호 창 등) 빈 안내를 보인다
+  const NAV_HOME = NAV;   // 이어 하기 — 주소 끝 없이 열면 내비게이터가 남은 기록에서 이어 간다
+  const explain = (t) => (window.NavGlossary ? window.NavGlossary.explain(t) : "");
+  function savedLearn() {
+    let store = null;
+    try { store = window.localStorage; } catch { store = null; }
+    return window.LibLearn.read(store);
+  }
+  function openLearn() {
+    lastFocus = document.activeElement;
+    const d = savedLearn(), none = (t) => `<p class="lr-none">${t}</p>`;
+    $("lr-seal").innerHTML = seal(d.empty ? "idle" : "happy", 72);
+    $("lr-sub").textContent = d.empty ? "아직 쌓인 기록이 없어요"
+      : `${d.project ? `${d.project} · ` : ""}${d.since ? `${d.since.replaceAll("-", ".")}부터 ` : ""}이 브라우저에 남은 기록이에요${d.practice ? " · 연습용 예시로 쌓았어요" : ""}`;
+    $("lr-body").innerHTML = d.empty
+      ? `<div class="lr-empty"><b>아직 쌓인 배움이 없어요</b><span>작업 화면(내비게이터)에서 할 일을 마치거나 설계도를 확정하면, 지나온 단계 · 배운 말 · 설계도가 여기 모여요.</span>
+          <a class="pillbtn pri" href="${NAV_HOME}">작업 화면에서 시작하기 →</a></div>`
+      : `<div class="tiles lr-tiles">${[["마친 단계", `${d.history.length}개`], ["배운 말", `${d.learned.length}개`], ["확정한 설계도", `${d.docs.length}개`]]
+          .map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join("")}</div>
+        ${d.finished ? `<p class="lr-done">여덟 단계를 끝까지 왔어요!</p>` : ""}
+        <div class="lr-grid">
+          <section><h3>지나온 단계</h3>${d.history.length ? `<ol class="lr-path">${d.history.map((x) => `<li>${esc(x.text)}</li>`).join("")}</ol>` : none("아직 없어요. 한 단계를 마치면 여기 남아요.")}
+            <h3>내가 확정한 설계도</h3>${d.docs.length ? d.docs.map((x) => `<details class="lr-doc"><summary>${x.stage}단계${x.name ? ` · ${esc(x.name)}` : ""}${x.at ? ` · ${esc(x.at)}` : ""}</summary><pre>${esc(x.text)}</pre></details>`).join("")
+              : none("설계도를 확정하면 여기 모여요.")}</section>
+          <section><h3>배운 말</h3>${d.learned.length ? `<ul class="lr-terms">${d.learned.map((x) => `<li><b>${esc(x.term)}</b>${explain(x.term) ? `<span>${esc(explain(x.term))}</span>` : ""}${
+              x.text ? `<small>만난 곳 · ${esc(x.text)}</small>` : ""}</li>`).join("")}</ul>` : none("할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.")}</section>
+        </div>
+        <a class="pillbtn lr-back" href="${NAV_HOME}">← 작업 화면으로 돌아가 이어 하기</a>`;
+    show("lib"); $("learn").classList.add("on"); caption("learn"); setHash("lib-learn"); $("lr-close").focus();
+  }
+  function closeLearn() { $("learn").classList.remove("on"); caption("lib"); setHash("lib"); lastFocus?.focus?.(); }
+  $("learn-btn").onclick = openLearn;
+  $("lr-close").onclick = closeLearn;
+  $("learn").addEventListener("click", (e) => { if (e.target === $("learn")) closeLearn(); });
+
   // ── 키보드: Esc는 한 겹씩 닫고, /는 찾기 ──
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
+      if ($("learn").classList.contains("on")) return closeLearn();
       if ($("review").classList.contains("on")) return closeReview();
       if ($("reader").classList.contains("on")) return closeReader();
       if ($("spread").classList.contains("on")) return go("hall");
@@ -307,8 +358,10 @@
     if (h === "lib") return go("lib");
     if (h === "lib-ask") return go("lib", "ask");
     if (h === "lib-dive") return arrive();
+    if (h === "lib-dive-learn") return arrive(openLearn);   // 내비게이터의 "서재에서 자세히 보기" — 물속으로 들어온 뒤 내 배움(F-05)
     if (h === "lib-hover") { go("lib"); return drawArcs("f1"); }
     if (h === "lib-review") { go("lib"); return openReview(); }
+    if (h === "lib-learn") { go("lib"); return openLearn(); }
     if (h.startsWith("lib-bound-")) return bound(h.slice(10));
     if (h.startsWith("lib-open-")) { go("lib"); return openReader(h.slice(9), { cover: false }); }
     if (h.startsWith("lib-q=")) { go("lib"); spot.set(decodeURIComponent(h.slice(6))); return $("q").focus(); }
@@ -316,9 +369,10 @@
     go("hall");
   }
   // 내비게이터의 "내 서고 들어가기"로 물속에서 넘어왔을 때 — 서고가 다 읽히면 물이 위로 빠지고 플로로가 점프해 시작을 알린다(../navigator/dive.js)
-  function arrive() {
+  // then: 다 올라온 뒤 할 일(내 배움 열기 등)
+  function arrive(then) {
     go("lib"); setHash("lib");
-    if (!window.FloeDive) return document.documentElement.classList.remove("dive-in");
+    if (!window.FloeDive) { document.documentElement.classList.remove("dive-in"); return then?.(); }
     const say = $("floro-say"), q = (s) => document.querySelector(s);
     say.style.visibility = "hidden";
     window.FloeDive.arrive({
@@ -329,6 +383,7 @@
         say.textContent = "서고에 온 걸 환영해요! 지난 책을 같이 찾아봐요.";
         say.style.visibility = ""; say.classList.add("hello");
         caption("arrive");
+        then?.();
       },
     });
   }

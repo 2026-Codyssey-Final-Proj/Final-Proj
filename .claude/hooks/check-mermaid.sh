@@ -5,6 +5,8 @@
 # 렌더러는 @mermaid-js/mermaid-cli(npx 캐시, 버전 고정)이고, Chrome은 이미 설치된 것을 쓴다
 # (PUPPETEER_SKIP_DOWNLOAD). 문법만 확인한다 — 순서가 뒤집히는 등 배치 문제는 사람이 그림을
 # 보고 확인해야 한다(01-docs/04-pattern-implementation/03-diagramming-guide.md "도구 환경").
+# json_field는 공용 도우미에 있다 — 빠져 있던 동안(2026-10-17~18) 훅 모드가 검사 없이 통과했다(고칠 목록 F-09)
+. "$(dirname "$0")/lib.sh"
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 0
 
 CHROME="${MERMAID_CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"

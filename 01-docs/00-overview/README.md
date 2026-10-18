@@ -105,8 +105,8 @@ flowchart TD
 | 6. 서비스 | ✅ 완료 (방법론) | Twelve-Factor App + Planguage Goal 실측 규칙. [`01-docs/06-service/`](../06-service/README.md) |
 | 7. 유지보수 | ✅ 완료 (방법론) | 5 Whys + Blameless Postmortem. [`01-docs/07-maintenance/`](../07-maintenance/README.md) |
 
-**지금 (2026-10-17)**: 팀은 이 방법론으로 Floe를 진행 중입니다 — 2단계 마무리, 3단계 ADR 확정(10/17),
-2→3 게이트는 10/18 예정([requirements.md](requirements.md) 2-3). 새 문제/
+**지금 (2026-10-18)**: 팀은 이 방법론으로 Floe를 진행 중입니다 — 1→2 · 2→3 · 3→4 · 4→5 Go(10/18), 5단계(주요 기능 11/3까지) →
+6단계 사용 테스트(11/4~7) → 7단계 회고(11/7~8). 게이트 로그는 [Floe 세션 파일](../01-problem-save/sessions/project-track/2026-10-18-floe.md), 고칠 것은 [고칠 목록](../07-maintenance/fix-map.md). 새 문제/
 프로젝트를 [`dev-workflow` 스킬](../../.claude/skills/dev-workflow/SKILL.md)로
 저장하면서 시작하세요 — 자세한 절차는 [`GETTING_STARTED.md`](../../GETTING_STARTED.md).
 
