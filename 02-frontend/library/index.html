@@ -4,7 +4,7 @@
      서버·AI·저장 없음 — 이 파일을 브라우저로 바로 연다. 물범 그림은 ../navigator/seal.js를 그대로 쓴다.
      2026-10-17 같은 날: 작업 화면 위 위젯(지금·단계 지도·한곳에서 보기·도서관 탭)은 내비게이터(../navigator/index.html)의 탭으로 옮겼다 — 같은 화면이 둘이 되지 않게.
      여기는 입구 → 서고 → 펼친 책 · 전체 돌아보기 · 별자리 하늘만 남는다. 내비게이터에서 "한 권의 책으로 엮기"를 누르면 #lib-bound-<id>로 와서 책장에 꽂힌다.
-     주소 끝으로 장면 바로 열기: #hall(입구) #pick(시안 고르기) #lib(내 서고) #lib-f1(서고에서 책 펼침) #lib-open-f1(표지 없이) #lib-ask(플로로 답) #lib-review(전체 돌아보기) #lib-q=EARS(찾기) #lib-bound-s3(엮은 책 받기) -->
+     주소 끝으로 장면 바로 열기: #hall(입구) #pick(시안 고르기) #lib(내 서고) #lib-f1(서고에서 책 펼침) #lib-open-f1(표지 없이) #lib-ask(플로로 답) #lib-dive(내비게이터에서 물속으로 들어오기) #lib-review(전체 돌아보기) #lib-q=EARS(찾기) #lib-bound-s3(엮은 책 받기) -->
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -13,8 +13,12 @@
 <link rel="stylesheet" href="../navigator/seal.css">
 <link rel="stylesheet" href="library.css">
 <link rel="stylesheet" href="../navigator/tour.css">
+<link rel="stylesheet" href="../navigator/dive.css">
+<!-- 내비게이터에서 물속으로 넘어왔으면(#lib-dive) 처음 그릴 때부터 물이 덮게 한다 — 물이 걷히는 건 ../navigator/dive.js -->
+<script>if (location.hash === "#lib-dive") document.documentElement.classList.add("dive-in");</script>
 </head>
 <body data-tour="lib">
+<div class="dive" id="dive-cover" aria-hidden="true"></div>
 <div class="sky" id="sky" aria-hidden="true"></div>
 <div class="arches" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
 <div class="beam" style="left:30vw" aria-hidden="true"></div><div class="beam" style="left:58vw;opacity:.6" aria-hidden="true"></div>
@@ -132,6 +136,7 @@
 <script src="skills.js"></script>
 <script src="search.js"></script>
 <script src="spotlight.js"></script>
+<script src="../navigator/dive.js"></script>
 <script src="library.js"></script>
 <script src="../navigator/tour.js"></script>
 </body>

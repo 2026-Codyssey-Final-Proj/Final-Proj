@@ -44,7 +44,8 @@
 
 ## 주소로 장면 바로 열기 (시연·녹화용)
 
-`index.html#hall` · `#pick` · `#lib` · `#lib-review`(전체 돌아보기) · `#lib-hover`(금빛 선) · `#lib-f1`(표지부터) · `#lib-open-f1`(표지 없이 펼침) · `#lib-ask`(플로로 답) · `#lib-q=EARS`(검색 결과) · `#lib-bound-s3`(내비게이터에서 엮은 책 받기).
+`index.html#hall` · `#pick` · `#lib` · `#lib-review`(전체 돌아보기) · `#lib-hover`(금빛 선) · `#lib-f1`(표지부터) · `#lib-open-f1`(표지 없이 펼침) · `#lib-ask`(플로로 답) · `#lib-q=EARS`(검색 결과) · `#lib-bound-s3`(내비게이터에서 엮은 책 받기) · `#lib-dive`(내비게이터의 '내 서고 들어가기' — 물속에서 떠오르고 플로로가 점프, `../navigator/dive.js`).
+책장의 책을 누르면 가운데로 날아와 크게 보이고, 표지를 누르면 책등을 축으로 넘어가며 펼쳐진다(2026-10-18, 목업 영상 40~42초).
 옛 주소 `#desk…`는 내비게이터의 도서관 탭으로 넘어간다. 오른쪽 위 **시연 길잡이**(`../navigator/tour.js`)가 [3분 시연 스토리](../../01-docs/04-pattern-implementation/demo-story-3min.md)의 9장면을 잇는다.
 
 ## 파일

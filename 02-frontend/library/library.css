@@ -30,19 +30,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ── 리퀴드 글래스 ── */
 .glass { background: var(--glass); border: 1px solid var(--edge); box-shadow: inset 0 1px 0 var(--hi), 0 24px 60px rgba(4, 10, 40, .55);
   -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%); }
-.pillbtn { border: 1px solid var(--edge); background: rgba(255, 255, 255, .08); border-radius: 999px; padding: 7px 16px; font-size: 14px; }
+.pillbtn { border: 1px solid var(--edge); background: rgba(255, 255, 255, .08); border-radius: 999px; padding: 9px 18px; font-size: 15px; }
 .pillbtn.pri { background: var(--ice); color: #13245e; border-color: var(--ice); font-weight: 700; }
 .kbd { font-size: 11px; padding: 1px 6px; border-radius: 5px; border: 1px solid currentColor; opacity: .7; margin-left: 6px; }
-.caption { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); padding: 7px 18px; border-radius: 999px; font-size: 14px; white-space: nowrap; z-index: 30; }
+.caption { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); padding: 8px 20px; border-radius: 999px; font-size: 15px; white-space: nowrap; z-index: 30; }
 .caption b { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ice); color: #13245e; font-size: 12px; margin-right: 8px; }
 
 /* 얼음 위의 플로로 */
 .floe { position: relative; display: flex; flex-direction: column; align-items: center; }
-.floe .ice { width: 220px; height: 46px; margin-top: -26px; border-radius: 50%; background: radial-gradient(ellipse at 50% 35%, #ffffff, #dbe9ff 55%, #a9c6f5); box-shadow: 0 10px 30px rgba(120, 170, 255, .35); }
-.floe .ripple { width: 300px; height: 40px; margin-top: -26px; border-radius: 50%; border: 1px solid rgba(190, 215, 255, .25); }
+.floe .ice { width: 240px; height: 50px; margin-top: -26px; border-radius: 50%; background: radial-gradient(ellipse at 50% 35%, #ffffff, #dbe9ff 55%, #a9c6f5); box-shadow: 0 10px 30px rgba(120, 170, 255, .35); }
+.floe .ripple { width: 330px; height: 40px; margin-top: -26px; border-radius: 50%; border: 1px solid rgba(190, 215, 255, .25); }
 .bob { animation: bob 3.6s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-5px); } }
-.say { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 280px; max-width: 360px; padding: 10px 16px; border-radius: 16px; font-size: 14px; text-align: center; }
+.say { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 300px; max-width: 420px; padding: 12px 18px; border-radius: 18px; font-size: 15.5px; text-align: center; }
+.say.hello { animation: say-pop .45s cubic-bezier(.3, 1.5, .5, 1); }   /* 물속에서 올라온 뒤 첫인사 */
+@keyframes say-pop { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.85); } }
 
 /* ── ① 입구: 큰 책 ── */
 .hall { display: grid; place-items: center; height: 100%; }
@@ -84,73 +86,83 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .toast { position: fixed; left: 50%; top: 240px; transform: translateX(-50%); padding: 10px 18px; border-radius: 999px; z-index: 40; font-size: 14px; }
 
 /* ── ③ 내 서고 ── */
-.lib-head { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); padding: 8px 32px; border-radius: 999px; text-align: center; z-index: 3; }
-.lib-head b { display: block; font-size: 15px; } .lib-head span { font-size: 12px; color: var(--ink-2); }
+.lib-head { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 38px; border-radius: 999px; text-align: center; z-index: 3; }
+.lib-head b { display: block; font-size: 17px; } .lib-head span { font-size: 13.5px; color: var(--ink-2); }
 .lib-out { position: absolute; top: 22px; left: 22px; z-index: 3; text-decoration: none; color: var(--ink); }
 .lib-refs { position: absolute; top: 22px; right: 22px; z-index: 3; display: flex; gap: 8px; }
 .skylink { color: var(--gold); text-decoration: none; border-color: rgba(255, 217, 138, .5); }
-.stage { position: absolute; inset: 150px 0 0 0; }
-.search { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); width: min(520px, calc(100% - 32px)); height: 42px; border-radius: 999px; display: flex; align-items: center; gap: 8px; padding: 0 14px; z-index: 5; }
-.search svg { width: 18px; height: 18px; flex: none; stroke: var(--ink-2); fill: none; stroke-width: 2; stroke-linecap: round; }
-.search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 14.5px; outline: none; }
+.stage { position: absolute; inset: 168px 0 0 0; }
+.search { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 32px)); height: 50px; border-radius: 999px; display: flex; align-items: center; gap: 8px; padding: 0 14px; z-index: 5; }
+.search svg { width: 20px; height: 20px; flex: none; stroke: var(--ink-2); fill: none; stroke-width: 2; stroke-linecap: round; }
+.search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 16px; outline: none; }
 .search input::placeholder { color: var(--mute); }
 .search:focus-within { box-shadow: inset 0 1px 0 var(--hi), 0 0 0 2px var(--ice), 0 24px 60px rgba(4, 10, 40, .55); }
 .search .kbd { color: var(--ink-2); }
 .answer mark { background: rgba(255, 217, 138, .35); color: inherit; border-radius: 3px; padding: 0 1px; }
 .answer .kind { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--edge); color: var(--ink-2); margin-left: 6px; }
 .answer ul { max-height: 46vh; overflow-y: auto; }
-.shelfbox { position: absolute; width: 270px; display: flex; flex-direction: column; align-items: center; }
-.shelfbox .row { display: flex; align-items: flex-end; gap: 4px; height: 118px; padding: 0 12px; }
-.shelfbox .spine { width: 14px; border-radius: 2px; background: linear-gradient(180deg, #8fb2ff, #4062c8); opacity: .9; }
-.shelfbox .board { width: 100%; height: 12px; border-radius: 3px; background: linear-gradient(180deg, #e9efff, #a7b8e8); box-shadow: 0 10px 20px rgba(0, 0, 0, .3); }
-.shelfbox .label { margin-top: 8px; font-size: 12.5px; color: var(--ink-2); }
-.front { width: 76px; height: 104px; border: 0; padding: 8px 8px 8px 12px; border-radius: 4px 8px 8px 4px; margin: 0 6px; text-align: left; font-size: 11.5px; font-weight: 800; line-height: 1.3; color: #0f1d55;
+.shelfbox { position: absolute; width: 340px; display: flex; flex-direction: column; align-items: center; }
+.shelfbox .row { display: flex; align-items: flex-end; gap: 5px; height: 152px; padding: 0 12px; }
+.shelfbox .spine { width: 16px; border-radius: 2px; background: linear-gradient(180deg, #8fb2ff, #4062c8); opacity: .9; }
+.shelfbox .board { width: 100%; height: 14px; border-radius: 3px; background: linear-gradient(180deg, #e9efff, #a7b8e8); box-shadow: 0 10px 20px rgba(0, 0, 0, .3); }
+.shelfbox .label { margin-top: 8px; font-size: 14px; color: var(--ink-2); }
+.front { width: 102px; height: 140px; border: 0; padding: 12px 10px 10px 15px; border-radius: 4px 9px 9px 4px; margin: 0 6px; text-align: left; font-size: 13.5px; font-weight: 800; line-height: 1.3; color: #0f1d55;
   background: linear-gradient(160deg, #cfe6ff, #6f9cf0); box-shadow: inset 4px 0 0 rgba(0, 0, 0, .15), 0 10px 20px rgba(0, 0, 0, .35); position: relative; transition: transform .2s ease; }
-.front::after { content: ""; position: absolute; right: 7px; bottom: 7px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(15, 29, 85, .55); }
+.front::after { content: ""; position: absolute; right: 9px; bottom: 9px; width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(15, 29, 85, .55); }
 .front:hover, .front:focus-visible, .front.lit { transform: translateY(-6px); box-shadow: inset 4px 0 0 rgba(0, 0, 0, .15), 0 0 0 2px var(--gold), 0 0 26px rgba(255, 217, 138, .55); }
-.slot { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 110px; height: 140px; border: 2px dashed rgba(190, 215, 255, .45); border-radius: 8px; display: grid; place-items: center; text-align: center; font-size: 12px; color: var(--ink-2); padding: 8px;
+.slot { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 128px; height: 168px; border: 2px dashed rgba(190, 215, 255, .45); border-radius: 8px; display: grid; place-items: center; text-align: center; font-size: 13px; color: var(--ink-2); padding: 8px;
   box-shadow: 0 0 40px rgba(127, 182, 255, .25); }
 .slot::after { content: ""; position: absolute; left: -20px; right: -20px; bottom: -14px; height: 8px; border-radius: 50%; background: rgba(127, 182, 255, .5); filter: blur(4px); }
-.chip { position: absolute; font-size: 12px; padding: 3px 10px; border-radius: 6px; background: rgba(14, 26, 80, .7); border: 1px solid var(--edge); color: var(--ink-2); white-space: nowrap; }
+.chip { position: absolute; font-size: 13.5px; padding: 5px 12px; border-radius: 6px; background: rgba(14, 26, 80, .7); border: 1px solid var(--edge); color: var(--ink-2); white-space: nowrap; }
 .arcs { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .arcs path { fill: none; stroke: var(--gold); stroke-width: 1.6; stroke-dasharray: 5 5; opacity: .85; }
-.arcs text { fill: var(--gold); font-size: 12.5px; font-weight: 700; paint-order: stroke; stroke: #0e1a50; stroke-width: 4px; }
+.arcs text { fill: var(--gold); font-size: 14px; font-weight: 700; paint-order: stroke; stroke: #0e1a50; stroke-width: 4px; }
 .center { position: absolute; left: 50%; bottom: 62px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 4; }
 .asks { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; width: max-content; max-width: calc(100vw - 32px); }
-.asks button { font-size: 12.5px; }
-.answer { position: absolute; right: 4vw; bottom: 8vh; width: min(380px, calc(100% - 32px)); border-radius: 18px; padding: 14px 16px; z-index: 6; }
-.answer h3 { margin: 0 0 10px; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+.asks button { font-size: 14px; }
+.answer { position: absolute; right: 4vw; bottom: 8vh; width: min(420px, calc(100% - 32px)); border-radius: 18px; padding: 14px 16px; z-index: 6; }
+.answer h3 { margin: 0 0 10px; font-size: 16.5px; display: flex; gap: 8px; align-items: center; }
 .answer ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.answer li button { width: 100%; text-align: left; border: 1px solid var(--edge); background: rgba(255, 255, 255, .06); border-radius: 10px; padding: 8px 10px; display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; font-size: 13.5px; }
+.answer li button { width: 100%; text-align: left; border: 1px solid var(--edge); background: rgba(255, 255, 255, .06); border-radius: 10px; padding: 9px 12px; display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px; font-size: 14.5px; }
 .answer li button i { grid-row: span 2; width: 18px; height: 24px; border-radius: 2px 4px 4px 2px; background: linear-gradient(160deg, #cfe6ff, #6f9cf0); }
 .answer li button small { color: var(--ink-2); }
 .answer .foot { margin-top: 10px; font-size: 12.5px; color: var(--ink-2); border-top: 1px dashed var(--edge); padding-top: 8px; }
 
 /* 서고에서 펼친 책 (영상 8번 장면) */
-.reader { position: fixed; inset: 0; display: none; place-items: center; background: rgba(4, 10, 40, .6); z-index: 25; padding: 16px; }
+/* 쪽 크기 — 표지(.bigcover)와 펼친 책의 한 쪽이 같은 크기라서 표지가 그대로 넘어가 왼쪽 쪽이 된다(2026-10-18, library.js openBook) */
+.reader { position: fixed; inset: 0; display: none; place-items: center; background: rgba(4, 10, 40, .6); z-index: 25; padding: 16px;
+  --pw: min(480px, calc(50vw - 36px)); --ph: min(600px, calc(100vh - 120px)); }
+.reader > .bigcover, .reader > .book { grid-area: 1 / 1; }
 .reader.on { display: grid; animation: fade .3s ease-out; }
-.reader .book { width: min(1000px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-radius: 16px; overflow: hidden; position: relative;
+.reader .book { width: min(calc(var(--pw) * 2), 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-radius: 16px; overflow: hidden; position: relative;
   background: #16245f; border: 1px solid var(--edge); box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
 .reader .book::after { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 30px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgba(0, 0, 0, .35), transparent); pointer-events: none; }
-.reader section { padding: 28px 30px; min-height: 460px; }
-.reader .kick { font-size: 12px; color: var(--ink-2); }
-.reader h2 { margin: 2px 0 14px; font-size: 20px; }
+.reader section { padding: 32px 34px; min-height: var(--ph); }
+.reader .kick { font-size: 13px; color: var(--ink-2); }
+.reader h2 { margin: 2px 0 16px; font-size: 23px; }
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
-.steps li { display: grid; grid-template-columns: 26px 86px 1fr; gap: 8px; align-items: center; font-size: 13.5px; }
-.steps li b { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--ice-2); display: grid; place-items: center; font-size: 11px; }
+.steps li { display: grid; grid-template-columns: 28px 96px 1fr; gap: 8px; align-items: center; font-size: 15px; }
+.steps li b { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--ice-2); display: grid; place-items: center; font-size: 11px; }
 .steps li span { font-weight: 700; } .steps li em { font-style: normal; color: var(--ink-2); }
-.reader h4 { margin: 14px 0 6px; font-size: 12px; color: var(--ink-2); font-weight: 600; }
+.reader h4 { margin: 16px 0 7px; font-size: 13.5px; color: var(--ink-2); font-weight: 600; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.tags span, .tags button { font-size: 12.5px; padding: 3px 10px; border-radius: 6px; background: rgba(207, 230, 255, .14); border: 1px solid var(--edge); }
+.tags span, .tags button { font-size: 14px; padding: 4px 11px; border-radius: 6px; background: rgba(207, 230, 255, .14); border: 1px solid var(--edge); }
 .tags button::before { content: "▮ "; color: var(--acc); }
-.reader ul.ins { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.75; }
+.reader ul.ins { margin: 0; padding-left: 18px; font-size: 15px; line-height: 1.75; }
 .stamp { position: absolute; right: 26px; bottom: 22px; width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--ice-2); display: grid; place-items: center; text-align: center; font-size: 11px; font-weight: 800; color: var(--ice); transform: rotate(-12deg); }
 .reader .close { position: absolute; top: 14px; right: 16px; z-index: 2; }
 
 @media (max-width: 760px) {
   body { overflow: auto; }
+  .reader { --pw: min(420px, 100%); --ph: auto; }
+  .bigcover { height: auto; aspect-ratio: 3 / 4; }
   .spread .book, .reader .book { grid-template-columns: minmax(0, 1fr); }
   .shelfbox { transform: scale(.7); }
+}
+/* 작은 노트북 화면 — 키운 책장이 가운데 플로로·이름표와 겹치지 않게 조금 줄인다 */
+@media (min-width: 761px) and (max-width: 1366px), (min-width: 761px) and (max-height: 800px) {
+  .shelfbox { transform: scale(.84); transform-origin: top center; }
+  .slot { width: 112px; height: 140px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
@@ -179,15 +191,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .reader .bigcover { display: none; }
 .reader.cover .book { display: none; }
 .reader.cover .bigcover { display: flex; }
-.bigcover { width: min(360px, 90vw); aspect-ratio: 3 / 4; border: 0; border-radius: 6px 16px 16px 6px; padding: 36px 30px; text-align: left; flex-direction: column; gap: 8px;
+.bigcover { width: var(--pw); height: var(--ph); border: 0; border-radius: 6px 16px 16px 6px; padding: 44px 38px; transform-origin: left center; backface-visibility: hidden; -webkit-backface-visibility: hidden; text-align: left; flex-direction: column; gap: 8px;
   background: linear-gradient(160deg, #d9ecff, #79a6f2); color: #12205a; box-shadow: inset 10px 0 0 rgba(0, 0, 0, .12), 0 30px 70px rgba(0, 0, 0, .55); position: relative; animation: fade .35s ease-out; }
-.bigcover .kick { font-size: 12px; font-weight: 700; opacity: .8; }
-.bigcover b { font-size: 30px; line-height: 1.25; letter-spacing: -.5px; margin-top: 6px; }
+.bigcover .kick { font-size: 13.5px; font-weight: 700; opacity: .8; }
+.bigcover b { font-size: 38px; line-height: 1.25; letter-spacing: -.5px; margin-top: 6px; }
 .bigcover i { width: 46px; height: 3px; background: #12205a; opacity: .5; margin: 8px 0; }
-.bigcover span { font-size: 13.5px; }
-.bigcover .stamp { position: absolute; right: 26px; bottom: 50px; width: 74px; height: 74px; border-radius: 50%; border: 3px solid #12205a; display: grid; place-items: center; text-align: center; font-weight: 800; font-size: 13px; transform: rotate(-10deg); }
-.bigcover em { position: absolute; left: 30px; bottom: 18px; font-style: normal; font-size: 12px; opacity: .7; }
-.rd-foot { margin-top: 16px; padding-top: 10px; border-top: 1px solid var(--edge); font-size: 12px; color: var(--ink-2); }
+.bigcover span { font-size: 15.5px; }
+.bigcover .stamp { position: absolute; right: 30px; bottom: 56px; width: 88px; height: 88px; border-radius: 50%; border: 3px solid #12205a; display: grid; place-items: center; text-align: center; font-weight: 800; font-size: 13px; transform: rotate(-10deg); }
+.bigcover em { position: absolute; left: 38px; bottom: 22px; font-style: normal; font-size: 13.5px; opacity: .7; }
+.rd-foot { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--edge); font-size: 13px; color: var(--ink-2); }
 .rv { width: min(1080px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; border-radius: 22px; padding: 22px 26px; position: relative; background: rgba(14, 24, 72, .92); }
 .rv header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .rv header .kick { font-size: 12px; color: var(--ink-2); }
@@ -220,3 +232,24 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .lv i.on { background: var(--gold); box-shadow: 0 0 6px rgba(255, 217, 138, .6); }
 .lv em { font-style: normal; font-size: 12px; color: var(--ink-2); margin-left: 6px; }
 .rv h3 small { font-weight: 400; font-size: 11.5px; color: var(--mute); margin-left: 4px; }
+
+/* ── 책 펼치기 (2026-10-18 claude-drafted, library.js openBook) — 넘어가는 동안 표지와 펼친 책이 겹쳐 보인다 ── */
+.reader.opening .book { display: grid; background: transparent; border-color: transparent; box-shadow: none; overflow: visible; }
+.reader.opening .book::after, .reader.opening .close { visibility: hidden; }
+.reader.opening section { background: #16245f; box-shadow: 0 30px 80px rgba(0, 0, 0, .45); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.reader.opening section:first-child { border-radius: 16px 0 0 16px; transform-origin: right center; }
+.reader.opening section:last-child { border-radius: 0 16px 16px 0; }
+.reader.opening .bigcover { animation: none; z-index: 2; }
+.reader.opening section > * { opacity: 0; }   /* 넘기는 동안 쪽은 비어 있고, 다 펼친 뒤 글이 차례로 떠오른다(영상 41~42초) */
+/* 다 펼친 뒤 쪽 안의 글이 차례로 떠오른다 */
+.book.fresh section > *, .book.fresh .steps li { animation: pg-in .45s cubic-bezier(.2, .8, .2, 1) both; }
+.book.fresh section > :nth-child(2) { animation-delay: .05s; } .book.fresh section > :nth-child(3) { animation-delay: .1s; }
+.book.fresh section > :nth-child(4) { animation-delay: .15s; } .book.fresh section > :nth-child(5) { animation-delay: .2s; }
+.book.fresh section > :nth-child(6) { animation-delay: .25s; } .book.fresh section > :nth-child(n+7) { animation-delay: .3s; }
+.book.fresh .steps li:nth-child(1) { animation-delay: .12s; } .book.fresh .steps li:nth-child(2) { animation-delay: .17s; }
+.book.fresh .steps li:nth-child(3) { animation-delay: .22s; } .book.fresh .steps li:nth-child(4) { animation-delay: .27s; }
+.book.fresh .steps li:nth-child(5) { animation-delay: .32s; } .book.fresh .steps li:nth-child(6) { animation-delay: .37s; }
+.book.fresh .steps li:nth-child(7) { animation-delay: .42s; } .book.fresh .steps li:nth-child(n+8) { animation-delay: .47s; }
+.reader .book.fresh section > .stamp { animation: stamp-in .5s cubic-bezier(.3, 1.6, .5, 1) .5s both; }
+@keyframes pg-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes stamp-in { from { opacity: 0; transform: rotate(-12deg) scale(1.8); } }
