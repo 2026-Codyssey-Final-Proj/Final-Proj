@@ -7,7 +7,7 @@ const path = require("node:path");
 const Nav = require("../../03-backend/navigator/navigator.js");
 const S = require("../../03-backend/navigator/scenario.js");
 const Cat = require("../../02-frontend/navigator/seal.js");
-const { allowed, recent, addEvent } = require("../../03-backend/navigator/server.js");
+const { allowed, recent, addEvent, handle } = require("../../03-backend/navigator/server.js");
 const Connect = require("../../03-backend/navigator/connect.js");
 const BACK = path.join(__dirname, "../../03-backend/navigator");
 const FRONT = path.join(__dirname, "../../02-frontend/navigator");
@@ -149,7 +149,7 @@ test("parseJudgement: 지어낸 근거를 주면 거부된다 — 글에 없는 
   raw.criteria[2] = { met: true, evidence: "" };                        // 근거 없이 '했다'
   raw.criteria[3] = { met: true, evidence: "필요한  기능을\n6개" };      // 띄어쓰기·줄바꿈만 다른 실제 구절
   const j = Nav.parseJudgement(raw, ex.text, 2);
-  assert.deepEqual(j.criteria.map((c) => c.met), [true, false, false, true]);
+  assert.deepEqual(j.criteria.map((c) => c.met), [true, false, false, true, false]);
   assert.equal(j.criteria[1].evidence, "", "지어낸 구절은 화면에 보이지 않는다");
   assert.equal(Nav.parseJudgement(raw, "", 2).criteria.some((c) => c.met), false, "글이 없으면 아무것도 '했다'가 아니다");
 });
@@ -182,7 +182,7 @@ test("가상 시나리오: 미리 만든 응답에 없는 입력은 살펴보지
   assert.equal(S.judgeFixture(S.examples[1].text, 0), null, "다른 단계의 장면은 고르지 않는다");
 });
 
-test("가상 시나리오: 연습 1에서 선택지를 하나 고르면 '하나 정함' 장면(2/4)으로 간다", () => {
+test("가상 시나리오: 연습 1에서 선택지를 하나 고르면 '하나 정함' 장면(2/5)으로 간다", () => {
   const base = S.examples[0], q = base.judgement.next;
   for (const o of q.options) {
     const j = S.judgeFixture(`${base.text}\n${Nav.decisionLine(q.question, o)}`, 2);
@@ -228,6 +228,93 @@ test("judgePrompt: 코드가 정한 단계와 그 할 일, 사용자 글이 들�
   assert.ok(!p.includes(Nav.STAGES[5].title), "다른 단계는 판정하지 않는다");
   assert.ok(p.includes("동아리 앱"));
   assert.ok(p.includes("로 정했어요."));
+});
+
+// 판정 규칙 ③·④(rules-review 4절) — 확정 후보 2026-10-18, 이재엽 확인 대기
+// ③ 빠진 할 일: 3단계 흔히 쓰는 방법 목록·원칙 대조, 5단계 막을 일 일부러 어겨 보기, 1~7단계 보안 점검 한 줄(checklist.md)
+test("판정 규칙 ③: 3단계에 흔히 쓰는 방법 목록·원칙 대조가, 5단계에 일부러 어겨 보기가, 1~7단계마다 보안 점검이 있다", () => {
+  const terms = (n) => Nav.STAGES[n].criteria.map((c) => c.term).join(" | ");
+  for (const t of [/표준 카탈로그/, /원칙표/, /화면 원칙/]) assert.match(terms(3), t);
+  for (const t of [/Unwanted/, /위반 시도/]) assert.match(terms(5), t);
+  for (let n = 1; n <= 7; n++) assert.ok(Nav.STAGES[n].criteria.some((c) => c.term.startsWith("보안 점검")), `${n}단계 보안 점검`);
+});
+
+test("판정 규칙 ③: 등급마다 단계의 할 일은 1~5개다 — 한 번에 볼 수 있는 만큼", () => {
+  for (const s of Nav.STAGES) for (const t of Nav.TIERS) {
+    const n = Nav.criteriaFor(s.n, t).length;
+    assert.ok(n >= 1 && n <= 5, `${s.n}단계 ${t}: ${n}개`);
+  }
+});
+
+// ④ 등급별 할 일 — tiers가 없으면 모든 등급. 등급 이름은 scope-tiers.md
+test("판정 규칙 ④: 등급은 Full·Xpress·Lite이고, 할 일에 단 등급은 모두 아는 이름이다", () => {
+  assert.deepEqual(Nav.TIERS, ["Full", "Xpress", "Lite"]);
+  for (const s of Nav.STAGES) for (const c of s.criteria) if ("tiers" in c) {
+    assert.ok(c.tiers.length > 0 && c.tiers.every((t) => Nav.TIERS.includes(t)), `${s.n}단계: ${c.text}`);
+  }
+});
+
+test("판정 규칙 ④: Lite·Xpress 등급이면 5단계에 '일부러 어겨 보기'가 없고, Full에는 있다", () => {
+  const has = (t) => Nav.criteriaFor(5, t).some((c) => c.text.includes("일부러 어겨"));
+  assert.deepEqual([has("Full"), has("Xpress"), has("Lite")], [true, false, false]);
+  assert.ok(Nav.judgePrompt("동아리 앱", 5, "Full").includes("일부러 어겨"));
+  assert.ok(!Nav.judgePrompt("동아리 앱", 5, "Lite").includes("일부러 어겨"), "AI에게도 묻지 않는다");
+});
+
+test("판정 규칙 ④: 등급을 안 주거나 모르는 등급이면 Full과 같다 — Full은 STAGES의 할 일 전부", () => {
+  for (const s of Nav.STAGES) {
+    assert.deepEqual(Nav.criteriaFor(s.n, "Full"), s.criteria, `${s.n}단계: 등급 없이 STAGES를 쓰는 화면도 그대로 맞는다`);
+    for (const t of [undefined, null, "엉뚱", "full"]) assert.deepEqual(Nav.criteriaFor(s.n, t), s.criteria, `${s.n}단계 ${t}`);
+  }
+  assert.equal(Nav.judgePrompt("x", 5), Nav.judgePrompt("x", 5, "Full"));
+  assert.equal(Nav.draftPrompt(1, "x"), Nav.draftPrompt(1, "x", "Full"));
+  assert.deepEqual(Nav.criteriaFor(9, "Full"), [], "없는 단계");
+});
+
+test("판정 규칙 ④: 등급에 맞는 할 일 개수만 받는다 — Lite 5단계 응답에 Full 개수를 주면 버린다", () => {
+  const lite = Nav.criteriaFor(5, "Lite"), full = Nav.criteriaFor(5, "Full"), text = "확인할 방법부터 정하고 만들었어요";
+  assert.ok(lite.length < full.length);
+  const raw = (n) => ({ reason: "r", criteria: Array.from({ length: n }, (_, i) => ({ met: i === 0, evidence: i === 0 ? text : "" })),
+    next: { what: "w", why: "y", question: "q", options: ["가", "나"], action: "a" } });
+  const j = Nav.parseJudgement(raw(lite.length), text, 5, "Lite");
+  assert.deepEqual(j.criteria.map((c) => c.text), lite.map((c) => c.text));
+  assert.deepEqual(j.criteria.map((c) => c.met), lite.map((_, i) => i === 0));
+  assert.equal(Nav.parseJudgement(raw(full.length), text, 5, "Lite"), null);
+  assert.equal(Nav.parseJudgement(raw(lite.length), text, 5), null, "등급이 없으면 Full 개수를 받는다");
+  assert.ok(Nav.parseJudgement(raw(full.length), text, 5));
+  assert.ok(Nav.judgePrompt(text, 5, "Lite").includes(`같은 개수(${lite.length}개)`));
+});
+
+test("판정 규칙 ④: 설계도 초안·다시 보기 요청에도 그 등급의 할 일만 넣는다", () => {
+  const prd = Nav.STAGES[1].criteria.find((c) => c.term === "PRD").text;
+  assert.ok(Nav.draftPrompt(1, "동아리 앱").includes(prd));
+  assert.ok(!Nav.draftPrompt(1, "동아리 앱", "Xpress").includes(prd));
+  assert.ok(Nav.reviewPrompt(1, "동아리 앱", "1. 신청", "Full").includes(prd));
+  assert.ok(!Nav.reviewPrompt(1, "동아리 앱", "1. 신청", "Lite").includes(prd));
+});
+
+test("서버: 모르는 등급을 보내면 AI를 부르지 않고 거절한다 (즉시 처리는 밟을 단계가 없다)", async () => {
+  assert.equal(typeof handle, "function", "server.js가 요청 처리기를 내보낸다");
+  const http = require("node:http");
+  const srv = http.createServer(handle);
+  await new Promise((r) => srv.listen(0, "127.0.0.1", r));
+  const host = `127.0.0.1:${Number(process.env.NAV_PORT) || 4317}`;   // allowed()가 보는 주소
+  const post = (url, body) => new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = http.request({ host: "127.0.0.1", port: srv.address().port, path: url, method: "POST",
+      headers: { host, "content-type": "application/json", "content-length": Buffer.byteLength(data) } },
+    (res) => { let b = ""; res.on("data", (d) => (b += d)); res.on("end", () => resolve([res.statusCode, JSON.parse(b)])); });
+    req.on("error", reject);
+    req.end(data);
+  });
+  try {
+    for (const url of ["/api/judge", "/api/answer", "/api/draft", "/api/review"]) {
+      for (const tier of ["Huge", "full", "즉시처리", 3, ""]) {
+        const got = await post(url, { text: "동아리 앱", stage: 2, question: "q", doc: "1. 신청", tier });
+        assert.deepEqual(got, [400, { ok: false, reason: "모르는 등급" }], `${url} ${JSON.stringify(tier)}`);
+      }
+    }
+  } finally { srv.close(); }
 });
 
 test("플로로: 표정 이름이 그림에 들어가고, 작으면 입을 빼고, 모르는 표정은 기본으로", () => {
@@ -445,7 +532,7 @@ test("설계도 플로로: 상황마다 말이 짧고 쉬운 말이며, 표정�
 test("다시 왔을 때 인사: 언제였는지와 몇 개까지 했는지 말하고, 기록이 이상하면 말하지 않는다", () => {
   const j = Nav.parseJudgement(S.examples[0].judgement, S.examples[0].text, 2), now = new Date(2026, 9, 14, 21).getTime();
   const at = (d, h) => new Date(2026, 9, d, h).getTime();
-  assert.equal(Nav.welcome({ j, at: at(13, 23) }, now), "어제 2단계 할 일 4개 중 1개까지 하셨어요. 이어서 해요!");
+  assert.equal(Nav.welcome({ j, at: at(13, 23) }, now), "어제 2단계 할 일 5개 중 1개까지 하셨어요. 이어서 해요!");
   assert.match(Nav.welcome({ j, at: at(14, 9) }, now), /^아까 /);
   assert.match(Nav.welcome({ j, at: at(11, 9) }, now), /^3일 전에 /);
   assert.match(Nav.welcome({ j: Nav.parseJudgement(S.examples[1].judgement, S.examples[1].text, 2), at: at(13, 9) }, now), /다 하셨어요/);
