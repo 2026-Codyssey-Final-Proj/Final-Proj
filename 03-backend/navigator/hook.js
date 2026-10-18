@@ -20,9 +20,12 @@ process.stdin.on("end", () => {
   let ev;
   try { ev = JSON.parse(input); } catch { return; }
   // 요청을 받을 때는 사용자의 요청(prompt), 작업을 마칠 때는 Claude의 마지막 답(last_assistant_message)만 넘긴다
+  // 아주 긴 답은 앞 16,000자만 보낸다(claude-drafted: 2026-10-18, API.md 4절 10번) — 서버 본문 한도(4만 자)에 걸려 알림이 버려지지 않게.
+  // 서버는 가린 뒤 앞 4,000자만 쓰므로, 여기서 자른 자리에 걸친 키 조각은 서버가 버리는 뒷부분에 있다(4,000자에서 자르면 반쪽 키가 가림을 피할 수 있다)
+  const cut = (t) => (typeof t === "string" ? t.slice(0, 16000) : t);
   const body = JSON.stringify({
     hook_event_name: ev.hook_event_name, session_id: ev.session_id, cwd: ev.cwd,
-    prompt: ev.prompt, last_assistant_message: ev.last_assistant_message, tool: TOOL,
+    prompt: cut(ev.prompt), last_assistant_message: cut(ev.last_assistant_message), tool: TOOL,
   });
   let token = "";
   try { token = fs.readFileSync(TOKEN_FILE, "utf8").trim(); } catch {}

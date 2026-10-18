@@ -138,6 +138,17 @@ test("S3: hook.js는 확인 값 파일을 읽어 같이 보내 알림이 화면�
   assert.ok((await events(0)).json.events.some((e) => e.work.includes("훅이 보낸 답")));
 });
 
+test("hook.js는 아주 긴 마지막 답(4만 자 넘게)도 줄여 보내 알림이 버려지지 않는다 (API.md 4절 10번)", async () => {
+  await new Promise((resolve) => {
+    const c = spawn(process.execPath, [path.join(BACK, "hook.js")], { env: { ...process.env, NAV_PORT: String(port), NAV_EVENT_TOKEN_FILE: TOKEN_FILE } });
+    c.on("close", resolve);
+    c.stdin.end(JSON.stringify({ hook_event_name: "Stop", session_id: "long-hook", cwd: "/work/club-app", last_assistant_message: `긴 답의 첫머리 ${"가".repeat(60000)}` }));
+  });
+  const mine = (await events(0)).json.events.filter((e) => e.work.includes("긴 답의 첫머리"));
+  assert.equal(mine.length, 1, "413으로 버려지지 않고 화면까지 온다");
+  assert.ok(mine[0].work.length <= 4000, "서버는 그중 앞 4,000자만 쓴다");
+});
+
 // ── S4 받은 글 검사 ──
 test("S4: 키·토큰 모양 글과 비밀번호 대입, 전화번호·이메일은 /api/events에서 그대로 나오지 않는다", async () => {
   const raw = [FAKE_KEY, FAKE_GH, "010-1234-5678", "member@club.example.com", "hunter2pass"];
