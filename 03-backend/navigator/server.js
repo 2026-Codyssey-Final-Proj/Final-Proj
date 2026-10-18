@@ -123,10 +123,13 @@ async function handle(req, res) {
     return ev ? send(res, 200, { ok: true, seq: ev.seq }) : refuse(res, "알 수 없는 알림");
   }
   if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
+  // 규모 등급 — 안 보내면 Full(navigator.js). 보냈는데 Full·Xpress·Lite가 아니면 거절한다(즉시 처리는 밟을 단계가 없다)
+  const { tier } = body;
+  if (tier != null && !Nav.TIERS.includes(tier)) return refuse(res, "모르는 등급");
 
   if (req.url === "/api/judge") {
     if (!Number.isInteger(body.stage) || !Nav.STAGES[body.stage]) return refuse(res, "지금 단계가 없음");
-    return ask(res, Nav.judgePrompt(body.text, body.stage), Nav.JUDGE_SCHEMA, as("judgement", (d) => Nav.parseJudgement(d, body.text, body.stage)), "판정");
+    return ask(res, Nav.judgePrompt(body.text, body.stage, tier), Nav.JUDGE_SCHEMA, as("judgement", (d) => Nav.parseJudgement(d, body.text, body.stage, tier)), "판정");
   }
   if (req.url === "/api/answer") {
     const hard = Array.isArray(body.hard) ? body.hard.map(String) : [];
@@ -137,9 +140,9 @@ async function handle(req, res) {
   if (req.url === "/api/draft" || req.url === "/api/review") {
     const s = Nav.STAGES[body.stage];
     if (!s || !s.doc) return refuse(res, "설계도를 만드는 단계가 아님");
-    if (req.url === "/api/draft") return ask(res, Nav.draftPrompt(s.n, body.text), Nav.DRAFT_SCHEMA, Nav.parseDraft, "초안");
+    if (req.url === "/api/draft") return ask(res, Nav.draftPrompt(s.n, body.text, tier), Nav.DRAFT_SCHEMA, Nav.parseDraft, "초안");
     if (!Nav.filled(body.doc)) return refuse(res, "설계도가 비어 있음");
-    return ask(res, Nav.reviewPrompt(s.n, body.text, body.doc), Nav.REVIEW_SCHEMA, as("review", Nav.parseReview), "다시 봐 준 결과의");
+    return ask(res, Nav.reviewPrompt(s.n, body.text, body.doc, tier), Nav.REVIEW_SCHEMA, as("review", Nav.parseReview), "다시 봐 준 결과의");
   }
   refuse(res, "없는 주소", 404);
 }
@@ -153,4 +156,4 @@ if (require.main === module) {
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
   });
 }
-module.exports = { allowed, recent, addEvent };
+module.exports = { allowed, recent, addEvent, handle };
