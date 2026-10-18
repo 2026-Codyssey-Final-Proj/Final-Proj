@@ -54,6 +54,14 @@ test("FR-6 · 한곳에서 보기 화면 글에 '가상 숫자' 표시가 있다
   assert.match(src, /가상 숫자/);
 });
 
+// claude-drafted: 2026-10-18 — F-17(원칙 P7 "가상 데이터는 화면에 가상이라고 표시"): 서고와 지식 은하도 더미 데이터라는 것을 주석이 아니라 화면 머리에 적는다
+test("FR-8 · 서고와 지식 은하의 머리에 '예시 데이터' 표시가 있다 — 더미 책 · 별을 진짜 기록으로 오해하지 않게 (F-17)", () => {
+  for (const page of ["02-frontend/library/index.html", "02-frontend/library/sky.html"]) {
+    const html = fs.readFileSync(path.join(ROOT, page), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+    assert.match(html, /<div class="lib-head glass">[^\n]*<span class="fake">예시 데이터예요 · 시연용<\/span>/, page);
+  }
+});
+
 // ── FR-8 ──
 test("FR-8 · 끝낸 책이 쌓이면 배운 것마다 네 단계 중 하나의 레벨과 노력(책 수 · 날 수)이 보이고, 열어 둔 책에만 있는 배움은 '처음 봄'이다", () => {
   assert.equal(Sk.LEVELS.length, 4, "레벨 4단계(requirements.md 5절)");

@@ -93,7 +93,7 @@ def gate(page, r):                   # 03 FR-4·5·12: 이해하셨나요? → �
 
 def overview(page, r):               # 04 FR-6: '지금' → '한곳에서 보기' 탭
     open_nav(page, "ex=2"); r.still(900)
-    r.click("[data-act=tab][data-i='4']", hold=1400)
+    r.click("[data-act=tab][data-tab=all]", hold=1400)   # 탭은 순서가 아니라 이름으로 — 2026-10-18 '내 배움' 탭을 빼며 순서가 바뀌었다(F-05)
     r.still(1800)
 
 
@@ -114,10 +114,10 @@ def share(page, r):                  # 06 FR-9: 예시 글 → 점검 → 팀 �
     page.select_option("#viewer", index=1); page.wait_for_timeout(250); r.still(1800)
 
 
-def plain_words(page, r):            # 07 FR-13: 용어는 작게 → '내 배움'의 배운 말
+def plain_words(page, r):            # 07 FR-13: 용어는 작게 → 누르면 한 줄 풀이 → 서재 '내 배움'의 배운 말(2026-10-18 F-05: 오버레이 탭에서 옮김)
     open_nav(page, "ex=2&crit"); r.still(1400)
-    r.click("[data-act=tab][data-i='3']", hold=1200)
-    r.still(1800)
+    r.click("[data-act=term]", hold=1200)
+    page.goto("about:blank"); page.goto(f"{LIB}#lib-learn"); page.wait_for_timeout(900); r.hold(600); r.still(1800)
 
 
 def floro(page, r):                  # 08 마스코트: 고개 돌리기 · 쓰다듬기

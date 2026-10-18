@@ -107,10 +107,12 @@ before(async () => {
 after(() => { srv && srv.close(); fs.rmSync(TMP, { recursive: true, force: true }); });
 
 // body: 객체면 JSON으로, raw: 글자 그대로 보낸다
-function call(method, url, { headers = {}, body, raw } = {}) {
+// F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI 네 주소도 확인 값이 있어야 한다 — 화면이 쿠키로 싣듯 여기서는 머리글을 기본으로 싣는다. token:false면 싣지 않는다
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review"];
+function call(method, url, { headers = {}, body, raw, token: withTok = AI_ROUTES.includes(url.split("?")[0]) } = {}) {
   return new Promise((resolve, reject) => {
     const data = raw !== undefined ? raw : body === undefined ? undefined : JSON.stringify(body);
-    const h = { ...(data !== undefined ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}), ...headers };
+    const h = { ...(data !== undefined ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}), ...(withTok ? { "X-Nav-Token": token() } : {}), ...headers };
     const req = http.request({ host: "127.0.0.1", port, path: url, method, headers: h, timeout: 10_000 }, (res) => {
       let text = "";
       res.setEncoding("utf8");
@@ -193,7 +195,7 @@ test("공통: 물음표 뒤 값은 API 주소를 바꾸지 않는다 — 화면 
 
 const PAGES = ["/", "/index.html", "/navigator/index.html", "/library/index.html", "/library/sky.html", "/share/index.html"];
 
-test("화면 파일: 페이지(html)는 확인 값 쿠키(HttpOnly·SameSite=Strict·Path=/api/events)와 no-store, 스크립트·스타일은 쿠키 없이", async () => {
+test("화면 파일: 페이지(html)는 확인 값 쿠키(HttpOnly·SameSite=Strict·Path=/api)와 no-store, 스크립트·스타일은 쿠키 없이", async () => {
   for (const page of PAGES) {
     const r = await call("GET", page);
     assert.equal(r.status, 200, page);
@@ -202,7 +204,7 @@ test("화면 파일: 페이지(html)는 확인 값 쿠키(HttpOnly·SameSite=Str
     const cookie = (r.headers["set-cookie"] || []).find((c) => c.startsWith("nav_event_token="));
     assert.ok(cookie, page);
     assert.equal(cookie.split(";")[0], `nav_event_token=${token()}`);
-    for (const part of [/;\s*HttpOnly/i, /;\s*SameSite=Strict/i, /;\s*Path=\/api\/events(;|$)/]) assert.match(cookie, part, page);
+    for (const part of [/;\s*HttpOnly/i, /;\s*SameSite=Strict/i, /;\s*Path=\/api(;|$)/]) assert.match(cookie, part, page);
     assert.ok(!r.text.includes(token()), `${page} 글에 확인 값이 없다`);
   }
   for (const [url, type] of [["/app.js", "text/javascript"], ["/app.css", "text/css"], ["/03-backend/navigator/navigator.js", "text/javascript"]]) {
@@ -241,6 +243,17 @@ test("확인 값: 알림 세 주소는 값이 없거나 틀리면 403 — 방법
     refused(await call("DELETE", "/api/events", { headers }), 403, no);
   }
   refused(await call("DELETE", "/api/events", { headers: withToken() }), 404, "없는 주소", "값이 맞으면 그다음에 주소를 본다");
+});
+
+test("확인 값: AI 네 주소도 값이 없거나 틀리면 403 — 본문을 읽기 전, AI를 부르기 전에 (F-04)", async () => {
+  const no = /^확인 값이 없거나 맞지 않음/;
+  for (const url of AI_ROUTES) {
+    for (const headers of [{}, { "X-Nav-Token": "wrong-value" }, { Cookie: "nav_event_token=wrong-value" }]) {
+      refused(await call("POST", url, { body: { text: "동아리 앱", stage: 2, question: "q", doc: "1. 신청" }, headers, token: false }), 403, no, `${url} ${JSON.stringify(headers)}`);
+    }
+    refused(await call("POST", url, { raw: "{not json", token: false }), 403, no, `${url}: 본문보다 확인 값이 먼저`);
+    assert.notEqual((await call("POST", url, { body: { text: "동아리 앱", stage: 2 }, headers: { Cookie: `nav_event_token=${token()}` }, token: false })).status, 403, `${url}: 화면의 쿠키로도 된다`);
+  }
 });
 
 test("확인 값: 머리글(X-Nav-Token)이 있으면 머리글만 본다 — 틀린 머리글에 맞는 쿠키를 같이 보내도 403", async () => {
@@ -413,7 +426,6 @@ test("POST /api/judge: 녹화에 없는 요청(AI 실패)은 502와 공급자가
 });
 
 // 네 AI 주소가 같이 쓰는 거절 — 본문 칸 순서: 글 → 등급 → 주소별 칸
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review"];
 const good = { stage: 2, question: "질문", doc: "1. 신청" };
 
 test("AI 네 주소 공통: 글이 없거나 비면 400 '작업 내용이 비어 있음', 모르는 등급은 400 '모르는 등급' — AI를 부르지 않는다", async () => {

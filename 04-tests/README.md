@@ -8,9 +8,10 @@
 |---|---|---|
 | `run_all_tests.py` | **이것 하나로 전부 돌린다** (파이썬 시험 + 노드 시험) | — |
 | `navigator/` | 시연 화면과 서버 — 단계 판정, 쉬운 말, 키 보호, 녹화·재생 | [03-backend/navigator](../03-backend/navigator/README.md), [02-frontend/navigator](../02-frontend/navigator/README.md) |
-| `library/` | 도서관 시안 — 마감 계산, 역량 지도, 서고 검색, 별자리 하늘 | [02-frontend/library](../02-frontend/library/README.md) |
+| `library/` | 도서관 시안 — 마감 계산, 역량 지도, 서고 검색, 별자리 하늘, 내 배움 기록 읽기 | [02-frontend/library](../02-frontend/library/README.md) |
 | `share/` | "나만 보기" 공유 규칙 — 글이 누구에게 보이는지 | [03-backend/share](../03-backend/README.md) |
 | `hooks/` | Claude가 커밋·푸시할 때 막는 자동 검사 장치(훅) | `.claude/hooks/` |
+| `e2e/` | **브라우저로 연 화면** — 휴대폰 폭(390px)에서 가로 스크롤이 없는지(고칠 목록 F-15). puppeteer · Chrome이 없으면 **건너뜀**을 알리고 실패하지 않는다 | `02-frontend/` 페이지 (파일로 바로 염) |
 | `acceptance/` | **수용 테스트**(이슈 #17) — 요구(FR)마다 Given-When-Then 장면, 자동 시험과 사람이 화면으로 볼 것 | [acceptance/README.md](acceptance/README.md) |
 
 수용 테스트는 2026-10-18에 Claude 초안으로 생겼다(이재엽 요청, 두승현 검토). 장면마다 상태(자동 통과 / 사람 확인 필요 / 아직 없음)가 적혀 있다.
