@@ -29,7 +29,7 @@
 
 | 문제/프로젝트 | 트랙 | 등급 | 사용한 패턴 | 게이트 | 테스트 | 세션 파일 |
 |---|---|---|---|---|---|---|
-| Floe (팀 제품, 작업 이름 Project Navigator) | 프로젝트 | Full · PRD 상세형 | ADR 0002~0009 (`03-pattern-analysis/adr/`) | 1 (Recycle: PRD 11섹션 확인 대기) · 2→3 자기 판정 Go | `python3 04-tests/run_all_tests.py` (2026-10-18 · 263개 통과) | [2026-10-18-floe.md](project-track/2026-10-18-floe.md) |
+| Floe (팀 제품, 작업 이름 Project Navigator) | 프로젝트 | Full · PRD 상세형 | ADR 0002~0009 (`03-pattern-analysis/adr/`) | 3 (2→3 Go 2026-10-18 · 리뷰 판정 Recycle: 성공 수치 목표 숫자 10/26) | `python3 04-tests/run_all_tests.py` (2026-10-18 · 263개 통과) | [2026-10-18-floe.md](project-track/2026-10-18-floe.md) |
 
 전체 테스트를 한 번에 돌리려면: `python3 04-tests/run_all_tests.py`
 
