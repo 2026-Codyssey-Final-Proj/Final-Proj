@@ -22,23 +22,31 @@ npm run dist                # Mac: dist/Floe-<버전>-arm64.dmg  (서명 없음 
 npm run dist:win            # Windows에서만: dist/Floe-Setup-<버전>.exe
 ```
 
-- 포트는 `NAV_PORT`(기본 4317). **같은 포트에 Floe 서버가 이미 켜져 있으면**(터미널의 `floe.js` · `server.js`) 새로 켜지 않고 그쪽 화면을 연다 — 옛 코드가 떠 있으면 옛 화면이 보인다. 먼저 끄거나 `NAV_PORT`를 바꾼다.
+- 포트는 `NAV_PORT`(기본 4317)부터 **빈 포트**를 찾아 앱이 늘 자기 서버를 켠다. 터미널에 다른 Floe 서버가 떠 있어도 거기 붙지 않는다(첫 알파의 "옛 화면" 문제).
 - 내 API 키로 쓰려면 메뉴 **Floe → 설정 폴더 열기**에 `.env`를 둔다(모양은 [`../../03-backend/navigator/.env.example`](../../03-backend/navigator/.env.example)). 없으면 이 컴퓨터의 Claude Code 구독. 키는 앱 묶음 · 저장소에 들어가지 않는다.
 - **프로젝트 폴더 연결**(메뉴 또는 톱니 → 연결 칸의 단추)은 그 폴더의 `.claude/settings.local.json`에 훅을 더한다 — `connect.js --apply`와 같은 규칙 · 백업. 훅은 `node`로 `app.asar.unpacked` 안의 `hook.js`를 부르므로 **그 컴퓨터에 node가 있어야 한다**(팀 알파에서는 모두 있다). node 없는 사람을 위한 길은 미정.
 - 기록(내 책 · 느낀 점)은 앱 안의 브라우저 저장소에 남는다 — 브라우저로 연 화면과는 따로다.
 
-## 받기
+## 받기 · 업데이트 — 자동화
 
-묶은 파일은 저장소가 아니라 [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에 올린다 — 첫 알파 `app-v0.3.0-alpha`(2026-10-19, `Floe-0.3.0-arm64.dmg`, 100MB). 새로 묶으면 `gh release create app-v<버전>-alpha dist/Floe-<버전>-arm64.dmg --prerelease`로 하나 더 올린다. 비공개 레포라 팀원만 받는다.
+묶은 파일은 저장소가 아니라 [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에 올린다(비공개 레포라 팀원만 받는다). 첫 알파는 `app-v3.0.0`(2026-10-19, `Floe-3.0.0-arm64.dmg`, 100MB).
+
+**새 버전을 내는 법 — 사람이 할 일은 숫자 하나:** 이 폴더 `package.json`의 `version`을 올려 PR → main에 병합. 그러면 [`.github/workflows/app-release.yml`](../../.github/workflows/app-release.yml)이
+① Release `app-v<버전>`을 만들고(이미 있으면 그대로) ② **Mac(arm64)과 Windows** 러너에서 `npm run dist` / `dist:win`을 돌려 ③ `.dmg` · `.exe`를 그 Release에 올린다. 비밀값 없음(저장소 기본 토큰), 서명 없음.
+Actions 탭에서 손으로도 돌릴 수 있다(workflow_dispatch). 비용: 비공개 저장소 Actions 분 — macOS 러너는 10배로 세어 한 번에 약 50분어치(무료 2,000분/월).
+
+**쓰는 사람 쪽:** 메뉴 **Floe → Floe <버전> · 새 버전 확인**이 Releases를 연다 — 받아서 덮어쓰면 된다. 기록(내 책 · 느낀 점)은 앱 설정 폴더에 남아 이어진다.
+**앱 안 자동 업데이트(electron-updater)는 아직 안 한다** — 비공개 저장소의 Release를 앱이 직접 받으려면 토큰을 앱에 넣어야 해서(새는 길) 못 쓰고, Release를 공개로 하면 코드 없이 묶음만 보인다. 둘 중 무엇으로 갈지는 이재엽 결정 — 그때까지는 "새 버전 확인 → 받기".
 
 ## 확인한 것 (2026-10-19, 이재엽의 Mac · arm64)
 
-- `npm run dist`로 `Floe-0.3.0-arm64.dmg`(100MB)가 나왔고, 묶은 앱을 포트 4399로 켜서 서버가 켜지고(`/api/usage` 200) 화면이 확인 값 쿠키와 함께 오며(`/` 200), 앱 안에서 `window.floeApp`이 있고 뒤 창이 숨고 바탕이 투명한 것을 CDP로 봤다.
-- 자동 시험에는 Electron을 넣지 않는다(묶음이 무겁다). `lib.js`만 Node 시험. 사람이 써 본 기록은 아직 없다.
+- `npm run dist`로 `Floe-3.0.0-arm64.dmg`(100MB)가 나왔고, 묶은 앱을 켜서 서버가 켜지고(`/api/usage` 200) 화면이 확인 값 쿠키와 함께 오며(`/` 200), 앱 안에서 `window.floeApp`이 있고 뒤 창이 숨고 바탕이 투명하며 유리 흐림 · 굴절이 꺼진 것을 CDP로 봤다. 4317이 막혀 있을 때 4318로 켜지는 것도.
+- **첫 알파(0.3.0)의 문제(이재엽 2026-10-19):** 같은 포트에 먼저 켜져 있던 옛 서버에 붙어 옛 화면 · 배경이 그대로 보였고, 투명 창 위의 유리 굴절 때문에 랙이 심했다. → 앱은 늘 자기 서버를 켜고(빈 포트), 앱 안에서는 굴절 · backdrop-filter를 끈다. 아이콘도 플로로로.
+- 자동 시험에는 Electron을 넣지 않는다(묶음이 무겁다). `lib.js`만 Node 시험. 사람이 써 본 기록은 이재엽 1회(0.3.0, 위 문제 보고).
 
 ## 아직 아닌 것
 
-- 서명 · 공증 없음(Apple 개발자 계정 필요 — 이재엽 결정). 앱 아이콘은 Electron 기본.
+- 서명 · 공증 없음(Apple 개발자 계정 필요 — 이재엽 결정). 아이콘은 `build/icon.png`(플로로 SVG를 1024px로 그린 것 — 원본 그림이 아니라 코드로 그린 플로로).
 - 창 크기 · 자리를 기억하지 않는다. 접힌 띠 크기로 창을 줄이는 것은 아직 — 창은 1040×760 고정 시작.
 - Windows `.exe`는 Windows에서 묶어야 한다(아직 안 해 봄). 노치 모양은 하지 않는다(Mac 전용).
 - 자동 업데이트 없음 — 새 버전은 다시 내려받는다.
