@@ -84,7 +84,7 @@ const STATIC = {
     "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
   "02-frontend/share": ["index.html"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js"],
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js"],
   "03-backend/share": ["share-rules.js", "scenarios.js", "environment-checks.js"],
 };
 const FILES = {};

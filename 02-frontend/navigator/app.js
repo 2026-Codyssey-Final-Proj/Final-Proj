@@ -640,8 +640,11 @@
         : c.kind === "일정과 겹침" ? `${esc(c.titles[0])} 마감 · 캘린더 ‘${esc(c.event)}’와 겹쳐요`
         : `${esc(c.titles[0])} 마감이 팀 ${esc(c.pin)}(${mmdd(c.pinDate)}) 뒤예요`}</small></li>`).join("")
       : `<li><small>14일 안에 겹치는 일정이 없어요</small></li>`;
-    const T = D.TOKENS, total = Object.values(T.plan).reduce((a, b) => a + b, 0), used = Object.values(T.used).reduce((a, b) => a + b, 0);
-    const tokens = Object.keys(T.plan).map((k) => `<li><span>${esc(T.names[k])}</span><i class="tbar"><i style="width:${(T.used[k] / T.plan[k]) * 100}%"></i></i><small>${fmt(T.used[k])} / ${fmt(T.plan[k])}</small></li>`).join("");
+    // 토큰 — 서버로 열면 /api/usage의 실제 값, 아니면 가상 숫자(F-12, token-view.js). 어느 쪽인지 칸 머리에 적는다
+    const TV = window.NavTokenView ? window.NavTokenView.view(usage, D.TOKENS) : null;
+    const tokRows = TV ? TV.rows : [], pct = (u, l) => (l ? Math.min(100, Math.round((u / l) * 100)) : 0);
+    const tokens = tokRows.map((r) => `<li><span>${esc(r.name)}</span><i class="tbar"><i style="width:${pct(r.used, r.limit)}%"></i></i><small>${fmt(r.used)}${r.limit ? ` / ${fmt(r.limit)}` : ""}</small></li>`).join("");
+    const tokHead = TV ? `${fmt(TV.used)}${TV.limit ? ` / ${fmt(TV.limit)} · ${pct(TV.used, TV.limit)}%` : ""}` : "";
     return `<div class="alltab"><div class="allhead"><b>한곳에서 보기</b><span class="fake">가상 숫자예요 · 시연용</span><span class="grow"></span>
         <small>오늘 ${mmdd(D.TODAY)} · 캘린더 일정 ${D.CALENDAR.length}개 읽음(제목·날짜만)${st.tokens ? ` · 이 화면의 마지막 호출 ${fmt(st.tokens)}토큰` : ""}</small></div>
       <div class="allgrid">
@@ -649,7 +652,7 @@
         <section><h4>내가 할 일 <small>마감 가까운 순</small></h4><ul class="alltodo">${todos}</ul></section>
         <section class="${clashes.length ? "hot" : ""}"><h4>일정 충돌 ${clashes.length ? `<span class="due late">${clashes.length}개</span>` : ""}</h4><ul class="clash">${clashHtml}</ul>
           <p class="hint">옮길지는 직접 정해요 — 프로젝트를 누르면 단계 지도나 책으로 가요</p></section>
-        <section><h4>토큰 사용 <small>${fmt(used)} / ${fmt(total)} · ${Math.round((used / total) * 100)}%</small>${termTag("토큰")}</h4><ul class="tok">${tokens}</ul></section>
+        <section><h4>토큰 사용 <small>${tokHead}</small>${termTag("토큰")}${TV && TV.source !== "fake" ? `<span class="okchip">${esc(TV.label)}</span>` : ""}</h4><ul class="tok">${tokens}</ul>${TV && TV.note ? `<p class="hint">${esc(TV.note)}</p>` : ""}</section>
       </div></div>`;
   }
   // 한 권의 책으로 엮기 — 책이 작아지며 서고로 넘어간다(서고 시안이 #lib-bound-<id>로 받아 책장에 꽂는다)
@@ -1036,12 +1039,18 @@
     if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")} — 서재의 '내 배움'에 모아 둘게요`));
   }
   const stop = (msg) => { st.error = msg; pendingNotice = ""; render(); };   // 보낼 수 없을 때 — 이유를 보여 주고 멈춘다
+  // 토큰 사용량(F-12) — 서버로 열었을 때만 /api/usage를 묻는다. 기록(save)에는 넣지 않는다(그때그때 서버에서 받는 값)
+  let usage = null;
+  function fetchUsage() {
+    if (!canLive) return;
+    fetch("/api/usage").then((r) => r.json()).then((j) => { usage = j && j.ok ? j : null; if (st.tab === "all" && !isPhone()) render(); }).catch(() => { usage = null; });
+  }
   // 진짜 AI에게 묻는 네 가지(어디쯤·물어보기·초안·다시 봐 주기)가 같이 쓰는 흐름:
   // [check가 있으면 비밀번호 같은 게 보일 때 먼저 멈춤] → 호출 → 성공이면 done(r), 실패면 지어내지 않고 이유만 보여 준다
   async function askAI(url, body, what, done, check) {
     if (check && guard(...check)) return;
     const r = await callAI(url, body);
-    if (r.ok) { st.tokens = r.tokens || 0; done(r); } else { st.error = `${what} — ${r.reason || "이유를 알 수 없어요"}. 지어내지 않고 비워 둘게요.`; pendingNotice = ""; }
+    if (r.ok) { st.tokens = r.tokens || 0; fetchUsage(); done(r); } else { st.error = `${what} — ${r.reason || "이유를 알 수 없어요"}. 지어내지 않고 비워 둘게요.`; pendingNotice = ""; }
     render();
   }
   function judge(skipCheck) {
@@ -1169,7 +1178,7 @@
     settings: () => set({ settings: !st.settings }),
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05)
     "lib-learn": () => enterLibrary("learn"),     // 지나온 단계 · 배운 말 · 확정한 설계도는 서재에서(F-05)
-    tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
+    tab: (i) => { set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }); if (TABS[i][0] === "all") fetchUsage(); },
     // 도서관 탭 — 책 고르기 · 덮기 · 세션 덮기(확인 뒤) · 한 권으로 엮기. 한곳에서 보기 — 프로젝트를 누르면 단계 지도(이 화면 것)나 그 책으로
     "lib-enter": () => enterLibrary(),
     "lib-book": (i, el) => set({ libSel: (el && el.dataset.id) || openBooks()[i].id, libConfirm: false }),
@@ -1379,7 +1388,7 @@
     st.notice = `${p.tool} 작업을 보고 끝냈다고 표시했어요: ${done.join(", ")}`;
     render();
   }
-  if (canLive) { poll(); setInterval(poll, 2000); }
+  if (canLive) { poll(); setInterval(poll, 2000); fetchUsage(); }
 
   // ── 뒤쪽 예시 화면: AI 도구로 작업하는 장면 ──
   const LINES = [

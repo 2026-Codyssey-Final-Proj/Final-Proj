@@ -295,3 +295,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
   #learn #lr-seal { display: none; }   /* 좁은 화면 — 제목과 닫기를 한 줄에 */
   #learn header > div:nth-child(2) { flex: 1; min-width: 0; }
 }
+
+/* ── 배운 말 풀이 (F-10, 2026-10-18 claude-drafted) — 누르면 바로 아래에 한 줄. 꼬리표 버튼의 '▮'(이어진 책 표시)는 붙이지 않는다 ── */
+.term { font: inherit; color: inherit; cursor: pointer; position: relative; text-decoration: underline dotted rgba(207, 230, 255, .55); text-underline-offset: 3px; }
+.tags button.term::before { content: none; }
+.chip.term { color: var(--ink-2); }
+.term .term-line { display: none; position: absolute; left: 0; top: calc(100% + 6px); z-index: 9; width: max-content; max-width: min(320px, 78vw); padding: 7px 11px; word-break: keep-all; border-radius: 10px;
+  background: #0e1a4f; border: 1px solid var(--edge); color: var(--ink); font-size: 12.5px; font-weight: 500; line-height: 1.5; white-space: normal; text-align: left; text-decoration: none;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .4); }
+.term[aria-expanded="true"] .term-line { display: block; }
+.bars li .term { text-align: left; background: none; border: 0; padding: 0; }

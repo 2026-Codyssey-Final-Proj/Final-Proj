@@ -9,6 +9,17 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const seal = (mood, size, opts) => (Seal ? Seal.svg(mood, size, opts) : "");
+  // 배운 말 풀이(F-10, FR-13을 서재에도) — 풀이가 있는 말(EARS · MoSCoW …)은 버튼이 되고, 누르면 그 자리에 쉬운 말 한 줄. 없으면 그냥 글
+  const termHtml = (text, cls = "") => {
+    const f = window.NavGlossary && window.NavGlossary.find(text);
+    if (!f) return `<span${cls ? ` class="${cls}"` : ""}>${esc(text)}</span>`;
+    return `<button type="button" class="${cls ? `${cls} ` : ""}term" data-term aria-expanded="false">${esc(text)}<span class="term-line" role="note">${esc(f.line)}</span></button>`;
+  };
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-term]");
+    document.querySelectorAll('[data-term][aria-expanded="true"]').forEach((x) => { if (x !== b) x.setAttribute("aria-expanded", "false"); });
+    if (b) { e.stopPropagation(); b.setAttribute("aria-expanded", String(b.getAttribute("aria-expanded") !== "true")); }
+  }, true);
 
   // 화면 안에서만 바뀌는 상태 (새로 고침하면 처음으로)
   const st = { open: D.OPEN.map((b) => ({ ...b })), shelved: [], answer: null, reading: null };
@@ -121,7 +132,7 @@
         <div class="board"></div><div class="label">${sh.label}</div>`;
       stage.appendChild(box);
     });
-    CHIPS.forEach(([t, s]) => { const c = document.createElement("span"); c.className = "chip"; c.style.cssText = s; c.textContent = t; stage.appendChild(c); });
+    CHIPS.forEach(([t, s]) => { const w = document.createElement("div"); w.innerHTML = termHtml(t, "chip"); const c = w.firstElementChild; c.style.cssText = s; stage.appendChild(c); });
     const last = st.shelved[st.shelved.length - 1];
     $("slot").innerHTML = last ? `방금 꽂은 책<br><b style="color:var(--ink)">${esc(last.title)}</b>` : `지금 쓰는 책 ${st.open.length}권<br>끝내면 여기 꽂혀요`;
     stage.querySelectorAll("[data-read]").forEach((b) => {
@@ -212,7 +223,7 @@
     $("reader").classList.toggle("cover", cover);
     $("rd-title").textContent = `${b.title}${b.sub ? ` ${b.sub}` : ""} — 단계마다 내가 정한 것`;
     $("rd-steps").innerHTML = b.steps.map((s, i) => `<li><b>${i}</b><span>${D.STAGES[i]}</span><em>${esc(s)}</em></li>`).join("");
-    $("rd-tags").innerHTML = b.tags.map((t) => `<span>${esc(t)}</span>`).join("");
+    $("rd-tags").innerHTML = b.tags.map((t) => termHtml(t)).join("");
     $("rd-ins").innerHTML = b.insights.map((t) => `<li>${esc(t)}</li>`).join("");
     $("rd-made").innerHTML = b.made.map((t) => `<span>${esc(t)}</span>`).join("");
     $("rd-links").innerHTML = b.links.map((l) => `<button data-read="${l}">${esc(D.SHELF.find((x) => x.id === l).title)}</button>`).join("");
@@ -277,7 +288,7 @@
     }));
     // FR-8 역량 지도 — 배운 것마다 레벨 4단계와 노력(책 수 · 날 수). 레벨 규칙은 가설(skills.js)
     const SK = window.Skills;
-    $("rv-tags").innerHTML = SK.skillMap(fin, open).slice(0, 7).map((x) => `<li><span>${esc(x.skill)}</span>
+    $("rv-tags").innerHTML = SK.skillMap(fin, open).slice(0, 7).map((x) => `<li>${termHtml(x.skill)}
       <span class="lv" aria-label="${SK.LEVELS[x.level]}">${SK.LEVELS.map((_, i) => `<i class="${i <= x.level ? "on" : ""}"></i>`).join("")}<em>${SK.LEVELS[x.level]}</em></span>
       <b>${x.books ? `${x.books}권 · ${x.days}일` : "열어 둔 책"}</b></li>`).join("");
     $("rv-ins").innerHTML = fin.flatMap((b) => b.insights.map((t) => `<li>${esc(t)} <small>— ${esc(b.title)}</small></li>`)).slice(0, 5).join("");

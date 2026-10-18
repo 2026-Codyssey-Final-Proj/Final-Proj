@@ -62,7 +62,15 @@
   // 모르는 말이면 "" — 화면은 누를 수 없는 표시로 둔다
   const explain = (term) => (term && Object.prototype.hasOwnProperty.call(LINES, term) ? LINES[term] : "");
 
-  const api = { LINES, explain };
+  // 글 속의 배운 말 — "EARS로 기능 한 줄씩"에서 EARS. 긴 말부터 본다(MoSCoW·Kano가 MoSCoW보다 먼저). 없으면 null (F-10, 서재가 쓴다)
+  const BY_LENGTH = Object.keys(LINES).sort((x, y) => y.length - x.length);
+  function find(text) {
+    const t = String(text || "");
+    const term = t && BY_LENGTH.find((k) => t.includes(k));
+    return term ? { term, line: LINES[term] } : null;
+  }
+
+  const api = { LINES, explain, find };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavGlossary = api;
 })(typeof window !== "undefined" ? window : globalThis);
