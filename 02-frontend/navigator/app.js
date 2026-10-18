@@ -77,7 +77,8 @@
   const allDone = () => !!st.j && left() === 0;
   const stage = () => st.j && N.STAGES[st.j.stage];
   const nextStage = () => st.j && N.STAGES[st.j.stage + 1];
-  const isPhone = () => PHONE.matches;
+  // 휴대폰 화면(600px 이하)은 브라우저에서만 — Electron 앱은 창이 섬 크기를 따라 좁아져도 PC 화면 그대로(2026-10-19 이재엽: 앱이 휴대폰 화면으로 넘어가 버림, 휴대폰 화면은 아직 만들지 않는다)
+  const isPhone = () => PHONE.matches && !window.floeApp;
   const isField = (el) => !!el && /^(TEXTAREA|INPUT|SELECT)$/.test(el.tagName);
   // 지금 글을 쓰는 중인가 — 쓰는 중에는 저절로 접히지 않는다
   const typing = () => { const a = document.activeElement; return isField(a) && $nav.contains(a); };

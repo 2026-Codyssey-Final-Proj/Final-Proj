@@ -76,7 +76,7 @@
     try { const j = await (await fetch("/api/setup", { cache: "no-store" })).json(); return j && j.ok ? j : null; } catch { return null; }
   }
   const floro = (mood, size) => (Seal ? Seal.svg(mood, size, { hole: true }) : "");
-  const phone = () => root.matchMedia && root.matchMedia("(max-width:600px)").matches;
+  const phone = () => !root.floeApp && root.matchMedia && root.matchMedia("(max-width:600px)").matches;   // 앱 안에서는 창이 좁아도 PC 모양(2026-10-19)
   const chip = (c) => `<span class="su-chip ${c.tone}">${esc(c.text)}</span>`;
   const code = (k) => `<span class="su-code"><code>${esc(CMD[k])}</code><button type="button" class="b ghost su-copy" data-s="copy" data-k="${k}">복사</button></span>`;
 
