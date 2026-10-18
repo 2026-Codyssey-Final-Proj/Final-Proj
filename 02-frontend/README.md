@@ -14,6 +14,7 @@
 | [`assets/mascot/`](assets/mascot/README.md) | 마스코트 그림 (이용 조건 확인 전) |
 
 **아래 본문은 Next.js·Electron으로 옮길 때의 계획**(임유정 가설, 이슈 #14)이다. 지금 돌아가는 코드는 위 `navigator/`이고, 본문 5절의 폴더 구조는 아직 만들지 않았다.
+**2026-10-19:** 2절의 Electron 오버레이는 Next.js 없이 **지금 화면을 그대로 감싸는 껍데기**로 먼저 만들었다 — [`electron/`](electron/README.md)(`npm run dist` → `.dmg`, 알파). 본문의 Next.js 계획은 그대로 남긴다.
 
 담당: 임유정(시험 기간 동안 두승현이 이어받음) · 리뷰: 고한결 · 서버 쪽: [backend](../03-backend/README.md)
 

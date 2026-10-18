@@ -24,6 +24,8 @@
   const M = window.FloeMine, NT = window.FloeNotes;
   const STORE = (() => { try { return window.localStorage; } catch { return null; } })();
   const canLive = location.protocol.startsWith("http");
+  // Electron 껍데기 안(2026-10-19, 02-frontend/electron — preload.js가 window.floeApp을 둔다): 뒤의 예시 코딩 도구 창을 숨기고 바탕을 투명하게(app.css .in-app)
+  if (window.floeApp) document.documentElement.classList.add("in-app");
   const DELAY = { greet: 6000, home: 15000, petit: 30000 };   // 저절로 접히기까지(밀리초)
   const PHONE = matchMedia("(max-width: 600px)");
   const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -290,7 +292,9 @@
         : "Claude Code·Codex 알림을 기다리는 중 — connect.js로 연결해 주세요"}</span>
         <button type="button" class="btn" data-act="unplug" aria-pressed="${st.unplug}">${st.unplug ? "다시 연결" : "연결 끊기"}</button></div>
       ${st.mode === "live" ? `<label class="chk"><input type="checkbox" data-act="auto" ${st.auto ? "checked" : ""} ${st.unplug ? "disabled" : ""}>AI 코딩 도구가 작업을 마치면 자동으로 살펴보기</label>
-      <span>켜면 그때마다 최근 작업 대화가 AI(Claude)로 보내져요. 비밀번호처럼 보이는 게 있으면 보내기 전에 멈춰요.</span>` : ""}</div>` : "";
+      <span>켜면 그때마다 최근 작업 대화가 AI(Claude)로 보내져요. 비밀번호처럼 보이는 게 있으면 보내기 전에 멈춰요.</span>` : ""}${
+      // 앱 안에서는 폴더 고르기로 훅을 더하고 뺀다(터미널의 floe.js · connect.js와 같은 일) — preload.js가 열어 준 셋만
+      window.floeApp ? `<div class="row"><button type="button" class="btn" data-act="app-connect">프로젝트 폴더 연결…</button><button type="button" class="btn" data-act="app-disconnect">연결 빼기…</button><button type="button" class="btn" data-act="app-settings">.env 폴더 열기</button></div>` : ""}</div>` : "";
     const keep = `<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`;
     // 만드는 크기 — 진짜 AI에게 물을 때 같이 보낸다(tier). 고르는 건 사용자
     const tier = `<div class="row tiers"><span>만드는 크기</span><span class="row" role="radiogroup" aria-label="만드는 크기">${TIERS.map(([v, label]) =>
@@ -1345,6 +1349,10 @@
       try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
       set({ noteCopy: ok ? "" : text }); say(ok ? `느낀 점 ${noteList.length}개를 복사했어요 — Jira에 붙여 넣어요` : "자동 복사가 안 돼서 글을 아래 두었어요");
     },
+    // Electron 앱(2026-10-19) — 폴더를 골라 훅을 더하거나 빼고, .env를 두는 설정 폴더를 연다. 앱 밖에서는 단추가 없다
+    "app-connect": async () => { const r = await window.floeApp.connect(); if (r && r.message) say(r.message.split("\n")[0]); },
+    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.message) say(r.message.split("\n")[0]); },
+    "app-settings": () => window.floeApp.openSettings(),
     alog: () => set({ alogOpen: !st.alogOpen, alogNote: "" }),
     // 연결 끊기 — 끊은 동안 들어온 알림은 받지 않는다(alerts.js accept). 다시 연결하면 그 뒤의 알림부터 받는다
     unplug: () => { set({ unplug: !st.unplug, ping: st.unplug ? st.ping : "" }); say(st.unplug ? "연결을 끊었어요. 작업 알림을 받지 않아요" : "다시 연결했어요"); },

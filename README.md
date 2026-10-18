@@ -1,4 +1,5 @@
-<!-- claude-drafted: 2026-10-16, 2026-10-17 갱신 — 이재엽의 요청으로 Claude가 README를 새로 썼고, 10/17에 이름 확정(이슈 #51)과 진행 상황을 반영했다. 같은 날 두승현의 요청으로 PR #91 뒤의 플로로(그림 · 표정 · 움직임)와 다시 잰 시험 개수를 반영했다. -->
+<!-- claude-drafted: 2026-10-16, 2026-10-17 갱신 — 이재엽의 요청으로 Claude가 README를 새로 썼고, 10/17에 이름 확정(이슈 #51)과 진행 상황을 반영했다. 같은 날 두승현의 요청으로 PR #91 뒤의 플로로(그림 · 표정 · 움직임)와 다시 잰 시험 개수를 반영했다.
+     2026-10-19 갱신(이재엽 요청 "총합 리드미에 올려줘") — 실제로 써 보기(v2.0, PR #108)와 오버레이 앱 .dmg(v3.0, PR #111), 버전 기록 vN.M · Jira로 옮긴 할 일을 반영했다. -->
 
 <p align="center">
   <img src="02-frontend/assets/mascot/floro.svg" alt="플로로 — 물에서 고개를 내민 길잡이 물범" width="170">
@@ -23,6 +24,10 @@
   <sub>🏷 이름: <b>Floe</b>(제품) · <b>플로로</b>(마스코트, Floro) — 2026-10-17 확정 · 이슈 <a href="https://github.com/2026-Codyssey-Final-Proj/Final-Proj/issues/51">#51</a></sub>
 </p>
 
+<p align="center">
+  <sub>📦 버전 <b>v3.0</b> (2026-10-19) — 올릴 때마다 <a href="CHANGELOG.md">CHANGELOG.md</a>에 한 줄, 동의 없이 병합 · 할 일은 Jira 프로젝트 Floe (<a href="01-docs/00-overview/jira.md">jira.md</a>)</sub>
+</p>
+
 ---
 
 ## 🎯 이런 분을 위해
@@ -44,6 +49,8 @@
 | 👀 | **한곳에서 보기** | 진행 · 할 일 · 충돌 · 토큰 *(일부)* |
 | 🔒 | **나만 보기 기본** | 공유본만 팀에 보임 |
 | 🦭 | **길잡이 플로로** | 표정 11가지 · 쓰다듬기 · 가만히 두면 헤엄치다 졸아요 |
+| 🧊 | **실제로 써 보기** *(v2.0)* | 내 프로젝트에 한 줄로 붙이기 · 서재에 **내 책** · 예시 책 지우기 · **느낀 점 남기기** → Jira용 복사 |
+| 🖥 | **오버레이 앱** *(v3.0 알파)* | 내려받아 더블클릭 — 코딩 도구 위에 **항상 위로** 뜨는 창 (`.dmg`, `.exe`는 Windows에서 묶음) |
 
 ---
 
@@ -95,11 +102,13 @@ flowchart LR
 | 👀 | 한곳에서 보기 | 🔵 일부 |
 | 🧪 | 수용 · 계약 테스트 | ✅ PR #95 · #100 (사람이 화면으로 보는 줄은 대기) |
 | 🚦 | Floe 게이트 | 🟡 1→2 · 2→3 · 3→4 · 4→5 Go(10/18), **5단계 — 주요 기능 11/3까지** · [게이트 로그](01-docs/01-problem-save/sessions/project-track/2026-10-18-floe.md) · [고칠 목록](01-docs/07-maintenance/fix-map.md) |
+| 🧊 | **실제로 써 보기** — 한 줄로 켜기 · 내 책 · 예시 책 지우기 · 느낀 점 | ✅ v2.0 (10/19, PR #108) · 시험 24개 · **사람이 써 본 기록은 아직** → [10-real-use](01-docs/features/10-real-use/README.md) |
+| 🖥 | **오버레이 앱** — Electron 껍데기, `npm run dist` → `.dmg` | ✅ v3.0 알파 (10/19, PR #111) · Mac에서 묶어 켜 봄 · 서명 없음 · Windows 묶기 전 → [electron/README](02-frontend/electron/README.md) |
 | 🎬 | 구동 영상 | ⚪ 시작 전 |
 
 ✅ 됨 &nbsp; 🟡 진행 · 대기 &nbsp; 🔵 목업 &nbsp; ⚪ 전
 
-🧪 시험 개수는 2026-10-18에 `python3 04-tests/run_all_tests.py`로 잰 값 — 노드 시험 263개 · 파일 19/19 통과 (위 표의 영역별 개수는 10/17 값)
+🧪 시험 개수는 2026-10-19에 `python3 04-tests/run_all_tests.py`로 잰 값 — 노드 시험 320개 · 파일 21/21 통과 (위 표의 영역별 개수는 10/17 값)
 
 ---
 
@@ -110,6 +119,7 @@ flowchart LR
 | 📄 | [`01-docs/`](01-docs/README.md) | 문서 — 문서 지도부터 |
 | 🗂 | [`01-docs/features/`](01-docs/features/README.md) | **기능별 README + 시연 GIF** — 무엇 · 왜 · 어떻게 진행됐나 · 흐름 그림 |
 | 🖥 | [`02-frontend/`](02-frontend/README.md) | 화면 |
+| 📦 | [`02-frontend/electron/`](02-frontend/electron/README.md) | **오버레이 앱 껍데기** — 화면 · 서버를 그대로 감싸 `.dmg` / `.exe`로 묶는다 (알파) |
 | ⚙️ | [`03-backend/`](03-backend/README.md) | 서버 · 판정 규칙 · AI 연결 |
 | 🧪 | [`04-tests/`](04-tests/README.md) | 시험 |
 | 📦 | [`05-projects/`](05-projects/README.md) | 팀 제품 밖 프로젝트 (세컨드 브레인) |
@@ -125,9 +135,12 @@ cd Final-Proj
 node 03-backend/navigator/server.js   # 🦭 → http://127.0.0.1:4317 · 시연 입구 /index.html
 node 03-backend/navigator/floe.js ~/내-프로젝트   # 🧊 내 프로젝트에 붙여 실제로 써 보기 — 훅 연결 → 서버 → 브라우저 (끝나면 --off)
 python3 04-tests/run_all_tests.py             # 🧪
+cd 02-frontend/electron && npm install && npm run dist   # 📦 오버레이 앱 묶기 → dist/Floe-<버전>-arm64.dmg (Windows: npm run dist:win)
 ```
 
-📘 **처음이라면 → [팀 작업 가이드](01-docs/00-overview/team-guide.md)** (내 키는 어디에 두고, 작업은 어디에 올리나)
+📦 **앱으로 쓰려면** `.dmg`를 받아 우클릭 → 열기(서명 없음) → 메뉴 **Floe → 프로젝트 폴더 연결…** → 그 폴더에서 Claude Code를 새로 연다. 자세히 → [팀 작업 가이드 2-c](01-docs/00-overview/team-guide.md)
+
+📘 **처음이라면 → [팀 작업 가이드](01-docs/00-overview/team-guide.md)** (내 키는 어디에 두고, 작업은 어디에 올리나, 한 줄로 켜기 · 앱으로 쓰기)
 
 🔑 **각자 자기 것으로** 동작: 내 API 키(`ANTHROPIC_API_KEY`) → 없으면 이 컴퓨터의 Claude 구독 → 없으면 미리 만든 응답으로 시연 모드 · 켜는 법 → [프로토타입 README](03-backend/navigator/README.md)
 
@@ -148,4 +161,4 @@ python3 04-tests/run_all_tests.py             # 🧪
 
 ## 🔗 더 보기
 
-📋 [요구사항](01-docs/00-overview/requirements.md) &nbsp;·&nbsp; 🗓 [일정](01-docs/00-overview/schedule.md) &nbsp;·&nbsp; 🎯 [우선순위](01-docs/00-overview/team-priorities.md) &nbsp;·&nbsp; 🏛 [ADR](01-docs/03-pattern-analysis/adr/) &nbsp;·&nbsp; 🔒 [공유·보안](01-docs/00-overview/team-sharing-security.md) &nbsp;·&nbsp; 🧭 [시작하기](GETTING_STARTED.md)
+📋 [요구사항](01-docs/00-overview/requirements.md) &nbsp;·&nbsp; 🗓 [일정](01-docs/00-overview/schedule.md) &nbsp;·&nbsp; 🎯 [우선순위](01-docs/00-overview/team-priorities.md) &nbsp;·&nbsp; 🏛 [ADR](01-docs/03-pattern-analysis/adr/) &nbsp;·&nbsp; 🔒 [공유·보안](01-docs/00-overview/team-sharing-security.md) &nbsp;·&nbsp; 📦 [버전 기록](CHANGELOG.md) &nbsp;·&nbsp; 🛠 [고칠 곳 지도](01-docs/07-maintenance/fix-map.md) &nbsp;·&nbsp; 🧭 [시작하기](GETTING_STARTED.md)
