@@ -127,7 +127,7 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 
 | 순서 | Mac | Windows |
 |---|---|---|
-| 받기 | `Floe-<버전>-arm64.dmg` (GitHub Release 또는 팀 채널) | `Floe-Setup-<버전>.exe` — **Windows에서 묶은 사람이 올린 것** |
+| 받기 | `Floe-<버전>-arm64.dmg` — [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) (첫 알파: `app-v0.3.0-alpha`, 2026-10-19, Apple Silicon) | `Floe-Setup-<버전>.exe` — **Windows에서 묶은 사람이 올린 것** (아직 없음) |
 | 처음 열기 | 서명이 없어 경고가 뜬다 → Finder에서 **우클릭 → 열기** 한 번 | SmartScreen 경고 → "추가 정보 → 실행" |
 | 연결 | 메뉴 **Floe → 프로젝트 폴더 연결…** 또는 톱니 → 연결 칸의 단추 | 같음 |
 | AI | 이 컴퓨터의 Claude Code 로그인을 쓴다. 내 키로 쓰려면 **Floe → 설정 폴더 열기**에 `.env` | 같음 |

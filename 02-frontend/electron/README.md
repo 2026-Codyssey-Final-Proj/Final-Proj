@@ -27,6 +27,10 @@ npm run dist:win            # Windows에서만: dist/Floe-Setup-<버전>.exe
 - **프로젝트 폴더 연결**(메뉴 또는 톱니 → 연결 칸의 단추)은 그 폴더의 `.claude/settings.local.json`에 훅을 더한다 — `connect.js --apply`와 같은 규칙 · 백업. 훅은 `node`로 `app.asar.unpacked` 안의 `hook.js`를 부르므로 **그 컴퓨터에 node가 있어야 한다**(팀 알파에서는 모두 있다). node 없는 사람을 위한 길은 미정.
 - 기록(내 책 · 느낀 점)은 앱 안의 브라우저 저장소에 남는다 — 브라우저로 연 화면과는 따로다.
 
+## 받기
+
+묶은 파일은 저장소가 아니라 [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에 올린다 — 첫 알파 `app-v0.3.0-alpha`(2026-10-19, `Floe-0.3.0-arm64.dmg`, 100MB). 새로 묶으면 `gh release create app-v<버전>-alpha dist/Floe-<버전>-arm64.dmg --prerelease`로 하나 더 올린다. 비공개 레포라 팀원만 받는다.
+
 ## 확인한 것 (2026-10-19, 이재엽의 Mac · arm64)
 
 - `npm run dist`로 `Floe-0.3.0-arm64.dmg`(100MB)가 나왔고, 묶은 앱을 포트 4399로 켜서 서버가 켜지고(`/api/usage` 200) 화면이 확인 값 쿠키와 함께 오며(`/` 200), 앱 안에서 `window.floeApp`이 있고 뒤 창이 숨고 바탕이 투명한 것을 CDP로 봤다.
