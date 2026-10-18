@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>얼음판 전투 목업</title>
+<!-- claude-drafted: 2026-10-19 — 이재엽 요청("우리 작업하는 공간이랑 대화하는 창을 이런식으로 디자인해서 게임처럼 작업이 가능하도록 … 목업 캔버스로 UI / UX만 지금 로컬에서 보여줘").
+     화면 시안일 뿐이다 — 서버 · AI · 저장 없음. 할 일 문구는 03-backend/navigator/navigator.js, 쉬운 말 풀이는 glossary.js에서 옮겼다.
+     특정 게임의 캐릭터 · 이름 · 소리 · 그림은 쓰지 않았다 — 고전 RPG 전투 화면의 짜임새만 빌렸다. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+@font-face { font-family: "DungGeunMo"; src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff") format("woff"); font-display: swap; }
+:root {
+  --void: #000000; --chalk: #ffffff; --ember: #ff8c1a; --sun: #ffff40; --soul: #ff2236; --ice: #9ad8ff; --frost: #e6f6ff; --deep: #072440; --dim: #7c7c7c;
+  --canvas: #22252b; --dot: #353a44; --note: #c9ced8; --note-hi: #ffffff; --rule: #3c424e;
+  --px: "DungGeunMo", ui-monospace, "Courier New", monospace;
+  --ui: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--canvas) radial-gradient(var(--dot) 1px, transparent 1.2px) 0 0 / 24px 24px;
+  color: var(--note); font: 15px/1.6 var(--ui);
+  padding: 40px max(16px, env(safe-area-inset-right, 0px)) 96px max(16px, env(safe-area-inset-left, 0px));
+}
+
+/* ── 캔버스 ── */
+.sheet { max-width: 1380px; margin: 0 auto; }
+.sheet-head { display: grid; gap: 14px; margin-bottom: 36px; }
+h1 { font: 700 34px/1.2 var(--ui); color: var(--note-hi); margin: 0; letter-spacing: -0.01em; }
+.sheet-head p { max-width: 64ch; margin: 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px 28px; align-items: center; font-size: 14px; }
+.seg { display: inline-flex; align-items: center; gap: 10px; }
+.seg span { color: var(--note); }
+.seg div { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.seg button { all: unset; padding: 5px 12px; cursor: pointer; color: var(--note); }
+.seg button[aria-pressed="true"] { background: var(--note-hi); color: #000; }
+.seg button:focus-visible, .reset:focus-visible { outline: 2px solid var(--sun); outline-offset: 2px; }
+.keys { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+kbd { font: 12px/1.5 var(--ui); border: 1px solid var(--rule); border-bottom-width: 2px; border-radius: 4px; padding: 0 6px; color: var(--note-hi); }
+.keys em { font-style: normal; margin-right: 10px; }
+
+.boards { display: flex; flex-wrap: wrap; gap: 36px; align-items: flex-start; }
+.board { margin: 0; min-width: 0; max-width: 100%; }
+.board figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 13px; margin-bottom: 10px; }
+.board figcaption b { color: var(--note-hi); font-weight: 600; }
+.reset { all: unset; cursor: pointer; color: var(--ice); }
+.scroll { overflow-x: auto; max-width: 100%; }
+
+section.flow, section.notes { margin-top: 64px; }
+h2 { font: 600 21px/1.3 var(--ui); color: var(--note-hi); margin: 0 0 18px; }
+.frames { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(288px, 1fr)); gap: 30px 26px; }
+.frames li { display: grid; gap: 10px; align-content: start; }
+.thumb { width: 288px; height: 180px; overflow: hidden; box-shadow: 0 0 0 1px var(--rule); }
+.thumb .game { transform: scale(.3); transform-origin: 0 0; pointer-events: none; }
+.frames p { margin: 0; font-size: 14px; max-width: 36ch; }
+.frames .no { font: 18px/1 var(--px); color: var(--ember); margin-right: 8px; }
+
+.notes { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 48px; }
+@media (max-width: 960px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th { text-align: left; color: var(--note-hi); font-weight: 600; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--rule); }
+td { padding: 9px 14px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td:first-child { font: 16px/1.5 var(--px); color: var(--ember); white-space: nowrap; }
+td.y { color: var(--sun); }
+.asks { margin: 0; padding-left: 1.15em; }
+.asks li { margin-bottom: 12px; max-width: 52ch; }
+.asks li::marker { color: var(--ember); }
+.fine { margin-top: 18px; font-size: 13px; color: #9aa1ad; max-width: 60ch; }
+
+/* ── 게임 화면 ── */
+.game {
+  position: relative; width: 960px; height: 600px; background: var(--void); color: var(--chalk);
+  font-family: var(--px); display: grid; grid-template-rows: 26px 1fr 150px 34px 66px; gap: 12px;
+  padding: 18px 28px 22px; outline: none; user-select: none; -webkit-user-select: none; container-type: inline-size;
+}
+.game:focus-visible { box-shadow: 0 0 0 3px var(--canvas), 0 0 0 6px var(--sun); }
+.game.phone { width: 360px; height: 740px; grid-template-rows: 46px 1fr 176px 30px 128px; gap: 10px; padding: 14px 14px 18px; }
+
+.hud { display: flex; align-items: center; gap: 14px; font-size: 16px; min-width: 0; }
+.path { display: flex; gap: 4px; flex: none; }
+.path i { width: 12px; height: 12px; border: 2px solid var(--chalk); }
+.path i.done { background: var(--chalk); }
+.path i.cur { background: var(--sun); border-color: var(--sun); }
+.where { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live { display: flex; align-items: center; gap: 6px; color: var(--ice); flex: none; }
+.live i { width: 8px; height: 8px; background: #47e06a; }
+.phone .hud { flex-wrap: wrap; gap: 6px 10px; font-size: 14px; align-content: center; }
+.phone .where { order: 3; flex-basis: 100%; }
+
+.arena { position: relative; overflow: hidden; }
+.sea { position: absolute; left: 0; right: 0; bottom: 0; height: 34px; background: var(--deep); }
+.sea::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: repeating-linear-gradient(90deg, var(--ice) 0 12px, transparent 12px 24px); }
+.floe { position: absolute; left: 10px; bottom: 18px; line-height: 0; }
+.floro { position: absolute; left: 37px; bottom: 36px; line-height: 0; }
+.foe { position: absolute; left: 34%; top: 6px; transform: translateX(-50%); display: grid; justify-items: center; gap: 8px; }
+.foe-sprite { line-height: 0; }
+.foe-name { font-size: 20px; }
+.foe.spare .foe-name { color: var(--sun); }
+.pips { display: flex; gap: 5px; }
+.pips i { width: 16px; height: 10px; border: 2px solid var(--chalk); }
+.pips i.left { background: var(--chalk); }
+.foe.float .foe-sprite { animation: float 1.6s steps(2) infinite; }
+.foe.hit .foe-sprite { animation: shake .45s steps(4); }
+.foe.gone { animation: dust .9s steps(6) forwards; }
+.foe.enter { animation: rise .6s steps(6); }
+@keyframes float { 50% { transform: translateY(-4px); } }
+@keyframes shake { 25% { transform: translateX(-12px); } 50% { transform: translateX(9px); } 75% { transform: translateX(-5px); } }
+@keyframes dust { to { opacity: 0; filter: blur(2px); transform: translateX(-50%) translateY(-10px); } }
+@keyframes rise { from { opacity: 0; transform: translateX(-50%) translateY(14px); } }
+
+.work { position: absolute; right: 0; top: 0; width: 318px; bottom: 46px; border: 3px solid var(--ice); background: var(--void); padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.work h3 { all: unset; display: flex; align-items: center; gap: 8px; color: var(--ice); font-size: 16px; }
+.work ol { list-style: none; margin: 0; padding: 0; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; line-height: 1.35; }
+.work li { flex: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cfe9ff; }
+.work li.me { color: var(--chalk); }
+.work li.file { color: var(--sun); }
+.work li.floe { color: var(--ice); }
+.work li.fresh { animation: blink .5s steps(2) 2; }
+.work p { margin: 0; color: var(--dim); font-size: 13px; }
+@keyframes blink { 50% { opacity: .2; } }
+.phone .foe { left: 50%; top: 66px; }
+.phone .floe { left: -6px; bottom: 16px; }
+.phone .floro { left: 22px; bottom: 32px; }
+.phone .work { left: 0; right: 0; width: auto; top: 0; bottom: auto; height: 58px; padding: 4px 10px; gap: 2px; font-size: 13px; }
+.phone .work h3, .phone .work p { display: none; }
+
+.box { justify-self: center; width: 100%; border: 5px solid var(--chalk); background: var(--void); overflow: hidden; position: relative; transition: width .45s steps(9); }
+.game.turn .box { width: 250px; }
+.phone.turn .box { width: 210px; }
+.box-in { height: 100%; padding: 12px 22px; font-size: 26px; line-height: 1.42; display: flex; gap: 18px; }
+.phone .box-in { padding: 10px 14px; font-size: 18px; gap: 10px; }
+.say { margin: 0; white-space: pre-wrap; flex: 1; min-width: 0; }
+.portrait { flex: none; line-height: 0; align-self: center; }
+.phone .portrait svg { width: 64px; height: auto; }
+.opts { list-style: none; margin: 0; padding: 0; flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 2px 28px; align-content: start; font-size: 24px; }
+.opts.one, .phone .opts { grid-template-columns: 1fr; }
+.phone .opts { font-size: 17px; }
+.opt { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.opt .h { width: 20px; flex: none; line-height: 0; }
+.opt .t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.opt.off { color: var(--dim); }
+.opt.y { color: var(--sun); }
+.ask-in { flex: 1; display: grid; gap: 8px; align-content: start; }
+.ask-in input { all: unset; border-bottom: 3px solid var(--chalk); font: inherit; color: var(--chalk); padding: 2px 0; caret-color: var(--sun); }
+.ask-in input::placeholder { color: var(--dim); }
+.ask-in small { font-size: 15px; color: var(--dim); }
+.dodge { position: relative; flex: 1; margin: -12px -22px; }
+.phone .dodge { margin: -10px -14px; }
+.soul { position: absolute; line-height: 0; }
+.soul.flash { animation: blink .3s steps(2) 2; }
+.shot { position: absolute; left: 100%; white-space: nowrap; font-size: 15px; color: var(--chalk); border: 2px solid var(--chalk); padding: 0 6px; line-height: 1.4; }
+.shot.f { color: var(--sun); border-color: var(--sun); }
+
+.stats { display: flex; align-items: center; gap: 22px; font-size: 22px; white-space: nowrap; }
+.phone .stats { gap: 12px; font-size: 16px; }
+.hp { width: 110px; height: 22px; background: var(--soul); position: relative; flex: none; }
+.phone .hp { width: 70px; height: 16px; }
+.hp i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--sun); transition: width .6s steps(6); }
+.hp.low i { background: var(--ember); }
+
+.cmds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 34px; }
+.phone .cmds { grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.cmd { all: unset; box-sizing: border-box; border: 3px solid var(--ember); color: var(--ember); display: flex; align-items: center; justify-content: center; gap: 12px; font: 30px/1 var(--px); cursor: pointer; }
+.phone .cmd { font-size: 24px; gap: 8px; }
+.cmd.sel { border-color: var(--sun); color: var(--sun); }
+.cmd .ic { line-height: 0; }
+.cmd.ready .ic { color: var(--sun); }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .box, .hp i { transition: none; }
+  .foe.float .foe-sprite, .foe.hit .foe-sprite, .foe.gone, .foe.enter, .work li.fresh, .soul.flash { animation: none; }
+  .foe.gone { opacity: 0; }
+}
+</style>
+</head>
+<body>
+<main class="sheet">
+  <header class="sheet-head">
+    <h1>얼음판 전투</h1>
+    <p>Floe의 작업 공간과 대화 창을 고전 RPG 전투 화면처럼 바꿔 본 목업이에요. 지금 단계에서 풀 문제가 적으로 나오고, Claude에게 일을 시키면 적의 칸이 줄어요. 할 일을 다 하면 적의 이름이 노래지고, 그때 넘어갈 수 있어요. 아래 두 화면은 직접 해 볼 수 있어요.</p>
+    <div class="controls">
+      <div class="seg"><span>버튼 말</span><div role="group" aria-label="버튼 말"><button type="button" data-words="game" aria-pressed="true">게임 말</button><button type="button" data-words="work" aria-pressed="false">일 말</button></div></div>
+      <div class="seg"><span>글자 속도</span><div role="group" aria-label="글자 나오는 속도"><button type="button" data-speed="normal" aria-pressed="true">보통</button><button type="button" data-speed="fast" aria-pressed="false">빠르게</button></div></div>
+      <span class="keys"><kbd>←</kbd><kbd>→</kbd><em>고르기</em><kbd>Z</kbd><kbd>Enter</kbd><em>정하기</em><kbd>X</kbd><kbd>Esc</kbd><em>뒤로</em><span>화면을 한 번 누르면 키보드로 움직여요</span></span>
+    </div>
+  </header>
+
+  <section class="boards" aria-label="직접 해 보기">
+    <figure class="board"><figcaption><b>PC 화면 960×600</b><button type="button" class="reset" data-reset="g-pc">처음부터</button></figcaption>
+      <div class="scroll"><div class="game pc" id="g-pc" tabindex="0" aria-label="얼음판 전투 PC 화면 — 눌러서 키보드로 해 보기"></div></div></figure>
+    <figure class="board"><figcaption><b>휴대폰 화면 360×740</b><button type="button" class="reset" data-reset="g-phone">처음부터</button></figcaption>
+      <div class="game phone" id="g-phone" tabindex="0" aria-label="얼음판 전투 휴대폰 화면 — 눌러서 해 보기"></div></figure>
+  </section>
+
+  <section class="flow">
+    <h2>한 단계를 넘는 흐름</h2>
+    <ol class="frames" id="frames"></ol>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h2>게임 말이 Floe에서 하는 일</h2>
+      <div class="tablewrap"><table>
+        <thead><tr><th>게임</th><th>Floe에서</th><th>지금 화면의 자리</th></tr></thead>
+        <tbody>
+          <tr><td>적</td><td>지금 단계에서 풀 문제. 막연한 아이디어, 흩어진 메모, 모호한 기능, 버그 무리처럼 단계마다 다르다</td><td>이번 단계 카드</td></tr>
+          <tr><td>적의 칸</td><td>남은 할 일. 하나 끝낼 때마다 한 칸씩 준다</td><td>할 일 목록</td></tr>
+          <tr><td>공격</td><td>Claude에게 일을 시킨다. 플로로가 다음 할 일로 한 줄을 추천하고, 직접 써도 된다</td><td>글 칸, 살펴보기</td></tr>
+          <tr><td>적의 턴</td><td>Claude Code가 일하는 시간. 상자가 작아지고 실제 작업(읽기, 쓰기, 확인)이 날아든다</td><td>작업 알림</td></tr>
+          <tr><td>행동</td><td>살펴보기(남은 할 일), 모르는 말 묻기, 플로로에게 묻기</td><td>판정, 용어 풀이, 질문</td></tr>
+          <tr><td>아이템</td><td>책갈피, 빈칸 템플릿, 서재의 지난 책. 이기면 책갈피가 늘어난다</td><td>서재, 배운 말</td></tr>
+          <tr><td class="y">노란 이름</td><td>할 일을 다 해서 넘어갈 수 있다는 표시</td><td>넘어가기 버튼이 켜짐</td></tr>
+          <tr><td>자비</td><td>다음 단계로 넘어가기(게이트), 또는 잠시 멈추기(보류)</td><td>넘어가기 전 확인, 보류</td></tr>
+          <tr><td>HP</td><td>남은 토큰. 테스터 한 명 몫 4만을 기준으로 그렸다. 20% 아래면 주황</td><td>토큰 표</td></tr>
+          <tr><td>LV</td><td>마친 단계 수</td><td>단계 지도</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+    <div>
+      <h2>같이 정할 것</h2>
+      <ol class="asks">
+        <li>버튼 말을 게임 말(공격, 행동)로 둘지, 일 말(만들기, 살피기)로 둘지. 처음 쓰는 사람에게 무엇이 쉬운지 위의 토글로 견줘 볼 수 있어요.</li>
+        <li>토큰을 HP로 보이면 줄어드는 게 불안할 수 있어요. 그대로 둘지, 숨길지, 다른 이름으로 할지.</li>
+        <li>Claude의 턴에 하트를 움직이는 건 지금은 놀이일 뿐이에요. 시험이 실패하면 '맞았다'로 보여 줄지.</li>
+        <li>이 화면이 오버레이의 '이번 단계' 탭을 대신할지, 설정에서 고르는 게임 모드로 둘지.</li>
+        <li>휴대폰에서는 작업 공간을 두 줄로 줄였어요. 그걸로 충분한지.</li>
+      </ol>
+      <p class="fine">글꼴은 둥근모꼴과 Pretendard를 CDN에서 불러 그렸어요. 제품에 넣기 전에 이용 조건을 확인해야 해요. 고전 RPG 전투 화면의 짜임새만 빌렸고, 특정 게임의 캐릭터, 이름, 그림, 소리는 쓰지 않았어요.</p>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  "use strict";
+  const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const G = { words: "game", speed: "normal" };
+  const LABELS = { game: ["공격", "행동", "아이템", "자비"], work: ["만들기", "살피기", "도구함", "넘어가기"] };
+  const STATW = { game: ["HP", "LV"], work: ["토큰", "마친 단계"] };
+  const MAX_HP = 40000, PROJECT = "가계부-위젯";
+
+  // 할 일은 navigator.js의 단계 표에서, 풀이는 glossary.js에서 옮겼다 (단계마다 앞의 3~4개만)
+  const STAGES = [
+    { title: "무엇을 만들지 정하기", foe: "막연한 아이디어", sprite: "ghost", idle: "안개처럼 둥실 떠 있다.", term: "규모 등급", file: "idea.md",
+      gloss: "얼마나 크게 만들지 작게·보통·크게로 나눈 것이에요",
+      todos: ["어떤 불편을 풀고 싶은지 한 문장으로 쓰기", "다 만들면 무엇이 달라지는지 쓰기", "누가 쓰는지 쓰기", "얼마나 크게 만들지 정하기"] },
+    { title: "아이디어 적어 두기", foe: "흩어진 메모", sprite: "paper", idle: "바스락거린다.", term: "의도명세 캔버스", file: "canvas.md",
+      gloss: "왜·무엇을·어디까지 만들지 정해진 빈칸에 채우는 정리표예요",
+      todos: ["정해진 빈칸에 아이디어 채우기", "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기", "한 문장에 한 가지 일만, 애매한 말 없이 쓰기"] },
+    { title: "꼭 필요한 기능 정리하기", foe: "모호한 기능", sprite: "blob", idle: "'빠르게?' 하고 중얼거린다.", term: "EARS", file: "features.md",
+      gloss: "기능을 '~하면, 앱은 ~한다' 꼴로 쓰는 방법이에요",
+      todos: ["기능을 '~하면, 앱은 ~한다' 문장으로 쓰기", "'빠르게' 같은 애매한 말을 숫자로 바꾸기", "기능마다 꼭 필요한지, 있으면 좋은지 표시하기"] },
+    { title: "만드는 방법 고르기", foe: "갈림길", sprite: "sign", idle: "앞에 찬 바람이 분다.", term: "ADR", file: "adr-0001.md",
+      gloss: "무엇을 왜 골랐는지 남겨 두는 짧은 기록이에요",
+      todos: ["흔히 쓰는 방법 목록에서 먼저 후보를 2개 이상 찾기", "후보끼리 좋은 점과 아쉬운 점 비교하기", "고른 방법과 왜 골랐는지 한 줄을 기록으로 남기기"] },
+    { title: "뼈대 먼저 이어 보기", foe: "끊긴 뼈대", sprite: "paper", idle: "덜그럭거린다.", term: "Walking Skeleton", file: "app.js",
+      gloss: "꾸미기 전에 처음부터 끝까지 이어지기만 하는 가장 단순한 모양이에요",
+      todos: ["가장 단순한 흐름을 처음부터 끝까지 이어 보기", "이어진 게 실제로 도는지 확인하기", "남은 일을 작은 할 일로 나누기"] },
+    { title: "하나씩 만들고 확인하기", foe: "버그 무리", sprite: "bug", idle: "한 마리씩 기어 나온다.", term: "TDD", file: "app.test.js",
+      gloss: "확인 방법을 먼저 정하고, 그 확인을 통과하게 만드는 순서예요",
+      todos: ["확인 방법을 먼저 정하고 만들기", "작은 부분마다 확인 통과하기", "쓰는 사람 입장의 시나리오대로 돌려 보기"] },
+    { title: "실제로 써 보고 재 보기", foe: "재지 않은 숫자", sprite: "blob", idle: "눈을 피한다.", term: "검증 기록", file: "check.md",
+      gloss: "실제로 재 본 값과 못 한 것을 적어 둔 기록이에요",
+      todos: ["2단계에서 정한 숫자를 실제로 재 보기", "잰 값을 그대로 적어 두기", "재지 못한 것을 '아직 못 함'으로 적어 두기"] },
+    { title: "돌아보고 배운 것 남기기", foe: "흐린 기억", sprite: "ghost", idle: "녹아내리려 한다.", term: "회고", file: "retro.md",
+      gloss: "끝난 뒤 잘된 점과 아쉬운 점을 돌아보는 일이에요",
+      todos: ["잘된 점과 아쉬운 점 돌아보기", "'왜?'를 다섯 번 물어 진짜 원인 찾기", "배운 것을 다음에 쓸 수 있게 남기기"] },
+  ];
+  const AI_SAYS = ["메모를 읽고 있어요", "질문 하나를 남겼어요", "빈칸을 채웠어요", "확인을 돌렸어요", "고친 곳을 보여 줬어요"];
+
+  // ── 조사 ──
+  const last = (w) => w.charCodeAt(w.length - 1);
+  const batchim = (w) => { const c = last(w); return c >= 0xac00 && c <= 0xd7a3 ? (c - 0xac00) % 28 : (/Skeleton$/.test(w) ? 4 : 0); };
+  const j = (w, a, b) => w + (batchim(w) ? a : b);
+  const DIGIT_RO = ["으로", "로", "로", "으로", "로", "로", "으로", "로", "로", "로"];
+  const ro = (w) => { const s = String(w); if (/\d$/.test(s)) return s + DIGIT_RO[+s.slice(-1)]; const b = batchim(s); return s + (b && b !== 8 ? "으로" : "로"); };
+  const roP = (w) => ro(w).slice(String(w).length);
+
+  // ── 도트 그림 ──
+  const SPR = {
+    seal: [".....######.....", "...##########...", "..############..", ".###oo####oo###.", ".###oo####oo###.", ".######nn######.",
+      "####n######n####", "###wwwwwwwwww###", "##wwwwwwwwwwww##", "#.wwwwwwwwwwww.#", ".##wwwwwwwwww##.", "..############..", "................"],
+    ghost: ["......######......", "....##########....", "...############...", "..##############..", "..###oo####oo###..", "..###oo####oo###..",
+      ".################.", ".#######..#######.", ".######....######.", ".################.", ".################.", "..##.####.####.##.", "..#...##...##...#.", ".................."],
+    paper: ["....##########....", "....#........#....", "....#.##..##.#....", "....#.##..##.#....", "....#........#....", "..###.######.#....",
+      "..#.#........###..", "..#.#.####...#.#..", "..#.#........#.#..", "..#.##########.#..", "..#............#..", "..##############..", "..................", ".................."],
+    blob: ["........##........", ".......#..#.......", "..........#.......", ".........#........", ".........#........", "..................",
+      ".........#........", "......######......", "....##########....", "...###o####o###...", "..##############..", "..######oo######..", ".################.", "##################"],
+    sign: ["........##........", "..###########.....", ".####o###o####....", "..###########.....", "........##........", "......###########.",
+      "......############", "......###########.", "........##........", "........##........", "........##........", "........##........", "......######......", "....##########...."],
+    bug: ["...#..........#...", "....#........#....", ".....########.....", "....##########....", "#..###o####o###..#", ".#.############.#.",
+      "..##############..", "#..############..#", ".#.############.#.", "..##############..", "#...##########...#", ".....########.....", "....#........#....", "...#..........#..."],
+    floe: ["....######################....", "..##########################..", ".############################.", "..bbbbbbbbbbbbbbbbbbbbbbbbbb..", "....bbbbbbbbbbbbbbbbbbbbbb...."],
+    heart: [".##..##.", "########", "########", "########", ".######.", "..####..", "...##..."],
+    folder: ["####.....", "#########", "#.......#", "#.......#", "#.......#", "#########"],
+    pick: ["..####..", ".#....#.", "#..##..#", "...##...", "...##...", "...##...", "...##...", "...##..."],
+    eye: ["........", "..####..", ".#....#.", "#..##..#", "#..##..#", ".#....#.", "..####..", "........"],
+    bag: ["..####..", ".#....#.", "########", "#......#", "#..##..#", "#......#", "#......#", "########"],
+    flag: ["#.......", "######..", "#######.", "######..", "#.......", "#.......", "#.......", "#......."],
+  };
+  const PAL = {
+    seal: { "#": "#9ad8ff", w: "#e6f6ff", o: "#000", n: "#1b3550" }, foe: { "#": "#fff", o: "#000" }, floe: { "#": "#e6f6ff", b: "#9ad8ff" },
+    heart: { "#": "#ff2236" }, ink: { "#": "currentColor" },
+  };
+  for (const [k, g] of Object.entries(SPR)) if (g.some((r) => r.length !== g[0].length)) console.error(`그림 ${k}의 줄 길이가 다르다`);
+  function svg(name, pal, px) {
+    const g = SPR[name], h = g.length, w = g[0].length;
+    let r = "";
+    g.forEach((row, y) => { for (let x = 0; x < w;) { const c = row[x]; if (c === "." || !pal[c]) { x++; continue; } let e = x; while (e < w && row[e] === c) e++; r += `<rect x="${x}" y="${y}" width="${e - x}" height="1" fill="${pal[c]}"/>`; x = e; } });
+    return `<svg viewBox="0 0 ${w} ${h}" width="${w * px}" height="${h * px}" shape-rendering="crispEdges" aria-hidden="true">${r}</svg>`;
+  }
+  const ICONS = ["pick", "eye", "bag", "flag"];
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const L = (i) => LABELS[G.words][i];
+  const games = [];
+
+  function baseItems() {
+    return [
+      { t: "책갈피: 문제를 한 문장으로", say: "* 책갈피를 펼쳤다.\n* 「누가, 무엇이 불편해서, 그래서 무엇을」 세 칸이 떠올랐다." },
+      { t: "빈칸 템플릿", file: true },
+      { t: "지난 책: 스터디 출석 앱", say: "* 서재의 지난 책을 펼쳤다.\n* 그때는 「출석은 버튼 한 번」으로 정했다." },
+    ];
+  }
+  function fresh() {
+    return { stage: 0, done: [], hp: MAX_HP, lv: 0, sel: 0, sub: 0, mode: "text", opts: [], cols: 2, pages: [], page: 0, typed: 0, then: null,
+      items: baseItems(), low: false, soul: { x: 110, y: 60 },
+      log: [{ k: "me", t: "나> 가계부 같은 걸 만들고 싶어" }, { k: "ai", t: "Claude> 누가 쓰는지 먼저 물었어요" }] };
+  }
+
+  function makeGame(root, opt = {}) {
+    const frozen = !!opt.frozen, phone = root.classList.contains("phone");
+    let s = fresh(), timers = [], typer = 0, raf = 0;
+    const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+    const stopAll = () => { timers.forEach(clearTimeout); timers = []; clearInterval(typer); cancelAnimationFrame(raf); };
+
+    root.innerHTML = `
+      <div class="hud"><span class="path" aria-hidden="true"></span><span class="where"></span><span class="live"><i></i>진짜 AI</span></div>
+      <div class="arena"><div class="sea"></div><div class="floe">${svg("floe", PAL.floe, phone ? 4 : 5)}</div><div class="floro">${svg("seal", PAL.seal, phone ? 4 : 6)}</div>
+        <div class="foe"><div class="foe-sprite"></div><div class="foe-name"></div><div class="pips" aria-hidden="true"></div></div>
+        <section class="work" aria-label="작업 공간"><h3>${svg("folder", { "#": "currentColor" }, 2)}${PROJECT}</h3><ol></ol><p>Claude Code와 이어져 있어요</p></section></div>
+      <div class="box"><div class="box-in"></div></div>
+      <div class="stats"></div>
+      <div class="cmds" role="group" aria-label="명령"></div>
+      <p class="sr" aria-live="polite"></p>`;
+    const $ = (q) => root.querySelector(q);
+    const box = $(".box-in"), foeEl = $(".foe");
+    const st = () => STAGES[s.stage];
+    const left = () => st().todos.map((t, i) => i).filter((i) => !s.done.includes(i));
+    const spare = () => left().length === 0;
+
+    function drawHud() {
+      $(".path").innerHTML = STAGES.map((_, i) => `<i class="${i < s.stage ? "done" : i === s.stage ? "cur" : ""}"></i>`).join("");
+      $(".where").textContent = `${s.stage}단계 ${st().title}`;
+    }
+    function drawFoe() {
+      $(".foe-sprite").innerHTML = svg(st().sprite, PAL.foe, phone ? 7 : 9);
+      $(".foe-name").textContent = st().foe;
+      $(".pips").innerHTML = st().todos.map((_, i) => `<i class="${s.done.includes(i) ? "" : "left"}"></i>`).join("");
+      foeEl.classList.toggle("spare", spare());
+      foeEl.classList.toggle("float", !STILL && !frozen);
+    }
+    function drawLog() {
+      const n = phone ? 2 : 4;
+      $(".work ol").innerHTML = s.log.slice(-n).map((l) => `<li class="${l.k}${l.fresh && !frozen ? " fresh" : ""}">${esc(l.t)}</li>`).join("");
+      s.log.forEach((l) => (l.fresh = false));
+    }
+    function drawStats() {
+      const pct = Math.max(0, s.hp / MAX_HP * 100);
+      $(".stats").innerHTML = `<span>나</span><span>${STATW[G.words][1]} ${s.lv}</span><span>${STATW[G.words][0]}</span>
+        <span class="hp${pct < 20 ? " low" : ""}" role="img" aria-label="남은 토큰 ${s.hp} / ${MAX_HP}"><i style="width:${pct}%"></i></span><span>${s.hp} / ${MAX_HP}</span>`;
+    }
+    function drawCmds() {
+      const lit = s.mode !== "turn" && s.mode !== "input";
+      $(".cmds").innerHTML = [0, 1, 2, 3].map((i) => {
+        const sel = lit && s.sel === i && (s.mode === "menu" || s.mode === "sub");
+        const ic = sel && s.mode === "menu" ? svg("heart", PAL.heart, 3) : svg(ICONS[i], PAL.ink, 3);
+        return `<button type="button" tabindex="-1" class="cmd${sel ? " sel" : ""}${i === 3 && spare() ? " ready" : ""}" data-cmd="${i}"
+          aria-label="${L(i)}${i === 3 && spare() ? " — 넘어갈 수 있어요" : ""}"><span class="ic">${ic}</span>${L(i)}</button>`;
+      }).join("");
+    }
+    function pageText() { const p = s.pages[s.page]; return p ? p.text : ""; }
+    function drawBox() {
+      if (s.mode === "turn") {
+        box.innerHTML = `<div class="dodge"><span class="soul" style="left:${s.soul.x}px;top:${s.soul.y}px">${svg("heart", PAL.heart, 2)}</span></div>`;
+        return;
+      }
+      if (s.mode === "sub") {
+        box.innerHTML = `<ul class="opts${s.cols === 1 ? " one" : ""}" role="listbox" aria-label="${L(s.sel)}">${s.opts.map((o, i) => `<li><button type="button" tabindex="-1" role="option"
+          aria-selected="${i === s.sub}" class="opt${o.off ? " off" : ""}${o.y ? " y" : ""}" data-opt="${i}"><span class="h">${i === s.sub ? svg("heart", PAL.heart, 2) : ""}</span><span class="t">* ${esc(o.t)}</span></button></li>`).join("")}</ul>`;
+        $(".sr").textContent = `${L(s.sel)}: ${s.opts.map((o) => o.t).join(", ")}`;
+        return;
+      }
+      if (s.mode === "input") {
+        box.innerHTML = `<label class="ask-in">* 무엇을 시킬까요?<input type="text" maxlength="60" placeholder="예: 지출을 한 줄로 넣는 화면 만들어 줘" aria-label="Claude에게 시킬 일"><small>Enter 보내기 · Esc 뒤로</small></label>`;
+        const inp = $(".ask-in input");
+        inp.addEventListener("keydown", (e) => {
+          e.stopPropagation();
+          if (e.key === "Enter" && inp.value.trim()) { e.preventDefault(); startTurn(inp.value.trim(), true); }
+          if (e.key === "Escape") { e.preventDefault(); openSub(0); root.focus(); }
+        });
+        if (!frozen) setTimeout(() => inp.focus(), 0);
+        return;
+      }
+      // text · menu — 글은 한 글자씩
+      const p = s.mode === "menu" ? { who: null, text: idleText() } : s.pages[s.page] || { text: "" };
+      const shown = frozen ? p.text : p.text.slice(0, s.typed);
+      box.innerHTML = `${p.who === "floro" ? `<span class="portrait">${svg("seal", PAL.seal, 6)}</span>` : ""}<p class="say">${esc(shown)}</p>`;
+    }
+    const idleText = () => s.menuText ? s.menuText : spare() ? `* ${j(st().foe, "이", "가")} 비켜 줄 때를 기다린다.` : `* ${j(st().foe, "이", "가")} ${st().idle}`;
+    function drawAll() { drawHud(); drawFoe(); drawLog(); drawStats(); drawCmds(); drawBox(); }
+
+    // ── 글자 하나씩 ──
+    const speed = () => (STILL ? 0 : G.speed === "fast" ? 8 : 34);
+    function type(text, done) {
+      clearInterval(typer);
+      s.typed = 0;
+      if (frozen || !speed()) { s.typed = text.length; drawBox(); done && done(); return; }
+      drawBox();
+      typer = setInterval(() => {
+        s.typed++;
+        const el = box.querySelector(".say");
+        if (el) el.textContent = text.slice(0, s.typed);
+        if (s.typed >= text.length) { clearInterval(typer); done && done(); }
+      }, speed());
+    }
+    const typing = () => s.typed < (s.mode === "menu" ? idleText() : pageText()).length;
+    function finishTyping() { clearInterval(typer); s.typed = 9999; drawBox(); }
+
+    function say(pages, then) {
+      s.mode = "text"; s.pages = pages.map((p) => (typeof p === "string" ? { who: null, text: p } : p)); s.page = 0; s.then = then;
+      drawCmds(); type(pageText());
+      $(".sr").textContent = s.pages.map((p) => p.text).join(" ");
+    }
+    function advance() {
+      if (typing()) return finishTyping();
+      if (s.page < s.pages.length - 1) { s.page++; type(pageText()); return; }
+      const t = s.then; s.then = null; t ? t() : toMenu();
+    }
+    function toMenu() { s.mode = "menu"; drawCmds(); type(idleText()); $(".sr").textContent = `${idleText()} 명령을 고르세요`; }
+    function pushLog(k, t) { s.log.push({ k, t, fresh: true }); if (s.log.length > 30) s.log.shift(); drawLog(); }
+
+    // ── 고르기 ──
+    function openSub(i) {
+      s.sel = i; s.sub = 0; s.mode = "sub"; s.cols = 2;
+      const lf = left(), next = lf.length ? st().todos[lf[0]] : "";
+      if (i === 0) {
+        s.cols = 1;
+        s.opts = [...(next ? [{ t: `「${next}」 같이 해 줘`, go: () => startTurn(`${next} 같이 해 줘`, true) }] : []),
+          { t: "지금까지 한 것 정리해 줘", go: () => startTurn("지금까지 한 것 정리해 줘", false) },
+          { t: "직접 쓰기", go: () => { s.mode = "input"; drawCmds(); drawBox(); } }];
+      }
+      if (i === 1) s.opts = [
+        { t: "살펴보기", go: check },
+        { t: "모르는 말 묻기", go: () => say([`* 「${st().term}」\n* ${st().gloss}`]) },
+        { t: "플로로에게 묻기", go: () => say([
+          { who: "floro", text: next ? `* 지금은 「${next}」부터 하면 돼요.` : `* 할 일을 다 했어요!\n* '${L(3)}'에서 넘어가요.` },
+          { who: "floro", text: `* 막히면 '${L(0)}'${roP(L(0))} Claude에게 같이 해 달라고 해요.` }]) },
+      ];
+      if (i === 2) s.opts = s.items.slice(-6).map((it) => ({ t: it.t, go: () => useItem(it) }));
+      if (i === 3) s.opts = [{ t: "다음 단계로", y: spare(), off: !spare(), go: tryPass }, { t: "잠시 멈추기", go: hold }];
+      drawCmds(); drawBox();
+    }
+    function pick(i) { const o = s.opts[i]; if (o) o.go(); }
+
+    function check() {
+      const t = st(), lines = [`* ${t.foe}. 남은 할 일 ${left().length}/${t.todos.length}`, ...t.todos.map((x, i) => `${s.done.includes(i) ? "  ✓" : "  ·"} ${x}`)];
+      const pages = [], per = phone ? 2 : 3;
+      for (let k = 0; k < lines.length; k += per) pages.push(lines.slice(k, k + per).join("\n"));
+      say(pages);
+    }
+    function useItem(it) {
+      if (it.file) { pushLog("file", `+ ${st().file}`); return say([`* 빈칸 템플릿을 꺼냈다.\n* 작업 공간에 ${st().file} 빈칸 한 장이 생겼다.`]); }
+      say([it.say]);
+    }
+    function tryPass() {
+      const n = left().length;
+      if (n) return say([`* 아직 할 일이 ${n}개 남았다.\n* ${j(st().foe, "이", "가")} 길을 막고 있다.`]);
+      win();
+    }
+    function hold() {
+      pushLog("floe", "Floe> 잠시 멈춤 표시를 남겼어요");
+      say([{ who: "floro", text: "* 여기에 얼음 표시를 해 둘게요.\n* 다음에 이 자리에서 이어 가요." }]);
+    }
+
+    // ── Claude의 턴 ──
+    function startTurn(prompt, progress) {
+      s.mode = "turn"; root.classList.add("turn");
+      s.soul = { x: phone ? 92 : 112, y: phone ? 70 : 58 };
+      pushLog("me", `나> ${prompt}`);
+      drawCmds(); drawBox();
+      $(".sr").textContent = "Claude가 일하는 중이에요";
+      const t = st(), W = phone ? 200 : 240, H = phone ? 156 : 130;
+      const words = [`Read 메모`, `Write ${t.file}`, `Edit ${t.file}`, "Grep 할 일", "Bash 확인", "질문 1개"];
+      const cost = rand(2000, 3200);
+      if (STILL) {
+        pushLog("ai", `Claude> ${AI_SAYS[rand(0, AI_SAYS.length - 1)]}`);
+        if (progress) pushLog("file", `+ ${t.file}`);
+        return later(() => endTurn(progress, cost), 900);
+      }
+      const area = () => box.querySelector(".dodge");
+      for (let k = 0; k < 6; k++) later(() => {
+        const a = area(); if (!a) return;
+        const el = document.createElement("span");
+        el.className = `shot${k === 3 && progress ? " f" : ""}`; el.textContent = words[k];
+        el.style.top = `${rand(6, H - 30)}px`;
+        a.appendChild(el);
+        el.animate([{ transform: "translateX(0)" }, { transform: `translateX(-${W + el.offsetWidth + 20}px)` }], { duration: 1500, easing: "linear", fill: "forwards" }).onfinish = () => el.remove();
+      }, 520 + k * 380);
+      later(() => pushLog("ai", `Claude> ${AI_SAYS[rand(0, AI_SAYS.length - 1)]}`), 1100);
+      if (progress) later(() => pushLog("file", `+ ${t.file}`), 2100);
+      // 하트에 작업 조각이 닿으면 깜빡 — 지금은 놀이일 뿐(점수 없음)
+      const loop = () => {
+        const a = area(); if (!a) return;
+        const h = a.querySelector(".soul").getBoundingClientRect();
+        for (const sh of a.querySelectorAll(".shot")) {
+          const r = sh.getBoundingClientRect();
+          if (r.left < h.right && r.right > h.left && r.top < h.bottom && r.bottom > h.top && !sh.dataset.hit) {
+            sh.dataset.hit = "1"; const so = a.querySelector(".soul"); so.classList.remove("flash"); void so.offsetWidth; so.classList.add("flash");
+          }
+        }
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+      later(() => endTurn(progress, cost), 3400);
+    }
+    function moveSoul(k) {
+      const W = phone ? 200 : 240, H = phone ? 156 : 130, d = 12;
+      if (k === "left") s.soul.x = Math.max(4, s.soul.x - d);
+      if (k === "right") s.soul.x = Math.min(W - 20, s.soul.x + d);
+      if (k === "up") s.soul.y = Math.max(4, s.soul.y - d);
+      if (k === "down") s.soul.y = Math.min(H - 20, s.soul.y + d);
+      const el = box.querySelector(".soul"); if (el) { el.style.left = `${s.soul.x}px`; el.style.top = `${s.soul.y}px`; }
+    }
+    function endTurn(progress, cost) {
+      cancelAnimationFrame(raf);
+      root.classList.remove("turn");
+      s.hp = Math.max(0, s.hp - cost);
+      s.mode = "text"; box.innerHTML = ""; drawStats();
+      later(() => {
+        const pages = [];
+        const lf = left();
+        if (progress && lf.length) {
+          const i = lf[0]; s.done.push(i);
+          foeEl.classList.remove("hit"); void foeEl.offsetWidth; foeEl.classList.add("hit"); later(() => foeEl.classList.remove("hit"), 500);
+          drawFoe();
+          pages.push(`* Claude가 할 일 하나를 해냈다!\n* 「${st().todos[i]}」`);
+          pages.push(spare() ? `* ${st().foe}의 이름이 노래졌다.\n* 이제 넘어갈 수 있다.` : `* 남은 할 일 ${left().length}.\n* 토큰을 ${cost} 썼다.`);
+        } else {
+          pages.push(`* Claude가 지금까지 한 것을 정리했다.\n* 할 일은 그대로다. 토큰을 ${cost} 썼다.`);
+        }
+        if (!s.low && s.hp < MAX_HP * 0.2) { s.low = true; pages.push({ who: "floro", text: "* 토큰이 8천 아래로 남았어요.\n* 아껴 쓰려면 연습용 예시로 바꿔도 돼요." }); }
+        if (s.hp <= 0) { pages.push("* 토큰을 다 썼다. 오늘은 여기까지.\n* (목업이라 다시 채워 둘게요.)"); s.hp = MAX_HP; s.low = false; }
+        drawCmds();
+        say(pages, () => { drawStats(); toMenu(); });
+      }, STILL ? 0 : 480);
+    }
+
+    // ── 넘어가기 ──
+    function win() {
+      const t = st(); s.lv++;
+      s.items.push({ t: `책갈피: ${t.term}`, say: `* 책갈피 「${t.term}」를 펼쳤다.\n* ${t.gloss}` });
+      foeEl.classList.add("gone");
+      pushLog("floe", `Floe> ${s.stage}단계를 마쳤어요`);
+      drawStats();
+      say([`* 이겼다!\n* 배운 말 「${t.term}」${batchim(t.term) ? "과" : "와"} 책갈피 1장을 얻었다.`, `* ${STATW[G.words][1]}가 ${ro(s.lv)} 올랐다.`], () => {
+        if (s.stage === STAGES.length - 1) {
+          return say([`* 마지막 단계까지 모두 넘었다.\n* 서재에 「${PROJECT}」 책 한 권이 꽂혔다.`], () => reset());
+        }
+        s.stage++; s.done = [];
+        foeEl.classList.remove("gone"); foeEl.classList.add("enter");
+        later(() => foeEl.classList.remove("enter"), 700);
+        drawAll();
+        say([`* ${j(st().foe, "이", "가")} 나타났다.`]);
+      });
+    }
+
+    function reset() {
+      stopAll(); s = fresh(); root.classList.remove("turn"); foeEl.className = "foe"; drawAll();
+      say([`* ${j(st().foe, "이", "가")} 나타났다.`]);
+    }
+
+    // ── 입력 ──
+    const KEYS = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", z: "ok", Z: "ok", "ㅋ": "ok", Enter: "ok", " ": "ok", x: "back", X: "back", "ㅌ": "back", Escape: "back" };
+    function key(k) {
+      if (s.mode === "turn") return moveSoul(k);
+      if (s.mode === "text") { if (k === "ok") advance(); return; }
+      if (s.mode === "menu") {
+        if (typing() && k === "ok") return finishTyping();
+        if (k === "left" || k === "up") { s.sel = (s.sel + 3) % 4; drawCmds(); }
+        if (k === "right" || k === "down") { s.sel = (s.sel + 1) % 4; drawCmds(); }
+        if (k === "ok") openSub(s.sel);
+        return;
+      }
+      if (s.mode === "sub") {
+        const n = s.opts.length;
+        if (k === "left" || k === "up") { s.sub = (s.sub + n - 1) % n; drawBox(); }
+        if (k === "right" || k === "down") { s.sub = (s.sub + 1) % n; drawBox(); }
+        if (k === "ok") pick(s.sub);
+        if (k === "back") toMenu();
+      }
+    }
+    if (!frozen) {
+      root.addEventListener("keydown", (e) => { const k = KEYS[e.key]; if (!k || e.isComposing) return; e.preventDefault(); key(k); });
+      root.addEventListener("click", (e) => {
+        if (s.mode !== "input") root.focus();
+        const c = e.target.closest("[data-cmd]"), o = e.target.closest("[data-opt]");
+        if (c) { if (s.mode === "menu" || s.mode === "sub") openSub(+c.dataset.cmd); else if (s.mode === "text") advance(); return; }
+        if (o) { s.sub = +o.dataset.opt; pick(s.sub); return; }
+        if (e.target.closest(".box") && s.mode === "text") advance();
+      });
+    }
+
+    const api = { redraw: drawAll, reset, get state() { return s; } };
+    if (frozen) { s = Object.assign(fresh(), opt.preset ? opt.preset(fresh()) : {}); if (s.mode === "turn") root.classList.add("turn"); drawAll();
+      if (s.shots) { const a = box.querySelector(".dodge"); s.shots.forEach(([t, x, y, f]) => { const el = document.createElement("span"); el.className = `shot${f ? " f" : ""}`; el.textContent = t; el.style.left = `${x}px`; el.style.top = `${y}px`; a.appendChild(el); }); }
+      if (s.gone) foeEl.classList.add("gone"); }
+    else { drawAll(); say([`* ${j(st().foe, "이", "가")} 나타났다.`]); }
+    games.push(api);
+    return api;
+  }
+
+  // ── 직접 해 보기 두 화면 ──
+  const live = { "g-pc": makeGame(document.getElementById("g-pc")), "g-phone": makeGame(document.getElementById("g-phone")) };
+  document.querySelectorAll("[data-reset]").forEach((b) => (b.onclick = () => live[b.dataset.reset].reset()));
+
+  // ── 흐름 그림 6장 (같은 화면을 멈춘 채로) ──
+  const T0 = STAGES[0].todos;
+  const FRAMES = [
+    { say: "문제가 나타난다. 지금 단계에서 풀 문제가 적으로 나온다.", preset: (s) => ({ mode: "menu", sel: 0, menuText: "* 막연한 아이디어가 나타났다." }) },
+    { say: "살펴보기로 남은 할 일을 본다. 적의 칸이 곧 남은 할 일이다.", preset: (s) => ({ done: [0], sel: 1, pages: [{ text: `* 막연한 아이디어. 남은 할 일 3/4\n  ✓ ${T0[0]}\n  · ${T0[1]}` }] }) },
+    { say: "공격은 Claude에게 일을 시키는 것. Claude가 일하는 동안 상자가 작아지고 실제 작업이 날아든다.", preset: (s) => ({ done: [0], mode: "turn", soul: { x: 112, y: 58 },
+      shots: [["Read 메모", 150, 14], ["Write idea.md", 40, 84, true], ["질문 1개", 6, 30]],
+      log: [...s.log, { k: "me", t: `나> ${T0[1]} 같이 해 줘` }, { k: "ai", t: "Claude> 빈칸을 채웠어요" }, { k: "file", t: "+ idea.md" }] }) },
+    { say: "할 일 하나가 끝나면 적이 흔들리고 칸이 하나 준다. 쓴 토큰만큼 HP도 준다.", preset: (s) => ({ done: [0, 1], hp: 37350, pages: [{ text: `* Claude가 할 일 하나를 해냈다!\n* 「${T0[1]}」` }] }) },
+    { say: "할 일을 다 하면 이름이 노래진다. 그때 자비(넘어가기)를 누를 수 있다.", preset: (s) => ({ done: [0, 1, 2, 3], hp: 31800, sel: 3, mode: "sub", sub: 0,
+      opts: [{ t: "다음 단계로", y: true }, { t: "잠시 멈추기" }] }) },
+    { say: "이기면 배운 말과 책갈피를 얻고 LV가 오른다. 그다음 단계의 문제가 나온다.", preset: (s) => ({ done: [0, 1, 2, 3], hp: 31800, lv: 1, gone: true,
+      pages: [{ text: "* 이겼다!\n* 배운 말 「규모 등급」과 책갈피 1장을 얻었다." }] }) },
+  ];
+  const ol = document.getElementById("frames");
+  FRAMES.forEach((f, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<div class="thumb"><div class="game pc" aria-hidden="true"></div></div><p><span class="no">${i + 1}</span>${f.say}</p>`;
+    ol.appendChild(li);
+    makeGame(li.querySelector(".game"), { frozen: true, preset: f.preset });
+  });
+
+  // ── 캔버스 조작 ──
+  document.querySelectorAll("[data-words]").forEach((b) => (b.onclick = () => {
+    G.words = b.dataset.words;
+    document.querySelectorAll("[data-words]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    games.forEach((g) => g.redraw());
+  }));
+  document.querySelectorAll("[data-speed]").forEach((b) => (b.onclick = () => {
+    G.speed = b.dataset.speed;
+    document.querySelectorAll("[data-speed]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  }));
+})();
+</script>
+</body>
+</html>
