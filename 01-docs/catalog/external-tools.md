@@ -35,6 +35,7 @@ Claude가 이 표에서 꺼내 제안하고, 들이기로 하면 [external-integ
 
 | 이름 | 무엇 | 쓸 때 (꺼낼 신호) | 밖으로 나가는 것 | 설치 주의 | Claude 의견 | 상태 · 조사일 |
 |---|---|---|---|---|---|---|
+| axe-core ([dequelabs/axe-core](https://github.com/dequelabs/axe-core)) | 웹 화면의 접근성(WCAG 2 AA — 색 대비 · 이름 없는 버튼 등)을 자동으로 검사하는 라이브러리 | checklist.md 4·5단계 5번 "접근성 자동 검사 위반 0을 E2E 하나로" — 고칠 목록 F-15 뒤 절반, 5→6(11/3) 전에 | **확인 필요** — 라이브러리 자체는 브라우저 안에서 도는 것으로 알지만, 라이선스(MPL-2.0로 앎) · 사용 기록 여부는 들이기 전에 원문 확인 | npm 패키지 하나. 저장소에 `package.json`이 없어 시험이 찾는 방식(e2e/responsive.test.js처럼 있으면 쓰고 없으면 건너뜀)을 정해야 함 · 우리 기준 파일은 고치지 않음 | 들일 만함 — 체크리스트가 이미 이 검사를 요구한다 | 후보 · 2026-10-18 |
 | MarkItDown ([microsoft/markitdown](https://github.com/microsoft/markitdown)) | PDF·pptx·docx·xlsx → 마크다운. MIT | 레프런스 ② 문서화, 학교 자료를 세컨드 브레인에 넣기 | 기본 변환은 로컬. Azure·LLM 이미지 설명·YouTube만 외부 | `pip` — 필요한 형식만(`[pdf,docx,pptx,xlsx]`) | 바로 써 볼 만함 | 후보 · 2026-10-06 |
 | HyperFrames ([heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)) | HTML+CSS+GSAP → MP4 영상. Apache 2.0, 스킬 21개 | 발표·소개용 모션그래픽 영상이 필요할 때 | 기본 로컬. `telemetry` 명령이 있어 **보내는 내용·끄는 법 미확인**. 클라우드 렌더는 선택 | FFmpeg 필요(이 Mac에 없음), Node 22+ | 영상이 필요하면 Remotion보다 이쪽 | 후보 · 2026-10-06 |
 | Remotion ([remotion-dev/remotion](https://github.com/remotion-dev/remotion)) | React → 영상. 자체 라이선스(3명 이하 무료) | 위와 같음 — React 프로젝트일 때 | 라이선스 키를 넣으면 렌더 기록(키·IP) | — | HyperFrames와 둘 중 하나만 | 후보 · 2026-10-06 |
