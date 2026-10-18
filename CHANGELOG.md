@@ -17,6 +17,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v1.3 | 2026-10-19 | 이재엽 | 게임처럼 일하는 오버레이 목업 세 개(RPG 전투 → 친구 대화 → 레벨 오버레이)와 안내 — 지금 방향은 레벨 오버레이, 제품 코드는 그대로 | `01-docs/04-pattern-implementation/` |
 | v1.2 | 2026-10-18 | 이재엽 | Jira 잇기 — GitHub for Jira 앱(PR · 커밋, 설치 전), `main`에 올라오면 버전을 Jira 릴리스로 만드는 GitHub Action(비밀값 넣기 전에는 건너뜀), 이름에 Jira 키 넣는 규칙 | `.github/` · `.claude/rules/` · `01-docs/00-overview/` · `01-docs/catalog/` · `04-tests/repo/` |
 | v1.1 | 2026-10-18 | 이재엽 | 버전 기록(이 파일) 시작 — 동의 없이 병합, 버전 한 줄과 PR이 알림. PR 양식 · 팀 가이드 · 규칙 문서를 같이 고침 | 루트 · `.github/` · `.claude/rules/` · `01-docs/00-overview/` · `01-docs/07-maintenance/` · `04-tests/repo/` |
 | v1.0 | 2026-10-18 | 팀 전원 | **시작점** — 2026-10-18 저녁의 `main`(PR #104까지). 아래 "v1.0에 든 것" | 전체 |
