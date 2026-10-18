@@ -12,6 +12,18 @@ node server.js                          # → http://127.0.0.1:4317
 python ../../04-tests/run_all_tests.py   # 테스트 (실제 AI 호출 없이)
 ```
 
+## 한 줄로 켜기 — 실제 프로젝트에 붙여 써 보기 (2026-10-19)
+
+<!-- claude-drafted: 2026-10-19 — 이재엽의 결정(2026-10-18 "실질적으로 테스트를 진행할 수 있도록 … 우리가 사용하면서 느끼고 싶어"). -->
+
+```bash
+node floe.js ~/내-프로젝트          # 훅 연결(connect.js --apply) → 서버(.env가 있으면 --env-file=.env) → 브라우저 열기
+node floe.js ~/내-프로젝트 --off    # 그 폴더의 훅을 뺀다 (서버는 켜지 않는다)
+node floe.js --help                 # --codex · --no-open · --port
+```
+
+`floe.js`는 켜기만 한다 — AI를 부르는 곳은 여전히 `provider.js` 하나다(시험이 확인). 값(키 · 확인 값)은 출력하지 않는다. 쓰는 법은 [팀 작업 가이드](../../01-docs/00-overview/team-guide.md) 2-b절.
+
 ## 누구의 토큰으로 부르나 — 각자 자기 것
 
 키와 로그인은 **저장소에 없다.** 각자 컴퓨터의 환경에만 있고, 그래서 한도와 사용량도 각자 것이다.

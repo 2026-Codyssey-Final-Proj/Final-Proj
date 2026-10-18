@@ -15,8 +15,9 @@ const { pathToFileURL } = require("node:url");
 const ROOT = path.join(__dirname, "../..");
 const FRONT = path.join(ROOT, "02-frontend");
 // 시연 길잡이 9장면이 지나는 페이지와 주소 끝 — 화면이 바뀌면 여기도
-const PAGES = ["index.html", "navigator/index.html#ex=1", "navigator/index.html#ex=1&done&gate", "navigator/index.html#tab=lib",
-  "library/index.html#lib", "library/index.html#lib-f1", "library/index.html#lib-review", "library/index.html#lib-learn", "library/sky.html#year", "share/index.html"];
+// &noex(2026-10-19 실사용): 예시 책 없이 — 내비게이터는 이 화면의 내 책만, 서고는 빈 책장 · 빈 전체 돌아보기가 멈추지 않는지
+const PAGES = ["index.html", "navigator/index.html#ex=1", "navigator/index.html#ex=1&done&gate", "navigator/index.html#tab=lib", "navigator/index.html#ex=1&tab=lib&noex",
+  "library/index.html#lib", "library/index.html#lib-f1", "library/index.html#lib-review", "library/index.html#lib-learn", "library/index.html#lib-review&noex", "library/sky.html#year", "share/index.html"];
 const WIDTH = 390;
 
 function findPuppeteer() {
@@ -62,8 +63,8 @@ test(`휴대폰 폭(${WIDTH}px): 시연 페이지마다 가로 스크롤이 생�
 
 // 시연 장면마다 — 밝은 · 어두운 설정 × PC · 휴대폰. 2026-10-18 처음 잴 때 실제 위반 5곳(색 대비)을 app.css에서 고쳐 0으로 만들었다
 const SCENES = ["index.html", "navigator/index.html#start", "navigator/index.html#ex=1", "navigator/index.html#ex=0&crit", "navigator/index.html#ex=1&tab=doc",
-  "navigator/index.html#ex=1&done&gate", "navigator/index.html#tab=lib", "library/index.html#lib", "library/index.html#lib-f1",
-  "library/index.html#lib-review", "library/index.html#lib-learn", "library/sky.html#year", "share/index.html"];
+  "navigator/index.html#ex=1&done&gate", "navigator/index.html#tab=lib", "navigator/index.html#ex=1&tab=lib&noex", "library/index.html#lib", "library/index.html#lib-f1",
+  "library/index.html#lib-review", "library/index.html#lib-learn", "library/index.html#lib&noex", "library/index.html#lib-review&noex", "library/sky.html#year", "share/index.html"];
 const skipAxe = skip || (!axe && "건너뜀 — axe-core를 찾지 못했어요(`npx -y -p axe-core@4.13.0 node -e 0` 또는 AXE_PATH)");
 if (!skip && !axe) console.log(`⚠️ e2e/responsive: ${skipAxe}`);
 

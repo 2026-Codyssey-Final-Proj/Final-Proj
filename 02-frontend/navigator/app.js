@@ -12,10 +12,17 @@
 //   확정한 설계도는 서재의 '내 배움'(../library/index.html#lib-learn, learn.js가 이 기록을 읽는다). 옛 주소 #tab=learn은 서재로 보낸다(fromHash).
 // claude-drafted: 2026-10-18 — 화면 빈칸(이재엽 요청): 용어 풀이(FR-13, glossary.js) · '예' 뒤 확인 질문 1개와 '아니요' 3번 뒤 잠시 멈추기(FR-5, understand.js)
 //   · 다음 할 일 꼭/나중에(FR-12, priority.js) · 작업 알림 기록과 연습 알림으로 할 일 끝 표시(FR-7, alerts.js) · 만드는 크기(tier)를 서버에 보내기.
+// claude-drafted: 2026-10-19 — 실사용(이재엽 2026-10-18 "화면에서만 … 아니라 실질적으로 테스트 … 우리가 사용하면서 느끼고 싶어"):
+//   도서관 탭의 첫 책이 예시(s1)를 빌려 쓰던 것을 **내 책**(이 화면의 단계 · 할 일 · 설계도 · 배운 말, ../library/my-books.js)으로 바꿨다 — 진짜 AI 모드이거나 예시 책을 지웠을 때.
+//   연습 모드에서 예시가 보일 때는 전처럼 첫 책이 이 화면을 따른다(시연 장면 · GIF 그대로). 예시 책에는 '예시' 꼬리표, 도서관 탭 아래 '예시 책 지우기 / 다시 보기'.
+//   설정에 '느낀 점'(notes.js) — 쓰다가 느낀 것을 한 줄 남기면 화면 · 단계 · 때가 저절로 붙고, 'Jira용 복사'로 모아 붙인다(이 컴퓨터에만 남는다).
 (function () {
   const N = window.NavRules, S = window.NavScenario, C = window.NavSeal;
   // 새 규칙 파일 다섯(03-backend/navigator/glossary·understand·priority·alerts·tiers.js) — server.js가 내주는 목록에 있는지는 static-files.test.js가 확인한다
   const G = window.NavGlossary, U = window.NavUnderstand, P = window.NavPriority, A = window.NavAlerts, T = window.NavTiers;
+  // 실사용(2026-10-19): 내 책 · 예시 책 지우기(../library/my-books.js), 느낀 점(notes.js). 둘 다 없어도 화면은 돈다(옛 동작)
+  const M = window.FloeMine, NT = window.FloeNotes;
+  const STORE = (() => { try { return window.localStorage; } catch { return null; } })();
   const canLive = location.protocol.startsWith("http");
   const DELAY = { greet: 6000, home: 15000, petit: 30000 };   // 저절로 접히기까지(밀리초)
   const PHONE = matchMedia("(max-width: 600px)");
@@ -46,7 +53,12 @@
     tier: "Full",                                  // 만드는 크기 — 할 일 목록이 이 등급을 따르고(criteriaFor), 서버 요청에 tier로 같이 보낸다(기본: 크게)
     unplug: false, alogNote: "",                   // 연결 끊기(끊은 동안 들어온 알림은 받지 않는다), 알림 기록 비우기 결과 한 줄
     judged: "",                                    // 마지막으로 살펴본 작업 글 — 글 칸을 비운 뒤 '물어보기'를 눌러도 이 글을 보낸다(F-11, understand.js askText)
+    noteText: "", notesOpen: false, noteCopy: "",  // 느낀 점(2026-10-19): 적는 중인 글, 설정에서 펼쳤나, 'Jira용 복사'가 실패했을 때 손으로 복사할 글
   };
+  // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
+  let exHidden = M ? M.readHidden(STORE) : false;
+  // 느낀 점 목록 — 따로 둔다(기록 지우기와 별개). 새것이 위
+  let noteList = NT ? NT.read(STORE) : [];
   // 만드는 크기 [보내는 값, 화면 이름] — tiers.js
   const TIERS = T.LABELS;
   // 지금 등급의 할 일 목록 — 단계 n
@@ -283,7 +295,7 @@
     // 만드는 크기 — 진짜 AI에게 물을 때 같이 보낸다(tier). 고르는 건 사용자
     const tier = `<div class="row tiers"><span>만드는 크기</span><span class="row" role="radiogroup" aria-label="만드는 크기">${TIERS.map(([v, label]) =>
       `<label class="chk"><input type="radio" name="tier" data-act="tier" value="${v}" ${st.tier === v ? "checked" : ""}>${label}</label>`).join("")}</span>${termTag(st.tier)}</div>`;
-    return `${bondCard()}${link}${alertLog()}<div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>
+    return `${bondCard()}${link}${alertLog()}${notesCard()}<div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>
       <div class="row">보기 방식 <select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div>
@@ -301,6 +313,16 @@
     st.alogNote ? `<span class="meta" role="status">${esc(st.alogNote)}</span>` : ""}${
     !st.alogOpen ? "" : st.alerts.length ? `<ol>${st.alerts.map(alertItem).join("")}</ol>`
       : `<span class="meta">아직 받은 알림이 없어요.${st.mode === "fixture" && !isPhone() ? " 뒤 화면의 '▶ 작업 장면 보기'를 누르면 연습 알림이 와요." : ""}</span>`}</div>`;
+  // 느낀 점(2026-10-19 실사용) — 설정 안. 한 줄 남기면 어디서(화면 · 단계 · 탭 · 보기 방식)와 때가 저절로 붙는다(notes.js where). 이 컴퓨터에만 남고,
+  // 'Jira용 복사'가 모아 클립보드에 넣는다 — 그때 비밀값 · 연락처 모양은 공유 규칙으로 가린다(sensitive와 같은 share-rules.js)
+  const noteCtx = () => ({ screen: st.screen, stage: st.j ? st.j.stage : undefined, tab: st.tab, mode: st.mode, project: project() });
+  const noteItem = (n) => `<li><span class="meta">${esc(NT.stamp(n.at))}${n.where ? ` · ${esc(n.where)}` : ""}</span><button type="button" class="lnk" data-act="note-del" data-id="${esc(n.id)}" aria-label="이 느낀 점 지우기">지우기</button><span class="ntext">${esc(n.text)}</span></li>`;
+  const notesCard = () => (!NT ? "" : `<div class="alog notes"><div class="row"><button type="button" class="lnk grow" data-act="notes" aria-expanded="${st.notesOpen}">${st.notesOpen ? I.up : I.down}느낀 점 ${noteList.length}개</button>${
+    st.notesOpen && noteList.length ? `<button type="button" class="btn" data-act="notes-copy">Jira용 복사</button><button type="button" class="btn" data-act="notes-clear">전부 지우기</button>` : ""}</div>${
+    !st.notesOpen ? "" : `<textarea class="mc-input" data-act="note-text" rows="2" aria-label="느낀 점" placeholder="예) 2단계 할 일 문장이 어려웠어요">${esc(st.noteText)}</textarea>
+      <div class="row"><span class="meta grow">어디서(화면 · 단계) 언제 쓴 느낌인지는 저절로 붙어요. 이 컴퓨터에만 남아요.</span><button type="button" class="btn pri" data-act="note-add" ${st.noteText.trim() ? "" : "disabled"}>남기기</button></div>${
+      st.noteCopy ? `<textarea class="mc-input" data-act="note-copy" rows="4" readonly aria-label="복사할 글">${esc(st.noteCopy)}</textarea><span class="meta">자동 복사가 안 돼서 여기 두었어요 — 전체 선택해서 복사하세요.</span>` : ""}${
+      noteList.length ? `<ol>${noteList.map(noteItem).join("")}</ol>` : `<span class="meta">아직 남긴 느낀 점이 없어요. 쓰다가 걸리는 게 있으면 바로 적어 두세요.</span>`}`}</div>`);
   const settingsCard = () => (st.settings ? `<div class="foot settings">${settingsBody()}</div>` : "");
   const gearBtn = () => `<button class="round" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 기록">${I.gear}</button>`;
 
@@ -606,35 +628,47 @@
   const L = () => window.LibData, SCH = () => window.Schedule;
   const LIB_URL = "../library/index.html";
   const libMissing = () => `<div class="libtab"><div class="doc-empty">${I.lib}<b>서고 데이터를 못 읽었어요</b><span>../library/books.js와 schedule.js가 같이 있어야 해요.</span></div></div>`;
-  // 열어 둔 책 — 서고로 보낸 책은 빼고, 첫 책은 지금 이 화면의 단계·할 일·확정한 설계도를 따른다
+  // 예시 책 숨기기/보이기(2026-10-19) — 데이터(window.LibData)에 적용한다. 서고 화면도 같은 열쇠를 읽어 같은 모습이 된다
+  const applyEx = () => { if (M && L()) M.apply(L(), { hidden: exHidden, today: ymd() }); };
+  applyEx();
+  // 내 책 — 이 화면의 상태에서 그때그때 만든다(저장된 기록이 아니라 지금 상태). 진짜 AI 모드이거나 예시를 지웠을 때만 — 연습 모드에서 예시가 보일 때는 첫 예시(s1)가 이 화면을 따른다(시연 장면 그대로)
+  const myBook = () => (M && st.j && (st.mode === "live" || exHidden) && !(st.libGone.includes(M.ME) && st.finished)
+    ? M.fromState({ ...st, project: project(), at: Date.now() }, ymd()) : null);   // 이름은 위쪽 줄과 같은 것(연습이면 예시 이름)
+  // 열어 둔 책 — 서고로 보낸 책은 빼고, 내 책이 있으면 맨 앞에. 내 책이 없으면(연습 · 예시 보임) 첫 예시 책이 지금 이 화면의 단계·할 일·확정한 설계도를 따른다
   function openBooks() {
-    return L().OPEN.filter((b) => !st.libGone.includes(b.id)).map((b) => (b.id === "s1" && st.j
+    const mine = myBook(), meId = M ? M.ME : "me";
+    const rest = L().OPEN.filter((b) => b.id !== meId && !st.libGone.includes(b.id)).map((b) => (!mine && b.id === "s1" && st.j
       ? { ...b, mine: true, stage: st.j.stage, todos: st.j.criteria.map((c) => ({ t: c.text, done: c.met })),
           decided: st.docs.length ? st.docs.map((d) => `${d.stage}단계 ${d.name} — ${d.at}에 확정`) : b.decided }
       : b));
+    return mine ? [mine, ...rest] : rest;
   }
+  const hasExamples = () => !!(M && L() && L().EXAMPLES && (L().EXAMPLES.OPEN || []).some((b) => !st.libGone.includes(b.id)));
+  const isEx = (b) => !!(M && M.isExample(b));
   const bookDone = (b) => b.stage === 7 && b.todos.every((t) => t.done);
   const libSelected = () => openBooks().find((b) => b.id === st.libSel);
   const mmdd = (d) => d.slice(5).replace("-", "/");
-  // 마감 칩 — 지남(금 간 얼음) · 오늘 · 3일 이내 · 여유
-  const dueChip = (due) => { const d = SCH().dueStatus(due, L().TODAY); return `<span class="due ${d.state}">${d.state === "late" ? "❄ " : ""}${mmdd(due)} · ${d.label}</span>`; };
-  const coverBtn = (b, i) => `<button class="cover" style="--tone:${b.tone}" data-act="lib-book" data-i="${i}" data-id="${b.id}" aria-label="${esc(b.title)}, ${b.stage}단계 ${esc(L().STAGES[b.stage])}, 책갈피 ${b.bookmarks.length}장">
+  // 마감 칩 — 지남(금 간 얼음) · 오늘 · 3일 이내 · 여유. 마감이 없는 책(내 책)은 칩을 그리지 않는다
+  const dueChip = (due) => { if (!due) return ""; const d = SCH().dueStatus(due, L().TODAY); return `<span class="due ${d.state}">${d.state === "late" ? "❄ " : ""}${mmdd(due)} · ${d.label}</span>`; };
+  const coverBtn = (b, i) => `<button class="cover${isEx(b) ? " ex" : ""}" style="--tone:${b.tone}" data-act="lib-book" data-i="${i}" data-id="${b.id}" aria-label="${esc(b.title)}${isEx(b) ? " (예시 책)" : ""}, ${b.stage}단계 ${esc(L().STAGES[b.stage])}, 책갈피 ${b.bookmarks.length}장">
     <span class="t">${esc(b.title)}</span><span class="s">${b.mine ? "이 화면 · " : ""}${b.stage}단계 · ${esc(L().STAGES[b.stage])}</span>
-    <span class="m"><span>▮ ${b.bookmarks.length}장</span>${bookDone(b) ? '<span class="due ok">완주 · 엮기 대기</span>' : dueChip(b.dues[b.stage])}</span></button>`;
+    <span class="m"><span>▮ ${b.bookmarks.length}장</span>${isEx(b) ? '<span class="extag">예시</span>' : ""}${bookDone(b) ? '<span class="due ok">완주 · 엮기 대기</span>' : dueChip(b.dues && b.dues[b.stage])}</span></button>`;
+  // 예시 책 지우기 / 다시 보기 — 지울 예시가 있을 때만, 다시 보기는 지운 뒤에만
+  const exToggle = () => (!M ? "" : exHidden ? `<button class="b ghost" data-act="ex-show">예시 책 다시 보기</button>` : hasExamples() ? `<button class="b ghost" data-act="ex-hide" title="예시(더미) 책 · 레퍼런스를 숨기고 내 기록만 봐요">예시 책 지우기</button>` : "");
   function deskLib() {
     if (!L() || !SCH()) return libMissing();
     const books = openBooks(), b = libSelected();
     if (!b) return `<div class="libtab"><div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
-        <div class="ob-say">열어 둔 책 ${books.length}권</div>
-        <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
-        ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요.</p>`}</div></div>
-      <div class="ob-foot"><span class="grow"></span>
+        <div class="ob-say">열어 둔 책 ${books.length}권${exHidden ? " · 내 기록만" : ""}</div>
+        <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : exHidden && !st.j ? "아직 책이 없어요" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
+        ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">${exHidden && !st.j ? "'이번 단계'에서 지금 만드는 걸 보여 주면 내 책이 생겨요." : "새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요."}</p>`}</div></div>
+      <div class="ob-foot">${exToggle()}<span class="grow"></span>
         <button class="enter-lib" data-act="lib-enter"><span class="mb"></span>내 서고 들어가기</button></div></div>`;
     const fin = bookDone(b);
     deskKeys.Escape = { act: "lib-close" };
     deskKeys.Enter = { act: st.libConfirm ? "lib-shelve" : fin ? "lib-bind" : "lib-shelve-ask" };
     return `<div class="libtab"><div class="minispread" data-spread>
-        <section><div class="stg">${fin ? "돌아보기까지 끝" : `지금 ${b.stage}단계 · ${esc(L().STAGES[b.stage])}`}${b.mine ? " · 이 화면의 프로젝트" : ""}</div><h3>${esc(b.title)}</h3>
+        <section><div class="stg">${fin ? "돌아보기까지 끝" : `지금 ${b.stage}단계 · ${esc(L().STAGES[b.stage])}`}${b.mine ? " · 이 화면의 프로젝트" : isEx(b) ? " · 예시 책" : ""}</div><h3>${esc(b.title)}</h3>
           <div class="stg soft">이 세션에서 정한 것</div><ul>${b.decided.map((d) => `<li>${esc(d)}</li>`).join("")}</ul></section>
         <section><div class="stg">꽂은 책갈피 ${b.bookmarks.length}장</div><h3>배운 것</h3>
           <div class="marks">${b.bookmarks.map((m) => `<span>${esc(m)}</span>`).join("")}</div>
@@ -1291,6 +1325,26 @@
       const b = [...document.querySelectorAll('[data-act="term"]')].find((x) => x.dataset.term === t);
       if (b) b.focus();
     },
+    // 예시 책 지우기 / 다시 보기(2026-10-19) — 두 화면이 같은 열쇠를 읽는다. 지우면 내 책만 남고, 선택은 풀어 둔다(지운 책이 펼쳐져 있을 수 있어서)
+    "ex-hide": () => { exHidden = true; if (M) M.writeHidden(STORE, true); applyEx(); set({ libSel: null, libConfirm: false }); say("예시 책을 치웠어요. 이제 내 기록만 보여요"); },
+    "ex-show": () => { exHidden = false; if (M) M.writeHidden(STORE, false); applyEx(); set({ libSel: null, libConfirm: false }); say("예시 책을 다시 꺼냈어요"); },
+    // 느낀 점(2026-10-19) — 남기기 · 지우기 · Jira용 복사(가린 글을 클립보드에) · 전부 지우기
+    notes: () => set({ notesOpen: !st.notesOpen, noteCopy: "" }),
+    "note-add": () => {
+      if (!NT || !st.noteText.trim()) return;
+      noteList = NT.add(noteList, { text: st.noteText, ...noteCtx() }); NT.write(STORE, noteList);
+      set({ noteText: "", noteCopy: "" }); say("남겨 뒀어요. 고마워요!");
+      requestAnimationFrame(() => document.querySelector("[data-act=note-text]")?.focus());
+    },
+    "note-del": (i, el) => { if (!NT || !el) return; noteList = NT.remove(noteList, el.dataset.id); NT.write(STORE, noteList); render(); },
+    "notes-clear": () => { if (!NT) return; noteList = []; NT.write(STORE, noteList); set({ noteCopy: "" }); say("느낀 점을 모두 지웠어요"); },
+    "notes-copy": async () => {
+      if (!NT || !noteList.length) return;
+      const text = NT.toJira(noteList, (t) => (window.ShareRules ? window.ShareRules.redact(t) : t));
+      let ok = false;
+      try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
+      set({ noteCopy: ok ? "" : text }); say(ok ? `느낀 점 ${noteList.length}개를 복사했어요 — Jira에 붙여 넣어요` : "자동 복사가 안 돼서 글을 아래 두었어요");
+    },
     alog: () => set({ alogOpen: !st.alogOpen, alogNote: "" }),
     // 연결 끊기 — 끊은 동안 들어온 알림은 받지 않는다(alerts.js accept). 다시 연결하면 그 뒤의 알림부터 받는다
     unplug: () => { set({ unplug: !st.unplug, ping: st.unplug ? st.ping : "" }); say(st.unplug ? "연결을 끊었어요. 작업 알림을 받지 않아요" : "다시 연결했어요"); },
@@ -1354,6 +1408,8 @@
       }
       if (e.target.dataset.act === "question") st.question = e.target.value;
       if (e.target.dataset.act === "own-text") st.ownText = e.target.value;
+      // 느낀 점 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '남기기' 단추만 켠다
+      if (e.target.dataset.act === "note-text") { st.noteText = e.target.value; const b = document.querySelector("[data-act=note-add]"); if (b) b.disabled = !st.noteText.trim(); }
       if (e.target.dataset.act === "doc" && st.doc) {
         st.doc.text = e.target.value; save(); grow(e.target);   // 글자를 칠 때는 다시 그리지 않는다(커서가 튄다) — 빈칸 개수만 바꾼다
         if (st.askConfirm) { st.askConfirm = 0; document.querySelector("[data-ask-confirm]")?.remove(); }   // 고치기 시작하면 다시 묻지 않는다
@@ -1468,7 +1524,7 @@
 
   // ── 주소 끝으로 장면 바로 열기 (시연·녹화용). 진짜 AI를 부르지 않고 연습 예시로만 장면을 만든다 ──
   //   #start · #ex=<단계>(그 단계 '하는 중' 예시) · &done(그 단계를 다 한 예시) · &tab=<탭> · &crit(할 일 펼침) · &gate(넘어가기 전 확인) · &book=<책>
-  //   · &tier=Lite|Xpress|Full(만드는 크기 — 장면보다 먼저 정한다)
+  //   · &tier=Lite|Xpress|Full(만드는 크기 — 장면보다 먼저 정한다) · &noex(예시 책 없이 — 내 책만, 2026-10-19)
   function fromHash() {
     const h = location.hash.slice(1);
     if (!h) return;
@@ -1476,6 +1532,7 @@
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
       termOpen: "", check: null, undo: [], own: false });
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
+    if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
     if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null });
     if (q.ex !== undefined) {
       const n = Number(q.ex), mine = S.examples.filter((e) => e.judgement.stage === n);
