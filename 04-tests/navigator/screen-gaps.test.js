@@ -304,12 +304,13 @@ test("물어보기(F-11): 보낼 글은 늘 서버가 받는 글이다(Nav.fille
 });
 
 // ── F-05 PRD 2-7(이재엽 2026-10-18): 오버레이는 간단하게 — '내 배움' 탭을 없애고 내용은 서재에서 ── claude-drafted: 2026-10-18
-test("오버레이 탭(F-05): PC는 지금 · 설계도 · 단계 지도 · 한곳에서 보기 · 도서관, iPhone은 앞의 셋 — '내 배움' 탭이 없다", () => {
+// 2026-10-18 임유정 결정(PR #105): 첫 탭 이름 '지금' → '이번 단계', '한곳에서 보기' 탭을 뺐다 — FR-6 등급은 팀이 정한다
+test("오버레이 탭(F-05): PC는 이번 단계 · 설계도 · 단계 지도 · 도서관, iPhone은 앞의 셋 — '내 배움' 탭이 없다", () => {
   const code = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
   const tabs = /const TABS = \[([\s\S]*?)\];/.exec(code);
   assert.ok(tabs, "app.js에 TABS가 있다");
   assert.deepEqual([...tabs[1].matchAll(/\["(\w+)", "([^"]+)"/g)].map((m) => [m[1], m[2]]),
-    [["today", "지금"], ["doc", "설계도"], ["map", "단계 지도"], ["all", "한곳에서 보기"], ["lib", "도서관"]]);
+    [["today", "이번 단계"], ["doc", "설계도"], ["map", "단계 지도"], ["lib", "도서관"]]);
   assert.match(code, /const PHONE_TABS = TABS\.slice\(0, 3\);/);
   assert.doesNotMatch(code.replace(/^\s*\/\/.*$/gm, ""), /tab: "learn"/, "탭을 learn으로 바꾸는 곳이 없다");
   // 옛 주소 #tab=learn은 서재의 '내 배움'(#lib-learn)으로 보낸다
