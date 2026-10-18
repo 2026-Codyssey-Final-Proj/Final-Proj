@@ -62,6 +62,29 @@ test(`휴대폰 폭(${WIDTH}px): 시연 페이지마다 가로 스크롤이 생�
   } finally { await browser.close(); }
 });
 
+// 휴대폰 폭의 서고 — 가로 스크롤 · 접근성 검사로는 안 잡히던 겹침(2026-10-19 F-21: 책장 · 배운 말 · 플로로가 서로 덮었다).
+// 보이는 덩어리마다 상자를 맞대어 본다. 휴대폰에 맞춘 기능은 추후 업데이트이고, 이 시험은 "겹치지 않는다"만 지킨다
+test(`휴대폰 폭(${WIDTH}px): 서고의 책장 · 배운 말 · 자리 · 플로로 · 머리가 서로 겹치지 않는다`, { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: WIDTH, height: 844, isMobile: true, hasTouch: true });
+    await page.goto(`${pathToFileURL(path.join(FRONT, "library/index.html")).href}#lib`, { waitUntil: "load" });
+    await new Promise((r) => setTimeout(r, 600));
+    const overlaps = await page.evaluate(() => {
+      const els = [...document.querySelectorAll("#s-lib .shelfbox, #s-lib .stage > .chip, #s-lib .slot, #s-lib .say, #s-lib #lib-seal, #s-lib .lib-head, #s-lib .search")];
+      const out = [];
+      for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) {
+        const a = els[i].getBoundingClientRect(), b = els[j].getBoundingClientRect();
+        if (a.width && b.width && a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1)
+          out.push(`${els[i].className || els[i].id} × ${els[j].className || els[j].id}`);
+      }
+      return out;
+    });
+    assert.deepEqual(overlaps, [], `겹친 덩어리: ${overlaps.join(", ")}`);
+  } finally { await browser.close(); }
+});
+
 // 시연 장면마다 — 밝은 · 어두운 설정 × PC · 휴대폰. 2026-10-18 처음 잴 때 실제 위반 5곳(색 대비)을 app.css에서 고쳐 0으로 만들었다
 const SCENES = ["index.html", "navigator/index.html#start", "navigator/index.html#ex=1", "navigator/index.html#ex=0&crit", "navigator/index.html#ex=1&tab=doc",
   "navigator/index.html#ex=1&done&gate", "navigator/index.html#tab=lib", "navigator/index.html#ex=1&tab=lib&noex", "library/index.html#lib", "library/index.html#lib-f1",

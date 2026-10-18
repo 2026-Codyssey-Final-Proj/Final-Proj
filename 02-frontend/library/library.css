@@ -271,6 +271,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .search { top: 172px; height: 44px; }
   .stage { inset: 232px 0 0 0; }
 }
+/* 휴대폰 폭에서 서고가 겹치던 것(2026-10-19, 고칠 목록 F-21) — 이재엽 "휴대폰 서재 겹치는 것도 고쳐줘 … 휴대폰 기능도 추후 업데이트 상황으로".
+   넓은 화면의 '책장 넷 + 둥둥 뜬 배운 말 + 가운데 플로로'를 위에서 아래로 차례로 쌓고, 서고 화면만 세로로 밀어 본다.
+   겹치지 않게만 한 것이다 — 휴대폰에 맞춘 기능 · 화면 설계는 추후 업데이트(roadmap-demo-to-beta.md 5절). 책장 자리는 JS가 style로 주므로 !important로 푼다 */
+@media (max-width: 760px) {
+  #s-lib { overflow-y: auto; overscroll-behavior: contain; }
+  #s-lib .stage { position: relative; inset: auto; margin-top: 232px; display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; align-items: flex-start; gap: 10px 8px; padding: 0 12px 8px; }
+  #s-lib .shelfbox { position: relative !important; left: auto !important; right: auto !important; top: auto !important; flex: 0 0 100%; min-width: 0; width: auto; transform: none; margin-bottom: 6px; }
+  #s-lib .shelfbox .row { height: 132px; max-width: 100%; overflow: hidden; }
+  #s-lib .stage > .chip { position: relative !important; left: auto !important; right: auto !important; top: auto !important; flex: none; max-width: calc(100vw - 32px); white-space: normal; }
+  #s-lib .slot { position: relative; left: auto; top: auto; transform: none; order: 9; flex: 0 0 112px; height: 140px; margin: 8px calc(50% - 56px) 0; }   /* 양옆 여백으로 혼자 한 줄 */
+  #s-lib .center { position: relative; left: auto; bottom: auto; transform: none; margin: 96px auto 48px; width: fit-content; }
+  #s-lib .say { min-width: 0; width: calc(100vw - 48px); max-width: 360px; font-size: 14.5px; }
+  #s-lib #lib-seal svg { width: 128px; height: 128px; }
+  #s-lib .floe .ice { width: 170px; height: 38px; margin-top: -20px; }
+  #s-lib .floe .ripple { width: 230px; }
+  #s-lib .answer { position: fixed; left: 12px; right: 12px; bottom: 12px; width: auto; max-height: 62vh; overflow-y: auto; }
+}
 
 /* ── 내 배움 (2026-10-18 claude-drafted, F-05) — 전체 돌아보기(.rv)와 같은 창. 내비게이터에서 지나온 단계 · 배운 말 · 확정한 설계도 ── */
 .lr-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
