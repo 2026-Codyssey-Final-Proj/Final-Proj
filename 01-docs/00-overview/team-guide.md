@@ -97,18 +97,21 @@ NAV_MODEL=<운영팀이 알려 준 모델 이름>
 
 ## 3. 작업은 어디에 올리나 — 팀이 하는 방식
 
-**GitHub `2026-Codyssey-Final-Proj/Final-Proj`** 에 올린다. 지금 팀은 **브랜치 → PR → 이재엽이 병합**으로 하고 있다(PR #54~#74).
-`main`에 직접 올려도 되지만, **PR에 남는 리뷰 코멘트가 협업 증빙(평가 10점)** 이라 PR 방식을 권한다.
+**GitHub `2026-Codyssey-Final-Proj/Final-Proj`** 에 올린다. 2026-10-18부터 **브랜치 → PR → 올린 사람이 바로 병합**이다 —
+서로 동의를 기다리지 않고, 올릴 때마다 [CHANGELOG.md](../../CHANGELOG.md)에 버전(vN.M) 한 줄을 적어 알린다(팀 결정 — 이재엽).
+버전은 **큰 묶음**(기능을 더하거나 바꿈)이면 N+1·M=0, **작은 고침**(버그·문서·시험)이면 M+1 — 올린 사람이 고른다.
+`main`에 직접 올려도 되고 그때도 버전 한 줄을 넣는다. 읽은 사람이 병합 뒤에 남기는 PR 코멘트 한 줄은 **협업 증빙(평가 10점)** 이 된다(선택).
 
 ```mermaid
 flowchart LR
     A["이슈 확인<br/>내 담당 #5~#20"] --> B["브랜치 만들기"]
     B --> C["작업 · 커밋"]
-    C --> D["git push"]
-    D --> E["PR 열기<br/>Refs #이슈번호"]
-    E --> F["리뷰어가<br/>코멘트 한 줄"]
-    F --> G["이재엽이 병합"]
+    C --> V["CHANGELOG.md<br/>맨 위에 vN.M 한 줄"]
+    V --> D["git push"]
+    D --> E["PR 열기<br/>제목 앞에 vN.M · Refs #이슈번호"]
+    E --> G["내가 바로 병합"]
     G --> H["이슈에 링크 남기고 닫기"]
+    G -.-> F["읽은 사람이<br/>코멘트 한 줄(선택)"]
 ```
 
 ```bash
@@ -116,13 +119,16 @@ git checkout main && git pull                 # 최신으로
 git checkout -b docs/내-주제                  # 브랜치 — v2/…, docs/…, fix/… 중 하나로 시작
 # …작업…
 git add <바꾼 파일>                            # git add -A 보다 파일을 골라서 (.env가 섞이지 않게)
+# CHANGELOG.md 맨 위에 한 줄: | v1.4 | 날짜 | 내 이름 | 무엇이 달라졌나 | 건드린 폴더 |
 git commit -m "docs(범위): 무엇을 했는지"      # 제목은 `타입(범위): 설명` — docs · feat · fix · chore · refactor
 git push -u origin docs/내-주제
-gh pr create                                  # 또는 GitHub 웹의 "Compare & pull request"
+gh pr create --title "[v1.4] docs(범위): 무엇을 했는지"   # 또는 GitHub 웹의 "Compare & pull request"
+gh pr merge --merge --delete-branch           # 동의를 기다리지 않고 내가 병합
 ```
 
-**PR 본문에는** ① 무엇인가 ② 리뷰해 주실 것 ③ 확인한 것(테스트·링크)을 적고, 맨 위에 `Refs #이슈번호`를 둔다.
-병합은 **이재엽**이 한다 — 내가 병합하지 않는다.
+**PR 본문에는** ① 무엇인가 ② 버전(큰 묶음/작은 고침) ③ 확인한 것(테스트·링크)을 적고, 맨 위에 `Refs #이슈번호`를 둔다.
+병합은 **올린 사람이** 한다. 같은 번호를 누가 먼저 병합했으면 최신 `main`을 받아 다음 번호로 고친 뒤 병합한다.
+Claude는 병합하지 못한다(훅) — Claude에게 시킨 PR은 내가 병합한다.
 
 ### 올리기 전에 한 번
 

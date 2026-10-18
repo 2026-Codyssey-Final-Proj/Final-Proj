@@ -19,7 +19,8 @@
 |---|---|
 | `CLAUDE.md` | `.claude/skills/dev-workflow/SKILL.md` (라우터 링크), `05-projects/*/CLAUDE.md`(루트를 따른다고 적은 부분) |
 | `05-projects/*/CLAUDE.md` | 루트 `CLAUDE.md`("프로젝트" 표), 같은 프로젝트의 `README.md`(문서 지도) |
-| `.claude/rules/git-workflow.md` | `CLAUDE.md`(라우팅 표·"브랜치·원격"), `05-projects/*/CLAUDE.md`("병합은 사용자가 한다"), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 3의 커밋 단계) |
+| `.claude/rules/git-workflow.md` | `CLAUDE.md`(라우팅 표·"브랜치·커밋"), `05-projects/*/CLAUDE.md`("병합은 사용자가 한다"), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 3의 커밋 단계). "버전과 알림"을 바꾸면 아래 `CHANGELOG.md` 행도 |
+| `CHANGELOG.md` (버전 규칙 vN.M · 동의 없이 병합) | `.claude/rules/git-workflow.md`("버전과 알림"), `CLAUDE.md`("브랜치·커밋"), `TEAM.md`(책임자 줄), `.github/pull_request_template.md`(버전 칸), `01-docs/00-overview/team-guide.md` 3절(올리는 법), `01-docs/07-maintenance/fix-map.md` 0절 6번, `04-tests/repo/test_changelog.py`(표 줄 모양 `\| vN.M \| 날짜 \|`을 읽는다 — 칸 순서를 바꾸면 시험도) |
 | `.claude/rules/docs-editing.md` | `CLAUDE.md`(라우팅 표), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 3의 링크 체크 언급) |
 | `.claude/rules/code.md` | `CLAUDE.md`(라우팅 표) |
 | `.claude/rules/problem-save-gate.md` | `CLAUDE.md`(라우팅 표), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 1의 PRD 게이트 단계) |
