@@ -78,7 +78,8 @@
 
 - 새 할 일은 Jira에 만든다. 논의가 길어지면 GitHub 이슈를 열고 Jira 이슈에 링크한다(#102 "논의와 원본 자료는 계속 GitHub 이슈에").
 - 시작하면 Jira 상태를 **"진행 중"**으로(#102). 끝난 일에는 3절이 버전을 붙인다. 상태를 "완료"로 바꾸는 것은 사람이 한다.
-- **Claude는 Jira를 읽지 못한다** — Atlassian MCP를 들이지 않았다(2026-10-18 "Jira 앱"을 고름). Claude 세션은 [team-priorities.md](team-priorities.md) "내 몫"으로 말하고, Jira와 다르면 Jira가 맞다.
+- **Claude는 Atlassian MCP로 Jira를 읽는다**(이재엽 결정 2026-10-19, 저장소 `.mcp.json`의 `atlassian`). 각자 처음 한 번 Claude Code에서 `/mcp` → `atlassian` → 자기 Atlassian 계정으로 로그인한다. 연결 직후에는 도구가 안 보일 수 있어 `/mcp` Reconnect나 세션을 다시 연다. 연결 전 세션은 [team-priorities.md](team-priorities.md) "내 몫"으로 말하고, Jira와 다르면 Jira가 맞다.
+- **Claude가 Jira에 쓰는 것**(코멘트 · 상태 · 새 이슈)은 바꿀 내용을 표로 먼저 보이고 **사람이 확인한 것만** 쓴다. 팀 전원에게 보이는 기록이고 다른 사람의 이름이 섞이기 때문이다(security-records.md 4절). 상태를 "완료"로 바꾸는 것은 위와 같이 사람이 한다.
 - 협업 증빙: 설명회가 말한 증빙은 "Issue 트래커"다([schedule.md](schedule.md) 3-3). GitHub 이슈 21개와 그 댓글은 그대로 남고, Jira 화면을 캡처로 남길지는 협업 증빙 담당(두승현)이 정한다.
 
 ## 5. 처음 한 번 · 정할 것

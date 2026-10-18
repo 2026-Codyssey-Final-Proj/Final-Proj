@@ -1028,7 +1028,8 @@
   function placeSay(b) {
     const host = liveCat();
     if (!host) return;
-    const r = host.getBoundingClientRect(), side = r.left > 250, below = !side && r.top < 90;
+    // 레벨 오버레이에서는 플로로가 왼쪽 칸에 있어 위로 띄우면 상자 제목을 덮는다 — 아래(기분 말 자리)로
+    const r = host.getBoundingClientRect(), side = r.left > 250, below = !side && (r.top < 90 || !!host.closest(".lvc"));
     b.classList.toggle("side", side);
     b.classList.toggle("below", below);
     b.style.left = `${Math.round(side ? r.left - 6 : r.left + r.width * 0.66)}px`;
