@@ -9,6 +9,8 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+/* 한국어는 낱말 사이에서만 줄을 바꾼다 — 책 이름이 "사진 정리 도우 / 미"처럼 끊기던 것(2026-10-19). 띄어쓰기 없이 긴 말은 칸 안에서 끊는다 */
+body { word-break: keep-all; overflow-wrap: anywhere; }
 body { margin: 0; overflow: hidden; color: var(--ink); background: linear-gradient(180deg, var(--night-1), var(--night-2) 62%, var(--night-3));
   font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Malgun Gothic", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
 button { font: inherit; color: inherit; cursor: pointer; }
@@ -33,8 +35,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pillbtn { border: 1px solid var(--edge); background: rgba(255, 255, 255, .08); border-radius: 999px; padding: 9px 18px; font-size: 15px; }
 .pillbtn.pri { background: var(--ice); color: #13245e; border-color: var(--ice); font-weight: 700; }
 .kbd { font-size: 11px; padding: 1px 6px; border-radius: 5px; border: 1px solid currentColor; opacity: .7; margin-left: 6px; }
-.caption { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); padding: 8px 20px; border-radius: 999px; font-size: 15px; white-space: nowrap; z-index: 30; }
-.caption b { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ice); color: #13245e; font-size: 12px; margin-right: 8px; }
 
 /* 얼음 위의 플로로 */
 .floe { position: relative; display: flex; flex-direction: column; align-items: center; }
@@ -42,7 +42,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .floe .ripple { width: 330px; height: 40px; margin-top: -26px; border-radius: 50%; border: 1px solid rgba(190, 215, 255, .25); }
 .bob { animation: bob 3.6s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-5px); } }
-.say { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 300px; max-width: 420px; padding: 12px 18px; border-radius: 18px; font-size: 15.5px; text-align: center; }
+.say { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 300px; max-width: 420px; padding: 12px 18px; border-radius: 18px; font-size: 15.5px; text-align: center; word-break: keep-all; }   /* 한국어는 낱말 사이에서만 줄을 바꾼다(2026-10-19) */
 .say.hello { animation: say-pop .45s cubic-bezier(.3, 1.5, .5, 1); }   /* 물속에서 올라온 뒤 첫인사 */
 @keyframes say-pop { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.85); } }
 
@@ -122,8 +122,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .arcs path { fill: none; stroke: var(--gold); stroke-width: 1.6; stroke-dasharray: 5 5; opacity: .85; }
 .arcs text { fill: var(--gold); font-size: 14px; font-weight: 700; paint-order: stroke; stroke: #0e1a50; stroke-width: 4px; }
 .center { position: absolute; left: 50%; bottom: 62px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 4; }
-.asks { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; width: max-content; max-width: calc(100vw - 32px); }
-.asks button { font-size: 14px; }
 .answer { position: absolute; right: 4vw; bottom: 8vh; width: min(420px, calc(100% - 32px)); border-radius: 18px; padding: 14px 16px; z-index: 6; }
 .answer h3 { margin: 0 0 10px; font-size: 16.5px; display: flex; gap: 8px; align-items: center; }
 .answer ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -275,7 +273,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 
 /* ── 내 배움 (2026-10-18 claude-drafted, F-05) — 전체 돌아보기(.rv)와 같은 창. 내비게이터에서 지나온 단계 · 배운 말 · 확정한 설계도 ── */
-#learn .rv { padding-bottom: 64px; }   /* 맨 아래 장면 설명(.caption)에 마지막 줄이 가리지 않게 */
 .lr-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .lr-done { margin: -6px 0 14px; color: var(--gold); font-weight: 700; font-size: 14px; }
 .lr-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px; }

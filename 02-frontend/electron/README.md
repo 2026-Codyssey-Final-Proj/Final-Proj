@@ -10,7 +10,7 @@
 | `preload.js` | 화면이 앱에게 부탁할 수 있는 다섯(`window.floeApp`: connect · disconnect · openSettings · **saveKey · clearKey** — 처음 설정, 2026-10-19). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
 | `lib.js` | 순수 함수 — `.env` 읽기 · PATH 합치기 · 훅 명령(app.asar → app.asar.unpacked) · 폴더 연결(connect.js 규칙 그대로). 시험 [`electron-lib.test.js`](../../04-tests/navigator/electron-lib.test.js) |
 | `prebuild.js` | 묶기 전에 화면 · 서버를 `payload/`로 복사(node_modules · `.env*` · 문서 제외). git에 올리지 않는다 |
-| `package.json` | Electron 33.2.1 · electron-builder 25.1.8 · `@anthropic-ai/sdk`(내 키로 쓸 때) · 묶기 설정(`build`) |
+| `package.json` | Electron 44.9.0 · electron-builder 26.15.3(4.0.0에서 33 · 25에서 올림 — 이 Mac은 macOS 26이라 옛 Electron의 입력 · 창 문제를 피하려고) · `@anthropic-ai/sdk`(내 키로 쓸 때) · 묶기 설정(`build`) |
 
 ## 켜기 · 묶기
 
@@ -22,22 +22,37 @@ npm run dist                # Mac: dist/Floe-<버전>-arm64.dmg  (서명 없음 
 npm run dist:win            # Windows에서만: dist/Floe-Setup-<버전>.exe
 ```
 
-- 포트는 `NAV_PORT`(기본 4317). **같은 포트에 Floe 서버가 이미 켜져 있으면** 그 서버의 지문(`/api/setup`의 `build`)을 이 앱의 코드와 맞대어 본다(2026-10-19). 같으면 그대로 쓰고, **다르거나 지문이 없으면(옛 판)** 묻는다 — **옛 서버 끄고 새로 켜기**(node로 켠 `server.js` · `floe.js`만 끈다, Mac · Linux) · 그대로 쓰기 · Floe 끄기. 2026-10-19에 dmg가 옛 화면을 보인 까닭이 이것이었다(전날 다른 폴더에서 켠 `server.js`가 4317을 잡고 있었다).
+- 포트는 `NAV_PORT`(기본 4317)부터 **빈 포트**를 찾아 앱이 늘 자기 서버를 켠다. 터미널에 다른 Floe 서버가 떠 있어도 거기 붙지 않는다(첫 알파의 "옛 화면" 문제).
 - **처음 켜면 플로로가 반기고 연결을 돕는다**(2026-10-19, 화면 `../navigator/setup.js`): Claude Code로 연결(찾기 · 로그인 · 폴더 연결 · 연결 확인) 또는 API 키 넣기 중 하나를 고른다. 키는 화면이 `floeApp.saveKey`로 앱에 넘기고, **앱이 설정 폴더의 `.env`에 쓴다(나만 읽기 600)** — 화면 · 브라우저 저장소 · 서버 주소에는 남지 않는다. 앱 안의 서버라 다시 켜지 않아도 다음 호출부터 그 키로 부른다. 다시 고르려면 톱니 → **처음 설정 다시 하기**.
 - 손으로 넣어도 된다: 메뉴 **Floe → 설정 폴더 열기**에 `.env`(모양은 [`../../03-backend/navigator/.env.example`](../../03-backend/navigator/.env.example)). 없으면 이 컴퓨터의 Claude Code 구독. 키는 앱 묶음 · 저장소에 들어가지 않는다.
 - **프로젝트 폴더 연결**(메뉴 또는 톱니 → 연결 칸의 단추)은 그 폴더의 `.claude/settings.local.json`에 훅을 더한다 — `connect.js --apply`와 같은 규칙 · 백업. 훅은 `node`로 `app.asar.unpacked` 안의 `hook.js`를 부르므로 **그 컴퓨터에 node가 있어야 한다**(팀 알파에서는 모두 있다). node 없는 사람을 위한 길은 미정.
 - 기록(내 책 · 느낀 점)은 앱 안의 브라우저 저장소에 남는다 — 브라우저로 연 화면과는 따로다.
 
+## 받기 · 업데이트 — 자동화
+
+묶은 파일은 저장소가 아니라 [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에 올린다(비공개 레포라 팀원만 받는다). 지금 알파는 `app-v4.0.0`(2026-10-19, `Floe-4.0.0-arm64.dmg`, 100MB — 0.3.0 · 3.0.0은 위 문제로 내렸다).
+
+**새 버전을 내는 법 — 사람이 할 일은 숫자 하나:** 이 폴더 `package.json`의 `version`을 올려 PR → main에 병합. 그러면 [`.github/workflows/app-release.yml`](../../.github/workflows/app-release.yml)이
+① Release `app-v<버전>`을 만들고(이미 있으면 그대로) ② **Mac(arm64)과 Windows** 러너에서 `npm run dist` / `dist:win`을 돌려 ③ `.dmg` · `.exe`를 그 Release에 올린다. 비밀값 없음(저장소 기본 토큰), 서명 없음.
+Actions 탭에서 손으로도 돌릴 수 있다(workflow_dispatch). 비용: 비공개 저장소 Actions 분 — macOS 러너는 10배로 세어 한 번에 약 50분어치(무료 2,000분/월).
+
+**쓰는 사람 쪽:** 메뉴 **Floe → Floe <버전> · 새 버전 확인**이 Releases를 연다 — 받아서 덮어쓰면 된다. 기록(내 책 · 느낀 점)은 앱 설정 폴더에 남아 이어진다.
+**앱 안 자동 업데이트(electron-updater)는 아직 안 한다** — 비공개 저장소의 Release를 앱이 직접 받으려면 토큰을 앱에 넣어야 해서(새는 길) 못 쓰고, Release를 공개로 하면 코드 없이 묶음만 보인다. 둘 중 무엇으로 갈지는 이재엽 결정 — 그때까지는 "새 버전 확인 → 받기".
+
 ## 확인한 것 (2026-10-19, 이재엽의 Mac · arm64)
 
-- **0.4.0(처음 설정 · 옛 서버 알아보기):** `npm run dist`로 `Floe-0.4.0-arm64.dmg`. 묶은 앱을 포트 4398로 켜서 `/api/setup`의 지문이 저장소 코드의 지문과 같은 것(`9d9dd5cd0b87`), 첫 화면에 처음 설정("반가워요! 저는 길잡이 물범 플로로예요.")이 뜨고 `window.floeApp.saveKey`가 있는 것을 CDP로 봤다(누르지는 않았다 — 처음 설정 기록이 남지 않게). 옛 서버가 먼저 떠 있을 때의 묻는 창은 **사람이 아직 눌러 보지 않았다**(판단 함수만 시험: `electron-setup.test.js`).
+- **0.4.0(처음 설정 · 옛 서버 알아보기, #113 브랜치에서만 — 병합 때 #115의 "늘 자기 서버"로 합쳐 옛 서버 알아보기는 뺐고 앱은 5.0.0):** `npm run dist`로 `Floe-0.4.0-arm64.dmg`. 묶은 앱을 포트 4398로 켜서 `/api/setup`의 지문이 저장소 코드의 지문과 같은 것(`9d9dd5cd0b87`), 첫 화면에 처음 설정("반가워요! 저는 길잡이 물범 플로로예요.")이 뜨고 `window.floeApp.saveKey`가 있는 것을 CDP로 봤다(누르지는 않았다 — 처음 설정 기록이 남지 않게). 옛 서버가 먼저 떠 있을 때의 묻는 창은 **사람이 아직 눌러 보지 않았다**(판단 함수만 시험: `electron-setup.test.js`).
 
-- `npm run dist`로 `Floe-0.3.0-arm64.dmg`(100MB)가 나왔고, 묶은 앱을 포트 4399로 켜서 서버가 켜지고(`/api/usage` 200) 화면이 확인 값 쿠키와 함께 오며(`/` 200), 앱 안에서 `window.floeApp`이 있고 뒤 창이 숨고 바탕이 투명한 것을 CDP로 봤다.
-- 자동 시험에는 Electron을 넣지 않는다(묶음이 무겁다). `lib.js`만 Node 시험. 사람이 써 본 기록은 아직 없다.
+- `npm run dist`로 `Floe-3.0.0-arm64.dmg`(100MB)가 나왔고, 묶은 앱을 켜서 서버가 켜지고(`/api/usage` 200) 화면이 확인 값 쿠키와 함께 오며(`/` 200), 앱 안에서 `window.floeApp`이 있고 뒤 창이 숨고 바탕이 투명하며 유리 흐림 · 굴절이 꺼진 것을 CDP로 봤다. 4317이 막혀 있을 때 4318로 켜지는 것도.
+- **첫 알파(0.3.0)의 문제(이재엽 2026-10-19):** 같은 포트에 먼저 켜져 있던 옛 서버에 붙어 옛 화면 · 배경이 그대로 보였고, 투명 창 위의 유리 굴절 때문에 랙이 심했다. → 앱은 늘 자기 서버를 켜고(빈 포트), 앱 안에서는 굴절 · backdrop-filter를 끈다. 아이콘도 플로로로.
+- **3.0.1 뒤에도 "클릭이 안 된다"(이재엽):** 렌더러 안의 클릭(CDP)은 정상이라 창 · 운영체제 쪽이다. 4.0.0에서 Electron을 33 → 44로 올리고 전체 화면 보조 창 옵션(`visibleOnFullScreen`)을 뺐다. **진짜 마우스 클릭은 Claude가 확인하지 못한다**(이 세션의 터미널에 손쉬운 사용 권한이 없어 AppleScript 클릭이 거부됨) — 사람이 4.0.0를 써 보고 알려 줘야 한다.
+- **3.0.0의 문제(이재엽 2026-10-19 "아직도 랙 · 기능들이 클릭이 안 됨"):** 창이 1040×760인데 보이는 건 위쪽 섬뿐이라, 투명한 빈 영역이 뒤 창(VS Code · 터미널)의 클릭을 전부 가로챘고 큰 투명 창을 매 프레임 그려 무거웠다. 렌더러 자체는 121fps · 클릭 정상(CDP로 확인). → **3.0.1: 창이 지금 보이는 섬 크기를 따라간다**(`floe:resize` — 인사 946×186, 작업 카드 946×316, 설정 열면 946×1066, 접으면 540×60). 화면 높이에 기댄 CSS 제한(`100vh`)은 앱 안에서 푼다.
+- 자동 시험에는 Electron을 넣지 않는다(묶음이 무겁다). `lib.js`만 Node 시험. 사람이 써 본 기록은 이재엽 1회(0.3.0, 위 문제 보고).
 
 ## 아직 아닌 것
 
-- 서명 · 공증 없음(Apple 개발자 계정 필요 — 이재엽 결정). 앱 아이콘은 Electron 기본.
-- 창 크기 · 자리를 기억하지 않는다. 접힌 띠 크기로 창을 줄이는 것은 아직 — 창은 1040×760 고정 시작.
+- 서명 · 공증 없음(Apple 개발자 계정 필요 — 이재엽 결정). 아이콘은 `build/icon.png`(플로로 SVG를 1024px로 그린 것 — 원본 그림이 아니라 코드로 그린 플로로).
+- 창 자리를 기억하지 않는다(켤 때마다 위쪽 가운데). 크기는 섬을 따라가지만, 설정 창을 열면 1,000px 넘게 길어져 작은 화면에서는 아래가 잘릴 수 있다.
+- 접힌 띠 · 한 줄 상태에서는 창을 끌 수 없다(위쪽 줄이 있는 펼침 상태에서만).
 - Windows `.exe`는 Windows에서 묶어야 한다(아직 안 해 봄). 노치 모양은 하지 않는다(Mac 전용).
 - 자동 업데이트 없음 — 새 버전은 다시 내려받는다.

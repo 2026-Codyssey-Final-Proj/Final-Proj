@@ -1,7 +1,7 @@
 {
   "name": "floe-app",
   "productName": "Floe",
-  "version": "0.4.0",
+  "version": "5.0.0",
   "private": true,
   "description": "Floe — 코딩 도구 위에 떠 있는 길잡이 오버레이 (Electron 껍데기). 화면 02-frontend · 서버 03-backend를 그대로 감싼다",
   "main": "main.js",
@@ -15,18 +15,46 @@
     "@anthropic-ai/sdk": "0.131.0"
   },
   "devDependencies": {
-    "electron": "33.2.1",
-    "electron-builder": "25.1.8"
+    "electron": "44.9.0",
+    "electron-builder": "26.15.3"
   },
   "build": {
     "appId": "kr.codyssey.floe",
     "productName": "Floe",
-    "directories": { "output": "dist" },
-    "files": ["main.js", "preload.js", "lib.js", "package.json", "payload/**/*"],
-    "asarUnpack": ["payload/03-backend/navigator/hook.js"],
-    "mac": { "target": [{ "target": "dmg", "arch": ["arm64"] }], "category": "public.app-category.developer-tools", "identity": null },
-    "win": { "target": "nsis" },
-    "dmg": { "artifactName": "Floe-${version}-${arch}.${ext}" },
-    "nsis": { "artifactName": "Floe-Setup-${version}.${ext}", "oneClick": true }
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "lib.js",
+      "package.json",
+      "payload/**/*"
+    ],
+    "asarUnpack": [
+      "payload/03-backend/navigator/hook.js"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.developer-tools",
+      "identity": null
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "dmg": {
+      "artifactName": "Floe-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "artifactName": "Floe-Setup-${version}.${ext}",
+      "oneClick": true
+    }
   }
 }

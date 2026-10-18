@@ -56,6 +56,7 @@
     unplug: false, alogNote: "",                   // 연결 끊기(끊은 동안 들어온 알림은 받지 않는다), 알림 기록 비우기 결과 한 줄
     judged: "",                                    // 마지막으로 살펴본 작업 글 — 글 칸을 비운 뒤 '물어보기'를 눌러도 이 글을 보낸다(F-11, understand.js askText)
     noteText: "", notesOpen: false, noteCopy: "",  // 느낀 점(2026-10-19): 적는 중인 글, 설정에서 펼쳤나, 'Jira용 복사'가 실패했을 때 손으로 복사할 글
+    cmd: null, words: "work",                      // 레벨 오버레이(2026-10-19): 고른 명령 칸(0~3 · null이면 지금 하는 일), 버튼 말(work 일 말 · game 게임 말)
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
   let exHidden = M ? M.readHidden(STORE) : false;
@@ -136,7 +137,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged"];
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words"];
   let forgotten = false;
   function load() {
     let s;
@@ -190,6 +191,11 @@
     bubble: icon('<circle cx="12" cy="13" r="7"></circle><circle cx="9.5" cy="10.5" r="1.2"></circle><circle cx="19" cy="5" r="2"></circle>', 15),
     all: icon('<rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect>', 24),
     lib: icon('<path d="M3.5 6.5C6 5.5 9 5.5 12 7c3-1.5 6-1.5 8.5-.5V18c-2.5-1-5.5-1-8.5.5-3-1.5-6-1.5-8.5-.5z"></path><path d="M12 7v11.5"></path>', 24),
+    // 레벨 오버레이의 명령 네 칸(2026-10-19, 목업 level-overlay.html 그대로) — 맡기기 · 살피기 · 꺼내기 · 쉬어 가기
+    hand: icon('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"></path><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"></path>', 22),
+    look: icon('<circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path>', 22),
+    bag: icon('<path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path>', 22),
+    moon: icon('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>', 22),
   };
   // 하트 — 설정 맨 위 '플로로와 나'가 쓴다(위쪽 줄의 하트는 2026-10-18에 뺐다)
   const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
@@ -306,7 +312,9 @@
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div>
       <div class="row">글자 크기 <select data-act="text-size" aria-label="글자 크기">${TEXT_SIZES.map(([v, name]) =>
         `<option value="${v}" ${st.textSize === v ? "selected" : ""}>${name}</option>`).join("")}</select></div>
-      ${tier}<label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>${keep}`;
+      ${tier}<div class="row tiers"><span>버튼 말</span><span class="row" role="radiogroup" aria-label="명령 칸의 말">${[["work", "일 말 (맡기기 · 살피기)"], ["game", "게임 말 (공격 · 행동)"]].map(([v, label]) =>
+        `<label class="chk"><input type="radio" name="words" data-act="words" value="${v}" ${st.words === v ? "checked" : ""}>${label}</label>`).join("")}</span></div>
+      <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>${keep}`;
   }
   // 알림 기록(FR-7) — [때 · 도구 · 무슨 알림 · 서버가 준 한 줄 · 이 알림으로 끝낸 할 일]. 비밀번호처럼 보이는 글은 숨긴 채로 남는다(alerts.js)
   const clock = (t) => (Number.isFinite(t) ? new Date(t).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) : "");
@@ -592,6 +600,85 @@
         ${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}
       </div></section>`;
   }
+  // ── 레벨 오버레이 (claude-drafted: 2026-10-19 — 이재엽이 고른 목업 3번 level-overlay.html을 제품에 넣음: "작업하는것들을 가볍게 보이게만 …
+  //    검은 사각형에서 작업들을 선택 … 단계가 레벨로 … 체력바는 경험치바로") — PC '이번 단계' 탭의 카드.
+  //    왼쪽 플로로, 오른쪽에 [상자(지금 하는 일 — momentToday의 제목 · 설명 · 글 칸 · 선택지가 그대로 들어간다) · LV와 EXP 줄 · 명령 네 칸].
+  //    명령을 고르면 상자 안에 '길'이 펼쳐진다 — 길마다 무슨 일이 생기는지(토큰 · 책갈피)를 먼저 보이고, 누르면 기존 동작(ACT)을 그대로 부른다.
+  //    규칙은 안 바뀐다: LV = 지금 단계(코드가 정한다), EXP = 한 할 일 × 10, 다 차도 레벨은 '확인하고 넘어가기'(게이트 · 확인 질문)를 지나야 오른다(FR-4 · 목업 "정할 것" 1번은 그대로 둠).
+  const XP_EACH = 10;
+  const CMD = { work: ["맡기기", "살피기", "꺼내기", "쉬어 가기"], game: ["공격", "행동", "아이템", "자비"] };
+  const CMD_IC = ["hand", "look", "bag", "moon"];
+  const MOOD_WORD = { idle: "같이 보고 있어요", look: "귀 기울이는 중", think: "살펴보는 중", happy: "신났어요", done: "뿌듯해요", wow: "레벨 업!", sleep: "쉬는 중", love: "기분 좋아요", purr: "기분 좋아요", alert: "잠깐!", dozy: "졸려요" };
+  const cmdWords = () => CMD[st.words] || CMD.work;
+  const tokFmt = (n) => (n >= 10000 ? `${(n / 10000).toFixed(1).replace(/\.0$/, "")}만` : n.toLocaleString());
+  let lvPop = false;
+  // Claude Code에서 온 마지막 알림 한두 줄 — 상자 아래
+  const feedHtml = () => {
+    const rows = st.alerts.slice(0, 2);
+    if (!rows.length) return canLive ? `<div class="feed"><div><span class="dot wait"></span><b>Claude Code</b><span>알림을 기다리는 중</span></div></div>` : "";
+    return `<div class="feed">${rows.map((a) => `<div><span class="dot"></span><b>${esc(toolName(a.tool))}</b><span>${esc(a.hidden ? "내용은 숨겼어요" : a.line || A.KIND[a.kind] || "")}</span><time>${clock(a.at)}</time></div>`).join("")}</div>`;
+  };
+  // 상자 — 지금 하는 일(momentToday · momentGate가 준 것을 그대로). 살피기 → '이 단계 할 일'을 고르면 할 일 목록을 같이 편다
+  function momentBox(v) {
+    let opts = v.acts.filter(isOpt), rest = v.acts.filter((a) => !isOpt(a));
+    if (opts.length && rest.every((a) => a.kind === "ghost")) { opts = opts.concat(rest); rest = []; }
+    return `${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}
+      ${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}<h2 class="say" aria-live="polite">${v.title}</h2>${v.sub ? `<p class="mc-sub">${v.sub}</p>` : ""}${v.body || ""}
+      ${opts.length ? `<div class="opts">${opts.map(btn).join("")}</div>` : ""}${rest.length ? `<div class="acts">${rest.map(btn).join("")}</div>` : ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}
+      ${st.showCrit && st.j && st.screen !== "gate" ? `<div class="critbox"><div class="row"><b class="grow">이 단계 할 일 ${met().length}개 · ${progress()}</b><button type="button" class="lnk" data-act="crit">접기</button></div>${critList(true)}</div>` : ""}
+      ${st.screen === "gate" ? "" : feedHtml()}`;
+  }
+  // 명령마다 길 — {b: 이름, sm: 무슨 일이 생기나, act, i}. 누르면 기존 동작(ACT)을 그대로 부른다
+  function pathsFor(c) {
+    const j = st.j, n = j && j.next, live = st.mode === "live", tok = live ? "토큰 약 8,000" : "연습용 · 보내지 않아요";
+    if (c === 0) {
+      if (!j) return [{ b: "지금 만드는 걸 보여 주기", sm: "글 한 번 — 몇 단계인지 알려 줘요", act: "open-input" }, { b: "예시 글 넣기", sm: "연습용 예시 글을 넣기만 해요", act: "fill-example" }];
+      if (holding()) return [{ b: "다시 이어 하기", sm: "멈춰 둔 확인을 다시 열어요", act: "hold-resume" }];
+      if (allDone()) return [{ b: "확인하고 넘어가기", sm: `이해했는지 한 번 확인 → LV ${j.stage + 1}`, act: "gate" }];
+      const out = [];
+      if (n && !st.todos) { n.options.forEach((o, k) => out.push({ b: o, sm: k === 0 ? `${n.question} — 고르면 글에 적고 다시 살펴봐요 · ${tok}` : `고르면 글에 적고 다시 살펴봐요 · ${tok}`, act: "pick-opt", i: k })); out.push({ b: "직접 쓸게요", sm: "선택지에 없으면 한 줄로", act: "own" }); }
+      out.push({ b: "바뀐 작업 보여 주기", sm: `AI 코딩 도구에서 한 것을 붙여 넣고 다시 살펴봐요 · ${tok}`, act: "open-input" });
+      if (live && canLive) out.push({ b: st.auto ? "자동으로 살펴보기 끄기" : "자동으로 살펴보기 켜기", sm: "AI 코딩 도구가 일을 마칠 때마다 저절로 · 그때마다 토큰", act: "auto-toggle" });
+      return out;
+    }
+    if (c === 1) {
+      const out = [];
+      if (j) out.push({ b: `이 단계 할 일 ${met().length}개`, sm: `${metCount()}개 했어요 · 용어는 눌러서 풀이`, act: "crit-box" });
+      if (st.text.trim() || st.judged) out.push({ b: "어디쯤인지 보기", sm: live ? `보여 준 글을 AI(Claude)가 봐요 · ${tok}` : "연습용 예시로 봐요", act: "judge" });
+      if (j && stage().doc) out.push({ b: `설계도 · ${stage().doc}`, sm: docDone(j.stage) ? "확정함 — 다시 보기 · 고쳐 쓰기" : "초안 받기 → 고치기 → 확정", act: "tab", i: 1 });
+      out.push({ b: "단계 지도", sm: "여덟 단계 중 어디까지 왔나", act: "tab", i: 2 });
+      return out;
+    }
+    if (c === 2) return [
+      ...(st.mode === "fixture" ? stageExamples().map((e) => ({ b: e.label, sm: "연습 장면 — 미리 써 둔 글", act: "ex", i: S.examples.indexOf(e) })) : []),
+      { b: "도서관 · 내 책", sm: "열어 둔 책 · 예시 책 · 서고", act: "tab", i: 3 },
+      { b: "서재의 내 배움", sm: `배운 말 ${st.learned.length}개 · 지나온 단계 ${st.history.length}개 · 설계도 ${st.docs.length}개`, act: "lib-learn" },
+      { b: "느낀 점 남기기", sm: "쓰다가 걸린 것 한 줄 · Jira용 복사", act: "notes-open" }];
+    return [{ b: "접기", sm: "띠로 작게 — 마우스를 올리면 나와요", act: "fold" },
+      ...(j && nextStage() ? [{ b: "다음 레벨 미리 보기", sm: `LV ${j.stage + 1} ${nextStage().title}`, act: "peek" }] : []),
+      ...(st.mode === "fixture" ? [{ b: RESTART.label, sm: "연습용 예시 처음 장면 · 기록은 그대로", act: RESTART.act }] : []),
+      { b: "설정", sm: "보기 방식 · 연결 · 버튼 말 · 느낀 점", act: "settings" }];
+  }
+  const pathsBox = (c) => `<p class="say">${esc(cmdWords()[c])} — 어느 길로 갈까요?</p><div class="paths" role="group" aria-label="${esc(cmdWords()[c])}">${pathsFor(c).map((p, i) =>
+    `<button type="button" class="path" data-act="path" data-i="${i}"><span class="h">${I.arrow}</span><b>${esc(p.b)}</b><small>${esc(p.sm)}</small></button>`).join("")}</div><p class="hint">Esc 뒤로 · 1~4 다른 칸</p>`;
+  // 레벨 오버레이 카드 — v는 momentToday()/momentGate()가 준 것(글은 이미 esc 한 것)
+  function levelCard(v) {
+    cardSay = v.say || "";
+    for (const a of v.acts) if (a.key) deskKeys[a.key] = a;
+    const inGate = st.screen === "gate", locked = st.busy || !!st.warn || !!st.error || inGate || !!st.ping;
+    const s = st.j && stage(), n = st.j ? met().length : 0, done = st.j ? metCount() : 0, max = Math.max(1, n) * XP_EACH, xp = done * XP_EACH;
+    if (!locked) { for (let i = 0; i < 4; i++) deskKeys[String(i + 1)] = { act: "cmd", i }; }
+    if (st.cmd !== null) deskKeys.Escape = { act: "cmd-close" };
+    const ticks = Array.from({ length: Math.max(0, n - 1) }, (_, k) => `<span class="tick" style="left:${((k + 1) / n) * 100}%"></span>`).join("");
+    const stats = st.j ? `<div class="stats"><span class="me">나</span><span class="lv"><b class="${lvPop ? "pop" : ""}">LV ${st.j.stage}</b><span>${esc(s.short)}</span></span>
+        <span class="xp-l">EXP</span><span class="xp${done === n ? " full" : ""}" role="progressbar" aria-label="경험치" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${xp}"><i style="width:${(xp / max) * 100}%"></i>${ticks}</span><span class="xp-n">${xp} / ${max}</span>
+        <span class="chip" style="margin-left:auto">책갈피 <b>${st.learned.length}</b></span>${st.tokens ? `<span class="chip">토큰 <b>${tokFmt(st.tokens)}</b></span>` : ""}</div>` : "";
+    const cmds = `<div class="cmds" role="group" aria-label="할 일 고르기">${cmdWords().map((w, i) => `<button type="button" class="cmd${st.cmd === i ? " sel" : ""}" data-act="cmd" data-i="${i}" aria-pressed="${st.cmd === i}" ${locked ? "disabled" : ""}><span class="ic">${I[CMD_IC[i]]}</span><span>${esc(w)}</span><kbd>${i + 1}</kbd></button>`).join("")}</div>`;
+    const box = st.cmd !== null && !locked ? pathsBox(st.cmd) : momentBox(v);
+    return `<section class="mc lvc tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}<span class="mood">${esc(MOOD_WORD[v.mood] || "")}</span></div>
+      <div class="main"><div class="box">${box}</div>${stats}${cmds}</div></section>`;
+  }
+
   // 설계도 — 왼쪽 플로로와 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
   const docShell = (mood, say, side, main) => `<div class="docx"><div class="doc-side">${petCat(mood, 92)}<p class="doc-say">${esc(say)}</p>
     <div class="doc-acts">${side}</div></div><div class="doc-main">${main}</div></div>`;
@@ -774,7 +861,7 @@
     if (st.tab === "doc") body = deskDoc();
     else if (st.tab === "map") body = deskMap();
     else if (st.tab === "lib") body = deskLib();
-    else body = card(momentToday());
+    else body = levelCard(momentToday());   // 레벨 오버레이(2026-10-19) — 옛 가로 카드(card)는 쓰지 않는다
     return `<div class="isl${enter}">${topbar()}<div class="isl-body">${body}</div>${countdown()}</div>${settingsPop()}`;
   }
   function renderDesk() {
@@ -838,7 +925,8 @@
   // 유리 가장자리에서 뒤 화면이 휘어 보이게 한다: 유리 크기에 맞춘 '밀어낼 방향 지도'(R=가로, G=세로, 128이 제자리)를 그려
   // SVG 필터(feDisplacementMap)에 넣고 app.css가 backdrop-filter로 건다. 다른 브라우저는 이 필터를 무시하거나 유리째 지워서 크롬 계열만 켠다.
   // 투명도 줄이기를 켠 사람에게는 켜지 않는다(app.css가 불투명한 판으로 바꾼다).
-  const REFRACT = !!navigator.userAgentData?.brands?.some((b) => b.brand === "Chromium") && !matchMedia("(prefers-reduced-transparency: reduce)").matches;
+  // Electron 앱의 투명 창에서는 끈다 — 뒤가 페이지가 아니라 다른 창이라 굴절할 것이 없고, 필터만 무거워 랙이 심했다(2026-10-19 이재엽 보고)
+  const REFRACT = !!navigator.userAgentData?.brands?.some((b) => b.brand === "Chromium") && !matchMedia("(prefers-reduced-transparency: reduce)").matches && !window.floeApp;
   const BEZEL = 14, SCALE = 50;   // ponytail: 휘는 가장자리 폭(px)·가장 세게 미는 거리(SCALE/2 px) 하나로 고정 — 유리마다 다르게 하려면 refract의 표에 칸을 늘린다
   // 볼록한 가장자리(애플식 곡선 h=3·(1-(1-t)⁴)^¼ — 높이는 테두리 폭의 3배, t=가장자리에서 안쪽으로 0→1)를 지나는 빛이 유리(굴절률 1.5)에서 꺾이는 정도.
   // 바깥 끝에서 가장 세고 안쪽 끝에서 0 — 바깥 끝 값으로 나눠 0~1로 쓴다
@@ -909,6 +997,18 @@
     refract();
     // 카드의 한마디도 다른 한마디처럼 플로로 옆에 잠깐 떴다 사라진다 — 같은 말은 한 번만
     if (cardSay !== lastCardSay) { lastCardSay = cardSay; if (cardSay) { const t = cardSay; requestAnimationFrame(() => say(t)); } }
+    reportSize();
+  }
+  // Electron 앱(2026-10-19): 지금 보이는 것(띠 · 한 줄 · 펼침 · 설정 창까지)의 크기를 앱에 알려 창을 딱 맞춘다 — 투명한 빈 영역이 뒤 창의 클릭을 가로채지 않게.
+  // 그린 직후와 조금 뒤(글 칸이 늘어나거나 움직임이 끝난 뒤) 두 번 잰다
+  function reportSize() {
+    if (!window.floeApp || isPhone()) return;
+    const measure = () => {
+      let r = 0, b = 0;
+      for (const el of $nav.children) { const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
+      if (r && b) window.floeApp.resize(r, b);
+    };
+    requestAnimationFrame(measure); setTimeout(measure, 450);
   }
   PHONE.addEventListener("change", render);
 
@@ -929,7 +1029,8 @@
   function placeSay(b) {
     const host = liveCat();
     if (!host) return;
-    const r = host.getBoundingClientRect(), side = r.left > 250, below = !side && r.top < 90;
+    // 레벨 오버레이에서는 플로로가 왼쪽 칸에 있어 위로 띄우면 상자 제목을 덮는다 — 아래(기분 말 자리)로
+    const r = host.getBoundingClientRect(), side = r.left > 250, below = !side && (r.top < 90 || !!host.closest(".lvc"));
     b.classList.toggle("side", side);
     b.classList.toggle("below", below);
     b.style.left = `${Math.round(side ? r.left - 6 : r.left + r.width * 0.66)}px`;
@@ -1201,10 +1302,11 @@
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`,
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
         last ? ` · 확인 질문 ${last.ok ? "맞힘" : "정답 보고 넘어감"}` : ""} · ${ymd()}` });
-    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false });
+    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, cmd: null });
     if (nx) st.j = { stage: nx.n, reason: `${s.n}단계를 마쳤어요! 이제 ${nx.n}단계 "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;
+    lvPop = true; setTimeout(() => { lvPop = false; }, 1200);   // 레벨 오버레이의 LV 글자가 튄다
     render();
     celebrate(nx ? "stage" : "finish");
   }
@@ -1351,6 +1453,14 @@
       try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
       set({ noteCopy: ok ? "" : text }); say(ok ? `느낀 점 ${noteList.length}개를 복사했어요 — Jira에 붙여 넣어요` : "자동 복사가 안 돼서 글을 아래 두었어요");
     },
+    // 레벨 오버레이(2026-10-19) — 명령 칸 고르기/닫기, 길 누르기(기존 동작을 그대로 부른다), 살피기의 할 일 목록, 자동 살펴보기, 다음 레벨 미리 보기, 느낀 점 열기
+    cmd: (i) => set({ cmd: st.cmd === i ? null : i }),
+    "cmd-close": () => set({ cmd: null }),
+    path: (i) => { const p = pathsFor(st.cmd)[i]; st.cmd = null; if (p) run({ act: p.act, i: p.i }); else render(); },
+    "crit-box": () => set({ showCrit: true }),
+    "auto-toggle": () => { set({ auto: !st.auto }); say(st.auto ? "AI 코딩 도구가 일을 마치면 저절로 살펴볼게요" : "이제 눌러야 살펴봐요"); },
+    peek: () => set({ tab: "map", mapSel: nextStage() ? nextStage().n : null, settings: false }),
+    "notes-open": () => set({ settings: true, notesOpen: true }),
     // Electron 앱(2026-10-19) — 폴더를 골라 훅을 더하거나 빼고, .env를 두는 설정 폴더를 연다. 앱 밖에서는 단추가 없다
     "app-connect": async () => { const r = await window.floeApp.connect(); if (r && r.message) say(r.message.split("\n")[0]); },
     "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.message) say(r.message.split("\n")[0]); },
@@ -1406,6 +1516,7 @@
       if (a === "sound") { set({ sound: e.target.checked }); if (st.sound) C.chime("pop"); }
       if (a === "hard") toggleHard(Number(e.target.dataset.i), e.target.checked);
       if (a === "tier") setTier(e.target.value);
+      if (a === "words" && CMD[e.target.value]) set({ words: e.target.value });
     });
     $root.addEventListener("input", (e) => {
       activity();

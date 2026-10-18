@@ -1,0 +1,48 @@
+# claude-drafted: 2026-10-19 — 이재엽 질문("여기서 업데이트가 진행된다면 지금 알파버전 또한 업데이트가 이루어져야하는데 이건 어떻게 자동화할것인지").
+# main에 올라온 앱 버전(02-frontend/electron/package.json의 version)이 바뀌면, Mac(arm64)과 Windows에서 묶어 GitHub Release `app-v<버전>`에 올린다.
+# 사람이 할 일은 PR에서 version을 올리는 것뿐이다. 같은 버전의 Release가 이미 있으면(손으로 먼저 올린 경우) 새로 만들지 않고 파일만 갈아 끼운다(--clobber).
+# 비밀값 없음 — 저장소의 기본 토큰(github.token)만 쓴다. 서명 · 공증은 하지 않는다(Apple 계정 — 이재엽 결정 대기).
+# 비용: 비공개 저장소의 Actions 분(分) — macOS 러너는 10배로 센다(한 번에 약 5분 → 50분어치). 무료 2,000분/월 안에서 한 달 수십 번은 된다.
+name: app-release
+on:
+  push:
+    branches: [main]
+    paths: ["02-frontend/electron/package.json"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.v.outputs.tag }}
+      fresh: ${{ steps.v.outputs.fresh }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - id: v
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          TAG="app-v$(node -p "require('./02-frontend/electron/package.json').version")"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" >/dev/null 2>&1; then echo "fresh=false" >> "$GITHUB_OUTPUT"; echo "이미 있는 Release: $TAG — 건너뜀";
+          else
+            gh release create "$TAG" --prerelease --title "Floe 앱 알파 — $TAG" --notes-file 02-frontend/electron/release-notes.md
+            echo "fresh=true" >> "$GITHUB_OUTPUT"
+          fi
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest, script: dist, glob: "dist/*.dmg" }
+          - { os: windows-latest, script: "dist:win", glob: "dist/*.exe" }
+    runs-on: ${{ matrix.os }}
+    defaults: { run: { shell: bash, working-directory: 02-frontend/electron } }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: node --version && npm ci --no-audit --no-fund
+      - run: npm run ${{ matrix.script }}
+        env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" }
+      - run: gh release upload "${{ needs.version.outputs.tag }}" ${{ matrix.glob }} --clobber
+        env: { GH_TOKEN: "${{ github.token }}" }

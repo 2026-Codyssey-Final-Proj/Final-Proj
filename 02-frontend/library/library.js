@@ -36,21 +36,7 @@
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   $("sky").innerHTML = Array.from({ length: 110 }, () => `<i style="left:${rnd() * 100}%;top:${rnd() * 80}%;opacity:${(rnd() * .6 + .2).toFixed(2)};transform:scale(${(rnd() * 1.2 + .4).toFixed(2)})"></i>`).join("");
 
-  // ── 장면 전환 ──
-  const CAPTIONS = {
-    hall: "큰 책을 누르면 도서관 두 가지가 펼쳐져요",
-    pick: "① 작업 화면 위 위젯(내비게이터의 도서관 탭) · ② 나만의 서고",
-    lib: "내 서고 — 같은 배움을 쓴 책끼리 별자리처럼 이어져요",
-    read: "책을 펼치면 단계마다 정한 것 · 배운 것이 그대로",
-    ask: "기억 안 날 땐 플로로에게 — 찾은 책을 바로 펼쳐요",
-    search: "서고에서 찾기 — 끝낸 책 · 열어 둔 책 · 레퍼런스를 한 번에",
-    cover: "서고에 꽂힌 책 — 표지를 넘기면 단계마다 정한 것이 그대로",
-    review: "전체 돌아보기 — 끝낸 책과 열어 둔 책, 역량 지도를 한눈에",
-    bound: "완주한 책이 한 권으로 엮여 서고에 꽂혔어요",
-    arrive: "플로로를 따라 물속에서 서고로 올라왔어요",
-    learn: "내 배움 — 지나온 단계 · 배운 말 · 설계도",
-  };
-  function caption(key) { $("caption").textContent = CAPTIONS[key]; }
+  // ── 장면 전환 ── (2026-10-19 이재엽 "서재에 왜 아직도 온보딩 영상에 남아있는 잔재들이": 영상의 장면 설명 자막(아래 띠)과 정해 둔 질문 단추를 뺐다)
   function show(screen) { for (const s of ["hall", "lib"]) $(`s-${s}`).classList.toggle("on", s === screen); }
   function setHash(h) { history.replaceState(null, "", `#${h}`); }
   // 작업 화면 위 위젯은 내비게이터에 있다 — 열어 둔 책은 그쪽 도서관 탭에서 펼친다
@@ -58,8 +44,8 @@
 
   function go(where, arg) {
     $("spread").classList.remove("on"); $("reader").classList.remove("on"); $("review").classList.remove("on"); $("learn").classList.remove("on");
-    if (where === "hall") { show("hall"); caption("hall"); setHash("hall"); $("tome").focus(); return; }
-    if (where === "pick") { show("hall"); $("spread").classList.add("on"); caption("pick"); setHash("pick"); $("spread").querySelector(".go").focus(); return; }
+    if (where === "hall") { show("hall"); setHash("hall"); $("tome").focus(); return; }
+    if (where === "pick") { show("hall"); $("spread").classList.add("on"); setHash("pick"); $("spread").querySelector(".go").focus(); return; }
     if (where === "lib") { show("lib"); spot.clear(); spot.close(); st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
   }
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
@@ -112,7 +98,7 @@
   function bound(id) {
     const fresh = st.open.some((b) => b.id === id), fid = bindInto(id);
     if (!fid) return go("lib");
-    go("lib"); caption("bound"); setHash(`lib-${fid}`);
+    go("lib"); setHash(`lib-${fid}`);
     if (fresh) toast(`‘${D.SHELF.find((b) => b.id === fid).title}’ 한 권 완성! 서고 ‘숫자 · 돈’ 책장에 꽂았어요`);
     setTimeout(() => openReader(fid), fresh ? 500 : 0);
   }
@@ -161,11 +147,8 @@
     $("floro-say").textContent = none ? `서고에는 ‘${st.search.trim()}’ 이야기가 없어요. 다른 말로 찾아볼까요?`
       : st.results ? `찾았어요! 검색창 밑에 ${st.results.length}곳을 펼쳐 뒀어요.` : st.answer ? "찾았어요! 오른쪽에 펼쳐 둘게요."
       : !D.SHELF.length ? (st.open.length ? "아직 꽂힌 책이 없어요. 지금 쓰는 책을 끝내면 여기 꽂혀요." : "아직 책이 없어요. 작업 화면에서 만드는 걸 보여 주면 내 책이 생겨요.")
-      : "기억 안 나는 게 있으면 저한테 물어봐요.";
-    $("asks").innerHTML = D.ASK.map((a, i) => `<button class="pillbtn glass" data-ask="${i}">${esc(a.q)}</button>`).join("");
-    $("asks").querySelectorAll("[data-ask]").forEach((b) => (b.onclick = () => { spot.clear(); spot.close(); st.answer = D.ASK[+b.dataset.ask]; renderLib(); setHash("lib-ask"); }));
+      : "기억 안 나는 건 위 검색창에 적어 봐요.";
     renderAnswer();
-    caption(st.results ? "search" : st.answer ? "ask" : "lib");
     drawArcs(null);
   }
   $("refs-btn").onclick = () => { spot.clear(); spot.close(); st.answer = D.ASK.find((a) => a.refs) || null; renderLib(); };
@@ -254,7 +237,7 @@
     $("rd-links").innerHTML = b.links.map((l) => `<button data-read="${l}">${esc(D.SHELF.find((x) => x.id === l).title)}</button>`).join("");
     $("rd-links").querySelectorAll("[data-read]").forEach((x) => (x.onclick = () => openReader(x.dataset.read, { cover: false })));
     $("rd-stamp").innerHTML = `${b.date}<br>완독`;
-    show("lib"); $("reader").classList.add("on"); caption(cover ? "cover" : "read"); setHash(`lib-${id}`);
+    show("lib"); $("reader").classList.add("on"); setHash(`lib-${id}`);
     (cover ? $("rd-cover") : $("rd-close")).focus();
     if (cover && from) flyFrom(from);
   }
@@ -278,8 +261,7 @@
   function openBook() {
     const rd = $("reader"), c = $("rd-cover"), bk = rd.querySelector(".book");
     const done = () => {
-      rd.classList.remove("opening", "cover"); bk.classList.remove("fresh"); void bk.offsetWidth; bk.classList.add("fresh");
-      caption("read"); $("rd-close").focus();
+      rd.classList.remove("opening", "cover"); bk.classList.remove("fresh"); void bk.offsetWidth; bk.classList.add("fresh"); $("rd-close").focus();
     };
     if (!MOVE || innerWidth <= 760) return done();
     rd.classList.add("opening");
@@ -320,13 +302,13 @@
       <span class="lv" aria-label="${SK.LEVELS[x.level]}">${SK.LEVELS.map((_, i) => `<i class="${i <= x.level ? "on" : ""}"></i>`).join("")}<em>${SK.LEVELS[x.level]}</em></span>
       <b>${x.books ? `${x.books}권 · ${x.days}일` : "열어 둔 책"}</b></li>`).join("");
     $("rv-ins").innerHTML = fin.flatMap((b) => b.insights.map((t) => `<li>${esc(t)} <small>— ${esc(b.title)}</small></li>`)).slice(0, 5).join("");
-    $("review").classList.add("on"); caption("review"); setHash("lib-review"); $("rv-close").focus();
+    $("review").classList.add("on"); setHash("lib-review"); $("rv-close").focus();
   }
-  function closeReview(back = true) { $("review").classList.remove("on"); if (back) { caption("lib"); setHash("lib"); lastFocus?.focus?.(); } }
+  function closeReview(back = true) { $("review").classList.remove("on"); if (back) { setHash("lib"); lastFocus?.focus?.(); } }
   $("review-btn").onclick = openReview;
   $("rv-close").onclick = () => closeReview();
   $("review").addEventListener("click", (e) => { if (e.target === $("review")) closeReview(); });
-  function closeReader() { document.querySelectorAll(".front").forEach((f) => (f.style.visibility = "")); $("reader").style.animation = $("rd-cover").style.animation = ""; $("reader").classList.remove("on"); st.reading = null; caption(st.results ? "search" : st.answer ? "ask" : "lib"); setHash(st.answer ? "lib-ask" : "lib"); lastFocus?.focus?.(); }
+  function closeReader() { document.querySelectorAll(".front").forEach((f) => (f.style.visibility = "")); $("reader").style.animation = $("rd-cover").style.animation = ""; $("reader").classList.remove("on"); st.reading = null; setHash(st.answer ? "lib-ask" : "lib"); lastFocus?.focus?.(); }
   $("rd-close").onclick = closeReader;
   $("reader").addEventListener("click", (e) => { if (e.target === $("reader")) closeReader(); });
 
@@ -360,9 +342,9 @@
               x.text ? `<small>만난 곳 · ${esc(x.text)}</small>` : ""}</li>`).join("")}</ul>` : none("할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.")}</section>
         </div>
         <a class="pillbtn lr-back" href="${NAV_HOME}">← 작업 화면으로 돌아가 이어 하기</a>`;
-    show("lib"); $("learn").classList.add("on"); caption("learn"); setHash("lib-learn"); $("lr-close").focus();
+    show("lib"); $("learn").classList.add("on"); setHash("lib-learn"); $("lr-close").focus();
   }
-  function closeLearn() { $("learn").classList.remove("on"); caption("lib"); setHash("lib"); lastFocus?.focus?.(); }
+  function closeLearn() { $("learn").classList.remove("on"); setHash("lib"); lastFocus?.focus?.(); }
   $("learn-btn").onclick = openLearn;
   $("lr-close").onclick = closeLearn;
   $("learn").addEventListener("click", (e) => { if (e.target === $("learn")) closeLearn(); });
@@ -410,7 +392,6 @@
         $("lib-seal").innerHTML = seal("happy", SEAL);
         say.textContent = "서고에 온 걸 환영해요! 지난 책을 같이 찾아봐요.";
         say.style.visibility = ""; say.classList.add("hello");
-        caption("arrive");
         then?.();
       },
     });

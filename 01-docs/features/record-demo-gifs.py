@@ -57,10 +57,11 @@ def open_nav(page, hash_):
     page.goto(f"{NAV}#{hash_}"); page.wait_for_timeout(900)
 
 
-def stage_guide(page, r):            # 01 FR-1·2: 글 넣기 → 지금 단계 · 할 일 하나 → 할 일 펼치기
+def stage_guide(page, r):            # 01 FR-1·2: 글 넣기 → 지금 단계(LV) · 할 일 하나 → 살피기 → 이 단계 할 일 펼치기 (2026-10-19 레벨 오버레이)
     open_nav(page, "start"); r.still(900)
     r.click("[data-act=judge]", hold=1600)
-    r.click("[data-act=crit]", hold=1400)
+    r.click("[data-act=cmd][data-i='1']", hold=1000)
+    r.click("[data-act=path][data-i='0']", hold=1400)
     r.still(1500)
 
 

@@ -84,9 +84,4 @@ function relayUrl(v) {
   if (!t) return "";
   try { const u = new URL(t); return u.protocol === "https:" && !u.username && !u.password ? u.href.replace(/\/+$/, "") : null; } catch { return null; }
 }
-// 같은 포트에 먼저 떠 있는 서버가 옛 코드인가 — /api/setup이 없거나(옛 판) 지문(build)이 다르면. build: 이 앱이 가진 코드의 지문
-const staleServer = (info, build) => !info || info.ok !== true || typeof info.build !== "string" || !info.build || info.build !== build;
-// 앱이 꺼도 되는 프로세스인가 — node로 띄운 Floe 서버(server.js · floe.js)만. 다른 프로그램 · 다른 Floe 앱은 끄지 않는다
-const isFloeServer = (cmd) => /(^|[\s/\\])node(\.exe)?\s.*\b(server|floe)\.js\b/.test(String(cmd || ""));
-
-module.exports = { paths, parseEnv, applyEnv, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, staleServer, isFloeServer };
+module.exports = { paths, parseEnv, applyEnv, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl };

@@ -30,16 +30,3 @@ test("중계 서버 주소: 비면 공식 주소(\"\"), https만 받고 끝의 /
   for (const bad of ["http://relay.example", "https://user:pw@relay.example", "relay.example", "javascript:alert(1)"]) assert.equal(L.relayUrl(bad), null, bad);
 });
 
-test("옛 서버 알아보기: /api/setup이 없거나(옛 판) 지문이 다르면 옛 것, 같으면 그대로 쓴다", () => {
-  assert.equal(L.staleServer(null, "abc"), true, "404 — 처음 설정이 없던 옛 서버");
-  assert.equal(L.staleServer({ ok: true }, "abc"), true, "지문이 없는 서버");
-  assert.equal(L.staleServer({ ok: true, build: "def" }, "abc"), true);
-  assert.equal(L.staleServer({ ok: false, build: "abc" }, "abc"), true);
-  assert.equal(L.staleServer({ ok: true, build: "abc" }, "abc"), false);
-});
-
-test("앱이 꺼도 되는 것은 node로 켠 Floe 서버(server.js · floe.js)뿐 — 다른 프로그램 · 다른 Floe 앱은 끄지 않는다", () => {
-  for (const cmd of ["node 03-backend/navigator/server.js", "/usr/local/bin/node /Users/me/p/03-backend/navigator/floe.js /Users/me/app", "node --env-file=.env server.js"])
-    assert.equal(L.isFloeServer(cmd), true, cmd);
-  for (const cmd of ["/Applications/Floe.app/Contents/MacOS/Floe", "python3 server.js", "nodemon x.js", "", null]) assert.equal(L.isFloeServer(cmd), false, String(cmd));
-});
