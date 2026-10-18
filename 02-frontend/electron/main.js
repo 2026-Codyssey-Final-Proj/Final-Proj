@@ -6,14 +6,22 @@
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen } = require("electron");
 const fs = require("node:fs");
 const http = require("node:http");
+const net = require("node:net");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const L = require("./lib.js");
 
 const P = L.paths(app.isPackaged, __dirname);
-const PORT = Number(process.env.NAV_PORT) || 4317;
-const URL_ = `http://127.0.0.1:${PORT}/`;   // 화면 파일은 정확한 경로만(API 약속) — 앱 안임은 preload.js가 둔 window.floeApp으로 안다
-let win = null, serverState = "";
+const WANT = Number(process.env.NAV_PORT) || 4317;
+const RELEASES = "https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases";
+let PORT = WANT, URL_ = "", win = null, serverState = "";
+// 앱은 늘 자기 서버를 켠다 — 같은 포트에 다른 서버(터미널의 옛 server.js 등)가 있으면 그쪽에 붙지 않고 옆 빈 포트를 쓴다.
+// (2026-10-19 첫 알파에서 옛 서버에 붙어 옛 화면 · 배경이 보였다 — 이재엽 보고)
+const freePort = (from) => new Promise((resolve) => {
+  const s = net.createServer(); s.unref();
+  s.on("error", () => resolve(freePort(from + 1)));
+  s.listen(from, "127.0.0.1", () => { const p = s.address().port; s.close(() => resolve(p)); });
+});
 
 // ① .env — 앱 설정 폴더(이 사용자만)에 둔다. 저장소 · 앱 묶음 안에는 없다
 function loadEnv() {
@@ -26,27 +34,42 @@ function fixPath() {
   const r = spawnSync(process.env.SHELL || "/bin/zsh", ["-ilc", "echo $PATH"], { encoding: "utf8", timeout: 4000 });
   if (r.status === 0 && r.stdout) process.env.PATH = L.mergePath(process.env.PATH, r.stdout.trim().split("\n").pop());
 }
-// ③ 서버 — 이미 같은 포트에 Floe가 켜져 있으면(터미널의 floe.js 등) 그쪽을 쓴다
-function startServer() {
+// ③ 서버 — 빈 포트를 찾아 같은 프로세스에서 켠다(server.js의 handle). 포트는 server.js가 읽기 전에 환경에 넣는다
+async function startServer() {
+  PORT = await freePort(WANT);
+  URL_ = `http://127.0.0.1:${PORT}/`;   // 화면 파일은 정확한 경로만(API 약속) — 앱 안임은 preload.js가 둔 window.floeApp으로 안다
   process.env.NAV_PORT = String(PORT);
   const Server = require(path.join(P.backend, "server.js"));
   return new Promise((resolve) => {
     const s = http.createServer(Server.handle);
-    s.on("error", (e) => resolve(e.code === "EADDRINUSE" ? "busy" : `error:${e.code || e.message}`));
+    s.on("error", (e) => resolve(`error:${e.code || e.message}`));
     s.listen(PORT, "127.0.0.1", () => { try { Server.eventToken(); } catch {} resolve("ok"); });
   });
 }
-// ④ 창 — 테두리 없음 · 투명 · 항상 위 · 모든 작업 공간. 위쪽 가운데에서 시작한다
+// ④ 창 — 테두리 없음 · 투명 · 항상 위 · 모든 작업 공간. 위쪽 가운데에서 시작한다.
+// 크기는 화면(app.js)이 지금 보이는 섬의 크기를 보내 주면 그때그때 맞춘다(floe:resize) — 첫 알파(3.0.0)에서 1040×760 투명 창의 빈 영역이
+// 뒤 창(VS Code · 터미널)의 클릭을 전부 가로채고 그리기도 무거웠다(이재엽 보고 2026-10-19 "클릭이 안 된다" · "랙")
+const PAD = 6, MIN_W = 240, MIN_H = 60;
 function createWindow() {
-  const { width } = screen.getPrimaryDisplay().workAreaSize, W = 1040, H = 760;
+  const { width } = screen.getPrimaryDisplay().workAreaSize, W = 952, H = 140;
   win = new BrowserWindow({ width: W, height: H, x: Math.max(0, Math.round((width - W) / 2)), y: 0, frame: false, transparent: true, hasShadow: false,
-    alwaysOnTop: true, resizable: true, minimizable: true, title: "Floe",
+    alwaysOnTop: true, resizable: false, minimizable: true, title: "Floe", useContentSize: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   win.setAlwaysOnTop(true, "floating");
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서
   win.on("closed", () => { win = null; });
   win.loadURL(URL_);
 }
+// 화면이 알려 준 섬 크기로 창을 맞춘다 — 가로가 바뀌면 가운데를 유지하고(사용자가 옮긴 자리 기준), 세로는 위를 고정
+ipcMain.on("floe:resize", (e, w, h) => {
+  if (!win || e.sender !== win.webContents) return;
+  const W = Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
+  const [cw, ch] = win.getContentSize();
+  if (Math.abs(cw - W) < 2 && Math.abs(ch - H) < 2) return;
+  const [x, y] = win.getPosition();
+  win.setContentSize(W, H, false);
+  win.setPosition(Math.max(0, Math.round(x + (cw - W) / 2)), y, false);
+});
 async function pickAndConnect(add) {
   const r = await dialog.showOpenDialog(win, { title: add ? "Claude Code로 작업하는 프로젝트 폴더" : "연결을 뺄 프로젝트 폴더", properties: ["openDirectory"] });
   if (r.canceled || !r.filePaths[0]) return { ok: false, message: "" };
@@ -57,6 +80,8 @@ function menu() {
   const say = async (add) => { const r = await pickAndConnect(add); if (r.message) dialog.showMessageBox(win, { message: r.message }); };
   const tpl = [
     { label: "Floe", submenu: [
+      { label: `Floe ${app.getVersion()} · 새 버전 확인 (Releases)`, click: () => shell.openExternal(RELEASES) },
+      { type: "separator" },
       { label: "프로젝트 폴더 연결…", click: () => say(true) },
       { label: "연결 빼기…", click: () => say(false) },
       { type: "separator" },
@@ -83,7 +108,7 @@ app.whenReady().then(async () => {
   if (serverState.startsWith("error:")) { dialog.showErrorBox("Floe", `서버를 켜지 못했어요 (${serverState.slice(6)}).`); return app.quit(); }
   menu();
   createWindow();
-  console.log(`Floe 앱: ${URL_} · 서버 ${serverState === "busy" ? "이미 켜진 것을 씀" : "켬"} · .env ${envFile ? "읽음" : "없음(이 컴퓨터의 Claude Code 구독)"}`);
+  console.log(`Floe ${app.getVersion()}: ${URL_}${PORT !== WANT ? ` (${WANT}은 다른 서버가 써서 ${PORT}로)` : ""} · .env ${envFile ? "읽음" : "없음(이 컴퓨터의 Claude Code 구독)"}`);
   app.on("activate", () => { if (!win) createWindow(); });
 });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

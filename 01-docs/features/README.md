@@ -11,7 +11,7 @@
 
 | 폴더 | 기능 | 요구 | 등급 | 지금 상태 (2026-10-18) |
 |---|---|---|---|---|
-| [`01-stage-guide/`](01-stage-guide/README.md) | 단계 안내 — 지금 몇 단계, 다음 할 일, 완료 기준 | FR-1 · FR-2 | Must | 연습 예시 · 진짜 AI 둘 다 동작 · 시험 50개(navigator) |
+| [`01-stage-guide/`](01-stage-guide/README.md) | 단계 안내 — 지금 몇 단계, 다음 할 일, 완료 기준 | FR-1 · FR-2 | Must | 연습 예시 · 진짜 AI 둘 다 동작 · 시험 50개(navigator) · **2026-10-19 레벨 오버레이**(단계 = LV, 할 일 = EXP, 명령 네 칸 — [목업](../04-pattern-implementation/game-overlay/README.md) 3번을 제품에) |
 | [`02-blueprint/`](02-blueprint/README.md) | 설계도 함께 쓰기 — 초안(AI) → 고치기(사람) → 리뷰(AI) → 확정(사람) | FR-3 | Must | 동작 · 시연 1바퀴 |
 | [`03-gate/`](03-gate/README.md) | 넘어가기 전 확인 — 그림 + "이해하셨나요?", 아니요 루프, 다음 할 일 순서 | FR-4 · FR-5 · FR-12 | Must · Should | 동작 · 1회 루프 |
 | [`04-overview/`](04-overview/README.md) | 한곳에서 보기 — 진행 · 할 일 · 일정 충돌 · 토큰 | FR-6 | Must | 가상 숫자(화면에 표시) |

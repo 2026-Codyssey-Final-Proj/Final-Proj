@@ -138,7 +138,7 @@ python3 04-tests/run_all_tests.py             # 🧪
 cd 02-frontend/electron && npm install && npm run dist   # 📦 오버레이 앱 묶기 → dist/Floe-<버전>-arm64.dmg (Windows: npm run dist:win)
 ```
 
-📦 **앱으로 쓰려면** `.dmg`를 받아 우클릭 → 열기(서명 없음) → 메뉴 **Floe → 프로젝트 폴더 연결…** → 그 폴더에서 Claude Code를 새로 연다. 자세히 → [팀 작업 가이드 2-c](01-docs/00-overview/team-guide.md)
+📦 **앱으로 쓰려면** [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에서 `.dmg`를 받아 우클릭 → 열기(서명 없음) → 메뉴 **Floe → 프로젝트 폴더 연결…** → 그 폴더에서 Claude Code를 새로 연다. 자세히 → [팀 작업 가이드 2-c](01-docs/00-overview/team-guide.md)
 
 📘 **처음이라면 → [팀 작업 가이드](01-docs/00-overview/team-guide.md)** (내 키는 어디에 두고, 작업은 어디에 올리나, 한 줄로 켜기 · 앱으로 쓰기)
 

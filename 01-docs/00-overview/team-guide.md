@@ -127,14 +127,15 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 
 | 순서 | Mac | Windows |
 |---|---|---|
-| 받기 | `Floe-<버전>-arm64.dmg` (GitHub Release 또는 팀 채널) | `Floe-Setup-<버전>.exe` — **Windows에서 묶은 사람이 올린 것** |
+| 받기 | `Floe-<버전>-arm64.dmg` — [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) (지금 알파 `app-v4.0.0`, 2026-10-19, Apple Silicon) | `Floe-Setup-<버전>.exe` — 같은 Release에 **CI가 묶어 올린다**(main 병합 뒤) |
 | 처음 열기 | 서명이 없어 경고가 뜬다 → Finder에서 **우클릭 → 열기** 한 번 | SmartScreen 경고 → "추가 정보 → 실행" |
 | 연결 | 메뉴 **Floe → 프로젝트 폴더 연결…** 또는 톱니 → 연결 칸의 단추 | 같음 |
 | AI | 이 컴퓨터의 Claude Code 로그인을 쓴다. 내 키로 쓰려면 **Floe → 설정 폴더 열기**에 `.env` | 같음 |
 | 끄기 | 메뉴 **Floe → Floe 끄기** (Cmd+Q) | 창 닫기 |
 
 - 직접 묶으려면: `cd 02-frontend/electron && npm install && npm run dist` — [electron/README.md](../../02-frontend/electron/README.md).
-- 터미널에서 `floe.js`나 `server.js`를 이미 켜 두었으면 앱은 새 서버를 켜지 않고 그쪽 화면을 연다. 옛 화면이 보이면 그 터미널을 먼저 끈다.
+- 앱은 늘 자기 서버를 켠다(4317이 막혀 있으면 옆 포트). 터미널의 서버와 섞이지 않는다.
+- **새 버전:** 메뉴 **Floe → 새 버전 확인**이 Releases를 연다. 앱 버전(`02-frontend/electron/package.json`)이 main에서 바뀌면 CI가 Mac · Windows를 묶어 올린다 — [electron/README.md](../../02-frontend/electron/README.md) "받기 · 업데이트".
 - 느낀 점 · 내 책은 앱 안에 남고, 브라우저로 연 것과는 따로다.
 
 ## 3. 작업은 어디에 올리나 — 팀이 하는 방식
