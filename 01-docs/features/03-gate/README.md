@@ -45,7 +45,7 @@ stateDiagram-v2
     다음할일 --> [*]: 이 순서로 시작하기 (canAdvance)
 ```
 
-답(`/api/answer`)은 연습 모드에서 `scenario.js`의 `answers`, 진짜 AI 모드에서 `provider.js`를 거친다. 넘어간 기록은 `'잘 모르겠어요' N번`과 날짜로 '내 배움'에 남는다.
+답(`/api/answer`)은 연습 모드에서 `scenario.js`의 `answers`, 진짜 AI 모드에서 `provider.js`를 거친다. 넘어간 기록은 `'잘 모르겠어요' N번`과 날짜로 남고 서재의 '내 배움'(`library/index.html#lib-learn`)에서 본다. 진짜 AI 모드에서 작업 글 칸이 비었으면 마지막으로 살펴본 글을 같이 보내고, 그것도 없으면 보내지 않고 "먼저 '지금'에서 지금 한 일을 적어 주세요"를 보인다(F-11, `understand.js` `askText`).
 
 ## 어떻게 진행됐나
 

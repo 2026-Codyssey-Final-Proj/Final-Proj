@@ -32,7 +32,7 @@
 | "오버레이가 이상해요", "탭이 이상해요", "버튼이 안 눌려요" | 내비게이터 화면 | [app.js](../../02-frontend/navigator/app.js), [app.css](../../02-frontend/navigator/app.css), [library-tab.css](../../02-frontend/navigator/library-tab.css) | [navigator.test.js](../../04-tests/navigator/navigator.test.js), [수용 테스트](../../04-tests/acceptance/README.md)의 사람 확인 줄 | 화면 흐름 [와이어](../04-pattern-implementation/screen-flow-wireframe.md) | 임유정 · 두승현 |
 | "플로로가 이상해요(그림 · 표정 · 움직임)" | 마스코트 | [seal.js](../../02-frontend/navigator/seal.js), [seal.css](../../02-frontend/navigator/seal.css) | [navigator.test.js](../../04-tests/navigator/navigator.test.js) | 이미지 원본은 고한결 | 고한결 · 임유정 |
 | "서재로 넘어갈 때 이상해요(물속 전환)" | 물속 전환 | [dive.js](../../02-frontend/navigator/dive.js), [dive.css](../../02-frontend/navigator/dive.css), [library.js](../../02-frontend/library/library.js)(`arrive`) | [static-files.test.js](../../04-tests/navigator/static-files.test.js) | 움직임 줄이기에서는 바로 넘어가야 한다 | 임유정 |
-| "서재 · 책 · 책 펼치기가 이상해요" | 서재(서고) | [library.js](../../02-frontend/library/library.js), [library.css](../../02-frontend/library/library.css), [books.js](../../02-frontend/library/books.js)(가상 데이터) | [04-tests/library/](../../04-tests/library/search.test.js) | — | 임유정 |
+| "서재 · 책 · 책 펼치기가 이상해요", "서재의 '내 배움'에 지나온 단계 · 배운 말이 안 보여요" | 서재(서고) · 내 배움 | [library.js](../../02-frontend/library/library.js)(`openLearn`), [library.css](../../02-frontend/library/library.css), [books.js](../../02-frontend/library/books.js)(가상 데이터), [learn.js](../../02-frontend/library/learn.js)(내비게이터 기록 읽기) | [04-tests/library/](../../04-tests/library/search.test.js), [learn.test.js](../../04-tests/library/learn.test.js) | 내비게이터의 기록 열쇠(app.js `KEY`)를 바꾸면 learn.js도 — 시험이 맞대어 본다 | 임유정 |
 | "역량 지도 · 레벨이 이상해요" | 역량 지도 | [skills.js](../../02-frontend/library/skills.js) | [skills.test.js](../../04-tests/library/skills.test.js) | 레벨 규칙은 가설 — 항목 · 단위는 인터뷰 뒤(FR-8) | 이재엽 · 고한결 |
 | "일정 충돌 · 마감이 이상해요" | 한곳에서 보기 | [schedule.js](../../02-frontend/library/schedule.js), [app.js](../../02-frontend/navigator/app.js)(`deskAll`) | [schedule.test.js](../../04-tests/library/schedule.test.js), [one-place.test.js](../../04-tests/acceptance/one-place.test.js) | 숫자는 가상 — 화면에 "가상 숫자" 표시 유지 | 임유정 |
 | "지식 은하가 이상해요" | 지식 은하 | [sky.js](../../02-frontend/library/sky.js), [sky-data.js](../../02-frontend/library/sky-data.js) | [knowledge-sky.test.js](../../04-tests/library/knowledge-sky.test.js) | — | 이재엽 |
@@ -54,13 +54,13 @@
 | F-02 | 판정 규칙 확정 질문 4개(Xpress의 5 Whys · ADR, Lite 1단계 2개, 1단계 꼬리표) | 판정 규칙 | PR #96 본문 | 2026-10-18 | Lite | 열림 — 이재엽 |
 | F-03 | 6단계 2번 "잰 값과 못 한 것 적어 두기"가 두 가지를 묶어 AI와 예시 정답이 갈림 — 둘로 나눌지 | 판정 규칙(바뀌면 6단계만 다시 녹화) | 실제 AI 점검 2026-10-18 | 2026-10-18 | Lite | 열림 — 이재엽 |
 | F-04 | AI 네 주소(`/api/judge` 등)는 확인 값을 보지 않아 같은 컴퓨터의 다른 프로그램이 부를 수 있다 | 로컬 API · 시연 안전장치 | PR #100 본문, API.md 4절 11번 | 2026-10-18 | Xpress | 열림 — 범위는 이재엽이 정함 |
-| F-05 | PRD 2-7: 오버레이의 **'내 배움' 탭을 없애고** 지나온 길 · 배운 말 · 확정한 설계도는 서재에서, '플로로와 나'는 설정 맨 위로, 오버레이는 간단히 | 내비게이터 화면 · 서재(주소 `#tab=learn`, 시연 길잡이, 수용 테스트 줄도) | PRD 2-7(이재엽 2026-10-18) | 2026-10-18 | Xpress | 열림 — **5단계 할 일(11/3 전)** |
+| F-05 | PRD 2-7: 오버레이의 **'내 배움' 탭을 없애고** 지나온 길 · 배운 말 · 확정한 설계도는 서재에서, '플로로와 나'는 설정 맨 위로, 오버레이는 간단히 | 내비게이터 화면 · 서재(주소 `#tab=learn`, 시연 길잡이, 수용 테스트 줄도) | PRD 2-7(이재엽 2026-10-18) | 2026-10-18 | Xpress | **고침 — 이 브랜치**(`v2/learn-to-library`): 탭 5개(iPhone 3개) · 플로로와 나는 설정 맨 위(하트도) · 서재 `#lib-learn` · 옛 `#tab=learn`은 서재로 · 시험 screen-gaps "오버레이 탭(F-05)" · learn.test.js. 시연 길잡이는 이 탭을 쓰지 않아 그대로 |
 | F-06 | 원칙표(P1~)를 **설계를 마친 뒤 한 번 더 대조**하지 않았다 | 요구 · 결정 기록([3단계 초안](../03-pattern-analysis/navigator-architecture-draft.md) 1절) | 3→4 리뷰 판정 | 2026-10-18 | Lite | 열림 — 이재엽 |
 | F-07 | 3단계 초안 문서 머리가 아직 "초안, 결정 전 · 모든 ADR이 Proposed"라고 적혀 있다(ADR은 10/17 Accepted) | 요구 · 결정 기록 | 3→4 리뷰(상태 문구) | 2026-10-18 | 즉시처리 | 열림 |
 | F-08 | 3단계 보안: 위협(무엇으로부터 지키나)을 대안 비교 · ADR에 표로 적지 않았다 | 요구 · 결정 기록 | checklist.md 보안 3단계 | 2026-10-18 | Lite | 열림 |
 | F-09 | `check-mermaid.sh`가 공용 도우미 `lib.sh`를 불러오지 않아, 파일 하나를 볼 때(훅 모드) **검사 없이 통과**한다 | 문서 검사 훅 | 2026-10-18 일정표 수정 때 발견 | 2026-10-18 | 즉시처리 | 열림 |
 | F-10 | 서고 · 지식 은하 화면의 큰 글씨에 "EARS" · "MoSCoW" 같은 배운 말이 나오고 쉬운 말 시험이 이 화면을 보지 않는다 — 의도인지 정하기 | 쉬운 말 · 서재 | PR #95 본문 | 2026-10-18 | Lite | 열림 — 팀이 정함 |
-| F-11 | 화면의 "물어보기"가 작업 글이 비어도 보내 400 | 내비게이터 화면 | API.md 4절 8번 | 2026-10-18 | 즉시처리 | 열림 |
+| F-11 | 화면의 "물어보기"가 작업 글이 비어도 보내 400 | 내비게이터 화면 | API.md 4절 8번 | 2026-10-18 | 즉시처리 | **고침 — 이 브랜치**(`v2/learn-to-library`): 글 칸이 비면 마지막으로 살펴본 글을 보내고, 그것도 없으면 보내지 않고 쉬운 말로 이유(`understand.js` `askText` · `NEED_TEXT`). 시험 screen-gaps "물어보기(F-11)" 2개 |
 | F-12 | 설정의 토큰 표가 미리 만든 값이다(화면이 `/api/usage`를 부르지 않음) | 내비게이터 화면 · AI 호출 창구 | API.md 4절 9번 | 2026-10-18 | Lite | 열림 — 대회 뒤 후보 |
 | F-13 | 기능별 GIF 중 게이트 · 쉬운 말 · 서고 장면이 지금 화면과 다를 수 있다 | 시연 GIF | 이슈 #16 알림 | 2026-10-18 | Lite | 열림 — 11/4 GIF 일정과 함께 |
 | F-14 | 내부 제출 목표(11/6)가 사용 테스트 · 버그 수정(11/4~7)보다 앞선다 | 일정 · 역할 | schedule.md 2절 | 2026-10-18 | 즉시처리 | 열림 — 이재엽이 정함 |

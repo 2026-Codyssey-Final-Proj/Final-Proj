@@ -8,7 +8,7 @@
 |---|---|---|
 | `run_all_tests.py` | **이것 하나로 전부 돌린다** (파이썬 시험 + 노드 시험) | — |
 | `navigator/` | 시연 화면과 서버 — 단계 판정, 쉬운 말, 키 보호, 녹화·재생 | [03-backend/navigator](../03-backend/navigator/README.md), [02-frontend/navigator](../02-frontend/navigator/README.md) |
-| `library/` | 도서관 시안 — 마감 계산, 역량 지도, 서고 검색, 별자리 하늘 | [02-frontend/library](../02-frontend/library/README.md) |
+| `library/` | 도서관 시안 — 마감 계산, 역량 지도, 서고 검색, 별자리 하늘, 내 배움 기록 읽기 | [02-frontend/library](../02-frontend/library/README.md) |
 | `share/` | "나만 보기" 공유 규칙 — 글이 누구에게 보이는지 | [03-backend/share](../03-backend/README.md) |
 | `hooks/` | Claude가 커밋·푸시할 때 막는 자동 검사 장치(훅) | `.claude/hooks/` |
 | `acceptance/` | **수용 테스트**(이슈 #17) — 요구(FR)마다 Given-When-Then 장면, 자동 시험과 사람이 화면으로 볼 것 | [acceptance/README.md](acceptance/README.md) |

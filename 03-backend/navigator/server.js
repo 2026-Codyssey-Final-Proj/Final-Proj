@@ -75,7 +75,8 @@ const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
 const STATIC = {
   // dive.js·dive.css — 내비게이터(`dive.js` → /dive.js)와 서고(`../navigator/dive.js` → /navigator/dive.js)가 같이 쓴다. 2026-10-18까지 빠져 있었다
   "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "tour.js", "tour.css", "library-tab.css", "dive.js", "dive.css"],
-  "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "schedule.js", "skills.js", "search.js", "spotlight.js",
+  // learn.js — 서재의 '내 배움'(2026-10-18, F-05). 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다
+  "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "schedule.js", "skills.js", "search.js", "spotlight.js", "learn.js",
     "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
   "02-frontend/share": ["index.html"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다

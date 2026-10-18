@@ -205,13 +205,18 @@ ol.track::before{content:"";position:absolute;left:6.25%;right:6.25%;top:52px;he
 .map-detail{display:flex;flex-direction:column;gap:8px;padding:14px 18px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
 .md-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 
-/* 내 배움 */
-.learn{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:4px 2px 2px}
 .isl .card{border:1px solid var(--line);box-shadow:none}
-.bond-row{display:flex;gap:14px;align-items:center}
-.bond-row .hearts svg{width:16px;height:16px}
+/* 플로로와 나 — 설정 맨 위(2026-10-18 claude-drafted, F-05: '내 배움' 탭을 빼고 옮겨 옴). 아래 줄은 서재의 '내 배움'으로 가는 길 */
+.bondcard{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:14px;background:var(--soft);color:var(--ink)}
+.foot.settings .bondcard{background:var(--card)}
+.bond-row{display:flex;gap:12px;align-items:center}
+.bond-row .stack{gap:2px;min-width:0}
+.bond-row .kicker{font-size:12px;font-weight:700;color:var(--acc)}
+.bond-row b{display:flex;align-items:center;gap:8px;font-size:15px}
+.bond-row .hearts svg{width:14px;height:14px}
+.bondcard .lnk{align-self:flex-start;padding:0 6px;margin-left:-6px;text-align:left}
 
-/* ── 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·내 배움·설정) ── */
+/* ── 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·설정) ── */
 .say{display:flex;gap:12px;align-items:center}
 .bubble{flex:1;background:var(--acc-soft);border-radius:4px 18px 18px 18px;padding:12px 14px;font-size:15px;line-height:1.55;
   display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}   /* 말풍선은 짧게 — 넘치면 3줄에서 자른다 */
@@ -401,7 +406,7 @@ button.pet:focus-visible{outline-offset:4px}
   .card .big{font-size:20px;font-weight:700;letter-spacing:-.3px}
   .proj{display:flex;align-items:center;gap:14px}
   .ring text{font:700 15px -apple-system,sans-serif;fill:var(--ink)}
-  .tabbar{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));padding:8px 12px calc(8px + env(safe-area-inset-bottom));border-top:.5px solid var(--line);z-index:5}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:8px 12px calc(8px + env(safe-area-inset-bottom));border-top:.5px solid var(--line);z-index:5}
   .tab{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;border:0;background:none;font-size:11px;color:var(--mute)}
   .tab[aria-current=page]{color:var(--acc);font-weight:600}
   .back{display:inline-flex;align-items:center;gap:4px;min-height:44px;border:0;background:none;color:var(--acc);font-size:16px;padding:0}

@@ -284,3 +284,35 @@ test("만드는 크기 이름: 서버가 아는 등급 셋이고, 화면 이름�
   assert.deepEqual(T.LABELS.map(([, l]) => l), ["작게", "보통", "크게"]);
   for (const [v] of T.LABELS) assert.ok(G.explain(v), v);
 });
+
+// ── F-11 물어보기 — 작업 글이 비면 서버가 400 `작업 내용이 비어 있음`으로 거절한다(API.md 4절 8번). 화면에서 먼저 막는다 ── claude-drafted: 2026-10-18
+test("물어보기(F-11): 작업 글이 있으면 그 글, 비면 마지막으로 살펴본 글을 보내고, 둘 다 비면 보내지 않는다", () => {
+  assert.equal(U.askText("지금 글", "예전 글"), "지금 글");
+  assert.equal(U.askText("  \n ", "예전 글"), "예전 글", "칸만 비운 글은 빈 글");
+  assert.equal(U.askText("", ""), "");
+  assert.equal(U.askText(undefined, "   "), "");
+  assert.equal(U.askText(null, undefined), "");
+});
+
+test("물어보기(F-11): 보낼 글은 늘 서버가 받는 글이다(Nav.filled) — 못 보내면 쉬운 말로 이유를 보인다", () => {
+  for (const [t, j] of [["a", ""], ["", "b"], [" ", " "], ["", ""], ["\t", "c"], [3, "d"]]) {
+    const out = U.askText(t, j);
+    assert.ok(out === "" || Nav.filled(out), JSON.stringify([t, j]));
+  }
+  assert.ok(Nav.filled(U.NEED_TEXT));
+  assert.deepEqual(jargonIn(U.NEED_TEXT), [], U.NEED_TEXT);
+});
+
+// ── F-05 PRD 2-7(이재엽 2026-10-18): 오버레이는 간단하게 — '내 배움' 탭을 없애고 내용은 서재에서 ── claude-drafted: 2026-10-18
+test("오버레이 탭(F-05): PC는 지금 · 설계도 · 단계 지도 · 한곳에서 보기 · 도서관, iPhone은 앞의 셋 — '내 배움' 탭이 없다", () => {
+  const code = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  const tabs = /const TABS = \[([\s\S]*?)\];/.exec(code);
+  assert.ok(tabs, "app.js에 TABS가 있다");
+  assert.deepEqual([...tabs[1].matchAll(/\["(\w+)", "([^"]+)"/g)].map((m) => [m[1], m[2]]),
+    [["today", "지금"], ["doc", "설계도"], ["map", "단계 지도"], ["all", "한곳에서 보기"], ["lib", "도서관"]]);
+  assert.match(code, /const PHONE_TABS = TABS\.slice\(0, 3\);/);
+  assert.doesNotMatch(code.replace(/^\s*\/\/.*$/gm, ""), /tab: "learn"/, "탭을 learn으로 바꾸는 곳이 없다");
+  // 옛 주소 #tab=learn은 서재의 '내 배움'(#lib-learn)으로 보낸다
+  assert.match(code, /q\.tab === "learn"/);
+  assert.match(code, /#lib-learn/);
+});

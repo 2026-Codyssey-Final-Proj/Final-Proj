@@ -5,8 +5,11 @@
 //   (골라 주세요=파랑, 다 했어요=초록, 넘어가기 전 확인=주황, 작업 알림·살펴보는 중=회색, 오류=빨강). 버튼마다 단축키(1·2·3, Enter, Esc, Y·N).
 //   교감: 플로로를 누르면(또는 좌우로 문지르면) 하트와 한마디, 친해진 정도가 쌓인다. 가만히 두면 졸다가 잠들고, 움직이면 깬다.
 //   할 일을 다 하거나 단계를 넘어가면 별이 튀며 축하한다. 작은 소리는 설정에서 켠 사람에게만.
-// 600px 이하 = iPhone: 오늘 / 설계도 / 단계 지도 / 내 배움 탭과 넘어가기 전 확인 화면 — 이번에 바꾸지 않았다(PC 먼저). 두 화면은 같은 상태(st)를 쓴다.
+// 600px 이하 = iPhone: 오늘 / 설계도 / 단계 지도 탭과 넘어가기 전 확인 화면 — 이번에 바꾸지 않았다(PC 먼저). 두 화면은 같은 상태(st)를 쓴다.
 // 기록(작업 글·진행·배운 말·설계도·플로로와 친해진 정도)은 이 브라우저(localStorage)에만 남는다.
+// claude-drafted: 2026-10-18 — F-05(PRD 2-7, 이재엽 결정 "내배움 지우기 / 플로로와 처음 만난거 보여주는건 설정 처음에 / 내용들은 서재에서 /
+//   오버레이에서는 간단하고 필요한 내용만, 자세한건 서재로"): '내 배움' 탭을 없앴다. 플로로와 나는 설정 맨 위(bondCard), 지나온 단계 · 배운 말 ·
+//   확정한 설계도는 서재의 '내 배움'(../library/index.html#lib-learn, learn.js가 이 기록을 읽는다). 옛 주소 #tab=learn은 서재로 보낸다(fromHash).
 // claude-drafted: 2026-10-18 — 화면 빈칸(이재엽 요청): 용어 풀이(FR-13, glossary.js) · '예' 뒤 확인 질문 1개와 '아니요' 3번 뒤 잠시 멈추기(FR-5, understand.js)
 //   · 다음 할 일 꼭/나중에(FR-12, priority.js) · 작업 알림 기록과 연습 알림으로 할 일 끝 표시(FR-7, alerts.js) · 만드는 크기(tier)를 서버에 보내기.
 (function () {
@@ -40,6 +43,7 @@
     alerts: [], alogOpen: false,                   // 작업 알림 기록(새것이 위), 설정에서 펼쳤나
     tier: "Full",                                  // 만드는 크기 — 할 일 목록이 이 등급을 따르고(criteriaFor), 서버 요청에 tier로 같이 보낸다(기본: 크게)
     unplug: false, alogNote: "",                   // 연결 끊기(끊은 동안 들어온 알림은 받지 않는다), 알림 기록 비우기 결과 한 줄
+    judged: "",                                    // 마지막으로 살펴본 작업 글 — 글 칸을 비운 뒤 '물어보기'를 눌러도 이 글을 보낸다(F-11, understand.js askText)
   };
   // 만드는 크기 [보내는 값, 화면 이름] — tiers.js
   const TIERS = T.LABELS;
@@ -98,21 +102,22 @@
   const SENT = "보여 주신 글은 AI(Claude)에게 보내져요. 비밀번호나 다른 사람 연락처는 빼 주세요.";
   const DOC = {
     first: "먼저 '지금'에서 어디쯤인지 봐요. 설계도는 그 단계에 맞춰 만들어요.",
-    none: "설계도는 1~4단계에서 만들어요. 확정한 설계도는 '내 배움'에 모여 있어요.",
+    none: "설계도는 1~4단계에서 만들어요. 확정한 설계도는 서재의 '내 배움'에서 다시 볼 수 있어요.",
     draft: "지금까지 작업을 보고 AI가 초안을 먼저 써 드려요. 고치고 완성하는 건 직접 해요. 확정도 직접 눌러야만 돼요.",
   };
   // 7단계까지 마쳤을 때 — last: 마지막 확인에서 "예" 뒤, title·sub: 마무리 카드
   const END = { last: "좋아요! 이걸로 모든 단계를 마쳐요", title: "여덟 단계를 끝까지 왔어요!",
-    sub: "지나온 단계와 배운 말, 확정한 설계도는 '내 배움'에 모여 있어요." };
+    sub: "지나온 단계와 배운 말, 확정한 설계도는 서재의 '내 배움'에서 자세히 볼 수 있어요.", more: "서재에서 자세히 보기" };
 
   // ── 기록 — 이 브라우저에만. 못 쓰는 환경(사생활 보호 창 등)이면 조용히 기록 없이 동작한다 ──
   const KEY = "navigator-prototype:v1";
+  // 서재의 '내 배움'(../library/learn.js)도 이 열쇠를 읽는다 — 바꾸면 learn.js의 KEY도(learn.test.js가 맞대어 본다)
   // 한 권으로 엮어 서고로 보낸 책 — 서고 시안(../library)도 같은 열쇠를 읽어 처음부터 책장에 꽂아 둔다
   const BOUND_KEY = "floe-demo:bound";
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug"];
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged"];
   let forgotten = false;
   function load() {
     let s;
@@ -128,6 +133,7 @@
     if (!TIERS.some(([v]) => v === st.tier)) st.tier = "Full";
     if (st.j) st.j = T.refit(st.j, st.tier);   // 할 일 목록이 바뀌었으면(등급·규칙) 지금 목록에 맞춘다 — 글자가 같은 할 일만 이어 간다
     st.unplug = !!st.unplug;
+    if (typeof st.judged !== "string") st.judged = "";
     st.back = N.welcome(s, Date.now());
   }
   function save() {
@@ -147,7 +153,6 @@
     back: icon('<path d="M15 5l-7 7 7 7"></path>', 20),
     today: icon('<circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.5l-2 5-5 2 2-5z"></path>', 24),
     map: icon('<path d="M4 19h4V5H4zM10 19h4V9h-4zM16 19h4v-6h-4z"></path>', 24),
-    learn: icon('<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"></path>', 24),
     doc: icon('<path d="M6 3h8l5 5v13H6z"></path><path d="M14 3v5h5"></path><path d="M9 13h7M9 17h7"></path>', 24),
     gear: icon('<circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path>', 16),
     check: icon('<path d="M5 12.5l4.5 4.5L19 7.5"></path>', 14),
@@ -176,7 +181,7 @@
   $nav.addEventListener("mouseenter", () => { hovering = true; clearIdle(); view("enter"); });
   $nav.addEventListener("mouseleave", () => { hovering = false; render(); });
 
-  // ── 두 화면이 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·내 배움·설정이 쓴다) ──
+  // ── 두 화면이 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·설정이 쓴다) ──
   const sayRow = (size, f = face()) => { const [mood, say] = f; return `<div class="say">${cat(mood, size)}<div class="bubble" aria-live="polite">${esc(say)}</div></div>`; };
   const seg = () => `<div class="seg" aria-hidden="true">${N.STAGES.map((x) => `<span class="${stepClass(x.n)}"></span>`).join("")}</div>`;
   // 카드 하나 — PC는 테두리 상자(.choose), iPhone은 흰 카드(.card). 넘기는 글은 이미 esc 한 것
@@ -238,7 +243,16 @@
   const modeBadge = () => (st.mode === "live"
     ? `<span class="badge live">진짜 AI(Claude)가 봐요${st.tokens ? ` · 지난번 읽고 쓴 양 약 ${st.tokens.toLocaleString()}토큰` : ""}</span>`
     : `<span class="badge fix">연습용 예시예요 — 진짜 AI가 아니에요</span>`);
-  // 설정 — 보기 방식, Claude Code·Codex 연결 상태, 자동으로 살펴보기, 소리, 기록. PC·iPhone 모두 톱니 뒤에
+  // 플로로와 나 — 친해진 정도 · 쓰다듬은 횟수 · 처음 만난 날 · 마친 단계 수. 설정 맨 위에 둔다(F-05, PRD 2-7 "플로로와 처음 만난거 보여주는건 설정 처음에").
+  // 지나온 단계 · 배운 말 · 확정한 설계도는 오버레이에 펼치지 않고 서재로 보낸다("자세한건 서재로")
+  function bondCard() {
+    const b = C.bond(st.pets);
+    return `<div class="bondcard"><div class="bond-row">${petCat("love", 56)}<div class="stack"><span class="kicker">플로로와 나</span><b>${esc(b.name)} ${hearts(b.level)}</b>
+        <span class="sub">쓰다듬은 횟수 ${st.pets}번${b.need ? ` · 더 친해지기까지 ${b.need}번` : ""}</span>
+        <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div>
+      <button type="button" class="lnk" data-act="lib-learn">지나온 단계 · 배운 말 · 설계도는 ${END.more}${I.arrow}</button></div>`;
+  }
+  // 설정 — 플로로와 나, 보기 방식, Claude Code·Codex 연결 상태, 자동으로 살펴보기, 소리, 기록. PC·iPhone 모두 톱니 뒤에
   function settingsBody() {
     // 연결 칸 — 서버로 열었으면 보기 방식과 상관없이 보인다(연습 중에도 알림은 들어오니까). '연결 끊기'를 누르면 들어온 알림을 받지 않는다
     const link = canLive ? `<div class="link"><div class="row"><span class="led ${conn() === "on" ? "on" : conn()}"></span><span class="grow">${st.unplug
@@ -252,7 +266,7 @@
     // 만드는 크기 — 진짜 AI에게 물을 때 같이 보낸다(tier). 고르는 건 사용자
     const tier = `<div class="row tiers"><span>만드는 크기</span><span class="row" role="radiogroup" aria-label="만드는 크기">${TIERS.map(([v, label]) =>
       `<label class="chk"><input type="radio" name="tier" data-act="tier" value="${v}" ${st.tier === v ? "checked" : ""}>${label}</label>`).join("")}</span>${termTag(st.tier)}</div>`;
-    return `${link}${alertLog()}<div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>
+    return `${bondCard()}${link}${alertLog()}<div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>
       <div class="row">보기 방식 <select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div>
@@ -271,23 +285,15 @@
   const settingsCard = () => (st.settings ? `<div class="foot settings">${settingsBody()}</div>` : "");
   const gearBtn = () => `<button class="round" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 기록">${I.gear}</button>`;
 
-  // 단계 지도 · 내 배움 — iPhone 탭이 쓰고, PC는 내 배움 카드만 같이 쓴다
+  // 단계 지도 — iPhone 탭이 쓴다
   const mapBody = () => `<div class="list">${N.STAGES.map((x) => `<div>
       <span class="dot ${stepClass(x.n)}"></span><span style="flex:1;padding:8px 0"><b>${x.n} · ${esc(x.title)}</b><span class="sub">${esc(x.does)}</span></span>
       ${stepClass(x.n) === "cur" ? `<span class="meta">${metCount()}/${met().length}</span>` : ""}</div>`).join("")}</div>`;
-  // 카드 하나 — 제목, 목록(없으면 안내 한 줄)
-  const section = (kicker, items, row, empty) =>
-    `<div class="card"><span class="kicker">${kicker}</span>${items.length ? items.map(row).join("") : `<span class="meta">${empty}</span>`}</div>`;
-  const learnBody = () =>
-    section("지나온 단계", st.history, (x) => `<span class="meta">${esc(x.text)}</span>`, "아직 없어요. 한 단계를 마치면 여기 남아요.") +
-    section("배운 말", st.learned, (x) => `<div><b>${esc(x.term)}</b>${G.explain(x.term) ? `<span class="sub">${esc(G.explain(x.term))}</span>` : ""}<span class="sub">${esc(x.text)}</span></div>`,
-      "할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.") +
-    section("내가 확정한 설계도", st.docs, (x) => `<details><summary>${x.stage}단계 · ${esc(x.name)} · ${esc(x.at)}</summary><pre class="doc-view">${esc(x.text)}</pre></details>`,
-      "설계도를 확정하면 여기 모여요.");
-  // [id, PC 이름, iPhone 이름, 아이콘]. 뒤의 둘(한곳에서 보기·도서관)은 PC에만 있다 — iPhone은 앞의 넷
-  const TABS = [["today", "지금", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["learn", "내 배움", "내 배움", "learn"],
+  // [id, PC 이름, iPhone 이름, 아이콘]. 뒤의 둘(한곳에서 보기·도서관)은 PC에만 있다 — iPhone은 앞의 셋.
+  // '내 배움' 탭은 2026-10-18에 뺐다(F-05, PRD 2-7) — 내용은 서재의 '내 배움', 플로로와 나는 설정 맨 위. 탭 순서가 바뀌면 고른 동그라미(.ti-ind)는 순서(tabIdx)를 따라간다
+  const TABS = [["today", "지금", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"],
     ["all", "한곳에서 보기", "한곳에서", "all"], ["lib", "도서관", "도서관", "lib"]];
-  const PHONE_TABS = TABS.slice(0, 4);
+  const PHONE_TABS = TABS.slice(0, 3);
   // 설계도(FR-3, iPhone) — 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
   function docBody(size) {
     const s = st.j && stage();
@@ -366,8 +372,8 @@
   // iPhone의 지금 결정할 것 하나 — 다 했으면 "넘어가기", 순서를 정했으면 그 첫 일, 아니면 같이 정하기
   function focusCard() {
     const n = st.j.next, now = esc(tick().now);
-    if (st.finished) return box("다 했어요", END.title, END.sub,
-      st.mode === "fixture" ? `<button class="btn wide" data-act="${RESTART.act}">${RESTART.label}</button>` : "");
+    if (st.finished) return box("다 했어요", END.title, END.sub, `<button class="btn pri wide" data-act="lib-learn">${END.more}</button>${
+      st.mode === "fixture" ? `<button class="btn wide" data-act="${RESTART.act}">${RESTART.label}</button>` : ""}`);
     if (holding()) return box(esc(U.holdLine(st.hold, ymd())), "잠시 멈춰 뒀어요", HOLD.later, `<button class="btn pri wide" data-act="hold-resume">다시 이어 하기</button>`);
     if (allDone()) return box("다 했어요", `${stage().n}단계 할 일을 모두 했어요`, "넘어가기 전에 이번 단계를 이해했는지 한 번만 같이 확인해요.",
       `<button class="btn pri wide" data-act="gate">다음 단계로 넘어가기</button>`);
@@ -447,7 +453,7 @@
     }
     if (st.finished) return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">모든 단계를 마쳤어요</span>`,
       title: END.title, sub: END.sub,
-      acts: [{ label: "내 배움 보기", act: "tab", i: 3, key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
+      acts: [{ label: END.more, act: "lib-learn", key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
     if (holding()) return { tone: "gray", mood: f[0], badge: "‖", say: f[1], meta: stageMeta(), banner: U.holdLine(st.hold, ymd()),
       title: "잠시 멈춰 뒀어요", sub: HOLD.later,
       acts: [{ label: "다시 이어 하기", act: "hold-resume", key: "Enter", pri: true }, { label: "나중에", act: "fold", key: "Escape", kind: "ghost" }] };
@@ -574,14 +580,6 @@
         <span class="flowline"><span>받은 것 · ${esc(s.gets)}</span>${I.arrow}<span>만든 것 · ${esc(gv(s))}</span>${s.doc ? `<span class="meta">설계도: ${esc(s.doc)}</span>` : ""}</span>
         <ul class="crit">${crit}</ul></div></div>`;
   }
-  // 내 배움 — 지나온 단계 · 배운 말 · 확정한 설계도 · 플로로와 나
-  function deskLearn() {
-    const b = C.bond(st.pets);
-    return `<div class="learn">${learnBody()}<div class="card bondcard"><span class="kicker">플로로와 나</span>
-      <div class="bond-row">${petCat("love", 64)}<div class="stack"><b>${esc(b.name)}</b>${hearts(b.level)}
-        <span class="sub">쓰다듬은 횟수 ${st.pets}번${b.need ? ` · 더 친해지기까지 ${b.need}번` : ""}</span>
-        <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div></div></div>`;
-  }
   // ── 도서관(FR-8 위젯) · 한곳에서 보기(FR-6) — 서고 시안(../library)의 더미 책(books.js)과 마감 계산(schedule.js)을 같이 쓴다.
   // 같은 화면이 둘이 되지 않게 서고 시안의 작업 화면 위젯을 여기로 옮겼다(2026-10-17). 첫 책(s1)은 이 화면의 단계·할 일을 그대로 따른다.
   const L = () => window.LibData, SCH = () => window.Schedule;
@@ -666,8 +664,10 @@
     setTimeout(open, 950);
   }
   // 내 서고 들어가기 — 오버레이가 화면 가득 물속이 되고, 책을 안은 플로로가 내려간 뒤 서고가 물속에서 떠오른다(dive.js, 목업 영상 24~28초)
-  function enterLibrary() {
-    const href = `${LIB_URL}#lib-dive`;
+  // then="learn"이면 서고에 올라온 뒤 '내 배움'을 연다(#lib-dive-learn, F-05). iPhone은 물속 없이 바로 '내 배움'(#lib-learn)으로
+  function enterLibrary(then = "") {
+    if (then && isPhone()) { location.href = `${LIB_URL}#lib-${then}`; return; }
+    const href = `${LIB_URL}#lib-dive${then ? `-${then}` : ""}`;
     if (!window.FloeDive) { location.href = href; return; }
     window.FloeDive.out($nav.querySelector(".isl"), href, $nav.querySelector(".libtab .who"));
   }
@@ -679,7 +679,7 @@
     const finish = () => { st.libGone.push(b.id); render(); say(`‘${b.title}’ 책을 서고에 꽂았어요`); };
     if (el && !STILL) { el.classList.add("leaving"); setTimeout(finish, 480); } else finish();
   }
-  // 위쪽 아이콘 줄 — 지금·설계도·단계 지도·내 배움·한곳에서 보기·도서관 | 연결·프로젝트·보기 방식·친해진 정도·설정·열어 두기·접기
+  // 위쪽 아이콘 줄 — 지금·설계도·단계 지도·한곳에서 보기·도서관 | 연결·프로젝트·보기 방식·친해진 정도(누르면 설정 맨 위의 플로로와 나)·설정·열어 두기·접기
   // 아이콘을 누르면 고른 동그라미(.ti-ind)가 지난 아이콘에서 새 아이콘으로 미끄러지고, 내용은 그쪽 방향에서 들어온다(renderDesk).
   // 누른 뒤 곧바로 한 번 더 그려지는 일이 있어서, 움직임은 시작한 때(tabMove.at)를 기억해 다시 그려도 이어서 움직인다
   let tabFrom = null, tabMove = null;
@@ -687,13 +687,13 @@
   function topbar() {
     const b = C.bond(st.pets), tab = TABS.find((x) => x[0] === st.tab);
     return `<div class="tb"><div class="tabs" role="tablist" aria-label="보기"><span class="ti-ind" style="--i:${tabIdx()}" aria-hidden="true"></span>${TABS.map(([id, label, , ic], i) =>
-      `<button class="ti" role="tab" data-act="tab" data-i="${i}" aria-selected="${st.tab === id}" aria-label="${label}" title="${label}">${I[ic]}</button>`).join("")}</div>
+      `<button class="ti" role="tab" data-act="tab" data-i="${i}" data-tab="${id}" aria-selected="${st.tab === id}" aria-label="${label}" title="${label}">${I[ic]}</button>`).join("")}</div>
       <span class="tb-tab">${esc(tab[1])}</span><span class="grow"></span>
       ${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
       <span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>
       ${st.mode === "live" ? `<span class="mode live" title="보여 주신 글을 진짜 AI(Claude)가 읽어요">진짜 AI</span>` : `<span class="mode fix" title="미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요">연습용 예시</span>`}
-      <button class="ti bond" data-act="bond" aria-label="플로로와 친해진 정도: ${esc(b.name)}" title="플로로와 친해진 정도: ${esc(b.name)}">${hearts(b.level)}</button>
+      <button class="ti bond" data-act="bond" aria-expanded="${st.settings}" aria-label="플로로와 나: ${esc(b.name)} — 설정 맨 위에서 봐요" title="플로로와 나: ${esc(b.name)} — 설정 맨 위에서 봐요">${hearts(b.level)}</button>
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 소리, 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
@@ -740,7 +740,6 @@
     let body;
     if (st.tab === "doc") body = deskDoc();
     else if (st.tab === "map") body = deskMap();
-    else if (st.tab === "learn") body = deskLearn();
     else if (st.tab === "all") body = deskAll();
     else if (st.tab === "lib") body = deskLib();
     else body = card(momentToday()) + deskMore();
@@ -788,7 +787,6 @@
   }
   const phoneDoc = () => phoneHead("1~4단계에서 만들어요", "설계도") + docBody(72);
   const phoneMap = () => phoneHead("전체 8단계", "단계 지도") + mapBody();
-  const phoneLearn = () => phoneHead("지나온 길과 배운 말", "내 배움") + learnBody();
   function phoneCheck() {
     const s = stage(), [body, actions] = checkStep();
     return `<button class="back" data-act="close-gate">${I.back}오늘</button>
@@ -799,9 +797,9 @@
   function renderPhone() {
     const gate = st.screen === "gate";
     $phone.className = "phone" + (gate ? " check" : "");
-    const views = { today: phoneToday, doc: phoneDoc, map: phoneMap, learn: phoneLearn }, tab = views[st.tab] ? st.tab : "today";   // 한곳에서 보기·도서관은 PC에서만
+    const views = { today: phoneToday, doc: phoneDoc, map: phoneMap }, tab = views[st.tab] ? st.tab : "today";   // 한곳에서 보기·도서관은 PC에서만
     $phone.innerHTML = gate ? phoneCheck() : views[tab]() +
-      `<nav class="tabbar glass" aria-label="화면">${PHONE_TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" ${tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
+      `<nav class="tabbar glass" aria-label="화면">${PHONE_TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" data-tab="${id}" ${tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
   }
 
   // ── 리퀴드 글래스 굴절 (PC, 크롬 계열만) ──
@@ -921,7 +919,7 @@
     } else {
       say(kind === "stroke" ? "흥얼흥얼… 기분 좋아요" : C.petLine(st.pets));
       if (st.sound) C.chime("pet");
-      if (st.tab === "learn") setTimeout(render, 1800);
+      if (st.settings) setTimeout(render, 1800);   // 설정 맨 위 '플로로와 나'의 쓰다듬은 횟수를 새로
     }
   }
   // 축하 — 할 일을 다 했을 때, 단계를 넘어갔을 때, 설계도를 확정했을 때
@@ -1027,14 +1025,15 @@
     return fresh;
   }
   let pendingNotice = "";
-  function landed(j, tokens) {
+  // sent: 살펴본 작업 글 — '물어보기'가 글 칸이 비었을 때 대신 보낸다(F-11)
+  function landed(j, tokens, sent = st.text) {
     const was = allDone();
-    Object.assign(st, { j, tokens: tokens || 0, todos: null, openInput: false, choice: null, later: false, picking: false, back: "", notice: pendingNotice, finished: false });
+    Object.assign(st, { j, tokens: tokens || 0, todos: null, openInput: false, choice: null, later: false, picking: false, back: "", notice: pendingNotice, finished: false, judged: sent });
     pendingNotice = "";
     const fresh = learn(j);
     // 다 했으면 스스로 펼쳐서 알린다(CouCou의 alert), 아니면 접혀 있던 것만 한 줄로 보인다
     if (allDone()) { view("alert"); if (!was) return celebrate("done"); } else peek();
-    if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")} — '내 배움'에 모아 둘게요`));
+    if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")} — 서재의 '내 배움'에 모아 둘게요`));
   }
   const stop = (msg) => { st.error = msg; pendingNotice = ""; render(); };   // 보낼 수 없을 때 — 이유를 보여 주고 멈춘다
   // 진짜 AI에게 묻는 네 가지(어디쯤·물어보기·초안·다시 봐 주기)가 같이 쓰는 흐름:
@@ -1052,7 +1051,8 @@
       const j = fixtureJudge(st.text, atStage());
       return j ? landed(j, 0) : stop("연습용 예시는 정해진 장면만 알아요. 위의 연습 버튼으로 이 단계 장면을 보거나, 직접 쓴 글은 보기 방식을 '진짜 AI'로 바꿔 주세요.");
     }
-    return askAI("/api/judge", { text: st.text, stage: atStage(), tier: st.tier }, "살펴보지 못했어요", (r) => landed(r.judgement, r.tokens), !skipCheck && [st.text, "judge"]);
+    const sent = st.text;
+    return askAI("/api/judge", { text: sent, stage: atStage(), tier: st.tier }, "살펴보지 못했어요", (r) => landed(r.judgement, r.tokens, sent), !skipCheck && [sent, "judge"]);
   }
   // 연습 장면 살펴보기 — 장면은 Full 순서라 지금 등급의 할 일 자리만 남긴 뒤(tiers.js) 진짜 AI 결과와 같은 검사를 거친다
   function fixtureJudge(text, n) {
@@ -1068,7 +1068,10 @@
       return render();
     }
     if (!st.question.trim()) return stop("궁금한 걸 적어 주세요.");
-    return askAI("/api/answer", { stage: s.n, hard: hardTexts(), question: st.question, text: st.text, tier: st.tier },
+    // F-11: 작업 글이 비면 서버가 400으로 거절한다 — 글 칸이 비었으면 마지막으로 살펴본 글을 보내고, 그것도 없으면 보내지 않고 이유만 보인다
+    const text = U.askText(st.text, st.judged);
+    if (!text) return stop(U.NEED_TEXT);
+    return askAI("/api/answer", { stage: s.n, hard: hardTexts(), question: st.question, text, tier: st.tier },
       "답을 받지 못했어요", (r) => { st.answer = r.answer; });
   }
   // 고른 것을 작업 글에 한 줄로 적고 다시 살펴본다 — 정하는 건 사용자, 받아 적는 건 플로로
@@ -1106,7 +1109,7 @@
     const d = st.doc, s = N.STAGES[d.stage], left = N.blanks(d.text).length;
     if (left && !force) return set({ askConfirm: left });
     st.docs = st.docs.filter((x) => x.stage !== d.stage).concat({ stage: d.stage, name: s.doc, text: d.text, at: ymd() });
-    Object.assign(st, { doc: null, warn: null, error: "", askConfirm: 0, notice: `${s.n}단계 설계도를 확정했어요. '내 배움'에도 모아 뒀어요.` });
+    Object.assign(st, { doc: null, warn: null, error: "", askConfirm: 0, notice: `${s.n}단계 설계도를 확정했어요. 서재의 '내 배움'에서도 볼 수 있어요.` });
     render();
     celebrate("doc");
   }
@@ -1164,7 +1167,8 @@
     again: () => set({ later: false, picking: true }),
     pick: () => set({ picking: true }),
     settings: () => set({ settings: !st.settings }),
-    bond: () => set({ tab: "learn", settings: false }),
+    bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05)
+    "lib-learn": () => enterLibrary("learn"),     // 지나온 단계 · 배운 말 · 확정한 설계도는 서재에서(F-05)
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
     // 도서관 탭 — 책 고르기 · 덮기 · 세션 덮기(확인 뒤) · 한 권으로 엮기. 한곳에서 보기 — 프로젝트를 누르면 단계 지도(이 화면 것)나 그 책으로
     "lib-enter": () => enterLibrary(),
@@ -1179,7 +1183,8 @@
     crit: () => set({ showCrit: !st.showCrit }),
     "open-input": () => { set({ openInput: true, showCrit: false }); focusText(); },
     "close-input": () => set({ openInput: false }),
-    "retry-input": () => { set({ error: "", openInput: !!st.j }); focusText(); },
+    // 넘어가기 전 확인 안에서는 글 칸이 안 보인다 — 보낼 작업 글이 없어 멈췄으면(F-11) 확인을 닫고 글 칸을 연다
+    "retry-input": () => { const noText = st.screen === "gate" && !U.askText(st.text, st.judged); set({ error: "", openInput: !!st.j, ...(noText ? { screen: "main" } : {}) }); focusText(); },
     dismiss: () => set({ error: "" }),
     "look-now": () => { st.notice = ""; lookAfterWork(lastPing); },
     "peek-text": () => { set({ ping: "", openInput: !!st.j }); focusText(); },
@@ -1425,9 +1430,12 @@
         const base = ex.from !== undefined ? S.examples[ex.from] : null, nx = base && base.judgement.next;
         const text = base ? `${base.text}\n${N.decisionLine(nx.question, nx.options[0])}` : ex.text;
         const j = fixtureJudge(text, n);
-        if (j) { Object.assign(st, { text, j, todos: null, todoLater: [], choice: null, later: false, picking: false, finished: false, notice: "", tab: "today", hold: null }); learn(j); }
+        if (j) { Object.assign(st, { text, judged: text, j, todos: null, todoLater: [], choice: null, later: false, picking: false, finished: false, notice: "", tab: "today", hold: null }); learn(j); }
       }
     }
+    // 옛 주소 #tab=learn('내 배움' 탭, 2026-10-18에 뺌 — F-05) — 그 탭이 보여 주던 지나온 단계 · 배운 말 · 확정한 설계도가 옮겨 간 서재의 '내 배움'으로 보낸다.
+    // 설정(플로로와 나)이 아니라 서재인 까닭: 옛 주소로 보려던 것은 배운 내용이고, 플로로와 나는 하트를 누르면 바로 열린다. 앞의 장면(ex= 등)을 먼저 기록해 두고 넘어간다
+    if (q.tab === "learn") { save(); location.replace(`${LIB_URL}#lib-learn`); return; }
     if (q.tab && TABS.some((t) => t[0] === q.tab)) st.tab = q.tab;
     if (q.book) st.libSel = String(q.book);
     if (q.crit) st.showCrit = true;
