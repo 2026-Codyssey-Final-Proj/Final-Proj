@@ -3,10 +3,18 @@
 // 같은 날: 작업 화면 위 위젯(지금·단계 지도·한곳에서 보기·도서관 탭)은 내비게이터(../navigator/app.js)의 탭으로 옮겼다 — 같은 화면이 둘이 되지 않게.
 //   그쪽에서 "한 권의 책으로 엮기"를 누르면 #lib-bound-<id>로 이 화면에 와서 책장에 꽂힌다. 열어 둔 책 목록(D.OPEN)은 두 화면이 같이 읽는다.
 // 2026-10-18(F-05, PRD 2-7): 내비게이터의 '내 배움' 탭을 여기 '내 배움' 창으로 옮겼다(#lib-learn) — 이 창만 더미가 아니라 이 브라우저에 남은 내비게이터 기록을 읽는다(learn.js).
+// 2026-10-19(실사용): 내비게이터 기록이 있으면 열어 둔 책에 '내 책'을 더하고, "예시 책 지우기"(HIDE_KEY)를 눌렀으면 예시 책 · 레퍼런스 · 물어볼 것을 비운다(my-books.js).
+//   그때 '오늘'은 시안의 고정 날짜가 아니라 실제 오늘이다. 주소 끝 &noex는 이 화면만 예시 없이(저장하지 않음). 책이 하나도 없어도 서고 · 전체 돌아보기가 멈추지 않는다.
 (function () {
   const D = window.LibData, Seal = window.NavSeal;
   const NAV = "../navigator/index.html";
   const $ = (id) => document.getElementById(id);
+  // 내 책 · 예시 책 지우기 — 화면을 그리기 전에 데이터에 적용한다. 저장소를 못 쓰면(사생활 보호 창) 예시 그대로
+  const Mine = window.FloeMine, NOEX = /(^|&)noex(&|$)/.test(location.hash.slice(1));
+  const storage = (() => { try { return window.localStorage; } catch { return null; } })();
+  const mine = Mine ? Mine.read(storage) : { book: null, hidden: false };
+  const exHidden = NOEX || mine.hidden;
+  if (Mine) Mine.apply(D, { book: mine.book, hidden: exHidden });
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const seal = (mood, size, opts) => (Seal ? Seal.svg(mood, size, opts) : "");
   // 배운 말 풀이(F-10, FR-13을 서재에도) — 풀이가 있는 말(EARS · MoSCoW …)은 버튼이 되고, 누르면 그 자리에 쉬운 말 한 줄. 없으면 그냥 글
@@ -132,9 +140,16 @@
         <div class="board"></div><div class="label">${sh.label}</div>`;
       stage.appendChild(box);
     });
-    CHIPS.forEach(([t, s]) => { const w = document.createElement("div"); w.innerHTML = termHtml(t, "chip"); const c = w.firstElementChild; c.style.cssText = s; stage.appendChild(c); });
+    // 책장 사이 배운 말 — 예시가 보이면 시안의 여섯 개, 예시를 지웠으면 내 책의 배운 말(없으면 없음). 내 배운 말은 이름이 길 수 있어 플로로에서 먼 자리(위쪽)부터 쓴다
+    const MINE_ORDER = [2, 4, 0, 3, 1, 5];
+    const chipNames = D.HIDDEN ? [...new Set(st.open.flatMap((b) => b.tags || []))].slice(0, CHIPS.length) : CHIPS.map(([t]) => t);
+    chipNames.forEach((t, i) => { const w = document.createElement("div"); w.innerHTML = termHtml(t, `chip${D.HIDDEN ? " mine" : ""}`); const c = w.firstElementChild; c.style.cssText = CHIPS[D.HIDDEN ? MINE_ORDER[i] : i][1]; stage.appendChild(c); });
     const last = st.shelved[st.shelved.length - 1];
     $("slot").innerHTML = last ? `방금 꽂은 책<br><b style="color:var(--ink)">${esc(last.title)}</b>` : `지금 쓰는 책 ${st.open.length}권<br>끝내면 여기 꽂혀요`;
+    // 머리 표시 · 예시 책 단추(2026-10-19) — 예시가 보이면 "예시 데이터예요", 지웠으면 "내 기록이에요"
+    document.querySelector(".lib-head .fake").textContent = exHidden ? "내 기록 · 예시 없음" : mine.book ? "예시 + 내 책 · 시연용" : "예시 데이터예요 · 시연용";
+    $("ex-toggle").textContent = exHidden ? "예시 책 다시 보기" : "예시 책 지우기";
+    $("ex-toggle").title = exHidden ? "예시(더미) 책 · 레퍼런스를 다시 꺼내요" : "예시(더미) 책 · 레퍼런스를 숨기고 내 기록만 봐요";
     stage.querySelectorAll("[data-read]").forEach((b) => {
       b.onclick = () => openReader(b.dataset.read, { from: b });
       b.onmouseenter = b.onfocus = () => drawArcs(b.dataset.read);
@@ -144,14 +159,24 @@
     const none = st.results && !st.results.length;
     $("lib-seal").innerHTML = seal(none ? "think" : st.answer ? "look" : "idle", SEAL);
     $("floro-say").textContent = none ? `서고에는 ‘${st.search.trim()}’ 이야기가 없어요. 다른 말로 찾아볼까요?`
-      : st.results ? `찾았어요! 검색창 밑에 ${st.results.length}곳을 펼쳐 뒀어요.` : st.answer ? "찾았어요! 오른쪽에 펼쳐 둘게요." : "기억 안 나는 게 있으면 저한테 물어봐요.";
+      : st.results ? `찾았어요! 검색창 밑에 ${st.results.length}곳을 펼쳐 뒀어요.` : st.answer ? "찾았어요! 오른쪽에 펼쳐 둘게요."
+      : !D.SHELF.length ? (st.open.length ? "아직 꽂힌 책이 없어요. 지금 쓰는 책을 끝내면 여기 꽂혀요." : "아직 책이 없어요. 작업 화면에서 만드는 걸 보여 주면 내 책이 생겨요.")
+      : "기억 안 나는 게 있으면 저한테 물어봐요.";
     $("asks").innerHTML = D.ASK.map((a, i) => `<button class="pillbtn glass" data-ask="${i}">${esc(a.q)}</button>`).join("");
     $("asks").querySelectorAll("[data-ask]").forEach((b) => (b.onclick = () => { spot.clear(); spot.close(); st.answer = D.ASK[+b.dataset.ask]; renderLib(); setHash("lib-ask"); }));
     renderAnswer();
     caption(st.results ? "search" : st.answer ? "ask" : "lib");
     drawArcs(null);
   }
-  $("refs-btn").onclick = () => { spot.clear(); spot.close(); st.answer = D.ASK.find((a) => a.refs); renderLib(); };
+  $("refs-btn").onclick = () => { spot.clear(); spot.close(); st.answer = D.ASK.find((a) => a.refs) || null; renderLib(); };
+  // 예시 책 지우기 / 다시 보기 — 저장하고 같은 장면으로 다시 연다(화면 안 상태가 예시 책을 품고 있어서 다시 그리는 것보다 확실하다). &noex로 연 화면은 저장만 바꾼다
+  $("ex-toggle").onclick = () => {
+    if (!Mine) return;
+    Mine.writeHidden(storage, !exHidden);
+    const h = location.hash.slice(1).replace(/(^|&)noex(?=&|$)/, "").replace(/^&/, "");
+    location.hash = h || "lib";
+    location.reload();
+  };
 
   // ── 서고에서 찾기 — 결과는 검색창 바로 밑에 펼친다(spotlight.js). 오른쪽 열은 "어디에 있는지" ──
   const KIND = { shelf: "끝낸 책", open: "열어 둔 책", ref: "레퍼런스" };
@@ -270,9 +295,11 @@
   function openReview() {
     lastFocus = document.activeElement;
     const fin = D.SHELF, open = st.open, marks = fin.reduce((n, b) => n + marksOf(b), 0) + open.reduce((n, b) => n + b.bookmarks.length, 0);
-    const first = [...fin, ...open].map((b) => b.started).sort()[0];
-    $("rv-seal").innerHTML = seal("happy", 72);
-    $("rv-sub").textContent = `${first.replaceAll("-", ".")}부터 오늘(${D.TODAY.replaceAll("-", ".")})까지 — 여기까지 왔어요!`;
+    // 책이 하나도 없을 수 있다(예시를 지우고 아직 시작 전) — 그래도 멈추지 않고 빈 안내를 보인다(2026-10-19)
+    const first = [...fin, ...open].map((b) => b.started).filter(Boolean).sort()[0];
+    $("rv-seal").innerHTML = seal(fin.length || open.length ? "happy" : "idle", 72);
+    $("rv-sub").textContent = first ? `${first.replaceAll("-", ".")}부터 오늘(${D.TODAY.replaceAll("-", ".")})까지 — 여기까지 왔어요!`
+      : "아직 책이 없어요 — 작업 화면에서 만드는 걸 보여 주면 첫 책이 생겨요.";
     $("rv-tiles").innerHTML = [["끝낸 책", `${fin.length}권`], ["열어 둔 책", `${open.length}권`], ["모은 책갈피 (열어 둔 책 포함)", `${marks}장`], ["돌아보기까지 완주", `${fin.length}번`]]
       .map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join("");
     const rows = [...fin.map((b) => ({ b, done: 8, fin: true })), ...open.map((b) => ({ b, done: b.stage + (b.stage === 7 ? 1 : 0), fin: false }))]
@@ -281,10 +308,11 @@
         <span class="nm">${esc(b.title)}${b.sub ? ` ${esc(b.sub)}` : ""}</span>
         <span class="dots" aria-label="${fin ? "8단계 완주" : `지금 ${b.stage}단계`}">${D.STAGES.map((_, i) => `<i class="${i < done ? "on" : i === b.stage && !fin ? "cur" : ""}"></i>`).join("")}</span>
         <span class="st">${fin ? `완주 · ${b.date}` : `${b.stage}단계 ${D.STAGES[b.stage]} · 내비게이터에서`}</span></button></li>`).join("");
-    // 끝낸 책은 여기서 펼치고, 열어 둔 책은 내비게이터로 — 첫 책(s1)은 그쪽 단계 지도, 나머지는 도서관 탭
+    // 끝낸 책은 여기서 펼치고, 열어 둔 책은 내비게이터로 — 이 화면의 책(내 책, 예시가 보일 때는 첫 책 s1)은 그쪽 단계 지도, 나머지는 도서관 탭
     $("rv-paths").querySelectorAll("[data-rv]").forEach((x) => (x.onclick = () => {
       const [k, id] = x.dataset.rv.split(":");
-      if (k === "f") { closeReview(false); openReader(id); } else toNav(id === "s1" ? "tab=map" : `tab=lib&book=${id}`);
+      const b = open.find((o) => o.id === id);
+      if (k === "f") { closeReview(false); openReader(id); } else toNav((b && b.mine) || (id === "s1" && !mine.book) ? "tab=map" : `tab=lib&book=${id}`);
     }));
     // FR-8 역량 지도 — 배운 것마다 레벨 4단계와 노력(책 수 · 날 수). 레벨 규칙은 가설(skills.js)
     const SK = window.Skills;
@@ -352,7 +380,7 @@
 
   // ── 주소 끝으로 장면 바로 열기 (시연·녹화용) ──
   function fromHash() {
-    const h = location.hash.slice(1);
+    const h = location.hash.slice(1).replace(/(^|&)noex(?=&|$)/, "").replace(/^&/, "");   // &noex(예시 없이)는 위에서 읽었다 — 장면 이름만 남긴다
     if (h === "pick") return go("pick");
     if (h.startsWith("desk")) return toNav("tab=lib");   // 옛 주소(작업 화면 위젯) — 내비게이터로
     if (h === "lib") return go("lib");

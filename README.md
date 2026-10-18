@@ -123,6 +123,7 @@ flowchart LR
 git clone https://github.com/2026-Codyssey-Final-Proj/Final-Proj.git
 cd Final-Proj
 node 03-backend/navigator/server.js   # 🦭 → http://127.0.0.1:4317 · 시연 입구 /index.html
+node 03-backend/navigator/floe.js ~/내-프로젝트   # 🧊 내 프로젝트에 붙여 실제로 써 보기 — 훅 연결 → 서버 → 브라우저 (끝나면 --off)
 python3 04-tests/run_all_tests.py             # 🧪
 ```
 

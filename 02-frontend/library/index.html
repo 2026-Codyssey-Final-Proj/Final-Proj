@@ -6,7 +6,10 @@
      여기는 입구 → 서고 → 펼친 책 · 전체 돌아보기 · 별자리 하늘만 남는다. 내비게이터에서 "한 권의 책으로 엮기"를 누르면 #lib-bound-<id>로 와서 책장에 꽂힌다.
      주소 끝으로 장면 바로 열기: #hall(입구) #pick(시안 고르기) #lib(내 서고) #lib-f1(서고에서 책 펼침) #lib-open-f1(표지 없이) #lib-ask(플로로 답) #lib-dive(내비게이터에서 물속으로 들어오기) #lib-review(전체 돌아보기) #lib-q=EARS(찾기) #lib-bound-s3(엮은 책 받기)
      2026-10-18(F-05, PRD 2-7): #lib-learn(내 배움 — 내비게이터에서 지나온 단계 · 배운 말 · 확정한 설계도) #lib-dive-learn(물속으로 들어온 뒤 내 배움).
-     2026-10-18(F-17, 원칙 P7): 머리의 "예시 데이터예요 · 시연용" — 책장 · 책은 더미 데이터다. 내 배움만 이 브라우저에 남은 내비게이터 기록을 읽는다(learn.js) -->
+     2026-10-18(F-17, 원칙 P7): 머리의 "예시 데이터예요 · 시연용" — 책장 · 책은 더미 데이터다. 내 배움만 이 브라우저에 남은 내비게이터 기록을 읽는다(learn.js)
+     2026-10-19(실사용): 내비게이터 기록이 있으면 열어 둔 책에 '내 책'이 더해지고(my-books.js), "예시 책 지우기"를 누르면 예시 책 · 레퍼런스가 비고 내 기록만 남는다.
+       주소 끝에 &noex를 붙이면 그 화면만 예시 없이 연다(시험 · 시연용, 저장하지 않는다) -->
+
 <html lang="ko">
 <head>
 <meta charset="utf-8">
@@ -71,6 +74,8 @@
 <!-- ③ 내 서고 -->
 <section class="screen" id="s-lib" aria-label="플로로의 얼음 서고">
   <a class="pillbtn lib-out glass" href="../navigator/index.html#tab=lib">← 작업 화면으로</a>
+  <!-- 2026-10-19 실사용: 예시 책을 지우면(my-books.js) 이 표시가 "내 기록"으로 바뀌고, 오른쪽 위 단추로 예시를 지우거나 다시 본다 -->
+  <button class="pillbtn glass" id="ex-toggle">예시 책 지우기</button>
   <div class="lib-head glass"><b>플로로의 얼음 서고 <span class="fake">예시 데이터예요 · 시연용</span></b><span id="lib-count"></span></div>
   <form class="search glass" id="search" role="search" autocomplete="off">
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
@@ -144,6 +149,7 @@
 
 <script src="../navigator/seal.js"></script>
 <script src="books.js"></script>
+<script src="my-books.js"></script>
 <script src="skills.js"></script>
 <script src="search.js"></script>
 <script src="spotlight.js"></script>
