@@ -5,6 +5,8 @@
 단계 판정·설계도·알림을 보여 주는 로컬 화면의 **서버 쪽**이다. 서버는 이 컴퓨터(`127.0.0.1`)에서만 열린다.
 화면 파일은 [`02-frontend/navigator/`](../../02-frontend/navigator/README.md), 시험은 [`04-tests/navigator/`](../../04-tests/README.md)에 있다(2026-10-17 폴더 정리).
 
+화면·훅이 서버를 부르는 모양(주소·요청·응답·거절)은 **[로컬 API 약속](API.md)** 에 있다 — 시험 [`api-contract.test.js`](../../04-tests/navigator/api-contract.test.js)가 그대로 답하는지 확인한다. <!-- claude-drafted: 2026-10-18 -->
+
 ```bash
 node server.js                          # → http://127.0.0.1:4317
 python ../../04-tests/run_all_tests.py   # 테스트 (실제 AI 호출 없이)

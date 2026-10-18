@@ -42,6 +42,7 @@ const DEFAULT_TOKEN_FILE = path.join(os.homedir(), ".navigator-event-token");
 const TOKEN_FILE = process.env.NAV_EVENT_TOKEN_FILE || DEFAULT_TOKEN_FILE;
 const COOKIE = "nav_event_token";
 const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear"];
+const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -72,7 +73,7 @@ function hasToken(headers) {
 const ROOT = "../../";
 const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
 const STATIC = {
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "tour.js", "tour.css", "library-tab.css"],
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "tour.js", "tour.css", "library-tab.css", "dive.js", "dive.css"],
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "schedule.js", "skills.js", "search.js", "spotlight.js",
     "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
   "02-frontend/share": ["index.html"],
@@ -97,12 +98,17 @@ function allowed(headers, port = PORT) {
   return !headers.origin || hosts.some((h) => headers.origin === `http://${h}`);
 }
 
-// 너무 크거나 끊긴 요청은 null — 끊겨도 기다리던 쪽이 멈춰 있지 않게 close에서도 끝낸다
+// 형식이 틀리거나 끊긴 요청은 null — 끊겨도 기다리던 쪽이 멈춰 있지 않게 close에서도 끝낸다
+// 2026-10-18 API 약속(API.md)을 맞추며 고침 — claude-drafted: 2026-10-18
+//   글자 단위로 읽는다: 조각(64KB) 경계에 걸린 한글이 깨져 판정 글·녹화 지문이 달라지던 것을 막는다.
+//   너무 크면 TOO_BIG(413으로 이유를 알린다): 전에는 연결을 끊어 화면이 "서버를 켜 주세요"로 잘못 안내했다. 넘친 뒤는 쌓지 않고 끝까지 받아 버린다.
+const TOO_BIG = Symbol("too big");
 function readJson(req) {
   return new Promise((resolve) => {
-    let body = "";
-    req.on("data", (d) => { body += d; if (body.length > MAX_BODY) req.destroy(); });
-    req.on("end", () => { try { resolve(JSON.parse(body)); } catch { resolve(null); } });
+    let body = "", big = false;
+    req.setEncoding("utf8");
+    req.on("data", (d) => { if (big) return; body += d; if (body.length > MAX_BODY) { big = true; body = ""; } });
+    req.on("end", () => { if (big) return resolve(TOO_BIG); try { resolve(JSON.parse(body)); } catch { resolve(null); } });
     req.on("close", () => resolve(null));
   });
 }
@@ -110,6 +116,7 @@ function readJson(req) {
 const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); };
 const refuse = (res, reason, code = 400) => send(res, code, { ok: false, reason });
 const as = (key, read) => (d) => { const v = read(d); return v && { [key]: v }; };   // 확인한 결과를 화면이 읽는 칸 이름으로
+const stageOf = (v) => (Number.isInteger(v) ? Nav.STAGES[v] : undefined);   // 단계는 정수 0~7만 — "2"·"length" 같은 글자는 단계가 아니다
 
 // Claude에게 묻고, 답의 모양을 확인한 것만 돌려준다. read: 확인해서 화면에 줄 칸들을 만든다(모양이 틀리면 null)
 async function ask(res, prompt, schema, read, what) {
@@ -139,7 +146,7 @@ function addEvent(body) {
   for (const [who, said] of [["사용자", body.prompt], [tool === "codex" ? "Codex" : "Claude", body.last_assistant_message]]) {
     if (typeof said === "string" && said.trim()) log.push(`[${who}] ${Share.redact(said.trim())}`);
   }
-  if (log.length > 20) log.shift();
+  while (log.length > 20) log.shift();   // 한 알림에 두 말이 오면 둘 다 넘칠 수 있다
   sessions.delete(id); sessions.set(id, log);   // 최근에 쓴 세션을 맨 뒤로
   if (sessions.size > 10) sessions.delete(sessions.keys().next().value);
   const ev = { seq: ++seq, at: Date.now(), kind, tool, project: Share.redact(path.basename(String(body.cwd || ""))), work: recent(log) };
@@ -172,10 +179,11 @@ async function handle(req, res) {
     return send(res, 200, { ok: true, latest: seq, events: events.filter((e) => e.seq > since) });
   }
   if (req.method === "POST" && route === "/api/events/clear") return send(res, 200, { ok: true, cleared: clearEvents() });   // S5
-  if (req.method === "GET" && req.url === "/api/usage") return send(res, 200, { ok: true, ...usage() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다
-  if (req.method !== "POST") return refuse(res, "없는 주소", 404);
+  if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다
+  if (req.method !== "POST" || !POST_ROUTES.includes(route)) return refuse(res, "없는 주소", 404);   // 본문을 읽기 전에(전에는 빈 본문이면 400이었다)
   const body = await readJson(req);
-  if (req.url === "/api/event") {
+  if (body === TOO_BIG) return refuse(res, `보낸 글이 너무 김 — ${MAX_BODY.toLocaleString()}자까지`, 413);
+  if (route === "/api/event") {
     const ev = body && addEvent(body);
     return ev ? send(res, 200, { ok: true, seq: ev.seq }) : refuse(res, "알 수 없는 알림");
   }
@@ -184,24 +192,22 @@ async function handle(req, res) {
   const { tier } = body;
   if (tier != null && !Nav.TIERS.includes(tier)) return refuse(res, "모르는 등급");
 
-  if (req.url === "/api/judge") {
-    if (!Number.isInteger(body.stage) || !Nav.STAGES[body.stage]) return refuse(res, "지금 단계가 없음");
+  if (route === "/api/judge") {
+    if (!stageOf(body.stage)) return refuse(res, "지금 단계가 없음");
     return ask(res, Nav.judgePrompt(body.text, body.stage, tier), Nav.JUDGE_SCHEMA, as("judgement", (d) => Nav.parseJudgement(d, body.text, body.stage, tier)), "판정");
   }
-  if (req.url === "/api/answer") {
+  if (route === "/api/answer") {
     const hard = Array.isArray(body.hard) ? body.hard.map(String) : [];
-    if (!Nav.STAGES[body.stage] || !Nav.filled(body.question)) return refuse(res, "질문이 비어 있음");
-    return ask(res, Nav.answerPrompt(body.stage, hard, body.question, body.text), Nav.ANSWER_SCHEMA, as("answer", (d) => d.answer), "답");
+    if (!stageOf(body.stage)) return refuse(res, "지금 단계가 없음");   // 전에는 STAGES["length"]도 통과해 "undefined단계"로 AI를 불렀다
+    if (!Nav.filled(body.question)) return refuse(res, "질문이 비어 있음");
+    return ask(res, Nav.answerPrompt(body.stage, hard, body.question, body.text), Nav.ANSWER_SCHEMA, as("answer", (d) => (Nav.filled(d.answer) ? d.answer : null)), "답");   // 다른 답처럼 모양을 본다(호환 모드는 스키마를 강제하지 않는다)
   }
-  // FR-3 설계도 — 설계도를 만드는 단계(1~4)만
-  if (req.url === "/api/draft" || req.url === "/api/review") {
-    const s = Nav.STAGES[body.stage];
-    if (!s || !s.doc) return refuse(res, "설계도를 만드는 단계가 아님");
-    if (req.url === "/api/draft") return ask(res, Nav.draftPrompt(s.n, body.text, tier), Nav.DRAFT_SCHEMA, Nav.parseDraft, "초안");
-    if (!Nav.filled(body.doc)) return refuse(res, "설계도가 비어 있음");
-    return ask(res, Nav.reviewPrompt(s.n, body.text, body.doc, tier), Nav.REVIEW_SCHEMA, as("review", Nav.parseReview), "다시 봐 준 결과의");
-  }
-  refuse(res, "없는 주소", 404);
+  // FR-3 설계도 — 설계도를 만드는 단계(1~4)만. 남은 주소는 /api/draft와 /api/review뿐이다(POST_ROUTES)
+  const s = stageOf(body.stage);
+  if (!s || !s.doc) return refuse(res, "설계도를 만드는 단계가 아님");
+  if (route === "/api/draft") return ask(res, Nav.draftPrompt(s.n, body.text, tier), Nav.DRAFT_SCHEMA, Nav.parseDraft, "초안");
+  if (!Nav.filled(body.doc)) return refuse(res, "설계도가 비어 있음");
+  return ask(res, Nav.reviewPrompt(s.n, body.text, body.doc, tier), Nav.REVIEW_SCHEMA, as("review", Nav.parseReview), "다시 봐 준 결과의");
 }
 
 if (require.main === module) {
