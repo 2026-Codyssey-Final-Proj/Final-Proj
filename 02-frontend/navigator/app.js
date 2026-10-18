@@ -83,6 +83,8 @@
   const ymd = () => new Date().toLocaleDateString("sv");   // 이 컴퓨터 시간으로 YYYY-MM-DD
   const project = () => st.project || (st.mode === "fixture" ? S.PROJECT : "내 프로젝트");
   const progress = () => `할 일 ${met().length}개 중 ${metCount()}개`;
+  // 그 단계에서 만든 것 — 확인 질문에 답하기 전에는 정답이라 '?'로 가린다(understand.js). 만든 것을 그리는 곳은 모두 이것을 쓴다
+  const gv = (s) => U.shownGives(s, st.screen === "gate" && st.step === "check" ? st.check : null);
   const hardTexts = () => st.hard.map((i) => st.j.criteria[i].text);   // 넘어가기 전 확인에서 헷갈린다고 고른 할 일(이 등급의 목록에서)
   const docDone = (n) => st.docs.find((x) => x.stage === n);              // 그 단계에서 확정한 설계도
   const pingHead = () => st.ping.split(" — ")[0];
@@ -202,7 +204,7 @@
   // 넘어가기 전 확인의 한 장 요약 — [이름, 내용]. iPhone은 줄로, PC는 표로 그린다
   function planRows() {
     const s = stage(), nx = nextStage();
-    return [["받은 것", s.gets], ["한 일", s.does], ["만든 것", s.gives], ["헷갈렸던 부분", hardTexts().join(", ")], ["받은 답", st.answer],
+    return [["받은 것", s.gets], ["한 일", s.does], ["만든 것", gv(s)], ["헷갈렸던 부분", hardTexts().join(", ")], ["받은 답", st.answer],
       ...(nx ? [["다음 단계", `${nx.n}단계 ${nx.title} — ${nx.does}`]] : [])];
   }
   // 내가 정한 순서 — move면 꼭 할 일/나중에 고르기와 위·아래 버튼까지
@@ -359,7 +361,7 @@
   }
   const chips = () => `<div class="chips">${N.STAGES.map((x) => `<span class="chip ${stepClass(x.n)}">${stepClass(x.n) === "done" ? "✓ " : ""}${x.n} ${esc(x.short)}</span>`).join("")}</div>`;
   const flow = () => { const s = stage(); return `<div class="flow"><div class="box"><b>받은 것</b>${esc(s.gets)}</div><span class="arrow">→</span>
-    <div class="box"><b>한 일</b>${esc(s.does)}</div><span class="arrow">→</span><div class="box"><b>만든 것</b>${esc(s.gives)}${
+    <div class="box"><b>한 일</b>${esc(s.does)}</div><span class="arrow">→</span><div class="box"><b>만든 것</b>${esc(gv(s))}${
     docDone(s.n) ? `<span class="sub ok">✓ 설계도 확정함</span>` : ""}</div></div>`; };
   // iPhone의 지금 결정할 것 하나 — 다 했으면 "넘어가기", 순서를 정했으면 그 첫 일, 아니면 같이 정하기
   function focusCard() {
@@ -405,7 +407,7 @@
 
   const mini = () => `<span class="mini" aria-hidden="true">${met().map((m) => `<i class="${m ? "on" : ""}"></i>`).join("")}</span>`;
   const stageMeta = () => { const s = stage(); return `<span class="mm-stage">${s.n}단계 · ${esc(s.title)}</span><span>${allDone() ? `할 일 ${met().length}개 모두 했어요` : progress()}</span>${mini()}`; };
-  const flowLine = () => { const s = stage(); return `<span class="flowline"><span>${esc(s.gets)}</span>${I.arrow}<span>${esc(s.does)}</span>${I.arrow}<span>${esc(s.gives)}</span>${
+  const flowLine = () => { const s = stage(); return `<span class="flowline"><span>${esc(s.gets)}</span>${I.arrow}<span>${esc(s.does)}</span>${I.arrow}<span>${esc(gv(s))}</span>${
     docDone(s.n) ? `<span class="okchip">${I.check}설계도 확정함</span>` : ""}</span>`; };
   const dots = `<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>`;
   const deskInput = () => `<textarea class="mc-input" data-act="text" rows="3" aria-label="지금 만드는 것"
@@ -569,7 +571,7 @@
     return `<div class="map"><ol class="track" aria-label="여덟 단계">${track}</ol>
       <div class="map-detail"><div class="md-head"><h3>${s.n}단계 · ${esc(s.title)}</h3>${where}</div>
         <p class="mc-sub">${esc(s.does)}</p>
-        <span class="flowline"><span>받은 것 · ${esc(s.gets)}</span>${I.arrow}<span>만든 것 · ${esc(s.gives)}</span>${s.doc ? `<span class="meta">설계도: ${esc(s.doc)}</span>` : ""}</span>
+        <span class="flowline"><span>받은 것 · ${esc(s.gets)}</span>${I.arrow}<span>만든 것 · ${esc(gv(s))}</span>${s.doc ? `<span class="meta">설계도: ${esc(s.doc)}</span>` : ""}</span>
         <ul class="crit">${crit}</ul></div></div>`;
   }
   // 내 배움 — 지나온 단계 · 배운 말 · 확정한 설계도 · 플로로와 나
@@ -1189,7 +1191,7 @@
     "confirm-cancel": () => set({ askConfirm: 0 }),
     "reopen-doc": () => { const x = docDone(st.j.stage); set({ doc: newDoc(x.stage, x.text, "") }); },
     forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); } catch {} location.reload(); },
-    gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false }),
+    gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false, check: null }),
     "close-gate": () => set({ screen: "main" }),
     no: () => { set({ noCount: st.noCount + 1, step: "which", hard: [], answer: "", question: "" }); say("모르는 게 당연해요. 같이 풀어요"); reveal(".hold-offer"); },
     "hard-t": (i) => toggleHard(i),

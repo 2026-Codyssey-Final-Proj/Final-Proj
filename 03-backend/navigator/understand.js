@@ -35,6 +35,10 @@
     hold: ["idle", "괜찮아요. 쉬었다가 정한 날에 다시 같이 봐요."],   // 잠시 멈추기를 적는 중·멈춰 둔 동안
   };
   const face = (c) => (!c || c.pick === undefined || c.pick === null ? FACE.ask : c.ok ? FACE.right : FACE.wrong);
+  // 화면에 보일 '만든 것' — 그 단계의 확인 질문에 답하기 전이면 정답이라 가린다(리뷰 지적 2026-10-18: 질문 위 그림에 정답이 보였다).
+  // 화면(app.js)은 gives를 직접 읽지 않고 늘 이 함수로 그린다 — screen-gaps.test.js가 확인한다. 답하면(맞든 틀리든) 다시 보인다
+  const HIDDEN = "?";
+  const shownGives = (s, c) => (c && c.q && c.q.stage === s.n && (c.pick === null || c.pick === undefined) ? HIDDEN : s.gives);
 
   // ── ② 보류 ──
   // "아니요" 몇 번 뒤에 '잠시 멈추기'를 권하나 — 3회. requirements.md 13-1 확정 기록(이재엽 2026-10-16 "3회").
@@ -56,7 +60,7 @@
     return `보류 중 · ${md(h.when)}에 다시 보기${h.who && h.who !== "나" ? ` · 다시 볼 사람: ${h.who}` : ""}`;
   }
 
-  const api = { ASK, checkQuestion, grade, record, FACE, face, HOLD_AFTER_NO, offerHold, makeHold, holdLine };
+  const api = { ASK, checkQuestion, grade, record, FACE, face, HIDDEN, shownGives, HOLD_AFTER_NO, offerHold, makeHold, holdLine };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavUnderstand = api;
 })(typeof window !== "undefined" ? window : globalThis);

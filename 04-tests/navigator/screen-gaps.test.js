@@ -77,6 +77,25 @@ test("확인 질문: 맞히면 ok, 틀려도 막지 않고 정답과 한 줄 설
   assert.equal(before.length, 1);
 });
 
+// 리뷰 지적(2026-10-18, 막힘): 확인 질문 바로 위의 그림(받은 것 → 한 일 → 만든 것)에 정답이 보였다 — 답하기 전에는 '만든 것'을 어디에도 두지 않는다
+test("확인 질문: 답하기 전에는 질문 장면에 보이는 글(그림·말풍선·안내·할 일) 어디에도 정답이 없고, 답한 뒤에는 다시 보인다", () => {
+  for (const s of Nav.STAGES) {
+    const q = U.checkQuestion(s.n), right = q.options[q.answer], pending = { q, pick: null, ok: null };
+    const shown = [s.gets, s.does, U.shownGives(s, pending), U.face(pending)[1], q.ask, ...Nav.STAGES[s.n].criteria.map((c) => c.text)];
+    for (const t of shown) assert.ok(!String(t).includes(right), `${s.n}단계: "${t}"에 정답 "${right}"`);
+    assert.equal(U.shownGives(s, { q, pick: 0, ok: q.answer === 0 }), s.gives, `${s.n}단계: 답한 뒤`);
+    assert.equal(U.shownGives(s, null), s.gives, `${s.n}단계: 확인 질문이 없을 때`);
+    const other = Nav.STAGES[(s.n + 1) % Nav.STAGES.length];
+    assert.equal(U.shownGives(other, pending), other.gives, "묻는 단계가 아니면 가리지 않는다");
+  }
+});
+
+test("확인 질문: 화면(app.js)은 '만든 것'(gives)을 직접 읽지 않고 늘 shownGives를 거친다 — 새로 그리는 곳이 생겨도 정답이 새지 않게", () => {
+  const code = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../02-frontend/navigator/app.js"), "utf8").replace(/^\s*\/\/.*$/gm, "");
+  assert.deepEqual(code.match(/\.gives\b/g) || [], []);
+  assert.ok(code.includes("U.shownGives("), "shownGives로 그린다");
+});
+
 test("확인 질문 플로로: 묻는 중·맞힘·틀림의 표정은 플로로에게 있고, 말은 짧고 쉬운 말이다", () => {
   const q = U.checkQuestion(1);
   for (const [mood, say] of [...[{ q }, { q, pick: q.answer, ok: true }, { q, pick: 0, ok: false }].map(U.face), ...Object.values(U.FACE)]) {
