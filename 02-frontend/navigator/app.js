@@ -510,7 +510,7 @@
         <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
         ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요.</p>`}</div></div>
       <div class="ob-foot"><span class="note">책을 고르면 펼쳐져요 · 세션을 덮으면 서고에 꽂혀요 · 완주한 책은 한 권으로 엮어요</span><span class="grow"></span>
-        <a class="enter-lib" href="${LIB_URL}#lib"><span class="mb"></span>내 서고 들어가기</a></div></div>`;
+        <button class="enter-lib" data-act="lib-enter"><span class="mb"></span>내 서고 들어가기</button></div></div>`;
     const fin = bookDone(b);
     deskKeys.Escape = { act: "lib-close" };
     deskKeys.Enter = { act: st.libConfirm ? "lib-shelve" : fin ? "lib-bind" : "lib-shelve-ask" };
@@ -565,6 +565,12 @@
     if (st.sound) C.chime("level");
     setTimeout(open, 950);
   }
+  // 내 서고 들어가기 — 오버레이가 화면 가득 물속이 되고, 책을 안은 플로로가 내려간 뒤 서고가 물속에서 떠오른다(dive.js, 목업 영상 24~28초)
+  function enterLibrary() {
+    const href = `${LIB_URL}#lib-dive`;
+    if (!window.FloeDive) { location.href = href; return; }
+    window.FloeDive.out($nav.querySelector(".isl"), href, $nav.querySelector(".libtab .who"));
+  }
   // 세션 덮기 — 목록으로 돌아가 그 책이 작아지며 사라진다
   function shelveBook() {
     const b = libSelected(); if (!b) return;
@@ -574,9 +580,13 @@
     if (el && !STILL) { el.classList.add("leaving"); setTimeout(finish, 480); } else finish();
   }
   // 위쪽 아이콘 줄 — 지금·설계도·단계 지도·내 배움·한곳에서 보기·도서관 | 연결·프로젝트·보기 방식·친해진 정도·설정·열어 두기·접기
+  // 아이콘을 누르면 고른 동그라미(.ti-ind)가 지난 아이콘에서 새 아이콘으로 미끄러지고, 내용은 그쪽 방향에서 들어온다(renderDesk).
+  // 누른 뒤 곧바로 한 번 더 그려지는 일이 있어서, 움직임은 시작한 때(tabMove.at)를 기억해 다시 그려도 이어서 움직인다
+  let tabFrom = null, tabMove = null;
+  const tabIdx = () => TABS.findIndex((x) => x[0] === st.tab);
   function topbar() {
     const b = C.bond(st.pets), tab = TABS.find((x) => x[0] === st.tab);
-    return `<div class="tb"><div class="tabs" role="tablist" aria-label="보기">${TABS.map(([id, label, , ic], i) =>
+    return `<div class="tb"><div class="tabs" role="tablist" aria-label="보기"><span class="ti-ind" style="--i:${tabIdx()}" aria-hidden="true"></span>${TABS.map(([id, label, , ic], i) =>
       `<button class="ti" role="tab" data-act="tab" data-i="${i}" aria-selected="${st.tab === id}" aria-label="${label}" title="${label}">${I[ic]}</button>`).join("")}</div>
       <span class="tb-tab">${esc(tab[1])}</span><span class="grow"></span>
       ${st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
@@ -625,7 +635,7 @@
     else if (st.tab === "all") body = deskAll();
     else if (st.tab === "lib") body = deskLib();
     else body = card(momentToday()) + deskMore();
-    return `<div class="isl${enter}">${topbar()}${settingsPop()}${body}${countdown()}</div>`;
+    return `<div class="isl${enter}">${topbar()}${settingsPop()}<div class="isl-body">${body}</div>${countdown()}</div>`;
   }
   function renderDesk() {
     const moved = st.ui !== lastUi; lastUi = st.ui;
@@ -635,6 +645,18 @@
     else if (st.ui === "greet") $nav.innerHTML = greetHTML(enter);
     else if (st.ui === "petit") $nav.innerHTML = `<div class="${enter.trim()}">${pillHTML()}</div>`;
     else $nav.innerHTML = islandHTML(enter);
+    const ind = $nav.querySelector(".ti-ind"), to = tabIdx();
+    if (!ind) return;
+    if (tabFrom !== null && tabFrom !== to) tabMove = { from: tabFrom, to, at: performance.now() };
+    tabFrom = to;
+    const t = tabMove && tabMove.to === to ? performance.now() - tabMove.at : Infinity;
+    if (STILL || t > 400 || !ind.animate) { tabMove = null; return; }
+    const go = (el, frames, ms, ease) => { if (el) el.animate(frames, { duration: ms, easing: ease }).currentTime = t; };
+    const dx = to > tabMove.from ? 36 : -36;
+    go(ind, [{ transform: `translateX(${tabMove.from * 42}px) scaleX(1)` }, { transform: `translateX(${(tabMove.from + to) * 21}px) scaleX(1.25)`, offset: 0.4 }, { transform: `translateX(${to * 42}px) scaleX(1)` }], 380, "cubic-bezier(.3,1.25,.5,1)");
+    go($nav.querySelector(".isl-body"), [{ opacity: 0, transform: `translateX(${dx}px)` }, { opacity: 1, transform: "none" }], 340, "cubic-bezier(.2,.8,.2,1)");
+    go($nav.querySelector(".tb-tab"), [{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], 260, "ease-out");
+    go($nav.querySelector(".tabs .ti[aria-selected=true] svg"), [{ transform: "none" }, { transform: "scale(1.22) translateY(-2px)", offset: 0.4 }, { transform: "none" }], 400, "cubic-bezier(.3,1.5,.5,1)");
   }
 
   // ── iPhone 화면 ──
@@ -1030,6 +1052,7 @@
     bond: () => set({ tab: "learn", settings: false }),
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
     // 도서관 탭 — 책 고르기 · 덮기 · 세션 덮기(확인 뒤) · 한 권으로 엮기. 한곳에서 보기 — 프로젝트를 누르면 단계 지도(이 화면 것)나 그 책으로
+    "lib-enter": () => enterLibrary(),
     "lib-book": (i, el) => set({ libSel: (el && el.dataset.id) || openBooks()[i].id, libConfirm: false }),
     "lib-close": () => set({ libSel: null, libConfirm: false }),
     "lib-shelve-ask": () => set({ libConfirm: true }),

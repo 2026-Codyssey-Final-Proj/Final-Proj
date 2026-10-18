@@ -86,7 +86,12 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .ti{width:40px;height:40px;flex:none;border:0;border-radius:50%;background:transparent;color:var(--mute);display:grid;place-items:center;transition:background .15s,color .15s}
 .ti svg{width:19px;height:19px}
 .ti:hover{color:var(--ink);background:rgba(127,127,127,.14)}
-.ti[aria-selected=true]{background:var(--card);color:var(--acc);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.ti[aria-selected=true]{color:var(--acc)}
+/* 고른 아이콘 밑 동그라미 — 지난 아이콘에서 새 아이콘으로 미끄러진다(움직임은 app.js renderDesk, 2026-10-18 claude-drafted). 자리 = 안쪽 여백 3px + 칸(40px+사이 2px) × 순서 */
+.tabs{position:relative}
+.tabs .ti{position:relative;z-index:1}
+.ti-ind{position:absolute;left:3px;top:3px;width:40px;height:40px;border-radius:50%;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.14);transform:translateX(calc(var(--i,0) * 42px))}
+.isl-body{display:flex;flex-direction:column;gap:8px;min-width:0}
 .ti[aria-pressed=true]{background:var(--acc-soft);color:var(--acc)}
 .ti.bond{width:auto;padding:0 10px;border-radius:999px}
 .tb-tab{font-size:13px;font-weight:700;margin-left:6px;white-space:nowrap}
