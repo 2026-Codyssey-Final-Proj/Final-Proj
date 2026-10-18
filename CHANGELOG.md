@@ -12,10 +12,12 @@
 - 고르는 것은 **올린 사람**이다. PR 제목 앞에도 같은 버전을 `[vN.M]`으로 붙인다 — PR은 그 제목으로 찾는다.
 - "건드린 곳"에는 폴더를 적는다. 남의 담당 폴더(TEAM.md)를 고쳤으면 그 칸이 담당에게 가는 알림이다.
 - 두 사람이 같은 번호를 고르면 **나중에 병합하는 쪽이** 최신 `main`을 받아 다음 번호로 고친다. 번호가 겹치거나 건너뛰면 `04-tests/repo/test_changelog.py`가 실패한다.
+- `main`에 올라오면 맨 위 버전이 Jira 프로젝트 Floe의 릴리스로 생기고, 커밋 · PR 제목에 적힌 Jira 키의 이슈에 붙는다 — [jira.md](01-docs/00-overview/jira.md) 3절.
 - 세부 규칙: [git-workflow.md](.claude/rules/git-workflow.md) "버전과 알림".
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v1.2 | 2026-10-18 | 이재엽 | Jira 잇기 — GitHub for Jira 앱(PR · 커밋, 설치 전), `main`에 올라오면 버전을 Jira 릴리스로 만드는 GitHub Action(비밀값 넣기 전에는 건너뜀), 이름에 Jira 키 넣는 규칙 | `.github/` · `.claude/rules/` · `01-docs/00-overview/` · `01-docs/catalog/` · `04-tests/repo/` |
 | v1.1 | 2026-10-18 | 이재엽 | 버전 기록(이 파일) 시작 — 동의 없이 병합, 버전 한 줄과 PR이 알림. PR 양식 · 팀 가이드 · 규칙 문서를 같이 고침 | 루트 · `.github/` · `.claude/rules/` · `01-docs/00-overview/` · `01-docs/07-maintenance/` · `04-tests/repo/` |
 | v1.0 | 2026-10-18 | 팀 전원 | **시작점** — 2026-10-18 저녁의 `main`(PR #104까지). 아래 "v1.0에 든 것" | 전체 |
 

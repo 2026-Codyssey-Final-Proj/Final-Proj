@@ -1,0 +1,31 @@
+# claude-drafted: 2026-10-18 — 이재엽 결정 "GitHub Action + API 토큰": main에 올라오면 CHANGELOG.md 맨 위 버전을 Jira 릴리스로 만들고,
+# 이번 push의 커밋 메시지에 적힌 Jira 키의 이슈에 그 버전을 붙인다. 설정(비밀값 3개 · 변수 1개)과 이유: 01-docs/00-overview/jira.md 3절.
+# 비밀값이 없으면 건너뛰고 성공으로 끝난다. 시험: 04-tests/repo/jira-release.test.js
+name: jira-release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jira-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: CHANGELOG 맨 위 버전 → Jira 릴리스
+        run: node .github/scripts/jira-release.js
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}

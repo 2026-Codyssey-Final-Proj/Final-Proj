@@ -100,11 +100,12 @@ NAV_MODEL=<운영팀이 알려 준 모델 이름>
 **GitHub `2026-Codyssey-Final-Proj/Final-Proj`** 에 올린다. 2026-10-18부터 **브랜치 → PR → 올린 사람이 바로 병합**이다 —
 서로 동의를 기다리지 않고, 올릴 때마다 [CHANGELOG.md](../../CHANGELOG.md)에 버전(vN.M) 한 줄을 적어 알린다(팀 결정 — 이재엽).
 버전은 **큰 묶음**(기능을 더하거나 바꿈)이면 N+1·M=0, **작은 고침**(버그·문서·시험)이면 M+1 — 올린 사람이 고른다.
+할 일은 **Jira 프로젝트 Floe**에 있고(#102), Jira 이슈가 있으면 브랜치 · PR 제목에 키(`<키>-12`)를 넣는다 — 병합되면 그 이슈에 버전이 붙는다([jira.md](jira.md)).
 `main`에 직접 올려도 되고 그때도 버전 한 줄을 넣는다. 읽은 사람이 병합 뒤에 남기는 PR 코멘트 한 줄은 **협업 증빙(평가 10점)** 이 된다(선택).
 
 ```mermaid
 flowchart LR
-    A["이슈 확인<br/>내 담당 #5~#20"] --> B["브랜치 만들기"]
+    A["Jira에서<br/>내 할 일 확인"] --> B["브랜치 만들기<br/>v2/키-12-주제"]
     B --> C["작업 · 커밋"]
     C --> V["CHANGELOG.md<br/>맨 위에 vN.M 한 줄"]
     V --> D["git push"]
@@ -122,7 +123,7 @@ git add <바꾼 파일>                            # git add -A 보다 파일을
 # CHANGELOG.md 맨 위에 한 줄: | v1.4 | 날짜 | 내 이름 | 무엇이 달라졌나 | 건드린 폴더 |
 git commit -m "docs(범위): 무엇을 했는지"      # 제목은 `타입(범위): 설명` — docs · feat · fix · chore · refactor
 git push -u origin docs/내-주제
-gh pr create --title "[v1.4] docs(범위): 무엇을 했는지"   # 또는 GitHub 웹의 "Compare & pull request"
+gh pr create --title "[v1.4] <키>-12 docs(범위): 무엇을 했는지"   # 또는 GitHub 웹의 "Compare & pull request"
 gh pr merge --merge --delete-branch           # 동의를 기다리지 않고 내가 병합
 ```
 
