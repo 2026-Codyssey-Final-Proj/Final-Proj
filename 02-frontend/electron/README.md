@@ -7,7 +7,7 @@
 | 파일 | 무엇 |
 |---|---|
 | `main.js` | 앱 — 서버 띄우기 · 창 · 메뉴(프로젝트 폴더 연결 / 빼기 · 설정 폴더 · 브라우저로 열기 · 끄기) |
-| `preload.js` | 화면이 앱에게 부탁할 수 있는 셋(`window.floeApp`: connect · disconnect · openSettings). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
+| `preload.js` | 화면이 앱에게 부탁할 수 있는 다섯(`window.floeApp`: connect · disconnect · openSettings · **saveKey · clearKey** — 처음 설정, 2026-10-19). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
 | `lib.js` | 순수 함수 — `.env` 읽기 · PATH 합치기 · 훅 명령(app.asar → app.asar.unpacked) · 폴더 연결(connect.js 규칙 그대로). 시험 [`electron-lib.test.js`](../../04-tests/navigator/electron-lib.test.js) |
 | `prebuild.js` | 묶기 전에 화면 · 서버를 `payload/`로 복사(node_modules · `.env*` · 문서 제외). git에 올리지 않는다 |
 | `package.json` | Electron 44.9.0 · electron-builder 26.15.3(4.0.0에서 33 · 25에서 올림 — 이 Mac은 macOS 26이라 옛 Electron의 입력 · 창 문제를 피하려고) · `@anthropic-ai/sdk`(내 키로 쓸 때) · 묶기 설정(`build`) |
@@ -23,7 +23,8 @@ npm run dist:win            # Windows에서만: dist/Floe-Setup-<버전>.exe
 ```
 
 - 포트는 `NAV_PORT`(기본 4317)부터 **빈 포트**를 찾아 앱이 늘 자기 서버를 켠다. 터미널에 다른 Floe 서버가 떠 있어도 거기 붙지 않는다(첫 알파의 "옛 화면" 문제).
-- 내 API 키로 쓰려면 메뉴 **Floe → 설정 폴더 열기**에 `.env`를 둔다(모양은 [`../../03-backend/navigator/.env.example`](../../03-backend/navigator/.env.example)). 없으면 이 컴퓨터의 Claude Code 구독. 키는 앱 묶음 · 저장소에 들어가지 않는다.
+- **처음 켜면 플로로가 반기고 연결을 돕는다**(2026-10-19, 화면 `../navigator/setup.js`): Claude Code로 연결(찾기 · 로그인 · 폴더 연결 · 연결 확인) 또는 API 키 넣기 중 하나를 고른다. 키는 화면이 `floeApp.saveKey`로 앱에 넘기고, **앱이 설정 폴더의 `.env`에 쓴다(나만 읽기 600)** — 화면 · 브라우저 저장소 · 서버 주소에는 남지 않는다. 앱 안의 서버라 다시 켜지 않아도 다음 호출부터 그 키로 부른다. 다시 고르려면 톱니 → **처음 설정 다시 하기**.
+- 손으로 넣어도 된다: 메뉴 **Floe → 설정 폴더 열기**에 `.env`(모양은 [`../../03-backend/navigator/.env.example`](../../03-backend/navigator/.env.example)). 없으면 이 컴퓨터의 Claude Code 구독. 키는 앱 묶음 · 저장소에 들어가지 않는다.
 - **프로젝트 폴더 연결**(메뉴 또는 톱니 → 연결 칸의 단추)은 그 폴더의 `.claude/settings.local.json`에 훅을 더한다 — `connect.js --apply`와 같은 규칙 · 백업. 훅은 `node`로 `app.asar.unpacked` 안의 `hook.js`를 부르므로 **그 컴퓨터에 node가 있어야 한다**(팀 알파에서는 모두 있다). node 없는 사람을 위한 길은 미정.
 - 기록(내 책 · 느낀 점)은 앱 안의 브라우저 저장소에 남는다 — 브라우저로 연 화면과는 따로다.
 
@@ -39,6 +40,8 @@ Actions 탭에서 손으로도 돌릴 수 있다(workflow_dispatch). 비용: 비
 **앱 안 자동 업데이트(electron-updater)는 아직 안 한다** — 비공개 저장소의 Release를 앱이 직접 받으려면 토큰을 앱에 넣어야 해서(새는 길) 못 쓰고, Release를 공개로 하면 코드 없이 묶음만 보인다. 둘 중 무엇으로 갈지는 이재엽 결정 — 그때까지는 "새 버전 확인 → 받기".
 
 ## 확인한 것 (2026-10-19, 이재엽의 Mac · arm64)
+
+- **0.4.0(처음 설정 · 옛 서버 알아보기, #113 브랜치에서만 — 병합 때 #115의 "늘 자기 서버"로 합쳐 옛 서버 알아보기는 뺐고 앱은 5.0.0):** `npm run dist`로 `Floe-0.4.0-arm64.dmg`. 묶은 앱을 포트 4398로 켜서 `/api/setup`의 지문이 저장소 코드의 지문과 같은 것(`9d9dd5cd0b87`), 첫 화면에 처음 설정("반가워요! 저는 길잡이 물범 플로로예요.")이 뜨고 `window.floeApp.saveKey`가 있는 것을 CDP로 봤다(누르지는 않았다 — 처음 설정 기록이 남지 않게). 옛 서버가 먼저 떠 있을 때의 묻는 창은 **사람이 아직 눌러 보지 않았다**(판단 함수만 시험: `electron-setup.test.js`).
 
 - `npm run dist`로 `Floe-3.0.0-arm64.dmg`(100MB)가 나왔고, 묶은 앱을 켜서 서버가 켜지고(`/api/usage` 200) 화면이 확인 값 쿠키와 함께 오며(`/` 200), 앱 안에서 `window.floeApp`이 있고 뒤 창이 숨고 바탕이 투명하며 유리 흐림 · 굴절이 꺼진 것을 CDP로 봤다. 4317이 막혀 있을 때 4318로 켜지는 것도.
 - **첫 알파(0.3.0)의 문제(이재엽 2026-10-19):** 같은 포트에 먼저 켜져 있던 옛 서버에 붙어 옛 화면 · 배경이 그대로 보였고, 투명 창 위의 유리 굴절 때문에 랙이 심했다. → 앱은 늘 자기 서버를 켜고(빈 포트), 앱 안에서는 굴절 · backdrop-filter를 끈다. 아이콘도 플로로로.

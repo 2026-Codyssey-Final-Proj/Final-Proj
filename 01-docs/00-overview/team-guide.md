@@ -130,7 +130,7 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 | 받기 | `Floe-<버전>-arm64.dmg` — [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) (지금 알파 `app-v4.0.0`, 2026-10-19, Apple Silicon) | `Floe-Setup-<버전>.exe` — 같은 Release에 **CI가 묶어 올린다**(main 병합 뒤) |
 | 처음 열기 | 서명이 없어 경고가 뜬다 → Finder에서 **우클릭 → 열기** 한 번 | SmartScreen 경고 → "추가 정보 → 실행" |
 | 연결 | 메뉴 **Floe → 프로젝트 폴더 연결…** 또는 톱니 → 연결 칸의 단추 | 같음 |
-| AI | 이 컴퓨터의 Claude Code 로그인을 쓴다. 내 키로 쓰려면 **Floe → 설정 폴더 열기**에 `.env` | 같음 |
+| AI | **처음 켜면 플로로가 물어본다** — Claude Code로 연결하거나 API 키를 넣는다(2026-10-19). 나중에 바꾸려면 톱니 → 처음 설정 다시 하기 | 같음 |
 | 끄기 | 메뉴 **Floe → Floe 끄기** (Cmd+Q) | 창 닫기 |
 
 - 직접 묶으려면: `cd 02-frontend/electron && npm install && npm run dist` — [electron/README.md](../../02-frontend/electron/README.md).

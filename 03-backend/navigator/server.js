@@ -23,7 +23,8 @@ const os = require("node:os");
 const path = require("node:path");
 const Nav = require("./navigator.js");
 const Share = require("../share/share-rules.js");
-const { callClaude, usage } = require("./provider.js");
+const { callClaude, usage, claudeVersion } = require("./provider.js");
+const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 
 const PORT = Number(process.env.NAV_PORT) || 4317;
 const MAX_BODY = 40_000;   // 작업 글 + 설계도
@@ -44,7 +45,8 @@ const COOKIE = "nav_event_token";
 const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear"];
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review"];
+// 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check"];
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES];
 const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
@@ -79,7 +81,8 @@ const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
 const STATIC = {
   // dive.js·dive.css — 내비게이터(`dive.js` → /dive.js)와 서고(`../navigator/dive.js` → /navigator/dive.js)가 같이 쓴다. 2026-10-18까지 빠져 있었다
   // notes.js — 실사용의 '느낀 점 남기기'(2026-10-19)
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "library-tab.css", "dive.js", "dive.css", "notes.js"],
+  // setup.js · setup.css — 처음 켤 때 반기고 연결(Claude Code / API 키)을 돕는 화면(2026-10-19)
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js"],
   // learn.js — 서재의 '내 배움'(2026-10-18, F-05). 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다
   // my-books.js — 내 책 · 예시 책 지우기(2026-10-19 실사용). 내비게이터(`../library/my-books.js`)와 서고가 같이 쓴다
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "my-books.js", "schedule.js", "skills.js", "search.js", "spotlight.js", "learn.js",
@@ -171,6 +174,26 @@ function clearEvents() {
   return n;
 }
 
+// ── 처음 설정 — claude-drafted: 2026-10-19 ──
+// claude 명령은 묻는 데 시간이 들어(--version) 10초 동안은 지난 답을 쓴다. 지문(build)은 화면 · 서버 파일이 바뀌지 않는 한 같아서 한 번만 센다
+let claudeSeen = { at: 0, info: null, login: null }, buildMemo = "";
+function build() {
+  return (buildMemo ||= Setup.buildId([...Object.values(FILES).map(([f]) => path.join(__dirname, f)), __filename,
+    path.join(__dirname, "provider.js"), path.join(__dirname, "setup-status.js")]));
+}
+function setupNow() {
+  if (!claudeSeen.info || Date.now() - claudeSeen.at > 10_000) claudeSeen = { at: Date.now(), info: claudeVersion(), login: Setup.signedIn() };
+  return Setup.status(process.env, { claude: claudeSeen.info, login: claudeSeen.login, build: build() });
+}
+// 연결 확인 — 아주 작은 요청 하나. 재생 중이면 부르지 않고 그렇다고 알린다
+async function checkAi(res) {
+  const provider = Setup.providerOf(process.env);
+  if (process.env.NAV_REPLAY) return send(res, 200, { ok: true, provider, replay: true, tokens: 0 });
+  const r = await callClaude(Setup.CHECK_PROMPT, Setup.CHECK_SCHEMA);
+  if (r.data && r.data.ok === true) return send(res, 200, { ok: true, provider, tokens: r.tokens || 0 });
+  return refuse(res, r.error || "답의 모양이 맞지 않음", 502);
+}
+
 async function handle(req, res) {
   if (!allowed(req.headers)) return refuse(res, "이 컴퓨터의 화면에서만 부를 수 있음", 403);
   if (req.method === "GET" && FILES[req.url]) {
@@ -178,6 +201,8 @@ async function handle(req, res) {
     const head = { "Content-Type": `${type}; charset=utf-8` };
     // S3: 페이지(html)를 줄 때 확인 값 쿠키를 같이 준다. 캐시에서 다시 꺼낸 페이지는 쿠키를 다시 못 주므로 저장하지 않게 한다
     if (type === TYPES.html) Object.assign(head, { "Set-Cookie": `${COOKIE}=${theToken()}; Path=/api; HttpOnly; SameSite=Strict`, "Cache-Control": "no-store" });
+    // 스크립트 · 스타일은 늘 서버에 다시 묻는다 — 앱(Electron) · 브라우저가 고친 뒤에도 옛 파일을 꺼내 쓰지 않게(2026-10-19)
+    else head["Cache-Control"] = "no-cache";
     res.writeHead(200, head);
     return fs.createReadStream(path.join(__dirname, file)).pipe(res);
   }
@@ -189,6 +214,8 @@ async function handle(req, res) {
   }
   if (req.method === "POST" && route === "/api/events/clear") return send(res, 200, { ok: true, cleared: clearEvents() });   // S5
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다
+  if (req.method === "GET" && route === "/api/setup") return send(res, 200, { ok: true, ...setupNow() });   // 처음 설정 — 있다 · 없다만(API.md 3-10)
+  if (req.method === "POST" && route === "/api/setup/check") return checkAi(res);   // 연결 확인(API.md 3-11) — 본문 없음
   if (req.method !== "POST" || !POST_ROUTES.includes(route)) return refuse(res, "없는 주소", 404);   // 본문을 읽기 전에(전에는 빈 본문이면 400이었다)
   const body = await readJson(req);
   if (body === TOO_BIG) return refuse(res, `보낸 글이 너무 김 — ${MAX_BODY.toLocaleString()}자까지`, 413);
@@ -230,4 +257,4 @@ if (require.main === module) {
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
   });
 }
-module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };
+module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, build, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };

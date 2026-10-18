@@ -17,6 +17,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v5.0 | 2026-10-19 | 이재엽 | **처음 설정(큰 묶음)** — 처음 켜면 플로로가 반기고 Claude Code로 연결 / API 키 넣기 중 하나를 같이 준비(찾기 · 로그인 · 폴더 연결 · 연결 확인). 서버 `GET /api/setup` · `POST /api/setup/check`, 앱은 키를 설정 폴더 `.env`(600)에. (옛 서버 알아보기는 병합 때 #115의 "늘 자기 서버"로 합쳐 뺐다) — dmg가 옛 화면을 보인 원인(F-19). 스크립트 · 스타일 `no-cache`, 앱 0.4.0 | `02-frontend/navigator/` · `02-frontend/electron/` · `03-backend/navigator/` · `04-tests/` · `01-docs/` |
 | v4.0 | 2026-10-19 | 이재엽 | **레벨 오버레이 + 앱 고침(큰 묶음)** — 화면을 이재엽이 고른 목업 3번으로(플로로 · 가벼운 상자 · LV/EXP 줄 · 명령 네 칸 — 고르면 상자 안에 길, 규칙은 그대로). 앱: 늘 자기 서버를 켬(빈 포트), 창이 섬 크기를 따라감(빈 투명 영역이 뒤 창의 클릭을 가로채던 것), 굴절 · 흐림 끔(랙), 플로로 아이콘, Electron 44, 메뉴에 새 버전 확인. CI(`app-release.yml`): main의 앱 버전이 바뀌면 Mac · Windows 묶어 Release `app-v<버전>`에. 시연 GIF 5개 다시. 이재엽이 0.3.0 → 3.0.2를 써 보며 찾은 문제들을 고친 것 | `02-frontend/navigator/` (담당 임유정 — 이 줄이 알림) · `02-frontend/electron/` · `.github/` · `01-docs/` · `04-tests/` |
 | v3.2 | 2026-10-19 | 이재엽 | 서재의 온보딩 영상 잔재를 지움 — 플로로 밑 정해 둔 질문 단추 · 아래 장면 설명 자막 띠. 책 이름이 낱말 중간에서 끊기지 않게(F-20) | `02-frontend/library/` |
 | v3.1 | 2026-10-19 | 이재엽 | Atlassian MCP를 저장소 `.mcp.json`에 올림 — 각자 `/mcp`로 로그인하면 Claude가 팀 Jira를 읽고, 쓰기는 사람 확인 뒤에만. 판정 후보 → 채택 | 루트(`.mcp.json` · `CLAUDE.md`) · `.claude/rules/` · `01-docs/00-overview/` · `01-docs/catalog/` |

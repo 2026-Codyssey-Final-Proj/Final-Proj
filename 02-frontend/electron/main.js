@@ -24,8 +24,9 @@ const freePort = (from) => new Promise((resolve) => {
 });
 
 // ① .env — 앱 설정 폴더(이 사용자만)에 둔다. 저장소 · 앱 묶음 안에는 없다
+const envFile = () => path.join(app.getPath("userData"), ".env");
 function loadEnv() {
-  const file = path.join(app.getPath("userData"), ".env");
+  const file = envFile();
   try { L.applyEnv(process.env, L.parseEnv(fs.readFileSync(file, "utf8"))); return file; } catch { return ""; }
 }
 // ② Mac 더블클릭 앱의 PATH는 짧다 — 로그인 셸의 PATH를 합쳐 `claude`(~/.local/bin 등)를 찾게
@@ -58,6 +59,8 @@ function createWindow() {
   win.setAlwaysOnTop(true, "floating");
   win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서
   win.on("closed", () => { win = null; });
+  // 화면의 바깥 링크(처음 설정의 'Claude Code 설치 안내' 등)는 앱 창이 아니라 기본 브라우저로
+  win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
   win.loadURL(URL_);
 }
 // 화면이 알려 준 섬 크기로 창을 맞춘다 — 가로가 바뀌면 가운데를 유지하고(사용자가 옮긴 자리 기준), 세로는 위를 고정
@@ -100,15 +103,40 @@ function menu() {
 ipcMain.handle("floe:connect", () => pickAndConnect(true));
 ipcMain.handle("floe:disconnect", () => pickAndConnect(false));
 ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData")));
+// 처음 설정(setup.js) — 키를 설정 폴더의 .env(나만 읽기 600)에 쓰고 이 프로세스의 환경에도 넣는다. 서버가 이 앱 안에 있으니 다시 켜지 않아도
+// 다음 AI 호출부터 그 키로 부른다(provider.js는 부를 때마다 환경을 본다). 값은 어디에도 출력하지 않는다
+function writeEnv(updates) {
+  let text = "";
+  try { text = fs.readFileSync(envFile(), "utf8"); } catch {}
+  fs.mkdirSync(path.dirname(envFile()), { recursive: true });
+  fs.writeFileSync(envFile(), L.setEnvLines(text, updates), { mode: 0o600 });
+  try { fs.chmodSync(envFile(), 0o600); } catch {}
+  for (const [k, v] of Object.entries(updates)) { if (v == null) delete process.env[k]; else process.env[k] = v; }
+}
+// 앱은 늘 자기 서버를 켜므로(빈 포트, #115) 보통 "ok"다 — 서버를 못 켰을 때만 막는다
+const OTHER_SERVER = "앱의 서버가 켜지지 않아 키를 바꿀 수 없어요. 앱을 다시 켜 주세요.";
+ipcMain.handle("floe:save-key", (_e, p) => {
+  if (serverState !== "ok") return { ok: false, message: OTHER_SERVER };
+  const key = String((p && p.key) || "").trim(), base = L.relayUrl(p && p.baseUrl);
+  if (!L.looksLikeKey(key)) return { ok: false, message: "키 모양이 아니에요. 띄어쓰기 없이 통째로 붙여 넣어 주세요." };
+  if (base === null) return { ok: false, message: "중계 서버 주소는 https://로 시작해야 해요." };
+  try { writeEnv({ ANTHROPIC_API_KEY: key, ANTHROPIC_BASE_URL: base || null }); } catch (e) { return { ok: false, message: `저장하지 못했어요: ${e.code || "알 수 없는 까닭"}` }; }
+  return { ok: true };
+});
+ipcMain.handle("floe:clear-key", () => {
+  if (serverState !== "ok") return { ok: false, message: OTHER_SERVER };
+  try { writeEnv({ ANTHROPIC_API_KEY: null, ANTHROPIC_BASE_URL: null }); } catch (e) { return { ok: false, message: `키를 빼지 못했어요: ${e.code || "알 수 없는 까닭"}` }; }
+  return { ok: true };
+});
 
 app.whenReady().then(async () => {
-  const envFile = loadEnv();
+  const loaded = loadEnv();
   fixPath();
   serverState = await startServer();
   if (serverState.startsWith("error:")) { dialog.showErrorBox("Floe", `서버를 켜지 못했어요 (${serverState.slice(6)}).`); return app.quit(); }
   menu();
   createWindow();
-  console.log(`Floe ${app.getVersion()}: ${URL_}${PORT !== WANT ? ` (${WANT}은 다른 서버가 써서 ${PORT}로)` : ""} · .env ${envFile ? "읽음" : "없음(이 컴퓨터의 Claude Code 구독)"}`);
+  console.log(`Floe ${app.getVersion()}: ${URL_}${PORT !== WANT ? ` (${WANT}은 다른 서버가 써서 ${PORT}로)` : ""} · .env ${loaded ? "읽음" : "없음(이 컴퓨터의 Claude Code 구독)"}`);
   app.on("activate", () => { if (!win) createWindow(); });
 });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

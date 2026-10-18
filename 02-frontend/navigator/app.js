@@ -301,7 +301,8 @@
       <span>켜면 그때마다 최근 작업 대화가 AI(Claude)로 보내져요. 비밀번호처럼 보이는 게 있으면 보내기 전에 멈춰요.</span>` : ""}${
       // 앱 안에서는 폴더 고르기로 훅을 더하고 뺀다(터미널의 floe.js · connect.js와 같은 일) — preload.js가 열어 준 셋만
       window.floeApp ? `<div class="row"><button type="button" class="btn" data-act="app-connect">프로젝트 폴더 연결…</button><button type="button" class="btn" data-act="app-disconnect">연결 빼기…</button><button type="button" class="btn" data-act="app-settings">.env 폴더 열기</button></div>` : ""}</div>` : "";
-    const keep = `<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`;
+    // 처음 설정(setup.js) 다시 하기 — Claude Code / API 키를 바꿀 때 (2026-10-19)
+    const keep = `${window.FloeSetup ? `<div class="row"><span class="grow">AI를 어떻게 부를지(Claude Code / API 키) 다시 고를 수 있어요.</span><button class="btn" data-act="setup">처음 설정 다시 하기</button></div>` : ""}<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`;
     // 만드는 크기 — 진짜 AI에게 물을 때 같이 보낸다(tier). 고르는 건 사용자
     const tier = `<div class="row tiers"><span>만드는 크기</span><span class="row" role="radiogroup" aria-label="만드는 크기">${TIERS.map(([v, label]) =>
       `<label class="chk"><input type="radio" name="tier" data-act="tier" value="${v}" ${st.tier === v ? "checked" : ""}>${label}</label>`).join("")}</span>${termTag(st.tier)}</div>`;
@@ -1385,7 +1386,8 @@
     "confirm-anyway": () => confirmDoc(true),
     "confirm-cancel": () => set({ askConfirm: 0 }),
     "reopen-doc": () => { const x = docDone(st.j.stage); set({ doc: newDoc(x.stage, x.text, "") }); },
-    forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); } catch {} location.reload(); },
+    forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
+    setup: () => { set({ settings: false }); if (window.FloeSetup) window.FloeSetup.open(); },
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false, check: null }),
     "close-gate": () => set({ screen: "main" }),
     no: () => { set({ noCount: st.noCount + 1, step: "which", hard: [], answer: "", question: "" }); say("모르는 게 당연해요. 같이 풀어요"); reveal(".hold-offer"); },
@@ -1673,6 +1675,13 @@
   }
   fromHash();
   addEventListener("hashchange", () => { fromHash(); render(); });
+  // 처음 설정(setup.js)이 끝나면 — 고른 길에 맞춰 보기 방식을 두고, '시작하기'를 눌렀으면 바로 보여 주기 화면으로 (2026-10-19)
+  document.addEventListener("floe:setup-done", (e) => {
+    const d = (e && e.detail) || {};
+    if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });
+    else if ((d.via === "cli" || d.via === "api") && canLive) set({ mode: "live", error: "", warn: null });
+    if (d.open && st.ui === "greet") ACT.open();
+  });
 
   render();
 })();

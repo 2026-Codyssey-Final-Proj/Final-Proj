@@ -59,4 +59,29 @@ function connectDir(dir, backend, add = true, { now = new Date() } = {}) {
   return { ok: true, message: add ? `연결했어요: ${dir}\n이 폴더에서 Claude Code를 새로 열면 플로로가 작업을 알아채요.` : `연결을 뺐어요: ${dir}` };
 }
 
-module.exports = { paths, parseEnv, applyEnv, mergePath, hookCommand, connectDir };
+// ── 처음 설정(2026-10-19) — 화면(setup.js)이 preload를 거쳐 키를 넣고 뺀다. 값은 어디에도 출력하지 않는다 ──
+// .env 글에서 KEY를 바꾸거나(값) 지운다(null). 다른 줄 · 주석은 그대로, 같은 KEY가 여러 줄이면 하나로. 끝은 줄바꿈 하나
+function setEnvLines(text, updates) {
+  const seen = new Set(), out = [];
+  for (const line of String(text || "").split(/\r?\n/)) {
+    const m = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line);
+    if (m && Object.prototype.hasOwnProperty.call(updates, m[1])) {
+      if (!seen.has(m[1]) && updates[m[1]] != null) out.push(`${m[1]}=${updates[m[1]]}`);
+      seen.add(m[1]);
+      continue;
+    }
+    out.push(line);
+  }
+  while (out.length && out[out.length - 1].trim() === "") out.pop();   // 끝의 빈 줄은 덧붙이기 전에 걷는다
+  for (const [k, v] of Object.entries(updates)) if (!seen.has(k) && v != null) out.push(`${k}=${v}`);
+  return `${out.join("\n").replace(/\n+$/, "")}\n`.replace(/^\n$/, "");
+}
+// 키 모양 — 띄어쓰기 · 따옴표 없이 20~400자. 중계 서버(코디세이)의 가상 키도 받으려고 sk-ant-로 묶지 않는다
+const looksLikeKey = (v) => typeof v === "string" && /^[^\s"'`]{20,400}$/.test(v.trim());
+// 중계 서버 주소 — 비었으면 ""(공식 주소), https면 그 주소(끝 / 없이), 그 밖은 null(받지 않음)
+function relayUrl(v) {
+  const t = String(v || "").trim();
+  if (!t) return "";
+  try { const u = new URL(t); return u.protocol === "https:" && !u.username && !u.password ? u.href.replace(/\/+$/, "") : null; } catch { return null; }
+}
+module.exports = { paths, parseEnv, applyEnv, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl };
