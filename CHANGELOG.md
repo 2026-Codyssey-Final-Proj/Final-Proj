@@ -17,6 +17,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v3.2 | 2026-10-19 | 이재엽 | 서재의 온보딩 영상 잔재를 지움 — 플로로 밑 정해 둔 질문 단추 · 아래 장면 설명 자막 띠. 책 이름이 낱말 중간에서 끊기지 않게(F-20) | `02-frontend/library/` |
 | v3.1 | 2026-10-19 | 이재엽 | Atlassian MCP를 저장소 `.mcp.json`에 올림 — 각자 `/mcp`로 로그인하면 Claude가 팀 Jira를 읽고, 쓰기는 사람 확인 뒤에만. 판정 후보 → 채택 | 루트(`.mcp.json` · `CLAUDE.md`) · `.claude/rules/` · `01-docs/00-overview/` · `01-docs/catalog/` |
 | v3.0 | 2026-10-19 | 이재엽 | **오버레이 앱(큰 묶음)** — Electron 껍데기 `02-frontend/electron/`: 화면 · 서버를 그대로 감싸 **항상 위에 뜨는 투명 창**으로, `npm run dist`로 `Floe-0.3.0-arm64.dmg`(서명 없음). 메뉴 · 설정에서 프로젝트 폴더 연결 / 빼기, `.env`는 앱 설정 폴더. 앱 안에서는 뒤의 예시 코딩 도구 창을 숨김(`app.css .in-app`). 이 Mac에서 묶어 켜 봄 — 사람이 써 본 기록은 아직 | `02-frontend/electron/` (새) · `02-frontend/navigator/`(app.js · app.css 몇 줄, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/` · `01-docs/00-overview/` · `.gitignore` |
 | v2.1 | 2026-10-19 | 이재엽 | 시연 길잡이 띠(‹ › 장면 넘기기, `tour.js` · `tour.css`)를 지움 — 장면은 주소 끝(`#ex=1&gate` 등)으로 여는 것만 남김 (F-18) | `02-frontend/` · `03-backend/navigator/` · `01-docs/04-pattern-implementation/` · `01-docs/07-maintenance/` |
