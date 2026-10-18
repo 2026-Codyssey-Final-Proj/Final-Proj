@@ -119,6 +119,24 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 - 보기 방식이 **진짜 AI**면 최근 작업 대화가 Claude로 전송된다 — 비밀번호 · 다른 사람 연락처가 섞인 프로젝트에는 붙이지 않는다([시연 안전장치](../../03-backend/navigator/README.md) S1~S6도 그대로).
 - Windows: `node 03-backend\navigator\floe.js C:\내-프로젝트`. Codex도 같이 알아채게 하려면 `--codex`(Codex는 전체에 걸린다).
 
+## 2-c. 앱으로 쓰기 — 내려받아 더블클릭 (알파)
+
+<!-- claude-drafted: 2026-10-19 — 이재엽의 요청("coucou처럼 다운만 받으면 사용할 수 있도록")으로 Claude가 썼다. -->
+
+2-b의 한 줄 대신 **실행 파일**로 쓸 수 있다. 화면과 서버가 그대로 들어 있고, 창이 **항상 위에** 떠서 진짜 코딩 도구 위에 겹친다(`02-frontend/electron`).
+
+| 순서 | Mac | Windows |
+|---|---|---|
+| 받기 | `Floe-<버전>-arm64.dmg` (GitHub Release 또는 팀 채널) | `Floe-Setup-<버전>.exe` — **Windows에서 묶은 사람이 올린 것** |
+| 처음 열기 | 서명이 없어 경고가 뜬다 → Finder에서 **우클릭 → 열기** 한 번 | SmartScreen 경고 → "추가 정보 → 실행" |
+| 연결 | 메뉴 **Floe → 프로젝트 폴더 연결…** 또는 톱니 → 연결 칸의 단추 | 같음 |
+| AI | 이 컴퓨터의 Claude Code 로그인을 쓴다. 내 키로 쓰려면 **Floe → 설정 폴더 열기**에 `.env` | 같음 |
+| 끄기 | 메뉴 **Floe → Floe 끄기** (Cmd+Q) | 창 닫기 |
+
+- 직접 묶으려면: `cd 02-frontend/electron && npm install && npm run dist` — [electron/README.md](../../02-frontend/electron/README.md).
+- 터미널에서 `floe.js`나 `server.js`를 이미 켜 두었으면 앱은 새 서버를 켜지 않고 그쪽 화면을 연다. 옛 화면이 보이면 그 터미널을 먼저 끈다.
+- 느낀 점 · 내 책은 앱 안에 남고, 브라우저로 연 것과는 따로다.
+
 ## 3. 작업은 어디에 올리나 — 팀이 하는 방식
 
 **GitHub `2026-Codyssey-Final-Proj/Final-Proj`** 에 올린다. 2026-10-18부터 **브랜치 → PR → 올린 사람이 바로 병합**이다 —

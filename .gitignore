@@ -35,3 +35,7 @@ projects/second-brain/data/
 
 # 의존성
 node_modules/
+
+# Electron 껍데기(02-frontend/electron) — 묶은 결과와 복사본은 올리지 않는다
+02-frontend/electron/dist/
+02-frontend/electron/payload/
