@@ -1,6 +1,6 @@
 # 팀 작업 분담 — 이슈 정리와 사람별 할 일 (초안, 2026-10-16 새벽 기준)
 
-> **기록 문서 (2026-10-16 기준).** 그날의 상태를 남긴 것이라 지금과 다를 수 있다. 지금 상태는 [team-priorities.md](team-priorities.md) "내 몫"과 [requirements.md](requirements.md) 2-3절을 본다(2026-10-17 표시).
+> **기록 문서 (2026-10-16 기준).** 그날의 상태를 남긴 것이라 지금과 다를 수 있다. 지금 상태는 [team-priorities.md](../team-priorities.md) "내 몫"과 [requirements.md](../requirements.md) 2-3절을 본다(2026-10-17 표시).
 
 <!-- claude-drafted: 2026-10-16 — 이재엽의 요청("팀원들의 이슈를 전체적으로 확인해서 분담할 수 있도록")으로 Claude가 `gh issue`·PR 목록·main의 파일을 읽어 정리한 초안이다. **이슈를 고치거나 코멘트를 달지 않았다.** 담당·리뷰어 변경은 제안이며 결정은 이재엽과 각 담당이 한다. 시험 일정은 확인하지 못했다. -->
 
@@ -49,7 +49,7 @@
 
 ## 3. 사람별 할 일
 
-[team-priorities.md](team-priorities.md) 4절 "내 몫"으로 합쳤다(2026-10-17). 이 초안의 표는 git 이력에 남아 있다.
+[team-priorities.md](../team-priorities.md) 4절 "내 몫"으로 합쳤다(2026-10-17). 이 초안의 표는 git 이력에 남아 있다.
 
 ## 4. 리뷰어 재배치 제안
 
