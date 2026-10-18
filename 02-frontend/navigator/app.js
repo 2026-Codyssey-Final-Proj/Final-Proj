@@ -1,11 +1,11 @@
-// claude-drafted: 2026-10-14, 2026-10-15, 2026-10-16(0~7단계 연습·마무리·빈칸 확인·지금 단계 계산·리퀴드 글래스 굴절) — Navigator 프로토타입 화면 동작.
+// claude-drafted: 2026-10-14, 2026-10-15, 2026-10-18(임유정 요청 14가지 정리), 2026-10-16(0~7단계 연습·마무리·빈칸 확인·지금 단계 계산·리퀴드 글래스 굴절) — Navigator 프로토타입 화면 동작.
 // 규칙·문구 판단은 navigator.js, 연습 예시는 scenario.js, 플로로 그림·교감 도구는 seal.js, 실제 Claude 호출은 server.js.
 // 넓은 화면(PC) = 코딩 도구 창 위에 떠 있는 옆자리 동료. 2026-10-15 "가로 카드 시안대로" 다시 짬:
 //   띠 → 한 줄 → 펼침(위: 아이콘 줄, 아래: 지금 결정할 것 하나를 담은 가로 카드). 카드는 상황마다 색·플로로 표정·뱃지가 다르다
 //   (골라 주세요=파랑, 다 했어요=초록, 넘어가기 전 확인=주황, 작업 알림·살펴보는 중=회색, 오류=빨강). 버튼마다 단축키(1·2·3, Enter, Esc, Y·N).
 //   교감: 플로로를 누르면(또는 좌우로 문지르면) 하트와 한마디, 친해진 정도가 쌓인다. 가만히 두면 졸다가 잠들고, 움직이면 깬다.
 //   할 일을 다 하거나 단계를 넘어가면 별이 튀며 축하한다. 작은 소리는 설정에서 켠 사람에게만.
-// 600px 이하 = iPhone: 오늘 / 설계도 / 단계 지도 / 내 배움 탭과 넘어가기 전 확인 화면 — 이번에 바꾸지 않았다(PC 먼저). 두 화면은 같은 상태(st)를 쓴다.
+// 600px 이하 = iPhone: 오늘 / 설계도 / 단계 지도 탭과 넘어가기 전 확인 화면 — 이번에 바꾸지 않았다(PC 먼저). 두 화면은 같은 상태(st)를 쓴다.
 // 기록(작업 글·진행·배운 말·설계도·플로로와 친해진 정도)은 이 브라우저(localStorage)에만 남는다.
 (function () {
   const N = window.NavRules, S = window.NavScenario, C = window.NavSeal;
@@ -18,7 +18,8 @@
     ui: "greet", screen: "main", tab: "today", mode: canLive ? "live" : "fixture", text: canLive ? "" : S.first.text,
     j: null, tokens: 0, busy: false, error: "", notice: "", todos: null, userPin: false, ping: "", openInput: false,
     warn: null,                                    // 보내기 전 경고 {w: 보인 것들, then: 괜찮다고 하면 다시 할 일 judge·draft·review}
-    choice: null, later: false, picking: false,
+    choice: null, later: false, picking: false, own: false, ownText: "",   // own: 선택지 대신 직접 쓰는 중
+    undo: [],                                      // 고른 선택지 {text, j, question, picked} — 연습용에서 직접 쓴 답을 첫 선택지 장면으로 보여 줄 때 쓴다
     step: "ask", hard: [], question: "", answer: "", noCount: 0, history: [], learned: [],
     auto: false, feed: { at: 0, project: "", tool: "" },   // Claude Code·Codex 연결: 자동으로 살펴보기(기본 꺼짐), 마지막 알림
     settings: false,                               // 설정(보기 방식·연결·자동 살펴보기·소리·기록)은 톱니를 눌러야 보인다
@@ -26,6 +27,7 @@
     project: "", back: "",                         // 알림에서 받은 프로젝트 폴더 이름, 다시 왔을 때 인사
     finished: false,                               // 7단계까지 모두 마쳤는가
     askConfirm: 0,                                 // 빈칸이 남은 설계도를 확정하려 할 때 — 남은 빈칸 수(한 번 더 묻는 중)
+    textSize: 1,                                   // 글자 크기 배율(설정) — 브라우저 기본 글자 크기에 곱한다
     pets: 0, since: "", sound: false,              // 플로로와 교감: 쓰다듬은 횟수, 처음 만난 날, 작은 소리(기본 꺼짐)
     mapSel: null, showCrit: false,                 // 단계 지도에서 고른 단계, 펼침 카드 아래 '이 단계 할 일' 펼침
     libSel: null, libConfirm: false, libGone: [],  // 도서관 탭: 펼친 책, 세션 덮기 확인 중, 서고로 보낸 책 (2026-10-17 서고 시안의 위젯을 옮김)
@@ -56,8 +58,11 @@
   const cat = C.svg;
   const toolName = (t) => ({ claude: "Claude Code", codex: "Codex" })[t] || "AI 코딩 도구";
   const ymd = () => new Date().toLocaleDateString("sv");   // 이 컴퓨터 시간으로 YYYY-MM-DD
-  const project = () => st.project || (st.mode === "fixture" ? S.PROJECT : "내 프로젝트");
-  const progress = () => `할 일 ${met().length}개 중 ${metCount()}개`;
+  // 프로젝트 이름 — 연결된 AI 코딩 도구가 알려 준 폴더 이름, 연습용이면 예시 이름. 모르면 빈칸(위쪽 줄에 안 보인다)
+  const project = () => st.project || (st.mode === "fixture" ? S.PROJECT : "");
+  // 지금 몇 번째 할 일을 하는가 — 한 것 다음이 지금(2026-10-18 임유정 요청: "4개 중 3개"는 남은 수로 읽혀서)
+  const nowAt = () => (allDone() ? met().length : metCount() + 1);
+  const progress = () => (allDone() ? `할 일 ${met().length}개 모두 했어요` : `${met().length}개 중 ${nowAt()}번째 할 일`);
   const hardTexts = () => st.hard.map((i) => stage().criteria[i].text);   // 넘어가기 전 확인에서 헷갈린다고 고른 할 일
   const docDone = (n) => st.docs.find((x) => x.stage === n);              // 그 단계에서 확정한 설계도
   const pingHead = () => st.ping.split(" — ")[0];
@@ -70,13 +75,13 @@
   const PLACEHOLDER = "예) 동아리 행사 등록 앱을 만들고 있어요. 필요한 기능을 문장으로 써 봤어요.";
   const SENT = "보여 주신 글은 AI(Claude)에게 보내져요. 비밀번호나 다른 사람 연락처는 빼 주세요.";
   const DOC = {
-    first: "먼저 '지금'에서 어디쯤인지 봐요. 설계도는 그 단계에 맞춰 만들어요.",
-    none: "설계도는 1~4단계에서 만들어요. 확정한 설계도는 '내 배움'에 모여 있어요.",
+    first: "먼저 '이번 단계'에서 어디쯤인지 봐요. 설계도는 그 단계에 맞춰 만들어요.",
+    none: "설계도는 1~4단계에서 만들어요. 확정한 설계도는 '단계 지도'에서 그 단계를 누르면 다시 볼 수 있어요.",
     draft: "지금까지 작업을 보고 AI가 초안을 먼저 써 드려요. 고치고 완성하는 건 직접 해요. 확정도 직접 눌러야만 돼요.",
   };
   // 7단계까지 마쳤을 때 — last: 마지막 확인에서 "예" 뒤, title·sub: 마무리 카드
   const END = { last: "좋아요! 이걸로 모든 단계를 마쳐요", title: "여덟 단계를 끝까지 왔어요!",
-    sub: "지나온 단계와 배운 말, 확정한 설계도는 '내 배움'에 모여 있어요." };
+    sub: "지나온 단계와 확정한 설계도는 '단계 지도'에서 다시 볼 수 있어요." };
 
   // ── 기록 — 이 브라우저에만. 못 쓰는 환경(사생활 보호 창 등)이면 조용히 기록 없이 동작한다 ──
   const KEY = "navigator-prototype:v1";
@@ -84,7 +89,7 @@
   const BOUND_KEY = "floe-demo:bound";
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
-  const KEEP = ["mode", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone"];
+  const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone"];
   let forgotten = false;
   function load() {
     let s;
@@ -105,6 +110,16 @@
   }
   load();
   if (!st.since) st.since = ymd();
+  // 글자 크기 — 브라우저(또는 운영체제)에서 정한 기본 글자 크기를 따르고, 설정에서 한 번 더 키우거나 줄인다
+  const TEXT_SIZES = [[0.9, "작게"], [1, "보통"], [1.15, "크게"], [1.3, "아주 크게"]];
+  if (!TEXT_SIZES.some(([v]) => v === st.textSize)) st.textSize = 1;
+  function browserScale() {
+    const p = document.createElement("div"); p.style.cssText = "position:absolute;visibility:hidden;font-size:medium";
+    document.documentElement.appendChild(p); const px = parseFloat(getComputedStyle(p).fontSize) || 16; p.remove();
+    return px / 16;
+  }
+  const applyScale = () => document.documentElement.style.setProperty("--ui-scale", String(Math.round(browserScale() * st.textSize * 100) / 100));
+  applyScale();
 
   // ── 아이콘 (선 그림) ──
   const icon = (d, size = 16) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
@@ -112,6 +127,7 @@
     up: icon('<path d="M6 15l6-6 6 6"></path>', 14), down: icon('<path d="M6 9l6 6 6-6"></path>', 14),
     pin: icon('<path d="M9 4h6l-1 6 3 3H7l3-3z"></path><path d="M12 13v7"></path>', 15),
     back: icon('<path d="M15 5l-7 7 7 7"></path>', 20),
+    undo: icon('<path d="M15 5l-7 7 7 7"></path>', 14),
     today: icon('<circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.5l-2 5-5 2 2-5z"></path>', 24),
     map: icon('<path d="M4 19h4V5H4zM10 19h4V9h-4zM16 19h4v-6h-4z"></path>', 24),
     learn: icon('<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"></path>', 24),
@@ -123,9 +139,6 @@
     all: icon('<rect x="4" y="4" width="7" height="7" rx="1.5"></rect><rect x="13" y="4" width="7" height="7" rx="1.5"></rect><rect x="4" y="13" width="7" height="7" rx="1.5"></rect><rect x="13" y="13" width="7" height="7" rx="1.5"></rect>', 24),
     lib: icon('<path d="M3.5 6.5C6 5.5 9 5.5 12 7c3-1.5 6-1.5 8.5-.5V18c-2.5-1-5.5-1-8.5.5-3-1.5-6-1.5-8.5-.5z"></path><path d="M12 7v11.5"></path>', 24),
   };
-  const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
-  const hearts = (level) => `<span class="hearts">${[0, 1, 2, 3].map((i) => `<i class="${i <= level ? "on" : ""}">${HEART}</i>`).join("")}</span>`;
-
   // ── 접힘·펼침 (PC 화면만) ──
   let hovering = false, timer = null, idleAt = 0, lastUi = null;
   function clearIdle() { clearTimeout(timer); timer = null; }
@@ -143,7 +156,7 @@
   $nav.addEventListener("mouseenter", () => { hovering = true; clearIdle(); view("enter"); });
   $nav.addEventListener("mouseleave", () => { hovering = false; render(); });
 
-  // ── 두 화면이 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·내 배움·설정이 쓴다) ──
+  // ── 두 화면이 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·설정이 쓴다) ──
   const sayRow = (size, f = face()) => { const [mood, say] = f; return `<div class="say">${cat(mood, size)}<div class="bubble" aria-live="polite">${esc(say)}</div></div>`; };
   const seg = () => `<div class="seg" aria-hidden="true">${N.STAGES.map((x) => `<span class="${stepClass(x.n)}"></span>`).join("")}</div>`;
   // 카드 하나 — PC는 테두리 상자(.choose), iPhone은 흰 카드(.card). 넘기는 글은 이미 esc 한 것
@@ -207,28 +220,21 @@
       <div class="row">보기 방식 <select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div>
+      <div class="row">글자 크기 <select data-act="text-size" aria-label="글자 크기">${TEXT_SIZES.map(([v, name]) =>
+        `<option value="${v}" ${st.textSize === v ? "selected" : ""}>${name}</option>`).join("")}</select></div>
       <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>${keep}`;
   }
   const settingsCard = () => (st.settings ? `<div class="foot settings">${settingsBody()}</div>` : "");
   const gearBtn = () => `<button class="round" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 기록">${I.gear}</button>`;
 
-  // 단계 지도 · 내 배움 — iPhone 탭이 쓰고, PC는 내 배움 카드만 같이 쓴다
+  // 단계 지도 — iPhone 탭
   const mapBody = () => `<div class="list">${N.STAGES.map((x) => `<div>
       <span class="dot ${stepClass(x.n)}"></span><span style="flex:1;padding:8px 0"><b>${x.n} · ${esc(x.title)}</b><span class="sub">${esc(x.does)}</span></span>
       ${stepClass(x.n) === "cur" ? `<span class="meta">${metCount()}/${met().length}</span>` : ""}</div>`).join("")}</div>`;
-  // 카드 하나 — 제목, 목록(없으면 안내 한 줄)
-  const section = (kicker, items, row, empty) =>
-    `<div class="card"><span class="kicker">${kicker}</span>${items.length ? items.map(row).join("") : `<span class="meta">${empty}</span>`}</div>`;
-  const learnBody = () =>
-    section("지나온 단계", st.history, (x) => `<span class="meta">${esc(x.text)}</span>`, "아직 없어요. 한 단계를 마치면 여기 남아요.") +
-    section("배운 말", st.learned, (x) => `<div><b>${esc(x.term)}</b><span class="sub">${esc(x.text)}</span></div>`,
-      "할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.") +
-    section("내가 확정한 설계도", st.docs, (x) => `<details><summary>${x.stage}단계 · ${esc(x.name)} · ${esc(x.at)}</summary><pre class="doc-view">${esc(x.text)}</pre></details>`,
-      "설계도를 확정하면 여기 모여요.");
-  // [id, PC 이름, iPhone 이름, 아이콘]. 뒤의 둘(한곳에서 보기·도서관)은 PC에만 있다 — iPhone은 앞의 넷
-  const TABS = [["today", "지금", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["learn", "내 배움", "내 배움", "learn"],
-    ["all", "한곳에서 보기", "한곳에서", "all"], ["lib", "도서관", "도서관", "lib"]];
-  const PHONE_TABS = TABS.slice(0, 4);
+  // [id, PC 이름, iPhone 이름, 아이콘]. 첫 탭 이름 '지금' → '이번 단계'(2026-10-18 임유정 요청). (2026-10-18 임유정 요청: '한곳에서 보기' 탭을 뺐다 — FR-6, 기획 문서 10번) 뒤의 하나(도서관)는 PC에만 있다 — iPhone은 앞의 셋
+  // (2026-10-18 임유정 요청: '내 배움' 탭을 뺐다. 배운 말은 st.learned에 계속 모은다 — 지식 창고·단어장 쪽에서 쓸 자리)
+  const TABS = [["today", "이번 단계", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["lib", "도서관", "도서관", "lib"]];
+  const PHONE_TABS = TABS.slice(0, 3);
   // 설계도(FR-3, iPhone) — 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
   function docBody(size) {
     const s = st.j && stage();
@@ -304,6 +310,8 @@
   // ── PC 화면 — 가로 카드 ──
   // 지금 보이는 카드의 단축키 { 키: 할 일 } — 카드를 그릴 때 채운다
   let deskKeys = {};
+  // 카드가 플로로에게 맡긴 한마디(2026-10-18 임유정 요청: 카드 위 말풍선과 잠깐 뜨는 말풍선을 하나로) — 그린 뒤 say()로 띄운다
+  let cardSay = "", lastCardSay = "";
   const KEYCAP = { Enter: "Enter", Escape: "Esc", "c-Enter": "Ctrl+Enter" };
   const kbd = (k) => (k ? `<kbd aria-hidden="true">${KEYCAP[k] || k.toUpperCase()}</kbd>` : "");
   // 버튼 하나 {label, act, i, key, pri, kind, pressed}. kind에 opt가 있으면 선택지(단축키가 앞에)
@@ -324,21 +332,26 @@
   const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="플로로 쓰다듬기"
     title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true })}</button>`;
 
-  const mini = () => `<span class="mini" aria-hidden="true">${met().map((m) => `<i class="${m ? "on" : ""}"></i>`).join("")}</span>`;
+  // 칸 — 지나온 것과 지금 하는 것까지 밝게, 남은 것은 어둡게
+  const mini = () => `<span class="mini" aria-hidden="true">${met().map((_, i) => `<i class="${i < nowAt() ? "on" : ""}"></i>`).join("")}</span>`;
   const stageMeta = () => { const s = stage(); return `<span class="mm-stage">${s.n}단계 · ${esc(s.title)}</span><span>${allDone() ? `할 일 ${met().length}개 모두 했어요` : progress()}</span>${mini()}`; };
   const flowLine = () => { const s = stage(); return `<span class="flowline"><span>${esc(s.gets)}</span>${I.arrow}<span>${esc(s.does)}</span>${I.arrow}<span>${esc(s.gives)}</span>${
     docDone(s.n) ? `<span class="okchip">${I.check}설계도 확정함</span>` : ""}</span>`; };
   const dots = `<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>`;
   const deskInput = () => `<textarea class="mc-input" data-act="text" rows="3" aria-label="지금 만드는 것"
     placeholder="${PLACEHOLDER}">${esc(st.text)}</textarea>${st.mode === "live" ? `<p class="mc-fine">${SENT}</p>` : ""}`;
-  const exampleActs = () => stageExamples().map((e) => ({ label: e.label, act: "ex", i: S.examples.indexOf(e), kind: "soft" }));
+  // 연습 버튼('0단계 · 하는 중' 등)은 미리 써 둔 글을 넣는 시연용이라 연습용 예시 모드에서만 보인다. 지금 단계는 카드 위 작은 줄이 알려 준다
+  // 바뀐 작업은 직접 써서 보내지 않는다 — AI 코딩 도구에서 작업하면 플로로가 알아채고 묻는다(onEvent → ping). (2026-10-18 임유정 요청:
+  // '새로 한 것만 덧붙여 주세요' 칸을 뺐다. 설계도 탭을 없애거나 설계도를 단계 질문에 반영하게 되면 다시 볼 것 — 기획 문서 1번)
+  const WORK_NOTE = "AI 코딩 도구에서 작업하면 플로로가 알아채고 어디쯤인지 봐 드릴지 물어요.";
+  const exampleActs = () => (st.mode === "live" ? [] : stageExamples()).map((e) => ({ label: e.label, act: "ex", i: S.examples.indexOf(e), kind: "soft" }));
 
   // 지금 결정할 것 하나 — 위에 있는 상황이 먼저다.
   // 돌려주는 것: {tone, mood, badge, say(플로로의 한마디), meta, title, sub, body, acts, foot} — 글은 이미 esc 한 것
   function momentToday() {
     const s = st.j && stage(), f = face();
     if (st.busy) return { tone: "gray", mood: "look", badge: "…", meta: s ? stageMeta() : "", title: `살펴보고 있어요${dots}`,
-      sub: st.mode === "live" ? "진짜 AI(Claude)가 글을 읽고 있어요. 잠깐만 기다려 주세요." : "잠깐만요!", acts: [] };
+      sub: `<span data-wait>${waitText()}</span>`, acts: [] };
     if (st.warn) {
       const fix = st.warn.then === "judge";
       return { tone: "amber", mood: "alert", badge: "!", title: "보내기 전에 잠깐!",
@@ -353,65 +366,69 @@
       title: "바뀐 작업을 보고, 어디쯤인지 알려 드릴까요?",
       sub: st.mode === "live" ? "최근 작업 대화가 AI(Claude)에게 보내져요. 비밀번호나 다른 사람 연락처처럼 보이는 게 있으면 보내기 전에 멈춰요."
         : "연습용 예시라서, 미리 만들어 둔 응답으로 살펴봐요.",
-      acts: [{ label: "살펴봐 주세요", act: "look-now", key: "Enter", pri: true }, { label: "보낼 글 먼저 보기", act: "peek-text" },
-        { label: "나중에", act: "ping-later", key: "Escape", kind: "ghost" }] };
+      acts: [{ label: "살펴봐 주세요", act: "look-now", key: "Enter", pri: true }, { label: "보낼 글 먼저 보기", act: "peek-text" }] };
     if (!st.j || st.openInput) {
       const first = !st.j;
       return { tone: "blue", mood: f[0], badge: "", say: first ? "" : f[1], meta: first ? `<span class="mm-stage">시작하기</span>` : stageMeta(),
-        title: first ? "지금 만들고 있는 걸 보여 주세요" : "바뀐 작업을 보여 주세요",
-        sub: first ? "무엇을 만들고 있는지, 어디까지 했는지 편하게 적어 주세요." : "하고 나서 바뀐 걸 덧붙여 주시면, 다시 어디쯤인지 봐 드려요.",
+        title: first ? "지금 만들고 있는 걸 보여 주세요" : "보낼 글을 확인해 주세요",
+        sub: first ? "무엇을 만들고 있는지, 어디까지 했는지 편하게 적어 주세요." : "AI 코딩 도구에서 가져온 작업이에요. 고칠 곳이 있으면 고친 뒤 보내 주세요.",
         body: deskInput(),
-        acts: [...exampleActs(), { label: "어디쯤인지 보기", act: "judge", key: "c-Enter", pri: true },
+        // 처음 카드는 시연용 '예시 글 넣기' 하나(연습·진짜 AI 모두) — 넣기만 하고 보내지는 않는다 (2026-10-18 임유정 요청)
+        acts: [...(first ? [{ label: "예시 글 넣기", act: "fill-example", kind: "soft" }] : exampleActs()), { label: "어디쯤인지 보기", act: "judge", key: "c-Enter", pri: true },
           ...(first ? [] : [{ label: "닫기", act: "close-input", key: "Escape", kind: "ghost" }])] };
     }
     if (st.finished) return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">모든 단계를 마쳤어요</span>`,
       title: END.title, sub: END.sub,
-      acts: [{ label: "내 배움 보기", act: "tab", i: 3, key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
+      acts: [{ label: "단계 지도 보기", act: "tab", i: 2, key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
     if (allDone()) return { tone: "green", mood: f[0], badge: "✓", meta: stageMeta(), title: `${s.n}단계 할 일을 모두 했어요!`,
       sub: "다음 단계로 가기 전에, 이번 단계를 이해했는지 한 번만 같이 확인해요.",
-      acts: [{ label: "확인하고 넘어가기", act: "gate", key: "Enter", pri: true }, { label: "나중에", act: "fold", key: "Escape", kind: "ghost" }] };
+      acts: [{ label: "확인하고 넘어가기", act: "gate", key: "Enter", pri: true }] };
     if (st.todos) return { tone: "blue", mood: f[0], badge: "", say: f[1], meta: stageMeta(), title: `지금 할 일 · ${esc(st.todos[0])}`,
-      sub: "정한 순서대로 하나씩 해 봐요. 하고 나서 바뀐 작업을 보여 주세요.",
+      sub: WORK_NOTE,
       body: `<ol class="steps">${st.todos.map((t, i) => `<li class="${i === 0 ? "now" : ""}"><b>${i + 1}</b>${esc(t)}</li>`).join("")}</ol>`,
-      acts: [{ label: "하고 나서 바뀐 작업 보여 주기", act: "open-input", key: "Enter", pri: true }, { label: "나중에", act: "fold", key: "Escape", kind: "ghost" }] };
+      acts: [] };
     const n = st.j.next;
-    if (!n) return { tone: "blue", mood: f[0], badge: "", say: f[1], meta: stageMeta(), title: `지금 할 일 · ${esc(tick().now)}`, sub: "",
-      acts: [{ label: "바뀐 작업 보여 주기", act: "open-input", key: "Enter", pri: true }] };
+    if (!n) return { tone: "blue", mood: f[0], badge: "", say: f[1], meta: stageMeta(), title: `지금 할 일 · ${esc(tick().now)}`, sub: WORK_NOTE, acts: [] };
     if (st.later) return { tone: "blue", mood: f[0], badge: "?", meta: stageMeta(), title: "나중에 정하기로 했어요", sub: esc(n.question),
       acts: [{ label: "지금 고르기", act: "again", key: "Enter", pri: true }, { label: "바뀐 작업 보여 주기", act: "open-input" }] };
-    return { tone: "blue", mood: f[0], badge: "?", say: f[1], meta: stageMeta(), title: esc(n.question), sub: esc(n.why),
+    // 선택지에 원하는 게 없으면 직접 쓴다 (2026-10-18 임유정 요청: '나중에'는 창을 닫는 것과 같아서 뺐다)
+    if (st.own) return { tone: "blue", mood: f[0], badge: "?", meta: stageMeta(), title: esc(n.question), sub: "어떻게 할지 직접 적어 주세요. 한 줄이면 충분해요.",
+      body: `<textarea class="mc-input" data-act="own-text" rows="2" aria-label="직접 쓴 답" placeholder="예) ${esc(n.options[0])}">${esc(st.ownText)}</textarea>`,
+      acts: [{ label: "이걸로 정할게요", act: "own-decide", key: "c-Enter", pri: true }, { label: "선택지로 돌아가기", act: "own-cancel", key: "Escape", kind: "ghost" }] };
+    // 왜 묻는지와 고르면 무엇을 하는지를 한 문단으로 (2026-10-18 임유정 요청: 위아래로 나뉘어 읽기 불편)
+    return { tone: "blue", mood: f[0], badge: "?", say: f[1], meta: stageMeta(), title: esc(n.question), sub: esc([n.why, n.action].filter(Boolean).map((x) => (/[.!?…]$/.test(x.trim()) ? x.trim() : `${x.trim()}.`)).join(" ")),
       acts: [...n.options.map((o, i) => ({ label: o, act: "pick-opt", i, key: String(i + 1), kind: "opt" })),
-        { label: "나중에", act: "later", key: "Escape", kind: "ghost" }],
-      foot: esc(n.action) };
+        { label: "직접 쓸게요", act: "own", key: String(n.options.length + 1), kind: "opt" }] };
   }
   // 넘어가기 전 확인 — 이해했나요? → (아니요) 헷갈린 곳 → 묻기 → 한 장 요약 → (예) 다음 단계 순서 정하기
   function momentGate() {
     const s = stage(), nx = nextStage(), meta = `<span class="mm-stage">${s.n}단계에서 한 일</span>${flowLine()}`;
     const yes = { label: "네, 이해했어요", act: "yes", key: "y", pri: true }, no = { label: "아니요, 같이 풀어요", act: "no", key: "n" };
-    const later = { label: "나중에", act: "close-gate", key: "Escape", kind: "ghost" };
+    // '나중에'(접기와 같음)는 뺐다 — 접기는 오른쪽 위 ^ 버튼과 Esc가 한다 (2026-10-18 임유정 요청)
     if (st.step === "which") return { tone: "amber", mood: "think", badge: "?", meta, title: "어디가 헷갈렸나요?", sub: "여러 개 골라도 돼요. 고른 곳부터 같이 풀어요.",
       acts: [...s.criteria.map((c, i) => ({ label: c.text, act: "hard-t", i, key: String(i + 1), kind: "opt toggle", pressed: st.hard.includes(i) })),
-        { label: "다음", act: "to-question", key: "Enter", pri: true }, later] };
+        { label: "다음", act: "to-question", key: "Enter", pri: true }] };
     if (st.step === "question") return { tone: "amber", mood: face()[0], badge: "?", meta,
       title: "궁금한 걸 편하게 물어보세요", sub: `헷갈린 곳: ${esc(hardTexts().join(", "))}`,
       body: `<textarea class="mc-input" data-act="question" rows="2" aria-label="궁금한 것" placeholder="예) 꼭 필요한지 표시하는 건 왜 해요?">${esc(st.question)}</textarea>${
         st.answer ? `<div class="answer"><b>플로로의 답</b>${esc(st.answer)}</div>` : ""}`,
-      acts: [{ label: "물어보기", act: "answer", key: "c-Enter", pri: !st.answer }, ...(st.answer ? [{ label: "한 장 요약 보기", act: "plan", key: "Enter", pri: true }] : []), later] };
+      acts: [{ label: "물어보기", act: "answer", key: "c-Enter", pri: !st.answer }, ...(st.answer ? [{ label: "한 장 요약 보기", act: "plan", key: "Enter", pri: true }] : [])] };
     if (st.step === "plan") return { tone: "amber", mood: face()[0], badge: "!", meta: `<span class="mm-stage">${s.n}단계 한 장 요약</span>`,
       title: "이렇게 정리해 봤어요. 이제 어때요?", sub: "",
       body: `<dl class="sheet">${planRows().map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`,
-      acts: [yes, { ...no, label: "아직 잘 모르겠어요" }, later] };
+      acts: [yes, { ...no, label: "아직 잘 모르겠어요" }] };
     if (st.step === "next" && !nx) return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">마무리</span>`,
-      title: END.last, sub: "", acts: [{ label: "마치기", act: "go", key: "Enter", pri: true }, later] };
+      title: END.last, sub: "", acts: [{ label: "마치기", act: "go", key: "Enter", pri: true }] };
     if (st.step === "next") return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">${nx ? `다음은 ${nx.n}단계 · ${esc(nx.title)}` : "마무리"}</span>`,
       title: "좋아요! 무엇부터 할지 순서를 정해 볼까요?", sub: "위아래 화살표로 순서를 바꿀 수 있어요. 정한 순서대로 하나씩 안내할게요.",
-      body: todoList(true), acts: [{ label: "이 순서로 시작하기", act: "go", key: "Enter", pri: true }, later] };
+      body: todoList(true), acts: [{ label: "이 순서로 시작하기", act: "go", key: "Enter", pri: true }] };
     return { tone: "amber", mood: face()[0], badge: "!", meta, title: "이번 단계에서 한 일, 이해되셨나요?",
       sub: `잘 모르겠으면 헷갈린 곳을 골라 같이 풀어요. 몇 번이고 괜찮아요.${st.noCount ? ` (다시 물어본 횟수 ${st.noCount}번)` : ""}`,
-      acts: [yes, no, later] };
+      acts: [yes, no] };
   }
   // 가로 카드 하나 — 왼쪽 플로로, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
   function card(v) {
+    cardSay = v.say || "";
     for (const a of v.acts) if (a.key) deskKeys[a.key] = a;
     let opts = v.acts.filter(isOpt), rest = v.acts.filter((a) => !isOpt(a));
     // 선택지 뒤에 '나중에'만 남으면 같은 줄에 — 카드가 낮아진다
@@ -420,7 +437,6 @@
       <div class="mc-cat">${petCat(v.mood, 108, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}</div>
       <div class="mc-main">
         ${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}
-        ${v.say ? `<p class="mc-say">${esc(v.say)}</p>` : ""}
         ${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}
         <h2 class="mc-title" aria-live="polite">${v.title}</h2>
         ${v.sub ? `<p class="mc-sub">${v.sub}</p>` : ""}
@@ -430,20 +446,12 @@
         ${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}
       </div></section>`;
   }
-  // 카드 아래 작은 줄 — 이 단계 할 일 펼치기, 바뀐 작업 다시 보여 주기
-  function deskMore() {
-    if (!st.j || st.busy || st.warn || st.error) return "";
-    const open = st.showCrit;
-    return `<div class="more-row"><button class="lnk" data-act="crit" aria-expanded="${open}">${open ? I.up : I.down}이 단계 할 일 ${met().length}개 ${open ? "접기" : "보기"}</button>${
-      st.openInput || st.screen === "gate" ? "" : `<button class="lnk" data-act="open-input">바뀐 작업 다시 보여 주기</button>`}</div>${
-      open ? `<div class="crit-grid">${critList(true)}</div>` : ""}`;
-  }
   // 설계도 — 왼쪽 플로로와 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
   const docShell = (mood, say, side, main) => `<div class="docx"><div class="doc-side">${petCat(mood, 92)}<p class="doc-say">${esc(say)}</p>
     <div class="doc-acts">${side}</div></div><div class="doc-main">${main}</div></div>`;
   function deskDoc() {
     const s = st.j && stage();
-    if (!s) return docShell("idle", DOC.first, `<button class="b pri" data-act="tab" data-i="0">'지금'으로 가기</button>`,
+    if (!s) return docShell("idle", DOC.first, `<button class="b pri" data-act="tab" data-i="0">'이번 단계'로 가기</button>`,
       `<div class="doc-empty">${I.doc}<b>아직 설계도가 없어요</b><span>어디쯤인지 보고 나면, 그 단계에 맞는 설계도를 같이 만들어요.</span></div>`);
     const { done, d, face: [mood, say] } = docState(s);
     if (!s.doc) return docShell(mood, say, "", `<div class="doc-empty">${I.doc}<b>${s.n}단계는 설계도 없이 진행해요</b><span>${DOC.none}</span></div>`);
@@ -472,17 +480,9 @@
       <div class="map-detail"><div class="md-head"><h3>${s.n}단계 · ${esc(s.title)}</h3>${where}</div>
         <p class="mc-sub">${esc(s.does)}</p>
         <span class="flowline"><span>받은 것 · ${esc(s.gets)}</span>${I.arrow}<span>만든 것 · ${esc(s.gives)}</span>${s.doc ? `<span class="meta">설계도: ${esc(s.doc)}</span>` : ""}</span>
-        <ul class="crit">${crit}</ul></div></div>`;
+        <ul class="crit">${crit}</ul>${docDone(sel) ? `<details><summary>확정한 설계도 보기 · ${esc(docDone(sel).at)}</summary><pre class="doc-view">${esc(docDone(sel).text)}</pre></details>` : ""}</div></div>`;
   }
-  // 내 배움 — 지나온 단계 · 배운 말 · 확정한 설계도 · 플로로와 나
-  function deskLearn() {
-    const b = C.bond(st.pets);
-    return `<div class="learn">${learnBody()}<div class="card bondcard"><span class="kicker">플로로와 나</span>
-      <div class="bond-row">${petCat("love", 64)}<div class="stack"><b>${esc(b.name)}</b>${hearts(b.level)}
-        <span class="sub">쓰다듬은 횟수 ${st.pets}번${b.need ? ` · 더 친해지기까지 ${b.need}번` : ""}</span>
-        <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div></div></div>`;
-  }
-  // ── 도서관(FR-8 위젯) · 한곳에서 보기(FR-6) — 서고 시안(../library)의 더미 책(books.js)과 마감 계산(schedule.js)을 같이 쓴다.
+  // ── 도서관(FR-8 위젯) — 서고 시안(../library)의 더미 책(books.js)과 마감 계산(schedule.js)을 같이 쓴다.
   // 같은 화면이 둘이 되지 않게 서고 시안의 작업 화면 위젯을 여기로 옮겼다(2026-10-17). 첫 책(s1)은 이 화면의 단계·할 일을 그대로 따른다.
   const L = () => window.LibData, SCH = () => window.Schedule;
   const LIB_URL = "../library/index.html";
@@ -506,10 +506,10 @@
     if (!L() || !SCH()) return libMissing();
     const books = openBooks(), b = libSelected();
     if (!b) return `<div class="libtab"><div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
-        <div class="ob-say">도서관 · 열어 둔 책 ${books.length}권</div>
+        <div class="ob-say">열어 둔 책 ${books.length}권</div>
         <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
         ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요.</p>`}</div></div>
-      <div class="ob-foot"><span class="note">책을 고르면 펼쳐져요 · 세션을 덮으면 서고에 꽂혀요 · 완주한 책은 한 권으로 엮어요</span><span class="grow"></span>
+      <div class="ob-foot"><span class="grow"></span>
         <button class="enter-lib" data-act="lib-enter"><span class="mb"></span>내 서고 들어가기</button></div></div>`;
     const fin = bookDone(b);
     deskKeys.Escape = { act: "lib-close" };
@@ -520,39 +520,10 @@
         <section><div class="stg">꽂은 책갈피 ${b.bookmarks.length}장</div><h3>배운 것</h3>
           <div class="marks">${b.bookmarks.map((m) => `<span>${esc(m)}</span>`).join("")}</div>
           <div class="stg soft" style="margin-top:12px">마지막으로 연 때 · ${esc(b.updated)}</div></section></div>
-      ${st.libConfirm ? `<div class="confirm" role="alertdialog" aria-label="세션 덮기 확인">${cat("think", 34)}<span><b>‘${esc(b.title)}’</b> 세션을 덮고 서고에 꽂을까요? 언제든 다시 펼칠 수 있어요.</span><span class="grow"></span>
-          <button class="b pri" data-act="lib-shelve">덮고 꽂기${kbd("Enter")}</button><button class="b" data-act="lib-shelve-no">그대로 두기</button></div>`
-        : `<div class="ob-foot"><button class="b" data-act="lib-close">책 덮기${kbd("Escape")}</button>
-          ${fin ? `<button class="b pri" data-act="lib-bind">📖 한 권의 책으로 엮기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">세션 덮기${kbd("Enter")}</button>`}
-          <span class="grow"></span><span class="note">${fin ? "엮으면 서고 책장에 꽂히고, 서고로 넘어가요" : "책 덮기는 목록으로 · 세션 덮기는 서고로"}</span></div>`}</div>`;
-  }
-  // 한곳에서 보기 — 진행 상황 · 내가 할 일 · 일정 충돌 · 토큰 사용. 시연은 가상 숫자(FR-10), 옮기는 결정은 사람이
-  function deskAll() {
-    if (!L() || !SCH()) return libMissing();
-    const D = L(), live = openBooks(), fmt = (n) => n.toLocaleString();
-    const progress = live.map((p, i) => `<li><button class="prow" data-act="all-goto" data-i="${i}"><span class="nm">${esc(p.title)}${p.mine ? ' <span class="okchip">이 화면</span>' : ""}</span>
-        <span class="pdots" aria-hidden="true">${D.STAGES.map((_, k) => `<i class="${k < p.stage || bookDone(p) ? "on" : k === p.stage ? "cur" : ""}"></i>`).join("")}</span>
-        <span>${bookDone(p) ? '<span class="due ok">완주</span>' : `${p.stage}단계 ${esc(D.STAGES[p.stage])} ${dueChip(p.dues[p.stage])}`}</span></button></li>`).join("");
-    const todos = live.map((p) => ({ p, t: p.todos.find((x) => !x.done), due: p.dues[p.stage] })).sort((a, b) => a.due.localeCompare(b.due))
-      .map(({ p, t, due }) => `<li><span>${t ? `○ ${esc(t.t)}` : "📖 책으로 엮기"}</span><small>${esc(p.title)} · ${t ? dueChip(due) : "완주"}</small></li>`).join("");
-    const clashes = SCH().findClashes({ projects: live, events: D.CALENDAR, pins: D.TEAM_PINS, today: D.TODAY });
-    const ICON = { "같은 날 마감": "⚑", "일정과 겹침": "📅", "팀 일정 뒤": "📌" };
-    const clashHtml = clashes.length ? clashes.map((c) => `<li><b>${ICON[c.kind]} ${mmdd(c.date)} ${esc(c.kind)}</b><small>${
-        c.kind === "같은 날 마감" ? `${c.titles.map(esc).join(" · ")} — 마감이 같은 날이에요`
-        : c.kind === "일정과 겹침" ? `${esc(c.titles[0])} 마감 · 캘린더 ‘${esc(c.event)}’와 겹쳐요`
-        : `${esc(c.titles[0])} 마감이 팀 ${esc(c.pin)}(${mmdd(c.pinDate)}) 뒤예요`}</small></li>`).join("")
-      : `<li><small>14일 안에 겹치는 일정이 없어요</small></li>`;
-    const T = D.TOKENS, total = Object.values(T.plan).reduce((a, b) => a + b, 0), used = Object.values(T.used).reduce((a, b) => a + b, 0);
-    const tokens = Object.keys(T.plan).map((k) => `<li><span>${esc(T.names[k])}</span><i class="tbar"><i style="width:${(T.used[k] / T.plan[k]) * 100}%"></i></i><small>${fmt(T.used[k])} / ${fmt(T.plan[k])}</small></li>`).join("");
-    return `<div class="alltab"><div class="allhead"><b>한곳에서 보기</b><span class="fake">가상 숫자예요 · 시연용</span><span class="grow"></span>
-        <small>오늘 ${mmdd(D.TODAY)} · 캘린더 일정 ${D.CALENDAR.length}개 읽음(제목·날짜만)${st.tokens ? ` · 이 화면의 마지막 호출 ${fmt(st.tokens)}토큰` : ""}</small></div>
-      <div class="allgrid">
-        <section><h4>진행 상황</h4><ol class="plist">${progress}</ol></section>
-        <section><h4>내가 할 일 <small>마감 가까운 순</small></h4><ul class="alltodo">${todos}</ul></section>
-        <section class="${clashes.length ? "hot" : ""}"><h4>일정 충돌 ${clashes.length ? `<span class="due late">${clashes.length}개</span>` : ""}</h4><ul class="clash">${clashHtml}</ul>
-          <p class="hint">옮길지는 직접 정해요 — 프로젝트를 누르면 단계 지도나 책으로 가요</p></section>
-        <section><h4>토큰 사용 <small>${fmt(used)} / ${fmt(total)} · ${Math.round((used / total) * 100)}%</small></h4><ul class="tok">${tokens}</ul></section>
-      </div></div>`;
+      ${st.libConfirm ? `<div class="confirm" role="alertdialog" aria-label="서고에 보관 확인">${cat("think", 34)}<span><b>‘${esc(b.title)}’</b>을 서고에 보관할까요? 언제든 다시 꺼내 펼칠 수 있어요.</span><span class="grow"></span>
+          <button class="b pri" data-act="lib-shelve">보관하기${kbd("Enter")}</button><button class="b" data-act="lib-shelve-no">그대로 두기</button></div>`
+        : `<div class="ob-foot"><button class="b" data-act="lib-close">‹ 목록으로${kbd("Escape")}</button>
+          ${fin ? `<button class="b pri" data-act="lib-bind">📖 한 권으로 엮어 서고에 꽂기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">서고에 보관하기${kbd("Enter")}</button>`}</div>`}</div>`;
   }
   // 한 권의 책으로 엮기 — 책이 작아지며 서고로 넘어간다(서고 시안이 #lib-bound-<id>로 받아 책장에 꽂는다)
   function bindBook() {
@@ -571,7 +542,7 @@
     if (!window.FloeDive) { location.href = href; return; }
     window.FloeDive.out($nav.querySelector(".isl"), href, $nav.querySelector(".libtab .who"));
   }
-  // 세션 덮기 — 목록으로 돌아가 그 책이 작아지며 사라진다
+  // 서고에 보관하기(옛 이름 '세션 덮기', 2026-10-18 임유정 요청으로 버튼 이름을 바꾸고 설명 줄을 뺐다) — 목록으로 돌아가 그 책이 작아지며 사라진다
   function shelveBook() {
     const b = libSelected(); if (!b) return;
     set({ libSel: null, libConfirm: false });
@@ -579,20 +550,21 @@
     const finish = () => { st.libGone.push(b.id); render(); say(`‘${b.title}’ 책을 서고에 꽂았어요`); };
     if (el && !STILL) { el.classList.add("leaving"); setTimeout(finish, 480); } else finish();
   }
-  // 위쪽 아이콘 줄 — 지금·설계도·단계 지도·내 배움·한곳에서 보기·도서관 | 연결·프로젝트·보기 방식·친해진 정도·설정·열어 두기·접기
+  // 위쪽 아이콘 줄 — 이번 단계·설계도·단계 지도·도서관 | 연결·프로젝트·설정·열어 두기·접기
+  // (2026-10-18 임유정 요청: 보기 방식 표시·친해진 정도 하트를 뺐다 — 보기 방식은 설정에 남는다)
   // 아이콘을 누르면 고른 동그라미(.ti-ind)가 지난 아이콘에서 새 아이콘으로 미끄러지고, 내용은 그쪽 방향에서 들어온다(renderDesk).
   // 누른 뒤 곧바로 한 번 더 그려지는 일이 있어서, 움직임은 시작한 때(tabMove.at)를 기억해 다시 그려도 이어서 움직인다
   let tabFrom = null, tabMove = null;
   const tabIdx = () => TABS.findIndex((x) => x[0] === st.tab);
+  // 위쪽 제목 — '이번 단계' 탭이면 지금 단계 이름("0단계 · 무엇을 만들지 정하기"), 다른 탭은 탭 이름 (2026-10-18 임유정 요청)
+  const tabTitle = (tab) => (tab[0] === "today" && st.j && !st.finished ? `${stage().n}단계 · ${stage().title}` : tab[1]);
   function topbar() {
-    const b = C.bond(st.pets), tab = TABS.find((x) => x[0] === st.tab);
+    const tab = TABS.find((x) => x[0] === st.tab);
     return `<div class="tb"><div class="tabs" role="tablist" aria-label="보기"><span class="ti-ind" style="--i:${tabIdx()}" aria-hidden="true"></span>${TABS.map(([id, label, , ic], i) =>
       `<button class="ti" role="tab" data-act="tab" data-i="${i}" aria-selected="${st.tab === id}" aria-label="${label}" title="${label}">${I[ic]}</button>`).join("")}</div>
-      <span class="tb-tab">${esc(tab[1])}</span><span class="grow"></span>
+      <span class="tb-tab">${esc(tabTitle(tab))}</span><span class="grow"></span>
       ${st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
-      <span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>
-      ${st.mode === "live" ? `<span class="mode live" title="보여 주신 글을 진짜 AI(Claude)가 읽어요">진짜 AI</span>` : `<span class="mode fix" title="미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요">연습용 예시</span>`}
-      <button class="ti bond" data-act="bond" aria-label="플로로와 친해진 정도: ${esc(b.name)}" title="플로로와 친해진 정도: ${esc(b.name)}">${hearts(b.level)}</button>
+      ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 소리, 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
@@ -620,8 +592,9 @@
   const stripHTML = () => `<button class="strip" data-act="strip" aria-label="플로로 부르기" title="마우스를 올리면 나와요"><span class="head" aria-hidden="true">${cat("idle", 58, { face: true })}</span>${WAVE}<span class="zz" aria-hidden="true">z<b>z</b></span></button>`;
   function greetHTML(enter) {
     deskKeys = { Enter: { act: "open" } };
+    cardSay = C.greeting(new Date().getHours());
     return `<div class="isl greet${enter}"><section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
-      <div class="mc-main"><p class="mc-say">${esc(C.greeting(new Date().getHours()))}</p>
+      <div class="mc-main">
         <h2 class="mc-title">${st.back ? "다시 오셨네요!" : "안녕하세요! 저는 길잡이 물범 플로로예요."}</h2>
         <p class="mc-sub">${st.back ? esc(st.back) : "지금 만들고 있는 걸 보여 주시면, 몇 단계쯤인지와 다음에 할 일을 알려 드려요. 평소엔 화면 위에 작게 있을게요."}</p>
         <div class="acts"><button class="b pri" data-act="open">${st.back ? "이어서 하기" : "보여 주기"}<kbd aria-hidden="true">Enter</kbd></button>
@@ -631,16 +604,14 @@
     let body;
     if (st.tab === "doc") body = deskDoc();
     else if (st.tab === "map") body = deskMap();
-    else if (st.tab === "learn") body = deskLearn();
-    else if (st.tab === "all") body = deskAll();
     else if (st.tab === "lib") body = deskLib();
-    else body = card(momentToday()) + deskMore();
-    return `<div class="isl${enter}">${topbar()}${settingsPop()}<div class="isl-body">${body}</div>${countdown()}</div>`;
+    else body = card(momentToday());
+    return `<div class="isl${enter}">${topbar()}<div class="isl-body">${body}</div>${countdown()}</div>${settingsPop()}`;
   }
   function renderDesk() {
     const moved = st.ui !== lastUi; lastUi = st.ui;
     const enter = moved ? " enter" : "";
-    deskKeys = {};
+    deskKeys = {}; cardSay = "";
     if (st.ui === "hidden") $nav.innerHTML = stripHTML();
     else if (st.ui === "greet") $nav.innerHTML = greetHTML(enter);
     else if (st.ui === "petit") $nav.innerHTML = `<div class="${enter.trim()}">${pillHTML()}</div>`;
@@ -679,7 +650,6 @@
   }
   const phoneDoc = () => phoneHead("1~4단계에서 만들어요", "설계도") + docBody(72);
   const phoneMap = () => phoneHead("전체 8단계", "단계 지도") + mapBody();
-  const phoneLearn = () => phoneHead("지나온 길과 배운 말", "내 배움") + learnBody();
   function phoneCheck() {
     const s = stage(), [body, actions] = checkStep();
     return `<button class="back" data-act="close-gate">${I.back}오늘</button>
@@ -690,7 +660,7 @@
   function renderPhone() {
     const gate = st.screen === "gate";
     $phone.className = "phone" + (gate ? " check" : "");
-    const views = { today: phoneToday, doc: phoneDoc, map: phoneMap, learn: phoneLearn }, tab = views[st.tab] ? st.tab : "today";   // 한곳에서 보기·도서관은 PC에서만
+    const views = { today: phoneToday, doc: phoneDoc, map: phoneMap }, tab = views[st.tab] ? st.tab : "today";   // 한곳에서 보기·도서관은 PC에서만
     $phone.innerHTML = gate ? phoneCheck() : views[tab]() +
       `<nav class="tabbar glass" aria-label="화면">${PHONE_TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" ${tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
   }
@@ -741,19 +711,35 @@
   }
   addEventListener("resize", refract);
 
+  // 설계도 글 칸은 글 길이만큼 늘어난다 — 확정한 뒤 보기(pre)와 같은 크기로. 섬 전체가 화면 높이를 넘으면 섬 안에서 스크롤 (2026-10-18 임유정 요청)
+  function grow(t) { const y = t.closest(".isl")?.scrollTop; t.style.height = "auto"; t.style.height = `${t.scrollHeight + 2}px`; if (y !== undefined) t.closest(".isl").scrollTop = y; }
+  // 선택지를 누르고 → 살펴보는 중 → 결과까지는 한 흐름이라 섬 크기를 그대로 둔다. 결과가 나오면 새 크기로 한 번만 부드럽게 바뀐다
+  // (2026-10-18 임유정 요청: 이어지는 과정에서 크기가 계속 바뀌어 정신없음)
+  let holdH = 0;
+  const hold = () => { const el = $nav.querySelector(".isl"); if (el && !holdH) holdH = el.offsetHeight; };
+  function holdSize() {
+    const el = $nav.querySelector(".isl");
+    if (!holdH || !el) return;
+    if (st.busy) { el.style.minHeight = `${holdH}px`; return; }
+    const from = holdH, to = el.offsetHeight; holdH = 0;
+    if (!STILL && Math.abs(to - from) > 4) el.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
   // 다시 그려도 쓰던 글 칸은 그대로 — 커서 자리와 스크롤까지 되돌린다
   function render() {
     save();
     if (!timer) scheduleIdle();
     const a = document.activeElement, keep = isField(a) && a.dataset.act ? a.dataset.act : "";
     const sel = keep ? [a.selectionStart, a.selectionEnd, a.scrollTop] : null;
-    if (isPhone()) renderPhone(); else renderDesk();
+    if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); }
     if (keep) {
       const b = document.querySelector(`[data-act="${keep}"]`);
       if (b && b !== a) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; }
     }
     if (point) C.follow(isPhone() ? $phone : $nav, point);
+    for (const t of document.querySelectorAll("textarea.doc")) grow(t);
     refract();
+    // 카드의 한마디도 다른 한마디처럼 플로로 옆에 잠깐 떴다 사라진다 — 같은 말은 한 번만
+    if (cardSay !== lastCardSay) { lastCardSay = cardSay; if (cardSay) { const t = cardSay; requestAnimationFrame(() => say(t)); } }
   }
   PHONE.addEventListener("change", render);
 
@@ -769,23 +755,33 @@
   function flash(mood, ms) { flashMood = { mood, until: Date.now() + ms }; applyMood(); setTimeout(applyMood, ms + 30); }
   const liveCat = () => (isPhone() ? $phone : $nav).querySelector("[data-live]");
   // 플로로의 한마디 — 잠깐 떴다 사라지는 말풍선. 화면 위쪽에 있으면 아래로 띄운다
-  let sayTimer = 0;
-  function say(text) {
+  let sayTimer = 0, sayRaf = 0;
+  // 말풍선 자리 — 플로로 옆. 왼쪽에 빈자리가 있으면 플로로 왼쪽(카드 글을 가리지 않게), 없으면 위, 화면 맨 위면 아래
+  function placeSay(b) {
     const host = liveCat();
-    if (!host || !$fx) return;
-    const r = host.getBoundingClientRect();
-    let b = $fx.querySelector(".pop-say");
-    if (!b) { b = document.createElement("div"); b.className = "pop-say"; b.setAttribute("role", "status"); $fx.appendChild(b); }
-    // 왼쪽에 빈자리가 있으면 플로로 왼쪽(카드 글을 가리지 않게), 없으면 위, 화면 맨 위면 아래
-    const side = r.left > 250, below = !side && r.top < 90;
-    b.textContent = text;
+    if (!host) return;
+    const r = host.getBoundingClientRect(), side = r.left > 250, below = !side && r.top < 90;
     b.classList.toggle("side", side);
     b.classList.toggle("below", below);
     b.style.left = `${Math.round(side ? r.left - 6 : r.left + r.width * 0.66)}px`;
     b.style.top = `${Math.round(side ? r.top + r.height * 0.2 : below ? r.bottom + 6 : r.top + 6)}px`;
+  }
+  function say(text) {
+    if (!liveCat() || !$fx) return;
+    let b = $fx.querySelector(".pop-say");
+    if (!b) { b = document.createElement("div"); b.className = "pop-say"; b.setAttribute("role", "status"); $fx.appendChild(b); }
+    b.textContent = text;
+    placeSay(b);
+    // 떠 있는 동안 플로로를 따라간다 — 카드 크기가 바뀌어 플로로 자리가 옮겨져도 (2026-10-18 임유정 요청)
+    cancelAnimationFrame(sayRaf);
+    const follow = () => { if (!b.classList.contains("show")) return; placeSay(b); sayRaf = requestAnimationFrame(follow); };
+    // 긴 말은 더 오래 — 글자당 70ms, 2.9초~7초
+    const ms = Math.min(7000, Math.max(2900, 1500 + text.length * 70));
+    b.style.animationDuration = `${ms}ms`;
     b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
+    sayRaf = requestAnimationFrame(follow);
     clearTimeout(sayTimer);
-    sayTimer = setTimeout(() => b.classList.remove("show"), 2900);
+    sayTimer = setTimeout(() => b.classList.remove("show"), ms);
   }
   // 한 번 하는 움직임(seal.css · app.css). 끝나면 떼어 낸다 — 헤엄의 물방울처럼 붙어 있는 동안 계속 보이는 것이 있어서
   const playOn = (host, cls) => {
@@ -812,7 +808,6 @@
     } else {
       say(kind === "stroke" ? "흥얼흥얼… 기분 좋아요" : C.petLine(st.pets));
       if (st.sound) C.chime("pet");
-      if (st.tab === "learn") setTimeout(render, 1800);
     }
   }
   // 축하 — 할 일을 다 했을 때, 단계를 넘어갔을 때, 설계도를 확정했을 때
@@ -892,13 +887,22 @@
   }, 3000);
 
   // ── AI 호출 — 기다리는 동안 플로로가 "살펴보는 중" ──
+  // 기다리는 시간 — AI는 얼마나 남았는지 알려 주지 않아서 퍼센트는 지어낸 숫자가 된다. 대신 지난 시간과 지난번에 걸린 시간을 보인다
+  let waitFrom = 0, lastWait = 0, waitTimer = 0;
+  const waitText = () => {
+    // 예상 시간 = 지난번에 걸린 시간(처음엔 없음). 넘기면 '예상보다 길어져요'
+    const s = Math.round((Date.now() - waitFrom) / 1000);
+    if (!lastWait) return `${s}초`;
+    return s <= lastWait ? `예상 ${lastWait}초 · ${s}초` : `예상보다 길어져요 · ${s}초`;
+  };
   async function callAI(url, body) {
-    st.busy = true; render();
+    hold(); st.busy = true; waitFrom = Date.now(); render();
+    waitTimer = setInterval(() => { const el = $nav.querySelector("[data-wait]"); if (el) el.textContent = waitText(); }, 1000);
     try {
       const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       return await r.json();
     } catch { return { ok: false, reason: "AI에 연결하지 못했어요. server.js를 켜거나, 보기 방식을 '연습용 예시'로 바꿔 주세요" }; }
-    finally { st.busy = false; }
+    finally { st.busy = false; clearInterval(waitTimer); lastWait = Math.round((Date.now() - waitFrom) / 1000); }
   }
   const WARN_NAME = { secret: "비밀번호나 비밀 열쇠", rrn: "주민등록번호", email: "이메일 주소", phone: "전화번호", ip: "인터넷 주소(IP)" };
   // 값은 다시 보이지 않고 종류만 말한다
@@ -925,7 +929,7 @@
     const fresh = learn(j);
     // 다 했으면 스스로 펼쳐서 알린다(CouCou의 alert), 아니면 접혀 있던 것만 한 줄로 보인다
     if (allDone()) { view("alert"); if (!was) return celebrate("done"); } else peek();
-    if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")} — '내 배움'에 모아 둘게요`));
+    if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")}`));
   }
   const stop = (msg) => { st.error = msg; pendingNotice = ""; render(); };   // 보낼 수 없을 때 — 이유를 보여 주고 멈춘다
   // 진짜 AI에게 묻는 네 가지(어디쯤·물어보기·초안·다시 봐 주기)가 같이 쓰는 흐름:
@@ -936,14 +940,22 @@
     if (r.ok) { st.tokens = r.tokens || 0; done(r); } else { st.error = `${what} — ${r.reason || "이유를 알 수 없어요"}. 지어내지 않고 비워 둘게요.`; pendingNotice = ""; }
     render();
   }
+  const landedFull = (text, j, tokens) => { st.text = text; landed(j, tokens); };
+  // 연습용 예시는 정해진 글만 안다 — 선택지 대신 직접 쓴 답이면 첫 선택지를 고른 장면으로 보여 준다(연습용이라 내용은 반영되지 않는다)
+  function fixtureFor(text) {
+    const u = st.undo[st.undo.length - 1], n = u && u.j.next;
+    if (S.judgeFixture(text, atStage()) || !n || n.options.includes(u.picked)) return text;
+    return `${u.text.trim()}\n${N.decisionLine(n.question, n.options[0])}`;
+  }
   function judge(skipCheck) {
     Object.assign(st, { error: "", warn: null });
-    if (!st.text.trim()) return stop("지금 만드는 걸 적어 주세요.");
+    const text = st.text;
+    if (!text.trim()) return stop("지금 만드는 걸 적어 주세요.");
     if (st.mode === "fixture") {
-      const raw = S.judgeFixture(st.text, atStage()), j = raw && N.parseJudgement(raw, st.text, atStage());
-      return j ? landed(j, 0) : stop("연습용 예시는 정해진 장면만 알아요. 위의 연습 버튼으로 이 단계 장면을 보거나, 직접 쓴 글은 보기 방식을 '진짜 AI'로 바꿔 주세요.");
+      const t = fixtureFor(text), raw = S.judgeFixture(t, atStage()), j = raw && N.parseJudgement(raw, t, atStage());
+      return j ? landedFull(text, j, 0) : stop("연습용 예시는 정해진 장면만 알아요. 위의 연습 버튼으로 이 단계 장면을 보거나, 직접 쓴 글은 보기 방식을 '진짜 AI'로 바꿔 주세요.");
     }
-    return askAI("/api/judge", { text: st.text, stage: atStage() }, "살펴보지 못했어요", (r) => landed(r.judgement, r.tokens), !skipCheck && [st.text, "judge"]);
+    return askAI("/api/judge", { text, stage: atStage() }, "살펴보지 못했어요", (r) => landedFull(text, r.judgement, r.tokens), !skipCheck && [text, "judge"]);
   }
   function answer() {
     const s = stage();
@@ -958,12 +970,14 @@
       "답을 받지 못했어요", (r) => { st.answer = r.answer; });
   }
   // 고른 것을 작업 글에 한 줄로 적고 다시 살펴본다 — 정하는 건 사용자, 받아 적는 건 플로로
-  function decide() {
-    const n = st.j.next, o = n.options[st.choice];
+  // own: 선택지 대신 직접 쓴 답. 고르기 전 상태를 undo에 남겨 '이전 선택 바꾸기'로 되돌릴 수 있다
+  // (2026-10-18 임유정 요청: "골랐어요: … 다시 살펴봤어요" 알림은 뺐다)
+  function decide(own) {
+    const n = st.j.next, o = own || n.options[st.choice];
+    hold();
+    st.undo.push({ text: st.text, j: st.j, question: n.question, picked: o });
     st.text = `${st.text.trim()}\n${N.decisionLine(n.question, o)}`;
-    // "다시 살펴봤어요"는 살펴보기가 성공했을 때만 보인다(landed에서)
-    pendingNotice = `골랐어요: ${o} — 작업 글에 적어 두고 다시 살펴봤어요.`;
-    Object.assign(st, { notice: "", choice: null, picking: false });
+    Object.assign(st, { notice: "", choice: null, picking: false, own: false, ownText: "" });
     judge(false);
   }
   // 설계도 — 초안 받기 / 다시 봐 주세요. 연습용은 미리 써 둔 초안과 빈칸 확인만, 진짜 AI는 server.js를 거친다
@@ -976,7 +990,7 @@
       if (!d) return stop("이 단계는 연습용 초안이 없어요. 직접 쓴 작업은 보기 방식을 '진짜 AI'로 바꿔 주세요.");
       made(d.draft, d.say); return render();
     }
-    if (!st.text.trim()) return stop("'지금' 탭에서 만들고 있는 걸 먼저 보여 주세요.");
+    if (!st.text.trim()) return stop("'이번 단계' 탭에서 만들고 있는 걸 먼저 보여 주세요.");
     return askAI("/api/draft", { stage: s.n, text: st.text }, "초안을 받지 못했어요", (r) => made(r.draft, r.say), !skipCheck && [st.text, "draft"]);
   }
   function review(skipCheck) {
@@ -992,7 +1006,7 @@
     const d = st.doc, s = N.STAGES[d.stage], left = N.blanks(d.text).length;
     if (left && !force) return set({ askConfirm: left });
     st.docs = st.docs.filter((x) => x.stage !== d.stage).concat({ stage: d.stage, name: s.doc, text: d.text, at: ymd() });
-    Object.assign(st, { doc: null, warn: null, error: "", askConfirm: 0, notice: `${s.n}단계 설계도를 확정했어요. '내 배움'에도 모아 뒀어요.` });
+    Object.assign(st, { doc: null, warn: null, error: "", askConfirm: 0, notice: `${s.n}단계 설계도를 확정했어요. '단계 지도'에서 다시 볼 수 있어요.` });
     render();
     celebrate("doc");
   }
@@ -1002,7 +1016,7 @@
     const s = stage(), nx = nextStage();
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`,
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번 · ${ymd()}` });
-    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null });
+    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, undo: [], own: false });
     if (nx) st.j = { stage: nx.n, reason: `${s.n}단계를 마쳤어요! 이제 ${nx.n}단계 "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: nx.criteria.map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;
@@ -1025,11 +1039,12 @@
     pet: () => pet("tap"),
     // 연습용은 바로 살펴보고, 진짜 AI 모드에서는 글만 넣어 둔다(보내는 건 사용자가 '어디쯤인지 보기'를 누를 때)
     ex: (i) => {
-      st.text = S.examples[i].text; st.notice = "";
+      st.text = S.examples[i].text; st.notice = ""; st.undo = [];
       if (st.mode === "fixture") return judge(true);
       render(); focusText(); say("예시 글을 넣었어요. 보내려면 '어디쯤인지 보기'를 눌러요");
     },
     judge: () => { st.notice = ""; judge(false); },
+    "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
     restart: () => { Object.assign(st, { j: null, finished: false, todos: null }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => RETRY[st.warn.then](),
     "stop-send": () => set({ warn: null }),
@@ -1046,12 +1061,19 @@
     opt: (i) => set({ choice: i }),
     decide: () => { if (st.choice !== null) decide(); },
     later: () => { set({ later: true, choice: null, picking: false }); say("좋아요, 나중에 같이 정해요"); },
+    // 선택지에 원하는 게 없을 때 — 직접 써서 정한다
+    own: () => { set({ own: true }); requestAnimationFrame(() => document.querySelector("[data-act=own-text]")?.focus()); },
+    "own-cancel": () => set({ own: false }),
+    "own-decide": () => {
+      if (st.busy || !st.j || !st.j.next) return;
+      if (!st.ownText.trim()) { flash("think", 1200); return say("어떻게 할지 한 줄 적어 주세요"); }
+      decide(st.ownText.trim());
+    },
     again: () => set({ later: false, picking: true }),
     pick: () => set({ picking: true }),
     settings: () => set({ settings: !st.settings }),
-    bond: () => set({ tab: "learn", settings: false }),
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
-    // 도서관 탭 — 책 고르기 · 덮기 · 세션 덮기(확인 뒤) · 한 권으로 엮기. 한곳에서 보기 — 프로젝트를 누르면 단계 지도(이 화면 것)나 그 책으로
+    // 도서관 탭 — 책 고르기 · 목록으로 · 서고에 보관(확인 뒤) · 한 권으로 엮기
     "lib-enter": () => enterLibrary(),
     "lib-book": (i, el) => set({ libSel: (el && el.dataset.id) || openBooks()[i].id, libConfirm: false }),
     "lib-close": () => set({ libSel: null, libConfirm: false }),
@@ -1059,7 +1081,6 @@
     "lib-shelve-no": () => set({ libConfirm: false }),
     "lib-shelve": () => shelveBook(),
     "lib-bind": () => bindBook(),
-    "all-goto": (i) => { const p = openBooks()[i]; if (p) set(p.mine ? { tab: "map", mapSel: null } : { tab: "lib", libSel: p.id, libConfirm: false }); },
     "map-sel": (i) => set({ mapSel: i }),
     crit: () => set({ showCrit: !st.showCrit }),
     "open-input": () => { set({ openInput: true, showCrit: false }); focusText(); },
@@ -1086,7 +1107,8 @@
     },
     answer: () => answer(),
     plan: () => set({ step: "plan" }),
-    yes: () => { const nx = nextStage(); set({ todos: nx ? nx.criteria.map((c) => c.text) : [], step: "next" }); flash("happy", 1200); },
+    // 이해했으면 바로 다음 단계로 — 순서 정하기는 뺐다(2026-10-18 임유정 요청: 더하고 빼고 고칠 수 없는 순서라 확인받을 게 없다). 마지막 단계만 '마치기'를 한 번 더 묻는다
+    yes: () => { const nx = nextStage(); if (!nx) { set({ step: "next" }); return flash("happy", 1200); } st.todos = nx.criteria.map((c) => c.text); advance(); },
     up: (i) => set({ todos: N.reorder(st.todos, i, -1) }),
     down: (i) => set({ todos: N.reorder(st.todos, i, 1) }),
     go: () => advance(),
@@ -1103,6 +1125,7 @@
       const a = e.target.dataset.act;
       if (a === "mode") set({ mode: e.target.value, error: "", warn: null });
       if (a === "auto") set({ auto: e.target.checked });
+      if (a === "text-size") { set({ textSize: Number(e.target.value) || 1 }); applyScale(); }
       if (a === "sound") { set({ sound: e.target.checked }); if (st.sound) C.chime("pop"); }
       if (a === "hard") toggleHard(Number(e.target.dataset.i), e.target.checked);
     });
@@ -1114,8 +1137,9 @@
         if (grew) say("와, 꼼꼼하게 쓰셨네요!");
       }
       if (e.target.dataset.act === "question") st.question = e.target.value;
+      if (e.target.dataset.act === "own-text") st.ownText = e.target.value;
       if (e.target.dataset.act === "doc" && st.doc) {
-        st.doc.text = e.target.value; save();   // 글자를 칠 때는 다시 그리지 않는다(커서가 튄다) — 빈칸 개수만 바꾼다
+        st.doc.text = e.target.value; save(); grow(e.target);   // 글자를 칠 때는 다시 그리지 않는다(커서가 튄다) — 빈칸 개수만 바꾼다
         if (st.askConfirm) { st.askConfirm = 0; document.querySelector("[data-ask-confirm]")?.remove(); }   // 고치기 시작하면 다시 묻지 않는다
         const m = document.querySelector("[data-blanks]");
         if (m) m.textContent = blankMeta(st.doc);
@@ -1208,7 +1232,7 @@
     const h = location.hash.slice(1);
     if (!h) return;
     const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(decodeURIComponent)).map(([k, v]) => [k, v === undefined ? true : v]));
-    Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false });
+    Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false, undo: [], own: false });
     if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today" });
     if (q.ex !== undefined) {
       const n = Number(q.ex), mine = S.examples.filter((e) => e.judgement.stage === n);
