@@ -22,6 +22,8 @@
 | `GET /api/events?since=N` | 화면(2초마다) | 출처 · 확인 값(쿠키) | `{ok, latest, events[]}` | 403 · 404 |
 | `POST /api/events/clear` | 사람(curl) | 출처 · 확인 값(머리글) | `{ok, cleared}` | 403 |
 | `GET /api/usage` | 사람(주소창·curl) | 출처 | `{ok, provider, model, host, compat, used, budget, state, …}` | 403 |
+| `GET /api/setup` | 화면 처음 설정, 앱(옛 서버 알아보기) | 출처 | `{ok, provider, apiKey, relay, claude:{found, version, signedIn}, replay, build}` | 403 |
+| `POST /api/setup/check` | 화면 처음 설정 "연결 확인하기" | 출처 · 확인 값(쿠키) | `{ok, provider, tokens}` (재생 중이면 `replay: true`) | 403 · 502 |
 | `POST /api/judge` | 화면 "어디쯤인지 살펴보기" | 출처 · 확인 값(쿠키) | `{ok, judgement:{stage, reason, criteria[], next}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/answer` | 화면 "물어보기" | 출처 · 확인 값(쿠키) | `{ok, answer, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/draft` | 화면 설계도 "초안 받기" | 출처 · 확인 값(쿠키) | `{ok, draft, say, tokens}` | 403 · 413 · 400 · 502 |
@@ -96,6 +98,7 @@
   **html이면** 두 머리글을 더한다:
   `Set-Cookie: nav_event_token=<확인 값>; Path=/api; HttpOnly; SameSite=Strict` · `Cache-Control: no-store`.
   쿠키는 `Path=/api`라 브라우저가 `/api/…` 요청(알림 · AI 주소)에만 싣는다. 화면 파일 · 스크립트에는 실리지 않는다(2026-10-18 F-04로 `/api/events`에서 넓힘).
+  **그 밖의 파일**(스크립트 · 스타일)은 `Cache-Control: no-cache` — 고친 뒤에도 앱 · 브라우저가 옛 파일을 꺼내 쓰지 않게 늘 다시 묻는다(2026-10-19).
 - **거절:** 403 출처 · 목록에 없는 경로, `?`가 붙은 경로, GET이 아닌 방법 → 404 JSON `없는 주소`.
 - **약속:** 서버가 내주는 페이지가 `src`·`href`로 부르는 이 컴퓨터의 파일은 **모두** 목록에 있다(시험이 페이지를 읽어 확인한다).
 
@@ -309,6 +312,35 @@
   "tokens": 0 }
 ```
 
+<!-- claude-drafted: 2026-10-19 — 처음 설정(이재엽 "플로로가 켜졌을때 초기 세팅을 도와주는 내용 … api키를 받든 아니면 클로드코드로 연동이 되도록 하든") -->
+### 3-10. `GET /api/setup` — 이 컴퓨터는 어떻게 AI를 부를 수 있나
+
+- **누가:** 화면의 처음 설정([`setup.js`](../../02-frontend/navigator/setup.js)) — 고르기 카드의 한 줄과 할 일 체크. 그리고 앱(Electron)이 같은 포트에 먼저 떠 있는 서버를 알아볼 때(`build`).
+- **확인:** 출처만. **요청:** 없음. claude 명령은 `--version`만 묻는다(토큰 0, 10초 동안 지난 답을 씀 — `provider.js`의 `claudeVersion`).
+- **성공:** 아래 칸만 있다. **키 값 · 중계 서버 주소 · 계정 이름 · 파일 내용은 없다** — 있다 / 없다만.
+
+| 칸 | 타입 | 뜻 |
+|---|---|---|
+| `provider` | `"api"` · `"cli"` | 지금 부르는 길 — 키가 있으면 api(`provider.js`와 같은 규칙) |
+| `apiKey` · `relay` | 참/거짓 | 키가 있나 · 중계 서버 주소(`ANTHROPIC_BASE_URL`)가 있나 |
+| `claude.found` · `claude.version` | 참/거짓 · 글 | claude 명령을 찾았나 · 판(못 읽으면 `""`) |
+| `claude.signedIn` | 참/거짓 · `null` | `~/.claude.json`에 계정 칸이 있나. 파일이 없거나 claude를 못 찾으면 `null`(모름) |
+| `replay` | 참/거짓 | 녹화 재생 중 |
+| `build` | 글(12자) | 서버 코드의 지문 — 화면 · 서버 파일 내용으로 만든다. 같은 코드면 저장소에서 켜든 앱 묶음에서 켜든 같다(`setup-status.js` `buildId`) |
+
+```jsonc
+{ "ok": true, "provider": "cli", "apiKey": false, "relay": false,
+  "claude": { "found": true, "version": "2.1.302", "signedIn": true }, "replay": false, "build": "9d9dd5cd0b87" }
+```
+
+### 3-11. `POST /api/setup/check` — 연결 확인
+
+- **누가:** 처음 설정의 "연결 확인하기". **확인:** 출처 · 확인 값(쿠키) — AI를 부르므로 판정 네 주소와 같다(F-04). **요청:** 본문 없음.
+- **하는 일:** 정해진 아주 작은 요청 하나(`{"ok": true}`만 답하라)를 `provider.js`로 보낸다 — 키면 수십 토큰, `claude -p`면 내 구독. 재생 중(`NAV_REPLAY`)이면 부르지 않는다.
+- **성공:** `{ "ok": true, "provider": "cli", "tokens": 6374 }` · 재생 중이면 `{ "ok": true, "provider": "api", "replay": true, "tokens": 0 }`.
+- **거절:** 403 출처 · 403 확인 값(본문 · AI 전에) · 502 AI가 실패(이유는 2-2와 같은 한 줄, 예: `claude 명령을 찾지 못함 — …`).
+- 2026-10-19 이재엽의 Mac에서 `claude -p`로 한 번 불러 200(`tokens` 6,374 — CLI가 세는 값)을 봤다.
+
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 
 `02-frontend/navigator/app.js`가 보내는 칸·읽는 칸을 서버와 맞대었다. 화면 코드는 고치지 않았다.
@@ -336,3 +368,4 @@
 - 재생이 깨져도 돈이 들지 않게 가짜 키와 닫힌 로컬 주소를 둔다(`claude -p`로도 새지 않는다). 확인 값·사용량 파일은 임시 폴더에만 만든다.
 - 할 일 문장은 시험에 적지 않는다 — `criteriaFor`로 세고 서버 데이터와 맞댄다. 판정 규칙이 바뀌어도 시험은 그대로다.
 - 확인하는 것: 주소마다 성공 모양(칸 이름·타입·개수), 거절마다 상태 코드와 이유, 등급(안 보냄·`null`·`Full`이 같음, Xpress·Lite는 그 등급의 개수), 확인 값(머리글·쿠키·머리글 먼저), 크기(40,000자 경계), 화면 파일 목록, 키·글이 사용량·녹화에 남지 않는 것.
+- 처음 설정(3-10 · 3-11)은 [`setup-api.test.js`](../../04-tests/navigator/setup-api.test.js) — 칸과 값이 새지 않는 것, 확인 값, 재생 중 확인, 스크립트 · 스타일의 `no-cache`(2026-10-19).

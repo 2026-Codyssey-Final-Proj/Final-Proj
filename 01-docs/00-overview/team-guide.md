@@ -130,11 +130,11 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 | 받기 | `Floe-<버전>-arm64.dmg` (GitHub Release 또는 팀 채널) | `Floe-Setup-<버전>.exe` — **Windows에서 묶은 사람이 올린 것** |
 | 처음 열기 | 서명이 없어 경고가 뜬다 → Finder에서 **우클릭 → 열기** 한 번 | SmartScreen 경고 → "추가 정보 → 실행" |
 | 연결 | 메뉴 **Floe → 프로젝트 폴더 연결…** 또는 톱니 → 연결 칸의 단추 | 같음 |
-| AI | 이 컴퓨터의 Claude Code 로그인을 쓴다. 내 키로 쓰려면 **Floe → 설정 폴더 열기**에 `.env` | 같음 |
+| AI | **처음 켜면 플로로가 물어본다** — Claude Code로 연결하거나 API 키를 넣는다(2026-10-19). 나중에 바꾸려면 톱니 → 처음 설정 다시 하기 | 같음 |
 | 끄기 | 메뉴 **Floe → Floe 끄기** (Cmd+Q) | 창 닫기 |
 
 - 직접 묶으려면: `cd 02-frontend/electron && npm install && npm run dist` — [electron/README.md](../../02-frontend/electron/README.md).
-- 터미널에서 `floe.js`나 `server.js`를 이미 켜 두었으면 앱은 새 서버를 켜지 않고 그쪽 화면을 연다. 옛 화면이 보이면 그 터미널을 먼저 끈다.
+- 터미널에서 `floe.js`나 `server.js`를 이미 켜 두었으면 앱은 그 서버가 같은 코드인지 본다. 옛 코드면 **"옛 서버 끄고 새로 켜기"**를 묻는다(2026-10-19) — 그대로 쓰면 옛 화면이 보인다.
 - 느낀 점 · 내 책은 앱 안에 남고, 브라우저로 연 것과는 따로다.
 
 ## 3. 작업은 어디에 올리나 — 팀이 하는 방식

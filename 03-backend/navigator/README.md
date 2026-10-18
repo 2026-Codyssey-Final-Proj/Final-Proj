@@ -24,6 +24,13 @@ node floe.js --help                 # --codex · --no-open · --port
 
 `floe.js`는 켜기만 한다 — AI를 부르는 곳은 여전히 `provider.js` 하나다(시험이 확인). 값(키 · 확인 값)은 출력하지 않는다. 쓰는 법은 [팀 작업 가이드](../../01-docs/00-overview/team-guide.md) 2-b절.
 
+## 처음 설정 — 화면이 도와준다 (2026-10-19)
+
+<!-- claude-drafted: 2026-10-19 -->
+처음 켜면 화면([`setup.js`](../../02-frontend/navigator/setup.js))이 반기고, 아래 표의 두 길 중 하나를 고르게 한다. 화면이 묻는 것은 `GET /api/setup`(있다 · 없다만, 키 값은 없음 — [setup-status.js](setup-status.js)), "연결 확인하기"는 `POST /api/setup/check`(아주 작은 요청 하나 — 확인 값 쿠키). [API.md](API.md) 3-10 · 3-11. claude 명령의 판은 `provider.js`의 `claudeVersion`(`--version`, 토큰 0)이 본다 — claude를 띄우는 곳은 `provider.js` 하나다.
+브라우저로 연 화면은 키를 받지 않는다 — 아래 "내 키로 쓰기"처럼 `.env`에 넣고 다시 켠다. 앱(.dmg)에서는 화면에서 바로 넣는다([electron/README.md](../../02-frontend/electron/README.md)).
+키 · 중계 서버를 바꾸면 다시 켜지 않아도 다음 호출부터 바뀐다(`provider.js`가 부를 때마다 환경을 다시 본다).
+
 ## 누구의 토큰으로 부르나 — 각자 자기 것
 
 키와 로그인은 **저장소에 없다.** 각자 컴퓨터의 환경에만 있고, 그래서 한도와 사용량도 각자 것이다.

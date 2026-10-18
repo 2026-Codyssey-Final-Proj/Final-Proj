@@ -10,7 +10,7 @@
 // 구조화 출력·effort·폴백 같은 새 기능 없이 JSON만 요청한다(중계 서버와 옛 모델이 못 받을 수 있다). NAV_COMPAT=0/1로 직접 정할 수 있다.
 //
 // 키는 이 파일 밖으로 나가지 않는다: 로그·오류·/api/usage 어디에도 값을 싣지 않는다.
-const { spawn } = require("node:child_process");
+const { spawn, spawnSync } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -149,6 +149,16 @@ async function callApi(client, cfg, prompt, schema) {
   try { return { data: extractJson(text), tokens }; } catch { return { error: "Claude가 정해진 형식으로 답하지 않음", tokens }; }
 }
 
+// 처음 설정(2026-10-19, setup-status.js · GET /api/setup)이 묻는 claude 명령의 판 — --version이라 AI를 부르지 않고 토큰도 쓰지 않는다. run: 시험에서 바꿔 끼운다
+function claudeVersion(run = spawnSync) {
+  try {
+    const r = run("claude", ["--version"], { encoding: "utf8", timeout: 4000, windowsHide: true });
+    if (!r || r.error || r.status !== 0) return { found: false, version: "" };
+    const v = String(r.stdout || "").trim().split(/\s+/)[0] || "";
+    return { found: true, version: /^\d+\.\d+/.test(v) ? v : "" };
+  } catch { return { found: false, version: "" }; }
+}
+
 // ── 이 컴퓨터에 로그인된 Claude Code(`claude -p`) — 도구·MCP·설정·대화 기록 없이 글만 판정한다 ──
 function callCli(prompt, schema) {
   return new Promise((resolve) => {
@@ -179,9 +189,10 @@ const recorderFrom = (env) => (env.NAV_RECORD ? (key, data) => { const items = R
 
 // 호출 함수를 만든다. makeClient는 키가 있을 때만, 처음 부를 때 한 번 SDK를 읽는다(SDK가 없는 사람도 다른 방식은 쓴다)
 function createCaller({ env = process.env, callCli: cli = callCli, makeClient, meter, replay = replayFrom(env), record = recorderFrom(env) }) {
-  const cfg = settings(env);
-  let client = null;
+  // 설정과 클라이언트는 부를 때마다 환경을 다시 본다 — 처음 설정(앱)에서 키 · 중계 서버를 넣거나 빼면 다시 켜지 않아도 다음 호출부터 바뀐다(2026-10-19)
+  let client = null, clientFor = "";
   return async function callClaude(prompt, schema) {
+    const cfg = settings(env);
     const key = REC.keyOf(prompt, schema);
     if (replay) {   // 재생 중에는 AI를 부르지 않는다 — 키도 한도도 필요 없다
       return replay[key] !== undefined ? { data: replay[key], tokens: 0, replayed: true }
@@ -192,7 +203,8 @@ function createCaller({ env = process.env, callCli: cli = callCli, makeClient, m
     else {
       const gate = meter.gate({ purpose: cfg.purpose, tester: cfg.tester, reserve: cfg.useReserve });
       if (!gate.ok) return { error: gate.reason };
-      try { client = client || makeClient(); } catch { return { error: "API 호출 도구가 없어요 — 03-backend/navigator에서 npm install을 한 번 해 주세요" }; }
+      const who = `${env.ANTHROPIC_API_KEY || ""}|${env.ANTHROPIC_BASE_URL || ""}`;
+      try { if (!client || clientFor !== who) { client = makeClient(); clientFor = who; } } catch { return { error: "API 호출 도구가 없어요 — 03-backend/navigator에서 npm install을 한 번 해 주세요" }; }
       r = await callApi(client, cfg, prompt, schema);
       if (r.tokens) meter.add(r.tokens, { bucket: gate.bucket, tester: cfg.tester });
     }
@@ -219,4 +231,4 @@ const meter = createMeter(settings(process.env).budget, fileStore(usageFile), { 
 const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); return new Anthropic(); };   // 키는 ANTHROPIC_API_KEY에서 SDK가 읽는다
 const callClaude = createCaller({ makeClient, meter });
 
-module.exports = { RELAY_MODELS, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN };
+module.exports = { RELAY_MODELS, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion };
