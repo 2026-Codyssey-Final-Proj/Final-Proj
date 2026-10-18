@@ -154,7 +154,7 @@ NAV_MODEL=claude-opus-4-8   # 또는 claude-opus-4-7. 비워 두면 claude-opus-
 AI 토큰(`NAV_TOKEN_BUDGET`)과는 다른 것이다 — 알림 주소를 부를 자격을 확인하는 값이다.
 
 - 서버를 켜면 홈 폴더에 `~/.navigator-event-token`을 만든다(**나만 읽기, 600**). 저장소 밖이라 커밋되지 않는다. 자리를 바꾸려면 `NAV_EVENT_TOKEN_FILE`.
-- **훅**(`hook.js`)은 부를 때마다 이 파일을 읽어 `X-Nav-Token` 머리글로 보낸다. **화면**은 서버가 페이지를 줄 때 주는 쿠키(`HttpOnly`·`SameSite=Strict`·`Path=/api/events`)로 보낸다 — 화면 코드는 바꾸지 않았다.
+- **훅**(`hook.js`)은 부를 때마다 이 파일을 읽어 `X-Nav-Token` 머리글로 보낸다. **화면**은 서버가 페이지를 줄 때 주는 쿠키(`HttpOnly`·`SameSite=Strict`·`Path=/api` — 2026-10-18부터 AI 네 주소에도 같은 확인 값)로 보낸다 — 화면 코드는 바꾸지 않았다.
 - 값이 없거나 틀리면 `/api/event`·`/api/events`·`/api/events/clear`는 **403** `{ "ok": false, "reason": "…" }`. 값은 로그·화면 어디에도 나오지 않는다.
 - 파일이 있으면 그대로 쓴다(서버를 다시 켜도 열어 둔 화면이 계속 된다). **바꾸려면** 서버를 끄고 파일을 지운 뒤 다시 켜고, 화면을 새로 고친다.
 - 파일 내용을 채팅·이슈·스크린샷에 붙이지 않는다. Windows에서는 600 대신 홈 폴더의 기본 권한(그 사용자만)에 기댄다.

@@ -7,7 +7,9 @@ const path = require("node:path");
 const Nav = require("../../03-backend/navigator/navigator.js");
 const S = require("../../03-backend/navigator/scenario.js");
 const Cat = require("../../02-frontend/navigator/seal.js");
-const { allowed, recent, addEvent, handle } = require("../../03-backend/navigator/server.js");
+// 확인 값 파일은 시험용 임시 파일로 — 사용자의 홈 폴더 파일을 건드리지 않는다
+process.env.NAV_EVENT_TOKEN_FILE = process.env.NAV_EVENT_TOKEN_FILE || path.join(require("node:os").tmpdir(), `nav-test-token-${process.pid}`);
+const { allowed, recent, addEvent, handle, eventToken } = require("../../03-backend/navigator/server.js");
 const Connect = require("../../03-backend/navigator/connect.js");
 const BACK = path.join(__dirname, "../../03-backend/navigator");
 const FRONT = path.join(__dirname, "../../02-frontend/navigator");
@@ -302,7 +304,7 @@ test("서버: 모르는 등급을 보내면 AI를 부르지 않고 거절한다 
   const post = (url, body) => new Promise((resolve, reject) => {
     const data = JSON.stringify(body);
     const req = http.request({ host: "127.0.0.1", port: srv.address().port, path: url, method: "POST",
-      headers: { host, "content-type": "application/json", "content-length": Buffer.byteLength(data) } },
+      headers: { host, "content-type": "application/json", "content-length": Buffer.byteLength(data), "x-nav-token": eventToken() } },   // F-04: AI 주소도 확인 값
     (res) => { let b = ""; res.on("data", (d) => (b += d)); res.on("end", () => resolve([res.statusCode, JSON.parse(b)])); });
     req.on("error", reject);
     req.end(data);
@@ -576,4 +578,20 @@ test("연결: Codex용 명령(… hook.js codex)도 우리 것으로 알아보�
   assert.match(once.hooks.Stop[0].hooks[0].command, /hook\.js" codex$/);
   assert.deepEqual(Connect.addHooks(once, `${Connect.COMMAND} codex`), once);
   assert.deepEqual(Connect.removeHooks(once), {});
+});
+
+// F-03(이재엽 2026-10-18 "둘로 나눔"): 6단계의 '잰 값과 못 한 것'은 한 항목에 두 가지가 묶여 실제 AI와 예시 정답이 갈렸다 — 둘로 나눈다
+test("6단계: '잰 값 적어 두기'와 '못 한 것 적어 두기'가 따로 있고, 한 항목에 둘을 묶지 않는다", () => {
+  const texts = Nav.STAGES[6].criteria.map((c) => c.text);
+  assert.ok(texts.some((t) => t.includes("잰 값") && !/못\s?한/.test(t)), "잰 값 항목");
+  assert.ok(texts.some((t) => /못\s?한/.test(t) && !t.includes("잰 값")), "못 한 것 항목");
+  assert.ok(!texts.some((t) => t.includes("잰 값") && /못\s?한/.test(t)), "둘을 묶은 항목이 남아 있다");
+});
+
+test("6단계 연습 예시: 글에 잰 값은 있고 못 한 것은 없다 — 정답도 그대로(잰 값 ✔ · 못 한 것 ✘)", () => {
+  const ex = S.examples.find((e) => e.text && e.judgement && e.judgement.stage === 6);
+  const crit = Nav.STAGES[6].criteria, met = ex.judgement.criteria.map((c) => c.met);
+  assert.equal(met.length, crit.length, "예시의 칸 수가 할 일 수와 같다");
+  assert.equal(met[crit.findIndex((c) => c.text.includes("잰 값"))], true, "잰 값은 했다");
+  assert.equal(met[crit.findIndex((c) => /못\s?한/.test(c.text))], false, "못 한 것은 안 했다");
 });

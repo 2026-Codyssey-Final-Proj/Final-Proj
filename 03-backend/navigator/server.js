@@ -33,7 +33,7 @@ const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
 // ── 확인 값(S3) — claude-drafted: 2026-10-18 ──
 // 고른 방식: 서버가 홈 폴더 파일(~/.navigator-event-token, 나만 읽기 600)에 긴 임의 값을 만들어 둔다. 훅(hook.js)은 그 파일을 읽어
 // X-Nav-Token 머리글로 보내고, 화면은 서버가 페이지(html)를 줄 때 같이 주는 쿠키로 보낸다 — HttpOnly(스크립트가 못 읽음),
-// SameSite=Strict, Path=/api/events(알림 주소에만 실림). 그래서 화면 코드(app.js)는 고치지 않는다: 같은 서버로 부르는 fetch는 쿠키를 저절로 싣는다.
+// SameSite=Strict, Path=/api(알림 주소와 AI 주소에 실림 — 2026-10-18 F-04로 /api/events에서 넓힘). 그래서 화면 코드(app.js)는 고치지 않는다: 같은 서버로 부르는 fetch는 쿠키를 저절로 싣는다.
 // 다른 방식을 버린 이유: 환경변수로 받으면 훅을 띄우는 Claude Code·Codex에도 같은 값을 넣어야 하고, 페이지 글에 값을 박으면 스크립트가 읽을 수 있다.
 // 파일이 있으면 그대로 쓴다 — 서버를 다시 켜도(S5) 열어 둔 화면의 쿠키와 훅이 계속 맞는다. 바꾸려면 파일을 지우고 다시 켠다.
 // 쿠키는 포트를 가리지 않아 같은 컴퓨터의 다른 로컬 서버(127.0.0.1:다른 포트)의 /api/events 요청에도 실린다 — 그 서버도 같은 사용자의
@@ -42,6 +42,10 @@ const DEFAULT_TOKEN_FILE = path.join(os.homedir(), ".navigator-event-token");
 const TOKEN_FILE = process.env.NAV_EVENT_TOKEN_FILE || DEFAULT_TOKEN_FILE;
 const COOKIE = "nav_event_token";
 const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear"];
+// F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
+// 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review"];
+const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES];
 const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
@@ -170,12 +174,12 @@ async function handle(req, res) {
     const [file, type] = FILES[req.url];
     const head = { "Content-Type": `${type}; charset=utf-8` };
     // S3: 페이지(html)를 줄 때 확인 값 쿠키를 같이 준다. 캐시에서 다시 꺼낸 페이지는 쿠키를 다시 못 주므로 저장하지 않게 한다
-    if (type === TYPES.html) Object.assign(head, { "Set-Cookie": `${COOKIE}=${theToken()}; Path=/api/events; HttpOnly; SameSite=Strict`, "Cache-Control": "no-store" });
+    if (type === TYPES.html) Object.assign(head, { "Set-Cookie": `${COOKIE}=${theToken()}; Path=/api; HttpOnly; SameSite=Strict`, "Cache-Control": "no-store" });
     res.writeHead(200, head);
     return fs.createReadStream(path.join(__dirname, file)).pipe(res);
   }
   const route = req.url.split("?")[0];
-  if (EVENT_ROUTES.includes(route) && !hasToken(req.headers)) return refuse(res, "확인 값이 없거나 맞지 않음 — 화면은 서버 주소로 다시 열고, 훅은 서버를 켠 뒤 다시 보내요", 403);   // S3: 본문을 읽기 전에
+  if (TOKEN_ROUTES.includes(route) && !hasToken(req.headers)) return refuse(res, "확인 값이 없거나 맞지 않음 — 화면은 서버 주소로 다시 열고, 훅은 서버를 켠 뒤 다시 보내요", 403);   // S3: 본문을 읽기 전에
   if (req.method === "GET" && route === "/api/events") {
     const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
     return send(res, 200, { ok: true, latest: seq, events: events.filter((e) => e.seq > since) });

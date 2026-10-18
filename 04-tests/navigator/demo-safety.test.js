@@ -95,7 +95,7 @@ test("S3: 화면을 열면 확인 값이 HttpOnly·SameSite=Strict 쿠키로 오
     assert.ok(cookie, `${page}에서 쿠키가 와야 한다`);
     assert.match(cookie, /;\s*HttpOnly/i);
     assert.match(cookie, /;\s*SameSite=Strict/i);
-    assert.match(cookie, /;\s*Path=\/api\/events(;|$)/, "알림 주소에만 실려 간다");
+    assert.match(cookie, /;\s*Path=\/api(;|$)/, "API 주소(알림 · AI)에만 실려 간다 — F-04로 /api/events에서 넓힘");
     assert.ok(!r.text.includes(token()), "페이지 글(스크립트가 읽을 수 있는 곳)에 값을 넣지 않는다");
   }
   const js = await call("GET", "/app.js");
