@@ -78,7 +78,7 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 | 지금 하려는 작업 | 먼저 읽을 파일 |
 |---|---|
 | 누가 "이게 문제예요 · 이상해요 · 고쳐 줘"라고 할 때(화면 · 판정 · 서버 · 문서 무엇이든) | [`01-docs/07-maintenance/fix-map.md`](01-docs/07-maintenance/fix-map.md) — 증상으로 고칠 곳을 찾고 고칠 목록에 한 줄 (이재엽 결정 2026-10-18: 문제는 7단계에서 고치며 간다) |
-| Jira(할 일 · 릴리스 · PR 잇기)를 다룰 때, 브랜치 · PR 제목에 Jira 키를 넣을 때 | [`01-docs/00-overview/jira.md`](01-docs/00-overview/jira.md) — 할 일은 Jira 프로젝트 Floe, Claude는 Jira를 읽지 못한다 |
+| Jira(할 일 · 릴리스 · PR 잇기)를 다룰 때, 브랜치 · PR 제목에 Jira 키를 넣을 때 | [`01-docs/00-overview/jira.md`](01-docs/00-overview/jira.md) — 할 일은 Jira 프로젝트 Floe. Claude는 Atlassian MCP(`.mcp.json`의 `atlassian`, 각자 `/mcp`로 로그인)로 읽고, **쓰기는 사람이 확인한 뒤에만** |
 | `01-docs/**` 문서를 새로 쓰거나 고침 | [`.claude/rules/docs-editing.md`](.claude/rules/docs-editing.md) |
 | `02-frontend/**`·`03-backend/**`·`04-tests/**` 또는 `05-projects/*/implementations/**` 코드를 새로 쓰거나 고침 | [`.claude/rules/code.md`](.claude/rules/code.md) |
 | git 명령(커밋, 브랜치, 푸시 등) | [`.claude/rules/git-workflow.md`](.claude/rules/git-workflow.md) — **Claude는 main에 올리지 않는다** |
