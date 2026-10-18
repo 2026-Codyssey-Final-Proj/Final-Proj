@@ -60,6 +60,12 @@ html.in-app,html.in-app body{background:transparent}
 /* 투명 창에서는 유리 흐림(backdrop-filter)이 뒤 창을 흐리지 못하고 GPU만 쓴다 — 랙의 원인(2026-10-19). 움직임 줄이기와 같은 불투명 판으로 */
 .in-app .isl,.in-app .pill,.in-app .strip,.in-app .pop,.in-app .glass{-webkit-backdrop-filter:none;backdrop-filter:none}
 .in-app .isl,.in-app .pill{background:#1A2766}
+/* 앱 창은 섬 크기에 맞춰 줄어든다(main.js floe:resize) — 섬을 창의 왼쪽 위에 붙이고 가운데 정렬을 푼다. 창 자체가 화면 가운데에 놓인다 */
+.in-app .nav{left:0;top:0;transform:none;width:940px;max-width:100vw;align-items:flex-start}
+/* 창 높이(100vh)가 섬을 따라오므로 화면 높이에 기댄 제한을 푼다 — 안 풀면 설정 창이 20px로 눌려 돌고 돈다 */
+.in-app .pop{align-self:flex-start;max-height:none;overflow:visible}
+.in-app .isl:has(> .pop){min-height:0}
+.in-app .isl{max-height:none}
 .in-app .tb{-webkit-app-region:drag}
 .in-app .tb button,.in-app .tb select{-webkit-app-region:no-drag}
 .glass{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%)}

@@ -909,6 +909,18 @@
     refract();
     // 카드의 한마디도 다른 한마디처럼 플로로 옆에 잠깐 떴다 사라진다 — 같은 말은 한 번만
     if (cardSay !== lastCardSay) { lastCardSay = cardSay; if (cardSay) { const t = cardSay; requestAnimationFrame(() => say(t)); } }
+    reportSize();
+  }
+  // Electron 앱(2026-10-19): 지금 보이는 것(띠 · 한 줄 · 펼침 · 설정 창까지)의 크기를 앱에 알려 창을 딱 맞춘다 — 투명한 빈 영역이 뒤 창의 클릭을 가로채지 않게.
+  // 그린 직후와 조금 뒤(글 칸이 늘어나거나 움직임이 끝난 뒤) 두 번 잰다
+  function reportSize() {
+    if (!window.floeApp || isPhone()) return;
+    const measure = () => {
+      let r = 0, b = 0;
+      for (const el of $nav.children) { const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
+      if (r && b) window.floeApp.resize(r, b);
+    };
+    requestAnimationFrame(measure); setTimeout(measure, 450);
   }
   PHONE.addEventListener("change", render);
 

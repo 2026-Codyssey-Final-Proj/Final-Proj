@@ -46,17 +46,30 @@ async function startServer() {
     s.listen(PORT, "127.0.0.1", () => { try { Server.eventToken(); } catch {} resolve("ok"); });
   });
 }
-// ④ 창 — 테두리 없음 · 투명 · 항상 위 · 모든 작업 공간. 위쪽 가운데에서 시작한다
+// ④ 창 — 테두리 없음 · 투명 · 항상 위 · 모든 작업 공간. 위쪽 가운데에서 시작한다.
+// 크기는 화면(app.js)이 지금 보이는 섬의 크기를 보내 주면 그때그때 맞춘다(floe:resize) — 첫 알파(3.0.0)에서 1040×760 투명 창의 빈 영역이
+// 뒤 창(VS Code · 터미널)의 클릭을 전부 가로채고 그리기도 무거웠다(이재엽 보고 2026-10-19 "클릭이 안 된다" · "랙")
+const PAD = 6, MIN_W = 240, MIN_H = 60;
 function createWindow() {
-  const { width } = screen.getPrimaryDisplay().workAreaSize, W = 1040, H = 760;
+  const { width } = screen.getPrimaryDisplay().workAreaSize, W = 952, H = 140;
   win = new BrowserWindow({ width: W, height: H, x: Math.max(0, Math.round((width - W) / 2)), y: 0, frame: false, transparent: true, hasShadow: false,
-    alwaysOnTop: true, resizable: true, minimizable: true, title: "Floe",
+    alwaysOnTop: true, resizable: false, minimizable: true, title: "Floe", useContentSize: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   win.setAlwaysOnTop(true, "floating");
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.on("closed", () => { win = null; });
   win.loadURL(URL_);
 }
+// 화면이 알려 준 섬 크기로 창을 맞춘다 — 가로가 바뀌면 가운데를 유지하고(사용자가 옮긴 자리 기준), 세로는 위를 고정
+ipcMain.on("floe:resize", (e, w, h) => {
+  if (!win || e.sender !== win.webContents) return;
+  const W = Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
+  const [cw, ch] = win.getContentSize();
+  if (Math.abs(cw - W) < 2 && Math.abs(ch - H) < 2) return;
+  const [x, y] = win.getPosition();
+  win.setContentSize(W, H, false);
+  win.setPosition(Math.max(0, Math.round(x + (cw - W) / 2)), y, false);
+});
 async function pickAndConnect(add) {
   const r = await dialog.showOpenDialog(win, { title: add ? "Claude Code로 작업하는 프로젝트 폴더" : "연결을 뺄 프로젝트 폴더", properties: ["openDirectory"] });
   if (r.canceled || !r.filePaths[0]) return { ok: false, message: "" };
