@@ -7,7 +7,7 @@
   --desk:#DCE4EE; --win:#FFFFFF; --winbar:#F7F7F8; --side:#F5F6F8; --line:#E6E8EC;
   --ink:#1D1D1F; --ink2:#3A3A3C; --mute:#6E6E73; --sub:#4A5260;
   --glass:rgba(255,255,255,.80); --glass2:rgba(255,255,255,.90); --soft:#F5F6F8; --card:#FFFFFF; --phone:#F2F3F7;
-  --acc:#2F6BFF; --acc-ink:#FFFFFF; --acc-soft:#EEF3FF; --acc-mid:#9DB8F7; --seg:#D5DBE5;
+  --acc:#2860EE; --acc-btn:#2860EE; --acc-ink:#FFFFFF; --acc-soft:#EEF3FF; --acc-mid:#9DB8F7; --seg:#D5DBE5;
   --ok:#1E7A47; --okbg:#E3F4EA; --warn:#8A5A00; --warnbg:#FFF4DE; --bad:#A32D2D; --badbg:#FDEAEA;
   /* 카드 색 — 바탕(t-*)과 그 위의 글·뱃지(t-*-ink), 진한 버튼 바탕 */
   --t-blue:#EEF3FF; --t-blue-ink:#2F6BFF;
@@ -22,7 +22,7 @@
   --desk:#1B1D22; --win:#1F2024; --winbar:#26272C; --side:#222328; --line:#34363C;
   --ink:#F2F2F5; --ink2:#D6D6DC; --mute:#A1A1AA; --sub:#C3C8D2;
   --glass:rgba(40,41,46,.80); --glass2:rgba(36,37,42,.94); --soft:#2A2B30; --card:#2A2C32; --phone:#111214;
-  --acc:#5B8CFF; --acc-ink:#FFFFFF; --acc-soft:#22305A; --acc-mid:#3D5BA8; --seg:#43464E;
+  --acc:#7AA2FF; --acc-btn:#3A67D6; --acc-ink:#FFFFFF; --acc-soft:#22305A; --acc-mid:#3D5BA8; --seg:#43464E;   /* 글씨용 강조색과 버튼 바탕색을 나눴다 — 하나(#5B8CFF)로는 파란 글씨 4.41 · 흰 글씨 버튼 3.16이라 둘 다 4.5 미달(axe, 2026-10-18 F-15) */
   --ok:#5DCAA5; --okbg:#10332A; --warn:#F0B955; --warnbg:#3A2D10; --bad:#F09595; --badbg:#3D1C1C;
   --t-blue:#1C2747; --t-blue-ink:#8DB0FF;
   --t-green:#14301F; --t-green-ink:#6FD3A6; --ok-btn:#238A57;
@@ -108,10 +108,10 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .pop .link{background:var(--soft)}
 
 /* 가로 카드 — 상황마다 색 */
-.tone-blue{--tint:var(--t-blue);--tink:var(--t-blue-ink);--pb:var(--acc);--pi:#FFFFFF}
+.tone-blue{--tint:var(--t-blue);--tink:var(--t-blue-ink);--pb:var(--acc-btn);--pi:#FFFFFF}
 .tone-green{--tint:var(--t-green);--tink:var(--t-green-ink);--pb:var(--ok-btn);--pi:#FFFFFF}
 .tone-amber{--tint:var(--t-amber);--tink:var(--t-amber-ink);--pb:var(--ink);--pi:var(--win)}
-.tone-gray{--tint:var(--t-gray);--tink:var(--t-gray-ink);--pb:var(--acc);--pi:#FFFFFF}
+.tone-gray{--tint:var(--t-gray);--tink:var(--t-gray-ink);--pb:var(--acc-btn);--pi:#FFFFFF}
 .tone-red{--tint:var(--t-red);--tink:var(--t-red-ink);--pb:var(--bad-btn);--pi:#FFFFFF}
 .mc{display:flex;gap:22px;align-items:center;padding:18px 24px 20px 16px;border-radius:22px;background:var(--tint);transition:background .3s}
 .mc-cat{position:relative;flex:none;width:124px;display:grid;place-items:center;align-self:center}
@@ -134,14 +134,14 @@ button:disabled{opacity:.45;cursor:not-allowed}
   transition:transform .12s ease,box-shadow .15s ease,background .15s}
 .b:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 12px rgba(30,40,60,.12)}
 .b:active:not(:disabled){transform:scale(.97)}
-.b.pri{background:var(--pb,var(--acc));color:var(--pi,#FFFFFF);border-color:transparent;font-weight:700}
+.b.pri{background:var(--pb,var(--acc-btn));color:var(--pi,var(--acc-ink));border-color:transparent;font-weight:700}
 .b.ghost{background:transparent;border-color:transparent;color:var(--sub);padding:0 12px}
 .b.ghost:hover:not(:disabled){box-shadow:none;background:rgba(127,127,127,.10)}
 .b.soft{background:transparent;border-style:dashed}
 .b.opt{padding-left:8px;text-align:left}
 .b.opt:hover:not(:disabled){border-color:var(--tink)}
 .b.toggle[aria-pressed=true]{border:2px solid var(--tink);background:var(--card);font-weight:600}
-.b kbd{min-width:22px;height:22px;padding:0 6px;border-radius:6px;border:1px solid currentColor;opacity:.6;display:inline-flex;align-items:center;justify-content:center;
+.b kbd{min-width:22px;height:22px;padding:0 6px;border-radius:6px;border:1px solid currentColor;opacity:.85;display:inline-flex;align-items:center;justify-content:center;
   font-family:inherit;font-size:11px;font-weight:500;line-height:1;letter-spacing:0}
 .b.toggle[aria-pressed=true] kbd{background:var(--tink);color:var(--card);border-color:var(--tink);opacity:1}
 .answer{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:14px;background:var(--card);font-size:14px}
@@ -235,7 +235,7 @@ ol.track::before{content:"";position:absolute;left:6.25%;right:6.25%;top:52px;he
 .opt[aria-pressed=true]{border:2px solid var(--acc);background:var(--acc-soft)}
 .opt[aria-pressed=true] .radio{border:5px solid var(--acc);background:#fff}
 .btn{min-height:44px;border:0;border-radius:12px;padding:0 18px;font-size:15px;background:rgba(127,127,127,.14)}
-.btn.pri{background:var(--acc);color:var(--acc-ink);font-weight:700}
+.btn.pri{background:var(--acc-btn);color:var(--acc-ink);font-weight:700}
 .btn.wide{width:100%}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .row .grow,.grow{flex:1}
@@ -262,7 +262,7 @@ details summary::after{content:"▾";margin-left:6px;font-size:11px}details[open
 details summary:hover{color:var(--acc)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{font-size:12px;padding:4px 10px;border-radius:999px;background:var(--card);color:var(--mute);border:1px solid var(--line)}
-.chip.done{background:var(--okbg);color:var(--ok);border-color:transparent}.chip.cur{background:var(--acc);color:var(--acc-ink);border-color:transparent;font-weight:700}
+.chip.done{background:var(--okbg);color:var(--ok);border-color:transparent}.chip.cur{background:var(--acc-btn);color:var(--acc-ink);border-color:transparent;font-weight:700}
 .flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:6px;align-items:center}
 .flow .box{border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:13px;min-height:64px;background:var(--card)}
 .flow .box b{display:block;font-size:11px;color:var(--mute);font-weight:600}
@@ -333,7 +333,7 @@ button.pet:focus-visible{outline-offset:4px}
     --win:#0F1847; --winbar:#121D55; --side:#0D1642; --line:rgba(255,255,255,.14);
     --ink:#F2F6FF; --ink2:#D6E0F5; --mute:#9DAED6; --sub:#B9C7E6;
     --glass2:rgba(34,52,128,.42); --soft:rgba(255,255,255,.05); --card:rgba(255,255,255,.07);
-    --acc:#A9DDFF; --acc-ink:#0E1A4F; --acc-soft:rgba(169,221,255,.16); --acc-mid:rgba(169,221,255,.5); --seg:rgba(255,255,255,.18);
+    --acc:#A9DDFF; --acc-btn:#A9DDFF; --acc-ink:#0E1A4F; --acc-soft:rgba(169,221,255,.16); --acc-mid:rgba(169,221,255,.5); --seg:rgba(255,255,255,.18);
     --ok:#A9DDFF; --okbg:rgba(169,221,255,.14); --warn:#FFD08A; --warnbg:rgba(255,208,138,.14); --bad:#FFA3A3; --badbg:rgba(255,163,163,.14);
     --t-blue:rgba(255,255,255,.06); --t-blue-ink:#A9DDFF; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9DDFF; --ok-btn:#A9DDFF;
     --t-amber:rgba(255,255,255,.06); --t-amber-ink:#FFD08A; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#C9D6F0;
@@ -373,7 +373,7 @@ button.pet:focus-visible{outline-offset:4px}
   /* 섬 안의 카드 — 유리가 아니라 얇은 채움 */
   .mc{border:1px solid rgba(255,255,255,.10)}
   .mc[class*="tone-"]{--pi:var(--acc-ink)}
-  .mc.tone-blue,.mc.tone-green,.mc.tone-gray,.mc.tone-amber{--pb:var(--acc)}
+  .mc.tone-blue,.mc.tone-green,.mc.tone-gray,.mc.tone-amber{--pb:var(--acc-btn)}
   .mc-badge{border-color:#1C2C78}
   .mc-say{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);box-shadow:none}
   .b.pri{box-shadow:0 0 22px rgba(169,221,255,.32)}
