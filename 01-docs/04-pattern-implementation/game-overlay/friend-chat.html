@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>옆자리 플로로 목업</title>
+<!-- claude-drafted: 2026-10-19 — 이재엽 요청("도트가 아니라 친구랑 대화하는 느낌으로 그리고 버튼들로 자신이 실행할 것들을 정하는 느낌으로 … 옆에 플로로는 그대로 넣어줘
+     옆에 플로로가 있고 왼쪽으로는 대화랑 내가 입력할 곳들 그리고 버튼들"). 화면 시안일 뿐 — 서버 · AI · 저장 없음, 답은 정해 둔 글이다.
+     플로로는 02-frontend/navigator/seal.js · seal.css를 그대로 불러와 그렸다. 색과 유리는 app.css의 "PC 리퀴드 글래스"(네이비 + 아이스 블루)를 따랐다.
+     할 일 문구는 03-backend/navigator/navigator.js, 쉬운 말 풀이는 glossary.js에서 옮겼다. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="../../../02-frontend/navigator/seal.css">
+<style>
+:root {
+  --navy-1: #1A2A86; --navy-2: #0E1850; --navy-3: #091142;
+  --ink: #F2F6FF; --ink2: #D6E0F5; --mute: #9DAED6;
+  --ice: #A9DDFF; --ice-ink: #0E1A4F; --ice-soft: rgba(169, 221, 255, .16);
+  --fill: rgba(255, 255, 255, .07); --fill2: rgba(255, 255, 255, .11); --line: rgba(255, 255, 255, .14);
+  --warm: #FFD08A;
+  --canvas: #10163d;
+  --ui: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font: 15px/1.6 var(--ui); color: var(--ink2);
+  background: radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent) fixed, radial-gradient(1px 1px at 31% 8%, #DDE8FF, transparent) fixed,
+    radial-gradient(1.5px 1.5px at 47% 27%, #fff, transparent) fixed, radial-gradient(1px 1px at 63% 12%, #DDE8FF, transparent) fixed,
+    radial-gradient(1.5px 1.5px at 78% 22%, #fff, transparent) fixed, radial-gradient(1px 1px at 89% 6%, #DDE8FF, transparent) fixed,
+    linear-gradient(105deg, transparent 30%, rgba(140, 190, 255, .10) 36%, transparent 44%) fixed,
+    linear-gradient(80deg, transparent 58%, rgba(140, 190, 255, .08) 63%, transparent 70%) fixed,
+    radial-gradient(ellipse at 70% -10%, #3556C9 0%, transparent 55%) fixed, linear-gradient(180deg, var(--navy-1) 0%, var(--navy-2) 55%, var(--navy-3) 100%) fixed;
+  background-color: var(--navy-3);
+  padding: 40px max(16px, env(safe-area-inset-right, 0px)) 96px max(16px, env(safe-area-inset-left, 0px));
+}
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+
+/* ── 캔버스 ── */
+.sheet { max-width: 1560px; margin: 0 auto; }
+.sheet-head { display: grid; gap: 14px; margin-bottom: 36px; }
+h1 { font: 700 34px/1.2 var(--ui); color: var(--ink); margin: 0; letter-spacing: -0.01em; }
+.sheet-head p { margin: 0; max-width: 64ch; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; font-size: 14px; }
+.seg { display: inline-flex; align-items: center; gap: 10px; }
+.seg div { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { all: unset; padding: 5px 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ice); color: var(--ice-ink); font-weight: 600; }
+.seg button:focus-visible, .reset:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+kbd { font: 12px/1.5 var(--ui); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 0 6px; color: var(--ink); }
+.keys { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.keys em { font-style: normal; margin-right: 10px; }
+.boards { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+.board { margin: 0; min-width: 0; max-width: 100%; }
+.board figcaption { display: flex; justify-content: space-between; gap: 16px; font-size: 13px; margin-bottom: 10px; }
+.board figcaption b { color: var(--ink); font-weight: 600; }
+.reset { all: unset; cursor: pointer; color: var(--ice); }
+.scroll { overflow-x: auto; max-width: 100%; padding: 4px; }
+.notes { margin-top: 64px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+@media (max-width: 960px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+h2 { font: 600 21px/1.3 var(--ui); color: var(--ink); margin: 0 0 16px; }
+.notes ol { margin: 0; padding-left: 1.2em; }
+.notes li { margin-bottom: 12px; max-width: 56ch; }
+.notes li::marker { color: var(--ice); }
+.notes li b { color: var(--ink); font-weight: 600; }
+.fine { font-size: 13px; color: var(--mute); max-width: 60ch; margin-top: 18px; }
+
+/* ── 화면: 섬(유리) ── */
+.chatapp {
+  position: relative; width: 1120px; height: 680px; border-radius: 30px; color: var(--ink2);
+  display: grid; grid-template-columns: minmax(0, 1fr) 300px; overflow: hidden; container-type: inline-size;
+  background: rgba(26, 42, 116, .30); -webkit-backdrop-filter: blur(14px) saturate(150%); backdrop-filter: blur(14px) saturate(150%);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .6), inset -1px -1px 0 rgba(255, 255, 255, .2), inset 0 0 0 .5px rgba(255, 255, 255, .14), 0 24px 60px rgba(0, 4, 30, .55);
+}
+.chatapp.phone { width: 390px; height: 820px; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); border-radius: 34px; }
+@media (prefers-reduced-transparency: reduce) { .chatapp { background: #1A2766; -webkit-backdrop-filter: none; backdrop-filter: none; } }
+
+.talk { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto; min-width: 0; min-height: 0; }
+.phone .talk { grid-row: 2; grid-template-rows: minmax(0, 1fr) auto auto; }   /* 위 줄(.top)이 숨으면 칸이 하나 줄어든다 */
+.talk > * { min-width: 0; }
+.top { display: flex; align-items: center; gap: 14px; padding: 20px 26px 14px; border-bottom: 1px solid var(--line); }
+.phone .top { display: none; }
+.top .stage { font-weight: 700; color: var(--ink); font-size: 16px; }
+.top .grow { flex: 1; }
+.chip { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--ice-soft); color: var(--ice); white-space: nowrap; }
+.chip.dim { background: var(--fill); color: var(--mute); }
+
+.log { overflow-y: auto; padding: 18px 26px 10px; display: flex; flex-direction: column; gap: 10px; scroll-behavior: smooth; }
+.phone .log { padding: 14px 16px 8px; }
+.row { display: flex; }
+.row.me { justify-content: flex-end; }
+.bub { max-width: min(76%, 560px); padding: 10px 15px; border-radius: 20px; line-height: 1.55; font-size: 15px; overflow-wrap: anywhere; }
+.floro .bub { background: var(--fill2); border: 1px solid var(--line); border-bottom-left-radius: 6px; color: var(--ink); }
+.me .bub { background: var(--ice); color: var(--ice-ink); border-bottom-right-radius: 6px; font-weight: 500; }
+.who { font-size: 12px; color: var(--mute); margin: 6px 0 -4px 4px; }
+.phone .bub { max-width: 86%; font-size: 14.5px; }
+.typing .bub { display: inline-flex; gap: 5px; align-items: center; height: 40px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink2); animation: hop 1s ease-in-out infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes hop { 0%, 60%, 100% { transform: none; opacity: .5; } 30% { transform: translateY(-5px); opacity: 1; } }
+.in { animation: up .28s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes up { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+
+/* 대화 속 카드 — 할 일 · Claude가 한 일 · 단계 끝 */
+.card { border: 1px solid var(--line); background: rgba(255, 255, 255, .05); border-radius: 18px; padding: 12px 16px; max-width: min(88%, 620px); }
+.phone .card { max-width: 100%; }
+.card h4 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--mute); display: flex; align-items: center; gap: 8px; }
+.card ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.card li { display: flex; gap: 8px; align-items: baseline; color: var(--ink2); }
+.card li .ck { flex: none; width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--mute); display: inline-grid; place-items: center; font-size: 12px; transform: translateY(3px); }
+.card li.ok { color: var(--mute); }
+.card li.ok .ck { background: var(--ice); border-color: var(--ice); color: var(--ice-ink); }
+.card li .by { margin-left: auto; font-size: 12px; color: var(--mute); white-space: nowrap; }
+.card.work .steps { display: grid; gap: 3px; font-size: 14px; }
+.card.work .steps span { color: var(--mute); }
+.card.work .steps span.now { color: var(--ink); }
+.card.work .steps span.now::after { content: "…"; }
+.card.work pre { margin: 8px 0 0; font: 13px/1.6 var(--code); color: var(--ice); white-space: pre-wrap; }
+.card.work .file { font: 12px var(--code); color: var(--ink2); background: var(--fill); padding: 1px 8px; border-radius: 6px; }
+.card.clear { border-color: rgba(169, 221, 255, .55); background: var(--ice-soft); }
+.card.clear b { color: var(--ink); font-size: 16px; }
+.card.clear .gets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+/* 고르기 — 내가 할 일 */
+.choose { padding: 10px 26px 6px; border-top: 1px solid var(--line); }
+.phone .choose { padding: 8px 14px 4px; }
+.choose .q { font-size: 13px; color: var(--mute); margin: 0 0 8px; }
+.picks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.phone .picks { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+.pick { all: unset; box-sizing: border-box; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 10px; padding: 9px 12px; border-radius: 16px;
+  background: var(--fill); border: 1px solid var(--line); transition: transform .3s cubic-bezier(.34, 1.56, .64, 1), background .15s; min-width: 0; }
+.phone .pick { flex: 0 0 210px; scroll-snap-align: start; }
+.pick:hover { background: var(--fill2); transform: translateY(-1px); }
+.pick:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+.pick .ic { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--fill2); color: var(--ice); }
+.pick .ic svg { width: 18px; height: 18px; }
+.pick .lb { min-width: 0; display: grid; }
+.pick .lb b { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14.5px; }
+.pick .lb small { font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pick kbd { opacity: .8; }
+.pick.pri { background: var(--ice); border-color: transparent; box-shadow: 0 0 22px rgba(169, 221, 255, .32); }
+.pick.pri .ic { background: rgba(14, 26, 79, .12); color: var(--ice-ink); }
+.pick.pri .lb b, .pick.pri .lb small, .pick.pri kbd { color: var(--ice-ink); border-color: var(--ice-ink); }
+.pick.locked { border-style: dashed; background: transparent; }
+.pick.locked .ic { color: var(--mute); }
+.pick.nope { animation: nope .35s; }
+@keyframes nope { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+.say { padding: 6px 26px 20px; }
+.phone .say { padding: 6px 14px 16px; }
+.field { display: flex; align-items: flex-end; gap: 10px; background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .22); border-radius: 22px; padding: 8px 8px 8px 16px; }
+.field.self { border-color: var(--ice); box-shadow: 0 0 0 3px rgba(169, 221, 255, .18); }
+.field textarea { all: unset; flex: 1; min-height: 24px; max-height: 96px; font: 15px/1.6 var(--ui); color: var(--ink); padding: 4px 0; white-space: pre-wrap; overflow-y: auto; }
+.field textarea::placeholder { color: var(--mute); }
+.send { all: unset; flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--ice); color: var(--ice-ink); display: grid; place-items: center; cursor: pointer; }
+.send svg { width: 18px; height: 18px; }
+.send:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.say p { margin: 6px 4px 0; font-size: 12px; color: var(--mute); }
+
+/* ── 옆자리 플로로 ── */
+.side { border-left: 1px solid var(--line); background: rgba(255, 255, 255, .035); display: grid; grid-template-rows: 1fr auto; padding: 22px 22px 24px; min-height: 0; }
+.phone .side { grid-row: 1; border-left: 0; border-bottom: 1px solid var(--line); grid-template-rows: auto; padding: 16px 18px 12px; }
+.stagewrap { display: grid; justify-items: center; align-content: center; gap: 10px; position: relative; }
+.phone .stagewrap { grid-template-columns: auto 1fr; justify-items: start; align-items: center; gap: 4px 12px; }
+.pet { all: unset; cursor: pointer; line-height: 0; border-radius: 50%; position: relative; }
+.pet:focus-visible { outline: 2px solid var(--ice); outline-offset: 6px; }
+.phone .pet { grid-column: 1; grid-row: 1 / span 3; }
+.phone .name { grid-column: 2; grid-row: 1; } .phone .mood { grid-column: 2; grid-row: 2; } .phone .think { grid-column: 2; grid-row: 3; }
+.think { position: relative; max-width: 240px; background: var(--fill2); border: 1px solid var(--line); color: var(--ink); border-radius: 18px; padding: 8px 14px; font-size: 14px; text-align: center; }
+.think::after { content: ""; position: absolute; left: 50%; bottom: -7px; width: 12px; height: 12px; background: inherit; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: translateX(-50%) rotate(45deg); background: #2b3b8a; }
+.phone .think { text-align: left; max-width: none; padding: 0; background: none; border: 0; font-size: 14px; }
+.phone .think::after { display: none; }
+.name { font-weight: 700; color: var(--ink); font-size: 17px; }
+.phone .name { font-size: 15px; }
+.mood { font-size: 13px; color: var(--mute); }
+.stats { display: grid; gap: 12px; }
+.phone .stats { display: none; }
+.meter { display: grid; gap: 6px; }
+.meter .l { display: flex; justify-content: space-between; font-size: 13px; color: var(--mute); }
+.meter .l b { color: var(--ink); font-weight: 600; }
+.pips { display: flex; gap: 4px; }
+.pips i { flex: 1; height: 6px; border-radius: 3px; background: var(--fill2); }
+.pips i.on { background: var(--ice); }
+.path { display: flex; gap: 6px; justify-content: space-between; }
+.path i { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font: 600 11px var(--ui); font-style: normal; color: var(--mute); }
+.path i.done { background: var(--ice); border-color: var(--ice); color: var(--ice-ink); }
+.path i.cur { border-color: var(--ice); color: var(--ice); }
+.bag { display: flex; gap: 8px; }
+.bag span { flex: 1; text-align: center; background: var(--fill); border-radius: 12px; padding: 6px 4px; font-size: 12px; color: var(--mute); }
+.bag span b { display: block; color: var(--ink); font-size: 18px; }
+.bag span.pop { animation: pop .5s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes pop { 40% { transform: scale(1.12); } }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cat .c-fur, .cat .c-paws ellipse { stroke: none; }   /* app.css와 같이: 네이비 위에서는 테두리 없이 */
+
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 30; }
+.fx { position: fixed; transform: translate(-50%, -50%); animation: fly 1s cubic-bezier(.2, .7, .3, 1) forwards; opacity: 0; }
+.fx svg { display: block; }
+@keyframes fly { 0% { opacity: 0; transform: translate(-50%, -50%) scale(.4); } 15% { opacity: 1; } 70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(var(--r)) scale(1.05); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .typing i, .in, .pick, .pick.nope, .bag span.pop { animation: none; transition: none; }
+  .log { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+<div id="fx" aria-hidden="true"></div>
+<main class="sheet">
+  <header class="sheet-head">
+    <h1>옆자리 플로로</h1>
+    <p>지금의 '시작하기' 카드를 플로로와 나누는 대화로 바꿔 본 목업이에요. 왼쪽에서 이야기하고, 아래 버튼으로 내가 할 일을 골라요. 버튼마다 누르면 무슨 일이 생기는지가 먼저 보이고, 플로로는 오른쪽에서 표정으로 따라와요. 두 화면 모두 직접 해 볼 수 있어요.</p>
+    <div class="controls">
+      <div class="seg"><span>플로로 말투</span><div role="group" aria-label="플로로 말투"><button type="button" data-tone="f" aria-pressed="true">친구처럼</button><button type="button" data-tone="p" aria-pressed="false">다정한 존댓말</button></div></div>
+      <span class="keys"><kbd>1</kbd>~<kbd>6</kbd><em>버튼 고르기</em><kbd>Enter</kbd><em>보내기</em><span>플로로를 누르면 쓰다듬어요</span></span>
+    </div>
+  </header>
+
+  <section class="boards" aria-label="직접 해 보기">
+    <figure class="board"><figcaption><b>PC 화면 1120×680</b><button type="button" class="reset" data-reset="pc">처음부터</button></figcaption>
+      <div class="scroll"><div class="chatapp" id="pc"></div></div></figure>
+    <figure class="board"><figcaption><b>휴대폰 화면 390×820</b><button type="button" class="reset" data-reset="ph">처음부터</button></figcaption>
+      <div class="chatapp phone" id="ph"></div></figure>
+  </section>
+
+  <section class="notes">
+    <div>
+      <h2>지금 화면에서 달라지는 것</h2>
+      <ol>
+        <li><b>카드 하나 대신 이어지는 대화.</b> 지난 결정과 Claude가 한 일이 위로 쌓여서, 올려 보면 어디서 무엇을 정했는지 보여요.</li>
+        <li><b>버튼은 내가 할 행동.</b> 누가 하는지(Claude, 나, 플로로)와 드는 토큰이 버튼 아래에 먼저 보여요. 추천하는 하나만 밝게 칠했어요.</li>
+        <li><b>직접 하면 책갈피가 생겨요.</b> Claude에게 맡긴 할 일과 내가 직접 쓴 할 일이 다르게 쌓여서, 배운 것이 서재로 이어져요.</li>
+        <li><b>Claude가 한 일은 대화 속 작업 카드로.</b> 어느 파일에 무엇을 더했는지 한 줄로 보여요.</li>
+        <li><b>잠긴 '다음 단계로'.</b> 할 일이 남으면 점선으로 잠기고, 누르면 플로로가 무엇이 남았는지 알려 줘요.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>같이 정할 것</h2>
+      <ol>
+        <li>플로로 말투를 친구처럼(반말) 할지, 다정한 존댓말로 할지. 위의 토글로 견줘 볼 수 있어요.</li>
+        <li>버튼 여섯 개가 많은지. 휴대폰에서는 옆으로 밀어서 봐요.</li>
+        <li>직접 쓴 할 일에만 책갈피를 주는 규칙이 맞는지.</li>
+        <li>대화 기록을 어디까지 남길지. 지금 화면처럼 이 브라우저에만 둘지.</li>
+        <li>작업 카드에 Claude의 실제 출력을 얼마나 보일지. 지금은 파일 이름과 한 줄만이에요.</li>
+      </ol>
+      <p class="fine">목업이라 플로로의 답과 Claude가 한 일은 미리 정해 둔 글이에요. 서버와 AI를 부르지 않고, 아무것도 저장하지 않아요. 플로로 그림은 지금 제품의 seal.js를 그대로 썼어요.</p>
+    </div>
+  </section>
+</main>
+
+<script src="../../../02-frontend/navigator/seal.js"></script>
+<script>
+(() => {
+  "use strict";
+  const Seal = window.NavSeal;
+  const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const G = { tone: "f" };
+  const T = (f, p) => (G.tone === "f" ? f : p);
+  const MAX = 40000, PROJECT = "가계부 위젯";
+  const banmal = (s) => s.replace(/이에요/g, "이야").replace(/예요/g, "야");
+
+  // 할 일은 navigator.js의 단계 표에서, 풀이는 glossary.js에서. made: Claude가 했을 때 작업 카드에 보일 한 줄(목업용)
+  const STAGES = [
+    { title: "무엇을 만들지 정하기", term: "규모 등급", file: "idea.md", gloss: "얼마나 크게 만들지 작게·보통·크게로 나눈 것이에요",
+      todos: [["어떤 불편을 풀고 싶은지 한 문장으로 쓰기", "+ 불편: 어디에 돈을 썼는지 한눈에 안 보인다", "예) 어디에 돈을 썼는지 한눈에 안 보여"],
+        ["다 만들면 무엇이 달라지는지 쓰기", "+ 달라지는 것: 하루 10초면 지출을 적고 이번 달 합계를 본다", "예) 하루 10초면 지출을 적고 합계를 봐"],
+        ["누가 쓰는지 쓰기", "+ 누가: 용돈을 관리하는 대학생, 나", "예) 용돈을 관리하는 나"],
+        ["얼마나 크게 만들지 정하기", "+ 크기: 작게 — 화면 하나, 일주일", "예) 작게, 화면 하나로 일주일"]] },
+    { title: "아이디어 적어 두기", term: "의도명세 캔버스", file: "canvas.md", gloss: "왜·무엇을·어디까지 만들지 정해진 빈칸에 채우는 정리표예요",
+      todos: [["정해진 빈칸에 아이디어 채우기", "+ 왜 / 무엇을 / 어디까지 빈칸 3개를 채움", "예) 왜: 돈이 새는 걸 막고 싶어"],
+        ["왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기", "+ 성공: 2주 동안 매일 적으면 성공", "예) 2주 동안 매일 적으면 성공"],
+        ["한 문장에 한 가지 일만, 애매한 말 없이 쓰기", "+ '편하게' → '버튼 두 번 안에'로 고침", "예) 버튼 두 번 안에 적는다"]] },
+    { title: "꼭 필요한 기능 정리하기", term: "EARS", file: "features.md", gloss: "기능을 '~하면, 앱은 ~한다' 꼴로 쓰는 방법이에요",
+      todos: [["기능을 '~하면, 앱은 ~한다' 문장으로 쓰기", "+ 지출을 넣으면, 앱은 이번 달 합계를 바로 고친다", "예) 지출을 넣으면, 앱은 합계를 고친다"],
+        ["'빠르게' 같은 애매한 말을 숫자로 바꾸기", "+ '빠르게' → 1초 안에", "예) 1초 안에"],
+        ["기능마다 꼭 필요한지, 있으면 좋은지 표시하기", "+ 꼭: 입력, 합계 / 있으면 좋음: 분류 그래프", "예) 꼭: 입력과 합계"]] },
+    { title: "만드는 방법 고르기", term: "ADR", file: "adr-0001.md", gloss: "무엇을 왜 골랐는지 남겨 두는 짧은 기록이에요",
+      todos: [["흔히 쓰는 방법 목록에서 먼저 후보를 2개 이상 찾기", "+ 후보: 웹 한 장 / 메모 앱 위젯", "예) 웹 한 장, 위젯"],
+        ["후보끼리 좋은 점과 아쉬운 점 비교하기", "+ 웹 한 장: 쉽다 / 위젯: 늘 보인다", "예) 웹은 쉽고 위젯은 늘 보여"],
+        ["고른 방법과 왜 골랐는지 한 줄을 기록으로 남기기", "+ 결정: 웹 한 장 — 일주일 안에 끝낼 수 있어서", "예) 웹 한 장, 빨리 끝나서"]] },
+    { title: "뼈대 먼저 이어 보기", term: "Walking Skeleton", file: "app.js", gloss: "꾸미기 전에 처음부터 끝까지 이어지기만 하는 가장 단순한 모양이에요",
+      todos: [["가장 단순한 흐름을 처음부터 끝까지 이어 보기", "+ 입력 → 저장 → 합계가 한 번에 이어짐", "예) 입력하고 합계까지 이어 봤어"],
+        ["이어진 게 실제로 도는지 확인하기", "+ 1,000원을 넣으니 합계가 1,000원", "예) 넣으니까 합계가 바뀌었어"],
+        ["남은 일을 작은 할 일로 나누기", "+ 남은 일 5개로 나눔", "예) 분류, 지우기, 달 바꾸기"]] },
+    { title: "하나씩 만들고 확인하기", term: "TDD", file: "app.test.js", gloss: "확인 방법을 먼저 정하고, 그 확인을 통과하게 만드는 순서예요",
+      todos: [["확인 방법을 먼저 정하고 만들기", "+ 시험 3개를 먼저 씀", "예) 합계가 맞는지부터 확인"],
+        ["작은 부분마다 확인 통과하기", "+ 시험 3개 모두 통과", "예) 셋 다 통과했어"],
+        ["쓰는 사람 입장의 시나리오대로 돌려 보기", "+ '점심값 넣기' 시나리오 통과", "예) 점심값을 넣어 봤어"]] },
+    { title: "실제로 써 보고 재 보기", term: "검증 기록", file: "check.md", gloss: "실제로 재 본 값과 못 한 것을 적어 둔 기록이에요",
+      todos: [["2단계에서 정한 숫자를 실제로 재 보기", "+ 입력까지 0.4초", "예) 0.4초 걸렸어"],
+        ["잰 값을 그대로 적어 두기", "+ check.md에 잰 값 3개", "예) 세 개 적었어"],
+        ["재지 못한 것을 '아직 못 함'으로 적어 두기", "+ 아직 못 함: 휴대폰에서 재기", "예) 휴대폰은 아직 못 했어"]] },
+    { title: "돌아보고 배운 것 남기기", term: "회고", file: "retro.md", gloss: "끝난 뒤 잘된 점과 아쉬운 점을 돌아보는 일이에요",
+      todos: [["잘된 점과 아쉬운 점 돌아보기", "+ 잘된 점 2, 아쉬운 점 1", "예) 입력이 빨라서 좋았어"],
+        ["'왜?'를 다섯 번 물어 진짜 원인 찾기", "+ 원인: 분류가 너무 많았다", "예) 분류가 많아서 귀찮았어"],
+        ["배운 것을 다음에 쓸 수 있게 남기기", "+ 서재에 책갈피 2장", "예) 입력 칸은 적을수록 좋다"]] },
+  ];
+  const MOOD_WORD = { idle: "같이 기다리는 중", happy: "신났어요", think: "생각하는 중", wow: "깜짝 기뻐요", sleep: "쉬는 중", look: "귀 기울이는 중", love: "기분 좋아요", done: "뿌듯해요" };
+
+  const ICON = {
+    spark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg>',
+    pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>',
+    map: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></svg>',
+    ask: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 .3c0 1.7-2.5 2-2.5 3.7"/><path d="M12 17h.01"/></svg>',
+    moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>',
+    next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 5l12 7-12 7z"/></svg>',
+    send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+    code: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/></svg>',
+  };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const wait = (ms) => new Promise((r) => setTimeout(r, STILL ? Math.min(ms, 60) : ms));
+  const num = (n) => n.toLocaleString("ko-KR");
+  const pp = (w, a, b) => { const c = w.charCodeAt(w.length - 1); const has = c >= 0xac00 && c <= 0xd7a3 ? (c - 0xac00) % 28 !== 0 : /[LMNlmn]$|Skeleton$/.test(w); return has ? a : b; };   // 조사만
+  const josa = (w, a, b) => w + pp(w, a, b);
+  const apps = [];
+
+  function makeApp(root) {
+    const phone = root.classList.contains("phone");
+    let s, busy = false, epoch = 0;
+    const fresh = () => ({ stage: 0, done: [], mine: [], hp: MAX, marks: 0, terms: 0, mode: "intro", mood: "idle", self: null });
+
+    root.innerHTML = `
+      <section class="talk">
+        <div class="top"><span class="stage"></span><span class="grow"></span><span class="chip">진짜 AI</span><span class="chip dim hp"></span></div>
+        <div class="log" role="log" aria-live="polite" aria-label="플로로와 나눈 이야기"></div>
+        <div class="choose"><p class="q"></p><div class="picks" role="group" aria-label="내가 할 일"></div></div>
+        <div class="say"><div class="field"><textarea rows="1" aria-label="플로로에게 말하기"></textarea><button type="button" class="send" aria-label="보내기">${ICON.send}</button></div>
+          <p>보여 준 글은 AI(Claude)에게 보내져요. 비밀번호나 다른 사람 연락처는 빼 주세요.</p></div>
+      </section>
+      <aside class="side" aria-label="옆자리 플로로">
+        <div class="stagewrap"><p class="think"></p><button type="button" class="pet" aria-label="플로로 쓰다듬기"></button>
+          <span class="name">플로로</span><span class="mood"></span></div>
+        <div class="stats">
+          <div class="meter"><div class="l"><span>이번 단계 할 일</span><b class="cnt"></b></div><div class="pips"></div></div>
+          <div class="meter"><div class="l"><span>지나온 단계</span></div><div class="path" aria-hidden="true"></div></div>
+          <div class="bag"><span class="b-marks"><b>0</b>책갈피</span><span class="b-terms"><b>0</b>배운 말</span><span class="b-hp"><b></b>남은 토큰</span></div>
+        </div>
+      </aside>`;
+    const $ = (q) => root.querySelector(q);
+    const log = $(".log"), picks = $(".picks"), ta = $("textarea"), field = $(".field");
+    const st = () => STAGES[s.stage];
+    const left = () => st().todos.map((_, i) => i).filter((i) => !s.done.includes(i));
+    const next = () => (left().length ? st().todos[left()[0]] : null);
+
+    // ── 옆자리 ──
+    function mood(m, line) {
+      s.mood = m;
+      $(".pet").innerHTML = Seal.svg(m, phone ? 64 : 200);
+      $(".mood").textContent = MOOD_WORD[m] || "";
+      if (line !== undefined) $(".think").textContent = line;
+    }
+    function drawSide(popKey) {
+      $(".stage").textContent = `${s.stage}단계 ${st().title}`;
+      $(".hp").textContent = `토큰 ${num(s.hp)} 남음`;
+      $(".cnt").textContent = `${s.done.length} / ${st().todos.length}`;
+      $(".pips").innerHTML = st().todos.map((_, i) => `<i class="${s.done.includes(i) ? "on" : ""}"></i>`).join("");
+      $(".path").innerHTML = STAGES.map((_, i) => `<i class="${i < s.stage ? "done" : i === s.stage ? "cur" : ""}">${i}</i>`).join("");
+      $(".b-marks b").textContent = s.marks; $(".b-terms b").textContent = s.terms; $(".b-hp b").textContent = `${Math.round(s.hp / 1000)}천`;
+      if (popKey) { const el = $(`.b-${popKey}`); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+      if (phone) $(".mood").textContent = `${MOOD_WORD[s.mood] || ""} · ${s.stage}단계 ${s.done.length}/${st().todos.length}`;
+    }
+
+    // ── 대화 ──
+    const scroll = () => { log.scrollTop = log.scrollHeight; };
+    function add(html, cls = "") {
+      const el = document.createElement("div");
+      el.className = `row ${cls} in`;
+      el.innerHTML = html;
+      log.appendChild(el); scroll();
+      return el;
+    }
+    const me = (text) => add(`<div class="bub">${esc(text)}</div>`, "me");
+    async function floro(text, m) {
+      const my = epoch;
+      const dots = add(`<div class="bub"><i></i><i></i><i></i></div>`, "floro typing");
+      await wait(Math.min(1100, 380 + text.length * 14));
+      if (my !== epoch) return;
+      dots.remove();
+      add(`<div class="bub">${esc(text)}</div>`, "floro");
+      if (m) mood(m);
+    }
+    const card = (html, cls = "") => add(`<div class="card ${cls}">${html}</div>`, "floro");
+    const todoCard = () => card(`<h4>${s.stage}단계 할 일 · ${s.done.length}/${st().todos.length}</h4><ul>${st().todos.map((t, i) => `<li class="${s.done.includes(i) ? "ok" : ""}">
+      <span class="ck">${s.done.includes(i) ? "✓" : ""}</span><span>${esc(t[0])}</span>${s.done.includes(i) ? `<span class="by">${s.mine.includes(i) ? "내가 씀" : "Claude"}</span>` : ""}</li>`).join("")}</ul>`);
+
+    // ── 고르기 — 지금 할 수 있는 일 ──
+    function choices() {
+      const n = next(), lf = left().length;
+      if (s.mode === "intro") return [{ k: "example", ic: "play", b: "예시로 시작하기", sm: "가계부 위젯을 만드는 중이라고 할게요", pri: true }];
+      if (s.mode === "rest") return [{ k: "resume", ic: "play", b: "이어서 하기", sm: n ? `「${n[0]}」부터` : "다음 단계로", pri: true }];
+      if (s.mode === "end") return [{ k: "again", ic: "play", b: "처음부터 다시", sm: "목업을 다시 해 봐요", pri: true }];
+      return [
+        ...(n ? [{ k: "claude", ic: "spark", b: "Claude랑 같이 하기", sm: `${st().file} · 토큰 약 2,500`, pri: true },
+          { k: "self", ic: "pen", b: "내가 직접 써 볼게", sm: "책갈피 +1 · 플로로가 봐 줘요" }] : []),
+        { k: "where", ic: "map", b: "지금 어디쯤이야?", sm: `남은 할 일 ${lf}개 보기` },
+        { k: "term", ic: "ask", b: `「${st().term}」${pp(st().term, "이", "가")} 뭐야?`, sm: "쉬운 말로 한 줄" },
+        { k: "rest", ic: "moon", b: "잠깐 쉴래", sm: "여기 표시해 두기" },
+        lf ? { k: "pass", ic: "lock", b: "다음 단계로", sm: `할 일 ${lf}개 남음`, locked: true }
+          : { k: "pass", ic: "next", b: "다음 단계로", sm: "할 일을 다 했어요", pri: true },
+      ];
+    }
+    function drawPicks() {
+      const list = choices();
+      $(".q").textContent = s.mode === "intro" ? T("뭐 만들고 있는지 알려 줘", "무엇을 만들고 있는지 알려 주세요")
+        : s.mode === "rest" ? T("돌아오면 눌러 줘", "돌아오면 눌러 주세요") : T("이제 뭐 할래?", "이제 무엇을 할까요?");
+      picks.innerHTML = list.map((c, i) => `<button type="button" class="pick${c.pri ? " pri" : ""}${c.locked ? " locked" : ""}" data-k="${c.k}"
+        aria-label="${esc(`${c.b}. ${c.sm}`)}" ${busy ? "disabled" : ""}><span class="ic">${ICON[c.ic]}</span><span class="lb"><b>${esc(c.b)}</b><small>${esc(c.sm)}</small></span>${phone ? "" : `<kbd>${i + 1}</kbd>`}</button>`).join("");
+      picks.style.opacity = busy ? ".55" : "";
+      ta.placeholder = s.self ? s.self : s.mode === "intro" ? "예) 동아리 행사 등록 앱을 만들고 있어요" : T("플로로에게 말하기…", "플로로에게 말하기…");
+      field.classList.toggle("self", !!s.self);
+    }
+    async function run(fn) {
+      if (busy) return;
+      busy = true; drawPicks();
+      try { await fn(); } finally { busy = false; drawPicks(); drawSide(); }
+    }
+
+    // ── 하는 일 ──
+    async function start(project) {
+      me(project);
+      s.mode = "main"; mood("happy", T("좋아, 같이 해 보자!", "좋아요, 같이 해 봐요!"));
+      await floro(T(`${josa(PROJECT, "이라니", "라니")} 좋다! 지금은 0단계 「${st().title}」야. 할 일이 ${st().todos.length}개 있어.`,
+        `${PROJECT}, 좋아요! 지금은 0단계 「${st().title}」예요. 할 일이 ${st().todos.length}개 있어요.`));
+      todoCard();
+      await floro(T(`「${next()[0]}」부터 해 볼까? Claude한테 맡겨도 되고, 네가 직접 써도 돼.`, `「${next()[0]}」부터 해 볼까요? Claude에게 맡겨도 되고, 직접 써도 돼요.`), "idle");
+      $(".think").textContent = T("뭐부터 할지 골라 봐", "무엇부터 할지 골라 보세요");
+    }
+    async function withClaude() {
+      const i = left()[0], t = st().todos[i];
+      me(T(`「${t[0]}」 Claude랑 같이 할래`, `「${t[0]}」 Claude랑 같이 할래요`));
+      mood("think", T("Claude가 일하는 중이야", "Claude가 일하는 중이에요"));
+      const steps = ["메모 읽기", `${st().file} 쓰기`, "확인하기"];
+      const c = card(`<h4>${ICON.code} Claude가 하는 중 <span class="file">${esc(st().file)}</span></h4><div class="steps">${steps.map((x) => `<span>${esc(x)}</span>`).join("")}</div>`, "work");
+      const spans = c.querySelectorAll(".steps span");
+      for (let k = 0; k < spans.length; k++) { spans.forEach((x, j) => x.classList.toggle("now", j === k)); await wait(700); }
+      const cost = 2000 + Math.floor(Math.random() * 1200);
+      s.hp = Math.max(0, s.hp - cost); s.done.push(i);
+      c.querySelector(".card").innerHTML = `<h4>${ICON.code} Claude가 했어요 <span class="file">${esc(st().file)}</span></h4><pre>${esc(t[1])}</pre>`;
+      c.querySelector(".card").insertAdjacentHTML("beforeend", `<div class="steps"><span>토큰 ${num(cost)} 씀</span></div>`);
+      scroll(); drawSide();
+      await after(t, false);
+    }
+    function selfMode() {
+      const t = st().todos[left()[0]];
+      s.self = t[2];
+      me(T("이건 내가 직접 써 볼게", "이건 제가 직접 써 볼게요"));
+      floro(T(`좋아! 「${t[0]}」, 아래 칸에 한 줄로 써 줘. 다 쓰면 Enter.`, `좋아요! 「${t[0]}」, 아래 칸에 한 줄로 써 주세요. 다 쓰면 Enter예요.`), "look");
+      $(".think").textContent = T("기다릴게, 천천히 써", "기다릴게요, 천천히 써요");
+      drawPicks(); ta.focus();
+    }
+    async function wrote(text) {
+      const i = left()[0], t = st().todos[i];
+      me(text); s.self = null; drawPicks();
+      if (text.replace(/\s/g, "").length < 6) {
+        await floro(T(`조금만 더 써 줄래? 「${t[0]}」를 한 문장으로.`, `조금만 더 써 줄래요? 「${t[0]}」를 한 문장으로요.`), "think");
+        s.self = t[2]; drawPicks(); ta.focus(); return;
+      }
+      s.done.push(i); s.mine.push(i); s.marks++;
+      drawSide("marks");
+      await after(t, true);
+    }
+    async function after(t, mine) {
+      const lf = left().length;
+      if (mine) await floro(T(`오, 잘 썼다! 직접 쓴 거라 책갈피 한 장 꽂아 둘게.`, `오, 잘 썼어요! 직접 쓴 거라 책갈피 한 장 꽂아 둘게요.`), "happy");
+      else await floro(T(`됐다! 「${t[0]}」 끝.`, `됐어요! 「${t[0]}」 끝.`), "happy");
+      if (lf) {
+        await floro(T(`이제 ${lf}개 남았어. 다음은 「${next()[0]}」.`, `이제 ${lf}개 남았어요. 다음은 「${next()[0]}」예요.`));
+        $(".think").textContent = T(`${lf}개 남았어`, `${lf}개 남았어요`);
+      } else {
+        await floro(T(`할 일을 다 했어! '다음 단계로'를 눌러 봐.`, `할 일을 다 했어요! '다음 단계로'를 눌러 보세요.`), "done");
+        $(".think").textContent = T("넘어갈 준비 됐어!", "넘어갈 준비가 됐어요!");
+      }
+      if (s.hp < MAX * 0.2) await floro(T("토큰이 조금 남았어. 아껴 쓰려면 연습용 예시로 바꿔도 돼.", "토큰이 조금 남았어요. 아껴 쓰려면 연습용 예시로 바꿔도 돼요."), "think");
+    }
+    async function where() {
+      me(T("지금 어디쯤이야?", "지금 어디쯤이에요?"));
+      await floro(T(`${s.stage}단계 「${st().title}」 하는 중이야.`, `${s.stage}단계 「${st().title}」 하는 중이에요.`), "look");
+      todoCard();
+      const n = next();
+      await floro(n ? T(`남은 건 ${left().length}개. 다음은 「${n[0]}」!`, `남은 건 ${left().length}개예요. 다음은 「${n[0]}」!`) : T("다 했어! 넘어가자.", "다 했어요! 넘어가요."), n ? "idle" : "done");
+    }
+    async function term() {
+      me(`「${st().term}」${pp(st().term, "이", "가")} 뭐야?`);
+      await floro(T(`「${st().term}」${pp(st().term, "은", "는")} ${banmal(st().gloss)}.`, `「${st().term}」${pp(st().term, "은", "는")} ${st().gloss}.`), "happy");
+      if (s.terms < s.stage + 1) { s.terms = s.stage + 1; drawSide("terms"); }
+      await floro(T("배운 말에 넣어 뒀어. 서재에서 다시 볼 수 있어.", "배운 말에 넣어 뒀어요. 서재에서 다시 볼 수 있어요."), "idle");
+    }
+    async function rest() {
+      me(T("잠깐 쉴래", "잠깐 쉴게요"));
+      s.mode = "rest";
+      await floro(T("그래, 쉬었다 하자. 여기 표시해 둘게. 돌아오면 '이어서 하기'만 눌러.", "그래요, 쉬었다 해요. 여기 표시해 둘게요. 돌아오면 '이어서 하기'만 눌러 주세요."), "sleep");
+      $(".think").textContent = "쿨…";
+    }
+    async function resume() {
+      me(T("나 왔어", "다시 왔어요"));
+      s.mode = "main";
+      const n = next();
+      await floro(n ? T(`왔구나! 우리 「${n[0]}」 하던 중이었어.`, `왔군요! 우리 「${n[0]}」 하던 중이었어요.`) : T("왔구나! 이제 넘어가면 돼.", "왔군요! 이제 넘어가면 돼요."), "happy");
+    }
+    async function pass(btn) {
+      const lf = left().length;
+      if (lf) {
+        btn && (btn.classList.remove("nope"), void btn.offsetWidth, btn.classList.add("nope"));
+        me(T("다음 단계로 가자", "다음 단계로 가요"));
+        return floro(T(`아직 ${lf}개 남았어. 「${next()[0]}」부터 할까?`, `아직 ${lf}개 남았어요. 「${next()[0]}」부터 할까요?`), "think");
+      }
+      me(T("다음 단계로 가자!", "다음 단계로 가요!"));
+      mood("wow", T("해냈다!", "해냈어요!"));
+      const b = $(".pet").getBoundingClientRect();
+      if (!STILL) Seal.burst(b.left + b.width / 2, b.top + b.height * 0.35, "star", 14, 360);
+      const mine = s.mine.length;
+      s.marks++; s.terms = Math.max(s.terms, s.stage + 1);
+      card(`<b>${s.stage}단계 끝!</b><div class="gets"><span class="chip">배운 말 「${esc(st().term)}」</span><span class="chip">책갈피 +1</span><span class="chip dim">직접 쓴 할 일 ${mine}개</span></div>`, "clear");
+      drawSide("marks");
+      await wait(500);
+      if (s.stage === STAGES.length - 1) {
+        s.mode = "end";
+        return floro(T(`다 했다! 서재에 「${PROJECT}」 책을 꽂아 둘게.`, `다 했어요! 서재에 「${PROJECT}」 책을 꽂아 둘게요.`), "love");
+      }
+      s.stage++; s.done = []; s.mine = [];
+      drawSide();
+      await floro(T(`다음은 ${s.stage}단계 「${st().title}」야. 할 일은 ${st().todos.length}개!`, `다음은 ${s.stage}단계 「${st().title}」예요. 할 일은 ${st().todos.length}개예요!`), "happy");
+      todoCard();
+      $(".think").textContent = T("또 같이 해 보자", "또 같이 해 봐요");
+    }
+    async function chat(text) {
+      me(text);
+      if (/[?？]$/.test(text)) return floro(T("음, 그건 Claude한테 같이 물어보는 게 좋겠어. 'Claude랑 같이 하기'를 눌러 봐.", "음, 그건 Claude에게 같이 물어보는 게 좋겠어요. 'Claude랑 같이 하기'를 눌러 보세요."), "think");
+      return floro(T("적어 둘게! 이걸로 Claude랑 같이 해 볼까?", "적어 둘게요! 이걸로 Claude랑 같이 해 볼까요?"), "happy");
+    }
+
+    function choose(k, btn) {
+      const go = {
+        example: () => start(`${PROJECT} 만들고 있어. 어디에 돈 썼는지 보고 싶어서.`),
+        claude: withClaude, self: () => selfMode(), where, term, rest, resume, pass: () => pass(btn), again: () => reset(),
+      }[k];
+      if (k === "self") return selfMode();
+      if (k === "again") return reset();
+      if (go) run(go);
+    }
+    function submit() {
+      const text = ta.value.trim(); if (!text || busy) return;
+      ta.value = ""; grow();
+      if (s.mode === "intro") return run(() => start(text));
+      if (s.self) return run(() => wrote(text));
+      run(() => chat(text));
+    }
+    const grow = () => { ta.style.height = "auto"; ta.style.height = `${Math.min(96, ta.scrollHeight)}px`; };
+
+    picks.addEventListener("click", (e) => { const b = e.target.closest("[data-k]"); if (b) choose(b.dataset.k, b); });
+    $(".send").onclick = submit;
+    ta.addEventListener("input", grow);
+    ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); submit(); } if (e.key === "Escape" && s.self) { s.self = null; drawPicks(); } });
+    ta.addEventListener("focus", () => { if (!busy && s.mood === "idle") mood("look"); });
+    ta.addEventListener("blur", () => { if (!busy && s.mood === "look" && !s.self) mood("idle"); });
+    root.addEventListener("keydown", (e) => {
+      if (e.target === ta || !/^[1-6]$/.test(e.key)) return;
+      const b = picks.querySelectorAll(".pick")[+e.key - 1]; if (b) { e.preventDefault(); b.focus(); choose(b.dataset.k, b); }
+    });
+    // 쓰다듬기 — 누르면 하트, 잠깐 기분 좋은 얼굴
+    $(".pet").addEventListener("click", () => {
+      const b = $(".pet").getBoundingClientRect(), was = s.mood;
+      if (!STILL) Seal.burst(b.left + b.width / 2, b.top + b.height * 0.3, "heart", 6, 140);
+      mood("love"); setTimeout(() => { if (s.mood === "love") mood(was === "love" ? "idle" : was); }, 1100);
+    });
+    // 눈이 마우스를 따라온다(seal.js의 follow)
+    if (!STILL) document.addEventListener("mousemove", (e) => Seal.follow($(".pet"), { x: e.clientX, y: e.clientY }));
+
+    async function reset() {
+      epoch++; busy = false; s = fresh(); log.innerHTML = ""; ta.value = "";
+      mood("idle", T("안녕! 반가워", "안녕하세요! 반가워요")); drawSide(); drawPicks();
+      busy = true; drawPicks();
+      await floro(T("안녕! 나 플로로야. 지금 뭐 만들고 있어? 아래에 편하게 써 줘.", "안녕하세요! 플로로예요. 지금 무엇을 만들고 있어요? 아래에 편하게 써 주세요."), "happy");
+      busy = false; drawPicks();
+    }
+    reset();
+    const api = { reset, redraw: () => { drawPicks(); drawSide(); } };
+    apps.push(api);
+    return api;
+  }
+
+  const live = { pc: makeApp(document.getElementById("pc")), ph: makeApp(document.getElementById("ph")) };
+  document.querySelectorAll("[data-reset]").forEach((b) => (b.onclick = () => live[b.dataset.reset].reset()));
+  document.querySelectorAll("[data-tone]").forEach((b) => (b.onclick = () => {
+    G.tone = b.dataset.tone;
+    document.querySelectorAll("[data-tone]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    apps.forEach((a) => a.redraw());
+  }));
+})();
+</script>
+</body>
+</html>
