@@ -29,6 +29,7 @@
 
 | 문제/프로젝트 | 트랙 | 등급 | 사용한 패턴 | 게이트 | 테스트 | 세션 파일 |
 |---|---|---|---|---|---|---|
+| Floe (팀 제품, 작업 이름 Project Navigator) | 프로젝트 | Full · PRD 상세형 | ADR 0002~0009 (`03-pattern-analysis/adr/`) | 5 (1→2 · 2→3 · 3→4 · 4→5 Go 2026-10-18, 5→6은 11/3 — 리뷰 문제는 [고칠 목록](../../07-maintenance/fix-map.md)) | `python3 04-tests/run_all_tests.py` (2026-10-18 · 263개 통과) | [2026-10-18-floe.md](project-track/2026-10-18-floe.md) |
 
 전체 테스트를 한 번에 돌리려면: `python3 04-tests/run_all_tests.py`
 

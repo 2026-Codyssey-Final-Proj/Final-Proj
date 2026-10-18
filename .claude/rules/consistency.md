@@ -36,7 +36,7 @@
 | `01-docs/catalog/checklist.md` "단계별 보안 점검 체크리스트" | `01-docs/00-overview/gates.md`("보안 점검"), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 5 2번), `.claude/rules/security-records.md`("언제 이 기준을 꺼내는가") |
 | `.claude/rules/security-records.md` | 출처로 모은 규칙들 — `git-workflow.md`(비공개·noreply·템플릿 동기화), `external-integration.md`(MCP 점검표), `skill-authoring.md`(evaluation.py), `01-docs/catalog/external-tools.md`(draw.io 조건, 외부 전송 때문에 채택 안 한 도구), `01-docs/06-service/01-twelve-factor-app.md`(Config), 6절은 사용자 저장소들(세컨드 브레인 `01-docs/references/`, 6-3 요청 판정 순서·입력 민감정보 경고는 `projects/coding-marathon-result/`). 이 중 하나를 바꾸면 이 파일의 해당 행도 고친다. `CLAUDE.md`(라우팅 표), `01-docs/01-problem-save/prd-template.md`(Security & Compliance 칸) |
 | `.claude/rules/external-integration.md` | `.claude/skills/mcp-builder/reference/mcp_best_practices.md`(MCP 안내의 기준 — 원본을 다시 복사하면 점검표가 여전히 맞는지 확인), `CLAUDE.md`(라우팅 표), `.claude/skills/dev-workflow/{SKILL,PROCEDURE}.md`(명령 4), `01-docs/catalog/external-tools.md`(판정 기록 대상) |
-
+| `01-docs/07-maintenance/fix-map.md` (고칠 곳 지도 · 고칠 목록) | `CLAUDE.md`(라우팅 표 "이게 문제예요"). 지도의 "고칠 파일 · 같이 볼 시험" 칸은 코드 · 시험 · 훅 파일을 링크로 가리킨다 — **그 파일을 옮기거나 이름을 바꾸면 이 지도도 같이 고친다**(링크 검사가 깨진 칸을 잡는다). 새 화면 · 모듈을 만들면 지도에 줄을 더한다 |
 | `.claude/rules/reference-intake.md` | `CLAUDE.md`(라우팅 표), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 1의 1-1), `01-docs/catalog/reference-candidates.md`(장부 형식·상태 이름), `~/proj/coding_marathon_result/코딩마라톤 가이드/README.md`(받은 기록표 열·상태 이름, 저장소 밖), `~/proj/references/짧은자료/README.md`(짧은 자료 받은 기록표, 저장소 밖), `.claude/skills/reference-library/`(원문 위치를 적어 둠), `05-projects/second-brain/CLAUDE.md`("자료가 많을 때"가 이 파일을 가리킴) |
 
 **새 기준 파일을 추가하면(새 rules 파일, 새 hook, 새 agent 등) 이 표에도 행을
