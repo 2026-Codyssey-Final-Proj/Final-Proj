@@ -1107,6 +1107,8 @@
         raf = 0; activity(); C.follow(isPhone() ? $phone : $nav, point);
       });
     });
+    // 앱(Electron) 안이면 창 밖의 커서도 — 창이 섬 크기라 커서는 거의 늘 창 밖이다(2026-10-19). 눈만 따라오고, 졸음을 깨우지는 않는다(activity는 이 창을 쓸 때만)
+    if (window.floeApp && window.floeApp.onCursor) window.floeApp.onCursor((p) => { point = p; C.follow(isPhone() ? $phone : $nav, p); });
     (function blink() {
       setTimeout(() => {
         document.body.classList.add("blink");

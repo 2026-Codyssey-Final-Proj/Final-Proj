@@ -62,6 +62,8 @@
       point = { x: e.clientX, y: e.clientY };
       if (!raf) raf = requestAnimationFrame(() => { raf = 0; Seal.follow(document.body, point); });
     });
+    // 앱 안이면 창 밖의 커서도(2026-10-19 — ../electron/preload.js onCursor)
+    if (window.floeApp && window.floeApp.onCursor) window.floeApp.onCursor((p) => { point = p; Seal.follow(document.body, p); });
     const play = () => {
       for (const h of [$("hall-seal"), $("lib-seal")]) {
         if (Math.random() < 0.5) { h.classList.remove("galumph"); void h.offsetWidth; h.classList.add("galumph"); continue; }

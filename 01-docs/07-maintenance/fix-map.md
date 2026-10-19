@@ -5,6 +5,20 @@
 
 **이재엽 결정(2026-10-18):** 게이트에서 나온 문제는 게이트를 막지 않고 이 목록에 모아 **7단계(유지보수)에서 고치며 간다.** 11/3 뒤에는 새 기능을 받지 않고 고침만 한다(schedule.md 2절).
 
+**2026-10-19 — 7단계로 들어왔다**(게이트 5→6 · 6→7 Go, 이재엽 "플로로 게이트 7번까지해서 우리가 이제 테스트 후 업데이트 차원에서 진행 할 수 있도록 해줘"). 이제 아래 0-1절의 고리로 간다.
+
+## 0-1. 7단계 고리 — 써 보고, 고치고, 올리고, 다시 써 본다
+
+| 차례 | 누가 | 무엇을 | 어디에 |
+|---|---|---|---|
+| 1. 써 본다 | 팀원 · 사용 테스트 참가자 | 최신 앱(Release `app-v<버전>`) 또는 `floe.js`로 실제 프로젝트에 붙여 쓴다. 이상한 곳은 설정의 **느낀 점 남기기** → 'Jira용 복사' | 앱 · [electron/README.md](../../02-frontend/electron/README.md) |
+| 2. 적는다 | 누구든 | Jira 이슈(키) + 이 파일 2절에 `F-번호` 한 줄(0절 순서) | Jira Floe · 이 파일 |
+| 3. 고친다 | 담당 또는 Claude | 시험 먼저 → 고침 → `python3 04-tests/run_all_tests.py`. PR 제목 `[vN.M] <키>-12 …`(고침은 M+1, 기능은 N+1) — 동의 없이 병합, CHANGELOG 한 줄이 알림 | [git-workflow.md](../../.claude/rules/git-workflow.md) |
+| 4. 다시 묶는다 | 병합한 사람 | 앱을 바꿨으면 `02-frontend/electron/package.json`의 `version`도 올린다 — 병합되면 CI가 Mac · Windows · Linux를 묶어 Release에 올린다 | [app-release.yml](../../.github/workflows/app-release.yml) |
+| 5. 다시 써 본다 | 처음 적은 사람 | 새 Release로 같은 장면을 다시 해 보고, 2절 그 줄을 **고침**으로(확인한 사람 · 날짜) | 이 파일 |
+| 6. 잰다 | 이재엽 · 두승현 | 사용 테스트에서 성공 수치(requirements.md 11-1)를 목표 숫자 대비로 기록 — 6→7 리뷰 판정 Recycle의 까닭(F-01 · F-23) | [verification/](../verification/) |
+| 7. 돌아본다 | 팀 전원 | 11/7~8 회고 · 5 Whys · 같은 유형 세 번이면 checklist.md로(F-16) | [07-maintenance/](README.md) |
+
 ## 0. Claude가 하는 순서 — 팀원 누구의 세션이든 같다
 
 1. **증상을 사람 말 그대로 받는다.** 어느 화면 · 어느 주소(`#ex=1&gate` 같은 끝부분) · 무엇을 눌렀고 · 무엇이 보였나. 모르면 이것만 묻는다(한 번에 2개 이하).
@@ -30,7 +44,7 @@
 | "'예' 뒤 질문이 이상해요", "답이 미리 보여요" | 이해 확인 · 확인 질문 | [understand.js](../../03-backend/navigator/understand.js), [app.js](../../02-frontend/navigator/app.js) | [screen-gaps.test.js](../../04-tests/navigator/screen-gaps.test.js) | — | 두승현 |
 | "잠시 멈추기가 안 떠요", "꼭/나중에가 안 먹어요", "알림 기록이 이상해요" | 보류 · 우선순위 · 알림 기록 | [app.js](../../02-frontend/navigator/app.js)(`HOLD_AFTER_NO`), [priority.js](../../03-backend/navigator/priority.js), [alerts.js](../../03-backend/navigator/alerts.js) | [screen-gaps.test.js](../../04-tests/navigator/screen-gaps.test.js) | 보류 3회는 13-1 결정 — 바꾸려면 이재엽 | 두승현 |
 | "오버레이가 이상해요", "탭이 이상해요", "버튼이 안 눌려요" | 내비게이터 화면 | [app.js](../../02-frontend/navigator/app.js), [app.css](../../02-frontend/navigator/app.css), [library-tab.css](../../02-frontend/navigator/library-tab.css) | [navigator.test.js](../../04-tests/navigator/navigator.test.js), [수용 테스트](../../04-tests/acceptance/README.md)의 사람 확인 줄 | 화면 흐름 [와이어](../04-pattern-implementation/screen-flow-wireframe.md) | 임유정 · 두승현 |
-| "플로로가 이상해요(그림 · 표정 · 움직임)" | 마스코트 | [seal.js](../../02-frontend/navigator/seal.js), [seal.css](../../02-frontend/navigator/seal.css) | [navigator.test.js](../../04-tests/navigator/navigator.test.js) | 이미지 원본은 고한결 | 고한결 · 임유정 |
+| "플로로가 이상해요(그림 · 표정 · 움직임)", "플로로 눈이 마우스를 안 따라와요" | 마스코트 | [seal.js](../../02-frontend/navigator/seal.js), [seal.css](../../02-frontend/navigator/seal.css), 눈 따라가기는 앱이 창 밖 커서를 보냄 — [electron/main.js](../../02-frontend/electron/main.js) · [lib.js](../../02-frontend/electron/lib.js) `cursorMsg` | [navigator.test.js](../../04-tests/navigator/navigator.test.js), [electron-cursor.test.js](../../04-tests/navigator/electron-cursor.test.js) | 이미지 원본은 고한결 | 고한결 · 임유정 |
 | "서재로 넘어갈 때 이상해요(물속 전환)" | 물속 전환 | [dive.js](../../02-frontend/navigator/dive.js), [dive.css](../../02-frontend/navigator/dive.css), [library.js](../../02-frontend/library/library.js)(`arrive`) | [static-files.test.js](../../04-tests/navigator/static-files.test.js) | 움직임 줄이기에서는 바로 넘어가야 한다 | 임유정 |
 | "서재 · 책 · 책 펼치기가 이상해요", "서재의 '내 배움'에 지나온 단계 · 배운 말이 안 보여요" | 서재(서고) · 내 배움 | [library.js](../../02-frontend/library/library.js)(`openLearn`), [library.css](../../02-frontend/library/library.css), [books.js](../../02-frontend/library/books.js)(가상 데이터), [learn.js](../../02-frontend/library/learn.js)(내비게이터 기록 읽기) | [04-tests/library/](../../04-tests/library/search.test.js), [learn.test.js](../../04-tests/library/learn.test.js) | 내비게이터의 기록 열쇠(app.js `KEY`)를 바꾸면 learn.js도 — 시험이 맞대어 본다 | 임유정 |
 | "역량 지도 · 레벨이 이상해요" | 역량 지도 | [skills.js](../../02-frontend/library/skills.js) | [skills.test.js](../../04-tests/library/skills.test.js) | 레벨 규칙은 가설 — 항목 · 단위는 인터뷰 뒤(FR-8) | 이재엽 · 고한결 |
@@ -54,7 +68,7 @@
 
 | ID | 무엇이 문제인가 | 고칠 곳(1절 영역) | 근거 · 찾은 곳 | 찾은 날 | 등급 | 상태 |
 |---|---|---|---|---|---|---|
-| F-01 | 성공 수치 다섯 칸의 **목표 숫자가 없다** — 5→6(11/3) 전에 없으면 5→6은 Recycle | 요구 · 결정 기록(requirements.md 11-1) | 2→3 리뷰 판정 | 2026-10-18 | Lite | 열림 — 10/26 이재엽 · 두승현 |
+| F-01 | 성공 수치 다섯 칸의 **목표 숫자가 없다** — 5→6(11/3) 전에 없으면 5→6은 Recycle | 요구 · 결정 기록(requirements.md 11-1) | 2→3 리뷰 판정 | 2026-10-18 | Lite | 열림 — 10/26 이재엽 · 두승현. **6→7 리뷰 판정 Recycle의 까닭**(2026-10-19) — 사용 테스트 전에 정해야 F-23에서 잴 수 있다 |
 | F-02 | 판정 규칙 확정 질문 4개(Xpress의 5 Whys · ADR, Lite 1단계 2개, 1단계 꼬리표) | 판정 규칙 | PR #96 본문 | 2026-10-18 | Lite | **고침** — "다 GO"로 지금 고른 그대로 확정(navigator.js 머리 · 검토 문서 · 13-1, 브랜치 v2/fix-docs) |
 | F-03 | 6단계 2번 "잰 값과 못 한 것 적어 두기"가 두 가지를 묶어 AI와 예시 정답이 갈림 — 둘로 나눌지 | 판정 규칙(바뀌면 6단계만 다시 녹화) | 실제 AI 점검 2026-10-18 | 2026-10-18 | Lite | **고침** — 6단계 할 일을 '잰 값을 그대로 적어 두기' · '재지 못한 것을 아직 못 함으로 적어 두기'로 나눔, 연습 예시 · 풀이 · 용어, 6단계 녹화만 다시(8,381토큰) — 새 답이 예시 정답과 4칸 모두 같음 (브랜치 v2/fix-code) |
 | F-04 | AI 네 주소(`/api/judge` 등)는 확인 값을 보지 않아 같은 컴퓨터의 다른 프로그램이 부를 수 있다 | 로컬 API · 시연 안전장치 | PR #100 본문, API.md 4절 11번 | 2026-10-18 | Xpress | **고침** — AI 네 주소도 확인 값(쿠키 범위 /api), 시험 · API.md · 위협 표 T2. 서버로 연 화면 200 · curl 403 (브랜치 v2/fix-code) |
@@ -75,3 +89,5 @@
 | F-19 | dmg 앱이 옛 화면을 보인다 — 병합한 내용(내 책 · 예시 책 지우기 · 느낀 점, 길잡이 띠 지움)이 빠진 것처럼 보인다 | 오버레이 앱 | 이재엽 2026-10-19 "UI들이 dmg 파일에 업데이트가 안된 상태 … 병합된 내용들이 뭔가 누락" | 2026-10-19 | Xpress | **고침** — dmg 안의 화면 · 서버 파일은 main과 **같았다**(풀어서 하나씩 맞대어 봄). 원인은 10/18 20:47에 옛 checkout(#105 시점)에서 켠 `server.js`가 4317을 잡고 있어 앱이 새로 켜지 않고 그 화면을 연 것. 앱이 먼저 떠 있는 서버의 지문(`/api/setup` `build`)을 맞대어 다르면 "옛 서버 끄고 새로 켜기"를 묻고, 스크립트 · 스타일은 `no-cache`, 앱 0.4.0으로 다시 묶음 — **병합 때(2026-10-19) 바뀜:** #115의 "앱은 늘 자기 서버를 빈 포트에 켠다"로 합쳐, 옛 서버를 알아보고 끄는 대화창은 뺐다(같은 문제를 두 번 풀지 않게) |
 | F-20 | 서재(서고)에 온보딩 목업 영상의 잔재 — 플로로 밑의 정해 둔 질문 단추 셋("지난번엔 EARS를 어떻게 썼지?" 등)과 맨 아래 장면 설명 자막 띠. 책 이름이 낱말 중간에서 끊긴다("사진 정리 도우 / 미") | 서재 | 이재엽 2026-10-19 "서재에 왜 아직도 온보딩 영상에 남아있는 잔재들이 있는걸까? 플로로 밑에 있는 UI들은 지워줘" | 2026-10-19 | Lite | **고침** — 서고가 영상 장면을 따라 만든 시안이라 자막(CAPTIONS)과 대본 질문이 남아 있었다. 둘을 지우고(부르던 곳 12군데), 플로로의 말을 검색창으로 안내하게, 서재 전체를 낱말 사이에서만 줄 바꿈. `#lib-ask` 주소와 레퍼런스 서가 단추는 그대로 |
 | F-21 | 휴대폰 폭(390px)에서 서고의 책장 · 책 · 배운 말 · 플로로가 서로 겹친다 — 가로 스크롤 · 접근성 검사는 통과해서 자동 시험이 못 잡았다 | 서재 | 이재엽 2026-10-19 "휴대폰 서재 겹치는 것도 고쳐줘" | 2026-10-19 | Lite | **고침(겹침만)** — 760px 이하에서 책장 넷 · 배운 말 · 다음 책 자리 · 플로로를 차례로 쌓고 서고만 세로로 밀어 본다(`library.css`). E2E에 겹침 시험 하나(고치기 전 코드로 실패하는 것 확인). **휴대폰 기능은 추후 업데이트**(roadmap-demo-to-beta.md 5절 9번) |
+| F-22 | 앱에서 플로로의 눈이 **자기 창 안에서만** 마우스를 따라온다 — 창이 섬 크기로 줄어든 뒤(앱 3.0.1) 커서는 거의 늘 창 밖이다 | 오버레이 앱 · 내비게이터 · 서재 | 이재엽 2026-10-19 "플로로가 자기 오버레이가 아니면 마우스커서를 따라오지 못하는 문제" | 2026-10-19 | Lite | **고침** — 앱(main.js)이 바탕 화면 커서를 1초에 20번까지 읽어 창 밖일 때만 화면에 보낸다(preload `onCursor`), 내비게이터 · 서재가 그 점으로 눈을 돌린다(졸음은 깨우지 않음). 앱 6.0.1. 묶은 앱에서 창 밖 커서 쪽으로 눈이 돌아간 것을 CDP로 봄 — **사람이 마우스를 움직여 보는 것은 아직** |
+| F-23 | 6단계 DoD — 성공 수치를 목표 숫자 대비로 **재서 기록**한 것이 없다(6→7 리뷰 판정 Recycle) | 검증 기록 | 6→7 게이트 리뷰(2026-10-19) | 2026-10-19 | Xpress | 열림 — 사용 테스트(#13 · #20, 11/4~7)에서 재서 `01-docs/verification/`에. 목표 숫자는 F-01 |

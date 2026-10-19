@@ -17,6 +17,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v6.1 | 2026-10-19 | 이재엽 | 앱에서 플로로의 눈이 창 밖 커서도 따라온다(F-22, 앱 6.0.1). 게이트 5→6 · 6→7 Go — **7단계(써 보고 고치고 올리기) 시작**, 고리는 fix-map.md 0-1절 | `02-frontend/electron/` · `02-frontend/navigator/` · `02-frontend/library/` · `04-tests/` · `01-docs/` |
 | v6.0 | 2026-10-19 | 이재엽 | **우분투 Linux 앱(큰 묶음)** — `npm run dist:linux` → `.AppImage` · `.deb`(x64 · arm64), CI가 Mac · Windows와 함께 같은 Release에. Linux · Windows처럼 메뉴 줄이 없는 창에는 **창 우클릭 · 트레이 아이콘**으로 같은 메뉴, Linux에서도 로그인 셸의 PATH로 `claude`를 찾음, 투명 창 옵션. 발표용(이재엽 "우분투 리눅스에서도 돌아가는 버전"). 앱 6.0.0 → Release `app-v6.0.0` | `02-frontend/electron/` · `.github/` · `04-tests/navigator/` · `01-docs/` · 루트 README |
 | v5.2 | 2026-10-19 | 이재엽 | 앱이 창이 좁아질 때(접힘 · 처음 설정) 휴대폰 화면으로 넘어가 버리던 것을 고침 — 앱 안에서는 늘 PC 화면. 휴대폰 화면은 아직 만들지 않는다(이재엽 결정). 앱 버전 5.2.0 → Release `app-v5.2.0` | `02-frontend/navigator/`(app.js · setup.js 한 줄씩, 담당 임유정 — 이 줄이 알림) · `02-frontend/electron/` |
 | v5.1 | 2026-10-19 | 이재엽 | 휴대폰 폭에서 서재가 겹치지 않게(차례로 쌓기 · 세로로 밀기) + 겹침 시험(F-21). 휴대폰 기능은 추후 업데이트로 남김 | `02-frontend/library/` · `04-tests/e2e/` · `01-docs/` |

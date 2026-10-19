@@ -62,7 +62,14 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   win.setAlwaysOnTop(true, "floating");
   win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서
-  win.on("closed", () => { win = null; });
+  // 창 밖 커서를 화면에 알린다 — 플로로의 눈이 바탕 화면 어디든 따라오게(2026-10-19). 1초에 20번까지, 창 안이거나 그대로면 보내지 않는다
+  let lastCursor = null;
+  const cursorTick = setInterval(() => {
+    if (!win || win.isDestroyed() || !win.isVisible() || win.isMinimized()) return;
+    const m = L.cursorMsg(screen.getCursorScreenPoint(), win.getContentBounds(), lastCursor);
+    if (m) { lastCursor = m; win.webContents.send("floe:cursor", m); }
+  }, 50);
+  win.on("closed", () => { clearInterval(cursorTick); win = null; });
   // 화면의 바깥 링크(처음 설정의 'Claude Code 설치 안내' 등)는 앱 창이 아니라 기본 브라우저로
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
   // Windows · Linux: 창 우클릭 → 같은 메뉴(메뉴 줄이 없으니). Mac은 위 메뉴 줄 그대로

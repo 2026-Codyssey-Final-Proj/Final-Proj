@@ -88,4 +88,16 @@ function relayUrl(v) {
   if (!t) return "";
   try { const u = new URL(t); return u.protocol === "https:" && !u.username && !u.password ? u.href.replace(/\/+$/, "") : null; } catch { return null; }
 }
-module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl };
+// 플로로의 눈이 창 밖 커서도 따라오게(2026-10-19 이재엽 "플로로가 자기 오버레이가 아니면 마우스커서를 따라오지 못하는 문제") —
+// 화면(브라우저)은 자기 창 안의 mousemove만 받는다. 창이 섬 크기로 줄어든 뒤(3.0.1)로는 커서가 거의 늘 창 밖이다.
+// point: 바탕 화면 좌표(screen.getCursorScreenPoint), bounds: 창의 내용 영역(getContentBounds), last: 지난번에 보낸 점.
+// 돌려주는 것: 화면 좌표(창 왼쪽 위가 0,0)로 바꾼 점. 창 안이면(화면의 mousemove가 맡는다) · 지난번과 같으면 null
+function cursorMsg(point, bounds, last) {
+  if (!point || !bounds) return null;
+  const inside = point.x >= bounds.x && point.x < bounds.x + bounds.width && point.y >= bounds.y && point.y < bounds.y + bounds.height;
+  if (inside) return null;
+  const p = { x: Math.round(point.x - bounds.x), y: Math.round(point.y - bounds.y) };
+  return last && last.x === p.x && last.y === p.y ? null : p;
+}
+
+module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg };
