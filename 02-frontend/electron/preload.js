@@ -13,4 +13,8 @@ contextBridge.exposeInMainWorld("floeApp", {
   onNotch: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:notch", h); return () => ipcRenderer.removeListener("floe:notch", h); },
   resize: (w, h, anchor) => ipcRenderer.send("floe:resize", w, h, anchor),   // 창을 지금 보이는 섬(띠 · 한 줄 · 펼침 · 옆의 설정 창) 크기에 맞춘다. anchor "left"면 왼쪽을 고정
   expand: () => ipcRenderer.send("floe:expand"),                // 서고로 들어갈 때 — 창을 화면만큼 넓힌다(6.2.0)
+  // 모아 보기 창(2026-10-20, C-11) — 섬의 단추가 연다. enter: 모아 보기 창의 '들어가기'가 섬을 앞으로 · '이번 단계'로. onEnter: 섬이 그 신호를 받는다(떼는 함수를 돌려줌)
+  openHub: () => ipcRenderer.send("floe:open-hub"),
+  enter: () => ipcRenderer.send("floe:enter"),
+  onEnter: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:enter", h); return () => ipcRenderer.removeListener("floe:enter", h); },
 });

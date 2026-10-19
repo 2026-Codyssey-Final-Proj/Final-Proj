@@ -131,4 +131,20 @@ function islandX(anchor, bounds, w, cx, wa) {
   return Math.max(wa.x, Math.min(x, wa.x + wa.width - w));
 }
 
-module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX };
+// ── 모아 보기 창(2026-10-20, C-11 — 넘김 문서 4절 [제안] 900×600) ── 보통 창의 크기 · 자리.
+// wa: 그 화면의 작업 영역(workArea — 메뉴 줄 · Dock을 뺀 곳), saved: 지난번 창의 {x, y, width, height}(이 앱이 켜져 있는 동안만 기억). 없으면 기본 크기를 가운데에.
+// 작업 영역보다 크면 그만큼 줄이고, 밖으로 나갔으면 안으로 당긴다. 최소 480×420은 main.js의 minWidth · minHeight와 같다
+const HUB = { width: 900, height: 600, minWidth: 480, minHeight: 420 };
+function hubBounds(wa, saved) {
+  const pick = (v, d) => (typeof v === "number" && Number.isFinite(v) && v > 0 ? v : d);
+  const width = Math.max(Math.min(HUB.minWidth, wa.width), Math.min(pick(saved && saved.width, HUB.width), wa.width));
+  const height = Math.max(Math.min(HUB.minHeight, wa.height), Math.min(pick(saved && saved.height, HUB.height), wa.height));
+  const has = (v) => typeof v === "number" && Number.isFinite(v);
+  let x = saved && has(saved.x) ? saved.x : wa.x + Math.round((wa.width - width) / 2);
+  let y = saved && has(saved.y) ? saved.y : wa.y + Math.round((wa.height - height) / 2);
+  x = Math.max(wa.x, Math.min(Math.round(x), wa.x + wa.width - width));
+  y = Math.max(wa.y, Math.min(Math.round(y), wa.y + wa.height - height));
+  return { x, y, width, height };
+}
+
+module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX, HUB, hubBounds };
