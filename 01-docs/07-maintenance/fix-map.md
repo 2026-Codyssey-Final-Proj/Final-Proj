@@ -13,7 +13,7 @@
 |---|---|---|---|
 | 1. 써 본다 | 팀원 · 사용 테스트 참가자 | 최신 앱(Release `app-v<버전>`) 또는 `floe.js`로 실제 프로젝트에 붙여 쓴다. 이상한 곳은 설정의 **느낀 점 남기기** → 'Jira용 복사' | 앱 · [electron/README.md](../../02-frontend/electron/README.md) |
 | 2. 적는다 | 누구든 | Jira 이슈(키) + 이 파일 2절에 `F-번호` 한 줄(0절 순서) | Jira Floe · 이 파일 |
-| 3. 고친다 | 담당 또는 Claude | 시험 먼저 → 고침 → `python3 04-tests/run_all_tests.py`. PR 제목 `[vN.M] <키>-12 …`(고침은 M+1, 기능은 N+1) — 동의 없이 병합, CHANGELOG 한 줄이 알림 | [git-workflow.md](../../.claude/rules/git-workflow.md) |
+| 3. 고친다 | 담당 또는 Claude | 시험 먼저 → 고침 → `python3 04-tests/run_all_tests.py`. PR 제목 `<키>-12 …`, 조각 파일 `changes/<브랜치>.md`(고침은 작은 고침 M+1, 기능은 큰 묶음 N+1) — 동의 없이 병합, 병합되면 CHANGELOG에 합쳐지는 한 줄이 알림 | [git-workflow.md](../../.claude/rules/git-workflow.md) |
 | 4. 다시 묶는다 | 병합한 사람 | 앱을 바꿨으면 `02-frontend/electron/package.json`의 `version`도 올린다 — 병합되면 CI가 Mac · Windows · Linux를 묶어 Release에 올린다 | [app-release.yml](../../.github/workflows/app-release.yml) |
 | 5. 다시 써 본다 | 처음 적은 사람 | 새 Release로 같은 장면을 다시 해 보고, 2절 그 줄을 **고침**으로(확인한 사람 · 날짜) | 이 파일 |
 | 6. 잰다 | 이재엽 · 두승현 | 사용 테스트에서 성공 수치(requirements.md 11-1)를 목표 숫자 대비로 기록 — 6→7 리뷰 판정 Recycle의 까닭(F-01 · F-23) | [verification/](../verification/) |
@@ -26,7 +26,7 @@
 3. **2절 고칠 목록에 한 줄을 더한다**(`F-번호`). 이미 같은 줄이 있으면 새로 만들지 않고 "찾은 날"에 더한다.
 4. **등급을 정한다**([scope-tiers.md](../00-overview/scope-tiers.md)): 2~5분이면 즉시처리, 한 파일 수준이면 Lite(한 줄 기록 → 고침 → 짧은 회고), 여러 파일 · 동작이 바뀌면 Xpress. 새 기능이면 11/3 뒤에는 받지 않는다 — 대회 뒤로 적는다.
 5. **고친다:** 시험을 먼저 쓰고([code.md](../../.claude/rules/code.md)), 고친 뒤 `python3 04-tests/run_all_tests.py`. 브랜치에서 하고 PR을 연다(Claude는 `main`에 올리지 않는다).
-6. **버전 한 줄로 알린다** — [CHANGELOG.md](../../CHANGELOG.md) 맨 위에 vN.M 한 줄(고침이면 대개 M+1), "건드린 곳"에 1절 "담당"의 폴더. 동의를 기다리지 않는다(팀 결정 2026-10-18).
+6. **버전 한 줄로 알린다** — PR에 조각 [`changes/<브랜치>.md`](../../changes/README.md) 한 장(종류는 고침이면 대개 작은 고침, "건드린 곳"에 1절 "담당"의 폴더). 병합되면 Action이 [CHANGELOG.md](../../CHANGELOG.md) 맨 위 다음 번호로 합친다(2026-10-19). 동의를 기다리지 않는다(팀 결정 2026-10-18).
 7. 같은 유형이 세 번 나오면 7단계 회고에서 [checklist.md](../catalog/checklist.md)로 올린다.
 
 ## 1. 고칠 곳 지도 — 증상 → 고칠 곳
