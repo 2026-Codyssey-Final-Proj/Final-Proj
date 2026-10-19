@@ -21,19 +21,43 @@ test("서고로 들어가기 — 플로로는 섬 한가운데에서 출발해 �
 
 test("느리던 것 — 나가기 1.2초 · 서고 기다림 150ms · 물 빠짐 750ms · 끝 1.3초 (전: 1.7 · 0.45 · 1.1 · 1.95초)", () => {
   const d = read("navigator/dive.js");
-  assert.ok(num(d, "OUT_MS") <= 1200 && num(d, "OUT_GO") <= num(d, "OUT_MS"), "나가기");
+  assert.ok(num(d, "OUT_MS") <= 1200 && num(d, "OUT_CAP") > num(d, "OUT_MS"), "나가기 — 끝나면 넘기고, 상한은 그보다 뒤(F-35)");
   assert.ok(num(d, "ARRIVE_WAIT") <= 200, "다 읽힌 뒤 기다림");
   assert.ok(num(d, "ARRIVE_MS") <= 800 && num(d, "ARRIVE_END") <= 1400, "물 빠짐 · 끝");
   assert.ok(num(d, "ARRIVE_JUMP") < num(d, "ARRIVE_END"), "점프는 끝나기 전에");
-  const total = num(d, "OUT_GO") + num(d, "ARRIVE_WAIT") + num(d, "ARRIVE_END");
+  const total = num(d, "OUT_MS") + num(d, "ARRIVE_WAIT") + num(d, "ARRIVE_END");
   assert.ok(total <= 2700, `누르고 서고를 쓸 수 있기까지 ${total}ms`);
+});
+
+// F-35(2026-10-20, 이재엽 버튼 "가볍게, 그리기만"): 무거운 그리기를 빼고, 시간이 아니라 움직임이 끝나면 넘긴다
+test("서고 전환 끊김(F-35) — 물은 clip-path 대신 둥근 판의 transform, 서고 층은 blur 없이, 넘기기는 움직임이 끝난 뒤(상한은 남음), 물방울 12개, 첫 그림부터 물방울", () => {
+  const d = read("navigator/dive.js"), css = read("navigator/dive.css");
+  assert.doesNotMatch(d, /clipPath/, "clip-path 움직임이 없다");
+  assert.doesNotMatch(d, /filter: "blur/, "서고 층 움직임에 blur가 없다");
+  assert.match(d, /pane\.className = "pane"; fx\.className = "fx";/, "물은 판(.pane) + 물방울 · 빛줄기(.fx) 두 층");
+  assert.match(d, /scale\(\$\{sx\},\$\{sy\}\)/, "판을 늘린다(transform)");
+  assert.match(d, /Promise\.all\(anims\.map\(\(a\) => a\.finished\)\)/, "끝나면 넘긴다");
+  assert.match(d, /whenDone\(\[paneAnim, floroAnim\], OUT_CAP/, "나가기 — 물 · 플로로가 끝나면");
+  assert.match(d, /whenDone\(anims, LEAVE_CAP/, "나오기 — 물(· 플로로)이 끝나면");
+  assert.doesNotMatch(d, /setTimeout\(\(\) => \{ location\.href = href; \}/, "정한 시간에 넘기지 않는다");
+  assert.match(d, /const BUBBLES = 12;/);
+  assert.match(d, /if \(!el \|\| el\.dataset\.filled\) return el;/, "한 번 채운 물은 다시 채우지 않는다");
+  assert.match(d, /if \(cover && \(h\.classList\.contains\("dive-in"\) \|\| h\.classList\.contains\("surfacing"\)\)\) fill\(cover\);/, "읽히자마자 #dive-cover를 채운다");
+  assert.match(css, /\.dive \.bub\{[^}]*will-change:transform/);
+  assert.match(css, /\.dive\.out \.pane\{position:absolute;transform-origin:0 0;will-change:transform;/);
+  // 두 페이지 모두 dive.js를 #dive-cover 바로 뒤에서 읽는다 — 첫 그림부터 물방울
+  for (const [f, src] of [["navigator/index.html", "dive.js"], ["library/index.html", "../navigator/dive.js"]]) {
+    const html = read(f), at = html.indexOf('<div class="dive" id="dive-cover"'), js = html.indexOf(`<script src="${src}"></script>`);
+    assert.ok(at > 0 && js > at && js - at < 400, `${f}: dive.js가 물 바로 뒤`);
+    assert.equal(html.split(`<script src="${src}">`).length, 2, `${f}: dive.js는 한 번만`);
+  }
 });
 
 test("서고 → 작업 화면 — 물이 차오르고 플로로가 잠수한 뒤 &back으로 넘어가고, 작업 화면은 처음부터 물이 덮였다가 빠지며 섬이 내려앉는다", () => {
   const d = read("navigator/dive.js"), lib = read("library/library.js"), nav = read("navigator/index.html"), app = read("navigator/app.js");
   assert.match(d, /function leave\(href, seal\)/);
   assert.match(d, /function surface\(\{ cover, island, done \}\)/);
-  assert.match(d, /window\.FloeDive = \{ out, arrive, jump, leave, surface, floroSize \}/);
+  assert.match(d, /window\.FloeDive = \{ out, arrive, jump, leave, surface, floroSize, fill \}/);
   assert.match(lib, /a\.lib-out, a\.go\[href\*="navigator\/index\.html"\]/, "서고의 '작업 화면으로' · 입구의 링크를 가로챈다");
   assert.match(lib, /window\.FloeDive\.leave\(`\$\{a\.getAttribute\("href"\)\}&back`, seal\)/);
   assert.match(lib, /prefers-reduced-motion: reduce\)"\)\.matches\) return;/, "움직임 줄이기면 그냥 넘어간다");

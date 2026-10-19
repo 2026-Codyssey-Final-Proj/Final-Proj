@@ -16,7 +16,7 @@ contextBridge.exposeInMainWorld("floeApp", {
   // 창을 넓힌 뒤(2026-10-20) — 앱이 {dx, dy}(섬 창이 있던 자리에서 넓힌 창까지 옮긴 거리)를 보내면 화면이 섬을 제자리에 붙들고 잠수한다
   onExpanded: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:expanded", h); return () => ipcRenderer.removeListener("floe:expanded", h); },
   // 모아 보기 창(2026-10-20, C-11) — 섬의 단추가 연다. enter: 모아 보기 창의 '들어가기'가 섬을 앞으로 · '이번 단계'로. onEnter: 섬이 그 신호를 받는다(떼는 함수를 돌려줌)
-  openHub: () => ipcRenderer.send("floe:open-hub"),
+  openHub: (space) => ipcRenderer.send("floe:open-hub", space || ""),   // space(2026-10-20, C-13): "alerts" · "ai"면 그 칸으로(기본 화면의 '크게 보기')
   enter: () => ipcRenderer.send("floe:enter"),
   onEnter: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:enter", h); return () => ipcRenderer.removeListener("floe:enter", h); },
 });

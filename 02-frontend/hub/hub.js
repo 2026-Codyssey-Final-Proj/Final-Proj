@@ -87,8 +87,9 @@
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloeHub = api;
 
-  // ── 화면 — 브라우저에서만 ──
-  if (typeof document === "undefined") return;
+  // ── 화면 — 모아 보기 창에서만(왼쪽 칸 [data-space]가 있는 페이지). 섬(navigator/app.js, C-13 기본 화면)은 이 파일을 순수 함수(window.FloeHub)로만 쓴다 —
+  //    여기서 돌면 섬의 주소 끝(#ex= …)을 #vibe로 덮고 2초마다 묻는다(넘김 문서 10절 함정, hub.test.js가 이 경계를 본다) ──
+  if (typeof document === "undefined" || !document.querySelector("[data-space]")) return;
   const SPACES = ["vibe", "alerts", "ai"];
   const live = location.protocol.startsWith("http");   // 서버로 열렸나(앱 · node server.js). 파일로 열면 예시(FR-10)
   const $ = (s) => document.querySelector(s);
