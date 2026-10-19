@@ -76,6 +76,12 @@ test("nextView: 답을 기다리는 중이면 저절로 접히지 않고, 알릴
   for (const v of ["hidden", "petit", "greet", "home"]) assert.equal(Nav.nextView(v, "alert", false), "home");
 });
 
+test("nextPlace(C-13, 2026-10-20): 모드는 접힘과 따로 — 접히고 펼쳐져도 바뀌지 않는다(자세한 것은 modes.test.js)", () => {
+  assert.equal(Nav.nextPlace("vibe", "fold"), "vibe");
+  assert.equal(Nav.nextPlace("vibe", "home"), "base");
+  assert.equal(Nav.nextPlace("base", "vibe"), "vibe");
+});
+
 test("face: 살펴보는 중 > 잠깐! > 오류 > 확인 화면 > 시작 > 다 했어요 > 평소 순서로 표정이 정해진다", () => {
   assert.equal(Nav.face({ busy: true, warn: ["x"], error: "e", gate: true, reason: "r" })[0], "look");
   assert.equal(Nav.face({ warn: ["x"], error: "e", gate: true })[0], "alert");

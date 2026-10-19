@@ -197,9 +197,11 @@ ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData"
 // ── 모아 보기 창(2026-10-20, C-11 · C-12 — 이재엽 "따로 창 하나") — 바이브 코딩 고르기 · 알림 · AI 진행. 섬은 그대로 코딩 도구 위에 뜬다 ──
 // 보통 창(테두리 있음 · 항상 위 아님 · Dock에 앉음), 하나만 — 이미 열려 있으면 앞으로. 크기는 900×600 [제안]을 작업 영역 안에(lib.js hubBounds), 닫았다 다시 열면 지난 크기 · 자리.
 // 닫아도 섬 · 서버는 그대로. 화면 파일은 서버 주소로(…/hub/index.html — STATIC에 있어야 한다, static-files.test.js). 켤 때는 열지 않는다(넘김 문서 9절 2번 기본값)
+// 2026-10-20(C-13 기본 화면의 '크게 보기'): space가 "alerts" · "ai"면 그 칸으로 연다 — 이미 열려 있으면 주소 끝만 바꾼다(hub.js가 hashchange로 그 칸을 보인다)
 let hub = null, hubSaved = null;
-function openHub() {
-  if (hub) { hub.show(); hub.focus(); return; }
+const hubSpace = (space) => (space === "alerts" || space === "ai" ? space : "");
+function openHub(space = "") {
+  if (hub) { hub.show(); hub.focus(); if (hubSpace(space)) hub.webContents.executeJavaScript(`location.hash = ${JSON.stringify(`#${hubSpace(space)}`)}`, true).catch(() => {}); return; }
   const wa = (win && !win.isDestroyed() ? screen.getDisplayMatching(win.getBounds()) : screen.getPrimaryDisplay()).workArea;
   hub = new BrowserWindow({ ...L.hubBounds(wa, hubSaved), minWidth: 480, minHeight: 420, title: "Floe — 모아 보기", alwaysOnTop: false, show: false,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
@@ -207,9 +209,9 @@ function openHub() {
   hub.on("close", () => { try { hubSaved = hub.getBounds(); } catch {} });
   hub.on("closed", () => { hub = null; });
   hub.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
-  hub.loadURL(`${URL_}hub/index.html`);
+  hub.loadURL(`${URL_}hub/index.html${hubSpace(space) ? `#${hubSpace(space)}` : ""}`);
 }
-ipcMain.on("floe:open-hub", () => openHub());   // 섬 위쪽 줄의 '모아 보기' 단추
+ipcMain.on("floe:open-hub", (_e, space) => openHub(space));   // 섬 위쪽 줄의 '모아 보기' 단추 · 기본 화면의 '크게 보기'(그 칸으로)
 // 바이브 코딩 '들어가기' — 섬 창을 앞으로 보이고 화면에 "이번 단계로"를 보낸다(app.js onEnter). 섬 창이 없으면 만든다(처음 화면이 '이번 단계'다)
 ipcMain.on("floe:enter", () => {
   if (!win) return createWindow();

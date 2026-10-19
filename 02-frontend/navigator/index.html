@@ -36,6 +36,8 @@
 
 <div class="nav" id="nav"></div>
 <div class="dive" id="dive-cover" aria-hidden="true"></div>
+<!-- dive.js는 물 바로 뒤에서 읽는다(2026-10-20 F-35): 서고에서 돌아올 때(&back) 첫 그림부터 물방울이 있게 — 머리의 surfacing 표시를 보고 바로 채운다 -->
+<script src="dive.js"></script>
 <div id="fx"></div>
 <main class="phone" id="phone"></main>
 
@@ -56,7 +58,10 @@
 <script src="../library/my-books.js"></script>
 <script src="../library/schedule.js"></script>
 <script src="notes.js"></script>
-<script src="dive.js"></script>
+<!-- 기본 화면(C-13) · 섬의 움직임(C-14), 2026-10-20: 모아 보기 창의 순수 함수(hub.js — 이 페이지에는 [data-space]가 없어 화면 코드는 돌지 않는다) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js) -->
+<script src="../hub/hub.js"></script>
+<script src="../../03-backend/navigator/steps.js" onerror="this.remove()"></script>
+<script src="morph.js"></script>
 <script src="greet.js"></script>
 <script src="app.js"></script>
 </body>

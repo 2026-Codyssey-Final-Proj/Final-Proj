@@ -131,6 +131,16 @@ def entry(page, r):                  # 시연 입구 → 3분 시연 시작
     r.still(1200)
 
 
+def base(page, r):                   # 11 C-13(2026-10-20): 섬의 기본 화면 — 단추 넷 → 알림 판 → 단추로 → AI 진행 판(예시) → 바이브 코딩(이번 단계)
+    open_nav(page, "base"); r.still(1400)
+    r.click("[data-act=base-alerts]", hold=1400)
+    r.click("[data-act=base-back]", hold=600)
+    r.click("[data-act=base-ai]", hold=1600)
+    r.click("[data-act=base]", hold=600)
+    r.click("[data-act=go-vibe]", hold=1200)
+    r.still(800)
+
+
 def hub(page, r):                    # 11 C-11 · C-12: 모아 보기 창 — 바이브 코딩(카드 둘) → 알림 → AI 진행. 파일로 열어 예시(2026-10-20)
     page.goto(f"{HUB}#vibe"); page.wait_for_timeout(900); r.still(1400)
     r.click("[data-space=alerts]", hold=1400)
@@ -142,7 +152,7 @@ SCENES = {
     "01-stage-guide": (stage_guide, NAV_CROP), "02-blueprint": (blueprint, NAV_CROP), "03-gate": (gate, NAV_CROP),
     "04-overview": (overview, NAV_CROP), "05-library": (library, None),
     "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "greeting": (greeting, NAV_CROP), "entry": (entry, None),
-    "11-hub": (hub, None),
+    "11-hub": (hub, None), "base": (base, NAV_CROP),
 }
 
 if __name__ == "__main__":
@@ -156,7 +166,7 @@ if __name__ == "__main__":
             r = Rec(page, crop); print(n)
             try:
                 fn(page, r)
-                r.save(OUT / "demo-entry.gif" if n == "entry" else OUT / "08-floro" / "greeting.gif" if n == "greeting" else OUT / n / "demo.gif")
+                r.save(OUT / "demo-entry.gif" if n == "entry" else OUT / "08-floro" / "greeting.gif" if n == "greeting" else OUT / "11-hub" / "base.gif" if n == "base" else OUT / n / "demo.gif")
             except Exception as e:
                 print("  ✗", n, type(e).__name__, str(e)[:300])
             ctx.close()

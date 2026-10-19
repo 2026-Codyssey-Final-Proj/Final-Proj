@@ -5,32 +5,61 @@
 //   나가기(내비게이터) — 오버레이가 화면 전체로 커지며 물속이 되고, 책을 안은 플로로가 한 번 솟았다가 아래로 풍덩 내려간다 → 서고 #lib-dive로 넘어간다.
 //   들어오기(서고) — 처음부터 물이 덮고 있다가, 서고가 다 읽히면 물이 위로 빠지며 서고가 아래에서 떠오르고, 플로로가 얼음판 위로 점프해 시작을 알린다.
 // 움직임 줄이기를 켰거나 애니메이션을 못 쓰는 브라우저면 바로 넘어간다. 서버·저장 없음.
+// claude-drafted: 2026-10-20 — F-35(이재엽 "아직 서고에 들어가고 나올때 에니메이션이 끊기는 모션들이 남아있어", 버튼 "가볍게, 그리기만"):
+//   ① 물이 커지는 움직임을 clip-path(매 프레임 다시 그림) 대신 둥근 판(.pane)의 transform(옮기기 · 늘리기)으로 — 합성만으로 돈다. 물방울 · 빛줄기는
+//      늘어나지 않게 다른 층(.fx)에 두고 물이 다 덮은 뒤 opacity로 나타낸다 ② 서고 층이 떠오를 때 filter: blur를 뺐다(opacity · transform만)
+//   ③ 물방울 22 → 12개, will-change ④ 정한 시간(setTimeout)에 넘기지 않고 물 · 플로로의 움직임이 **끝나면**(finished) 넘긴다 — 멈춤 막이로 상한(OUT_CAP · LEAVE_CAP)은 남긴다
+//   ⑤ 새 페이지의 첫 그림에도 물방울이 있게 — 이 파일이 #dive-cover 바로 뒤에서 읽히며 머리의 dive-in · surfacing 표시를 보고 바로 채운다(fill은 한 번만)
+//   창 크기 · 페이지 넘김에서 오는 끊김(넘김 문서 5절 ①·③)은 이번에 손대지 않았다
 (function () {
   const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const CAN = !STILL && typeof Element.prototype.animate === "function";
+  const BUBBLES = 12;   // 2026-10-20 F-35: 22 → 12
 
-  // 물속 — 빛줄기와 떠오르는 물방울. 같은 씨앗이라 두 페이지의 물방울 자리가 같다(넘어갈 때 튀지 않게)
+  // 물속 — 빛줄기와 떠오르는 물방울. 같은 씨앗이라 두 페이지의 물방울 자리가 같다(넘어갈 때 튀지 않게). 한 번 채운 요소는 다시 채우지 않는다
   function fill(el) {
+    if (!el || el.dataset.filled) return el;
     let seed = 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    el.innerHTML = `<div class="rays"></div>${Array.from({ length: 22 }, () => `<i class="bub" style="left:${(rnd() * 100).toFixed(1)}%;--s:${(4 + rnd() * 10).toFixed(0)}px;--d:${(2.4 + rnd() * 2.4).toFixed(1)}s;--w:-${(rnd() * 4).toFixed(1)}s;--x:${(rnd() * 40 - 20).toFixed(0)}px"></i>`).join("")}<div class="surf"></div>`;
+    el.innerHTML = `<div class="rays"></div>${Array.from({ length: BUBBLES }, () => `<i class="bub" style="left:${(rnd() * 100).toFixed(1)}%;--s:${(4 + rnd() * 10).toFixed(0)}px;--d:${(2.4 + rnd() * 2.4).toFixed(1)}s;--w:-${(rnd() * 4).toFixed(1)}s;--x:${(rnd() * 40 - 20).toFixed(0)}px"></i>`).join("")}<div class="surf"></div>`;
+    el.dataset.filled = "1";
     return el;
+  }
+  // 처음부터 물이 덮는 페이지(서고 #lib-dive · 작업 화면 &back)는 첫 그림부터 물방울이 있게 — 머리의 한 줄이 붙인 표시를 보고 바로 채운다(F-35 ⑤)
+  {
+    const cover = document.getElementById("dive-cover"), h = document.documentElement;
+    if (cover && (h.classList.contains("dive-in") || h.classList.contains("surfacing"))) fill(cover);
+  }
+  // 움직임이 끝나면 한 번만 — 끝나기 전에 상한(cap)이 오면 그때. 뒤로 가기(페이지 보관)로 돌아오면 물을 걷는다
+  function whenDone(anims, cap, then, cleanup) {
+    let went = false;
+    const go = () => { if (went) return; went = true; then(); };
+    Promise.all(anims.map((a) => a.finished)).then(go, () => {});
+    const timer = setTimeout(go, cap);
+    addEventListener("pageshow", (e) => { if (e.persisted) { clearTimeout(timer); cleanup(); } }, { once: true });
   }
 
   // 플로로 크기 — 창(오버레이)의 짧은 변에 맞춘다(2026-10-20 "오버레이 크기에 따라서 플로로 크기 조정")
   const floroSize = (W, H) => Math.round(Math.min(150, Math.max(90, Math.min(W, H) * 0.16)));
-  const OUT_MS = 1200, OUT_GO = 1150;   // 나가기 길이 · 넘어가는 때(2026-10-20 — 1700 · 1750에서 줄임)
+  const OUT_MS = 1150, OUT_CAP = 1450;   // 플로로가 내려가는 길이(끝나면 넘긴다) · 멈춤 막이 상한(2026-10-20 — 시간으로 넘기던 OUT_GO 1150을 끝나면으로)
+  const WATER_MS = 700, OVER = 80;       // 물이 화면을 덮는 길이 · 화면보다 더 커지는 여유(둥근 모서리가 화면 밖으로 나간다)
 
   // 나가기 — from: 커질 오버레이(섬), href: 넘어갈 주소. 플로로는 섬 한가운데에서 출발한다(2026-10-20 — 전에는 서고 탭 왼쪽 칸)
   function out(from, href) {
     if (!CAN || !from) { location.href = href; return; }
     const r = from.getBoundingClientRect(), W = innerWidth, H = innerHeight;
     const rad = parseFloat(getComputedStyle(from).borderTopLeftRadius) || 24;
-    const clip = (t, rt, b, l, k) => `inset(${t}px ${rt}px ${b}px ${l}px round ${k}px)`;
-    const water = fill(document.createElement("div"));
-    water.className = "dive"; water.setAttribute("aria-hidden", "true");
+    // 물 — 섬 자리의 둥근 판이 화면 밖까지 늘어난다(transform만). 물방울 · 빛줄기는 늘어나지 않는 층(.fx)에 두고 물이 덮은 뒤 나타난다(F-35)
+    const water = document.createElement("div");
+    water.className = "dive out"; water.setAttribute("aria-hidden", "true");
+    const pane = document.createElement("div"), fx = fill(document.createElement("div"));
+    pane.className = "pane"; fx.className = "fx";
+    pane.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border-radius:${rad}px`;
+    water.append(pane, fx);
     document.body.appendChild(water);
-    water.animate([{ clipPath: clip(r.top, W - r.right, H - r.bottom, r.left, rad), opacity: 0 }, { opacity: 1, offset: 0.2 }, { clipPath: clip(0, 0, 0, 0, 0), opacity: 1 }],
-      { duration: 700, easing: "cubic-bezier(.7,0,.2,1)", fill: "forwards" });
+    const sx = (W + OVER * 2) / r.width, sy = (H + OVER * 2) / r.height;
+    const paneAnim = pane.animate([{ transform: "none", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: `translate(${-OVER - r.left * sx}px,${-OVER - r.top * sy}px) scale(${sx},${sy})`, opacity: 1 }],
+      { duration: WATER_MS, easing: "cubic-bezier(.7,0,.2,1)", fill: "forwards" });
+    fx.animate([{ opacity: 0 }, { opacity: 0, offset: 0.55 }, { opacity: 1 }], { duration: WATER_MS + 150, easing: "ease-out", fill: "forwards" });
 
     // 책을 안은 플로로 — 오버레이 한가운데에서 출발해 한 번 솟았다가 그 자리에서 곧게 아래로 내려간다(이재엽 2026-10-20 "잠수해서 들어가는 곳이 오버레이 중앙에서")
     const w = floroSize(W, H), f = document.createElement("div");
@@ -38,30 +67,28 @@
     f.innerHTML = `${window.NavSeal ? window.NavSeal.svg("happy", w) : ""}<span class="carry-book"></span><i class="trail"></i><i class="trail"></i>`;
     document.body.appendChild(f);
     const x0 = r.left + r.width / 2 - w / 2, y0 = r.top + r.height / 2 - w / 2;
-    f.animate([
+    const floroAnim = f.animate([
       { transform: `translate(${x0}px,${y0}px) scale(.7)`, opacity: 0 },
       { transform: `translate(${x0}px,${y0}px) scale(.85)`, opacity: 1, offset: 0.12 },
       { transform: `translate(${x0}px,${Math.max(10, y0 - 60)}px) scale(1) rotate(-6deg)`, offset: 0.4 },
       { transform: `translate(${x0 + 10}px,${Math.max(y0 + 80, H * 0.55)}px) scale(1.05) rotate(8deg)`, offset: 0.75 },
       { transform: `translate(${x0 + 20}px,${H + 40}px) scale(1.1) rotate(14deg)` },
     ], { duration: OUT_MS, easing: "cubic-bezier(.45,0,.4,1)", fill: "forwards" });
-    // 뒤로 가기로 돌아오면(페이지 보관) 물을 걷는다
-    addEventListener("pageshow", (e) => { if (e.persisted) { water.remove(); f.remove(); } }, { once: true });
-    setTimeout(() => { location.href = href; }, OUT_GO);
+    whenDone([paneAnim, floroAnim], OUT_CAP, () => { location.href = href; }, () => { water.remove(); f.remove(); });
   }
 
   // 서고 → 작업 화면(2026-10-20 "서재에서 오버레이로 넘어갈 때 애니메이션") — 물이 아래에서 차오르고 플로로가 잠수한 뒤 넘어간다(href 끝의 &back을 내비게이터가 읽어 surface를 한다)
-  const LEAVE_MS = 650, LEAVE_GO = 620;
+  // 2026-10-20 F-35: 전에는 끝나기 30ms 전(LEAVE_GO 620)에 넘겼다 — 넘기는 순간의 멈춤을 가리려던 것인데 재 보니 차이가 없어(헤드리스 Chrome) 끝나면 넘긴다
+  const LEAVE_MS = 650, LEAVE_CAP = 950;
   function leave(href, seal) {
     if (!CAN) { location.href = href; return; }
     const water = fill(document.createElement("div"));
     water.className = "dive rising-up"; water.setAttribute("aria-hidden", "true");
     document.body.appendChild(water);
-    water.animate([{ transform: "translateY(104%)" }, { transform: "translateY(0)" }], { duration: LEAVE_MS, easing: "cubic-bezier(.6,0,.3,1)", fill: "forwards" });
-    if (seal) seal.animate([{ transform: "none" }, { transform: "translateY(-40px) scale(.96,1.06)", offset: 0.3 }, { transform: "translateY(90px) scale(.9,1.1)", opacity: 0 }],
-      { duration: LEAVE_MS, easing: "cubic-bezier(.5,0,.6,1)", fill: "forwards" });
-    addEventListener("pageshow", (e) => { if (e.persisted) water.remove(); }, { once: true });
-    setTimeout(() => { location.href = href; }, LEAVE_GO);
+    const anims = [water.animate([{ transform: "translateY(104%)" }, { transform: "translateY(0)" }], { duration: LEAVE_MS, easing: "cubic-bezier(.6,0,.3,1)", fill: "forwards" })];
+    if (seal) anims.push(seal.animate([{ transform: "none" }, { transform: "translateY(-40px) scale(.96,1.06)", offset: 0.3 }, { transform: "translateY(90px) scale(.9,1.1)", opacity: 0 }],
+      { duration: LEAVE_MS, easing: "cubic-bezier(.5,0,.6,1)", fill: "forwards" }));
+    whenDone(anims, LEAVE_CAP, () => { location.href = href; }, () => water.remove());
   }
 
   // 작업 화면이 물속에서 떠오름(2026-10-20 "오버레이가 작아졌다가 다시 켜지는 애니메이션") — 서고에서 돌아오면 처음부터 물이 덮고 있다가(#dive-cover, html.surfacing)
@@ -95,8 +122,9 @@
     Promise.all([loaded, document.fonts ? document.fonts.ready : null, new Promise((r) => setTimeout(r, ARRIVE_WAIT))]).then(() => {
       cover.classList.add("rising");
       cover.animate([{ transform: "translateY(0)" }, { transform: "translateY(-104%)" }], { duration: ARRIVE_MS, easing: "cubic-bezier(.6,0,.3,1)", fill: "forwards" });
+      // 층이 떠오른다 — opacity · transform만(2026-10-20 F-35: filter: blur를 뺐다 — 큰 층 넷을 매 프레임 흐리게 다시 그렸다)
       for (const [el, vh] of layers) {
-        el?.animate([{ transform: `translateY(${vh}vh) scale(.95)`, filter: "blur(5px)", opacity: 0.35 }, { transform: "none", filter: "blur(0)", opacity: 1 }],
+        el?.animate([{ transform: `translateY(${vh}vh) scale(.95)`, opacity: 0.35 }, { transform: "none", opacity: 1 }],
           { duration: ARRIVE_MS + 150, easing: "cubic-bezier(.2,.7,.2,1)" });
       }
       setTimeout(() => { if (seal) jump(seal); }, ARRIVE_JUMP);
@@ -126,5 +154,5 @@
     setTimeout(() => { add("splash"); setTimeout(() => made.forEach((s) => s.remove()), 800); }, 800);
   }
 
-  window.FloeDive = { out, arrive, jump, leave, surface, floroSize };
+  window.FloeDive = { out, arrive, jump, leave, surface, floroSize, fill };
 })();

@@ -16,12 +16,22 @@
 //   도서관 탭의 첫 책이 예시(s1)를 빌려 쓰던 것을 **내 책**(이 화면의 단계 · 할 일 · 설계도 · 배운 말, ../library/my-books.js)으로 바꿨다 — 진짜 AI 모드이거나 예시 책을 지웠을 때.
 //   연습 모드에서 예시가 보일 때는 전처럼 첫 책이 이 화면을 따른다(시연 장면 · GIF 그대로). 예시 책에는 '예시' 꼬리표, 도서관 탭 아래 '예시 책 지우기 / 다시 보기'.
 //   설정에 '느낀 점'(notes.js) — 쓰다가 느낀 것을 한 줄 남기면 화면 · 단계 · 때가 저절로 붙고, 'Jira용 복사'로 모아 붙인다(이 컴퓨터에만 남는다).
+// claude-drafted: 2026-10-20 — C-13 모드 둘 · C-14 섬의 움직임(이재엽, 넘김 문서 fable-handoff-2026-10-20-modes.md 3 · 4절):
+//   켜면 늘 **기본 화면**(st.place "base" — 플로로와 지금 한 줄, 단추 넷: 바이브 코딩 · 서재 · 알림 · AI 진행. 알림 · AI 진행은 섬 안에서 바로 — 모아 보기 창(hub.js)의 순수 함수를 그대로 쓴다).
+//   바이브 코딩 단추를 누르면 "vibe"(이번 단계 · 설계도 · 단계 지도 · 도서관)로, 접혔다 펼쳐지거나 서고에 다녀와도 그대로(sessionStorage — 켤 때마다 새 창이라 늘 기본), 위쪽 줄의 집 단추로 돌아온다.
+//   규칙은 navigator.js nextPlace. 주소로 연 장면(#ex= …)은 바이브 코딩, #base(&pane=alerts|ai)는 기본 화면. 켤 때 인사가 끝나면 인사 카드 대신 기본 화면이 된다.
+//   섬이 접히고 펼쳐질 때 모양을 갈아 끼우는 대신 바탕 껍데기(.shell)가 늘어나고 줄어든다(morph.js — FLIP · transform만, 창은 커질 때 먼저 · 작아질 때 나중에),
+//   접힌 한 줄에 마우스를 올리면 살짝 커진다(창은 안 바꾼다 — 접힌 창에 여유). 움직임 줄이기면 전처럼 바로 바뀐다.
 (function () {
   const N = window.NavRules, S = window.NavScenario, C = window.NavSeal;
   // 새 규칙 파일 다섯(03-backend/navigator/glossary·understand·priority·alerts·tiers.js) — server.js가 내주는 목록에 있는지는 static-files.test.js가 확인한다
   const G = window.NavGlossary, U = window.NavUnderstand, P = window.NavPriority, A = window.NavAlerts, T = window.NavTiers;
   // 실사용(2026-10-19): 내 책 · 예시 책 지우기(../library/my-books.js), 느낀 점(notes.js). 둘 다 없어도 화면은 돈다(옛 동작)
   const M = window.FloeMine, NT = window.FloeNotes;
+  // 기본 화면 · 섬의 움직임(2026-10-20): 모아 보기 창의 순수 함수(hub.js) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js). 없어도 화면은 돈다
+  const HUB = window.FloeHub, STEPS = window.NavSteps, MO = window.FloeMorph;
+  const SESS = (() => { try { return window.sessionStorage; } catch { return null; } })();
+  const PLACE_KEY = "floe:place", SEEN_KEY = "floe:alerts-seen";   // 이 창(섬)에만 — 기록(KEY)에는 넣지 않는다(다음에 켤 때는 늘 기본 화면)
   const STORE = (() => { try { return window.localStorage; } catch { return null; } })();
   const canLive = location.protocol.startsWith("http");
   // Electron 껍데기 안(2026-10-19, 02-frontend/electron — preload.js가 window.floeApp을 둔다): 뒤의 예시 코딩 도구 창을 숨기고 바탕을 투명하게(app.css .in-app)
@@ -64,6 +74,7 @@
     judged: "",                                    // 마지막으로 살펴본 작업 글 — 글 칸을 비운 뒤 '물어보기'를 눌러도 이 글을 보낸다(F-11, understand.js askText)
     noteText: "", notesOpen: false, noteCopy: "",  // 느낀 점(2026-10-19): 적는 중인 글, 설정에서 펼쳤나, 'Jira용 복사'가 실패했을 때 손으로 복사할 글
     cmd: null, words: "work",                      // 레벨 오버레이(2026-10-19): 고른 명령 칸(0~3 · null이면 지금 하는 일), 버튼 말(work 일 말 · game 게임 말)
+    place: "base", pane: "",                       // 기본 화면(base) · 바이브 코딩(vibe) — 펼친 섬에 어떤 판을 보이나(C-13, 2026-10-20). pane: 기본 화면 안의 알림 · AI 진행 판
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
   let exHidden = M ? M.readHidden(STORE) : false;
@@ -171,6 +182,9 @@
     try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
   }
   load();
+  // 모드는 이 창에만(sessionStorage) — 서고에 다녀와도 남고, 앱을 다시 켜면 기본 화면(C-13). 읽지 않은 알림의 기준(마지막으로 알림 판을 본 때)도 같은 곳
+  st.place = N.nextPlace(SESS && SESS.getItem(PLACE_KEY) === "vibe" ? "vibe" : "base", "");
+  let seenAlerts = Number(SESS && SESS.getItem(SEEN_KEY)) || 0;
   if (!st.since) st.since = ymd();
   // 글자 크기 — 브라우저(또는 운영체제)에서 정한 기본 글자 크기를 따르고, 설정에서 한 번 더 키우거나 줄인다
   const TEXT_SIZES = [[0.9, "작게"], [1, "보통"], [1.15, "크게"], [1.3, "아주 크게"]];
@@ -206,6 +220,8 @@
     moon: icon('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>', 22),
     // 모아 보기 창(2026-10-20, C-11) — 위쪽 줄의 단추. 네 칸 격자
     grid: icon('<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"></rect>', 20),
+    // 기본 화면(2026-10-20, C-13) — 위쪽 줄 맨 왼쪽의 집 단추
+    home: icon('<path d="M4 11l8-7 8 7"></path><path d="M6 10v10h12V10"></path><path d="M10 20v-6h4v6"></path>', 20),
   };
   // 하트 — 설정 맨 위 '플로로와 나'가 쓴다(위쪽 줄의 하트는 2026-10-18에 뺐다)
   const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
@@ -226,6 +242,11 @@
   const view = (ev) => go(N.nextView(st.ui, ev, pinned()));   // 일(enter·click·esc·idle·alert)에 따라 다음 모습으로
   // 알릴 일이 생기면 접혀 있던 것(띠·인사)만 한 줄로 살짝 보인다 — 펼쳐져 있으면 그대로
   const peek = () => go(st.ui === "hidden" || st.ui === "greet" ? "petit" : st.ui);
+  // 모드 바꾸기(C-13) — 규칙은 navigator.js nextPlace. 바꾸면 이 창에 기억한다(판은 닫는다)
+  function setPlace(ev) {
+    const p = N.nextPlace(st.place, ev);
+    if (p !== st.place) { st.place = p; st.pane = ""; try { if (SESS) SESS.setItem(PLACE_KEY, p); } catch {} }
+  }
   $nav.addEventListener("mouseenter", () => { hovering = true; clearIdle(); view("enter"); });
   $nav.addEventListener("mouseleave", () => { hovering = false; render(); });
 
@@ -838,18 +859,22 @@
   const tabIdx = () => TABS.findIndex((x) => x[0] === st.tab);
   // 위쪽 제목 — '이번 단계' 탭이면 지금 단계 이름("0단계 · 무엇을 만들지 정하기"), 다른 탭은 탭 이름 (2026-10-18 임유정 요청)
   const tabTitle = (tab) => (tab[0] === "today" && st.j && !st.finished ? `${stage().n}단계 · ${stage().title}` : tab[1]);
-  function topbar() {
-    const tab = TABS.find((x) => x[0] === st.tab);
-    return `<div class="tb"><div class="tabs" role="tablist" aria-label="보기"><span class="ti-ind" style="--i:${tabIdx()}" aria-hidden="true"></span>${TABS.map(([id, label, , ic], i) =>
-      `<button class="ti" role="tab" data-act="tab" data-i="${i}" data-tab="${id}" aria-selected="${st.tab === id}" aria-label="${label}" title="${label}">${I[ic]}</button>`).join("")}</div>
-      <span class="tb-tab">${esc(tabTitle(tab))}</span><span class="grow"></span>
-      ${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
+  // 집 단추(C-13) — 맨 왼쪽. 기본 화면에서는 눌린 모양, 바이브 코딩 모드에서는 누르면 기본 화면으로
+  const homeBtn = (on) => `<button class="ti home" data-act="base" aria-pressed="${on}" aria-label="기본 화면" title="기본 화면 — 바이브 코딩 · 서재 · 알림 · AI 진행">${I.home}</button>`;
+  // 오른쪽 — 연결 표시 · 프로젝트 · 모아 보기 · 설정 · 열어 두기 · 접기(두 모드가 같다)
+  const tbRight = () => `${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
       <button class="ti" data-act="hub" aria-label="모아 보기" title="모아 보기 — 바이브 코딩 · 알림 · AI 진행">${I.grid}</button>
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 소리, 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
+  function topbar() {
+    if (st.place === "base") return `<div class="tb">${homeBtn(true)}<span class="tb-tab">Floe</span><span class="grow"></span>${tbRight()}`;
+    const tab = TABS.find((x) => x[0] === st.tab);
+    return `<div class="tb">${homeBtn(false)}<div class="tabs" role="tablist" aria-label="보기"><span class="ti-ind" style="--i:${tabIdx()}" aria-hidden="true"></span>${TABS.map(([id, label, , ic], i) =>
+      `<button class="ti" role="tab" data-act="tab" data-i="${i}" data-tab="${id}" aria-selected="${st.tab === id}" aria-label="${label}" title="${label}">${I[ic]}</button>`).join("")}</div>
+      <span class="tb-tab">${esc(tabTitle(tab))}</span><span class="grow"></span>${tbRight()}`;
   }
   const X_ICON = icon('<path d="M6 6l12 12M18 6L6 18"></path>', 16);
   const settingsPop = () => (st.settings ? `<div class="pop" role="dialog" aria-label="설정"><div class="pop-h"><b>설정</b><span class="grow"></span><button type="button" class="ti" data-act="settings" aria-label="설정 닫기" title="닫기 (Esc)">${X_ICON}</button></div>${settingsBody()}</div>` : "");
@@ -894,23 +919,115 @@
         <div class="acts"><button class="b pri" data-act="open">${st.back ? "이어서 하기" : "보여 주기"}<kbd aria-hidden="true">Enter</kbd></button>
           <span class="hint">${I.bubble}${st.pets ? `우리는 ${esc(C.bond(st.pets).name)}예요` : "플로로를 눌러 쓰다듬어 보세요"}</span></div></div></section></div>`;
   }
+  // ── 기본 화면(C-13, 2026-10-20 — 이재엽 "버튼식으로 준비가 되어있는 공간이 기본값") — 플로로와 지금 한 줄, 단추 넷. 알림 · AI 진행은 섬 안에서 바로(모아 보기 창의 순수 함수 FloeHub 그대로) ──
+  let aiSessions = [], aiMode = "none", aiLatest = 0;   // AI 진행(C-12)의 세션 · 어디서 왔나(none · example · live) · 마지막 번호
+  const aiLast = () => { let best = null; for (const s of aiSessions) for (const x of s.steps || []) if (!best || (x.at || 0) > (best.at || 0)) best = { ...x, project: s.project }; return best; };
+  const stepLine = (s) => (STEPS ? STEPS.line(s) : `${s.verb || ""} ${s.what || ""}`.trim());
+  // 지금 한 줄 — 알림과 AI가 한 일 중 더 최근 것, 없으면 다시 온 인사 또는 시간대 인사(넘김 문서 9절 2번 기본값)
+  function nowLine() {
+    const a = st.alerts[0], s = aiLast();
+    const at = (x) => (x && Number.isFinite(x.at) ? x.at : 0);
+    if (a && at(a) >= at(s)) return `${toolName(a.tool)}가 ${A.KIND[a.kind] || "알림을 보냈어요"}${a.line && !a.hidden ? ` — ${a.line}` : ""} · ${ago(a.at)}`;
+    if (s) return `${aiMode === "example" ? "예시 · " : ""}${s.project || "Claude Code"}에서 ${stepLine(s)} · ${ago(s.at)}`;   // 서버 없이 보이는 예시는 예시라고(FR-10)
+    return st.back || C.greeting(new Date().getHours());
+  }
+  const unreadN = () => (HUB ? HUB.unread(st.alerts, seenAlerts) : 0);
+  const working = () => (HUB ? HUB.anyWorking(aiSessions) : false);
+  // 단추 넷 — [할 일, 이름, 한 줄, 아이콘]. 1~4 키
+  const BASE_BTNS = [["go-vibe", "바이브 코딩", "단계마다 길 안내", "today"], ["lib-enter", "서재", "끝낸 책 · 서고", "lib"], ["base-alerts", "알림", "AI 코딩 도구가 보낸 것", "bubble"], ["base-ai", "AI 진행", "Claude Code가 한 일", "look"]];
+  function baseBody() {
+    if (st.pane) return basePane(st.pane);
+    BASE_BTNS.forEach(([act], i) => { deskKeys[String(i + 1)] = { act }; });
+    const mark = (act) => (act === "base-alerts" && unreadN() ? `<span class="cnt" aria-label="읽지 않은 알림 ${unreadN()}개">${unreadN()}</span>`
+      : act === "base-ai" && working() ? `<i class="dot" title="일하는 중"></i>` : "");
+    return `<section class="mc base tone-blue"><div class="who">${petCat("happy", 116)}</div>
+      <div class="main"><div class="box"><span class="kicker">지금</span><p class="say now-line">${esc(nowLine())}</p></div>
+      <div class="grid4" role="group" aria-label="무엇을 할까요">${BASE_BTNS.map(([act, label, sub, ic], i) => `<button type="button" class="bb" data-act="${act}"><span class="ic">${I[ic]}</span><span class="t"><b>${esc(label)}${mark(act)}</b><small>${esc(sub)}</small></span><kbd aria-hidden="true">${i + 1}</kbd></button>`).join("")}</div></div></section>`;
+  }
+  // 알림 판 · AI 진행 판 — 왼쪽: 플로로 · 프로젝트 · 도구 이름 · (AI 진행) 상태와 한 일의 종류별 수, 오른쪽: 줄 목록(모아 보기 창과 같은 글 · 같은 기록). 집(또는 '단추로')으로 돌아온다.
+  //   AI 진행은 C-12 규칙 그대로 — 파일 이름 · 첫 줄 · 줄 수뿐, 파일 내용은 받지도 보이지도 않는다
+  const PANE = { alerts: ["알림", "AI 코딩 도구가 보낸 알림이에요 — 새것이 위예요"], ai: ["AI 진행", "Claude Code가 한 일을 한 줄씩 — 파일 내용은 받지 않아요"] };
+  function basePane(kind) {
+    deskKeys.Escape = { act: "base-back" };
+    const now = Date.now(), [title, lead] = PANE[kind] || PANE.alerts;
+    const last = kind === "ai" ? [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0] : null;
+    const tool = toolName(kind === "ai" ? (last && last.tool) || "claude" : st.feed.tool || (st.alerts[0] && st.alerts[0].tool));
+    const proj = kind === "ai" && last ? last.project : project();
+    const counts = kind === "ai" && last ? Object.entries((last.steps || []).reduce((m, s) => { m[s.verb || ""] = (m[s.verb || ""] || 0) + 1; return m; }, {})) : [];
+    const body = !HUB ? `<p class="empty">아직 준비 중이에요</p>` : kind === "ai" ? HUB.aiHTML(aiSessions, aiMode, STEPS, now) : HUB.alertsHTML(st.alerts, now);
+    return `<section class="mc base pane tone-gray"><div class="who">${petCat("look", 92)}<b class="pj">${esc(proj || "프로젝트")}</b><span class="tl">${esc(tool)}</span>${
+        kind === "ai" && last && HUB && HUB.STATE_WORD[last.state] ? `<span class="st ${esc(last.state)}">${esc(HUB.STATE_WORD[last.state])}</span>` : ""}${
+        counts.length ? `<ul class="verbs">${counts.map(([v, n]) => `<li><span>${esc(v)}</span><b>${n}</b></li>`).join("")}</ul>` : ""}</div>
+      <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b>
+        <button type="button" class="btn" data-act="hub-${kind}" title="모아 보기 창에서 크게 봐요">크게 보기</button></div><p class="meta">${esc(lead)}</p><div class="pane-body">${body}</div></div></section>`;
+  }
   function islandHTML(enter) {
     let body;
-    if (st.tab === "doc") body = deskDoc();
+    if (st.place === "base") body = baseBody();
+    else if (st.tab === "doc") body = deskDoc();
     else if (st.tab === "map") body = deskMap();
     else if (st.tab === "lib") body = deskLib();
     else body = levelCard(momentToday());   // 레벨 오버레이(2026-10-19) — 옛 가로 카드(card)는 쓰지 않는다
     return `<div class="isl${enter}">${topbar()}<div class="isl-body">${body}</div>${countdown()}</div>${settingsPop()}`;
   }
+  // ── 섬의 움직임(C-14, 2026-10-20 — 규칙 · 숫자는 morph.js) ──
+  // 바탕(배경 · 그림자)을 가진 요소 — 섬(.isl) · 한 줄(.pill) · 띠(.strip — 바탕 없음)
+  const shapeEl = () => { const el = $nav.querySelector(":scope > :not(.shell)"); return el ? (el.classList.contains("isl") ? el : el.querySelector(".pill, .strip") || el) : null; };
+  const opaque = (c) => !!c && c !== "transparent" && !/^rgba\([^)]*,\s*0\)$/.test(c);
+  // 갈아 끼우기 전의 상자 — 자리 · 크기 · 바탕색 · 모서리 · 그림자
+  function snapShape() {
+    const el = shapeEl(); if (!el) return null;
+    const r = el.getBoundingClientRect(), cs = getComputedStyle(el);
+    return r.width && r.height ? { x: r.left, y: r.top, w: r.width, h: r.height, bg: cs.backgroundColor, shadow: cs.boxShadow } : null;
+  }
+  // 모양이 바뀌면(띠 ↔ 한 줄 ↔ 펼침) 바탕 껍데기(.shell)가 처음 상자에서 끝 상자로 늘어나고 줄어든다(FLIP — transform · opacity만, 합성만으로 돈다).
+  // 그동안 새 모양의 바탕은 숨기고(.morph-bg) 내용은 바탕이 reveal만큼 자란 뒤 나타난다. 줄어들 때는 움직임이 끝난 뒤 창을 줄인다(morphHold → measureSize).
+  // 켤 때 인사 · 잠수 · 떠오름 · 움직임 줄이기 · 휴대폰에서는 하지 않는다(그쪽은 저마다의 움직임이 있다)
+  let morphHold = false, morphShell = null;
+  function morphFrom(prev) {
+    const h = document.documentElement, el = shapeEl();
+    if (!MO || !el || !el.animate || STILL || isPhone() || greetSkip || h.classList.contains("greeting") || h.classList.contains("surfacing") || h.classList.contains("diving")) return;
+    const to = el.getBoundingClientRect(); if (!to.width || !to.height) return;
+    const p = MO.plan({ w: prev.w, h: prev.h }, { w: to.width, h: to.height }, { still: STILL });
+    if (!p.ms) return;
+    const f = MO.flip(prev, { x: to.left, y: to.top, w: to.width, h: to.height }), cs = getComputedStyle(el), nr = $nav.getBoundingClientRect();
+    if (morphShell) morphShell.remove();
+    const shell = morphShell = document.createElement("div");
+    shell.className = "shell"; shell.setAttribute("aria-hidden", "true");
+    const fromOn = opaque(prev.bg), toOn = opaque(cs.backgroundColor);
+    shell.style.cssText = `left:${to.left - nr.left}px;top:${to.top - nr.top}px;width:${to.width}px;height:${to.height}px;border-radius:${cs.borderRadius};background:${toOn ? cs.backgroundColor : prev.bg};box-shadow:${toOn ? cs.boxShadow : prev.shadow}`;
+    $nav.prepend(shell);
+    el.classList.add("morph-bg");
+    morphHold = p.order === "animate-then-resize";
+    const a = shell.animate([{ transform: `translate(${f.dx}px,${f.dy}px) scale(${f.sx},${f.sy})`, opacity: fromOn ? 1 : 0 }, { transform: "none", opacity: toOn ? 1 : 0 }], { duration: p.ms, easing: p.easing, fill: "both" });
+    shell.nextElementSibling?.animate([{ opacity: 0 }, { opacity: 0, offset: p.reveal || 0.5 }, { opacity: 1 }], { duration: p.ms, easing: "ease-out", fill: "both" });
+    const done = () => { if (morphShell === shell) morphShell = null; shell.remove(); el.classList.remove("morph-bg"); if (morphHold) { morphHold = false; lastSize = ""; queueSize(); } };
+    a.finished.then(done, done);
+  }
+  // 접힌 한 줄에 마우스를 올리면 살짝 커진다(세로 +6 · 가로 +24) — 비율은 크기마다 달라 그릴 때 잰다(app.css .pill:hover). 창은 그대로(접힌 창에 여유 — measureSize)
+  function peekReady() {
+    const pill = $nav.querySelector(".pill");
+    if (!pill || !MO) return;
+    const { sx, sy } = MO.peekScale(pill.offsetWidth, pill.offsetHeight);
+    pill.style.setProperty("--px", sx.toFixed(3)); pill.style.setProperty("--py", sy.toFixed(3));
+  }
+  let placeFrom = null, paneFrom = null;
   function renderDesk() {
     const moved = st.ui !== lastUi; lastUi = st.ui;
     const enter = moved ? " enter" : "";
+    const prev = moved ? snapShape() : null;   // 움직임(C-14): 갈아 끼우기 전의 상자
+    const slid = placeFrom !== null && !moved && (placeFrom !== st.place || paneFrom !== st.pane);   // 모드 · 판이 바뀌면 판만 옆으로 밀려 바뀐다(탭 바뀜과 같은 움직임)
+    placeFrom = st.place; paneFrom = st.pane;
     deskKeys = {}; cardSay = "";
     if (st.ui === "hidden") $nav.innerHTML = stripHTML();
     else if (st.ui === "greet") $nav.innerHTML = greetHTML(enter);
     else if (st.ui === "petit") $nav.innerHTML = `<div class="${enter.trim()}">${pillHTML()}</div>`;
     else $nav.innerHTML = islandHTML(enter);
     $nav.classList.toggle("side", !!$nav.querySelector(":scope > .pop"));   // 설정 창은 섬 옆(오른쪽)에 — 아래에 열리면 글자를 키웠을 때 설정이 바로 안 보였다(6.2.0)
+    $nav.classList.toggle("peekroom", !!window.floeApp && (st.ui === "hidden" || st.ui === "petit"));   // 접힌 창의 여유 — 올리면 커질 자리(C-14)
+    if (prev) morphFrom(prev);
+    peekReady();
+    if (slid && !STILL) $nav.querySelector(".isl-body")?.animate([{ opacity: 0, transform: `translateX(${st.place === "vibe" || st.pane ? 36 : -36}px)` }, { opacity: 1, transform: "none" }], { duration: 340, easing: "cubic-bezier(.2,.8,.2,1)" });
     const ind = $nav.querySelector(".ti-ind"), to = tabIdx();
     if (!ind) return;
     if (tabFrom !== null && tabFrom !== to) tabMove = { from: tabFrom, to, at: performance.now() };
@@ -1048,9 +1165,11 @@
     if (!window.floeApp || isPhone()) return;
     const h = document.documentElement;
     if (h.classList.contains("diving") || h.classList.contains("surfacing")) return;   // 창은 서고 크기(넓힘) · 섬 크기(돌아옴)로 앱이 먼저 맞춰 둔다
+    if (morphHold) return;   // 줄어드는 움직임이 끝난 뒤 창을 줄인다(C-14 — 움직이는 동안 창을 바꾸면 F-24의 버벅임이 돌아온다)
     let r = 0, b = 0;
-    for (const el of $nav.children) { const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
+    for (const el of $nav.children) { if (el.classList.contains("shell")) continue; const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
     if (!r || !b) return;
+    if ($nav.classList.contains("peekroom") && MO) { r += MO.RESERVE.w / 2; b += MO.RESERVE.h; }   // 접힌 창의 여유 — 올리면 커질 자리(왼쪽 여유는 .nav.peekroom의 padding)
     const side = $nav.classList.contains("side"), anchor = side || sideWas ? "left" : "center";
     sideWas = side;
     const key = `${Math.ceil(r)}x${Math.ceil(b)}:${anchor}`;
@@ -1429,6 +1548,13 @@
     settings: () => set({ settings: !st.settings }),
     // 모아 보기 창(2026-10-20, C-11) — 앱이면 보통 창 하나(main.js openHub), 브라우저면 새 탭 하나(같은 이름이라 두 번 눌러도 하나)
     hub: () => (window.floeApp && window.floeApp.openHub ? window.floeApp.openHub() : window.open("../hub/index.html", "floe-hub")),
+    // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기 · 크게 보기(모아 보기 창의 그 칸)
+    base: () => { setPlace("home"); set({ settings: false, pane: "" }); },   // 집 — 기본 화면으로, 열어 둔 판도 닫는다
+    "go-vibe": () => { setPlace("vibe"); set({ tab: "today", settings: false }); },
+    "base-alerts": () => { seenAlerts = HUB ? HUB.latestAt(st.alerts) : Date.now(); try { if (SESS) SESS.setItem(SEEN_KEY, String(seenAlerts)); } catch {} set({ pane: "alerts" }); },
+    "base-ai": () => { set({ pane: "ai" }); pollSteps().then(render); },
+    "base-back": () => set({ pane: "" }),
+    "hub-alerts": () => openHub("alerts"), "hub-ai": () => openHub("ai"),
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
     // 도서관 탭 — 책 고르기 · 목록으로 · 서고에 보관(확인 뒤) · 한 권으로 엮기
@@ -1569,6 +1695,8 @@
     }
     render();
   }
+  // 모아 보기 창을 그 칸(#alerts · #ai)으로 — 앱이면 main.js openHub(space), 브라우저면 같은 이름의 탭(주소 끝만 바뀐다)
+  const openHub = (space) => (window.floeApp && window.floeApp.openHub ? window.floeApp.openHub(space) : window.open(`../hub/index.html#${space}`, "floe-hub"));
   const run = (a, el) => { if (ACT[a.act]) ACT[a.act](a.i, el); };
   for (const $root of [$nav, $phone]) {
     $root.addEventListener("click", (e) => {
@@ -1681,6 +1809,19 @@
     render();
   }
   if (canLive) { poll(); setInterval(poll, 2000); fetchUsage(); }
+  // AI 진행(C-12) — 기본 화면의 '지금 한 줄' · AI 진행 판이 쓴다. 서버로 열렸으면 /api/steps?since=를 2초마다(기본 화면이 펼쳐져 있을 때만), 파일로 열렸거나 거절하면 예시(모아 보기 창과 같은 규칙)
+  async function pollSteps() {
+    if (!HUB || !STEPS) { aiMode = "none"; return; }
+    if (!canLive) { if (aiMode !== "example") { aiMode = "example"; aiSessions = HUB.exampleSessions(STEPS, Date.now()); } return; }
+    try {
+      const r = await fetch(`/api/steps?since=${aiLatest}`, { credentials: "same-origin" });
+      const j = await r.json();
+      if (!j || !j.ok) throw new Error("refused");
+      aiMode = "live"; aiLatest = Number(j.latest) || aiLatest; aiSessions = HUB.mergeSessions(aiSessions, j.sessions);
+    } catch { if (aiMode !== "live") { aiMode = "example"; aiSessions = HUB.exampleSessions(STEPS, Date.now()); } }
+  }
+  pollSteps().then(() => { if (st.place === "base" && st.ui === "home") render(); });
+  if (canLive) setInterval(async () => { if (st.place !== "base" || st.ui !== "home") return; const was = aiLatest; await pollSteps(); if (aiLatest !== was) render(); }, 2000);
 
   // ── 뒤쪽 예시 화면: AI 도구로 작업하는 장면 ──
   const LINES = [
@@ -1722,6 +1863,8 @@
     const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(decodeURIComponent)).map(([k, v]) => [k, v === undefined ? true : v]));
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
       termOpen: "", check: null, undo: [], own: false });
+    // 주소로 연 장면은 바이브 코딩(녹화 · 시험이 그대로), #base(&pane=alerts|ai)만 기본 화면(C-13, 넘김 문서 9절 7번)
+    if (q.base) { st.place = "base"; st.pane = q.pane === "alerts" || q.pane === "ai" ? q.pane : ""; } else setPlace("scene");
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
     if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null });
@@ -1749,10 +1892,12 @@
   // 켤 때마다. 주소 끝 장면 · 휴대폰 · 움직임 줄이기면 안 한다(greet.js shouldGreet). 처음 설정(setup.js)은 인사가 끝난 뒤 열린다(floe:greet-done)
   const greetNow = !!GR && st.ui === "greet" && GR.shouldGreet({ hash: location.hash, still: STILL, phone: isPhone() }).greet;
   if (greetNow) document.documentElement.classList.add("greeting");
+  else if (st.ui === "greet") st.ui = "home";   // 인사 움직임이 없으면(움직임 줄이기 등) 바로 기본 화면 — 인사 카드는 이제 없다(C-13)
   function startGreeting() {
     const h = document.documentElement;
     const finish = () => {
       greetSkip = null; h.classList.remove("greeting"); delete h.dataset.greet;
+      go("home");   // 인사가 끝나면 인사 카드 대신 기본 화면(C-13, 넘김 문서 9절 3번) — 바이브 코딩 단추가 '이어서 하기'를 맡는다
       clearIdle(); scheduleIdle();
       document.dispatchEvent(new CustomEvent("floe:greet-done"));
     };
@@ -1778,10 +1923,10 @@
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });
     else if ((d.via === "cli" || d.via === "api") && canLive) set({ mode: "live", error: "", warn: null });
-    if (d.open && st.ui === "greet") ACT.open();
+    if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
   });
   // 모아 보기 창의 바이브 코딩 '들어가기'(2026-10-20, C-11) — 앱이 섬 창을 앞으로 보내고 이 신호를 주면 '이번 단계'로
-  if (window.floeApp && window.floeApp.onEnter) window.floeApp.onEnter(() => { st.tab = "today"; go("home"); });
+  if (window.floeApp && window.floeApp.onEnter) window.floeApp.onEnter(() => { setPlace("enter"); st.tab = "today"; go("home"); });
 
   render();
   if (greetNow) startGreeting();

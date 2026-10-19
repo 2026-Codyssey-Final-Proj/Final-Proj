@@ -32,7 +32,7 @@ test("창 크기(hubBounds): 지난 크기 · 자리(saved)가 있으면 그것�
 
 test("main.js — 모아 보기 창은 보통 창(테두리 · 항상 위 아님 · 최소 480×420), 하나만, 닫으면 null. 섬 창과 같은 preload · 격리", () => {
   const main = read("electron/main.js");
-  const at = main.indexOf("function openHub()");
+  const at = main.indexOf("function openHub(space = \"\")");   // 2026-10-20 C-13: space("alerts" · "ai")면 그 칸으로
   assert.ok(at > 0, "openHub");
   const block = main.slice(at, at + 2200);
   assert.match(block, /alwaysOnTop: false/);
@@ -52,7 +52,9 @@ test("main.js — 여는 길 넷: 메뉴 '모아 보기 열기'(버전 줄 다�
   assert.match(main, /새 버전 확인 \(Releases\)[^\n]*\n[^\n]*모아 보기 열기[^\n]*openHub\(\)/, "메뉴 — 버전 줄 바로 다음");
   assert.match(main, /tray\.on\("click", \(\) => \{[^\n]*createWindow\(\);[^\n]*openHub\(\)/);
   assert.match(main, /app\.on\("activate", \(\) => \{[^\n]*createWindow\(\);[^\n]*openHub\(\)/);
-  assert.match(main, /ipcMain\.on\("floe:open-hub", [^\n]*openHub\(\)/);
+  assert.match(main, /ipcMain\.on\("floe:open-hub", \(_e, space\) => openHub\(space\)\)/, "섬 단추 · 기본 화면의 크게 보기(그 칸으로, 2026-10-20)");
+  assert.match(main, /hub\.loadURL\(`\$\{URL_\}hub\/index\.html\$\{hubSpace\(space\) \? `#\$\{hubSpace\(space\)\}` : ""\}`\)/, "주소 끝으로 그 칸을 연다");
+  assert.match(main, /if \(hubSpace\(space\)\) hub\.webContents\.executeJavaScript/, "이미 열려 있으면 주소 끝만 바꾼다");
 });
 
 test("main.js — '들어가기'(IPC floe:enter)는 섬 창을 앞으로 보이고 화면에 floe:enter를 보낸다. 섬 창이 없으면 만든다", () => {
@@ -73,7 +75,7 @@ test("main.js — 창 크기 함수들(createWindow · expandWindow · floe:resi
 
 test("preload.js — openHub · enter · onEnter(onCursor와 같은 모양, 떼는 함수를 돌려준다)", () => {
   const pre = read("electron/preload.js");
-  assert.match(pre, /openHub: \(\) => ipcRenderer\.send\("floe:open-hub"\)/);
+  assert.match(pre, /openHub: \(space\) => ipcRenderer\.send\("floe:open-hub", space \|\| ""\)/, "2026-10-20: 칸을 같이 보낸다");
   assert.match(pre, /enter: \(\) => ipcRenderer\.send\("floe:enter"\)/);
   assert.match(pre, /onEnter: \(cb\) => \{ const h = \(_e, p\) => cb\(p\); ipcRenderer\.on\("floe:enter", h\); return \(\) => ipcRenderer\.removeListener\("floe:enter", h\); \}/);
 });
@@ -83,7 +85,7 @@ test("섬(app.js) — 위쪽 줄의 설정 단추 앞에 '모아 보기' 단추,
   assert.match(app, /<button class="ti" data-act="hub" aria-label="모아 보기"[^\n]*\n?[^\n]*<button class="ti" data-act="settings"/, "설정 단추 바로 앞");
   assert.match(app, /grid: icon\(/, "격자 아이콘");
   assert.match(app, /hub: \(\) => \(window\.floeApp && window\.floeApp\.openHub \? window\.floeApp\.openHub\(\) : window\.open\("\.\.\/hub\/index\.html", "floe-hub"\)\)/);
-  assert.match(app, /window\.floeApp\.onEnter\(\(\) => \{ st\.tab = "today"; go\("home"\); \}\)/);
+  assert.match(app, /window\.floeApp\.onEnter\(\(\) => \{ setPlace\("enter"\); st\.tab = "today"; go\("home"\); \}\)/, "2026-10-20 C-13: 바이브 코딩 모드로");
 });
 
 test("서버(server.js)가 모아 보기 창의 파일을 내준다 — 앱은 서버 주소로 연다(넘김 문서 10절 함정)", () => {
