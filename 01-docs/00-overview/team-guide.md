@@ -125,17 +125,17 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 
 2-b의 한 줄 대신 **실행 파일**로 쓸 수 있다. 화면과 서버가 그대로 들어 있고, 창이 **항상 위에** 떠서 진짜 코딩 도구 위에 겹친다(`02-frontend/electron`).
 
-| 순서 | Mac | Windows |
-|---|---|---|
-| 받기 | `Floe-<버전>-arm64.dmg` — [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) (지금 알파 `app-v4.0.0`, 2026-10-19, Apple Silicon) | `Floe-Setup-<버전>.exe` — 같은 Release에 **CI가 묶어 올린다**(main 병합 뒤) |
-| 처음 열기 | 서명이 없어 경고가 뜬다 → Finder에서 **우클릭 → 열기** 한 번 | SmartScreen 경고 → "추가 정보 → 실행" |
-| 연결 | 메뉴 **Floe → 프로젝트 폴더 연결…** 또는 톱니 → 연결 칸의 단추 | 같음 |
-| AI | **처음 켜면 플로로가 물어본다** — Claude Code로 연결하거나 API 키를 넣는다(2026-10-19). 나중에 바꾸려면 톱니 → 처음 설정 다시 하기 | 같음 |
-| 끄기 | 메뉴 **Floe → Floe 끄기** (Cmd+Q) | 창 닫기 |
+| 순서 | Mac | Windows | 우분투 Linux (6.0.0부터) |
+|---|---|---|---|
+| 받기 | `Floe-<버전>-arm64.dmg` — [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) (지금 알파 `app-v6.0.0`, 2026-10-19, Apple Silicon) | `Floe-Setup-<버전>.exe` — 같은 Release에 **CI가 묶어 올린다**(main 병합 뒤) | `Floe-<버전>-x86_64.AppImage`(보통 PC) 또는 `Floe-<버전>-amd64.deb` — 같은 Release(ARM 컴퓨터는 `-arm64`) |
+| 처음 열기 | 서명이 없어 경고가 뜬다 → Finder에서 **우클릭 → 열기** 한 번 | SmartScreen 경고 → "추가 정보 → 실행" | AppImage: `chmod +x Floe-*.AppImage && ./Floe-*.AppImage` (또는 파일 속성 → 실행 허용 → 더블클릭). deb: `sudo apt install ./Floe-*.deb` 뒤 앱 메뉴의 Floe. AppImage가 FUSE를 찾으면 `sudo apt install libfuse2t64`(22.04는 `libfuse2`) |
+| 연결 | 메뉴 **Floe → 프로젝트 폴더 연결…** 또는 톱니 → 연결 칸의 단추 | **창 우클릭** 또는 알림 영역(트레이)의 Floe 아이콘 → 같은 메뉴 | 같음(창 우클릭 · 트레이) |
+| AI | **처음 켜면 플로로가 물어본다** — Claude Code로 연결하거나 API 키를 넣는다(2026-10-19). 나중에 바꾸려면 톱니 → 처음 설정 다시 하기 | 같음 | 같음 |
+| 끄기 | 메뉴 **Floe → Floe 끄기** (Cmd+Q) | 우클릭 → Floe 끄기 | 우클릭 → Floe 끄기 |
 
-- 직접 묶으려면: `cd 02-frontend/electron && npm install && npm run dist` — [electron/README.md](../../02-frontend/electron/README.md).
+- 직접 묶으려면: `cd 02-frontend/electron && npm install && npm run dist`(Mac) · `dist:win` · `dist:linux` — [electron/README.md](../../02-frontend/electron/README.md).
 - 앱은 늘 자기 서버를 켠다(4317이 막혀 있으면 옆 포트). 터미널의 서버와 섞이지 않는다.
-- **새 버전:** 메뉴 **Floe → 새 버전 확인**이 Releases를 연다. 앱 버전(`02-frontend/electron/package.json`)이 main에서 바뀌면 CI가 Mac · Windows를 묶어 올린다 — [electron/README.md](../../02-frontend/electron/README.md) "받기 · 업데이트".
+- **새 버전:** 메뉴 **Floe → 새 버전 확인**이 Releases를 연다. 앱 버전(`02-frontend/electron/package.json`)이 main에서 바뀌면 CI가 Mac · Windows · Linux를 묶어 올린다 — [electron/README.md](../../02-frontend/electron/README.md) "받기 · 업데이트".
 - 느낀 점 · 내 책은 앱 안에 남고, 브라우저로 연 것과는 따로다.
 
 ## 3. 작업은 어디에 올리나 — 팀이 하는 방식

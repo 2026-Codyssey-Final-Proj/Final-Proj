@@ -30,6 +30,10 @@ function applyEnv(env, parsed) {
   return env;
 }
 
+// 어느 운영체제에서 로그인 셸의 PATH를 합치나 — Mac(더블클릭 앱)과 Linux(앱 메뉴 · AppImage로 연 앱)는 PATH가 짧아 `claude`를 못 찾는다. Windows는 등록된 PATH를 그대로 받는다
+const wantsShellPath = (platform) => platform === "darwin" || platform === "linux";
+// 그 셸 — SHELL 환경이 있으면 그것, 없으면 Mac은 zsh · Linux는 bash
+const loginShell = (platform, env = {}) => env.SHELL || (platform === "darwin" ? "/bin/zsh" : "/bin/bash");
 // Mac에서 더블클릭으로 연 앱은 PATH가 짧아 `claude`(~/.local/bin)를 못 찾는다 — 로그인 셸의 PATH를 합친다. 순서는 셸 것이 먼저, 겹치면 하나만
 function mergePath(current, shellPath, sep = path.delimiter) {
   const parts = [...String(shellPath || "").split(sep), ...String(current || "").split(sep)].filter(Boolean);
@@ -84,4 +88,4 @@ function relayUrl(v) {
   if (!t) return "";
   try { const u = new URL(t); return u.protocol === "https:" && !u.username && !u.password ? u.href.replace(/\/+$/, "") : null; } catch { return null; }
 }
-module.exports = { paths, parseEnv, applyEnv, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl };
+module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl };

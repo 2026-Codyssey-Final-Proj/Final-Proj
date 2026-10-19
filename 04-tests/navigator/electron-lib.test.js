@@ -20,6 +20,15 @@ test(".env 읽기: KEY=VALUE만, 주석 · 빈 줄 · 따옴표 처리. 이미 �
   assert.deepEqual(L.parseEnv(""), {}); assert.deepEqual(L.parseEnv(null), {});
 });
 
+test("로그인 셸 PATH는 Mac · Linux에서만 합치고, 셸은 SHELL 환경 → 없으면 zsh(Mac) · bash(Linux)", () => {
+  assert.equal(L.wantsShellPath("darwin"), true);
+  assert.equal(L.wantsShellPath("linux"), true, "Linux 앱 메뉴 · AppImage로 연 앱도 PATH가 짧다(6.0.0)");
+  assert.equal(L.wantsShellPath("win32"), false);
+  assert.equal(L.loginShell("linux", {}), "/bin/bash");
+  assert.equal(L.loginShell("darwin", {}), "/bin/zsh");
+  assert.equal(L.loginShell("linux", { SHELL: "/usr/bin/fish" }), "/usr/bin/fish");
+});
+
 test("PATH 합치기: 로그인 셸의 PATH가 앞에, 겹치면 하나만", () => {
   assert.equal(L.mergePath("/usr/bin:/bin", "/Users/me/.local/bin:/usr/bin", ":"), "/Users/me/.local/bin:/usr/bin:/bin");
   assert.equal(L.mergePath("/usr/bin", "", ":"), "/usr/bin");

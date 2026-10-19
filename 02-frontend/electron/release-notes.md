@@ -3,9 +3,9 @@
 코딩 도구 위에 **항상 위로** 뜨는 Floe. 화면과 서버가 그대로 들어 있고, AI는 이 컴퓨터의 Claude Code 로그인(또는 내 `.env` 키)을 씁니다. 무엇이 바뀌었는지는 저장소의 `CHANGELOG.md` 맨 위 줄.
 
 **받아서 쓰는 법**
-1. Mac(Apple Silicon)은 `Floe-<버전>-arm64.dmg`, Windows는 `Floe-Setup-<버전>.exe`를 받습니다.
-2. 서명이 없어 처음엔 경고가 뜹니다 → Mac은 Finder에서 **우클릭 → 열기**, Windows는 "추가 정보 → 실행".
-3. 메뉴 **Floe → 프로젝트 폴더 연결…** 으로 지금 만드는 폴더를 고르고, 그 폴더에서 Claude Code를 새로 엽니다. 플로로가 작업을 알아챕니다.
+1. Mac(Apple Silicon)은 `Floe-<버전>-arm64.dmg`, Windows는 `Floe-Setup-<버전>.exe`, **우분투 Linux**는 `Floe-<버전>-x86_64.AppImage`(또는 `Floe-<버전>-amd64.deb`, ARM 컴퓨터는 `-arm64`)를 받습니다.
+2. 서명이 없어 처음엔 경고가 뜹니다 → Mac은 Finder에서 **우클릭 → 열기**, Windows는 "추가 정보 → 실행". 우분투 AppImage는 `chmod +x` 뒤 실행(FUSE가 없다고 하면 `sudo apt install libfuse2t64`), deb는 `sudo apt install ./Floe-*.deb`.
+3. 메뉴 **Floe → 프로젝트 폴더 연결…**(Windows · 우분투는 **창 우클릭** 또는 트레이의 Floe 아이콘) 으로 지금 만드는 폴더를 고르고, 그 폴더에서 Claude Code를 새로 엽니다. 플로로가 작업을 알아챕니다.
 4. 내 키로 쓰려면 **Floe → 설정 폴더 열기**에 `.env`(모양은 `03-backend/navigator/.env.example`).
 5. 끄기: **Floe → Floe 끄기**. 느낀 점은 톱니 → 느낀 점 → Jira용 복사.
 
