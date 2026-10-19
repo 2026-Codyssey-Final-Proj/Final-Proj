@@ -32,6 +32,8 @@
     h.classList.add("notch"); h.style.setProperty("--notch-w", `${n.width}px`); h.style.setProperty("--notch-h", `${n.height}px`);
   });
   const DELAY = { greet: 6000, home: 15000, petit: 30000 };   // 저절로 접히기까지(밀리초)
+  const GR = window.FloeGreet;   // 켤 때 인사의 시간표 · 규칙(greet.js, C-10 2026-10-20). 없으면 인사 움직임 없이 카드만
+  let greetSkip = null;         // 인사 움직임이 도는 동안만 — 누름 · Esc로 바로 끝낸다
   const PHONE = matchMedia("(max-width: 600px)");
   const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -211,6 +213,7 @@
   let hovering = false, timer = null, idleAt = 0, lastUi = null;
   function clearIdle() { clearTimeout(timer); timer = null; }
   function scheduleIdle() {
+    if (greetSkip) return;   // 켜질 때 인사 움직임이 끝난 뒤부터 센다(C-10)
     clearIdle();
     // 마우스가 올라가 있으면 인사도 접지 않는다(플로로를 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
     if (isPhone() || st.ui === "hidden" || hovering || (st.ui !== "greet" && pinned())) return;
@@ -799,11 +802,23 @@
   // 내 서고 들어가기 — 오버레이가 화면 가득 물속이 되고, 책을 안은 플로로가 내려간 뒤 서고가 물속에서 떠오른다(dive.js, 목업 영상 24~28초)
   // then: 서고에 올라온 뒤 열 장면 이름(#lib-dive-<then>). iPhone은 물속 없이 바로 #lib-<then>으로
   function enterLibrary(then = "") {
-    if (window.floeApp) window.floeApp.expand();   // 앱: 섬 크기에 묶인 창을 화면만큼 넓힌다 — 물속 전환과 서고가 커질 자리(6.2.0)
     if (then && isPhone()) { location.href = `${LIB_URL}#lib-${then}`; return; }
     const href = `${LIB_URL}#lib-dive${then ? `-${then}` : ""}`;
-    if (!window.FloeDive) { location.href = href; return; }
-    window.FloeDive.out($nav.querySelector(".isl"), href, $nav.querySelector(".libtab .who"));
+    if (!window.FloeDive || STILL) { if (window.floeApp) window.floeApp.expand(); location.href = href; return; }
+    const dive = () => window.FloeDive.out($nav.querySelector(".isl"), href);   // 플로로는 섬 한가운데에서(2026-10-20)
+    if (!window.floeApp) return dive();
+    // 앱(6.2.0 → 2026-10-20): 창을 먼저 화면만큼 넓히고(floe:expand → floe:expanded) 섬을 **제자리에 붙든 채**(--dx · --dy, app.css html.diving) 잠수한다.
+    // 넓히기 전에 재면 물과 플로로의 길이 작은 창 기준으로 계산돼 플로로가 창 중간에 멈춰 있었다. 창이 넓어지면서 섬이 창의 왼쪽 위로 뛰던 것도 이 옮김이 막는다
+    let went = false;
+    const go = (d) => {
+      if (went) return; went = true;
+      if (d) { $nav.style.setProperty("--dx", `${Math.round(d.dx)}px`); $nav.style.setProperty("--dy", `${Math.max(0, Math.round(d.dy))}px`); }
+      document.documentElement.classList.add("diving");
+      requestAnimationFrame(() => requestAnimationFrame(dive));
+    };
+    if (window.floeApp.onExpanded) { const off = window.floeApp.onExpanded((d) => { off(); go(d); }); setTimeout(() => go(null), 400); }
+    else setTimeout(() => go(null), 150);
+    window.floeApp.expand();
   }
   // 서고에 보관하기(옛 이름 '세션 덮기', 2026-10-18 임유정 요청으로 버튼 이름을 바꾸고 설명 줄을 뺐다) — 목록으로 돌아가 그 책이 작아지며 사라진다
   function shelveBook() {
@@ -863,10 +878,13 @@
     <path d="M6 5 Q40 2 75 5 Q110 8 144 5" fill="none" stroke="url(#strip-wl)" stroke-width="2" stroke-linecap="round"></path><path d="M40 9 Q58 7.5 72 9 M84 9.5 Q98 8 112 9.5" fill="none" stroke="#A9DDFF" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg>`;
   const stripHTML = () => `<button class="strip" data-act="strip" aria-label="플로로 부르기 · ${esc(stateWords())}" title="마우스를 올리면 나와요 · ${esc(stateWords())}"><span class="head" aria-hidden="true">${cat("idle", 58, { face: true })}</span>${WAVE}<span class="zz" aria-hidden="true">z<b>z</b></span>
     <span class="st-mode ${st.mode}${conn() === "off" ? " off" : ""}" aria-hidden="true">${st.mode === "live" ? "진짜 AI" : "연습"}${conn() === "off" ? " · 끊음" : ""}</span></button>`;
+  // 켤 때 인사의 물결 선(C-10) — 띠(stripHTML)의 WAVE와 같은 선을 pathLength로 그어 그려지게 한다(app.css .greet-wl)
+  const GREET_WAVE = () => WAVE.replace('class="wl"', 'class="wl greet-wl"').replace(/<path /g, '<path pathLength="100" ');
   function greetHTML(enter) {
     deskKeys = { Enter: { act: "open" } };
-    cardSay = C.greeting(new Date().getHours());
-    return `<div class="isl greet${enter}"><section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
+    const greeting = document.documentElement.classList.contains("greeting");
+    cardSay = greeting ? "" : C.greeting(new Date().getHours());   // 인사 움직임 중에는 hello 단계에서 말한다
+    return `<div class="isl greet${enter}">${greeting ? GREET_WAVE() : ""}<section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
       <div class="mc-main">
         <h2 class="mc-title">${st.back ? "다시 오셨네요!" : "안녕하세요! 저는 길잡이 물범 플로로예요."}</h2>
         <p class="mc-sub">${st.back ? esc(st.back) : "지금 만들고 있는 걸 보여 주시면, 몇 단계쯤인지와 다음에 할 일을 알려 드려요. 평소엔 화면 위에 작게 있을게요."}</p>
@@ -1025,6 +1043,8 @@
   function measureSize() {
     sizeRaf = 0;
     if (!window.floeApp || isPhone()) return;
+    const h = document.documentElement;
+    if (h.classList.contains("diving") || h.classList.contains("surfacing")) return;   // 창은 서고 크기(넓힘) · 섬 크기(돌아옴)로 앱이 먼저 맞춰 둔다
     let r = 0, b = 0;
     for (const el of $nav.children) { const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
     if (!r || !b) return;
@@ -1589,6 +1609,7 @@
   document.addEventListener("keydown", (e) => {
     activity();
     if (isPhone() || e.isComposing) return;
+    if (greetSkip) { greetSkip(); if (e.key === "Escape") { e.preventDefault(); return; } }   // 켤 때 인사 중: 어떤 키든 움직임을 끝내고, Esc는 그것만
     const t = e.target, writing = isField(t);
     if (e.key === "Escape") {
       if (st.settings) return set({ settings: false });
@@ -1718,6 +1739,35 @@
   }
   fromHash();
   addEventListener("hashchange", () => { fromHash(); render(); });
+
+  // ── 켤 때 인사(C-10, 2026-10-20 이재엽 "처음에 반갑다고 인사하고 하는 모습이랑 켜지는 모습들") — 시간표는 greet.js, 단계마다 모양은 app.css([data-greet]) ──
+  // 켤 때마다. 주소 끝 장면 · 휴대폰 · 움직임 줄이기면 안 한다(greet.js shouldGreet). 처음 설정(setup.js)은 인사가 끝난 뒤 열린다(floe:greet-done)
+  const greetNow = !!GR && st.ui === "greet" && GR.shouldGreet({ hash: location.hash, still: STILL, phone: isPhone() }).greet;
+  if (greetNow) document.documentElement.classList.add("greeting");
+  function startGreeting() {
+    const h = document.documentElement;
+    const finish = () => {
+      greetSkip = null; h.classList.remove("greeting"); delete h.dataset.greet;
+      clearIdle(); scheduleIdle();
+      document.dispatchEvent(new CustomEvent("floe:greet-done"));
+    };
+    const onPhase = (p) => {
+      if (p === "done") return finish();
+      h.dataset.greet = p;
+      const host = liveCat();
+      if (p === "pop" && host) C.burst(...center(host, 0.65), "bubble", 7, 160);
+      if (p === "hello") { say(C.greeting(new Date().getHours())); if (st.sound) C.chime("pop"); }
+      if (p === "settle") { document.body.classList.add("blink"); setTimeout(() => document.body.classList.remove("blink"), 140); }
+    };
+    const run = GR.play(GR.TIMELINE, { onPhase });
+    greetSkip = () => run.skip();
+    $nav.addEventListener("click", () => { if (greetSkip) greetSkip(); }, { capture: true });   // 누르면 바로 인사 카드로(누른 단추는 그대로 눌린다)
+  }
+  // 서고에서 돌아옴(2026-10-20) — 물이 빠지며 섬이 내려앉는다(index.html 머리가 html.surfacing을, 앱은 창을 먼저 섬 크기로)
+  function startSurfacing() {
+    history.replaceState(null, "", `${location.pathname}${location.hash.replace(/&back(?=&|$)/, "").replace(/^#back$/, "")}`);   // 새로 고침해도 또 떠오르지 않게
+    window.FloeDive.surface({ cover: document.getElementById("dive-cover"), island: $nav.firstElementChild, done: () => reportSize() });
+  }
   // 처음 설정(setup.js)이 끝나면 — 고른 길에 맞춰 보기 방식을 두고, '시작하기'를 눌렀으면 바로 보여 주기 화면으로 (2026-10-19)
   document.addEventListener("floe:setup-done", (e) => {
     const d = (e && e.detail) || {};
@@ -1727,4 +1777,7 @@
   });
 
   render();
+  if (greetNow) startGreeting();
+  else if (document.documentElement.classList.contains("surfacing") && window.FloeDive && !isPhone()) startSurfacing();
+  else document.documentElement.classList.remove("surfacing");
 })();

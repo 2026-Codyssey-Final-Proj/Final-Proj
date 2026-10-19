@@ -131,4 +131,33 @@ function islandX(anchor, bounds, w, cx, wa) {
   return Math.max(wa.x, Math.min(x, wa.x + wa.width - w));
 }
 
-module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX };
+// 서고에 있는 동안의 창(2026-10-20) — 작업 영역 **위쪽** 가운데(세로 가운데가 아니다 — 섬이 있던 맨 위에서 잠수가 이어지게), 최대 1440×960.
+// saved: 사람이 지난번에 조절한 크기({width, height}) — 있으면 그 크기(작업 영역 안으로 당김, 최소 640×480)
+const LIB_MIN = { width: 640, height: 480 };
+function libraryBounds(wa, saved) {
+  const maxW = Math.max(LIB_MIN.width, wa.width - 24), maxH = Math.max(LIB_MIN.height, wa.height - 24);
+  let width = Math.min(1440, maxW), height = Math.min(960, maxH);
+  if (saved && Number.isFinite(saved.width) && Number.isFinite(saved.height)) {
+    width = Math.max(LIB_MIN.width, Math.min(Math.round(saved.width), maxW));
+    height = Math.max(LIB_MIN.height, Math.min(Math.round(saved.height), maxH));
+  }
+  return { x: wa.x + Math.round((wa.width - width) / 2), y: wa.y, width, height };
+}
+
+// 켜지는 중(C-10, 2026-10-20) — 서버가 켜지기 전에 창에 띄우는 작은 화면: 띠 자리에 물결 선이 숨 쉬듯 그어진다(투명 바탕, 노치가 있으면 노치 폭 · 검정).
+// 글자 · 그림 파일 없이 한 장의 HTML — data: 주소로 연다. 화면(app.js)의 인사가 이 선에서 이어진다
+function bootPage(notch) {
+  const w = notch ? Math.max(150, notch.width + 28) : 150, h = notch ? notch.height + 18 : 52;
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Floe</title><style>
+html,body{margin:0;background:transparent;overflow:hidden}
+.strip{position:fixed;left:50%;top:0;transform:translateX(-50%);width:${w}px;height:${h}px;${notch ? "background:#000;border-radius:0 0 18px 18px;" : ""}}
+.wl{position:absolute;left:0;bottom:4px;width:100%;height:12px}
+.wl path{stroke-dasharray:100;stroke-dashoffset:100;animation:draw 1.6s ease-in-out infinite alternate}
+@keyframes draw{to{stroke-dashoffset:0}}
+@media (prefers-reduced-motion:reduce){.wl path{animation:none;stroke-dashoffset:0}}
+</style></head><body><div class="strip" aria-label="켜지는 중"><svg class="wl" viewBox="0 0 150 12" preserveAspectRatio="none" aria-hidden="true">
+<path pathLength="100" d="M6 5 Q40 2 75 5 Q110 8 144 5" fill="none" stroke="#A9DDFF" stroke-width="2" stroke-linecap="round"></path></svg></div></body></html>`;
+}
+const bootUrl = (notch) => `data:text/html;charset=utf-8,${encodeURIComponent(bootPage(notch))}`;
+
+module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };

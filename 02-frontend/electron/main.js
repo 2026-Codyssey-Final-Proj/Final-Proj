@@ -4,12 +4,14 @@
 // 화면 · 서버 코드는 손대지 않고 그대로 감쌌다(02-frontend/README.md 2절의 Electron 오버레이 계획). AI를 부르는 곳은 여전히 provider.js 하나.
 // 개발 중: `npm start`(저장소 코드를 바로 읽음) · 묶기: `npm run dist`(prebuild.js가 payload/로 복사 → dmg) · `dist:win`(exe) · `dist:linux`(AppImage · deb, 6.0.0 — 이재엽 "우분투에서도 돌아가는 버전")
 // Mac이 아니면(Windows · Linux) 테두리 없는 창에는 메뉴 줄이 없다 — 같은 메뉴를 **창 우클릭**과 **알림 영역(트레이) 아이콘**에 둔다.
+// 2026-10-20(이재엽, C-10 · 서재 전환): ① 창을 **먼저** 만들어 '켜지는 중'(lib.js bootPage)을 보이고 서버가 켜지면 화면을 연다(빈 화면 없이)
+//   ② 서고에 있는 동안은 창을 사람이 조절할 수 있고(resizable) 조절한 크기를 기억한다 ③ 작업 화면으로 돌아오면 섬 자리로 되돌린다(Mac은 줄어드는 것이 보인다)
 const { app, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, shell, screen } = require("electron");
 const fs = require("node:fs");
 const http = require("node:http");
 const net = require("node:net");
 const path = require("node:path");
-const { spawnSync } = require("node:child_process");
+const { spawnSync, execFile } = require("node:child_process");
 const L = require("./lib.js");
 
 const P = L.paths(app.isPackaged, __dirname);
@@ -34,10 +36,15 @@ function loadEnv() {
   try { L.applyEnv(process.env, L.parseEnv(fs.readFileSync(file, "utf8"))); return file; } catch { return ""; }
 }
 // ② Mac 더블클릭 앱 · Linux 앱 메뉴(AppImage · deb)로 연 앱의 PATH는 짧다 — 로그인 셸의 PATH를 합쳐 `claude`(~/.local/bin 등)를 찾게
+// 2026-10-20: 기다리지 않는다(execFile) — 창을 먼저 띄운 뒤 셸을 묻는 4초 동안 메인 프로세스가 멈추면 '켜지는 중'도 멈춘다
 function fixPath() {
-  if (!L.wantsShellPath(process.platform)) return;
-  const r = spawnSync(L.loginShell(process.platform, process.env), ["-ilc", "echo $PATH"], { encoding: "utf8", timeout: 4000 });
-  if (r.status === 0 && r.stdout) process.env.PATH = L.mergePath(process.env.PATH, r.stdout.trim().split("\n").pop());
+  if (!L.wantsShellPath(process.platform)) return Promise.resolve();
+  return new Promise((resolve) => {
+    execFile(L.loginShell(process.platform, process.env), ["-ilc", "echo $PATH"], { encoding: "utf8", timeout: 4000 }, (err, stdout) => {
+      if (!err && stdout) process.env.PATH = L.mergePath(process.env.PATH, stdout.trim().split("\n").pop());
+      resolve();
+    });
+  });
 }
 // ③ 서버 — 빈 포트를 찾아 같은 프로세스에서 켠다(server.js의 handle). 포트는 server.js가 읽기 전에 환경에 넣는다
 async function startServer() {
@@ -100,14 +107,16 @@ function createWindow() {
     const url = typeof ev.url === "string" ? ev.url : legacyUrl, main = typeof ev.isMainFrame === "boolean" ? ev.isMainFrame : legacyMain;
     const same = typeof ev.isSameDocument === "boolean" ? ev.isSameDocument : false;
     if (main && !same && /\/library\//.test(String(url || ""))) expandWindow();
+    else if (main && !same && expanded) restoreWindow();   // 서고에서 작업 화면으로 — 섬 자리로 되돌린다(2026-10-20)
   });
-  win.loadURL(URL_);
+  // 서버가 아직이면 '켜지는 중'(물결 선) — 서버가 켜지면 whenReady가 loadURL(URL_)로 바꾼다(C-10)
+  win.loadURL(URL_ || L.bootUrl(PROBE && PROBE.notch));
 }
 // 화면이 알려 준 섬 크기로 창을 맞춘다 — 가로가 바뀌면 가운데를 유지하고(사용자가 옮긴 자리 기준), 세로는 위를 고정.
 // anchor="left"면 왼쪽 가장자리를 고정한다(설정 창이 섬 오른쪽에 열릴 때 — 섬은 그 자리에 있고 창만 오른쪽으로 넓어진다, 6.2.0).
 // 크기와 자리를 한 번에(setBounds) 바꾼다 — 따로 두 번 바꾸면 그 사이 한 프레임이 어긋나 보여 "따라오는 게 버벅"였다(이재엽 2026-10-19). 화면 밖으로 나가면 안쪽으로 당긴다
 ipcMain.on("floe:resize", (e, w, h, anchor) => {
-  if (!win || e.sender !== win.webContents) return;
+  if (!win || e.sender !== win.webContents || expanded) return;   // 서고에 있는 동안(넓힌 창)은 섬 크기를 따르지 않는다
   const W = Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
   const b = win.getContentBounds();
   if (Math.abs(b.width - W) < 2 && Math.abs(b.height - H) < 2) return;
@@ -118,11 +127,31 @@ ipcMain.on("floe:resize", (e, w, h, anchor) => {
 });
 // 서고로 들어갈 때(…/library/) 창을 화면만큼 넓힌다 — 섬 크기에 묶인 창에서는 서고가 커질 수 없었다(이재엽 2026-10-19 "서재도 오버레이가 커져야 하는데 커지지 못하는 상태").
 // 내비게이터로 돌아오면 화면이 다시 섬 크기를 보내 창이 줄어든다(floe:resize)
+// 2026-10-20(이재엽 "서재에서 들어갈 때 오버레이 크기를 조정할 수 있도록"): 서고에 있는 동안은 창을 사람이 조절할 수 있다(resizable, 최소 640×480). 조절한 크기는 다음에 들어갈 때 그대로(이 켜짐 동안, libSize).
+// 넓힌 창은 작업 영역 위쪽 가운데(lib.js libraryBounds) — 세로 가운데에 두면 맨 위에 있던 섬이 창 밖으로 나가 잠수를 제자리에서 이어 갈 수 없다.
+// 화면에는 floe:expanded로 {dx, dy}(섬 창 → 넓힌 창의 옮긴 거리)를 알려 섬을 제자리에 붙든 채 잠수하게 한다(app.js enterLibrary)
+let expanded = null;   // 서고에 있는 동안 { from: 섬 창의 자리 } — 돌아오면 그 자리로
+let libSize = null;    // 사람이 조절한 서고 창 크기
 function expandWindow() {
-  if (!win) return;
+  if (!win || expanded) return;
   const b = win.getContentBounds(), wa = screen.getDisplayMatching(b).workArea;
-  const W = Math.min(1440, wa.width - 24), H = Math.min(960, wa.height - 24);
-  win.setContentBounds({ x: wa.x + Math.round((wa.width - W) / 2), y: wa.y + Math.round((wa.height - H) / 2), width: W, height: H }, false);
+  const r = L.libraryBounds(wa, libSize);
+  expanded = { from: b };
+  win.setResizable(true);
+  win.setMinimumSize(L.LIB_MIN.width, L.LIB_MIN.height);
+  win.setContentBounds(r, false);
+  win.webContents.send("floe:expanded", { dx: b.x - r.x, dy: b.y - r.y });
+}
+// 작업 화면으로 돌아올 때(2026-10-20 "오버레이가 작아졌다가 다시 켜지는 애니메이션") — 섬이 있던 자리 · 크기로. Mac은 창이 줄어드는 것을 보여 준다(setContentBounds의 animate).
+// 그다음 화면이 물속에서 떠오른다(dive.js surface — 주소 끝 &back). 조절한 서고 창 크기는 기억해 둔다
+function restoreWindow() {
+  if (!win || !expanded) return;
+  const now = win.getContentBounds();
+  libSize = { width: now.width, height: now.height };
+  const { from } = expanded; expanded = null;
+  win.setResizable(false);
+  win.setMinimumSize(MIN_W, MIN_H);
+  win.setContentBounds(from, process.platform === "darwin");
 }
 ipcMain.on("floe:expand", (e) => { if (win && e.sender === win.webContents) expandWindow(); });
 async function pickAndConnect(add) {
@@ -191,14 +220,15 @@ ipcMain.handle("floe:clear-key", () => {
 });
 
 app.whenReady().then(async () => {
-  const loaded = loadEnv();
-  fixPath();
-  serverState = await startServer();
-  if (serverState.startsWith("error:")) { dialog.showErrorBox("Floe", `서버를 켜지 못했어요 (${serverState.slice(6)}).`); return app.quit(); }
   menu();
   // Linux: ready 직후 바로 만들면 투명 창이 검게 나오는 일이 있어(Electron 안내) 잠깐 기다린다
   if (LINUX) await new Promise((r) => setTimeout(r, 300));
-  createWindow();
+  createWindow();   // 먼저 — '켜지는 중'(물결 선)을 보이는 동안 아래에서 PATH · 서버를 준비한다(C-10, 2026-10-20)
+  const loaded = loadEnv();
+  await fixPath();
+  serverState = await startServer();
+  if (serverState.startsWith("error:")) { dialog.showErrorBox("Floe", `서버를 켜지 못했어요 (${serverState.slice(6)}).`); return app.quit(); }
+  if (win && !win.isDestroyed()) win.loadURL(URL_);
   console.log(`Floe ${app.getVersion()}: ${URL_}${PORT !== WANT ? ` (${WANT}은 다른 서버가 써서 ${PORT}로)` : ""} · .env ${loaded ? "읽음" : "없음(이 컴퓨터의 Claude Code 구독)"}`);
   app.on("activate", () => { if (!win) createWindow(); });
 });
