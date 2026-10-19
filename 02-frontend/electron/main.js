@@ -116,7 +116,10 @@ function createWindow() {
 // anchor="left"면 왼쪽 가장자리를 고정한다(설정 창이 섬 오른쪽에 열릴 때 — 섬은 그 자리에 있고 창만 오른쪽으로 넓어진다, 6.2.0).
 // 크기와 자리를 한 번에(setBounds) 바꾼다 — 따로 두 번 바꾸면 그 사이 한 프레임이 어긋나 보여 "따라오는 게 버벅"였다(이재엽 2026-10-19). 화면 밖으로 나가면 안쪽으로 당긴다
 ipcMain.on("floe:resize", (e, w, h, anchor) => {
-  if (!win || e.sender !== win.webContents || expanded) return;   // 서고에 있는 동안(넓힌 창)은 섬 크기를 따르지 않는다
+  if (!win || e.sender !== win.webContents) return;
+  // 서고에 있는 동안(넓힌 창)은 섬 크기를 따르지 않는다. 서고가 아닌데 넓혀져 있으면(처음 설정이 떠 있는 동안 넓혔다가 닫힘 — KAN-57 F-39-1, 병합 2026-10-20)
+  // 조절 · 서고 크기 기억 없이 섬 창으로 돌아와 아래에서 섬 크기를 맞춘다
+  if (expanded) { if (/\/library\//.test(win.webContents.getURL())) return; expanded = null; win.setResizable(false); win.setMinimumSize(MIN_W, MIN_H); }
   const W = Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
   const b = win.getContentBounds();
   if (Math.abs(b.width - W) < 2 && Math.abs(b.height - H) < 2) return;
