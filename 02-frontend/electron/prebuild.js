@@ -20,3 +20,21 @@ const mock = "01-docs/04-pattern-implementation/bookmark-constellation-mock.html
 fs.mkdirSync(path.dirname(path.join(OUT, mock)), { recursive: true });
 fs.copyFileSync(path.join(ROOT, mock), path.join(OUT, mock));
 console.log(`payload/ 준비: ${fs.readdirSync(OUT).join(", ")}`);
+
+// Mac 노치 도우미(2026-10-19 이재엽 결정 "Swift 도우미로 정확히") — notch/notch-probe.swift를 build/notch-probe로 묶는다(package.json mac.extraResources가 Resources/로 넣는다).
+// 이 Mac(2026-10-19)은 명령줄 도구의 기본 SDK가 컴파일러와 안 맞아 실패했다 — 그러면 설치된 SDK를 새것부터 하나씩 대 본다. 끝내 안 되거나 swiftc가 없으면 건너뛴다(앱은 노치 없이 전처럼 위쪽 가운데)
+if (process.platform === "darwin") {
+  const { spawnSync } = require("node:child_process");
+  const out = path.join(__dirname, "build/notch-probe"), src = path.join(__dirname, "notch/notch-probe.swift");
+  const sdkDir = "/Library/Developer/CommandLineTools/SDKs";
+  let sdks = [];
+  try { sdks = fs.readdirSync(sdkDir).filter((n) => /^MacOSX\d/.test(n)).sort().reverse().map((n) => path.join(sdkDir, n)); } catch {}
+  let ok = false, why = "";
+  for (const sdk of [null, ...sdks]) {
+    const r = spawnSync("swiftc", ["-O", ...(sdk ? ["-sdk", sdk] : []), "-o", out, src], { encoding: "utf8", timeout: 120000 });
+    if (r.error) { why = "swiftc 없음"; break; }
+    if (r.status === 0) { ok = true; break; }
+    why = "컴파일 실패";
+  }
+  console.log(ok ? "build/notch-probe 묶음(Mac 노치 도우미)" : `notch-probe 건너뜀(${why}) — 앱은 노치 없이 위쪽 가운데로 켜진다`);
+}

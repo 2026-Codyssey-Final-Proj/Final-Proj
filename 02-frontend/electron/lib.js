@@ -100,4 +100,35 @@ function cursorMsg(point, bounds, last) {
   return last && last.x === p.x && last.y === p.y ? null : p;
 }
 
-module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg };
+// ── Mac 노치(다이내믹 아일랜드, 2026-10-19 이재엽 결정 "Swift 도우미로 정확히") ──
+// Electron은 노치 크기를 안 알려 줘 Swift 도우미(notch/notch-probe.swift)가 JSON 한 줄을 찍는다: {"notch":{"x","width","height"}|null,"screen":{…},"menuBar"}.
+// 그 줄을 읽어 모양을 확인한다 — 숫자가 아니거나 폭 · 높이가 0 이하면 null(도우미가 이상하면 노치 없이 켠다)
+const num = (v) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+function parseNotchProbe(text) {
+  let j;
+  try { j = JSON.parse(String(text || "")); } catch { return null; }
+  if (!j || typeof j !== "object" || Array.isArray(j) || !("notch" in j)) return null;
+  let notch = null;
+  if (j.notch !== null) {
+    const n = j.notch || {}, x = num(n.x), width = num(n.width), height = num(n.height);
+    if (x === null || width === null || height === null || width <= 0 || height <= 0) return null;
+    notch = { x, width, height };
+  }
+  const s = j.screen || {};
+  return { notch, menuBar: num(j.menuBar), screen: { width: num(s.width), height: num(s.height) } };
+}
+// 노치가 있으면 창(폭 w · 높이 h)을 노치 가운데 · 화면 맨 위(y=0, 메뉴 줄 위)에 — 레벨 screen-saver가 메뉴 줄보다 위다. cx는 그 뒤 크기가 바뀔 때 기준.
+// display: 그 화면의 bounds(screen.getPrimaryDisplay().bounds — 두 번째 화면이 왼쪽이면 x가 0이 아니다). 노치가 없으면 null
+function notchLayout(probe, display, w, h) {
+  if (!probe || !probe.notch || !display) return null;
+  const cx = display.x + probe.notch.x + probe.notch.width / 2;
+  return { x: Math.round(cx - w / 2), y: display.y, width: w, height: h, level: "screen-saver", cx };
+}
+// 창 크기가 바뀔 때의 x — anchor "left"면 왼쪽 고정(설정 창이 옆에 열릴 때), 노치가 있으면(cx) 노치 가운데, 아니면 지금 창의 가운데를 지킨다. 화면(workArea) 밖이면 안쪽으로
+function islandX(anchor, bounds, w, cx, wa) {
+  let x = anchor === "left" ? bounds.x : typeof cx === "number" ? cx - w / 2 : bounds.x + (bounds.width - w) / 2;
+  x = Math.round(x);
+  return Math.max(wa.x, Math.min(x, wa.x + wa.width - w));
+}
+
+module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX };

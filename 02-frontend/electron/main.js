@@ -55,13 +55,32 @@ async function startServer() {
 // 크기는 화면(app.js)이 지금 보이는 섬의 크기를 보내 주면 그때그때 맞춘다(floe:resize) — 첫 알파(3.0.0)에서 1040×760 투명 창의 빈 영역이
 // 뒤 창(VS Code · 터미널)의 클릭을 전부 가로채고 그리기도 무거웠다(이재엽 보고 2026-10-19 "클릭이 안 된다" · "랙")
 const PAD = 6, MIN_W = 240, MIN_H = 60;
+// Mac 노치(다이내믹 아일랜드) — 이재엽 결정 2026-10-19 "Mac에서는 노치 자리에 붙인다 · 노치 크기는 Swift 도우미로 정확히".
+// Electron은 노치 크기를 안 알려 줘 작은 Swift 도우미(notch/notch-probe.swift → prebuild.js가 build/notch-probe로 묶음, 묶은 앱은 Resources/notch-probe)를
+// 앱이 켜질 때 한 번 돌려 JSON 한 줄을 읽는다(lib.js parseNotchProbe). 도우미가 없거나 · 실패하거나 · 노치가 없으면 null — 전처럼 위쪽 가운데(floating).
+let PROBE = null;   // 도우미가 읽은 것 { notch: {x, width, height} | null, screen, menuBar }
+let NOTCH = null;   // 창 자리 { x, y, width, height, level, cx } — 노치가 있을 때만. cx = 노치 가운데(화면 좌표), 크기가 바뀌어도 여기에 맞춘다
+function probeNotch() {
+  if (process.platform !== "darwin") return null;
+  const bin = app.isPackaged ? path.join(process.resourcesPath, "notch-probe") : path.join(__dirname, "build/notch-probe");
+  try {
+    const r = spawnSync(bin, [], { encoding: "utf8", timeout: 2000 });
+    return r.status === 0 ? L.parseNotchProbe(r.stdout) : null;
+  } catch { return null; }
+}
 function createWindow() {
-  const { width } = screen.getPrimaryDisplay().workAreaSize, W = 952, H = 140;
-  win = new BrowserWindow({ width: W, height: H, x: Math.max(0, Math.round((width - W) / 2)), y: 0, frame: false, transparent: true, hasShadow: false,
+  const disp = screen.getPrimaryDisplay(), { width } = disp.workAreaSize, W = 952, H = 140;
+  PROBE = probeNotch();
+  NOTCH = L.notchLayout(PROBE, disp.bounds, W, H);
+  win = new BrowserWindow({ width: W, height: H, x: NOTCH ? NOTCH.x : Math.max(0, Math.round((width - W) / 2)), y: NOTCH ? NOTCH.y : 0, frame: false, transparent: true, hasShadow: false,
     alwaysOnTop: true, resizable: false, minimizable: true, title: "Floe", useContentSize: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
-  win.setAlwaysOnTop(true, "floating");
-  win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서
+  // 노치가 있으면 메뉴 줄보다 위 레벨(screen-saver)로 올린 뒤 자리를 다시 둔다 — floating 레벨의 창은 메뉴 줄 아래로 밀린다. 레벨을 먼저 올리고 자리를 놓는다
+  if (NOTCH) { win.setAlwaysOnTop(true, NOTCH.level); win.setContentBounds({ x: NOTCH.x, y: NOTCH.y, width: W, height: H }, false); }
+  else win.setAlwaysOnTop(true, "floating");
+  win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서. 노치 모양에서도 켜지 않는다(사람이 켜 본 뒤 정한다)
+  // 노치 크기를 화면에 — 띠를 노치와 같은 검정 · 노치 폭으로(app.css .notch). 서고에 갔다 돌아와도(다시 load) 매번 보낸다
+  win.webContents.on("did-finish-load", () => { if (NOTCH && win) win.webContents.send("floe:notch", { width: PROBE.notch.width, height: PROBE.notch.height }); });
   // 창 밖 커서를 화면에 알린다 — 플로로의 눈이 바탕 화면 어디든 따라오게(2026-10-19). 1초에 20번까지, 창 안이거나 그대로면 보내지 않는다
   let lastCursor = null;
   const cursorTick = setInterval(() => {
@@ -91,9 +110,9 @@ ipcMain.on("floe:resize", (e, w, h, anchor) => {
   const b = win.getContentBounds();
   if (Math.abs(b.width - W) < 2 && Math.abs(b.height - H) < 2) return;
   const wa = screen.getDisplayMatching(b).workArea;
-  let x = anchor === "left" ? b.x : Math.round(b.x + (b.width - W) / 2);
-  x = Math.max(wa.x, Math.min(x, wa.x + wa.width - W));
-  win.setContentBounds({ x, y: b.y, width: W, height: H }, false);
+  // 노치가 있으면 가로는 늘 노치 가운데, 세로는 화면 맨 위(서고에서 돌아와도 노치로) — 없으면 지금 창의 가운데 · 지금 y
+  const x = L.islandX(anchor, b, W, NOTCH ? NOTCH.cx : null, wa);
+  win.setContentBounds({ x, y: NOTCH ? NOTCH.y : b.y, width: W, height: H }, false);
 });
 // 서고로 들어갈 때(…/library/) 창을 화면만큼 넓힌다 — 섬 크기에 묶인 창에서는 서고가 커질 수 없었다(이재엽 2026-10-19 "서재도 오버레이가 커져야 하는데 커지지 못하는 상태").
 // 내비게이터로 돌아오면 화면이 다시 섬 크기를 보내 창이 줄어든다(floe:resize)

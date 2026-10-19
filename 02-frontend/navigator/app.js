@@ -26,6 +26,11 @@
   const canLive = location.protocol.startsWith("http");
   // Electron 껍데기 안(2026-10-19, 02-frontend/electron — preload.js가 window.floeApp을 둔다): 뒤의 예시 코딩 도구 창을 숨기고 바탕을 투명하게(app.css .in-app)
   if (window.floeApp) document.documentElement.classList.add("in-app");
+  // Mac 노치(다이내믹 아일랜드, 2026-10-19 이재엽 결정): 앱이 노치 크기를 보내면 섬을 노치에 맞춘다(app.css html.notch). 브라우저 · 노치 없는 컴퓨터에는 오지 않는다
+  if (window.floeApp && window.floeApp.onNotch) window.floeApp.onNotch((n) => {
+    const h = document.documentElement;
+    h.classList.add("notch"); h.style.setProperty("--notch-w", `${n.width}px`); h.style.setProperty("--notch-h", `${n.height}px`);
+  });
   const DELAY = { greet: 6000, home: 15000, petit: 30000 };   // 저절로 접히기까지(밀리초)
   const PHONE = matchMedia("(max-width: 600px)");
   const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
