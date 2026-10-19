@@ -9,7 +9,6 @@
 | `run_all_tests.py` | **이것 하나로 전부 돌린다** (파이썬 시험 + 노드 시험) | — |
 | `navigator/` | 시연 화면과 서버 — 단계 판정, 쉬운 말, 키 보호, 녹화·재생, 한 줄로 켜기(`floe.test.js` — 임시 폴더에 진짜로 한 번 켠다, AI 호출 없음), 느낀 점(`notes.test.js`) | [03-backend/navigator](../03-backend/navigator/README.md), [02-frontend/navigator](../02-frontend/navigator/README.md) |
 | `library/` | 도서관 시안 — 마감 계산, 역량 지도, 서고 검색, 별자리 하늘, 내 배움 기록 읽기, 내 책 · 예시 책 지우기(`my-books.test.js`) | [02-frontend/library](../02-frontend/library/README.md) |
-| `share/` | "나만 보기" 공유 규칙 — 글이 누구에게 보이는지 | [03-backend/share](../03-backend/README.md) |
 | `hooks/` | Claude가 커밋·푸시할 때 막는 자동 검사 장치(훅) | `.claude/hooks/` |
 | `e2e/` | **브라우저로 연 화면** — 휴대폰 폭(390px)에서 가로 스크롤이 없는지(고칠 목록 F-15). puppeteer · Chrome이 없으면 **건너뜀**을 알리고 실패하지 않는다 | `02-frontend/` 페이지 (파일로 바로 염) |
 | `repo/` | 저장소 자체의 약속 — 버전 기록(CHANGELOG.md)의 번호가 겹치거나 건너뛰지 않는지, 버전을 Jira 릴리스로 만드는 Action(가짜 Jira로) | [CHANGELOG.md](../CHANGELOG.md), [jira-release.js](../.github/scripts/jira-release.js) |

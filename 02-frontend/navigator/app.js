@@ -8,8 +8,8 @@
 // 600px 이하 = iPhone: 오늘 / 설계도 / 단계 지도 탭과 넘어가기 전 확인 화면 — 이번에 바꾸지 않았다(PC 먼저). 두 화면은 같은 상태(st)를 쓴다.
 // 기록(작업 글·진행·배운 말·설계도·플로로와 친해진 정도)은 이 브라우저(localStorage)에만 남는다.
 // claude-drafted: 2026-10-18 — F-05(PRD 2-7, 이재엽 결정 "내배움 지우기 / 플로로와 처음 만난거 보여주는건 설정 처음에 / 내용들은 서재에서 /
-//   오버레이에서는 간단하고 필요한 내용만, 자세한건 서재로"): '내 배움' 탭을 없앴다. 플로로와 나는 설정 맨 위(bondCard), 지나온 단계 · 배운 말 ·
-//   확정한 설계도는 서재의 '내 배움'(../library/index.html#lib-learn, learn.js가 이 기록을 읽는다). 옛 주소 #tab=learn은 서재로 보낸다(fromHash).
+//   오버레이에서는 간단하고 필요한 내용만, 자세한건 서재로"): '내 배움' 탭을 없앴다. 플로로와 나는 설정 맨 위(bondCard).
+// 2026-10-19(이재엽): 서재의 '내 배움'(learn.js)도 지웠다 — "서재에서 자세히 보기"는 서고로 가고, 옛 주소 #tab=learn도 서고로 보낸다(fromHash).
 // claude-drafted: 2026-10-18 — 화면 빈칸(이재엽 요청): 용어 풀이(FR-13, glossary.js) · '예' 뒤 확인 질문 1개와 '아니요' 3번 뒤 잠시 멈추기(FR-5, understand.js)
 //   · 다음 할 일 꼭/나중에(FR-12, priority.js) · 작업 알림 기록과 연습 알림으로 할 일 끝 표시(FR-7, alerts.js) · 만드는 크기(tier)를 서버에 보내기.
 // claude-drafted: 2026-10-19 — 실사용(이재엽 2026-10-18 "화면에서만 … 아니라 실질적으로 테스트 … 우리가 사용하면서 느끼고 싶어"):
@@ -123,16 +123,16 @@
   const SENT = "보여 주신 글은 AI(Claude)에게 보내져요. 비밀번호나 다른 사람 연락처는 빼 주세요.";
   const DOC = {
     first: "먼저 '이번 단계'에서 어디쯤인지 봐요. 설계도는 그 단계에 맞춰 만들어요.",
-    none: "설계도는 1~4단계에서 만들어요. 확정한 설계도는 서재의 '내 배움'과 단계 지도에서 다시 볼 수 있어요.",
+    none: "설계도는 1~4단계에서 만들어요. 확정한 설계도는 단계 지도에서 다시 볼 수 있어요.",
     draft: "지금까지 작업을 보고 AI가 초안을 먼저 써 드려요. 고치고 완성하는 건 직접 해요. 확정도 직접 눌러야만 돼요.",
   };
   // 7단계까지 마쳤을 때 — last: 마지막 확인에서 "예" 뒤, title·sub: 마무리 카드
   const END = { last: "좋아요! 이걸로 모든 단계를 마쳐요", title: "여덟 단계를 끝까지 왔어요!",
-    sub: "지나온 단계와 배운 말, 확정한 설계도는 서재의 '내 배움'에서 자세히 볼 수 있어요.", more: "서재에서 자세히 보기" };
+    sub: "다 만든 책은 서재의 서고에 꽂아 두고 언제든 다시 펼쳐 볼 수 있어요.", more: "서재로 가기" };
 
   // ── 기록 — 이 브라우저에만. 못 쓰는 환경(사생활 보호 창 등)이면 조용히 기록 없이 동작한다 ──
   const KEY = "navigator-prototype:v1";
-  // 서재의 '내 배움'(../library/learn.js)도 이 열쇠를 읽는다 — 바꾸면 learn.js의 KEY도(learn.test.js가 맞대어 본다)
+  // 서재의 '내 책'(../library/my-books.js)도 이 열쇠를 읽는다 — 바꾸면 my-books.js의 KEY도(my-books.test.js가 맞대어 본다)
   // 한 권으로 엮어 서고로 보낸 책 — 서고 시안(../library)도 같은 열쇠를 읽어 처음부터 책장에 꽂아 둔다
   const BOUND_KEY = "floe-demo:bound";
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
@@ -282,13 +282,11 @@
     ? `<span class="badge live">진짜 AI(Claude)가 봐요${st.tokens ? ` · 지난번 읽고 쓴 양 약 ${st.tokens.toLocaleString()}토큰` : ""}</span>`
     : `<span class="badge fix">연습용 예시예요 — 진짜 AI가 아니에요</span>`);
   // 플로로와 나 — 친해진 정도 · 쓰다듬은 횟수 · 처음 만난 날 · 마친 단계 수. 설정 맨 위에 둔다(F-05, PRD 2-7 "플로로와 처음 만난거 보여주는건 설정 처음에").
-  // 지나온 단계 · 배운 말 · 확정한 설계도는 오버레이에 펼치지 않고 서재로 보낸다("자세한건 서재로")
   function bondCard() {
     const b = C.bond(st.pets);
     return `<div class="bondcard"><div class="bond-row">${petCat("love", 56)}<div class="stack"><span class="kicker">플로로와 나</span><b>${esc(b.name)} ${hearts(b.level)}</b>
         <span class="sub">쓰다듬은 횟수 ${st.pets}번${b.need ? ` · 더 친해지기까지 ${b.need}번` : ""}</span>
-        <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div>
-      <button type="button" class="lnk" data-act="lib-learn">지나온 단계 · 배운 말 · 설계도는 ${END.more}${I.arrow}</button></div>`;
+        <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div></div>`;
   }
   // 설정 — 플로로와 나, 보기 방식, Claude Code·Codex 연결 상태, 자동으로 살펴보기, 소리, 기록. PC·iPhone 모두 톱니 뒤에
   // 설정 — 묶음별로 나눠 한눈에(6.2.0, 이재엽 2026-10-19 "설정창도 직관적으로"): 플로로와 나 · 연결 · 보기 · 알림 기록 · 느낀 점 · 기록. PC에서는 섬 옆(오른쪽)에 열린다(settingsPop · .nav.side)
@@ -339,7 +337,7 @@
     !st.alogOpen ? "" : st.alerts.length ? `<ol>${st.alerts.map(alertItem).join("")}</ol>`
       : `<span class="meta">아직 받은 알림이 없어요.${st.mode === "fixture" && !isPhone() ? " 뒤 화면의 '▶ 작업 장면 보기'를 누르면 연습 알림이 와요." : ""}</span>`}</div>`;
   // 느낀 점(2026-10-19 실사용) — 설정 안. 한 줄 남기면 어디서(화면 · 단계 · 탭 · 보기 방식)와 때가 저절로 붙는다(notes.js where). 이 컴퓨터에만 남고,
-  // 'Jira용 복사'가 모아 클립보드에 넣는다 — 그때 비밀값 · 연락처 모양은 공유 규칙으로 가린다(sensitive와 같은 share-rules.js)
+  // 'Jira용 복사'가 모아 클립보드에 넣는다 — 그때 비밀값 · 연락처 모양은 가린다(sensitive와 같은 sensitive.js)
   const noteCtx = () => ({ screen: st.screen, stage: st.j ? st.j.stage : undefined, tab: st.tab, mode: st.mode, project: project() });
   const noteItem = (n) => `<li><span class="meta">${esc(NT.stamp(n.at))}${n.where ? ` · ${esc(n.where)}` : ""}</span><button type="button" class="lnk" data-act="note-del" data-id="${esc(n.id)}" aria-label="이 느낀 점 지우기">지우기</button><span class="ntext">${esc(n.text)}</span></li>`;
   const notesCard = () => (!NT ? "" : `<div class="alog notes"><div class="row"><button type="button" class="lnk grow" data-act="notes" aria-expanded="${st.notesOpen}">${st.notesOpen ? I.up : I.down}느낀 점 ${noteList.length}개</button>${
@@ -356,7 +354,7 @@
       <span class="dot ${stepClass(x.n)}"></span><span style="flex:1;padding:8px 0"><b>${x.n} · ${esc(x.title)}</b><span class="sub">${esc(x.does)}</span></span>
       ${stepClass(x.n) === "cur" ? `<span class="meta">${metCount()}/${met().length}</span>` : ""}</div>`).join("")}</div>`;
   // [id, PC 이름, iPhone 이름, 아이콘]. 마지막(도서관)은 PC에만 있다 — iPhone은 앞의 셋. 탭 순서가 바뀌면 고른 동그라미(.ti-ind)는 순서(tabIdx)를 따라간다
-  // '내 배움' 탭은 2026-10-18에 뺐다(F-05, PRD 2-7) — 내용은 서재의 '내 배움', 플로로와 나는 설정 맨 위.
+  // '내 배움' 탭은 2026-10-18에 뺐다(F-05, PRD 2-7) — 플로로와 나는 설정 맨 위. 서재의 '내 배움'도 2026-10-19에 지움.
   // 2026-10-18 임유정 요청: 첫 탭 이름 '지금' → '이번 단계', '한곳에서 보기' 탭(FR-6)도 뺐다 — FR-6 등급은 팀이 정한다(PR #105)
   const TABS = [["today", "이번 단계", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["lib", "도서관", "도서관", "lib"]];
   const PHONE_TABS = TABS.slice(0, 3);
@@ -438,7 +436,7 @@
   // iPhone의 지금 결정할 것 하나 — 다 했으면 "넘어가기", 순서를 정했으면 그 첫 일, 아니면 같이 정하기
   function focusCard() {
     const n = st.j.next, now = esc(tick().now);
-    if (st.finished) return box("다 했어요", END.title, END.sub, `<button class="btn pri wide" data-act="lib-learn">${END.more}</button>${
+    if (st.finished) return box("다 했어요", END.title, END.sub, `<button class="btn pri wide" data-act="lib-enter">${END.more}</button>${
       st.mode === "fixture" ? `<button class="btn wide" data-act="${RESTART.act}">${RESTART.label}</button>` : ""}`);
     if (holding()) return box(esc(U.holdLine(st.hold, ymd())), "잠시 멈춰 뒀어요", HOLD.later, `<button class="btn pri wide" data-act="hold-resume">다시 이어 하기</button>`);
     if (allDone()) return box("다 했어요", `${stage().n}단계 할 일을 모두 했어요`, "넘어가기 전에 이번 단계를 이해했는지 한 번만 같이 확인해요.",
@@ -526,7 +524,7 @@
     }
     if (st.finished) return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">모든 단계를 마쳤어요</span>`,
       title: END.title, sub: END.sub,
-      acts: [{ label: END.more, act: "lib-learn", key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
+      acts: [{ label: END.more, act: "lib-enter", key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
     if (holding()) return { tone: "gray", mood: f[0], badge: "‖", say: f[1], meta: stageMeta(), banner: U.holdLine(st.hold, ymd()),
       title: "잠시 멈춰 뒀어요", sub: HOLD.later,
       acts: [{ label: "다시 이어 하기", act: "hold-resume", key: "Enter", pri: true }] };
@@ -664,7 +662,7 @@
     if (c === 2) return [
       ...(st.mode === "fixture" ? stageExamples().map((e) => ({ b: e.label, sm: "연습 장면 — 미리 써 둔 글", act: "ex", i: S.examples.indexOf(e) })) : []),
       { b: "도서관 · 내 책", sm: "열어 둔 책 · 예시 책 · 서고", act: "tab", i: 3 },
-      { b: "서재의 내 배움", sm: `배운 말 ${st.learned.length}개 · 지나온 단계 ${st.history.length}개 · 설계도 ${st.docs.length}개`, act: "lib-learn" },
+      { b: "서재로 가기", sm: `서고 · 내 책 · 전체 돌아보기 (배운 말 ${st.learned.length}개 · 지나온 단계 ${st.history.length}개)`, act: "lib-enter" },
       { b: "느낀 점 남기기", sm: "쓰다가 걸린 것 한 줄 · Jira용 복사", act: "notes-open" }];
     return [{ b: "접기", sm: "띠로 작게 — 마우스를 올리면 나와요", act: "fold" },
       ...(j && nextStage() ? [{ b: "다음 레벨 미리 보기", sm: `LV ${j.stage + 1} ${nextStage().title}`, act: "peek" }] : []),
@@ -794,7 +792,7 @@
     setTimeout(open, 950);
   }
   // 내 서고 들어가기 — 오버레이가 화면 가득 물속이 되고, 책을 안은 플로로가 내려간 뒤 서고가 물속에서 떠오른다(dive.js, 목업 영상 24~28초)
-  // then="learn"이면 서고에 올라온 뒤 '내 배움'을 연다(#lib-dive-learn, F-05). iPhone은 물속 없이 바로 '내 배움'(#lib-learn)으로
+  // then: 서고에 올라온 뒤 열 장면 이름(#lib-dive-<then>). iPhone은 물속 없이 바로 #lib-<then>으로
   function enterLibrary(then = "") {
     if (window.floeApp) window.floeApp.expand();   // 앱: 섬 크기에 묶인 창을 화면만큼 넓힌다 — 물속 전환과 서고가 커질 자리(6.2.0)
     if (then && isPhone()) { location.href = `${LIB_URL}#lib-${then}`; return; }
@@ -1208,7 +1206,7 @@
   }
   const WARN_NAME = { secret: "비밀번호나 비밀 열쇠", rrn: "주민등록번호", email: "이메일 주소", phone: "전화번호", ip: "인터넷 주소(IP)" };
   // 값은 다시 보이지 않고 종류만 말한다
-  const sensitive = (text) => (window.ShareRules ? [...new Set(window.ShareRules.scan(text).findings.filter((x) => WARN_NAME[x.type]).map((x) => WARN_NAME[x.type]))] : []);
+  const sensitive = (text) => (window.NavSensitive ? [...new Set(window.NavSensitive.scan(text).findings.filter((x) => WARN_NAME[x.type]).map((x) => WARN_NAME[x.type]))] : []);
   // 진짜 AI로 보내기 전에 비밀번호 같은 게 보이면 멈추고 묻는다. "괜찮아요"를 누르면 RETRY[then]으로 다시 한다
   function guard(text, then) {
     const w = sensitive(text);
@@ -1232,7 +1230,7 @@
     const fresh = learn(j);
     // 다 했으면 스스로 펼쳐서 알린다(CouCou의 alert), 아니면 접혀 있던 것만 한 줄로 보인다
     if (allDone()) { view("alert"); if (!was) return celebrate("done"); } else peek();
-    if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")} — 서재의 '내 배움'에 모아 둘게요`));
+    if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")}`));
   }
   const stop = (msg) => { st.error = msg; pendingNotice = ""; render(); };   // 보낼 수 없을 때 — 이유를 보여 주고 멈춘다
   // 토큰 사용량(F-12) — 서버로 열었을 때만 /api/usage를 묻는다. 기록(save)에는 넣지 않는다(그때그때 서버에서 받는 값)
@@ -1322,7 +1320,7 @@
     const d = st.doc, s = N.STAGES[d.stage], left = N.blanks(d.text).length;
     if (left && !force) return set({ askConfirm: left });
     st.docs = st.docs.filter((x) => x.stage !== d.stage).concat({ stage: d.stage, name: s.doc, text: d.text, at: ymd() });
-    Object.assign(st, { doc: null, warn: null, error: "", askConfirm: 0, notice: `${s.n}단계 설계도를 확정했어요. 서재의 '내 배움'에서도 볼 수 있어요.` });
+    Object.assign(st, { doc: null, warn: null, error: "", askConfirm: 0, notice: `${s.n}단계 설계도를 확정했어요. 단계 지도에서 다시 볼 수 있어요.` });
     render();
     celebrate("doc");
   }
@@ -1391,7 +1389,6 @@
     pick: () => set({ picking: true }),
     settings: () => set({ settings: !st.settings }),
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
-    "lib-learn": () => enterLibrary("learn"),     // 지나온 단계 · 배운 말 · 확정한 설계도는 서재에서(F-05)
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
     // 도서관 탭 — 책 고르기 · 목록으로 · 서고에 보관(확인 뒤) · 한 권으로 엮기
     "lib-enter": () => enterLibrary(),
@@ -1479,7 +1476,7 @@
     "notes-clear": () => { if (!NT) return; noteList = []; NT.write(STORE, noteList); set({ noteCopy: "" }); say("느낀 점을 모두 지웠어요"); },
     "notes-copy": async () => {
       if (!NT || !noteList.length) return;
-      const text = NT.toJira(noteList, (t) => (window.ShareRules ? window.ShareRules.redact(t) : t));
+      const text = NT.toJira(noteList, (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t));
       let ok = false;
       try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
       set({ noteCopy: ok ? "" : text }); say(ok ? `느낀 점 ${noteList.length}개를 복사했어요 — Jira에 붙여 넣어요` : "자동 복사가 안 돼서 글을 아래 두었어요");
@@ -1696,9 +1693,8 @@
         if (j) { Object.assign(st, { text, judged: text, j, todos: null, todoLater: [], choice: null, later: false, picking: false, finished: false, notice: "", tab: "today", hold: null }); learn(j); }
       }
     }
-    // 옛 주소 #tab=learn('내 배움' 탭, 2026-10-18에 뺌 — F-05) — 그 탭이 보여 주던 지나온 단계 · 배운 말 · 확정한 설계도가 옮겨 간 서재의 '내 배움'으로 보낸다.
-    // 설정(플로로와 나)이 아니라 서재인 까닭: 옛 주소로 보려던 것은 배운 내용이고, 플로로와 나는 하트를 누르면 바로 열린다. 앞의 장면(ex= 등)을 먼저 기록해 두고 넘어간다
-    if (q.tab === "learn") { save(); location.replace(`${LIB_URL}#lib-learn`); return; }
+    // 옛 주소 #tab=learn('내 배움' 탭 2026-10-18, 서재의 '내 배움' 2026-10-19에 지움) — 서고로 보낸다. 앞의 장면(ex= 등)을 먼저 기록해 두고 넘어간다
+    if (q.tab === "learn") { save(); location.replace(`${LIB_URL}#lib`); return; }
     if (q.tab && TABS.some((t) => t[0] === q.tab)) st.tab = q.tab;
     if (q.book) st.libSel = String(q.book);
     if (q.crit) st.showCrit = true;

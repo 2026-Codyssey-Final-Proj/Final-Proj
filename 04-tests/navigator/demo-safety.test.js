@@ -1,7 +1,7 @@
 // claude-drafted: 2026-10-18
 // 시연 안전장치 S3~S5 — navigator-prototype-rules-review.md 6절 "시연 안전장치 점검표". 각 항목의 위반 시도를 먼저 시험으로 썼다.
 //   S3 확인 값(토큰)이 없거나 틀린 /api/event·/api/events는 거절한다
-//   S4 받은 알림 글도 보이기 전에 민감 패턴 검사(공유 규칙 share-rules.js와 같은 규칙)를 거친다
+//   S4 받은 알림 글도 보이기 전에 민감 패턴 검사(sensitive.js)를 거친다
 //   S5 기록을 비울 수 있다(지우기 주소, 서버 다시 켜기)
 // 실제 AI는 부르지 않는다. 확인 값 파일은 임시 폴더에만 만든다(홈 폴더의 진짜 파일을 건드리지 않는다).
 const { test, before, after } = require("node:test");

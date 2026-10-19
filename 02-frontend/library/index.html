@@ -5,8 +5,8 @@
      2026-10-17 같은 날: 작업 화면 위 위젯(지금·단계 지도·한곳에서 보기·도서관 탭)은 내비게이터(../navigator/index.html)의 탭으로 옮겼다 — 같은 화면이 둘이 되지 않게.
      여기는 입구 → 서고 → 펼친 책 · 전체 돌아보기 · 별자리 하늘만 남는다. 내비게이터에서 "한 권의 책으로 엮기"를 누르면 #lib-bound-<id>로 와서 책장에 꽂힌다.
      주소 끝으로 장면 바로 열기: #hall(입구) #pick(시안 고르기) #lib(내 서고) #lib-f1(서고에서 책 펼침) #lib-open-f1(표지 없이) #lib-ask(플로로 답) #lib-dive(내비게이터에서 물속으로 들어오기) #lib-review(전체 돌아보기) #lib-q=EARS(찾기) #lib-bound-s3(엮은 책 받기)
-     2026-10-18(F-05, PRD 2-7): #lib-learn(내 배움 — 내비게이터에서 지나온 단계 · 배운 말 · 확정한 설계도) #lib-dive-learn(물속으로 들어온 뒤 내 배움).
-     2026-10-18(F-17, 원칙 P7): 머리의 "예시 데이터예요 · 시연용" — 책장 · 책은 더미 데이터다. 내 배움만 이 브라우저에 남은 내비게이터 기록을 읽는다(learn.js)
+     2026-10-19(이재엽): '내 배움'(learn.js) · 역량 지도(skills.js)를 지웠다. 옛 주소 #lib-learn · #lib-dive-learn은 서고로. 지식 은하(sky.html)로 가는 길은 막았다(코드는 남김).
+     2026-10-18(F-17, 원칙 P7): 머리의 "예시 데이터예요 · 시연용" — 책장 · 책은 더미 데이터다
      2026-10-19(실사용): 내비게이터 기록이 있으면 열어 둔 책에 '내 책'이 더해지고(my-books.js), "예시 책 지우기"를 누르면 예시 책 · 레퍼런스가 비고 내 기록만 남는다.
        주소 끝에 &noex를 붙이면 그 화면만 예시 없이 연다(시험 · 시연용, 저장하지 않는다) -->
 
@@ -82,7 +82,7 @@
     <input id="q" type="search" placeholder="서고에서 찾기 — 책 이름 · 배운 것 · 정한 것 · 만든 파일" enterkeyhint="search">
     <span class="kbd" aria-hidden="true">/</span>
   </form>
-  <div class="lib-refs"><button class="pillbtn glass" id="learn-btn">✎ 내 배움</button><button class="pillbtn glass" id="review-btn">↺ 전체 돌아보기</button><a class="pillbtn glass skylink" href="sky.html#year">✦ 지식 은하</a> <button class="pillbtn glass" id="refs-btn">레퍼런스 서가</button></div>
+  <div class="lib-refs"><button class="pillbtn glass" id="review-btn">↺ 전체 돌아보기</button><button class="pillbtn glass" id="refs-btn">레퍼런스 서가</button></div>
   <div class="stage" id="stage">
     <svg class="arcs" id="arcs" aria-hidden="true"></svg>
     <div class="slot" id="slot"></div>
@@ -126,19 +126,8 @@
     <div class="tiles" id="rv-tiles"></div>
     <div class="rv-grid">
       <section><h3>책마다 지나온 단계</h3><ol class="paths" id="rv-paths"></ol></section>
-      <section><h3>역량 지도 <small>배운 것마다 레벨 · 노력 (레벨 규칙은 가설)</small></h3><ol class="bars skills" id="rv-tags"></ol>
-        <h3>되풀이해 남긴 인사이트</h3><ul class="ins" id="rv-ins"></ul>
-        <a class="pillbtn skylink" href="sky.html#year">✦ 한 해 지식 은하로 보기</a></section>
+      <section><h3>되풀이해 남긴 인사이트</h3><ul class="ins" id="rv-ins"></ul></section>
     </div>
-  </div>
-</div>
-
-<!-- 내 배움 — 내비게이터에서 쌓은 지나온 단계 · 배운 말 · 확정한 설계도(F-05). 오버레이에는 간단히, 자세한 것은 여기서 -->
-<div class="reader" id="learn" role="dialog" aria-modal="true" aria-labelledby="lr-title">
-  <div class="rv glass">
-    <header><div id="lr-seal"></div><div><div class="kick">내비게이터에서 쌓은 것</div><h2 id="lr-title">내 배움</h2><p id="lr-sub"></p></div>
-      <button class="pillbtn glass close" id="lr-close">닫기<span class="kbd">Esc</span></button></header>
-    <div id="lr-body"></div>
   </div>
 </div>
 
@@ -147,10 +136,8 @@
 <script src="../navigator/seal.js"></script>
 <script src="books.js"></script>
 <script src="my-books.js"></script>
-<script src="skills.js"></script>
 <script src="search.js"></script>
 <script src="spotlight.js"></script>
-<script src="learn.js"></script>
 <script src="../../03-backend/navigator/glossary.js"></script>
 <script src="../navigator/dive.js"></script>
 <script src="library.js"></script>

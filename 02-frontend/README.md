@@ -197,7 +197,7 @@ flowchart TD
 - 화면과 컴포넌트는 `lib/api.js`만 부른다. fixture를 직접 읽지 않는다 — 연습과 실제를 바꿀 때 고칠 곳이 한 군데다.
 - 실제 대화는 `src/app/api/`(Route Handler)가 위 1절의 순서(API 키 → Claude 구독 → 연습)로 부르는 안이다. **외부 AI 호출은 이 한 곳에서만** 한다 (CLAUDE.md 역할표, code.md 6번). #47 프로토타입의 `server.js`가 같은 방식(로그인된 Claude Code 호출, 도구·MCP·사용자 설정 잠금)이라 참고할 수 있다. 만드는 시점은 8절.
 - 실제 대화를 시연에 쓰기 전에 안전장치 S1~S6을 모두 갖춘다 — 각 항목은 위반 시도 시험을 먼저 쓴다 ([navigator-prototype-rules-review.md](../01-docs/00-overview/navigator-prototype-rules-review.md) 6절).
-- 입력창에 자유롭게 쓴 글(처음 설명, "기타", 설계도 물어보기)은 보내기 전에 **비밀값 경고**를 거친다 — 키·비밀번호 같은 게 보이면 막지 않고 "그대로 / 수정"을 고르게 한다([security-records.md](../.claude/rules/security-records.md) 6-3). 검사 규칙은 `03-backend/share`의 것을 재사용하는 안이 있다(#47 프로토타입이 그렇게 한다).
+- 입력창에 자유롭게 쓴 글(처음 설명, "기타", 설계도 물어보기)은 보내기 전에 **비밀값 경고**를 거친다 — 키·비밀번호 같은 게 보이면 막지 않고 "그대로 / 수정"을 고르게 한다([security-records.md](../.claude/rules/security-records.md) 6-3). 검사 규칙은 `03-backend/navigator/sensitive.js`(2026-10-19 공유 규칙을 지우며 남긴 안전장치)를 쓴다.
 - 클릭·입력에 반응하는 컴포넌트와 mermaid는 `'use client'`로 둔다.
 - 패널과 넓은 화면은 같은 컴포넌트를 다시 쓴다. 레이아웃이 바뀌어도 `components/`는 그대로 두고 `app/`만 고친다.
 

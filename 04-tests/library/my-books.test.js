@@ -6,7 +6,6 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const M = require("../../02-frontend/library/my-books.js");
-const L = require("../../02-frontend/library/learn.js");
 const FRONT = path.join(__dirname, "../../02-frontend");
 
 // books.js를 매번 새로 읽는다 — apply가 제자리에서 바꾸므로 시험끼리 섞이지 않게
@@ -21,10 +20,9 @@ const SAVED = {
 const fakeStorage = (init = {}) => { const m = new Map(Object.entries(init)); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k), map: m }; };
 const broken = { getItem() { throw new Error("사생활 보호 창"); }, setItem() { throw new Error("no"); }, removeItem() { throw new Error("no"); } };
 
-test("내비게이터 · 서재 · 내 책이 읽는 기록 열쇠가 모두 같다", () => {
+test("내비게이터와 내 책이 읽는 기록 열쇠가 같다", () => {
   const app = fs.readFileSync(path.join(FRONT, "navigator/app.js"), "utf8");
   assert.equal(M.KEY, /const KEY = "([^"]+)"/.exec(app)[1]);
-  assert.equal(M.KEY, L.KEY);
 });
 
 test("내 책: 기록에서 지금 단계 · 할 일 · 확정한 설계도 · 배운 말 · 지나온 단계를 꺼내고, 예시 책과 같은 칸을 모두 갖는다", () => {
@@ -76,13 +74,11 @@ test("내 책이 있으면 열어 둔 책 맨 앞에 — 예시가 보여도, �
   assert.deepEqual(D.OPEN.map((b) => b.id), [M.ME]); assert.equal(M.isExample(D.OPEN[0]), false);
 });
 
-test("예시를 숨긴 데이터로도 서고의 계산(역량 지도 · 검색 · 일정 충돌)이 던지지 않는다", () => {
-  const D = freshData(), Sk = require("../../02-frontend/library/skills.js"), Se = require("../../02-frontend/library/search.js"), Sch = require("../../02-frontend/library/schedule.js");
+test("예시를 숨긴 데이터로도 서고의 계산(검색 · 일정 충돌)이 던지지 않는다", () => {
+  const D = freshData(), Se = require("../../02-frontend/library/search.js"), Sch = require("../../02-frontend/library/schedule.js");
   M.apply(D, { book: M.fromState(SAVED, "2026-10-19"), hidden: true, today: "2026-10-19" });
-  assert.deepEqual(Sk.skillMap(D.SHELF, D.OPEN).map((x) => [x.skill, x.level]), [["EARS", 0], ["규모 등급", 0]]);
   assert.equal(Se.searchLibrary("책방", D).length, 1);
   assert.deepEqual(Sch.findClashes({ projects: D.OPEN, events: D.CALENDAR, pins: D.TEAM_PINS, today: D.TODAY }), [], "마감이 없는 내 책은 충돌이 없다");
-  assert.deepEqual(Sk.skillMap([], []), []);
 });
 
 test("저장소: 숨김 표시를 읽고 쓴다. 못 쓰는 저장소면 숨기지 않은 것으로, 던지지 않는다", () => {

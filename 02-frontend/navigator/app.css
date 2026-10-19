@@ -292,7 +292,7 @@ ol.track::before{content:"";position:absolute;left:6.25%;right:6.25%;top:52px;he
 .md-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 
 .isl .card{border:1px solid var(--line);box-shadow:none}
-/* 플로로와 나 — 설정 맨 위(2026-10-18 claude-drafted, F-05: '내 배움' 탭을 빼고 옮겨 옴). 아래 줄은 서재의 '내 배움'으로 가는 길 */
+/* 플로로와 나 — 설정 맨 위(2026-10-18 claude-drafted, F-05: '내 배움' 탭을 빼고 옮겨 옴) */
 .bondcard{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:14px;background:var(--soft);color:var(--ink)}
 .foot.settings .bondcard{background:var(--card)}
 .bond-row{display:flex;gap:12px;align-items:center}
@@ -300,7 +300,6 @@ ol.track::before{content:"";position:absolute;left:6.25%;right:6.25%;top:52px;he
 .bond-row .kicker{font-size:calc(12px * var(--ui-scale,1));font-weight:700;color:var(--acc)}
 .bond-row b{display:flex;align-items:center;gap:8px;font-size:calc(15px * var(--ui-scale,1))}
 .bond-row .hearts svg{width:14px;height:14px}
-.bondcard .lnk{align-self:flex-start;padding:0 6px;margin-left:-6px;text-align:left}
 
 /* ── 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·설정) ── */
 .say{display:flex;gap:12px;align-items:center}

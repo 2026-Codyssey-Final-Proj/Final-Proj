@@ -1,6 +1,9 @@
 <!-- claude-drafted: 2026-10-18 — 이재엽의 요청으로 Claude가 requirements.md(FR-8), ADR-0004·0006, library README, skills.js·knowledge-sky.js 주석, plan-confirm 3절, 커밋 기록에서 옮겨 썼다. 틀린 곳은 담당이 고친다. -->
 
-# 05 지식 창고 — 도서관 탭 · 얼음 서고 · 역량 지도 · 지식 은하 (FR-8)
+# 05 지식 창고 — 도서관 탭 · 얼음 서고 (FR-8)
+
+> **2026-10-19 바뀜(이재엽):** 서재의 '내 배움' · 역량 지도를 지웠고(`learn.js` · `skills.js`), 지식 은하는 길을 막아 두었다(파일은 남김), 나만 보기(FR-9)는 Won't. 아래에서 그것들을 말하는 줄은 바뀌기 전 기록이다 — [requirements.md](../../00-overview/requirements.md) 13-1, [고칠 목록](../../07-maintenance/fix-map.md) F-25. GIF는 다시 찍기 전이다.
+
 
 ![도서관 탭 → 한 권의 책으로 엮기 → 서고에 꽂힘 → 전체 돌아보기(역량 지도)](demo.gif)
 

@@ -89,9 +89,9 @@
 |---|---|
 | `/` · `/<파일>` · `/navigator/<파일>` | `02-frontend/navigator/` (`/`는 `index.html`) |
 | `/index.html` | `02-frontend/index.html` (시연 입구) |
-| `/library/<파일>` · `/share/<파일>` | `02-frontend/library/` · `02-frontend/share/` |
+| `/library/<파일>` | `02-frontend/library/` (지식 은하 `sky.*`는 2026-10-19부터 내주지 않음) |
 | `/02-frontend/<화면>/<파일>` | 위와 같은 파일 |
-| `/03-backend/navigator/{navigator.js, scenario.js}` · `/03-backend/share/{share-rules.js, scenarios.js, environment-checks.js}` | 화면이 같이 쓰는 규칙 |
+| `/03-backend/navigator/{navigator.js, scenario.js, sensitive.js, …}` | 화면이 같이 쓰는 규칙 (공유 규칙 `/03-backend/share/`는 2026-10-19에 지움) |
 | `/01-docs/04-pattern-implementation/bookmark-constellation-mock.html` | 입구의 설계 목업 링크 |
 
 - **성공:** 200, 파일 그대로. `Content-Type`은 `text/html` · `text/css` · `text/javascript` + `; charset=utf-8`.
@@ -117,7 +117,7 @@
 | `last_assistant_message` | 글 | | AI의 마지막 답 |
 | `tool` | `"codex"` · 그 밖 | | `"codex"`가 아니면 Claude Code |
 
-- **서버가 하는 일:** 말을 **저장하기 전에 가린다**([공유 규칙](../share/share-rules.js)과 같은 패턴 — 키 모양·비밀번호 대입·주민번호는 `[비밀값]`, 이메일·전화·IP는 `[… 가림]`). 세션마다 최근 말 20개, 세션 10개, 알림 20개를 **메모리에만** 둔다.
+- **서버가 하는 일:** 말을 **저장하기 전에 가린다**([sensitive.js](sensitive.js)의 패턴 — 키 모양·비밀번호 대입·주민번호는 `[비밀값]`, 이메일·전화·IP는 `[… 가림]`). 세션마다 최근 말 20개, 세션 10개, 알림 20개를 **메모리에만** 둔다.
 - **성공:** `{ "ok": true, "seq": 7 }` — `seq`는 이 알림의 번호(정수, 하나씩 는다).
 - **거절:** 403 출처 · 403 확인 값 · 413 · 400 `알 수 없는 알림`(JSON이 아님, `hook_event_name`이 다름).
 
