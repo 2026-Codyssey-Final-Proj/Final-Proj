@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v10.0 | 2026-10-20 | 이재엽 | ① 기본 화면과 모드 둘(C-13 · F-34 — 켜면 플로로와 지금 한 줄 · 단추 넷(바이브 코딩 · 서재 · 알림 · AI 진행), 알림 · AI 진행은 섬 안에서 바로, 바이브 코딩에 들어가면 접혔다 펼쳐지거나 서고에 다녀와도 그 모드, 집 단추로 돌아옴, 인사가 끝나면 인사 카드 대신 기본 화면) ② 섬의 움직임(C-14 — 접히고 펼쳐질 때 바탕이 늘어나고 줄어듦, 접힌 한 줄에 마우스를 올리면 살짝 커짐, `morph.js`) ③ 서고 전환 끊김(F-35 — 물은 `clip-path` 대신 `transform`, 서고 층 `blur` 제거, 물방울 12개, 움직임이 끝나면 넘기기, 새 페이지 첫 그림부터 물방울; 창 크기 · 페이지 넘김에서 오는 끊김은 남음). 오퍼스 세션 넘김 문서(2026-10-20 둘째)대로, 이재엽 버튼 "한 PR에 셋 다". 앱 버전은 그대로 (#139) | `02-frontend/navigator/`(app.js · app.css · dive.js · dive.css · morph.js(새) · index.html, 담당 임유정 — 이 줄이 알림) · `02-frontend/hub/`(hub.js 화면 코드 경계) · `02-frontend/library/`(index.html) · `02-frontend/electron/`(main.js · preload.js — 모아 보기 창을 그 칸으로) · `03-backend/navigator/`(navigator.js nextPlace · server.js 목록, 담당 두승현) · `04-tests/` · `01-docs/`(features · fix-map · requirements · verification · 넘김 문서) |
 | v9.3 | 2026-10-20 | 이재엽 | 요구 후보 C-13 모드 둘(기본 · 바이브 코딩) · C-14 섬의 움직임 + 서고 전환 끊김 방향(F-34 · F-35) + 넘김 문서 (#138) | `01-docs/00-overview/` · `01-docs/07-maintenance/` · `changes/` |
 | v9.2 | 2026-10-20 | 이재엽 | 고칠 목록에 F-32(릴리스 비용 주석이 실제보다 큼) · F-33(sprintf-js 보안 알림, 묶는 도구에만 있음) (#137) | `01-docs/07-maintenance/` · `changes/` |
 | v9.1 | 2026-10-20 | 이재엽 | 앱 받기 안내를 알파 8.0.0으로 (팀원만 받기 · 8.0.0은 폴더 다시 연결) (#136) | `01-docs/00-overview/` · `changes/` |
