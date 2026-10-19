@@ -235,6 +235,7 @@
       }
     });
     render();
+    doc.dispatchEvent(new CustomEvent("floe:setup-open"));   // 앱이면 app.js가 창을 넓힌다 — 섬 크기 창에 끼지 않게(KAN-57)
     if (s.step === "hello") setTimeout(() => burst("heart", 7), 250);
     refresh();
   }
