@@ -50,7 +50,7 @@
 | 🔒 | **나만 보기 기본** | 공유본만 팀에 보임 |
 | 🦭 | **길잡이 플로로** | 표정 11가지 · 쓰다듬기 · 가만히 두면 헤엄치다 졸아요 |
 | 🧊 | **실제로 써 보기** *(v2.0)* | 내 프로젝트에 한 줄로 붙이기 · 서재에 **내 책** · 예시 책 지우기 · **느낀 점 남기기** → Jira용 복사 |
-| 🖥 | **오버레이 앱** *(v3.0 알파)* | 내려받아 더블클릭 — 코딩 도구 위에 **항상 위로** 뜨는 창 (`.dmg`, `.exe`는 Windows에서 묶음) |
+| 🖥 | **오버레이 앱** *(v3.0 알파 · v6.0 Linux)* | 내려받아 더블클릭 — 코딩 도구 위에 **항상 위로** 뜨는 창. Mac `.dmg` · Windows `.exe` · **우분투 `.AppImage` / `.deb`**(CI가 셋을 같은 Release에) |
 
 ---
 
@@ -103,7 +103,7 @@ flowchart LR
 | 🧪 | 수용 · 계약 테스트 | ✅ PR #95 · #100 (사람이 화면으로 보는 줄은 대기) |
 | 🚦 | Floe 게이트 | 🟡 1→2 · 2→3 · 3→4 · 4→5 Go(10/18), **5단계 — 주요 기능 11/3까지** · [게이트 로그](01-docs/01-problem-save/sessions/project-track/2026-10-18-floe.md) · [고칠 목록](01-docs/07-maintenance/fix-map.md) |
 | 🧊 | **실제로 써 보기** — 한 줄로 켜기 · 내 책 · 예시 책 지우기 · 느낀 점 | ✅ v2.0 (10/19, PR #108) · 시험 24개 · **사람이 써 본 기록은 아직** → [10-real-use](01-docs/features/10-real-use/README.md) |
-| 🖥 | **오버레이 앱** — Electron 껍데기, `npm run dist` → `.dmg` | ✅ v3.0 알파 (10/19, PR #111) · Mac에서 묶어 켜 봄 · 서명 없음 · Windows 묶기 전 → [electron/README](02-frontend/electron/README.md) |
+| 🖥 | **오버레이 앱** — Electron 껍데기, `npm run dist` → `.dmg` · `dist:win` · `dist:linux` | ✅ v3.0 알파 (10/19, PR #111) → v6.0 **Linux(우분투) 묶음**(10/19) · 서명 없음 · 셋은 CI가 Release에 → [electron/README](02-frontend/electron/README.md) |
 | 🎬 | 구동 영상 | ⚪ 시작 전 |
 
 ✅ 됨 &nbsp; 🟡 진행 · 대기 &nbsp; 🔵 목업 &nbsp; ⚪ 전
@@ -119,7 +119,7 @@ flowchart LR
 | 📄 | [`01-docs/`](01-docs/README.md) | 문서 — 문서 지도부터 |
 | 🗂 | [`01-docs/features/`](01-docs/features/README.md) | **기능별 README + 시연 GIF** — 무엇 · 왜 · 어떻게 진행됐나 · 흐름 그림 |
 | 🖥 | [`02-frontend/`](02-frontend/README.md) | 화면 |
-| 📦 | [`02-frontend/electron/`](02-frontend/electron/README.md) | **오버레이 앱 껍데기** — 화면 · 서버를 그대로 감싸 `.dmg` / `.exe`로 묶는다 (알파) |
+| 📦 | [`02-frontend/electron/`](02-frontend/electron/README.md) | **오버레이 앱 껍데기** — 화면 · 서버를 그대로 감싸 `.dmg` / `.exe` / `.AppImage` · `.deb`로 묶는다 (알파) |
 | ⚙️ | [`03-backend/`](03-backend/README.md) | 서버 · 판정 규칙 · AI 연결 |
 | 🧪 | [`04-tests/`](04-tests/README.md) | 시험 |
 | 📦 | [`05-projects/`](05-projects/README.md) | 팀 제품 밖 프로젝트 (세컨드 브레인) |
@@ -135,10 +135,10 @@ cd Final-Proj
 node 03-backend/navigator/server.js   # 🦭 → http://127.0.0.1:4317 · 시연 입구 /index.html
 node 03-backend/navigator/floe.js ~/내-프로젝트   # 🧊 내 프로젝트에 붙여 실제로 써 보기 — 훅 연결 → 서버 → 브라우저 (끝나면 --off)
 python3 04-tests/run_all_tests.py             # 🧪
-cd 02-frontend/electron && npm install && npm run dist   # 📦 오버레이 앱 묶기 → dist/Floe-<버전>-arm64.dmg (Windows: npm run dist:win)
+cd 02-frontend/electron && npm install && npm run dist   # 📦 오버레이 앱 묶기 → dist/Floe-<버전>-arm64.dmg (Windows: dist:win · 우분투: dist:linux)
 ```
 
-📦 **앱으로 쓰려면** [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에서 `.dmg`를 받아 우클릭 → 열기(서명 없음) → 메뉴 **Floe → 프로젝트 폴더 연결…** → 그 폴더에서 Claude Code를 새로 연다. 자세히 → [팀 작업 가이드 2-c](01-docs/00-overview/team-guide.md)
+📦 **앱으로 쓰려면** [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에서 Mac은 `.dmg`(우클릭 → 열기, 서명 없음), Windows는 `.exe`, 우분투는 `.AppImage`(실행 권한 주고 더블클릭) 또는 `.deb`를 받아 → 메뉴(Windows · 우분투는 **창 우클릭** 또는 트레이 아이콘) **Floe → 프로젝트 폴더 연결…** → 그 폴더에서 Claude Code를 새로 연다. 자세히 → [팀 작업 가이드 2-c](01-docs/00-overview/team-guide.md)
 
 📘 **처음이라면 → [팀 작업 가이드](01-docs/00-overview/team-guide.md)** (내 키는 어디에 두고, 작업은 어디에 올리나, 한 줄로 켜기 · 앱으로 쓰기)
 

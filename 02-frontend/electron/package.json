@@ -1,15 +1,18 @@
 {
   "name": "floe-app",
   "productName": "Floe",
-  "version": "5.2.0",
+  "version": "6.0.0",
   "private": true,
   "description": "Floe — 코딩 도구 위에 떠 있는 길잡이 오버레이 (Electron 껍데기). 화면 02-frontend · 서버 03-backend를 그대로 감싼다",
+  "author": "2026-Codyssey-Final-Proj",
+  "homepage": "https://github.com/2026-Codyssey-Final-Proj/Final-Proj",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "prebuild": "node prebuild.js",
     "dist": "node prebuild.js && electron-builder --mac dmg",
-    "dist:win": "node prebuild.js && electron-builder --win nsis"
+    "dist:win": "node prebuild.js && electron-builder --win nsis",
+    "dist:linux": "node prebuild.js && electron-builder --linux --x64 --arm64"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.131.0"
@@ -29,6 +32,7 @@
       "preload.js",
       "lib.js",
       "package.json",
+      "build/icon.png",
       "payload/**/*"
     ],
     "asarUnpack": [
@@ -49,12 +53,38 @@
     "win": {
       "target": "nsis"
     },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development",
+      "icon": "build/icon.png",
+      "maintainer": "2026-Codyssey-Final-Proj <noreply@github.com>",
+      "synopsis": "Floe — 코딩 도구 위에 떠 있는 길잡이 오버레이",
+      "artifactName": "Floe-${version}-${arch}.${ext}"
+    },
     "dmg": {
       "artifactName": "Floe-${version}-${arch}.${ext}"
     },
     "nsis": {
       "artifactName": "Floe-Setup-${version}.${ext}",
       "oneClick": true
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0",
+        "libasound2t64 | libasound2",
+        "libgbm1"
+      ]
     }
   }
 }
