@@ -48,7 +48,16 @@
         }
       ],
       "category": "public.app-category.developer-tools",
-      "identity": null
+      "identity": null,
+      "extraResources": [
+        {
+          "from": "build",
+          "to": ".",
+          "filter": [
+            "notch-probe"
+          ]
+        }
+      ]
     },
     "win": {
       "target": "nsis"

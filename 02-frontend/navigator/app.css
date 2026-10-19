@@ -73,6 +73,12 @@ html.in-app,html.in-app body{background:transparent;overflow:hidden}   /* 창이
 .in-app .isl{max-height:none}
 .in-app .tb{-webkit-app-region:drag}
 .in-app .tb button,.in-app .tb select{-webkit-app-region:no-drag}
+/* Mac 노치(다이내믹 아일랜드, 2026-10-19 이재엽 결정) — 앱이 노치 크기를 보내면(app.js → --notch-w · --notch-h) 띠는 노치와 같은 검정으로 노치를 덮고,
+   한 줄 · 펼침은 노치 아래로 늘어난다. 위 모서리는 화면 맨 위에 붙으니 각지게, 아래만 둥글게. 노치 없는 컴퓨터 · 브라우저에는 .notch가 안 붙는다 */
+html.notch .strip{width:max(150px,calc(var(--notch-w,200px) + 28px));height:calc(var(--notch-h,38px) + 18px);background:#000;border-radius:0 0 18px 18px}
+html.notch .strip .head{bottom:6px}
+html.notch .pill,html.notch .isl{border-radius:0 0 28px 28px}
+html.notch .pill{border-radius:0 0 25px 25px}
 .glass{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%)}
 @keyframes drop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 .enter{animation:drop .24s ease-out}

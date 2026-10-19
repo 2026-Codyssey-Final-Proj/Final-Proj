@@ -39,3 +39,5 @@ node_modules/
 # Electron 껍데기(02-frontend/electron) — 묶은 결과와 복사본은 올리지 않는다
 02-frontend/electron/dist/
 02-frontend/electron/payload/
+# Mac 노치 도우미 — prebuild.js가 swiftc로 만드는 실행 파일(원본은 notch/notch-probe.swift)
+02-frontend/electron/build/notch-probe
