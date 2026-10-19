@@ -103,6 +103,22 @@ flowchart LR
 | 담당 | **이재엽 #7(프롬프트 · API 계약 10/25) · #8(API 구현·연동 11/1)** · 계약 테스트 두승현 #19(11/1) |
 | 문서 | [backend navigator README](../../../03-backend/navigator/README.md) · [팀 작업 가이드](../../00-overview/team-guide.md) · [다른 API를 받으면](../../04-pattern-implementation/api-intake.md) |
 
+<!-- claude-drafted: 2026-10-20 — 이재엽 요청(C-12 AI 진행 — Claude Code가 하는 일 보기, "이건 바이브 코딩이 아니야") -->
+## AI 진행 (C-12, 2026-10-20) — Claude Code가 하는 일을 한 줄씩
+
+바이브 코딩 안내(단계 · 판정 · 토큰)와 **따로인 지켜보기 전용** 공간이다. 판정을 부르지 않고 토큰을 쓰지 않는다. 화면은 모아 보기 창(`02-frontend/hub/`)의 AI 진행.
+
+| 무엇 | 어떻게 |
+|---|---|
+| **훅** | `connect.js`가 더하는 훅이 셋이 됐다 — 요청 받음 · 작업 마침에 **도구를 쓴 뒤(`PostToolUse`)** 추가. matcher는 비워 모든 도구. **이미 연결한 폴더는 다시 연결해야** 새 훅이 걸린다 |
+| **훅이 넘기는 것** | `hook.js` → [`steps.js`](../../../03-backend/navigator/steps.js) `fromHook`: 말(읽었어요 · 고쳤어요 · 만들었어요 · 실행했어요 · 찾았어요 · 했어요) · 파일 경로(작업 폴더 밖이면 이름만)나 명령 첫 줄 · 고친 줄 수 `+N −M`. 80자까지 |
+| **넘기지 않는 것** | 파일 내용(`content`) · 고친 글(`old_string` · `new_string`) · 도구 결과(`tool_response`) · 명령의 둘째 줄부터. 훅이 싣지 않고 서버도 받으면 버린다 |
+| **Claude Code를 느리게 하지 않음** | PostToolUse 훅은 답을 기다리지 않고 끝난다(요청 상한 300ms). 서버가 꺼져 있어도 조용히 0으로 |
+| **서버** | `POST /api/event`(PostToolUse) → 세션별 **메모리에만** 최근 50줄 · 세션 10개, 저장 전에 가림(S4), '알림 기록 비우기'(S5)로 같이 지움. 요청 받음이면 `working`, 작업 마침이면 `done`. 화면은 `GET /api/steps?since=`로 — [API.md](../../../03-backend/navigator/API.md) 3-2-1 · 3-12 |
+| **서버 없이(FR-10)** | `steps.js` `EXAMPLE`(예시 세션 7줄)을 보이고 화면이 "예시 데이터예요"를 붙인다 |
+| **시험** | [`hook-steps.test.js`](../../../04-tests/navigator/hook-steps.test.js) — 도구별 말 · 경로 · 줄 수, 결과에 내용이 없음, hook.js를 실제로 돌려 서버가 꺼져 있을 때 600ms 안에 끝남 · 보낸 본문에 `tool_input` · `tool_response`가 없음, 훅 연결. `api-contract.test.js` 3-12 — 403 · 모양 · since · 가림 · 50줄 · 비우기 · 상태 |
+| **미정** | 하기 전(`PreToolUse`)은 걸지 않는다(기본은 끝난 일만). Codex가 같은 모양으로 보내는지는 실측 뒤 |
+
 ## 아직 아닌 것 · 미정
 
 <!-- claude-drafted: 2026-10-18 — 아래 세 줄을 PR #94 · #99 · #100에 맞춰 고쳤다(병합 전이면 그 PR을 본다). -->

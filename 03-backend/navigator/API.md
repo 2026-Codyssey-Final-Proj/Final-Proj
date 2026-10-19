@@ -7,8 +7,8 @@
 
 | | |
 |---|---|
-| 판 | **v1 · 2026-10-18** |
-| 기준 코드 | `server.js` — 시연 안전장치(#94: 확인 값·받은 글 가림·기록 비우기)와 판정 규칙(#96: 등급별 할 일)을 합친 상태. **2026-10-18 F-04: AI 네 주소도 확인 값**, 6단계 할 일 넷(F-03) |
+| 판 | **v1.1 · 2026-10-20** — AI 진행(C-12): `/api/event`가 도구를 쓴 뒤(PostToolUse)의 한 일을 받고, 새 주소 `GET /api/steps`(3-12). v1은 2026-10-18 |
+| 기준 코드 | `server.js` — 시연 안전장치(#94: 확인 값·받은 글 가림·기록 비우기)와 판정 규칙(#96: 등급별 할 일)을 합친 상태. **2026-10-18 F-04: AI 네 주소도 확인 값**, 6단계 할 일 넷(F-03). 2026-10-20 AI 진행(`steps.js` · `hook.js` PostToolUse) |
 | 시험 | [`04-tests/navigator/api-contract.test.js`](../../04-tests/navigator/api-contract.test.js) — 실제 AI를 부르지 않는다(5절) |
 | 바꾸는 법 | 이 문서·시험·`server.js`를 한 PR에서 같이 고친다. 화면이 읽는 칸이 바뀌면 화면 담당에게 알린다 |
 | 다루지 않는 것 | 본 제품(Next `src/app/api/`)의 API — 아직 없다. 그때 이 약속을 출발점으로 쓴다 |
@@ -20,7 +20,8 @@
 | `GET` 화면 파일 (`/`, `/index.html` …) | 브라우저 | 출처 | 파일 + html이면 확인 값 쿠키 | 403 · 404 |
 | `POST /api/event` | 훅(`hook.js`) | 출처 · 확인 값(머리글) | `{ok, seq}` | 403 · 413 · 400 |
 | `GET /api/events?since=N` | 화면(2초마다) | 출처 · 확인 값(쿠키) | `{ok, latest, events[]}` | 403 · 404 |
-| `POST /api/events/clear` | 사람(curl) | 출처 · 확인 값(머리글) | `{ok, cleared}` | 403 |
+| `GET /api/steps?since=N` | 모아 보기 창 AI 진행(2026-10-20 C-12) | 출처 · 확인 값(쿠키) | `{ok, latest, sessions[]}` | 403 · 404 |
+| `POST /api/events/clear` | 사람(curl) · 화면 '알림 기록 비우기' | 출처 · 확인 값(머리글 · 쿠키) | `{ok, cleared}` — 한 일(3-12)도 비운다 | 403 |
 | `GET /api/usage` | 사람(주소창·curl) | 출처 | `{ok, provider, model, host, compat, used, budget, state, …}` | 403 |
 | `GET /api/setup` | 화면 처음 설정, 앱(옛 서버 알아보기) | 출처 | `{ok, provider, apiKey, relay, claude:{found, version, signedIn}, replay, build}` | 403 |
 | `POST /api/setup/check` | 화면 처음 설정 "연결 확인하기" | 출처 · 확인 값(쿠키) | `{ok, provider, tokens}` (재생 중이면 `replay: true`) | 403 · 502 |
@@ -47,7 +48,7 @@
 |---|---|---|---|---|
 | 인증 ① 출처 | 이 컴퓨터의 이 서버 주소로 왔나? `Host`가 `127.0.0.1:포트`·`localhost:포트`이고, `Origin`이 있으면 `http://`+그 둘 중 하나 | `allowed()` | **403** `이 컴퓨터의 화면에서만 부를 수 있음` | 다른 웹페이지가 내 키·구독으로 Claude를 부르거나(Origin) 주소 바꿔치기로 들어오지(Host) 못하게. 존재를 숨길 까닭이 없어 404가 아니라 403 |
 | (화면 파일) | 목록에 있는 파일인가(GET) | `FILES` | — | 있으면 여기서 내준다(3-1) |
-| 인증 ② 확인 값 — 알림 세 주소 + AI 네 주소(2026-10-18 F-04) | 서버가 만든 값을 갖고 있나? | `hasToken()` | **403** `확인 값이 없거나 맞지 않음 — …` | 남이 가짜 알림을 넣거나 대화 글을 읽지 못하게. 방법(메서드)이 틀려도 값부터 본다. 다시 로그인할 길을 주는 401이 아니다 — 값은 파일·쿠키로만 받는다 |
+| 인증 ② 확인 값 — 알림 네 주소(`/api/steps`는 2026-10-20) + AI 네 주소(2026-10-18 F-04) | 서버가 만든 값을 갖고 있나? | `hasToken()` | **403** `확인 값이 없거나 맞지 않음 — …` | 남이 가짜 알림을 넣거나 대화 글을 읽지 못하게. 방법(메서드)이 틀려도 값부터 본다. 다시 로그인할 길을 주는 401이 아니다 — 값은 파일·쿠키로만 받는다 |
 | 권한(역할) · 소유권 | — | — | — | **없다.** 한 사람의 컴퓨터에서 한 사람이 쓰는 서버라 역할도 자원의 주인도 없다. 서비스로 낼 때 채울 칸(기록·보안 기준 5절) |
 | 주소 | 있는 주소·방법인가 | `handle()` | **404** `없는 주소` | 본문을 읽기 전에 거절한다 |
 | 크기 · 형식 | 40,000자 안인가, JSON인가 | `readJson()` | **413** `보낸 글이 너무 김 — 40,000자까지` · JSON이 아니면 400(주소별 이유) | — |
@@ -118,6 +119,7 @@
 | `tool` | `"codex"` · 그 밖 | | `"codex"`가 아니면 Claude Code |
 
 - **서버가 하는 일:** 말을 **저장하기 전에 가린다**([sensitive.js](sensitive.js)의 패턴 — 키 모양·비밀번호 대입·주민번호는 `[비밀값]`, 이메일·전화·IP는 `[… 가림]`). 세션마다 최근 말 20개, 세션 10개, 알림 20개를 **메모리에만** 둔다.
+  `UserPromptSubmit`이면 그 세션의 상태를 `"working"`, `Stop`이면 `"done"`으로 적는다(3-12의 `sessions[].state`, 2026-10-20).
 - **성공:** `{ "ok": true, "seq": 7 }` — `seq`는 이 알림의 번호(정수, 하나씩 는다).
 - **거절:** 403 출처 · 403 확인 값 · 413 · 400 `알 수 없는 알림`(JSON이 아님, `hook_event_name`이 다름).
 
@@ -126,6 +128,30 @@
 { "hook_event_name": "UserPromptSubmit", "session_id": "demo-1", "cwd": "/Users/me/club-app", "prompt": "행사 목록 화면 만들어 줘", "tool": "claude" }
 // 응답
 { "ok": true, "seq": 1 }
+```
+
+<!-- claude-drafted: 2026-10-20 — AI 진행(C-12, 이재엽 "이건 바이브 코딩이 아니야") -->
+#### 3-2-1. 도구를 쓴 뒤 — `hook_event_name: "PostToolUse"` (2026-10-20)
+
+Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린다. `hook.js`가 [steps.js](steps.js) `fromHook`으로 **이름 · 첫 줄 · 줄 수만** 뽑아 보내고, **답을 기다리지 않는다**(요청 상한 300ms — Claude Code를 느리게 하지 않는다).
+
+| 칸 | 타입 | 꼭 | 뜻 |
+|---|---|---|---|
+| `hook_event_name` | `"PostToolUse"` | ✓ | |
+| `session_id` · `cwd` · `tool` | 3-2와 같음 | | 세션은 `tool:session_id`로 나눈다 |
+| `tool_name` | 글 | | 도구 이름(`Read` · `Edit` · `MultiEdit` · `Write` · `Bash` · `Grep` · `Glob` · 그 밖). `step.what`이 비면 이것을 보인다 |
+| `step.verb` | `"읽었어요"` · `"고쳤어요"` · `"만들었어요"` · `"실행했어요"` · `"찾았어요"` · `"했어요"` | | 표에 없는 말은 `"했어요"`로 |
+| `step.what` | 글(80자까지) | | Read · Edit · Write는 파일 경로(작업 폴더 안이면 상대 경로, 밖이면 이름만), Bash는 명령 첫 줄, Grep · Glob은 찾을 말, 그 밖은 `""` |
+| `step.add` · `step.del` | 0 이상 정수 | | 고친 줄 수 — Edit · MultiEdit는 새 글 · 옛 글의 줄 수, Write는 글의 줄 수. 아니면 0 |
+
+- **넣지 않는 것(훅이 싣지 않고, 서버도 받으면 버린다):** `tool_input`(파일 내용 `content`, 고친 글 `old_string` · `new_string`, 명령의 둘째 줄부터) · `tool_response`(도구 결과) · `prompt` · `last_assistant_message`. 시험 [`hook-steps.test.js`](../../04-tests/navigator/hook-steps.test.js)가 hook.js를 실제로 돌려 본문에 그 글이 없는지 본다.
+- **서버가 하는 일:** `what`을 저장하기 전에 가리고(S4 — `export API_KEY=…` 같은 명령) 80자로 자른다. 세션마다 최근 **50줄**, 세션 **10개**, **메모리에만**. 알림 목록(3-3)에는 넣지 않고 번호도 따로 센다. 판정을 부르지 않고 토큰을 쓰지 않는다.
+- **성공:** `{ "ok": true, "seq": 12 }` — 한 일의 번호(알림 번호와 다른 줄). **거절:** 3-2와 같다.
+
+```jsonc
+// 요청 — Edit 도구를 쓴 뒤
+{ "hook_event_name": "PostToolUse", "session_id": "demo-1", "cwd": "/Users/me/club-app", "tool": "claude", "tool_name": "Edit",
+  "step": { "verb": "고쳤어요", "what": "src/signup.js", "add": 12, "del": 3 } }
 ```
 
 ### 3-3. `GET /api/events?since=N` — 화면이 새 알림을 묻는다
@@ -160,7 +186,7 @@
 
 - **누가:** 사람(시연 전, [README](README.md) "기록 비우기"의 curl 한 줄). 화면에는 아직 버튼이 없다.
 - **확인:** 출처 + 확인 값. **본문:** 없음(보내도 읽지 않는다).
-- **성공:** `{ "ok": true, "cleared": 3 }` — 지운 알림 수. 세션 대화도 같이 지운다. `latest`는 그대로다(열어 둔 화면이 새 알림을 놓치지 않게).
+- **성공:** `{ "ok": true, "cleared": 3 }` — 지운 알림 수. 세션 대화도 같이 지운다. **한 일(3-12)과 세션 상태도 비운다**(2026-10-20 — `cleared`에는 세지 않는다). `latest`는 그대로다(열어 둔 화면이 새 알림을 놓치지 않게).
 - **거절:** 403 출처 · 403 확인 값.
 
 ### 3-5. `GET /api/usage` — 어느 AI로, 얼마나 썼나
@@ -341,6 +367,39 @@
 - **거절:** 403 출처 · 403 확인 값(본문 · AI 전에) · 502 AI가 실패(이유는 2-2와 같은 한 줄, 예: `claude 명령을 찾지 못함 — …`).
 - 2026-10-19 이재엽의 Mac에서 `claude -p`로 한 번 불러 200(`tokens` 6,374 — CLI가 세는 값)을 봤다.
 
+<!-- claude-drafted: 2026-10-20 — AI 진행(C-12, 이재엽 "이건 바이브 코딩이 아니야"): 단계 · 판정 · 토큰과 섞지 않는 지켜보기 전용 -->
+### 3-12. `GET /api/steps?since=N` — 모아 보기 창이 AI가 한 일을 묻는다
+
+- **누가:** 모아 보기 창(`02-frontend/hub/`)의 AI 진행 공간 — 쿠키로. 서버 없이 열면 부르지 않고 [steps.js](steps.js)의 `EXAMPLE`(예시 세션)을 보인다(FR-10).
+- **확인:** 출처 + 확인 값(쿠키 `nav_event_token` 또는 머리글 `X-Nav-Token`).
+- **요청:** `since` — 이 번호보다 뒤의 한 일만. 없거나 숫자가 아니면 0(남아 있는 것 전부). 번호는 3-2-1의 `seq`(알림 번호 3-3과 다른 줄).
+- **성공:**
+
+| 칸 | 타입 | 뜻 |
+|---|---|---|
+| `latest` | 정수 | 지금까지 매긴 한 일의 마지막 번호. 기록을 비워도 되돌리지 않는다 |
+| `sessions` | 목록(최대 10) | 세션(프로젝트), **최근에 쓴 것부터**. 한 일이 `since` 뒤에 없어도 세션은 보인다(상태를 보이려고) |
+| `sessions[].id` | 글 | `tool:session_id` (예: `claude:demo-1`) |
+| `sessions[].project` | 글 | 작업 폴더의 마지막 이름(가림 규칙 적용) |
+| `sessions[].tool` | `"claude"` · `"codex"` | 어느 도구인지 |
+| `sessions[].state` | `"working"` · `"done"` · `""` | 요청 받음 뒤 · 작업 마침 뒤 · 아직 둘 다 안 옴(한 일만 왔다) |
+| `sessions[].at` | 숫자 | 이 세션에 마지막으로 무엇이든 온 시각(밀리초) |
+| `sessions[].steps` | 목록(최대 50) | `seq`가 `since`보다 큰 한 일, 오래된 것부터 |
+| `steps[].seq` · `at` | 정수 · 숫자 | 번호 · 받은 시각(밀리초) |
+| `steps[].verb` · `what` · `add` · `del` | 3-2-1과 같음 | 가린 뒤의 글(80자까지). `what`이 비었으면 도구 이름 |
+
+- **화면이 그리는 법:** `NavSteps.line(step)` → `"고쳤어요 · src/signup.js (+12 −3)"`. 비밀값 모양은 이미 `[비밀값]`으로 와 있다.
+- **거절:** 403 출처 · 403 확인 값 · GET이 아니면 404(확인 값을 본 뒤).
+
+```jsonc
+// GET /api/steps?since=0
+{ "ok": true, "latest": 12, "sessions": [
+  { "id": "claude:demo-1", "project": "club-app", "tool": "claude", "state": "working", "at": 1792316180211,
+    "steps": [
+      { "seq": 11, "at": 1792316170004, "verb": "읽었어요", "what": "src/signup.js", "add": 0, "del": 0 },
+      { "seq": 12, "at": 1792316180211, "verb": "고쳤어요", "what": "src/signup.js", "add": 12, "del": 3 } ] } ] }
+```
+
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 
 `02-frontend/navigator/app.js`가 보내는 칸·읽는 칸을 서버와 맞대었다. 화면 코드는 고치지 않았다.
@@ -369,3 +428,4 @@
 - 할 일 문장은 시험에 적지 않는다 — `criteriaFor`로 세고 서버 데이터와 맞댄다. 판정 규칙이 바뀌어도 시험은 그대로다.
 - 확인하는 것: 주소마다 성공 모양(칸 이름·타입·개수), 거절마다 상태 코드와 이유, 등급(안 보냄·`null`·`Full`이 같음, Xpress·Lite는 그 등급의 개수), 확인 값(머리글·쿠키·머리글 먼저), 크기(40,000자 경계), 화면 파일 목록, 키·글이 사용량·녹화에 남지 않는 것.
 - 처음 설정(3-10 · 3-11)은 [`setup-api.test.js`](../../04-tests/navigator/setup-api.test.js) — 칸과 값이 새지 않는 것, 확인 값, 재생 중 확인, 스크립트 · 스타일의 `no-cache`(2026-10-19).
+- AI 진행(3-2-1 · 3-12, 2026-10-20)은 `api-contract.test.js`(403 · 모양 · since · 가림 · 50줄 · 비우기 · 상태)와 [`hook-steps.test.js`](../../04-tests/navigator/hook-steps.test.js)(hook.js를 실제로 돌려 — 본문에 내용이 없고, 서버가 꺼져 있을 때 600ms 안에 끝남).
