@@ -7,5 +7,7 @@ contextBridge.exposeInMainWorld("floeApp", {
   openSettings: () => ipcRenderer.invoke("floe:open-settings"), // .env를 두는 앱 설정 폴더 열기
   saveKey: (key, baseUrl) => ipcRenderer.invoke("floe:save-key", { key, baseUrl }),   // API 키(와 중계 서버 주소)를 넣는다
   clearKey: () => ipcRenderer.invoke("floe:clear-key"),       // 키를 뺀다 — 그다음부터 이 컴퓨터의 Claude Code로
+  // 창 밖의 커서 — 플로로의 눈이 따라오게(2026-10-19). 돌려주는 함수를 부르면 그만 듣는다
+  onCursor: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:cursor", h); return () => ipcRenderer.removeListener("floe:cursor", h); },
   resize: (w, h) => ipcRenderer.send("floe:resize", w, h),     // 창을 지금 보이는 섬(띠 · 한 줄 · 펼침) 크기에 맞춘다 — 투명한 빈 영역이 뒤 창의 클릭을 가로채지 않게
 });
