@@ -12,7 +12,7 @@
 | `prebuild.js` | 묶기 전에 화면 · 서버를 `payload/`로 복사(node_modules · `.env*` · 문서 제외). git에 올리지 않는다 |
 | `package.json` | Electron 44.9.0 · electron-builder 26.15.3(4.0.0에서 33 · 25에서 올림 — 이 Mac은 macOS 26이라 옛 Electron의 입력 · 창 문제를 피하려고) · `@anthropic-ai/sdk`(내 키로 쓸 때) · 묶기 설정(`build`: mac dmg · win nsis · **linux AppImage + deb**, `homepage` · `author`는 deb가 요구하는 칸 — 사람 메일은 없다) |
 
-> **플로로의 눈(2026-10-19, 앱 6.0.1):** 화면은 자기 창 안의 마우스만 안다 — 창이 섬 크기라 커서는 거의 늘 창 밖이어서, `main.js`가 바탕 화면 커서를 1초에 20번까지 읽어 **창 밖일 때만** 화면에 보낸다(`preload.js` `onCursor`, `lib.js` `cursorMsg`). 눈만 따라오고 졸음은 깨우지 않는다.
+> **플로로의 눈(2026-10-19, 앱 6.0.1):** 화면은 자기 창 안의 마우스만 안다 — 창이 섬 크기라 커서는 거의 늘 창 밖이어서, `main.js`가 바탕 화면 커서를 1초에 30번까지 읽어 **창 밖일 때만** 화면에 보낸다(`preload.js` `onCursor`, `lib.js` `cursorMsg`). 눈만 따라오고 졸음은 깨우지 않는다. 화면은 받은 점으로 바로 뛰지 않고 프레임마다 미끄러져 간다(`seal.js` `glide`, F-27 — 바로 뛰면 1초 20~30번의 계단이 보인다). 이 창은 거의 늘 포커스가 없으니 `backgroundThrottling`을 꺼 프레임이 느려지지 않게 했다.
 
 ## 켜기 · 묶기
 

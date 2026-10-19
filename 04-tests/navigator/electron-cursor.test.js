@@ -1,6 +1,7 @@
 // claude-drafted: 2026-10-19 — 이재엽 "플로로가 자기 오버레이가 아니면 마우스커서를 따라오지 못하는 문제".
 // 화면은 자기 창 안의 mousemove만 받는데, 앱 창이 섬 크기로 줄어든 뒤(앱 3.0.1)로는 커서가 거의 늘 창 밖이다.
-// 그래서 앱(main.js)이 바탕 화면의 커서를 1초에 20번까지 읽어 창 밖일 때만 화면에 보낸다(preload onCursor). electron 모듈 없이 돈다.
+// 그래서 앱(main.js)이 바탕 화면의 커서를 1초에 30번까지 읽어 창 밖일 때만 화면에 보낸다(preload onCursor). electron 모듈 없이 돈다.
+// 2026-10-19 F-27(이재엽 "창 밖에 있을 때 부드럽지 못해"): 화면은 받은 점으로 바로 뛰지 않고 프레임마다 미끄러져 간다(seal.js glide) — 20번 → 30번도 그때.
 // 실행: node --test 04-tests/navigator/electron-cursor.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -28,21 +29,27 @@ test("창 안이면 보내지 않는다 — 화면의 mousemove가 맡는다. �
   assert.equal(L.cursorMsg({ x: 1, y: 1 }, null, null), null);
 });
 
-test("앱이 커서를 보내고, 창이 닫히면 멈춘다 — 1초에 20번까지", () => {
+test("앱이 커서를 보내고, 창이 닫히면 멈춘다 — 1초에 30번까지, 창이 포커스를 잃어도 화면을 느리게 하지 않는다", () => {
   const main = read("electron/main.js");
   assert.match(main, /getCursorScreenPoint\(\)/);
   assert.match(main, /L\.cursorMsg\(/);
   assert.match(main, /webContents\.send\("floe:cursor"/);
-  assert.match(main, /\}, 50\);/, "50ms마다");
+  assert.match(main, /\}, 33\);/, "33ms마다");
+  assert.match(main, /backgroundThrottling: false/, "포커스 없는 창의 requestAnimationFrame이 느려지면 미끄러짐이 끊긴다");
   assert.match(main, /clearInterval\(cursorTick\)/, "창이 닫히면 멈춘다");
   assert.match(read("electron/preload.js"), /onCursor: \(cb\) =>[^\n]*ipcRenderer\.on\("floe:cursor"/);
 });
 
-test("내비게이터 · 서고 모두 창 밖 커서로 눈을 움직인다 — 졸음은 깨우지 않는다(activity는 이 창을 쓸 때만)", () => {
+test("내비게이터 · 서고 모두 창 밖 커서로 눈을 미끄러져 움직인다 — 졸음은 깨우지 않는다(activity는 이 창을 쓸 때만), 창 안 mousemove는 바로", () => {
   for (const f of ["navigator/app.js", "library/library.js"]) {
-    const line = read(f).split("\n").find((l) => l.includes("floeApp.onCursor"));
-    assert.ok(line, `${f}에 onCursor`);
-    assert.match(line, /follow\(/, `${f}: 눈을 움직인다`);
-    assert.doesNotMatch(line, /activity\(/, `${f}: 창 밖 커서로 졸음을 깨우지 않는다`);
+    const lines = read(f).split("\n"), at = lines.findIndex((l) => l.includes("window.floeApp.onCursor)"));
+    assert.ok(at > 0, `${f}에 onCursor`);
+    const block = lines.slice(at, at + 12).join("\n");
+    assert.match(block, /glide\(point, target, now - last\)/, `${f}: 받은 점으로 바로 뛰지 않고 미끄러져 간다`);
+    assert.match(block, /follow\(/, `${f}: 눈을 움직인다`);
+    assert.match(block, /requestAnimationFrame\(step\)/, `${f}: 프레임마다`);
+    assert.doesNotMatch(block, /activity\(/, `${f}: 창 밖 커서로 졸음을 깨우지 않는다`);
+    const move = lines.slice(lines.findIndex((l) => l.includes('addEventListener("mousemove"')), at).join("\n");
+    assert.match(move, /target = null/, `${f}: 창 안으로 들어오면 미끄러지던 것을 멈추고 바로 따라간다`);
   }
 });

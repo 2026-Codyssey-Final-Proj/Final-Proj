@@ -79,6 +79,21 @@ test("run — 조각을 합쳐 CHANGELOG에 쓰고 조각을 지운다, README.m
   assert.match(logs[0], /^v7\.2 ← changes\/gate-copy\.md/);
 });
 
+test("run — 이번 push에 없는 조각은 지난 병합 커밋(history)에서 PR 번호를 찾고, '하나뿐이면 push의 번호' 추정은 history를 빌리지 않는다", () => {
+  const files = { "CHANGELOG.md": CHANGELOG, "changes/gate-copy.md": FRAG, "changes/old-fix.md": FRAG.replace("임유정", "두승현"),
+    "event.json": JSON.stringify({ commits: [{ message: "Merge pull request #140 from org/v2/gate-copy" }] }) };
+  const history = () => ["Merge pull request #140 from org/v2/gate-copy", "Merge pull request #128 from org/v2/old-fix", "docs: 아무것"];
+  const io = { eventPath: "event.json", history, list: () => ["gate-copy.md", "old-fix.md"], read: (p) => files[p] || "", write: (p, t) => { files[p] = t; }, remove: () => {}, log: () => {} };
+  assert.equal(F.run(io), 0);
+  assert.match(files["CHANGELOG.md"], /\| v7\.2 \| [^|]+ \| 임유정 \| 게이트 문구 고침 \(#140\) \|/);
+  assert.match(files["CHANGELOG.md"], /\| v7\.3 \| [^|]+ \| 두승현 \| 게이트 문구 고침 \(#128\) \|/, "지난 병합 커밋에서 찾은 번호");
+
+  const lone = { "CHANGELOG.md": CHANGELOG, "changes/other-name.md": FRAG, "event.json": JSON.stringify({ commits: [{ message: "docs: 번호 없음" }] }) };
+  const io2 = { eventPath: "event.json", history, list: () => ["other-name.md"], read: (p) => lone[p] || "", write: (p, t) => { lone[p] = t; }, remove: () => {}, log: () => {} };
+  assert.equal(F.run(io2), 0);
+  assert.match(lone["CHANGELOG.md"], /\| 게이트 문구 고침 \| `02-frontend\/` \|/, "이름이 안 맞고 이번 push에 PR이 없으면 history의 번호를 빌리지 않는다");
+});
+
 test("run — 조각이 없으면 아무것도 쓰지 않고 0", () => {
   let wrote = false;
   const io = { list: () => ["README.md"], read: () => "", write: () => { wrote = true; }, remove: () => {}, log: () => {} };

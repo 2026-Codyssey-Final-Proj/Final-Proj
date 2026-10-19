@@ -74,20 +74,22 @@ function createWindow() {
   NOTCH = L.notchLayout(PROBE, disp.bounds, W, H);
   win = new BrowserWindow({ width: W, height: H, x: NOTCH ? NOTCH.x : Math.max(0, Math.round((width - W) / 2)), y: NOTCH ? NOTCH.y : 0, frame: false, transparent: true, hasShadow: false,
     alwaysOnTop: true, resizable: false, minimizable: true, title: "Floe", useContentSize: true,
-    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+    // backgroundThrottling 끔(F-27): 사용자는 거의 늘 다른 창(코딩 도구)을 쓰고 있어 이 창은 포커스가 없다 — 그때 화면의 requestAnimationFrame이 느려지면 눈이 미끄러져 가는 것이 끊긴다
+    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false } });
   // 노치가 있으면 메뉴 줄보다 위 레벨(screen-saver)로 올린 뒤 자리를 다시 둔다 — floating 레벨의 창은 메뉴 줄 아래로 밀린다. 레벨을 먼저 올리고 자리를 놓는다
   if (NOTCH) { win.setAlwaysOnTop(true, NOTCH.level); win.setContentBounds({ x: NOTCH.x, y: NOTCH.y, width: W, height: H }, false); }
   else win.setAlwaysOnTop(true, "floating");
   win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서. 노치 모양에서도 켜지 않는다(사람이 켜 본 뒤 정한다)
   // 노치 크기를 화면에 — 띠를 노치와 같은 검정 · 노치 폭으로(app.css .notch). 서고에 갔다 돌아와도(다시 load) 매번 보낸다
   win.webContents.on("did-finish-load", () => { if (NOTCH && win) win.webContents.send("floe:notch", { width: PROBE.notch.width, height: PROBE.notch.height }); });
-  // 창 밖 커서를 화면에 알린다 — 플로로의 눈이 바탕 화면 어디든 따라오게(2026-10-19). 1초에 20번까지, 창 안이거나 그대로면 보내지 않는다
+  // 창 밖 커서를 화면에 알린다 — 플로로의 눈이 바탕 화면 어디든 따라오게(2026-10-19). 1초에 30번까지(F-22는 20번 — F-27에서 올림, 화면은 받은 점 사이를 미끄러져 간다),
+  // 창 안이거나 그대로면 보내지 않는다
   let lastCursor = null;
   const cursorTick = setInterval(() => {
     if (!win || win.isDestroyed() || !win.isVisible() || win.isMinimized()) return;
     const m = L.cursorMsg(screen.getCursorScreenPoint(), win.getContentBounds(), lastCursor);
     if (m) { lastCursor = m; win.webContents.send("floe:cursor", m); }
-  }, 50);
+  }, 33);
   win.on("closed", () => { clearInterval(cursorTick); win = null; });
   // 화면의 바깥 링크(처음 설정의 'Claude Code 설치 안내' 등)는 앱 창이 아니라 기본 브라우저로
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });

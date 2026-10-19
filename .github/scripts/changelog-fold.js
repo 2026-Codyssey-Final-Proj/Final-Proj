@@ -2,7 +2,8 @@
 // 동시에 열린 PR이 반드시 같은 줄에서 부딪친다(10/19 하루에 PR 넷이 v4.0을 골랐다). 그래서 PR은 `changes/<브랜치>.md` 조각 파일 하나만 두고,
 // main에 올라오면(.github/workflows/jira-release.yml) 이 스크립트가 조각을 CHANGELOG.md 맨 위 버전의 **다음 번호**로 합쳐 넣고 조각을 지운다.
 // 버전은 "올린 사람이 고른다"에서 "병합될 때 정해진다"로 바뀐다 — 조각의 `종류`(큰 묶음 → N+1.0, 작은 고침 → M+1)만 사람이 고른다.
-// 조각끼리는 파일이 달라 부딪치지 않는다. 날짜는 한국 시간. 병합 커밋의 "Merge pull request #N from …/<브랜치>"에서 PR 번호를 찾아 "무엇" 끝에 (#N)을 붙인다.
+// 조각끼리는 파일이 달라 부딪치지 않는다. 날짜는 한국 시간. 병합 커밋의 "Merge pull request #N from …/<브랜치>"에서 PR 번호를 찾아 "무엇" 끝에 (#N)을 붙인다 —
+// 이번 push의 커밋뿐 아니라 지난 병합 커밋(git log, io.history)도 본다: Action이 생기기 전에 병합된 조각이나 앞 실행이 실패해 남은 조각도 제 PR 번호를 받게.
 // 네트워크 없음, 비밀값 없음. 시험: 04-tests/repo/changelog-fold.test.js
 "use strict";
 
@@ -79,6 +80,8 @@ function run(io) {
   let event = {};
   try { event = JSON.parse(io.read(io.eventPath || "") || "{}"); } catch {}
   const prs = prNumbers((event.commits || []).map((c) => c && c.message));
+  const past = prNumbers(io.history ? io.history() : []);
+  prs.byBranch = { ...past.byBranch, ...prs.byBranch };   // 브랜치 이름으로만 빌려 온다 — "조각 하나 = 이 push의 PR" 추정(all)은 이번 push만
   const fragments = names.map((n) => ({ name: n.replace(/\.md$/, ""), text: io.read(`changes/${n}`) }));
   const r = fold(io.read("CHANGELOG.md"), fragments, { prs });
   for (const e of r.errors) io.log(`::error::조각 파일이 이상해요 — ${e} (changes/README.md)`);
@@ -93,8 +96,10 @@ module.exports = { parseFragment, nextVersion, kstDate, prNumbers, fold, run };
 
 if (require.main === module) {
   const fs = require("node:fs");
+  const { execFileSync } = require("node:child_process");
   const io = {
     eventPath: process.env.GITHUB_EVENT_PATH,
+    history: () => { try { return execFileSync("git", ["log", "--format=%s", "-n", "200"], { encoding: "utf8" }).split("\n"); } catch { return []; } },
     list: (d) => { try { return fs.readdirSync(d); } catch { return []; } },
     read: (p) => { try { return fs.readFileSync(p, "utf8"); } catch { return ""; } },
     write: (p, t) => fs.writeFileSync(p, t),

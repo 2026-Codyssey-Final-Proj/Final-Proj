@@ -134,6 +134,7 @@ test("워크플로는 main push에서만 돌고, 저장소 쓰기는 CHANGELOG �
   assert.doesNotMatch(wf, /pull_request_target|pull_request:/, "PR 이벤트에서는 비밀값을 쓰지 않는다");
   // 2026-10-19: 조각(changes/*.md)을 CHANGELOG에 합쳐 main에 커밋하므로 contents: write — 그 대신 add 하는 경로를 둘로 못 박고 main에만 push 한다
   assert.match(wf, /permissions:\s*\n\s*contents:\s*write/);
+  assert.match(wf, /fetch-depth:\s*\d{2,}/, "changelog-fold.js가 지난 병합 커밋에서 PR 번호를 찾으려면 깊이가 필요하다");
   assert.match(wf, /git add CHANGELOG\.md changes\n/);
   assert.match(wf, /git push origin HEAD:main\n/);
   assert.doesNotMatch(wf, /--force/);

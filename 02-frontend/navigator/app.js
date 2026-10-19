@@ -1130,16 +1130,27 @@
   }
 
   // 눈은 마우스를 따라온다. 글 칸에 들어가면 글 칸을 본다. 깜빡임은 들쭉날쭉하게
-  let point = null, raf = 0;
+  let point = null, raf = 0, target = null;
   if (!STILL) {
     document.addEventListener("mousemove", (e) => {
-      point = { x: e.clientX, y: e.clientY };
+      point = { x: e.clientX, y: e.clientY }; target = null;   // 창 안이면 바로 — 미끄러지던 것은 멈춘다
       if (!raf) raf = requestAnimationFrame(() => {
         raf = 0; activity(); C.follow(isPhone() ? $phone : $nav, point);
       });
     });
-    // 앱(Electron) 안이면 창 밖의 커서도 — 창이 섬 크기라 커서는 거의 늘 창 밖이다(2026-10-19). 눈만 따라오고, 졸음을 깨우지는 않는다(activity는 이 창을 쓸 때만)
-    if (window.floeApp && window.floeApp.onCursor) window.floeApp.onCursor((p) => { point = p; C.follow(isPhone() ? $phone : $nav, p); });
+    // 앱(Electron) 안이면 창 밖의 커서도 — 창이 섬 크기라 커서는 거의 늘 창 밖이다(2026-10-19). 눈만 따라오고, 졸음을 깨우지는 않는다(activity는 이 창을 쓸 때만).
+    // 앱은 1초에 30번만 보내 주니 받은 점으로 바로 뛰지 않고 프레임마다 미끄러져 간다(C.glide — F-27, 창 안의 mousemove는 위처럼 바로)
+    if (window.floeApp && window.floeApp.onCursor) {
+      let glideRaf = 0, last = 0;
+      const step = (now) => {
+        glideRaf = 0;
+        if (!target) return;
+        const g = C.glide(point, target, now - last); last = now;
+        point = { x: g.x, y: g.y }; C.follow(isPhone() ? $phone : $nav, point);
+        if (g.done) target = null; else glideRaf = requestAnimationFrame(step);
+      };
+      window.floeApp.onCursor((p) => { target = p; if (!glideRaf) { last = performance.now(); glideRaf = requestAnimationFrame(step); } });
+    }
     (function blink() {
       setTimeout(() => {
         document.body.classList.add("blink");
