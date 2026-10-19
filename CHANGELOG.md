@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v8.2 | 2026-10-20 | 이재엽 | 요구 후보 C-10 켜짐과 인사 · C-11 모아 보기 창(바이브 코딩 · 알림) · C-12 AI 진행(Claude Code가 하는 일 — 바이브 코딩과 따로)을 requirements.md에, 페이블 세션 넘김 문서(만드는 법 · 시험 · 앱 버전업 · 릴리스 노트 초안), 고칠 목록 F-28 · F-29(우선순위 문서의 낡은 상태 고침), legal.md D-1에 coucou 라이선스 원문 확인 (#134) | `01-docs/00-overview/` · `01-docs/07-maintenance/` · `changes/` |
 | v8.1 | 2026-10-19 | 이재엽 | 요구 후보 C-9 "책 레이아웃 고르기"(구조 고르기 · 칸 켜기/끄기, Notion 페이지 설정 참고)를 requirements.md 2-2에 — 확정 전, 범위 · 11/3 안에 넣을지는 미정. #124가 main이 아닌 브랜치로 병합돼 최신 main에 다시 적용 (#132) | `01-docs/00-overview/` |
 | v8.0 | 2026-10-19 | 이재엽 | Mac에서 섬이 노치(다이내믹 아일랜드) 자리에 붙음 — Swift 도우미(notch-probe)로 노치 크기를 읽어 창을 메뉴 줄 위에 놓고, 노치가 없는 Mac · 리눅스 · 윈도우는 전처럼 위쪽 가운데 (F-번호 없음, 요구 후보 C-5 오버레이의 Mac 자리) (#128) | `02-frontend/electron/` · `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/` |
 | v7.3 | 2026-10-19 | 이재엽 | 2026-10-19 버튼 결정 넷을 기록 — FR-8 범위 줄임 "Go"(알고 정함, 발표 근거는 판정 규칙 중심)를 requirements.md 13-1과 주력 문구 다섯 곳(canvas · team-priorities · schedule S4 · 서재 README)에, 인수인계 C의 캔버스 파일 "Hold" · CHANGELOG 조각 "Go" (#130) | `01-docs/00-overview/` · `01-docs/features/05-library/` |
