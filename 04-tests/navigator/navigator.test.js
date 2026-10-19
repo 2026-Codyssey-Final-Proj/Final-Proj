@@ -447,11 +447,11 @@ test("연결: 글자 수가 넘치면 오래된 말부터 버린다", () => {
   assert.equal(recent([], 70), "");
 });
 
-test("연결: 훅은 두 개만 더하고, 두 번 해도 하나씩이고, 다른 설정·훅은 그대로 둔다", () => {
+test("연결: 훅은 세 개만 더하고(2026-10-20 C-12로 PostToolUse 추가), 두 번 해도 하나씩이고, 다른 설정·훅은 그대로 둔다", () => {
   const mine = { hooks: [{ type: "command", command: "echo 내 훅" }] };
   const before = { model: "sonnet", hooks: { Stop: [mine] } };
   const once = Connect.addHooks(before), twice = Connect.addHooks(once);
-  assert.deepEqual(Object.keys(once.hooks).sort(), ["Stop", "UserPromptSubmit"]);
+  assert.deepEqual(Object.keys(once.hooks).sort(), ["PostToolUse", "Stop", "UserPromptSubmit"]);
   assert.deepEqual(twice, once, "두 번 해도 같다");
   assert.equal(once.model, "sonnet");
   assert.deepEqual(once.hooks.Stop[0], mine, "원래 있던 훅은 그대로");

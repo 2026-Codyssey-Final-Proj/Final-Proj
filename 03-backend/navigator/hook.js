@@ -6,32 +6,42 @@
 // 아무것도 출력하지 않는다: UserPromptSubmit 훅의 출력은 Claude에게 전달되기 때문이다.
 // 확인 값(S3, claude-drafted: 2026-10-18): 서버가 만든 홈 폴더 파일(~/.navigator-event-token)을 부를 때마다 읽어 X-Nav-Token으로 보낸다.
 // 파일이 없으면(서버를 한 번도 안 켰으면) 값 없이 보내고 서버가 거절한다 — 그래도 조용히 끝난다.
+// claude-drafted: 2026-10-20 — 이재엽 요청(C-12 AI 진행 — Claude Code가 하는 일 보기): 도구를 쓸 때마다 오는 PostToolUse도 받는다.
+//   steps.js로 {verb, what, add, del}(말 · 이름이나 첫 줄 · 줄 수)만 만들어 보낸다 — tool_input · tool_response는 절대 싣지 않는다.
+//   Claude Code는 훅이 끝날 때까지 기다리므로 이 알림은 답을 기다리지 않는다: 본문을 다 보내면 바로 끝나고, 요청 상한도 300ms다 [제안].
 const http = require("node:http");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const Steps = require("./steps.js");
 const PORT = Number(process.env.NAV_PORT) || 4317;
 const TOOL = process.argv[2] === "codex" ? "codex" : "claude";
 const TOKEN_FILE = process.env.NAV_EVENT_TOKEN_FILE || path.join(os.homedir(), ".navigator-event-token");
+const STEP_TIMEOUT = 300;   // PostToolUse — 도구마다 불리므로 짧게 [제안 2026-10-20]
+const TALK_TIMEOUT = 1500;   // UserPromptSubmit · Stop — 전과 같다
 
 let input = "";
 process.stdin.on("data", (d) => (input += d));
 process.stdin.on("end", () => {
   let ev;
   try { ev = JSON.parse(input); } catch { return; }
+  if (!ev || typeof ev !== "object") return;
+  const isStep = ev.hook_event_name === "PostToolUse";
   // 요청을 받을 때는 사용자의 요청(prompt), 작업을 마칠 때는 Claude의 마지막 답(last_assistant_message)만 넘긴다
   // 아주 긴 답은 앞 16,000자만 보낸다(claude-drafted: 2026-10-18, API.md 4절 10번) — 서버 본문 한도(4만 자)에 걸려 알림이 버려지지 않게.
   // 서버는 가린 뒤 앞 4,000자만 쓰므로, 여기서 자른 자리에 걸친 키 조각은 서버가 버리는 뒷부분에 있다(4,000자에서 자르면 반쪽 키가 가림을 피할 수 있다)
   const cut = (t) => (typeof t === "string" ? t.slice(0, 16000) : t);
-  const body = JSON.stringify({
-    hook_event_name: ev.hook_event_name, session_id: ev.session_id, cwd: ev.cwd,
-    prompt: cut(ev.prompt), last_assistant_message: cut(ev.last_assistant_message), tool: TOOL,
-  });
+  const body = JSON.stringify(isStep
+    // 도구를 쓴 뒤(PostToolUse): 이름 · 첫 줄 · 줄 수만. 입력 · 결과 · 대화는 싣지 않는다
+    ? { hook_event_name: ev.hook_event_name, session_id: ev.session_id, cwd: ev.cwd, tool: TOOL, tool_name: ev.tool_name, step: Steps.fromHook(ev) }
+    : { hook_event_name: ev.hook_event_name, session_id: ev.session_id, cwd: ev.cwd, prompt: cut(ev.prompt), last_assistant_message: cut(ev.last_assistant_message), tool: TOOL });
   let token = "";
   try { token = fs.readFileSync(TOKEN_FILE, "utf8").trim(); } catch {}
-  const req = http.request({ host: "127.0.0.1", port: PORT, path: "/api/event", method: "POST", timeout: 1500,
+  const req = http.request({ host: "127.0.0.1", port: PORT, path: "/api/event", method: "POST", timeout: isStep ? STEP_TIMEOUT : TALK_TIMEOUT,
     headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(body), ...(token && { "X-Nav-Token": token }) } }, (res) => res.resume());
   req.on("error", () => {});
   req.on("timeout", () => req.destroy());
+  // PostToolUse는 답을 기다리지 않는다 — 본문이 소켓으로 다 나가면(finish) 소켓을 놓아 프로세스가 바로 끝나게 한다. 서버는 받은 본문을 그대로 처리한다
+  if (isStep) req.on("finish", () => { if (req.socket) req.socket.unref(); });
   req.end(body);
 });
