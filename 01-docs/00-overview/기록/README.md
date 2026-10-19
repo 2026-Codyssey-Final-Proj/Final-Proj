@@ -11,6 +11,7 @@
 | [team-handoff-demo.md](team-handoff-demo.md) | 2026-10-15 | 팀원에게 보낼 시연 화면 안내문 초안 |
 | [work-split-2026-10-16.md](work-split-2026-10-16.md) | 2026-10-16 | 이슈 정리와 사람별 할 일 |
 | [risk-plan.md](risk-plan.md) | 2026-10-16 | 위험 3가지와 해결 방안 |
+| [session-handoff-2026-10-19.md](session-handoff-2026-10-19.md) | 2026-10-19 | 세션 인수인계 — 지금 상태, 이어 받을 일(지우기 결정 다시 적용 · C-9), 병합하다 못 고치는 곳을 어떻게 할지(제안) |
 
 ## 지금 상태는
 
