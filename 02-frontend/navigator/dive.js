@@ -11,9 +11,12 @@
 //   ③ 물방울 22 → 12개, will-change ④ 정한 시간(setTimeout)에 넘기지 않고 물 · 플로로의 움직임이 **끝나면**(finished) 넘긴다 — 멈춤 막이로 상한(OUT_CAP · LEAVE_CAP)은 남긴다
 //   ⑤ 새 페이지의 첫 그림에도 물방울이 있게 — 이 파일이 #dive-cover 바로 뒤에서 읽히며 머리의 dive-in · surfacing 표시를 보고 바로 채운다(fill은 한 번만)
 //   창 크기 · 페이지 넘김에서 오는 끊김(넘김 문서 5절 ①·③)은 이번에 손대지 않았다
-(function () {
-  const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const CAN = !STILL && typeof Element.prototype.animate === "function";
+// claude-drafted: 2026-10-20 — F-37(PR #139 리뷰: 물이 화면 오른쪽을 다 덮지 못함): 판의 끝 transform 계산을 순수 함수 coverTransform으로 빼서 Node에서도 재게 했다(dive.test.js).
+//   그래서 이 파일은 브라우저가 아니어도 읽힌다(화면 일은 window가 있을 때만).
+(function (root) {
+  const BROWSER = typeof window !== "undefined" && typeof document !== "undefined";
+  const STILL = BROWSER && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const CAN = BROWSER && !STILL && typeof Element.prototype.animate === "function";
   const BUBBLES = 12;   // 2026-10-20 F-35: 22 → 12
 
   // 물속 — 빛줄기와 떠오르는 물방울. 같은 씨앗이라 두 페이지의 물방울 자리가 같다(넘어갈 때 튀지 않게). 한 번 채운 요소는 다시 채우지 않는다
@@ -25,7 +28,7 @@
     return el;
   }
   // 처음부터 물이 덮는 페이지(서고 #lib-dive · 작업 화면 &back)는 첫 그림부터 물방울이 있게 — 머리의 한 줄이 붙인 표시를 보고 바로 채운다(F-35 ⑤)
-  {
+  if (BROWSER) {
     const cover = document.getElementById("dive-cover"), h = document.documentElement;
     if (cover && (h.classList.contains("dive-in") || h.classList.contains("surfacing"))) fill(cover);
   }
@@ -42,6 +45,11 @@
   const floroSize = (W, H) => Math.round(Math.min(150, Math.max(90, Math.min(W, H) * 0.16)));
   const OUT_MS = 1150, OUT_CAP = 1450;   // 플로로가 내려가는 길이(끝나면 넘긴다) · 멈춤 막이 상한(2026-10-20 — 시간으로 넘기던 OUT_GO 1150을 끝나면으로)
   const WATER_MS = 700, OVER = 80;       // 물이 화면을 덮는 길이 · 화면보다 더 커지는 여유(둥근 모서리가 화면 밖으로 나간다)
+  // 섬 상자 r{left, top, width, height}에 둔 판(transform-origin 0 0)이 화면(W×H)을 over만큼 넘게 덮으려면 — {tx, ty, sx, sy}
+  function coverTransform(r, W, H, over = OVER) {
+    const sx = (W + over * 2) / r.width, sy = (H + over * 2) / r.height;
+    return { tx: -over - r.left, ty: -over - r.top, sx, sy };   // F-37: 전에는 r.left × sx — 판이 r.left × (sx − 1)만큼 더 왼쪽으로 가 오른쪽이 모자랐다
+  }
 
   // 나가기 — from: 커질 오버레이(섬), href: 넘어갈 주소. 플로로는 섬 한가운데에서 출발한다(2026-10-20 — 전에는 서고 탭 왼쪽 칸)
   function out(from, href) {
@@ -56,8 +64,8 @@
     pane.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;border-radius:${rad}px`;
     water.append(pane, fx);
     document.body.appendChild(water);
-    const sx = (W + OVER * 2) / r.width, sy = (H + OVER * 2) / r.height;
-    const paneAnim = pane.animate([{ transform: "none", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: `translate(${-OVER - r.left * sx}px,${-OVER - r.top * sy}px) scale(${sx},${sy})`, opacity: 1 }],
+    const c = coverTransform(r, W, H, OVER);
+    const paneAnim = pane.animate([{ transform: "none", opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: `translate(${c.tx}px,${c.ty}px) scale(${c.sx},${c.sy})`, opacity: 1 }],
       { duration: WATER_MS, easing: "cubic-bezier(.7,0,.2,1)", fill: "forwards" });
     fx.animate([{ opacity: 0 }, { opacity: 0, offset: 0.55 }, { opacity: 1 }], { duration: WATER_MS + 150, easing: "ease-out", fill: "forwards" });
 
@@ -154,5 +162,7 @@
     setTimeout(() => { add("splash"); setTimeout(() => made.forEach((s) => s.remove()), 800); }, 800);
   }
 
-  window.FloeDive = { out, arrive, jump, leave, surface, floroSize, fill };
-})();
+  const api = { out, arrive, jump, leave, surface, floroSize, fill, coverTransform, OVER };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else root.FloeDive = api;
+})(typeof window !== "undefined" ? window : globalThis);

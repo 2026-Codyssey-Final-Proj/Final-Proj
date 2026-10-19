@@ -35,7 +35,7 @@ test("app.js — 모드는 st.place(mode · home이라는 이름은 쓰지 않�
   assert.ok(!keep.includes('"place"') && !keep.includes('"pane"'), "기록(localStorage)에는 넣지 않는다 — 다음에 켤 때는 늘 기본");
   assert.match(app, /base: \(\) => \{ setPlace\("home"\); set\(\{ settings: false, pane: "" \}\); \}/, "집 — 열어 둔 판도 닫는다");
   assert.match(app, /"go-vibe": \(\) => \{ setPlace\("vibe"\); set\(\{ tab: "today"/, "바이브 코딩 단추 → 이번 단계");
-  assert.match(app, /if \(q\.base\) \{ st\.place = "base"; st\.pane = q\.pane === "alerts" \|\| q\.pane === "ai" \? q\.pane : ""; \} else setPlace\("scene"\);/, "주소 장면은 바이브 코딩, #base만 기본");
+  assert.match(app, /if \(q\.base\) \{ st\.place = "base"; st\.pane = q\.pane === "alerts" \|\| q\.pane === "ai" \? q\.pane : ""; \} else setPlace\(q\.back \? "library" : "scene"\);/, "주소 장면은 바이브 코딩, #base만 기본, 서고에서 돌아온 &back은 떠난 모드 그대로(F-36)");
   assert.match(app, /setPlace\("enter"\); st\.tab = "today"; go\("home"\);/, "모아 보기의 들어가기");
   assert.match(app, /if \(st\.place === "base"\) body = baseBody\(\);/);
 });

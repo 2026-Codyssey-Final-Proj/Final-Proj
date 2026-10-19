@@ -9,6 +9,21 @@ const path = require("node:path");
 const FRONT = path.join(__dirname, "../../02-frontend");
 const read = (f) => fs.readFileSync(path.join(FRONT, f), "utf8");
 const num = (src, name) => Number((new RegExp(`${name} = (\\d+)`).exec(src) || [])[1]);
+const Dive = require("../../02-frontend/navigator/dive.js");   // 2026-10-20 F-37: 브라우저가 아니어도 읽힌다 — 순수 계산(coverTransform)을 잰다
+
+// F-37(PR #139 리뷰): 물이 다 커진 끝 상자가 화면을 덮어야 한다 — 섬이 가운데 · 왼쪽 끝 · 오른쪽 끝 · 아래쪽에 있을 때
+test("물의 끝 자리(coverTransform) — 섬이 어디 있든 판의 끝 상자가 화면을 over만큼 넘게 덮는다(F-37)", () => {
+  const W = 1440, H = 900, over = 80;
+  for (const r of [{ left: 250, top: 14, width: 940, height: 335 }, { left: 0, top: 0, width: 940, height: 335 }, { left: 500, top: 14, width: 940, height: 335 }, { left: 100, top: 500, width: 600, height: 300 }]) {
+    const c = Dive.coverTransform(r, W, H, over), left = r.left + c.tx, top = r.top + c.ty;
+    assert.ok(Math.abs(left + over) < 1e-6, `${JSON.stringify(r)}: 왼쪽 ${left} (−${over}이어야)`);
+    assert.ok(Math.abs(top + over) < 1e-6, `${JSON.stringify(r)}: 위 ${top}`);
+    assert.ok(Math.abs(left + r.width * c.sx - (W + over)) < 1e-6, `${JSON.stringify(r)}: 오른쪽 ${left + r.width * c.sx} (${W + over}이어야)`);
+    assert.ok(Math.abs(top + r.height * c.sy - (H + over)) < 1e-6, `${JSON.stringify(r)}: 아래 ${top + r.height * c.sy}`);
+  }
+  assert.equal(Dive.OVER, 80);
+  assert.match(read("navigator/dive.js"), /const c = coverTransform\(r, W, H, OVER\);[\s\S]{0,200}translate\(\$\{c\.tx\}px,\$\{c\.ty\}px\) scale\(\$\{c\.sx\},\$\{c\.sy\}\)/, "out()이 이 계산을 쓴다");
+});
 
 test("서고로 들어가기 — 플로로는 섬 한가운데에서 출발해 그 자리에서 곧게 내려가고, 크기는 창의 짧은 변을 따른다", () => {
   const d = read("navigator/dive.js");
@@ -35,7 +50,7 @@ test("서고 전환 끊김(F-35) — 물은 clip-path 대신 둥근 판의 trans
   assert.doesNotMatch(d, /clipPath/, "clip-path 움직임이 없다");
   assert.doesNotMatch(d, /filter: "blur/, "서고 층 움직임에 blur가 없다");
   assert.match(d, /pane\.className = "pane"; fx\.className = "fx";/, "물은 판(.pane) + 물방울 · 빛줄기(.fx) 두 층");
-  assert.match(d, /scale\(\$\{sx\},\$\{sy\}\)/, "판을 늘린다(transform)");
+  assert.match(d, /scale\(\$\{c\.sx\},\$\{c\.sy\}\)/, "판을 늘린다(transform)");
   assert.match(d, /Promise\.all\(anims\.map\(\(a\) => a\.finished\)\)/, "끝나면 넘긴다");
   assert.match(d, /whenDone\(\[paneAnim, floroAnim\], OUT_CAP/, "나가기 — 물 · 플로로가 끝나면");
   assert.match(d, /whenDone\(anims, LEAVE_CAP/, "나오기 — 물(· 플로로)이 끝나면");
@@ -57,14 +72,14 @@ test("서고 → 작업 화면 — 물이 차오르고 플로로가 잠수한 �
   const d = read("navigator/dive.js"), lib = read("library/library.js"), nav = read("navigator/index.html"), app = read("navigator/app.js");
   assert.match(d, /function leave\(href, seal\)/);
   assert.match(d, /function surface\(\{ cover, island, done \}\)/);
-  assert.match(d, /window\.FloeDive = \{ out, arrive, jump, leave, surface, floroSize, fill \}/);
+  assert.match(d, /const api = \{ out, arrive, jump, leave, surface, floroSize, fill, coverTransform, OVER \};/);
   assert.match(lib, /a\.lib-out, a\.go\[href\*="navigator\/index\.html"\]/, "서고의 '작업 화면으로' · 입구의 링크를 가로챈다");
   assert.match(lib, /window\.FloeDive\.leave\(`\$\{a\.getAttribute\("href"\)\}&back`, seal\)/);
-  assert.match(lib, /prefers-reduced-motion: reduce\)"\)\.matches\) return;/, "움직임 줄이기면 그냥 넘어간다");
+  assert.doesNotMatch(lib.slice(lib.indexOf("a.lib-out"), lib.indexOf("a.lib-out") + 400), /prefers-reduced-motion/, "움직임 줄이기도 &back으로 간다(F-36) — 움직임만 없다(dive.js leave !CAN)");
   assert.match(nav, /if \(\/\[#&\]back\(&\|\$\)\/\.test\(location\.hash\)\) document\.documentElement\.classList\.add\("surfacing"\)/, "머리에서 바로");
   assert.match(nav, /<div class="dive" id="dive-cover" aria-hidden="true"><\/div>/);
   assert.match(read("navigator/dive.css"), /html:not\(\.dive-in\):not\(\.surfacing\) #dive-cover\{display:none\}/);
-  assert.match(app, /history\.replaceState\(null, "", `\$\{location\.pathname\}\$\{location\.hash\.replace\(\/&back/, "새로 고침하면 또 떠오르지 않게");
+  assert.match(app, /history\.replaceState\(null, "", st\.place === "base" \? location\.pathname : `\$\{location\.pathname\}\$\{location\.hash\.replace\(\/&back/, "새로 고침하면 또 떠오르지 않게 — 기본 화면이면 주소 끝을 통째로(F-36)");
   assert.match(app, /window\.FloeDive\.surface\(\{ cover: document\.getElementById\("dive-cover"\), island: \$nav\.firstElementChild/);
 });
 
