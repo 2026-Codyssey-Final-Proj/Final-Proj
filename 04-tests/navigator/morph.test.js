@@ -48,7 +48,7 @@ test("app.js — 모양이 바뀌면 바탕 껍데기(.shell)가 FLIP으로 움�
   assert.doesNotMatch(block, /animate\(\[[^\]]*(width|height|clipPath|filter|borderRadius)/, "너비 · 높이 · clip-path · filter를 움직이지 않는다(껍데기 크기는 처음에 한 번 둔다)");
   assert.match(app, /morphHold = p\.order === "animate-then-resize";/);
   assert.match(app, /if \(morphHold\) return;/, "measureSize — 줄어드는 동안 보내지 않는다");
-  assert.match(app, /if \(morphHold\) \{ morphHold = false; lastSize = ""; queueSize\(\); \}/, "끝나면 한 번 보낸다");
+  assert.match(app, /if \(last && morphHold\) \{ morphHold = false; lastSize = ""; queueSize\(\); \}/, "끝나면 한 번 보낸다 — 마지막 움직임만(F-38)");
   assert.match(app, /greetSkip \|\| h\.classList\.contains\("greeting"\) \|\| h\.classList\.contains\("surfacing"\) \|\| h\.classList\.contains\("diving"\)\) return;/, "인사 · 잠수 · 떠오름 중에는 하지 않는다");
   assert.match(app, /\$nav\.classList\.toggle\("peekroom", !!window\.floeApp && \(st\.ui === "hidden" \|\| st\.ui === "petit"\)\)/);
   assert.match(app, /r \+= MO\.RESERVE\.w \/ 2; b \+= MO\.RESERVE\.h;/, "접힌 창의 여유");
