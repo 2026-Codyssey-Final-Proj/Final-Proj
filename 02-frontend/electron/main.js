@@ -74,18 +74,36 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
   // Windows · Linux: 창 우클릭 → 같은 메뉴(메뉴 줄이 없으니). Mac은 위 메뉴 줄 그대로
   if (process.platform !== "darwin") win.webContents.on("context-menu", () => Menu.buildFromTemplate(floeItems()).popup({ window: win }));
+  // 서고 주소로 넘어가기 시작하면 창을 먼저 넓힌다(내비게이터의 '내 서고 들어가기' · '내 배움'은 화면이 floeApp.expand로도 부른다 — 둘 중 먼저 온 것이 넓힌다)
+  win.webContents.on("did-start-navigation", (ev, legacyUrl, _inPlace, legacyMain) => {
+    const url = typeof ev.url === "string" ? ev.url : legacyUrl, main = typeof ev.isMainFrame === "boolean" ? ev.isMainFrame : legacyMain;
+    const same = typeof ev.isSameDocument === "boolean" ? ev.isSameDocument : false;
+    if (main && !same && /\/library\//.test(String(url || ""))) expandWindow();
+  });
   win.loadURL(URL_);
 }
-// 화면이 알려 준 섬 크기로 창을 맞춘다 — 가로가 바뀌면 가운데를 유지하고(사용자가 옮긴 자리 기준), 세로는 위를 고정
-ipcMain.on("floe:resize", (e, w, h) => {
+// 화면이 알려 준 섬 크기로 창을 맞춘다 — 가로가 바뀌면 가운데를 유지하고(사용자가 옮긴 자리 기준), 세로는 위를 고정.
+// anchor="left"면 왼쪽 가장자리를 고정한다(설정 창이 섬 오른쪽에 열릴 때 — 섬은 그 자리에 있고 창만 오른쪽으로 넓어진다, 6.2.0).
+// 크기와 자리를 한 번에(setBounds) 바꾼다 — 따로 두 번 바꾸면 그 사이 한 프레임이 어긋나 보여 "따라오는 게 버벅"였다(이재엽 2026-10-19). 화면 밖으로 나가면 안쪽으로 당긴다
+ipcMain.on("floe:resize", (e, w, h, anchor) => {
   if (!win || e.sender !== win.webContents) return;
   const W = Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
-  const [cw, ch] = win.getContentSize();
-  if (Math.abs(cw - W) < 2 && Math.abs(ch - H) < 2) return;
-  const [x, y] = win.getPosition();
-  win.setContentSize(W, H, false);
-  win.setPosition(Math.max(0, Math.round(x + (cw - W) / 2)), y, false);
+  const b = win.getContentBounds();
+  if (Math.abs(b.width - W) < 2 && Math.abs(b.height - H) < 2) return;
+  const wa = screen.getDisplayMatching(b).workArea;
+  let x = anchor === "left" ? b.x : Math.round(b.x + (b.width - W) / 2);
+  x = Math.max(wa.x, Math.min(x, wa.x + wa.width - W));
+  win.setContentBounds({ x, y: b.y, width: W, height: H }, false);
 });
+// 서고로 들어갈 때(…/library/) 창을 화면만큼 넓힌다 — 섬 크기에 묶인 창에서는 서고가 커질 수 없었다(이재엽 2026-10-19 "서재도 오버레이가 커져야 하는데 커지지 못하는 상태").
+// 내비게이터로 돌아오면 화면이 다시 섬 크기를 보내 창이 줄어든다(floe:resize)
+function expandWindow() {
+  if (!win) return;
+  const b = win.getContentBounds(), wa = screen.getDisplayMatching(b).workArea;
+  const W = Math.min(1440, wa.width - 24), H = Math.min(960, wa.height - 24);
+  win.setContentBounds({ x: wa.x + Math.round((wa.width - W) / 2), y: wa.y + Math.round((wa.height - H) / 2), width: W, height: H }, false);
+}
+ipcMain.on("floe:expand", (e) => { if (win && e.sender === win.webContents) expandWindow(); });
 async function pickAndConnect(add) {
   const r = await dialog.showOpenDialog(win, { title: add ? "Claude Code로 작업하는 프로젝트 폴더" : "연결을 뺄 프로젝트 폴더", properties: ["openDirectory"] });
   if (r.canceled || !r.filePaths[0]) return { ok: false, message: "" };

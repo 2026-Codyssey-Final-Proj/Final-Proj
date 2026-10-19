@@ -66,7 +66,10 @@ html.in-app,html.in-app body{background:transparent;overflow:hidden}   /* 창이
 @media (max-width:600px){html.in-app .nav{display:flex}html.in-app .phone{display:none}html.in-app body{background:transparent}}
 /* 창 높이(100vh)가 섬을 따라오므로 화면 높이에 기댄 제한을 푼다 — 안 풀면 설정 창이 20px로 눌려 돌고 돈다 */
 .in-app .pop{align-self:flex-start;max-height:none;overflow:visible}
-.in-app .isl:has(> .pop){min-height:0}
+/* 설정이 옆에 열리면(.nav.side) 섬은 940px 그대로, 창만 오른쪽으로 넓어진다(floe:resize anchor left). 아주 길어지면 설정 창 안에서 스크롤 */
+.in-app .nav.side{width:auto}
+.in-app .nav.side>.isl{flex:0 0 940px;width:940px}
+.in-app .nav.side>.pop{max-height:820px;overflow:auto}
 .in-app .isl{max-height:none}
 .in-app .tb{-webkit-app-region:drag}
 .in-app .tb button,.in-app .tb select{-webkit-app-region:no-drag}
@@ -124,6 +127,24 @@ html.in-app,html.in-app body{background:transparent;overflow:hidden}   /* 창이
 .pop{position:relative;z-index:3;align-self:flex-end;margin-top:8px;width:min(400px,100%);max-height:calc(100vh - 120px);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;border-radius:16px;
   background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);font-size:calc(13px * var(--ui-scale,1));color:var(--mute);animation:drop .18s ease-out}
 .pop .link{background:var(--soft)}
+/* 설정은 섬 옆(오른쪽)에 — 아래에 열리면 글자를 키웠을 때 설정이 화면 아래로 밀려 바로 보이지 않았다(이재엽 2026-10-19, 6.2.0). 폭이 모자라면(1180px 아래) 다시 아래로 */
+.nav.side{flex-direction:row;align-items:flex-start;gap:12px;width:min(1332px,calc(100vw - 32px))}
+.nav.side>.isl{flex:1 1 auto;min-width:0}
+.nav.side>.pop{flex:none;margin-top:0;align-self:flex-start;width:calc(380px * var(--ui-scale,1));max-height:calc(100vh - 28px)}
+@media (max-width:1180px){
+  .nav.side{flex-direction:column;align-items:center;width:min(940px,calc(100vw - 32px))}
+  .nav.side>.pop{align-self:flex-end;margin-top:8px;width:min(400px,100%)}
+  html.in-app .nav.side{flex-direction:row;align-items:flex-start;width:auto}
+  html.in-app .nav.side>.pop{align-self:flex-start;margin-top:0;width:calc(380px * var(--ui-scale,1))}
+}
+/* 설정 창의 머리줄과 묶음(플로로와 나 · 연결 · 보기 · 알림 기록 · 느낀 점 · 기록) */
+.pop-h{display:flex;align-items:center;gap:8px;padding:0 2px;font-size:calc(15px * var(--ui-scale,1));color:var(--ink)}
+.pop-h .ti{width:32px;height:32px}
+.sgrp{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;background:var(--soft)}
+.sg-h{margin:0;display:flex;align-items:center;gap:6px;font-size:calc(12px * var(--ui-scale,1));font-weight:800;letter-spacing:.2px;color:var(--mute)}
+.srow{display:grid;grid-template-columns:minmax(72px,auto) minmax(0,1fr);gap:6px 10px;align-items:center}
+.srow>span:first-child{font-weight:700;color:var(--ink);font-size:calc(13px * var(--ui-scale,1))}
+.srow .tiers{gap:4px 8px}
 
 /* 가로 카드 — 상황마다 색 */
 .tone-blue{--tint:var(--t-blue);--tink:var(--t-blue-ink);--pb:var(--acc-btn);--pi:#FFFFFF}
@@ -518,9 +539,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .notes li .ntext{flex-basis:100%;white-space:pre-wrap;overflow-wrap:anywhere}
 .notes textarea[readonly]{font-size:calc(12px * var(--ui-scale,1));min-height:64px}
 .tiers [role=radiogroup] label.chk{min-height:32px}
-/* 설정 창이 연결·알림 기록·만드는 크기로 길어져서 — 열려 있는 동안 섬을 그만큼 키우고, 그래도 넘치면 창 안에서 스크롤 */
-.isl:has(> .pop){min-height:min(600px,calc(100vh - 28px))}
-.pop{max-height:calc(100% - 70px);overflow:auto}
+/* (6.2.0) 설정 창은 섬 옆에 열린다(.nav.side) — 섬 높이를 설정 창에 맞춰 키우던 규칙은 뺐다 */
 /* 접혀 있어도 보이는 표시 — 연습인지 진짜 AI인지, 연결을 끊었는지 */
 .led.off{background:none;box-shadow:inset 0 0 0 1.5px var(--bad)}
 .pl-mode,.st-mode{flex:none;font-size:11px;font-weight:700;line-height:1;padding:3px 8px;border-radius:999px;white-space:nowrap}
