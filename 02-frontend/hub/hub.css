@@ -1,0 +1,91 @@
+/* claude-drafted: 2026-10-20 — 이재엽 요청(C-11 모아 보기 창). 시연 입구(02-frontend/index.html)의 밤하늘을 따르되 글은 읽기 쉽게(대비 4.5 이상 — axe).
+   밝은 · 어두운 둘 다(color-scheme). 왼쪽 칸은 600px 아래(휴대폰 폭 390px)에서 위로 접혀 탭 줄이 된다 — 가로 스크롤은 없다. 움직임은 '움직임 줄이기'를 따른다. */
+:root{
+  --bg:#edf2ff; --bg2:#dfe8ff; --panel:#ffffff; --side:#e6edfc; --card:#ffffff; --edge:rgba(35,60,140,.18);
+  --ink:#13245e; --ink-2:#34467e; --mute:#4f5f8c; --acc:#2353d6; --acc-btn:#2353d6; --acc-ink:#ffffff; --acc-soft:#e6edfc;
+  --gold:#8a5a00; --badge-bg:#ffd98a; --badge-ink:#13245e; --ok:#1e7a47; --ok-bg:#e3f4ea; --star:transparent;
+  color-scheme:light dark;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#050a24; --bg2:#1b2f86; --panel:#111c4f; --side:#0b1440; --card:#1b2a69; --edge:rgba(190,215,255,.28);
+  --ink:#eef4ff; --ink-2:#c6d3f5; --mute:#9db0e0; --acc:#9cc4ff; --acc-btn:#2f5fd6; --acc-ink:#ffffff; --acc-soft:#22305a;
+  --gold:#ffd98a; --badge-bg:#ffd98a; --badge-ink:#13245e; --ok:#7fd9ab; --ok-bg:#10332a; --star:#dfeaff;
+}}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;min-height:100vh;color:var(--ink);background:var(--bg);background-image:radial-gradient(ellipse at 50% 10%,var(--bg2),var(--bg) 60%);background-attachment:fixed;
+  font:15px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.sky{position:fixed;inset:0;pointer-events:none;z-index:0}
+.sky i{position:absolute;width:2px;height:2px;border-radius:50%;background:var(--star)}
+
+.hub{position:relative;z-index:1;display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100vh}
+.side{background:var(--side);border-right:1px solid var(--edge);padding:20px 14px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px}
+.brand .seal{width:64px;height:64px;flex:none;display:grid;place-items:center}
+.brand .seal svg{width:64px;height:64px}
+.brand-t{display:flex;flex-direction:column;line-height:1.2}
+.brand b{font-size:20px;letter-spacing:-.3px}
+.brand small{font-size:12px;color:var(--mute)}
+.spaces{display:flex;flex-direction:column;gap:4px}
+.sp{display:flex;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:transparent;border-radius:10px;padding:10px 12px;font-weight:600;color:var(--ink-2);min-height:40px}
+.sp:hover{background:var(--acc-soft);color:var(--ink)}
+.sp[aria-selected=true]{background:var(--panel);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.badge{margin-left:auto;min-width:22px;height:22px;line-height:22px;padding:0 7px;border-radius:999px;background:var(--badge-bg);color:var(--badge-ink);font-size:12px;font-weight:800;text-align:center}
+.dot{margin-left:auto;width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px var(--ok-bg)}
+.side-note{margin:auto 6px 0;font-size:12px;color:var(--mute)}
+.side-note:empty{display:none}
+
+.pane{padding:28px 32px 64px;background:var(--panel);min-width:0}
+h1{margin:0 0 4px;font-size:26px;letter-spacing:-.4px}
+.lead{margin:0 0 22px;color:var(--ink-2)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;max-width:720px}
+.card{display:flex;flex-direction:column;gap:8px;padding:18px 20px;border-radius:18px;border:1px solid var(--edge);background:var(--card);min-width:0}
+.card .k{font-size:12px;color:var(--gold);font-weight:700;letter-spacing:.3px}
+.card h2{margin:0;font-size:19px}
+.card p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.card .btn{margin-top:auto;align-self:flex-start}
+.btn{border:1px solid var(--edge);background:transparent;border-radius:999px;padding:8px 16px;font-weight:700;min-height:36px}
+.btn:hover{background:var(--acc-soft)}
+.btn.pri{background:var(--acc-btn);color:var(--acc-ink);border-color:transparent}
+.btn.pri:hover{filter:brightness(1.08)}
+.now{margin:18px 0 0;font-size:13.5px;color:var(--mute)}
+
+.empty,.note{margin:0 0 12px;font-size:13.5px;color:var(--mute)}
+.note{display:inline-block;padding:4px 10px;border-radius:999px;border:1px dashed var(--edge);color:var(--gold)}
+.alist,.steps{list-style:none;margin:0;padding:0;max-width:720px}
+.al{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--edge);min-width:0}
+.when{flex:none;font-size:12px;color:var(--mute);min-width:52px;padding-top:2px;font-variant-numeric:tabular-nums}
+.al-main{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
+.al-line{font-size:13.5px;color:var(--ink-2)}
+.al-line.hid{font-style:italic;color:var(--mute)}
+.al-done{font-size:13px;color:var(--ok)}
+.sess{margin:0 0 20px}
+.sess h3{display:flex;align-items:center;gap:10px;margin:0 0 6px;font-size:15px;flex-wrap:wrap}
+.sess .proj{overflow-wrap:anywhere}
+.st{font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--acc-soft);color:var(--acc)}
+.st.working{background:var(--ok-bg);color:var(--ok)}
+.sess h3 .when{min-width:0}
+.steps li{display:flex;gap:12px;padding:5px 0;border-bottom:1px solid var(--edge);font-size:13.5px;min-width:0}
+.steps .line{min-width:0;overflow-wrap:anywhere;color:var(--ink-2)}
+
+@media (prefers-reduced-motion:no-preference){
+  .card{transition:transform .2s ease,border-color .2s ease}
+  .card:hover{transform:translateY(-2px);border-color:var(--acc)}
+  .sp{transition:background .15s,color .15s}
+}
+/* 휴대폰 폭 — 왼쪽 칸이 위로 접혀 탭 줄이 된다 */
+@media (max-width:600px){
+  .hub{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr)}   /* 위 줄은 내용만큼 — min-height의 남는 자리는 아래로 */
+  .side{flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 12px;border-right:0;border-bottom:1px solid var(--edge);padding:10px 16px}
+  .brand .seal,.brand .seal svg{width:40px;height:40px}
+  .brand b{font-size:17px}
+  .spaces{flex:1 1 100%;flex-direction:row;min-width:0}
+  .sp{width:auto;flex:1 1 0;justify-content:center;padding:8px 6px;font-size:13px;gap:5px;min-width:0;white-space:nowrap}
+  .badge,.dot{margin-left:0}
+  .side-note{flex:1 1 100%;margin:0}
+  .pane{padding:18px 16px 48px}
+  h1{font-size:22px}
+  .when{min-width:44px}
+}

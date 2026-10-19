@@ -83,6 +83,37 @@ html.notch .pill{border-radius:0 0 25px 25px}
 @keyframes drop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
 .enter{animation:drop .24s ease-out}
 
+/* 서고로 잠수하는 동안(2026-10-20, app.js enterLibrary) — 앱 창이 화면만큼 넓어져도 섬은 제자리(--dx · --dy는 앱이 알려 준 창의 옮긴 거리) */
+html.in-app.diving .nav{transform:translate(var(--dx,0px),var(--dy,0px))}
+
+/* 켤 때 인사(C-10, 2026-10-20 — 시간표 greet.js, 단계는 html[data-greet]). 창은 처음부터 인사 크기(투명이라 안 보인다), 섬 모양만 안에서 움직인다.
+   wave: 띠 자리(노치면 노치 폭 · 검정)만 보이고 물결 선이 그어진다 → open: 섬이 인사 크기로 열린다(살짝 넘쳤다 돌아옴) → pop: 플로로가 솟는다 →
+   hello: 옆으로 가 지느러미를 흔든다 → settle: 글과 단추 → done: 평소 인사 카드 */
+html{--gw:150px;--gh:52px}
+html.notch{--gw:max(150px,calc(var(--notch-w,200px) + 28px));--gh:calc(var(--notch-h,38px) + 18px)}
+html.greeting .isl.greet{transition:clip-path .5s cubic-bezier(.34,1.56,.64,1),background-color .4s ease,box-shadow .4s ease}
+html.greeting .isl.greet .mc-cat,html.greeting .isl.greet .mc-main{opacity:0}
+html[data-greet="wave"] .isl.greet{clip-path:inset(0 calc(50% - var(--gw) / 2) calc(100% - var(--gh)) calc(50% - var(--gw) / 2) round 0 0 18px 18px);background:transparent;box-shadow:none;transition:none}
+html.notch[data-greet="wave"] .isl.greet{background:#000}
+html[data-greet="open"] .isl.greet,html[data-greet="pop"] .isl.greet,html[data-greet="hello"] .isl.greet,html[data-greet="settle"] .isl.greet{clip-path:inset(0 0 0 0 round 28px)}
+html.notch[data-greet="open"] .isl.greet,html.notch[data-greet="pop"] .isl.greet,html.notch[data-greet="hello"] .isl.greet,html.notch[data-greet="settle"] .isl.greet{clip-path:inset(0 0 0 0 round 0 0 28px 28px)}
+.greet-wl{position:absolute;left:50%;top:calc(var(--gh) - 16px);transform:translateX(-50%);width:150px;height:12px;pointer-events:none;transition:opacity .3s ease}
+.greet-wl path{stroke-dasharray:100;stroke-dashoffset:100;animation:wl-draw .4s ease-out forwards}
+.greet-wl path:nth-child(2){animation-delay:.12s}
+@keyframes wl-draw{to{stroke-dashoffset:0}}
+html[data-greet="pop"] .greet-wl,html[data-greet="hello"] .greet-wl,html[data-greet="settle"] .greet-wl{opacity:0}
+html:not(.greeting) .greet-wl{display:none}
+html[data-greet="pop"] .isl.greet .mc-cat,html[data-greet="hello"] .isl.greet .mc-cat,html[data-greet="settle"] .isl.greet .mc-cat{opacity:1}
+html[data-greet="pop"] .isl.greet .mc-cat{animation:greet-pop .5s cubic-bezier(.3,1.4,.5,1)}
+@keyframes greet-pop{from{transform:translateY(70px) scale(.75,.9);opacity:0}60%{transform:translateY(-10px) scale(.96,1.06);opacity:1}80%{transform:translateY(4px) scale(1.06,.94)}to{transform:none}}
+html[data-greet="hello"] .isl.greet .mc-cat{animation:greet-swim 1.5s ease-in-out}
+@keyframes greet-swim{0%{transform:none}30%{transform:translateX(-18px) rotate(-5deg)}70%{transform:translateX(-18px) rotate(-3deg)}100%{transform:none}}
+html[data-greet="hello"] .isl.greet .mc-cat .c-fin{transform-origin:49px 72px;animation:fin-wave .3s ease-in-out .35s 5 alternate}
+@keyframes fin-wave{to{transform:rotate(-24deg) translate(-3px,-2px)}}
+html[data-greet="settle"] .isl.greet .mc-main{opacity:1;animation:greet-text .5s ease-out}
+@keyframes greet-text{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){html.greeting .isl.greet .mc-cat,html.greeting .isl.greet .mc-main{opacity:1}html[data-greet] .isl.greet{clip-path:none;animation:none}}
+
 /* 띠 — 물결 선 위로 플로로가 얼굴 위쪽만 빼꼼(2026-10-17, 그림은 seal.js의 얼굴만). 마우스를 올리면 한 줄 알약으로 펼쳐진다(navigator.js nextView) */
 .strip{position:relative;width:150px;height:52px;border:0;background:none;padding:0}
 .strip .head{position:absolute;left:50%;bottom:9px;transform:translateX(-50%);width:58px;height:42px;overflow:hidden}   /* 높이 42 = 눈·코·입·수염까지 물 위로, 턱 아래는 물속 */
@@ -101,6 +132,10 @@ html.notch .pill{border-radius:0 0 25px 25px}
 .pill .pl-cta{font-size:calc(13px * var(--ui-scale,1));font-weight:600;color:var(--acc);white-space:nowrap}
 .pill.ping{box-shadow:0 10px 30px rgba(30,40,60,.16),0 0 0 2px var(--acc)}
 .pill .pet{display:inline-flex;margin-top:4px}
+
+/* 플로로 크기는 오버레이(섬)의 글자 크기 설정을 따른다(2026-10-20 "오버레이 크기에 따라서 플로로 크기") — 그림은 seal.js가 px로 그리지만 폭을 --ui-scale로 덮는다 */
+.isl .mc-cat svg.cat{width:calc(116px * var(--ui-scale,1));height:auto}
+.isl .libtab .who svg.cat{width:calc(100px * var(--ui-scale,1));height:auto}
 
 /* 펼침 — 섬 하나: 위 아이콘 줄, 아래 카드 */
 .isl{position:relative;width:100%;padding:8px 12px 14px;display:flex;flex-direction:column;gap:8px;border-radius:28px;background:var(--glass2);
@@ -159,7 +194,7 @@ html.notch .pill{border-radius:0 0 25px 25px}
 .tone-gray{--tint:var(--t-gray);--tink:var(--t-gray-ink);--pb:var(--acc-btn);--pi:#FFFFFF}
 .tone-red{--tint:var(--t-red);--tink:var(--t-red-ink);--pb:var(--bad-btn);--pi:#FFFFFF}
 .mc{display:flex;gap:22px;align-items:center;padding:18px 24px 20px 16px;border-radius:22px;background:var(--tint);transition:background .3s}
-.mc-cat{position:relative;flex:none;width:124px;display:grid;place-items:center;align-self:center}
+.mc-cat{position:relative;flex:none;width:calc(124px * var(--ui-scale,1));display:grid;place-items:center;align-self:center}   /* 플로로 칸도 글자 크기를 따른다(2026-10-20) */
 .mc-badge{position:absolute;left:6px;top:4px;width:30px;height:30px;border-radius:50%;background:var(--pb);color:var(--pi);border:3px solid var(--tint);
   display:grid;place-items:center;font-size:calc(14px * var(--ui-scale,1));font-weight:800;line-height:1;pointer-events:none}
 .mc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}

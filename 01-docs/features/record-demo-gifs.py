@@ -14,6 +14,7 @@ OUT = ROOT / "01-docs" / "features"
 NAV = f"file://{FE}/navigator/index.html"
 LIB = f"file://{FE}/library/index.html"
 ENTRY = f"file://{FE}/index.html"
+HUB = f"file://{FE}/hub/index.html"
 W, H = 1280, 800
 GIF_W = 880                       # 저장 폭 — 파일 크기와 가독성 사이
 FPS_MS = 220                      # 프레임 간격(ms), 약 4.5fps
@@ -118,16 +119,30 @@ def floro(page, r):                  # 08 마스코트: 고개 돌리기 · 쓰�
     r.hold(1200)
 
 
+def greeting(page, r):               # 08 켤 때 인사(C-10, 2026-10-20): 주소 끝 없이 열면 띠 → 섬 → 플로로 솟음 → 지느러미 → 글. 저장이 없어 끝나면 처음 설정이 열린다
+    page.goto("about:blank"); page.goto(NAV); r.hold(3900)
+    r.still(1200)
+    page.keyboard.press("Escape"); r.hold(500)
+
+
 def entry(page, r):                  # 시연 입구 → 3분 시연 시작
     page.goto(ENTRY); page.wait_for_timeout(600); r.still(1200)
     r.click("text=3분 시연 시작", hold=1500)
     r.still(1200)
 
 
+def hub(page, r):                    # 11 C-11 · C-12: 모아 보기 창 — 바이브 코딩(카드 둘) → 알림 → AI 진행. 파일로 열어 예시(2026-10-20)
+    page.goto(f"{HUB}#vibe"); page.wait_for_timeout(900); r.still(1400)
+    r.click("[data-space=alerts]", hold=1400)
+    r.click("[data-space=ai]", hold=1600)
+    r.still(1200)
+
+
 SCENES = {
     "01-stage-guide": (stage_guide, NAV_CROP), "02-blueprint": (blueprint, NAV_CROP), "03-gate": (gate, NAV_CROP),
     "04-overview": (overview, NAV_CROP), "05-library": (library, None),
-    "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "entry": (entry, None),
+    "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "greeting": (greeting, NAV_CROP), "entry": (entry, None),
+    "11-hub": (hub, None),
 }
 
 if __name__ == "__main__":
@@ -141,7 +156,7 @@ if __name__ == "__main__":
             r = Rec(page, crop); print(n)
             try:
                 fn(page, r)
-                r.save(OUT / "demo-entry.gif" if n == "entry" else OUT / n / "demo.gif")
+                r.save(OUT / "demo-entry.gif" if n == "entry" else OUT / "08-floro" / "greeting.gif" if n == "greeting" else OUT / n / "demo.gif")
             except Exception as e:
                 print("  ✗", n, type(e).__name__, str(e)[:300])
             ctx.close()

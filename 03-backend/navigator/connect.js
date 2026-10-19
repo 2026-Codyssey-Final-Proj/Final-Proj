@@ -1,5 +1,5 @@
 // claude-drafted: 2026-10-14
-// Claude Code·Codex와 Navigator 연결하기 — 바이브 코딩할 때 쓰는 도구에 훅 두 개를 더한다.
+// Claude Code·Codex와 Navigator 연결하기 — 바이브 코딩할 때 쓰는 도구에 훅 세 개를 더한다(요청 받음 · 작업 마침 · 도구를 쓴 뒤).
 //
 //   node connect.js [폴더]            무엇을 어디에 더할지 보여 주기만 한다 (아무것도 바꾸지 않음)
 //   node connect.js [폴더] --apply    백업을 만든 뒤 더한다
@@ -16,7 +16,9 @@ const path = require("node:path");
 
 const HOOK = path.join(__dirname, "hook.js").replace(/\\/g, "/");
 const COMMAND = `node "${HOOK}"`;
-const EVENTS = ["UserPromptSubmit", "Stop"];
+// PostToolUse(2026-10-20, C-12 AI 진행): 도구를 쓸 때마다 — hook.js가 이름 · 첫 줄 · 줄 수만 보낸다. matcher 칸은 비운다:
+// Claude Code 훅 문서상 PostToolUse의 matcher는 도구 이름 정규식이고, 비우거나 없으면 모든 도구에 걸린다
+const EVENTS = ["UserPromptSubmit", "Stop", "PostToolUse"];
 // 옛 위치(implementations/navigator-prototype, backend/navigator — 2026-10-17 정리 전)에 단 훅도 우리 것으로 알아본다. "backend/navigator/hook.js"는 03-backend/… 경로에도 들어 있다 — 다시 연결하면 새 경로로 바뀐다
 const MARKS = ["backend/navigator/hook.js", "navigator-prototype/hook.js"];
 const ours = (h) => !!h && typeof h.command === "string" && MARKS.some((m) => h.command.includes(m));

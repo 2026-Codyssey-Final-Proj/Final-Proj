@@ -14,7 +14,7 @@
   background:linear-gradient(180deg,rgba(220,240,255,.85),rgba(150,200,255,0));filter:blur(1px);display:none}
 .dive.rising .surf{display:block}
 
-/* 책을 안은 플로로 — 그림은 seal.js, 책은 여기서 */
+/* 책을 안은 플로로 — 그림은 seal.js, 책은 여기서. 크기(--w)는 창의 짧은 변에 맞춘다(dive.js floroSize, 2026-10-20) */
 .dive-floro{position:fixed;left:0;top:0;z-index:1001;pointer-events:none;width:var(--w);height:var(--w)}
 .dive-floro .cat{width:100%;height:100%}
 .carry-book{position:absolute;left:30%;top:52%;width:42%;height:30%;border-radius:3px 6px 6px 3px;background:linear-gradient(160deg,#d9ecff,#79a6f2);
@@ -24,8 +24,14 @@
 .dive-floro .trail:nth-child(3){left:58%;width:7px;height:7px;animation-delay:.25s}
 @keyframes dive-trail{from{transform:translateY(0);opacity:.9}to{transform:translateY(-60px);opacity:0}}
 
-/* 서고에 들어올 때: 그려지기 전부터 물이 덮고 있다(서고 index.html 머리의 한 줄이 html에 dive-in을 붙인다) */
-html:not(.dive-in) #dive-cover{display:none}
+/* 서고에 들어올 때: 그려지기 전부터 물이 덮고 있다(서고 index.html 머리의 한 줄이 html에 dive-in을 붙인다).
+   작업 화면으로 돌아올 때(2026-10-20)도 같다 — 내비게이터 index.html 머리의 한 줄이 주소 끝 &back을 보고 surfacing을 붙인다 */
+html:not(.dive-in):not(.surfacing) #dive-cover{display:none}
+/* 서고에서 나갈 때 물이 아래에서 차오른다 — 수면 띠는 위쪽에 */
+.dive.rising-up .surf{display:block;top:-2px;bottom:auto;border-radius:0 0 50% 50%/0 0 100% 100%;background:linear-gradient(0deg,rgba(220,240,255,.85),rgba(150,200,255,0))}
+/* 작업 화면이 떠오르는 동안 섬은 보이지 않는다 — 물이 빠진 뒤 위에서 내려앉는다(dive.js surface) */
+html.surfacing .nav{opacity:0}
+html.surfacing .nav{pointer-events:none}
 .splash{position:absolute;left:50%;bottom:30px;width:240px;height:46px;margin-left:-120px;border-radius:50%;border:2px solid rgba(220,240,255,.85);pointer-events:none;
   animation:splash .7s ease-out forwards}
 .splash.b{animation-delay:.12s;border-color:rgba(220,240,255,.5)}

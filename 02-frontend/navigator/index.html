@@ -17,6 +17,8 @@
 <link rel="stylesheet" href="library-tab.css">
 <link rel="stylesheet" href="dive.css">
 <link rel="stylesheet" href="setup.css">
+<!-- 서고에서 돌아왔으면(주소 끝 &back, 2026-10-20) 처음 그릴 때부터 물이 덮게 한다 — 물이 빠지고 섬이 내려앉는 건 dive.js surface -->
+<script>if (/[#&]back(&|$)/.test(location.hash)) document.documentElement.classList.add("surfacing");</script>
 </head>
 <body>
 
@@ -33,6 +35,7 @@
 </div>
 
 <div class="nav" id="nav"></div>
+<div class="dive" id="dive-cover" aria-hidden="true"></div>
 <div id="fx"></div>
 <main class="phone" id="phone"></main>
 
@@ -54,6 +57,7 @@
 <script src="../library/schedule.js"></script>
 <script src="notes.js"></script>
 <script src="dive.js"></script>
+<script src="greet.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
