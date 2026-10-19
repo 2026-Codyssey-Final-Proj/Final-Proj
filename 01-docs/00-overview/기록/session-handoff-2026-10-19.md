@@ -72,7 +72,7 @@
 | FR-8 범위 줄임(장기 기억이 서고의 책으로만 남음)을 알고 정한 것인지 → **Go**(이재엽 2026-10-19 버튼): 알고 정함, 발표 근거는 판정 규칙 중심 | requirements.md 13-1 |
 | Jira 쓰기 — 오늘 병합한 PR을 Jira 할 일에 잇기(코멘트 · 상태). **이 세션에서는 Jira 도구가 올라오지 않아 못 했다.** `/mcp` → Atlassian 로그인 · Reconnect 뒤 새 세션에서. 쓰기 전에 표로 보이고 확인받는다([jira.md](../jira.md) 4절) | jira.md |
 | Jira 릴리스 Action — 비밀값 4개가 없어 매번 **건너뛰고 "성공"**으로 끝난다. Jira에 v1.2~v6.2 릴리스가 하나도 없다. 토큰은 GitHub 웹 화면에서만 넣는다 | [jira.md](../jira.md) 3절 · 5절 |
-| 4절 끝의 예방 제안(CHANGELOG 조각 파일) — 받을지 → **Go**(이재엽 2026-10-19 버튼): [`changes/README.md`](../../../changes/README.md)로 만듦 | 이 문서 4절 |
+| 4절 끝의 예방 제안(CHANGELOG 조각 파일) — 받을지 → **Go**(이재엽 2026-10-19 버튼): `changes/README.md`로 만듦(#131) | 이 문서 4절 |
 | 원래 폴더 `~/orca/Final-Proj`를 `git pull` | 1절 |
 
 ### D. 이 세션 밖에서 이미 정해진 다음 일 (참고)
