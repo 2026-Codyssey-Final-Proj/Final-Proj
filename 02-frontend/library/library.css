@@ -92,7 +92,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #ex-toggle { position: absolute; left: 22px; top: 70px; z-index: 3; font-size: 13px; padding: 7px 14px; }   /* "← 작업 화면으로" 아래 — 머리글 · 오른쪽 단추 줄과 겹치지 않는 빈자리 */
 .lib-out { position: absolute; top: 22px; left: 22px; z-index: 3; text-decoration: none; color: var(--ink); }
 .lib-refs { position: absolute; top: 22px; right: 22px; z-index: 3; display: flex; gap: 8px; }
-.skylink { color: var(--gold); text-decoration: none; border-color: rgba(255, 217, 138, .5); }
 .stage { position: absolute; inset: 168px 0 0 0; }
 .search { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 32px)); height: 50px; border-radius: 999px; display: flex; align-items: center; gap: 8px; padding: 0 14px; z-index: 5; }
 .search svg { width: 20px; height: 20px; flex: none; stroke: var(--ink-2); fill: none; stroke-width: 2; stroke-linecap: round; }
@@ -228,11 +227,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .rv .ins small { color: var(--ink-2); }
 @media (max-width: 760px) { .tiles, .rv-grid { grid-template-columns: 1fr 1fr; } }
 
-.bars.skills li { grid-template-columns: 96px 1fr 76px; }
-.lv { display: flex; align-items: center; gap: 4px; }
-.lv i { width: 12px; height: 12px; border-radius: 50%; background: rgba(207, 230, 255, .16); }
-.lv i.on { background: var(--gold); box-shadow: 0 0 6px rgba(255, 217, 138, .6); }
-.lv em { font-style: normal; font-size: 12px; color: var(--ink-2); margin-left: 6px; }
 .rv h3 small { font-weight: 400; font-size: 11.5px; color: var(--mute); margin-left: 4px; }
 
 /* ── 책 펼치기 (2026-10-18 claude-drafted, library.js openBook) — 넘어가는 동안 표지와 펼친 책이 겹쳐 보인다 ── */
@@ -287,32 +281,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
   #s-lib .floe .ice { width: 170px; height: 38px; margin-top: -20px; }
   #s-lib .floe .ripple { width: 230px; }
   #s-lib .answer { position: fixed; left: 12px; right: 12px; bottom: 12px; width: auto; max-height: 62vh; overflow-y: auto; }
-}
-
-/* ── 내 배움 (2026-10-18 claude-drafted, F-05) — 전체 돌아보기(.rv)와 같은 창. 내비게이터에서 지나온 단계 · 배운 말 · 확정한 설계도 ── */
-.lr-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.lr-done { margin: -6px 0 14px; color: var(--gold); font-weight: 700; font-size: 14px; }
-.lr-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 22px; }
-.reader .lr-grid section { padding: 0; min-height: 0; }   /* 펼친 책의 쪽(.reader section) 여백을 물려받지 않게 */
-.lr-grid section > h3:not(:first-child) { margin-top: 18px; }
-.lr-path { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; line-height: 1.6; }
-.lr-terms { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.lr-terms li { border-radius: 10px; padding: 8px 12px; background: rgba(255, 255, 255, .05); border: 1px solid var(--edge); display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; }
-.lr-terms b { color: var(--ice); } .lr-terms span { color: var(--ink); } .lr-terms small { color: var(--ink-2); font-size: 12px; }
-.lr-doc { border-radius: 10px; background: rgba(255, 255, 255, .05); border: 1px solid var(--edge); margin-bottom: 6px; }
-.lr-doc summary { cursor: pointer; padding: 8px 12px; font-size: 13.5px; font-weight: 600; }
-.lr-doc pre { margin: 0; padding: 4px 12px 12px; white-space: pre-wrap; font: 12.5px/1.65 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--ink-2); }
-.lr-none { margin: 0; color: var(--ink-2); font-size: 13px; }
-.lr-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 18px 4px 6px; }
-.lr-empty b { font-size: 17px; } .lr-empty span { color: var(--ink-2); font-size: 14px; line-height: 1.6; max-width: 560px; }
-.lr-empty .pillbtn, .lr-back { margin-top: 6px; text-decoration: none; color: var(--ink); display: inline-block; }
-.lr-empty .pillbtn.pri { color: #13245e; }
-.lr-back { margin-top: 18px; }
-@media (max-width: 760px) {
-  .lr-grid { grid-template-columns: minmax(0, 1fr); }
-  .lr-tiles div { padding: 8px 10px; } .lr-tiles small { font-size: 11px; word-break: keep-all; }
-  #learn #lr-seal { display: none; }   /* 좁은 화면 — 제목과 닫기를 한 줄에 */
-  #learn header > div:nth-child(2) { flex: 1; min-width: 0; }
 }
 
 /* ── 배운 말 풀이 (F-10, 2026-10-18 claude-drafted) — 누르면 바로 아래에 한 줄. 꼬리표 버튼의 '▮'(이어진 책 표시)는 붙이지 않는다 ── */

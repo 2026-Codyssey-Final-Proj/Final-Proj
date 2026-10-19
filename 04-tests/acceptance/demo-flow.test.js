@@ -10,7 +10,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const Nav = require("../../03-backend/navigator/navigator.js");
 const S = require("../../03-backend/navigator/scenario.js");
-const Share = require("../../03-backend/share/share-rules.js");
+const Share = require("../../03-backend/navigator/sensitive.js");
 const ROOT = path.join(__dirname, "../..");
 
 // ── 화면(02-frontend/navigator/app.js)이 하는 일을 순수 함수만으로 따라 한다 ──
@@ -81,8 +81,7 @@ test("FR-10 · 판정 규칙과 연습 예시는 다른 파일·네트워크를 
 });
 
 test("FR-10 · 시연 페이지는 저장소 안의 파일만 불러온다 — 외부 주소(CDN·글꼴·API)가 없고, 부르는 파일은 모두 있다", () => {
-  const pages = ["02-frontend/index.html", "02-frontend/navigator/index.html", "02-frontend/library/index.html",
-    "02-frontend/library/sky.html", "02-frontend/share/index.html"];
+  const pages = ["02-frontend/index.html", "02-frontend/navigator/index.html", "02-frontend/library/index.html"];
   for (const p of pages) {
     const html = fs.readFileSync(path.join(ROOT, p), "utf8").replace(/<!--[\s\S]*?-->/g, "");
     const refs = [...html.matchAll(/\b(?:src|href)\s*=\s*["']([^"']*)["']/g)].map((m) => m[1]);
@@ -189,8 +188,8 @@ test("FR-12 · '예' 뒤 다음 단계 할 일의 순서를 사용자가 바꾸�
   }
 });
 
-// ── FR-9 (AI로 보내기 전 검사 — UC-01 1번·E3) ──
-test("FR-9 · 연습 예시 글과 연습 초안은 보내기 전 검사에 걸리지 않는다 — 시연 중 잘못된 경고가 뜨지 않는다", () => {
+// ── 안전장치 — AI로 보내기 전 검사(UC-01 1번·E3). 2026-10-19 FR-9를 Won't로 바꾸며 이름만 바꿈, 검사는 sensitive.js ──
+test("안전장치 · 연습 예시 글과 연습 초안은 보내기 전 검사에 걸리지 않는다 — 시연 중 잘못된 경고가 뜨지 않는다", () => {
   const texts = [...NS.flatMap(textsOf), ...Object.values(S.drafts).map((d) => d.draft)];
   assert.ok(texts.length > NS.length);
   for (const t of texts) {
@@ -199,7 +198,7 @@ test("FR-9 · 연습 예시 글과 연습 초안은 보내기 전 검사에 걸�
   }
 });
 
-test("FR-9 · 연습 글에 키 모양과 전화번호를 붙이면 보내기 전에 걸리고, 가린 글에는 그 값이 다시 나오지 않는다", () => {
+test("안전장치 · 연습 글에 키 모양과 전화번호를 붙이면 보내기 전에 걸리고, 가린 글에는 그 값이 다시 나오지 않는다", () => {
   const key = "sk-" + "a".repeat(24), phone = "010-1234-5678";
   const text = `${S.first.text}\n열쇠 ${key}\n연락처 ${phone}`;
   const r = Share.scan(text);

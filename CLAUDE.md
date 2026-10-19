@@ -169,4 +169,4 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 
 - 전체 그림: [01-docs/00-overview/README.md](01-docs/00-overview/README.md), 이전 기록: [migration.md](01-docs/00-overview/migration.md)
 - 이 시스템을 처음 쓰는 법: [GETTING_STARTED.md](GETTING_STARTED.md)
-- 공유·보안 시험 화면: `02-frontend/share/index.html` (서버 없이 브라우저로 연다)
+- 시연 입구: `02-frontend/index.html` (서버 없이 브라우저로 연다)
