@@ -14,7 +14,7 @@
 //
 // 시연 안전장치(2026-10-18, navigator-prototype-rules-review.md 6절 S3~S5) — claude-drafted: 2026-10-18
 //   S3 알림 주소(/api/event·/api/events·/api/events/clear)는 확인 값(토큰)이 맞을 때만 받는다. 아래 "확인 값" 참고.
-//   S4 받은 알림 글은 저장하기 전에 공유 규칙(share-rules.js)과 같은 민감 패턴으로 가린다 — 키 모양은 [비밀값], 이메일·전화·IP는 [… 가림].
+//   S4 받은 알림 글은 저장하기 전에 민감 패턴(sensitive.js)으로 가린다 — 키 모양은 [비밀값], 이메일·전화·IP는 [… 가림].
 //   S5 POST /api/events/clear로 알림과 세션 대화를 비운다. 메모리에만 두므로 서버를 다시 켜도 빈다.
 const http = require("node:http");
 const crypto = require("node:crypto");
@@ -22,7 +22,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const Nav = require("./navigator.js");
-const Share = require("../share/share-rules.js");
+const Sensitive = require("./sensitive.js");
 const { callClaude, usage, claudeVersion } = require("./provider.js");
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 
@@ -72,10 +72,10 @@ function hasToken(headers) {
   return got.length === want.length && crypto.timingSafeEqual(got, want);
 }
 
-// 정해진 파일만 내준다 — 경로를 요청에서 만들지 않는다. 시연 페이지 전부(내비게이터·서고·공유 시험·입구)를 같이 내준다(2026-10-17 시연 연결).
+// 정해진 파일만 내준다 — 경로를 요청에서 만들지 않는다. 시연 페이지 전부(내비게이터·서고·입구)를 같이 내준다(2026-10-17 시연 연결).
 // 주소는 화면(index.html)의 상대 경로가 서버 기준으로 풀린 모양이다: 내비게이터는 `/`에 있어 `../library/x` → `/library/x`, `../../03-backend/…` → `/03-backend/…`.
 //   /                 내비게이터        /index.html         시연 입구(02-frontend/index.html)
-//   /library/…  /navigator/…  /share/…   02-frontend의 화면들   /03-backend/…   규칙·공유 규칙
+//   /library/…  /navigator/…   02-frontend의 화면들   /03-backend/…   규칙
 const ROOT = "../../";
 const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
 const STATIC = {
@@ -83,14 +83,11 @@ const STATIC = {
   // notes.js — 실사용의 '느낀 점 남기기'(2026-10-19)
   // setup.js · setup.css — 처음 켤 때 반기고 연결(Claude Code / API 키)을 돕는 화면(2026-10-19)
   "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js"],
-  // learn.js — 서재의 '내 배움'(2026-10-18, F-05). 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다
+  // 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다. 2026-10-19(이재엽): learn.js · skills.js를 지우고, 지식 은하(sky.*)는 내주지 않는다(길을 막음 — 파일은 남김)
   // my-books.js — 내 책 · 예시 책 지우기(2026-10-19 실사용). 내비게이터(`../library/my-books.js`)와 서고가 같이 쓴다
-  "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "my-books.js", "schedule.js", "skills.js", "search.js", "spotlight.js", "learn.js",
-    "sky.html", "sky.css", "sky.js", "knowledge-sky.js", "sky-data.js"],
-  "02-frontend/share": ["index.html"],
+  "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "my-books.js", "schedule.js", "search.js", "spotlight.js"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js"],
-  "03-backend/share": ["share-rules.js", "scenarios.js", "environment-checks.js"],
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js"],
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -156,12 +153,12 @@ function addEvent(body) {
   const id = `${tool}:${String(body.session_id || "")}`, log = sessions.get(id) || [];
   // S4: 저장하기 전에 가린다 — 메모리의 대화에도, 화면에 줄 글에도 원래 값이 남지 않는다(자르기 전에 가려서 키가 반쯤 남지 않는다)
   for (const [who, said] of [["사용자", body.prompt], [tool === "codex" ? "Codex" : "Claude", body.last_assistant_message]]) {
-    if (typeof said === "string" && said.trim()) log.push(`[${who}] ${Share.redact(said.trim())}`);
+    if (typeof said === "string" && said.trim()) log.push(`[${who}] ${Sensitive.redact(said.trim())}`);
   }
   while (log.length > 20) log.shift();   // 한 알림에 두 말이 오면 둘 다 넘칠 수 있다
   sessions.delete(id); sessions.set(id, log);   // 최근에 쓴 세션을 맨 뒤로
   if (sessions.size > 10) sessions.delete(sessions.keys().next().value);
-  const ev = { seq: ++seq, at: Date.now(), kind, tool, project: Share.redact(path.basename(String(body.cwd || ""))), work: recent(log) };
+  const ev = { seq: ++seq, at: Date.now(), kind, tool, project: Sensitive.redact(path.basename(String(body.cwd || ""))), work: recent(log) };
   events.push(ev);
   if (events.length > 20) events.shift();
   return ev;

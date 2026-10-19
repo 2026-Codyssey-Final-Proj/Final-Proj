@@ -193,7 +193,7 @@ test("공통: 물음표 뒤 값은 API 주소를 바꾸지 않는다 — 화면 
 
 // ════════ 3-1. 화면 파일 ════════
 
-const PAGES = ["/", "/index.html", "/navigator/index.html", "/library/index.html", "/library/sky.html", "/share/index.html"];
+const PAGES = ["/", "/index.html", "/navigator/index.html", "/library/index.html", ];
 
 test("화면 파일: 페이지(html)는 확인 값 쿠키(HttpOnly·SameSite=Strict·Path=/api)와 no-store, 스크립트·스타일은 쿠키 없이", async () => {
   for (const page of PAGES) {

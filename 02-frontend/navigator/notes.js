@@ -1,7 +1,7 @@
 // claude-drafted: 2026-10-19 — 실사용 테스트의 '느낀 점 남기기'(이재엽 2026-10-18 "우리가 사용하면서 느끼고 싶어").
 // 쓰는 사람이 쓰다가 느낀 것을 그 자리에서 한 줄 남긴다. 어느 화면 · 어느 단계 · 어느 탭 · 연습인지 진짜 AI인지 · 때는 저절로 붙는다(지어내지 않는다 — 상태에서 읽는다).
 // 기록은 이 브라우저(localStorage)에만 남는다. 밖으로 나가는 길은 하나 — "Jira용 복사"가 글을 만들어 클립보드에 넣고, 붙이는 건 사람이 한다.
-// 그때 비밀값 · 이메일 · 전화 모양은 공유 규칙(share-rules.js redact)으로 가린다 — 느낀 점에 실수로 적힌 값이 Jira로 가지 않게.
+// 그때 비밀값 · 이메일 · 전화 모양은 sensitive.js의 redact로 가린다 — 느낀 점에 실수로 적힌 값이 Jira로 가지 않게.
 // 순수 함수만 — 화면(app.js)이 쓰고 Node에서 시험한다(04-tests/navigator/notes.test.js). 고장 난 기록이면 빈 목록 — 던지지 않는다.
 (function (root) {
   const KEY = "floe:notes";
@@ -55,7 +55,7 @@
     try { storage.setItem(KEY, JSON.stringify(Array.isArray(list) ? list : [])); return true; } catch { return false; }
   }
 
-  // Jira에 붙일 글 — 오래된 것부터(시간 순) 한 줄씩. redact: 글을 가리는 함수(share-rules.js의 redact) — 없으면 그대로.
+  // Jira에 붙일 글 — 오래된 것부터(시간 순) 한 줄씩. redact: 글을 가리는 함수(sensitive.js의 redact) — 없으면 그대로.
   // 모양은 Jira · GitHub · 메모장 어디에 붙여도 읽히는 글머리표 목록이다(마크업에 기대지 않는다)
   function toJira(list, redact = (t) => t, title = "Floe 실사용 느낀 점") {
     const items = (Array.isArray(list) ? list : []).slice().sort((a, b) => a.at - b.at);

@@ -1,8 +1,8 @@
 // claude-drafted: 2026-10-17 — 도서관 시안의 동작. 저장·서버·AI 호출 없음 — 더미 데이터(books.js)를 화면 안에서만 바꾼다.
-// 장면: ① 입구(큰 책) → 도서관 두 가지 고르기 → ③ 플로로의 얼음 서고 → 펼친 책 · 전체 돌아보기 · 지식 은하(sky.html).
+// 장면: ① 입구(큰 책) → 도서관 두 가지 고르기 → ③ 플로로의 얼음 서고 → 펼친 책 · 전체 돌아보기.
+// 2026-10-19(이재엽): '내 배움'(learn.js) · 역량 지도(skills.js)를 지웠고, 지식 은하(sky.html)는 들어가는 길을 막았다(코드는 남김 — 추후 작업).
 // 같은 날: 작업 화면 위 위젯(지금·단계 지도·한곳에서 보기·도서관 탭)은 내비게이터(../navigator/app.js)의 탭으로 옮겼다 — 같은 화면이 둘이 되지 않게.
 //   그쪽에서 "한 권의 책으로 엮기"를 누르면 #lib-bound-<id>로 이 화면에 와서 책장에 꽂힌다. 열어 둔 책 목록(D.OPEN)은 두 화면이 같이 읽는다.
-// 2026-10-18(F-05, PRD 2-7): 내비게이터의 '내 배움' 탭을 여기 '내 배움' 창으로 옮겼다(#lib-learn) — 이 창만 더미가 아니라 이 브라우저에 남은 내비게이터 기록을 읽는다(learn.js).
 // 2026-10-19(실사용): 내비게이터 기록이 있으면 열어 둔 책에 '내 책'을 더하고, "예시 책 지우기"(HIDE_KEY)를 눌렀으면 예시 책 · 레퍼런스 · 물어볼 것을 비운다(my-books.js).
 //   그때 '오늘'은 시안의 고정 날짜가 아니라 실제 오늘이다. 주소 끝 &noex는 이 화면만 예시 없이(저장하지 않음). 책이 하나도 없어도 서고 · 전체 돌아보기가 멈추지 않는다.
 (function () {
@@ -43,7 +43,7 @@
   const toNav = (hash) => { location.href = `${NAV}#${hash}`; };
 
   function go(where, arg) {
-    $("spread").classList.remove("on"); $("reader").classList.remove("on"); $("review").classList.remove("on"); $("learn").classList.remove("on");
+    $("spread").classList.remove("on"); $("reader").classList.remove("on"); $("review").classList.remove("on");
     if (where === "hall") { show("hall"); setHash("hall"); $("tome").focus(); return; }
     if (where === "pick") { show("hall"); $("spread").classList.add("on"); setHash("pick"); $("spread").querySelector(".go").focus(); return; }
     if (where === "lib") { show("lib"); spot.clear(); spot.close(); st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
@@ -298,11 +298,6 @@
       const b = open.find((o) => o.id === id);
       if (k === "f") { closeReview(false); openReader(id); } else toNav((b && b.mine) || (id === "s1" && !mine.book) ? "tab=map" : `tab=lib&book=${id}`);
     }));
-    // FR-8 역량 지도 — 배운 것마다 레벨 4단계와 노력(책 수 · 날 수). 레벨 규칙은 가설(skills.js)
-    const SK = window.Skills;
-    $("rv-tags").innerHTML = SK.skillMap(fin, open).slice(0, 7).map((x) => `<li>${termHtml(x.skill)}
-      <span class="lv" aria-label="${SK.LEVELS[x.level]}">${SK.LEVELS.map((_, i) => `<i class="${i <= x.level ? "on" : ""}"></i>`).join("")}<em>${SK.LEVELS[x.level]}</em></span>
-      <b>${x.books ? `${x.books}권 · ${x.days}일` : "열어 둔 책"}</b></li>`).join("");
     $("rv-ins").innerHTML = fin.flatMap((b) => b.insights.map((t) => `<li>${esc(t)} <small>— ${esc(b.title)}</small></li>`)).slice(0, 5).join("");
     $("review").classList.add("on"); setHash("lib-review"); $("rv-close").focus();
   }
@@ -314,47 +309,9 @@
   $("rd-close").onclick = closeReader;
   $("reader").addEventListener("click", (e) => { if (e.target === $("reader")) closeReader(); });
 
-  // ── 내 배움 (claude-drafted: 2026-10-18, F-05 — PRD 2-7 "내용들은 서재에서 확인이 가능하도록 / 오버레이에서는 간단하고 필요한 내용만, 자세한건 서재로") ──
-  // 오버레이의 '내 배움' 탭이 보여 주던 지나온 단계 · 배운 말 · 확정한 설계도를 여기서 본다. 책장의 더미 책과 달리 이 브라우저에 남은 내비게이터 기록이다(learn.js).
-  // 기록이 없거나 못 읽으면(사생활 보호 창 등) 빈 안내를 보인다
-  const NAV_HOME = NAV;   // 이어 하기 — 주소 끝 없이 열면 내비게이터가 남은 기록에서 이어 간다
-  const explain = (t) => (window.NavGlossary ? window.NavGlossary.explain(t) : "");
-  function savedLearn() {
-    let store = null;
-    try { store = window.localStorage; } catch { store = null; }
-    return window.LibLearn.read(store);
-  }
-  function openLearn() {
-    lastFocus = document.activeElement;
-    const d = savedLearn(), none = (t) => `<p class="lr-none">${t}</p>`;
-    $("lr-seal").innerHTML = seal(d.empty ? "idle" : "happy", 72);
-    $("lr-sub").textContent = d.empty ? "아직 쌓인 기록이 없어요"
-      : `${d.project ? `${d.project} · ` : ""}${d.since ? `${d.since.replaceAll("-", ".")}부터 ` : ""}이 브라우저에 남은 기록이에요${d.practice ? " · 연습용 예시로 쌓았어요" : ""}`;
-    $("lr-body").innerHTML = d.empty
-      ? `<div class="lr-empty"><b>아직 쌓인 배움이 없어요</b><span>작업 화면(내비게이터)에서 할 일을 마치거나 설계도를 확정하면, 지나온 단계 · 배운 말 · 설계도가 여기 모여요.</span>
-          <a class="pillbtn pri" href="${NAV_HOME}">작업 화면에서 시작하기 →</a></div>`
-      : `<div class="tiles lr-tiles">${[["마친 단계", `${d.history.length}개`], ["배운 말", `${d.learned.length}개`], ["확정한 설계도", `${d.docs.length}개`]]
-          .map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join("")}</div>
-        ${d.finished ? `<p class="lr-done">여덟 단계를 끝까지 왔어요!</p>` : ""}
-        <div class="lr-grid">
-          <section><h3>지나온 단계</h3>${d.history.length ? `<ol class="lr-path">${d.history.map((x) => `<li>${esc(x.text)}</li>`).join("")}</ol>` : none("아직 없어요. 한 단계를 마치면 여기 남아요.")}
-            <h3>내가 확정한 설계도</h3>${d.docs.length ? d.docs.map((x) => `<details class="lr-doc"><summary>${x.stage}단계${x.name ? ` · ${esc(x.name)}` : ""}${x.at ? ` · ${esc(x.at)}` : ""}</summary><pre>${esc(x.text)}</pre></details>`).join("")
-              : none("설계도를 확정하면 여기 모여요.")}</section>
-          <section><h3>배운 말</h3>${d.learned.length ? `<ul class="lr-terms">${d.learned.map((x) => `<li><b>${esc(x.term)}</b>${explain(x.term) ? `<span>${esc(explain(x.term))}</span>` : ""}${
-              x.text ? `<small>만난 곳 · ${esc(x.text)}</small>` : ""}</li>`).join("")}</ul>` : none("할 일을 하나씩 마치면, 전문가들이 부르는 이름을 여기 모아 드려요.")}</section>
-        </div>
-        <a class="pillbtn lr-back" href="${NAV_HOME}">← 작업 화면으로 돌아가 이어 하기</a>`;
-    show("lib"); $("learn").classList.add("on"); setHash("lib-learn"); $("lr-close").focus();
-  }
-  function closeLearn() { $("learn").classList.remove("on"); setHash("lib"); lastFocus?.focus?.(); }
-  $("learn-btn").onclick = openLearn;
-  $("lr-close").onclick = closeLearn;
-  $("learn").addEventListener("click", (e) => { if (e.target === $("learn")) closeLearn(); });
-
   // ── 키보드: Esc는 한 겹씩 닫고, /는 찾기 ──
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      if ($("learn").classList.contains("on")) return closeLearn();
       if ($("review").classList.contains("on")) return closeReview();
       if ($("reader").classList.contains("on")) return closeReader();
       if ($("spread").classList.contains("on")) return go("hall");
@@ -370,10 +327,10 @@
     if (h === "lib") return go("lib");
     if (h === "lib-ask") return go("lib", "ask");
     if (h === "lib-dive") return arrive();
-    if (h === "lib-dive-learn") return arrive(openLearn);   // 내비게이터의 "서재에서 자세히 보기" — 물속으로 들어온 뒤 내 배움(F-05)
+    if (h === "lib-dive-learn") return arrive();   // 옛 주소(내 배움, 2026-10-19 지움) — 서고로
     if (h === "lib-hover") { go("lib"); return drawArcs("f1"); }
     if (h === "lib-review") { go("lib"); return openReview(); }
-    if (h === "lib-learn") { go("lib"); return openLearn(); }
+    if (h === "lib-learn") return go("lib");   // 옛 주소(내 배움, 2026-10-19 지움)
     if (h.startsWith("lib-bound-")) return bound(h.slice(10));
     if (h.startsWith("lib-open-")) { go("lib"); return openReader(h.slice(9), { cover: false }); }
     if (h.startsWith("lib-q=")) { go("lib"); spot.set(decodeURIComponent(h.slice(6))); return $("q").focus(); }
@@ -381,7 +338,7 @@
     go("hall");
   }
   // 내비게이터의 "내 서고 들어가기"로 물속에서 넘어왔을 때 — 서고가 다 읽히면 물이 위로 빠지고 플로로가 점프해 시작을 알린다(../navigator/dive.js)
-  // then: 다 올라온 뒤 할 일(내 배움 열기 등)
+  // then: 다 올라온 뒤 할 일
   function arrive(then) {
     go("lib"); setHash("lib");
     if (!window.FloeDive) { document.documentElement.classList.remove("dive-in"); return then?.(); }

@@ -1,6 +1,6 @@
 // claude-drafted: 2026-10-18 — 수용 테스트(이슈 #17). 이재엽(팀장) 요청으로 Claude가 썼고, 담당 두승현이 검토한다.
-// 무엇: FR-6(한곳에서 보기)과 FR-8(지식 창고 — 역량·노력)을 시연 더미 데이터(02-frontend/library/books.js)로 확인한다.
-//   계산 규칙 자체는 단위 시험(04-tests/library/schedule.test.js · skills.test.js)이 본다. 여기서는 "시연 데이터로 화면을 그리면
+// 무엇: FR-6(한곳에서 보기)과 FR-8(지식 창고 — 서고의 책)을 시연 더미 데이터(02-frontend/library/books.js)로 확인한다.
+//   계산 규칙 자체는 단위 시험(04-tests/library/schedule.test.js)이 본다. 여기서는 "시연 데이터로 화면을 그리면
 //   사용자가 무엇을 보게 되는가"를 본다. 시나리오 전체와 사람이 화면으로 볼 것은 README.md.
 // 날짜·개수는 적어 두지 않고 더미 데이터에서 읽는다(더미 데이터는 시연에 맞춰 바뀐다).
 // 실행: node --test 04-tests/acceptance/one-place.test.js
@@ -10,7 +10,6 @@ const fs = require("node:fs");
 const path = require("node:path");
 const D = require("../../02-frontend/library/books.js");
 const Sch = require("../../02-frontend/library/schedule.js");
-const Sk = require("../../02-frontend/library/skills.js");
 const Nav = require("../../03-backend/navigator/navigator.js");
 const ROOT = path.join(__dirname, "../..");
 
@@ -58,23 +57,9 @@ test.skip("FR-6 · 한곳에서 보기 화면 글에 '가상 숫자' 표시가 �
 
 // claude-drafted: 2026-10-18 — F-17(원칙 P7 "가상 데이터는 화면에 가상이라고 표시"): 서고와 지식 은하도 더미 데이터라는 것을 주석이 아니라 화면 머리에 적는다
 test("FR-8 · 서고와 지식 은하의 머리에 '예시 데이터' 표시가 있다 — 더미 책 · 별을 진짜 기록으로 오해하지 않게 (F-17)", () => {
-  for (const page of ["02-frontend/library/index.html", "02-frontend/library/sky.html"]) {
+  for (const page of ["02-frontend/library/index.html", "02-frontend/library/sky.html"]) {   // 지식 은하는 길만 막았고 파일은 남김(2026-10-19)
     const html = fs.readFileSync(path.join(ROOT, page), "utf8").replace(/<!--[\s\S]*?-->/g, "");
     assert.match(html, /<div class="lib-head glass">[^\n]*<span class="fake">예시 데이터예요 · 시연용<\/span>/, page);
   }
 });
 
-// ── FR-8 ──
-test("FR-8 · 끝낸 책이 쌓이면 배운 것마다 네 단계 중 하나의 레벨과 노력(책 수 · 날 수)이 보이고, 열어 둔 책에만 있는 배움은 '처음 봄'이다", () => {
-  assert.equal(Sk.LEVELS.length, 4, "레벨 4단계(requirements.md 5절)");
-  const map = Sk.skillMap(D.SHELF, D.OPEN);
-  const onShelf = new Set(D.SHELF.flatMap((b) => b.tags));
-  const openOnly = new Set(D.OPEN.flatMap((b) => b.tags).filter((t) => !onShelf.has(t)));
-  assert.deepEqual(new Set(map.map((x) => x.skill)), new Set([...onShelf, ...openOnly]), "빠진 배움도, 지어낸 배움도 없다");
-  assert.ok(onShelf.size > 0, "시연 서고에 끝낸 책의 배움이 있다");
-  for (const x of map) {
-    assert.ok(Nav.filled(Sk.LEVELS[x.level]), `${x.skill}: 레벨 이름`);
-    if (onShelf.has(x.skill)) assert.ok(x.level >= 1 && x.books >= 1 && x.days > 0, `${x.skill}: 끝낸 책의 노력`);
-    else assert.deepEqual([Sk.LEVELS[x.level], x.books, x.days], [Sk.LEVELS[0], 0, 0], `${x.skill}: 열어 둔 책에만 있음`);
-  }
-});

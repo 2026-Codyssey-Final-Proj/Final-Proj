@@ -9,8 +9,7 @@
 | 폴더 | 무엇 |
 |---|---|
 | [`navigator/`](navigator/README.md) | **지금 시연에 쓰는 화면**(프로토타입) — 여는 법은 그 폴더 README |
-| [`library/`](library/README.md) | 도서관 시안 — 플로로의 얼음 서고, 지식 별자리 하늘. `library/index.html`을 바로 연다(더미 데이터) |
-| `share/` | 공유 규칙 시험 화면 — `share/index.html`을 브라우저로 바로 연다 |
+| [`library/`](library/README.md) | 도서관 시안 — 플로로의 얼음 서고. `library/index.html`을 바로 연다(더미 데이터). 지식 별자리 하늘(`sky.html`)은 2026-10-19부터 길을 막아 두었다 |
 | [`assets/mascot/`](assets/mascot/README.md) | 마스코트 그림 (이용 조건 확인 전) |
 
 **아래 본문은 Next.js·Electron으로 옮길 때의 계획**(임유정 가설, 이슈 #14)이다. 지금 돌아가는 코드는 위 `navigator/`이고, 본문 5절의 폴더 구조는 아직 만들지 않았다.

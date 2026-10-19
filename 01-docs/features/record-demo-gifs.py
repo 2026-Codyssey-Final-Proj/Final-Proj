@@ -13,7 +13,6 @@ FE = ROOT / "02-frontend"
 OUT = ROOT / "01-docs" / "features"
 NAV = f"file://{FE}/navigator/index.html"
 LIB = f"file://{FE}/library/index.html"
-SHARE = f"file://{FE}/share/index.html"
 ENTRY = f"file://{FE}/index.html"
 W, H = 1280, 800
 GIF_W = 880                       # 저장 폭 — 파일 크기와 가독성 사이
@@ -105,20 +104,9 @@ def library(page, r):                # 05 FR-8: 도서관 탭 → 한 권의 책
     page.goto("about:blank"); page.goto(f"{LIB}#lib-review"); page.wait_for_timeout(900); r.hold(600); r.still(2000)
 
 
-def share(page, r):                  # 06 FR-9: 예시 글 → 점검 → 팀 전체 → 올리기 → 다른 사람에게 보이는 모습
-    page.goto(SHARE); page.wait_for_timeout(500); r.still(700)
-    r.click("#sample", hold=900)
-    page.check("input[name=level][value=team]"); page.wait_for_timeout(250); r.still(1000)
-    if page.is_visible("#confirm"):
-        page.check("#confirm"); page.wait_for_timeout(200); r.still(600)
-    r.click("#add", hold=1200)
-    page.select_option("#viewer", index=1); page.wait_for_timeout(250); r.still(1800)
-
-
-def plain_words(page, r):            # 07 FR-13: 용어는 작게 → 누르면 한 줄 풀이 → 서재 '내 배움'의 배운 말(2026-10-18 F-05: 오버레이 탭에서 옮김)
+def plain_words(page, r):            # 07 FR-13: 용어는 작게 → 누르면 한 줄 풀이(서재의 '내 배움'은 2026-10-19에 지움)
     open_nav(page, "ex=2&crit"); r.still(1400)
-    r.click("[data-act=term]", hold=1200)
-    page.goto("about:blank"); page.goto(f"{LIB}#lib-learn"); page.wait_for_timeout(900); r.hold(600); r.still(1800)
+    r.click("[data-act=term]", hold=1800)
 
 
 def floro(page, r):                  # 08 마스코트: 고개 돌리기 · 쓰다듬기
@@ -138,7 +126,7 @@ def entry(page, r):                  # 시연 입구 → 3분 시연 시작
 
 SCENES = {
     "01-stage-guide": (stage_guide, NAV_CROP), "02-blueprint": (blueprint, NAV_CROP), "03-gate": (gate, NAV_CROP),
-    "04-overview": (overview, NAV_CROP), "05-library": (library, None), "06-share": (share, None),
+    "04-overview": (overview, NAV_CROP), "05-library": (library, None),
     "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "entry": (entry, None),
 }
 
