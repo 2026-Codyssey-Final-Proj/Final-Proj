@@ -204,6 +204,8 @@
     look: icon('<circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path>', 22),
     bag: icon('<path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path>', 22),
     moon: icon('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>', 22),
+    // 모아 보기 창(2026-10-20, C-11) — 위쪽 줄의 단추. 네 칸 격자
+    grid: icon('<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"></rect>', 20),
   };
   // 하트 — 설정 맨 위 '플로로와 나'가 쓴다(위쪽 줄의 하트는 2026-10-18에 뺐다)
   const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
@@ -844,6 +846,7 @@
       ${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
+      <button class="ti" data-act="hub" aria-label="모아 보기" title="모아 보기 — 바이브 코딩 · 알림 · AI 진행">${I.grid}</button>
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 보기 방식, 연결, 소리, 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
@@ -1424,6 +1427,8 @@
     again: () => set({ later: false, picking: true }),
     pick: () => set({ picking: true }),
     settings: () => set({ settings: !st.settings }),
+    // 모아 보기 창(2026-10-20, C-11) — 앱이면 보통 창 하나(main.js openHub), 브라우저면 새 탭 하나(같은 이름이라 두 번 눌러도 하나)
+    hub: () => (window.floeApp && window.floeApp.openHub ? window.floeApp.openHub() : window.open("../hub/index.html", "floe-hub")),
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
     // 도서관 탭 — 책 고르기 · 목록으로 · 서고에 보관(확인 뒤) · 한 권으로 엮기
@@ -1775,6 +1780,8 @@
     else if ((d.via === "cli" || d.via === "api") && canLive) set({ mode: "live", error: "", warn: null });
     if (d.open && st.ui === "greet") ACT.open();
   });
+  // 모아 보기 창의 바이브 코딩 '들어가기'(2026-10-20, C-11) — 앱이 섬 창을 앞으로 보내고 이 신호를 주면 '이번 단계'로
+  if (window.floeApp && window.floeApp.onEnter) window.floeApp.onEnter(() => { st.tab = "today"; go("home"); });
 
   render();
   if (greetNow) startGreeting();

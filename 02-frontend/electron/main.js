@@ -165,6 +165,7 @@ function floeItems() {
   const say = async (add) => { const r = await pickAndConnect(add); if (r.message) dialog.showMessageBox(win, { message: r.message }); };
   return [
     { label: `Floe ${app.getVersion()} · 새 버전 확인 (Releases)`, click: () => shell.openExternal(RELEASES) },
+    { label: "모아 보기 열기", click: () => openHub() },   // 바이브 코딩 · 알림 · AI 진행(C-11 · C-12, 2026-10-20)
     { type: "separator" },
     { label: "프로젝트 폴더 연결…", click: () => say(true) },
     { label: "연결 빼기…", click: () => say(false) },
@@ -186,13 +187,35 @@ function menu() {
     tray = new Tray(icon);
     tray.setToolTip(`Floe ${app.getVersion()}`);
     tray.setContextMenu(Menu.buildFromTemplate(floeItems()));
-    tray.on("click", () => { if (!win) createWindow(); else win.show(); });
+    tray.on("click", () => { if (!win) createWindow(); openHub(); });   // 트레이 클릭 → 모아 보기 창(없던 섬 창도 같이)
   } catch (e) { console.log(`트레이 아이콘을 못 만들었어요(${e.message}) — 창 우클릭 메뉴로`); }
 }
 
 ipcMain.handle("floe:connect", () => pickAndConnect(true));
 ipcMain.handle("floe:disconnect", () => pickAndConnect(false));
 ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData")));
+// ── 모아 보기 창(2026-10-20, C-11 · C-12 — 이재엽 "따로 창 하나") — 바이브 코딩 고르기 · 알림 · AI 진행. 섬은 그대로 코딩 도구 위에 뜬다 ──
+// 보통 창(테두리 있음 · 항상 위 아님 · Dock에 앉음), 하나만 — 이미 열려 있으면 앞으로. 크기는 900×600 [제안]을 작업 영역 안에(lib.js hubBounds), 닫았다 다시 열면 지난 크기 · 자리.
+// 닫아도 섬 · 서버는 그대로. 화면 파일은 서버 주소로(…/hub/index.html — STATIC에 있어야 한다, static-files.test.js). 켤 때는 열지 않는다(넘김 문서 9절 2번 기본값)
+let hub = null, hubSaved = null;
+function openHub() {
+  if (hub) { hub.show(); hub.focus(); return; }
+  const wa = (win && !win.isDestroyed() ? screen.getDisplayMatching(win.getBounds()) : screen.getPrimaryDisplay()).workArea;
+  hub = new BrowserWindow({ ...L.hubBounds(wa, hubSaved), minWidth: 480, minHeight: 420, title: "Floe — 모아 보기", alwaysOnTop: false, show: false,
+    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  hub.once("ready-to-show", () => { if (hub) hub.show(); });
+  hub.on("close", () => { try { hubSaved = hub.getBounds(); } catch {} });
+  hub.on("closed", () => { hub = null; });
+  hub.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
+  hub.loadURL(`${URL_}hub/index.html`);
+}
+ipcMain.on("floe:open-hub", () => openHub());   // 섬 위쪽 줄의 '모아 보기' 단추
+// 바이브 코딩 '들어가기' — 섬 창을 앞으로 보이고 화면에 "이번 단계로"를 보낸다(app.js onEnter). 섬 창이 없으면 만든다(처음 화면이 '이번 단계'다)
+ipcMain.on("floe:enter", () => {
+  if (!win) return createWindow();
+  win.show(); win.focus();
+  win.webContents.send("floe:enter");
+});
 // 처음 설정(setup.js) — 키를 설정 폴더의 .env(나만 읽기 600)에 쓰고 이 프로세스의 환경에도 넣는다. 서버가 이 앱 안에 있으니 다시 켜지 않아도
 // 다음 AI 호출부터 그 키로 부른다(provider.js는 부를 때마다 환경을 본다). 값은 어디에도 출력하지 않는다
 function writeEnv(updates) {
@@ -230,6 +253,6 @@ app.whenReady().then(async () => {
   if (serverState.startsWith("error:")) { dialog.showErrorBox("Floe", `서버를 켜지 못했어요 (${serverState.slice(6)}).`); return app.quit(); }
   if (win && !win.isDestroyed()) win.loadURL(URL_);
   console.log(`Floe ${app.getVersion()}: ${URL_}${PORT !== WANT ? ` (${WANT}은 다른 서버가 써서 ${PORT}로)` : ""} · .env ${loaded ? "읽음" : "없음(이 컴퓨터의 Claude Code 구독)"}`);
-  app.on("activate", () => { if (!win) createWindow(); });
+  app.on("activate", () => { if (!win) createWindow(); openHub(); });   // Mac Dock 클릭 → 섬 창이 없으면 만들고, 모아 보기 창을 연다(C-11)
 });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
