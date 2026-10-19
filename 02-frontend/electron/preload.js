@@ -12,5 +12,11 @@ contextBridge.exposeInMainWorld("floeApp", {
   // Mac 노치(다이내믹 아일랜드, 2026-10-19) — 앱이 노치 크기 {width, height}(pt)를 보내면 화면이 띠를 노치에 맞춘다. 노치가 없으면 오지 않는다
   onNotch: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:notch", h); return () => ipcRenderer.removeListener("floe:notch", h); },
   resize: (w, h, anchor) => ipcRenderer.send("floe:resize", w, h, anchor),   // 창을 지금 보이는 섬(띠 · 한 줄 · 펼침 · 옆의 설정 창) 크기에 맞춘다. anchor "left"면 왼쪽을 고정
-  expand: () => ipcRenderer.send("floe:expand"),                // 서고로 들어갈 때 — 창을 화면만큼 넓힌다(6.2.0)
+  expand: () => ipcRenderer.send("floe:expand"),                // 서고로 들어갈 때 — 창을 화면만큼 넓힌다(6.2.0). 넓히면 floe:expanded가 온다
+  // 창을 넓힌 뒤(2026-10-20) — 앱이 {dx, dy}(섬 창이 있던 자리에서 넓힌 창까지 옮긴 거리)를 보내면 화면이 섬을 제자리에 붙들고 잠수한다
+  onExpanded: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:expanded", h); return () => ipcRenderer.removeListener("floe:expanded", h); },
+  // 모아 보기 창(2026-10-20, C-11) — 섬의 단추가 연다. enter: 모아 보기 창의 '들어가기'가 섬을 앞으로 · '이번 단계'로. onEnter: 섬이 그 신호를 받는다(떼는 함수를 돌려줌)
+  openHub: (space) => ipcRenderer.send("floe:open-hub", space || ""),   // space(2026-10-20, C-13): "alerts" · "ai"면 그 칸으로(기본 화면의 '크게 보기')
+  enter: () => ipcRenderer.send("floe:enter"),
+  onEnter: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:enter", h); return () => ipcRenderer.removeListener("floe:enter", h); },
 });

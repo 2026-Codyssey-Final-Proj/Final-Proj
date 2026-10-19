@@ -7,3 +7,4 @@
 | 기록 | 무엇 | 날짜 |
 |---|---|---|
 | [live-check-2026-10-18.md](live-check-2026-10-18.md) | 실제 AI 판정을 연습 예시 정답과 비교 · 토큰 실측 (`03-backend/navigator/live-check.js --report`) | 2026-10-18 |
+| [dive-frames-2026-10-20.md](dive-frames-2026-10-20.md) | 서고 전환(F-35) 프레임을 고치기 전 · 뒤 헤드리스 Chrome으로 3번씩 — 앱에서는 사람이 다시 잰다 | 2026-10-20 |

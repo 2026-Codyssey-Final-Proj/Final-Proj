@@ -16,6 +16,9 @@
 //   S3 알림 주소(/api/event·/api/events·/api/events/clear)는 확인 값(토큰)이 맞을 때만 받는다. 아래 "확인 값" 참고.
 //   S4 받은 알림 글은 저장하기 전에 민감 패턴(sensitive.js)으로 가린다 — 키 모양은 [비밀값], 이메일·전화·IP는 [… 가림].
 //   S5 POST /api/events/clear로 알림과 세션 대화를 비운다. 메모리에만 두므로 서버를 다시 켜도 빈다.
+//
+// AI 진행(C-12, claude-drafted: 2026-10-20 — 이재엽 "이건 바이브 코딩이 아니야"): 도구를 쓴 뒤(PostToolUse) hook.js가 보낸 한 일(말 · 이름이나 첫 줄 · 줄 수)을
+//   세션별로 메모리에만 모은다(50줄 · 세션 10개) — 알림 목록과 섞지 않고, 판정을 부르지 않고, 토큰을 쓰지 않는다. 화면은 GET /api/steps?since=로 본다. S4 가림 · S5 비우기가 같이 적용된다.
 const http = require("node:http");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
@@ -23,6 +26,7 @@ const os = require("node:os");
 const path = require("node:path");
 const Nav = require("./navigator.js");
 const Sensitive = require("./sensitive.js");
+const Steps = require("./steps.js");   // AI 진행(C-12) — 한 일의 말 · 80자 — claude-drafted: 2026-10-20
 const { callClaude, usage, claudeVersion } = require("./provider.js");
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 
@@ -42,7 +46,7 @@ const HOOK_KINDS = { UserPromptSubmit: "prompt", Stop: "stop" };
 const DEFAULT_TOKEN_FILE = path.join(os.homedir(), ".navigator-event-token");
 const TOKEN_FILE = process.env.NAV_EVENT_TOKEN_FILE || DEFAULT_TOKEN_FILE;
 const COOKIE = "nav_event_token";
-const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear"];
+const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/steps"];   // /api/steps — AI 진행(C-12, 2026-10-20)
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
@@ -82,12 +86,17 @@ const STATIC = {
   // dive.js·dive.css — 내비게이터(`dive.js` → /dive.js)와 서고(`../navigator/dive.js` → /navigator/dive.js)가 같이 쓴다. 2026-10-18까지 빠져 있었다
   // notes.js — 실사용의 '느낀 점 남기기'(2026-10-19)
   // setup.js · setup.css — 처음 켤 때 반기고 연결(Claude Code / API 키)을 돕는 화면(2026-10-19)
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js"],
+  // greet.js — 켤 때 인사의 시간표(C-10, 2026-10-20)
+  // morph.js — 섬의 움직임 규칙(C-14, 2026-10-20). 내비게이터는 hub.js(순수 함수) · steps.js도 부른다(C-13 기본 화면)
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js", "greet.js", "morph.js"],
   // 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다. 2026-10-19(이재엽): learn.js · skills.js를 지우고, 지식 은하(sky.*)는 내주지 않는다(길을 막음 — 파일은 남김)
   // my-books.js — 내 책 · 예시 책 지우기(2026-10-19 실사용). 내비게이터(`../library/my-books.js`)와 서고가 같이 쓴다
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "my-books.js", "schedule.js", "search.js", "spotlight.js"],
+  // 모아 보기 창(2026-10-20, C-11 · C-12) — 섬과 따로 뜨는 보통 창. 앱은 서버 주소(/hub/index.html)로 연다
+  "02-frontend/hub": ["index.html", "hub.css", "hub.js"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js"],
+  // steps.js — AI 진행(C-12, 2026-10-20): 모아 보기 창이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js"],
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -145,11 +154,44 @@ function recent(log, max = MAX_WORK) {
 const sessions = new Map();   // 세션별 최근 대화 — 메모리에만. 세션 10개·말 20개까지
 const events = [];
 let seq = 0;
+
+// ── AI 진행(C-12) — 도구를 쓴 뒤 한 일을 세션별로, 메모리에만 — claude-drafted: 2026-10-20 ──
+// 알림(events · sessions)과 따로 둔다: 알림 목록에 섞이지 않고, 판정을 부르지 않는다. 번호(stepSeq)도 알림 번호(seq)와 따로 센다 — /api/events의 latest가 한 일 때문에 늘지 않게
+const MAX_STEPS = 50, MAX_WORK_SESSIONS = 10;   // 세션마다 최근 50줄 · 세션 10개 [제안 2026-10-20]
+const work = new Map();   // id → {id, project, tool, state, at, steps[]} — 최근에 쓴 세션이 맨 뒤
+let stepSeq = 0;
+const VERB_OK = new Set(Object.values(Steps.VERBS));
+const count = (v) => (Number.isInteger(v) && v > 0 ? v : 0);
+const cut = (t) => (t.length > Steps.MAX ? `${t.slice(0, Steps.MAX - 1)}…` : t);
+// 세션 표의 한 줄 — 없으면 만들고, 최근에 쓴 것을 맨 뒤로. 작업 폴더 이름은 가린다(S4)
+function workSession(body, tool) {
+  const id = `${tool}:${String(body.session_id || "")}`;
+  const s = work.get(id) || { id, project: "", tool, state: "", at: 0, steps: [] };
+  s.project = Sensitive.redact(path.basename(String(body.cwd || ""))) || s.project;
+  s.at = Date.now();
+  work.delete(id); work.set(id, s);
+  if (work.size > MAX_WORK_SESSIONS) work.delete(work.keys().next().value);
+  return s;
+}
+// 훅이 보낸 step {verb, what, add, del}을 확인해서 쌓는다 — 말은 표의 값만, what은 가린 뒤 80자까지(비면 도구 이름), 줄 수는 0 이상 정수만. 그 밖의 칸은 버린다
+function addStep(body, tool) {
+  const s = workSession(body, tool);
+  const raw = body.step && typeof body.step === "object" ? body.step : {};
+  const what = typeof raw.what === "string" && raw.what.trim() ? raw.what.trim() : typeof body.tool_name === "string" ? body.tool_name.trim() : "";
+  s.steps.push({ seq: ++stepSeq, at: Date.now(), verb: VERB_OK.has(raw.verb) ? raw.verb : Steps.OTHER, what: cut(Sensitive.redact(what)), add: count(raw.add), del: count(raw.del) });
+  while (s.steps.length > MAX_STEPS) s.steps.shift();
+  return { seq: stepSeq };
+}
+// 화면이 묻는 모양 — since보다 뒤의 한 일만, 세션은 최근 쓴 순
+const stepsSince = (since) => ({ latest: stepSeq, sessions: [...work.values()].reverse().map((s) => ({ ...s, steps: s.steps.filter((st) => st.seq > since) })) });
+
 function addEvent(body) {
-  const kind = HOOK_KINDS[body.hook_event_name];
-  if (!kind) return null;
   // Codex(GPT)도 Claude Code와 같은 모양으로 알린다(2026-10-14 실측) — 어느 도구인지만 hook.js가 붙여 준다
   const tool = body.tool === "codex" ? "codex" : "claude";
+  if (body.hook_event_name === "PostToolUse") return addStep(body, tool);   // C-12: 한 일 — 알림 목록에는 넣지 않는다
+  const kind = HOOK_KINDS[body.hook_event_name];
+  if (!kind) return null;
+  workSession(body, tool).state = kind === "prompt" ? "working" : "done";   // C-12: 세션 상태 — 요청 받음이면 일하는 중, 작업 마침이면 마쳤어요
   const id = `${tool}:${String(body.session_id || "")}`, log = sessions.get(id) || [];
   // S4: 저장하기 전에 가린다 — 메모리의 대화에도, 화면에 줄 글에도 원래 값이 남지 않는다(자르기 전에 가려서 키가 반쯤 남지 않는다)
   for (const [who, said] of [["사용자", body.prompt], [tool === "codex" ? "Codex" : "Claude", body.last_assistant_message]]) {
@@ -168,6 +210,7 @@ function clearEvents() {
   const n = events.length;
   events.length = 0;
   sessions.clear();
+  work.clear();   // C-12: 한 일과 세션 상태도 같이(stepSeq는 되돌리지 않는다 — 열어 둔 모아 보기 창이 since로 묻는다)
   return n;
 }
 
@@ -208,6 +251,10 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/events") {
     const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
     return send(res, 200, { ok: true, latest: seq, events: events.filter((e) => e.seq > since) });
+  }
+  if (req.method === "GET" && route === "/api/steps") {   // C-12 AI 진행(API.md 3-12) — 모아 보기 창이 쿠키로 묻는다
+    const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
+    return send(res, 200, { ok: true, ...stepsSince(since) });
   }
   if (req.method === "POST" && route === "/api/events/clear") return send(res, 200, { ok: true, cleared: clearEvents() });   // S5
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다

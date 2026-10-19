@@ -240,6 +240,7 @@ test("확인 값: 알림 세 주소는 값이 없거나 틀리면 403 — 방법
     refused(await call("POST", "/api/event", { body: hookEvent("t"), headers }), 403, no);
     refused(await call("GET", "/api/events", { headers }), 403, no);
     refused(await call("POST", "/api/events/clear", { headers }), 403, no);
+    refused(await call("GET", "/api/steps", { headers }), 403, no);   // 2026-10-20 C-12 — 넷째 알림 주소
     refused(await call("DELETE", "/api/events", { headers }), 403, no);
   }
   refused(await call("DELETE", "/api/events", { headers: withToken() }), 404, "없는 주소", "값이 맞으면 그다음에 주소를 본다");
@@ -313,6 +314,109 @@ test("POST /api/events/clear: {ok, cleared} — 비운 뒤 events는 비고, lat
   assert.equal(r.json.cleared, before.events.length);
   const now = (await getEvents(0)).json;
   assert.deepEqual([now.events, now.latest], [[], before.latest]);
+});
+
+// ════════ 3-12. AI 진행 — 도구를 쓴 뒤(PostToolUse) → GET /api/steps (C-12, claude-drafted: 2026-10-20) ════════
+
+// hook.js가 PostToolUse에 보내는 모양 — step만, tool_input · tool_response는 없다
+const stepEvent = (session, step, over = {}) => ({ hook_event_name: "PostToolUse", session_id: session, cwd: "/Users/me/club-app", tool: "claude", tool_name: "Edit", step: { verb: "고쳤어요", what: "src/app.js", add: 3, del: 1, ...step }, ...over });
+const getSteps = (since = 0, headers = withToken()) => call("GET", `/api/steps?since=${since}`, { headers });
+const STEP_KEYS = ["add", "at", "del", "seq", "verb", "what"], SESSION_KEYS = ["at", "id", "project", "state", "steps", "tool"];
+
+test("GET /api/steps: 확인 값이 없거나 틀리면 403, 쿠키로도 된다, GET이 아니면 404", async () => {
+  const no = /^확인 값이 없거나 맞지 않음/;
+  for (const headers of [{}, { "X-Nav-Token": "wrong-value" }, { Cookie: "nav_event_token=wrong-value" }]) refused(await call("GET", "/api/steps", { headers }), 403, no);
+  assert.equal((await getSteps(0, { Cookie: `nav_event_token=${token()}` })).status, 200, "화면은 쿠키로");
+  refused(await call("POST", "/api/steps", { headers: withToken() }), 404, "없는 주소");
+});
+
+test("POST /api/event(PostToolUse): {ok, seq} — 알림 목록(/api/events)에는 섞이지 않고 /api/steps에 세션별로 쌓인다", async () => {
+  const evBefore = (await getEvents(0)).json;
+  const a = await postEvent(stepEvent("st-shape", { verb: "읽었어요", what: "README.md", add: 0, del: 0 }, { tool_name: "Read" }));
+  succeeded(a, ["seq"]);
+  assert.ok(Number.isInteger(a.json.seq) && a.json.seq > 0);
+  const b = await postEvent(stepEvent("st-shape", {}));
+  assert.equal(b.json.seq, a.json.seq + 1, "한 일의 번호도 하나씩 는다");
+  const evAfter = (await getEvents(0)).json;
+  assert.deepEqual([evAfter.events.length, evAfter.latest], [evBefore.events.length, evBefore.latest], "알림 목록은 그대로");
+  const r = await getSteps(0);
+  succeeded(r, ["latest", "sessions"]);
+  assert.equal(r.json.latest, b.json.seq);
+  const s = r.json.sessions.find((x) => x.id === "claude:st-shape");
+  assert.ok(s, "세션은 tool:session_id");
+  assert.deepEqual(Object.keys(s).sort(), SESSION_KEYS);
+  assert.deepEqual([s.project, s.tool, s.state], ["club-app", "claude", ""], "상태는 요청 받음 · 작업 마침이 와야 생긴다");
+  assert.ok(Number.isFinite(s.at) && Math.abs(Date.now() - s.at) < 60_000);
+  assert.equal(s.steps.length, 2);
+  for (const st of s.steps) { assert.deepEqual(Object.keys(st).sort(), STEP_KEYS); assert.ok(Number.isFinite(st.at)); }
+  assert.deepEqual(s.steps.map((st) => [st.seq, st.verb, st.what, st.add, st.del]), [[a.json.seq, "읽었어요", "README.md", 0, 0], [b.json.seq, "고쳤어요", "src/app.js", 3, 1]], "오래된 것부터");
+  assert.equal(r.json.sessions[0].id, "claude:st-shape", "최근 쓴 세션이 먼저");
+});
+
+test("GET /api/steps?since=N: N보다 뒤의 한 일만 — 세션은 남고 steps가 빈다. 숫자가 아니면 0", async () => {
+  const first = await postEvent(stepEvent("st-since", {}));
+  await postEvent(stepEvent("st-since", { what: "src/b.js" }));
+  const r = (await getSteps(first.json.seq)).json;
+  const s = r.sessions.find((x) => x.id === "claude:st-since");
+  assert.deepEqual(s.steps.map((st) => st.what), ["src/b.js"]);
+  assert.equal((await getSteps(r.latest)).json.sessions.find((x) => x.id === "claude:st-since").steps.length, 0, "다 본 뒤엔 빈 목록");
+  assert.equal((await getSteps("abc")).json.sessions.find((x) => x.id === "claude:st-since").steps.length, 2);
+});
+
+test("GET /api/steps: 한 일의 글은 저장하기 전에 가린다 — `export API_KEY=…` 같은 명령의 키, 작업 폴더 이름의 이메일", async () => {
+  await postEvent(stepEvent("st-redact", { verb: "실행했어요", what: `export API_KEY=${FAKE_KEY} && npm test`, add: 0, del: 0 }, { tool_name: "Bash", cwd: "/Users/me/member@club.example.com" }));
+  const r = await getSteps(0);
+  assert.ok(!r.text.includes(FAKE_KEY), "키가 그대로 나왔다");
+  assert.ok(!r.text.includes("member@club.example.com"));
+  const s = r.json.sessions.find((x) => x.id === "claude:st-redact");
+  assert.match(s.steps.at(-1).what, /\[비밀값\]/);
+});
+
+test("GET /api/steps: 세션마다 최근 50줄, 세션 10개 — 넘치면 오래된 것부터 버린다", async () => {
+  for (let i = 0; i < 55; i++) await postEvent(stepEvent("st-cap", { what: `f${i}.js` }));
+  const s = (await getSteps(0)).json.sessions.find((x) => x.id === "claude:st-cap");
+  assert.equal(s.steps.length, 50);
+  assert.equal(s.steps[0].what, "f5.js", "오래된 것부터 버린다");
+  for (let i = 0; i < 12; i++) await postEvent(stepEvent(`st-many-${i}`, {}));
+  const r = (await getSteps(0)).json;
+  assert.ok(r.sessions.length <= 10, `세션 ${r.sessions.length}개`);
+  assert.equal(r.sessions[0].id, "claude:st-many-11", "최근 쓴 세션이 먼저");
+  assert.ok(!r.sessions.some((x) => x.id === "claude:st-cap"), "오래된 세션은 밀려난다");
+});
+
+test("GET /api/steps: 요청 받음(UserPromptSubmit)이면 state 'working', 작업 마침(Stop)이면 'done' — 같은 세션의 한 일에 붙는다", async () => {
+  await postEvent(hookEvent("st-state", { cwd: "/Users/me/club-app" }));
+  let s = (await getSteps(0)).json.sessions.find((x) => x.id === "claude:st-state");
+  assert.ok(s, "한 일이 아직 없어도 세션은 보인다");
+  assert.deepEqual([s.state, s.steps], ["working", []]);
+  await postEvent(stepEvent("st-state", {}));
+  s = (await getSteps(0)).json.sessions.find((x) => x.id === "claude:st-state");
+  assert.deepEqual([s.state, s.steps.length], ["working", 1]);
+  await postEvent(hookEvent("st-state", { hook_event_name: "Stop", prompt: undefined, last_assistant_message: "다 했어요" }));
+  s = (await getSteps(0)).json.sessions.find((x) => x.id === "claude:st-state");
+  assert.deepEqual([s.state, s.steps.length], ["done", 1]);
+  await postEvent(stepEvent("st-state", {}, { tool: "codex", tool_name: "Bash" }));
+  assert.ok((await getSteps(0)).json.sessions.some((x) => x.id === "codex:st-state"), "Codex는 따로 모인다");
+});
+
+test("POST /api/event(PostToolUse): step 칸이 없거나 이상해도 받는다 — 말은 '했어요', what이 비면 도구 이름, 줄 수는 0 이상 정수만, 80자까지", async () => {
+  await postEvent(stepEvent("st-odd", {}, { step: undefined, tool_name: "Task" }));
+  await postEvent(stepEvent("st-odd", { verb: 7, what: "x".repeat(200), add: -3, del: "둘" }, { tool_name: "Edit" }));
+  await postEvent(stepEvent("st-odd", { verb: "실행했어요", what: "", add: 0, del: 0 }, { tool_name: "Bash", tool_input: { command: "넣으면 안 되는 칸" }, tool_response: "결과" }));
+  const r = await getSteps(0);
+  const s = r.json.sessions.find((x) => x.id === "claude:st-odd");
+  assert.deepEqual(s.steps.map((st) => [st.verb, st.what.length, st.add, st.del]), [["했어요", 4, 0, 0], ["했어요", 80, 0, 0], ["실행했어요", 4, 0, 0]]);
+  assert.deepEqual([s.steps[0].what, s.steps[2].what], ["Task", "Bash"]);
+  assert.ok(!r.text.includes("넣으면 안 되는 칸") && !r.text.includes("tool_input"), "모르는 칸은 버린다");
+});
+
+test("POST /api/events/clear: 한 일과 세션 상태도 비운다 — latest는 그대로", async () => {
+  await postEvent(stepEvent("st-clear", {}));
+  const before = (await getSteps(0)).json;
+  assert.ok(before.sessions.length > 0);
+  await call("POST", "/api/events/clear", { headers: withToken() });
+  const now = (await getSteps(0)).json;
+  assert.deepEqual([now.sessions, now.latest], [[], before.latest]);
 });
 
 // ════════ 3-5. 사용량 ════════

@@ -14,7 +14,7 @@ const BACK = path.join(__dirname, "../../03-backend/navigator");
 
 test("인자: 폴더 · --off · --codex · --no-open · --port. 폴더를 안 주면 지금 폴더, 이상한 포트는 기본값", () => {
   const o = F.parseArgs(["/tmp/x", "--off", "--codex", "--no-open", "--port", "4399"], "/cwd", {});
-  assert.equal(o.dir, path.resolve("/tmp/x")); assert.equal(o.off, true);   // 기대값도 이 OS의 규칙으로 — Windows는 D:\tmp\x (KAN-57 F-28-2) assert.equal(o.codex, true); assert.equal(o.open, false); assert.equal(o.port, 4399);
+  assert.equal(o.dir, path.resolve("/tmp/x")); assert.equal(o.off, true);   // 기대값도 이 OS의 규칙으로 — Windows는 D:\tmp\x (KAN-57 F-39-2) assert.equal(o.codex, true); assert.equal(o.open, false); assert.equal(o.port, 4399);
   const d = F.parseArgs([], "/cwd", {});
   assert.equal(d.dir, path.resolve("/cwd")); assert.equal(d.off, false); assert.equal(d.open, true); assert.equal(d.port, F.DEFAULT_PORT);
   assert.equal(F.parseArgs(["--port", "abc"], "/cwd", {}).port, F.DEFAULT_PORT);

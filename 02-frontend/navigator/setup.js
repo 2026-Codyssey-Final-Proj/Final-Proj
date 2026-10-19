@@ -241,6 +241,11 @@
   }
 
   root.FloeSetup = { ...api, open };
-  const boot = () => { let saved = null; try { saved = readSaved(root.localStorage); } catch {} if (shouldOpen(saved, root.location.hash)) open(); };
+  // 켤 때 인사(app.js, C-10 2026-10-20)가 돌고 있으면 그것이 끝난 뒤에 연다 — 인사가 두 번 나오지 않게(인사 움직임 → 처음 설정)
+  const boot = () => {
+    let saved = null; try { saved = readSaved(root.localStorage); } catch {}
+    if (!shouldOpen(saved, root.location.hash)) return;
+    if (doc.documentElement.classList.contains("greeting")) doc.addEventListener("floe:greet-done", () => open(), { once: true }); else open();
+  };
   if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", boot); else boot();
 })(typeof window !== "undefined" ? window : globalThis);

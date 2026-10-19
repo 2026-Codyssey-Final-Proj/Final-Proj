@@ -104,6 +104,19 @@
     return view;
   }
 
+  // 모드(C-13, 2026-10-20 — 이재엽 "처음 시작했을때는 기본으로 두지만 사람들이 바이브 코딩 환경에 들어가면 기본 화면에 나오지 않는 이상 그 오버레이는 바이브 코딩 오버레이로 계속 남는거야").
+  // 접힘(nextView의 띠 · 한 줄 · 펼침)과 따로다 — 어떤 판을 보이나. base: 기본 화면(단추 판) · vibe: 바이브 코딩(이번 단계 · 설계도 · 단계 지도 · 도서관).
+  //   켤 때는 늘 base(start), 바이브 코딩 단추 · 주소로 연 장면(scene) · 모아 보기 창의 '들어가기'(enter)는 vibe, 집 단추(home)는 base.
+  //   접힘 · 펼침 · 서고 다녀옴(fold · unfold · library)으로는 바뀌지 않는다. 모르는 일도 그대로. 이름에 mode(보기 방식) · home(펼친 섬)을 쓰지 않는다(넘김 문서 10절)
+  const PLACES = ["base", "vibe"];
+  function nextPlace(place, ev) {
+    const cur = PLACES.includes(place) ? place : "base";
+    if (ev === "start") return "base";
+    if (ev === "vibe" || ev === "scene" || ev === "enter") return "vibe";
+    if (ev === "home") return "base";
+    return cur;
+  }
+
   // 진행 세 줄 — 방금 한 일 / 지금 할 일 / 그다음. todos는 사용자가 정한 순서(있으면 그것을 따른다)
   function ticker(j, todos, lastDone) {
     const s = STAGES[j.stage], nx = STAGES[s.n + 1];
@@ -274,7 +287,7 @@
     };
   }
 
-  const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, reorder, nextView, ticker, face, docFace, decisionLine, blanks, welcome,
+  const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt,
     parseJudgement, parseDraft, parseReview, filled };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

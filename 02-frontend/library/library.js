@@ -49,6 +49,15 @@
     if (where === "lib") { show("lib"); spot.clear(); spot.close(); st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
   }
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
+  // 작업 화면으로 돌아가기(2026-10-20 이재엽 "서재에서 오버레이로 넘어갈 때 애니메이션") — 물이 차오르고 플로로가 잠수한 뒤 내비게이터가 물속에서 떠오른다(주소 끝 &back → dive.js surface)
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest('a.lib-out, a.go[href*="navigator/index.html"]');
+    // 움직임 줄이기도 같은 길로(&back) — leave()가 움직임 없이 바로 넘긴다. 전에는 &back 없이 가서 내비게이터가 장면(#tab=lib)으로 읽어 바이브 코딩이 됐다(F-36)
+    if (!a || !window.FloeDive || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    const seal = $("s-lib").classList.contains("on") ? $("lib-seal") : $("hall-seal");
+    window.FloeDive.leave(`${a.getAttribute("href")}&back`, seal);
+  });
   $("tome").onclick = () => go("pick");
   $("spread").addEventListener("click", (e) => { if (e.target === $("spread")) go("hall"); });
 

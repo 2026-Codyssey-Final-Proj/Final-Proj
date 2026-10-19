@@ -17,6 +17,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 :focus-visible { outline: 2px solid var(--ice); outline-offset: 3px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
+/* 플로로 크기는 창(오버레이) 크기를 따른다(2026-10-20 이재엽 "오버레이 크기에 따라서 플로로 크기 조정") — 서고에서는 창을 사람이 조절할 수 있다(electron/main.js).
+   그림은 seal.js가 고정 px로 그리지만 여기서 폭을 짧은 변(vmin)에 맞춰 덮는다. 휴대폰 폭의 128px 규칙은 아래 @media가 다시 덮는다 */
+#lib-seal svg.cat{width:clamp(120px,17vmin,260px);height:auto}
+#hall-seal svg.cat{width:clamp(96px,14vmin,210px);height:auto}
+
 /* ── 배경: 별 · 아치 · 빛줄기 ── */
 .sky { position: fixed; inset: 0; pointer-events: none; }
 .sky i { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #dfeaff; }
