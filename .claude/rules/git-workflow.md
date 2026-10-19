@@ -23,13 +23,16 @@ git 명령을 실행하기 전에 읽는다. 위험한 명령 일부는 훅(`.cl
 | **큰 묶음** — 기능을 더하거나 바꿨다 | N+1, M=0 (v1.3 → v2.0) |
 | **작은 고침** — 버그 · 문서 · 시험 | M+1 (v1.3 → v1.4) |
 
-- 올릴 때마다 [CHANGELOG.md](../../CHANGELOG.md) **맨 위에 한 줄**(버전 · 날짜 · 누가 · 무엇 · 건드린 곳)을 같은 PR에 넣고, PR 제목 앞에 `[vN.M]`을 붙인다. 버전은 **올린 사람이 고른다.**
+- **PR은 CHANGELOG를 고치지 않는다(2026-10-19 — 이재엽, 인수인계 4절 제안 1번 "Go").** 대신 [`changes/<브랜치 끝 이름>.md`](../../changes/README.md) 조각 한 장을 같은 PR에 넣는다 —
+  네 줄 `종류: 큰 묶음|작은 고침` · `누가` · `무엇` · `건드린 곳`. `main`에 올라오면 Action([jira-release.yml](../../.github/workflows/jira-release.yml) → [changelog-fold.js](../../.github/scripts/changelog-fold.js))이
+  [CHANGELOG.md](../../CHANGELOG.md) 맨 위 버전의 **다음 번호**를 붙여 넣고 조각을 지우고 "무엇" 끝에 `(#PR번호)`를 붙인다. **번호는 병합될 때 정해지고 사람은 종류만 고른다.** PR 제목에 `[vN.M]`은 붙이지 않는다.
+  왜: 동시에 열린 PR이 CHANGELOG 맨 위 한 줄에서 반드시 부딪쳤다(10/19 PR 넷이 v4.0). <!-- claude-drafted: 2026-10-19 -->
 - **동의를 기다리지 않고 병합한다.** 그 한 줄과 PR이 알림이다 — 남의 담당 폴더를 고쳤어도 같다("건드린 곳"에 그 폴더를 적는다).
-- `main`에 직접 올릴 때도 같은 커밋에 한 줄을 넣는다.
-- **앱 버전 · 릴리스는 따로 (이재엽 2026-10-19 "지금 작업들에서 릴리즈는 나중에 우리가 버전업을 할때 해줘"):** CHANGELOG vN.M은 PR마다 올리지만, 앱 버전(`02-frontend/electron/package.json`의 `version`)은 **팀이 버전업을 정할 때만** 올린다 — 올리면 CI가 Release `app-v<버전>`을 만든다. 작업 PR(Claude가 연 것도)은 앱 버전을 건드리지 않는다. 그사이 앱으로 써 보려면 각자 `npm run dist`로 묶는다([electron/README.md](../../02-frontend/electron/README.md)).
-- 두 사람이 같은 번호를 고르면 **나중에 병합하는 쪽이** 최신 `main`을 받아 다음 번호로 고친다. [test_changelog.py](../../04-tests/repo/test_changelog.py)가 겹침·건너뜀을 잡는다.
-- **Claude가 연 PR도 같다** — Claude가 버전 줄을 적고, 병합은 사람이 한다(위 표, 훅).
-- **Jira:** 할 일은 Jira 프로젝트 Floe에 있다. Jira 이슈가 있으면 브랜치 · PR 제목 · 커밋 제목에 키(`<키>-12`)를 넣는다 — PR 제목은 `[vN.M] <키>-12 타입(범위): 설명`. `main`에 올라오면 GitHub Action이 맨 위 버전을 Jira 릴리스로 만들고 그 이슈들에 붙인다([jira.md](../../01-docs/00-overview/jira.md)).
+- `main`에 직접 올릴 때는 조각 대신 CHANGELOG 맨 위에 한 줄을 직접 써도 된다(다음 조각은 그 줄의 다음 번호를 받는다).
+- **앱 버전 · 릴리스는 따로 (이재엽 2026-10-19 "지금 작업들에서 릴리즈는 나중에 우리가 버전업을 할때 해줘"):** CHANGELOG vN.M은 병합마다 올라가지만, 앱 버전(`02-frontend/electron/package.json`의 `version`)은 **팀이 버전업을 정할 때만** 올린다 — 올리면 CI가 Release `app-v<버전>`을 만든다. 작업 PR(Claude가 연 것도)은 앱 버전을 건드리지 않는다. 그사이 앱으로 써 보려면 각자 `npm run dist`로 묶는다([electron/README.md](../../02-frontend/electron/README.md)).
+- [test_changelog.py](../../04-tests/repo/test_changelog.py)가 겹침·건너뜀과 조각의 네 줄을 잡는다. 직접 쓴 줄끼리 겹치면 **나중에 올리는 쪽이** 다음 번호로 고친다.
+- **Claude가 연 PR도 같다** — Claude가 조각 파일을 적고, 병합은 사람이 한다(위 표, 훅).
+- **Jira:** 할 일은 Jira 프로젝트 Floe에 있다. Jira 이슈가 있으면 브랜치 · PR 제목 · 커밋 제목에 키(`<키>-12`)를 넣는다 — PR 제목은 `<키>-12 타입(범위): 설명`. `main`에 올라오면 GitHub Action이 조각을 합친 뒤 맨 위 버전을 Jira 릴리스로 만들고 그 이슈들에 붙인다([jira.md](../../01-docs/00-overview/jira.md)).
 - 협업 증빙: 읽은 사람이 병합 뒤에 PR 코멘트 한 줄을 남기면 증빙이 된다 — 선택이고 병합을 막지 않는다.
 
 ## 세션 시작 체크리스트

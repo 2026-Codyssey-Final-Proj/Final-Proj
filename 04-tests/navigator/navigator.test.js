@@ -340,6 +340,20 @@ test("플로로: 눈은 커서 쪽으로 가되 7칸을 넘지 않고, 커서가
   assert.deepEqual([still.x, still.y], [0, 0]);
 });
 
+test("플로로: 창 밖 커서로는 미끄러져 간다 — 80ms에 남은 거리의 63%, 0.5px 안이면 딱 맞추고 끝, 처음이면 바로 (F-27)", () => {
+  const to = { x: 100, y: 0 };
+  assert.deepEqual(Cat.glide(null, to, 16), { x: 100, y: 0, done: true }, "처음(from 없음)은 바로");
+  const a = Cat.glide({ x: 0, y: 0 }, to, 80);
+  assert.ok(Math.abs(a.x - 63.2) < 0.1 && a.y === 0 && !a.done, JSON.stringify(a));
+  assert.ok(Cat.glide({ x: 0, y: 0 }, to, 40).x < a.x, "짧은 프레임은 덜 간다");
+  assert.deepEqual(Cat.glide({ x: 0, y: 0 }, to, 0), { x: 0, y: 0, done: false }, "시간이 안 흘렀으면 그대로");
+  assert.deepEqual(Cat.glide({ x: 0, y: 0 }, to, 5000), { x: 100, y: 0, done: true }, "오래 걸렸으면 목표에");
+  assert.deepEqual(Cat.glide({ x: 99.8, y: 0.2 }, to, 16), { x: 100, y: 0, done: true }, "0.5px 안이면 딱 맞추고 끝");
+  let p = { x: 0, y: 0 }, n = 0;
+  while (!(p = Cat.glide(p, to, 16)).done) n++;
+  assert.ok(n > 10 && n < 40, `60fps에서 ${n}프레임 만에 닿는다(약 0.3초)`);
+});
+
 test("플로로: 고개를 돌리면 얼굴이 그쪽으로 가며 가로로 좁아지고, 가운데를 보면 그대로다", () => {
   assert.deepEqual(Cat.turn({ x: 0, y: 0 }), { x: 0, y: 0, sx: 1, sy: 1 });
   const right = Cat.turn(Cat.gaze(1000, 0)), down = Cat.turn(Cat.gaze(0, 1000));

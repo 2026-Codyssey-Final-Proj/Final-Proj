@@ -112,6 +112,15 @@
       el.querySelector(".c-head").setAttribute("transform", `rotate(${(t.x * 0.3).toFixed(1)} 55 108)`);
     }
   }
+  // 미끄러져 따라가기(2026-10-19 F-27, 이재엽 "창 밖에 있을 때 부드럽지 못해") — 창 밖 커서는 앱이 1초에 30번만 보내 줘서(electron/main.js) 받은 점으로
+  // 바로 뛰면 계단처럼 보인다. 그래서 프레임마다 남은 거리의 일부씩 간다: dt ms 동안 남은 거리의 1 - e^(-dt/tau)만큼(tau 80ms면 80ms에 63%, 240ms에 95%).
+  // 0.5px 안에 들면 목표에 딱 맞추고 done. from이 없으면 바로 목표(처음 한 번)
+  function glide(from, to, dt, tau = 80) {
+    if (!from) return { x: to.x, y: to.y, done: true };
+    const k = 1 - Math.exp(-Math.max(0, dt || 0) / tau);
+    const x = from.x + (to.x - from.x) * k, y = from.y + (to.y - from.y) * k;
+    return Math.abs(to.x - x) < 0.5 && Math.abs(to.y - y) < 0.5 ? { x: to.x, y: to.y, done: true } : { x, y, done: false };
+  }
 
   // ── 교감 — 순수 함수(navigator.test.js가 확인한다) ──
 
@@ -204,7 +213,7 @@
     } catch {}
   }
 
-  const api = { MOODS, svg, gaze, turn, follow, stroke, bond, petLine, PET_LINES, greeting, sleepy, burst, chime };
+  const api = { MOODS, svg, gaze, turn, follow, glide, stroke, bond, petLine, PET_LINES, greeting, sleepy, burst, chime };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavSeal = api;
 })(typeof window !== "undefined" ? window : globalThis);

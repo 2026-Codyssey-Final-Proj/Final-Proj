@@ -35,6 +35,42 @@ def test_dates_do_not_go_back_upward():
     assert not bad, "새 줄은 맨 위에: " + "; ".join(bad)
 
 
+# 2026-10-19부터 PR은 CHANGELOG를 고치지 않고 changes/<브랜치>.md 조각을 둔다 — 병합되면 .github/scripts/changelog-fold.js가 합친다.
+# 조각이 네 줄(종류 · 누가 · 무엇 · 건드린 곳)을 갖췄는지, 표를 깨는 |가 없는지 여기서 먼저 잡는다(Action에서 터지면 main이 빨개진다).
+CHANGES = CHANGELOG.parent / "changes"
+KEYS = ("종류", "누가", "무엇", "건드린 곳")
+
+
+def _fragments():
+    if not CHANGES.is_dir():
+        return []
+    return sorted(p for p in CHANGES.glob("*.md") if p.name.lower() != "readme.md")
+
+
+def _parse(text):
+    got = {}
+    for line in text.splitlines():
+        if ":" in line:
+            k, v = line.split(":", 1)
+            if k.strip() in KEYS and k.strip() not in got:
+                got[k.strip()] = v.strip()
+    return got
+
+
+def test_fragments_have_four_lines():
+    bad = []
+    for p in _fragments():
+        got = _parse(p.read_text(encoding="utf-8"))
+        missing = [k for k in KEYS if not got.get(k)]
+        if missing:
+            bad.append(f"{p.name}: 빠진 줄 {', '.join(missing)}")
+        elif got["종류"] not in ("큰 묶음", "작은 고침"):
+            bad.append(f"{p.name}: 종류는 '큰 묶음' 또는 '작은 고침' — 지금 '{got['종류']}'")
+        elif any("|" in got[k] for k in KEYS):
+            bad.append(f"{p.name}: 값에 | 가 있다 — 표 칸이 깨진다")
+    assert not bad, "조각 파일(changes/*.md)이 이상하다 — changes/README.md: " + "; ".join(bad)
+
+
 def run_all():
     tests = [v for k, v in globals().items() if k.startswith("test_") and callable(v)]
     for t in tests:

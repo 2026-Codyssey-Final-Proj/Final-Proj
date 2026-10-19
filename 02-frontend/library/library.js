@@ -57,13 +57,23 @@
   // 얼음판 위 플로로(2026-10-17 자연스럽게) — 얼음판과 함께 둥실 뜨고(index.html의 .ice.bob), 눈은 마우스를 따라가며,
   // 12~20초마다 배로 통통(물범 걸음, ../navigator/seal.css)이나 두리번 중 하나를 한다. 움직임 줄이기면 하지 않는다
   if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    let raf = 0, point = null;
+    let raf = 0, point = null, target = null;
     document.addEventListener("mousemove", (e) => {
-      point = { x: e.clientX, y: e.clientY };
+      point = { x: e.clientX, y: e.clientY }; target = null;
       if (!raf) raf = requestAnimationFrame(() => { raf = 0; Seal.follow(document.body, point); });
     });
-    // 앱 안이면 창 밖의 커서도(2026-10-19 — ../electron/preload.js onCursor)
-    if (window.floeApp && window.floeApp.onCursor) window.floeApp.onCursor((p) => { point = p; Seal.follow(document.body, p); });
+    // 앱 안이면 창 밖의 커서도(2026-10-19 — ../electron/preload.js onCursor). 1초에 30번만 오니 받은 점으로 바로 뛰지 않고 프레임마다 미끄러져 간다(Seal.glide, F-27)
+    if (window.floeApp && window.floeApp.onCursor) {
+      let glideRaf = 0, last = 0;
+      const step = (now) => {
+        glideRaf = 0;
+        if (!target) return;
+        const g = Seal.glide(point, target, now - last); last = now;
+        point = { x: g.x, y: g.y }; Seal.follow(document.body, point);
+        if (g.done) target = null; else glideRaf = requestAnimationFrame(step);
+      };
+      window.floeApp.onCursor((p) => { target = p; if (!glideRaf) { last = performance.now(); glideRaf = requestAnimationFrame(step); } });
+    }
     const play = () => {
       for (const h of [$("hall-seal"), $("lib-seal")]) {
         if (Math.random() < 0.5) { h.classList.remove("galumph"); void h.offsetWidth; h.classList.add("galumph"); continue; }

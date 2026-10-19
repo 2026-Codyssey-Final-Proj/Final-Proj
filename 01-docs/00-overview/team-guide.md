@@ -141,8 +141,9 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 ## 3. 작업은 어디에 올리나 — 팀이 하는 방식
 
 **GitHub `2026-Codyssey-Final-Proj/Final-Proj`** 에 올린다. 2026-10-18부터 **브랜치 → PR → 올린 사람이 바로 병합**이다 —
-서로 동의를 기다리지 않고, 올릴 때마다 [CHANGELOG.md](../../CHANGELOG.md)에 버전(vN.M) 한 줄을 적어 알린다(팀 결정 — 이재엽).
-버전은 **큰 묶음**(기능을 더하거나 바꿈)이면 N+1·M=0, **작은 고침**(버그·문서·시험)이면 M+1 — 올린 사람이 고른다.
+서로 동의를 기다리지 않고, 올릴 때마다 [CHANGELOG.md](../../CHANGELOG.md)에 생기는 버전(vN.M) 한 줄로 알린다(팀 결정 — 이재엽).
+**2026-10-19부터 PR은 CHANGELOG를 직접 고치지 않는다** — [`changes/<브랜치 끝 이름>.md`](../../changes/README.md) 조각 한 장(종류 · 누가 · 무엇 · 건드린 곳)을 넣으면,
+병합될 때 Action이 다음 번호를 붙여 CHANGELOG에 합친다. 종류는 **큰 묶음**(기능을 더하거나 바꿈 → N+1·M=0) 또는 **작은 고침**(버그·문서·시험 → M+1) — 올린 사람은 종류만 고르고 번호는 병합될 때 정해진다.
 할 일은 **Jira 프로젝트 Floe**에 있고(#102), Jira 이슈가 있으면 브랜치 · PR 제목에 키(`<키>-12`)를 넣는다 — 병합되면 그 이슈에 버전이 붙는다([jira.md](jira.md)).
 `main`에 직접 올려도 되고 그때도 버전 한 줄을 넣는다. 읽은 사람이 병합 뒤에 남기는 PR 코멘트 한 줄은 **협업 증빙(평가 10점)** 이 된다(선택).
 
@@ -150,11 +151,12 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 flowchart LR
     A["Jira에서<br/>내 할 일 확인"] --> B["브랜치 만들기<br/>v2/키-12-주제"]
     B --> C["작업 · 커밋"]
-    C --> V["CHANGELOG.md<br/>맨 위에 vN.M 한 줄"]
+    C --> V["changes/브랜치.md<br/>조각 한 장(종류 · 누가 · 무엇 · 건드린 곳)"]
     V --> D["git push"]
-    D --> E["PR 열기<br/>제목 앞에 vN.M · Refs #이슈번호"]
+    D --> E["PR 열기<br/>제목에 Jira 키 · Refs #이슈번호"]
     E --> G["내가 바로 병합"]
-    G --> H["이슈에 링크 남기고 닫기"]
+    G --> W["Action이 다음 번호로<br/>CHANGELOG에 합침"]
+    W --> H["이슈에 링크 남기고 닫기"]
     G -.-> F["읽은 사람이<br/>코멘트 한 줄(선택)"]
 ```
 
@@ -163,15 +165,15 @@ git checkout main && git pull                 # 최신으로
 git checkout -b docs/내-주제                  # 브랜치 — v2/…, docs/…, fix/… 중 하나로 시작
 # …작업…
 git add <바꾼 파일>                            # git add -A 보다 파일을 골라서 (.env가 섞이지 않게)
-# CHANGELOG.md 맨 위에 한 줄: | v1.4 | 날짜 | 내 이름 | 무엇이 달라졌나 | 건드린 폴더 |
+# changes/내-주제.md 네 줄: 종류: 작은 고침 / 누가: 내 이름 / 무엇: 무엇이 달라졌나 / 건드린 곳: 폴더  (CHANGELOG.md는 고치지 않는다)
 git commit -m "docs(범위): 무엇을 했는지"      # 제목은 `타입(범위): 설명` — docs · feat · fix · chore · refactor
 git push -u origin docs/내-주제
-gh pr create --title "[v1.4] <키>-12 docs(범위): 무엇을 했는지"   # 또는 GitHub 웹의 "Compare & pull request"
+gh pr create --title "<키>-12 docs(범위): 무엇을 했는지"   # 또는 GitHub 웹의 "Compare & pull request" — 버전 번호는 적지 않는다
 gh pr merge --merge --delete-branch           # 동의를 기다리지 않고 내가 병합
 ```
 
-**PR 본문에는** ① 무엇인가 ② 버전(큰 묶음/작은 고침) ③ 확인한 것(테스트·링크)을 적고, 맨 위에 `Refs #이슈번호`를 둔다.
-병합은 **올린 사람이** 한다. 같은 번호를 누가 먼저 병합했으면 최신 `main`을 받아 다음 번호로 고친 뒤 병합한다.
+**PR 본문에는** ① 무엇인가 ② 종류(큰 묶음/작은 고침) ③ 확인한 것(테스트·링크)을 적고, 맨 위에 `Refs #이슈번호`를 둔다.
+병합은 **올린 사람이** 한다. 번호는 병합될 때 Action이 붙이므로 같은 번호 충돌은 없다 — 병합 1분 뒤 CHANGELOG 맨 위에 내 줄이 `(#PR번호)`와 함께 생겼는지 한 번 본다.
 Claude는 병합하지 못한다(훅) — Claude에게 시킨 PR은 내가 병합한다.
 
 ### 올리기 전에 한 번

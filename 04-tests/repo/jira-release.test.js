@@ -128,13 +128,18 @@ test("로그 어디에도 토큰 · 이메일 · 사이트 주소가 없다", as
   for (const secret of [ENV.JIRA_API_TOKEN, ENV.JIRA_EMAIL, "team-x", Buffer.from(`${ENV.JIRA_EMAIL}:${ENV.JIRA_API_TOKEN}`).toString("base64")]) assert.ok(!all.includes(secret), secret);
 });
 
-test("워크플로는 main push에서만 돌고, 읽기 권한만 갖고, 비밀값을 이 스크립트에만 넘기며, 액션을 커밋 해시로 고정한다", () => {
+test("워크플로는 main push에서만 돌고, 저장소 쓰기는 CHANGELOG · changes/만 main에 커밋하며, 비밀값을 Jira 스크립트에만 넘기고, 액션을 커밋 해시로 고정한다", () => {
   const wf = fs.readFileSync(path.join(ROOT, ".github/workflows/jira-release.yml"), "utf8");
   assert.match(wf, /on:\s*\n\s*push:\s*\n\s*branches:\s*\[main\]/);
   assert.doesNotMatch(wf, /pull_request_target|pull_request:/, "PR 이벤트에서는 비밀값을 쓰지 않는다");
-  assert.match(wf, /permissions:\s*\n\s*contents:\s*read/);
+  // 2026-10-19: 조각(changes/*.md)을 CHANGELOG에 합쳐 main에 커밋하므로 contents: write — 그 대신 add 하는 경로를 둘로 못 박고 main에만 push 한다
+  assert.match(wf, /permissions:\s*\n\s*contents:\s*write/);
+  assert.match(wf, /fetch-depth:\s*\d{2,}/, "changelog-fold.js가 지난 병합 커밋에서 PR 번호를 찾으려면 깊이가 필요하다");
+  assert.match(wf, /git add CHANGELOG\.md changes\n/);
+  assert.match(wf, /git push origin HEAD:main\n/);
+  assert.doesNotMatch(wf, /--force/);
+  assert.ok(wf.indexOf("changelog-fold.js") < wf.indexOf("jira-release.js"), "조각을 먼저 합친 뒤 Jira 릴리스");
   for (const m of wf.matchAll(/uses:\s*(\S+)/g)) assert.match(m[1], /@[0-9a-f]{40}$/, `${m[1]}은 커밋 해시로 고정`);
-  assert.match(wf, /persist-credentials:\s*false/);
   assert.match(wf, /node \.github\/scripts\/jira-release\.js/);
   for (const k of ["JIRA_BASE_URL", "JIRA_EMAIL", "JIRA_API_TOKEN"]) assert.match(wf, new RegExp(`${k}: \\$\\{\\{ secrets\\.${k} \\}\\}`));
   assert.match(wf, /JIRA_PROJECT_KEY: \$\{\{ vars\.JIRA_PROJECT_KEY \}\}/);
