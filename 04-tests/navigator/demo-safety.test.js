@@ -108,7 +108,9 @@ test("S3: 확인 값 파일은 저장소 밖(홈 폴더)에 두고 나만 읽을
   assert.equal(S.TOKEN_FILE, TOKEN_FILE, "시험에서는 환경변수로 바꾼 자리를 쓴다");
   assert.equal(S.DEFAULT_TOKEN_FILE, path.join(os.homedir(), ".navigator-event-token"));
   const repo = path.resolve(__dirname, "../..");
-  assert.ok(path.relative(repo, S.DEFAULT_TOKEN_FILE).startsWith(".."), "기본 자리는 저장소 안이 아니다");
+  // 드라이브가 다르면(Windows: 저장소 D: · 홈 C:) relative가 ..가 아니라 절대 경로를 돌려준다 — 그것도 밖이다(KAN-57 F-28-3)
+  const rel = path.relative(repo, S.DEFAULT_TOKEN_FILE);
+  assert.ok(rel.startsWith("..") || path.isAbsolute(rel), "기본 자리는 저장소 안이 아니다");
   const f = path.join(TMP, "sub", "t");
   const a = S.eventToken(f);
   assert.match(a, /^[A-Za-z0-9_-]{43,}$/, "길고 맞히기 어려운 값");

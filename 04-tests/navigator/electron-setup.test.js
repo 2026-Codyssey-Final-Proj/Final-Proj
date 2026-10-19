@@ -3,7 +3,10 @@
 // 실행: node --test 04-tests/navigator/electron-setup.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const L = require("../../02-frontend/electron/lib.js");
+const read = (f) => fs.readFileSync(path.join(__dirname, "../../02-frontend", f), "utf8");
 
 const KEY = "sk-" + "Hy4d".repeat(6);   // 시험에서만
 
@@ -30,3 +33,13 @@ test("중계 서버 주소: 비면 공식 주소(\"\"), https만 받고 끝의 /
   for (const bad of ["http://relay.example", "https://user:pw@relay.example", "relay.example", "javascript:alert(1)"]) assert.equal(L.relayUrl(bad), null, bad);
 });
 
+// KAN-57(두승현 2026-10-19 "floe 초기 실행시 설정 창이 매우 작게 보여진다"): 창은 섬 크기만 따라가서(measureSize) 처음 설정이 391×60 창에 끼어 보였다
+test("처음 설정이 떠 있는 동안은 섬을 재지 않고 창을 넓히고(expand), 뜰 때 · 닫힐 때 다시 잰다 — 닫히면 섬 크기로", () => {
+  const app = read("navigator/app.js");
+  const measure = app.slice(app.indexOf("function measureSize"), app.indexOf("const queueSize"));
+  assert.match(measure, /getElementById\("floe-setup"\)[^\n]*floeApp\.expand\(\)/, "설정이 떠 있으면 넓힌다");
+  assert.ok(measure.indexOf("floe-setup") < measure.indexOf("getBoundingClientRect"), "섬을 재기 전에 본다");
+  assert.match(read("navigator/setup.js"), /dispatchEvent\(new CustomEvent\("floe:setup-open"/, "설정이 뜨면 알린다");
+  assert.match(app, /addEventListener\("floe:setup-open", queueSize\)/, "뜨면 다시 잰다");
+  assert.match(app, /addEventListener\("floe:setup-done", queueSize\)/, "닫히면('나중에 할게요' · Esc 포함) 다시 재서 섬 크기로");
+});

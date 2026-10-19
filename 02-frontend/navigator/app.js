@@ -1025,6 +1025,8 @@
   function measureSize() {
     sizeRaf = 0;
     if (!window.floeApp || isPhone()) return;
+    // 처음 설정(setup.js)이 떠 있으면 섬이 아니라 그 창을 담도록 넓힌다 — 섬 크기 창(391×60)에 끼어 보였다(두승현 2026-10-19 "설정 창이 매우 작게", KAN-57)
+    if (document.getElementById("floe-setup")) { if (lastSize !== "setup") { lastSize = "setup"; window.floeApp.expand(); } return; }
     let r = 0, b = 0;
     for (const el of $nav.children) { const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
     if (!r || !b) return;
@@ -1042,6 +1044,9 @@
     if (sizeObs) { sizeObs.disconnect(); for (const el of $nav.children) sizeObs.observe(el); }   // 다시 그릴 때마다 새 자식을 본다
     queueSize(); setTimeout(queueSize, 300);   // 300ms 뒤 한 번 더 — 글꼴 · 그림이 늦게 오는 경우
   }
+  // 처음 설정이 뜨거나 닫히면('나중에 할게요' · Esc 포함) 다시 잰다 — 닫히면 섬 크기로 돌아온다(KAN-57)
+  document.addEventListener("floe:setup-open", queueSize);
+  document.addEventListener("floe:setup-done", queueSize);
   PHONE.addEventListener("change", render);
 
   // ── 플로로와 교감 ──
