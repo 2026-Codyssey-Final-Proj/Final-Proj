@@ -7,7 +7,7 @@
 | 파일 | 무엇 |
 |---|---|
 | `main.js` | 앱 — 서버 띄우기 · 창 · 메뉴(프로젝트 폴더 연결 / 빼기 · 설정 폴더 · 브라우저로 열기 · 끄기). Mac은 위 메뉴 줄, **Windows · Linux는 창 우클릭과 트레이 아이콘**에 같은 메뉴(테두리 없는 창엔 메뉴 줄이 없다, 6.0.0) |
-| `preload.js` | 화면이 앱에게 부탁할 수 있는 다섯(`window.floeApp`: connect · disconnect · openSettings · **saveKey · clearKey** — 처음 설정, 2026-10-19). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
+| `preload.js` | 화면이 앱에게 부탁할 수 있는 것(`window.floeApp`: connect · disconnect · openSettings · **saveKey · clearKey** — 처음 설정, 2026-10-19 · resize(anchor) · **expand** — 서고로 들어갈 때 창을 화면만큼, 6.2.0). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
 | `lib.js` | 순수 함수 — `.env` 읽기 · PATH 합치기(Mac · Linux, 셸 고르기) · 훅 명령(app.asar → app.asar.unpacked) · 폴더 연결(connect.js 규칙 그대로). 시험 [`electron-lib.test.js`](../../04-tests/navigator/electron-lib.test.js) |
 | `prebuild.js` | 묶기 전에 화면 · 서버를 `payload/`로 복사(node_modules · `.env*` · 문서 제외). git에 올리지 않는다 |
 | `package.json` | Electron 44.9.0 · electron-builder 26.15.3(4.0.0에서 33 · 25에서 올림 — 이 Mac은 macOS 26이라 옛 Electron의 입력 · 창 문제를 피하려고) · `@anthropic-ai/sdk`(내 키로 쓸 때) · 묶기 설정(`build`: mac dmg · win nsis · **linux AppImage + deb**, `homepage` · `author`는 deb가 요구하는 칸 — 사람 메일은 없다) |
@@ -53,6 +53,7 @@ npm run dist:linux          # 우분투용(Mac · Linux에서 됨): dist/Floe-<�
 
 ## 확인한 것 (2026-10-19, 이재엽의 Mac · arm64)
 
+- **6.2.0(설정 옆 · 따라오기 · 서고 넓히기):** 묶은 앱을 CDP로 열어 설정을 켜면 창이 오른쪽으로만 넓어지고(x 그대로), 서고 주소로 넘어가면 창이 화면만큼 커지고 돌아오면 다시 섬 크기가 되는 것을 봤다 — 섬 947×513 → 설정 열림 1338×826(x 그대로, 글자 '아주 크게' 1452) → 닫으면 946×512 → 서고 1440×960 → 돌아오면 937×177. 버벅임은 사람이 느끼는 것이라 **이재엽이 다시 써 보고** 말해 줘야 한다.
 - **6.0.0 Linux(도커의 우분투 24.04, arm64, 화면은 Xvfb):** `Floe-6.0.0-arm64.deb`를 `apt install`로 넣고 `/opt/Floe/floe-app`을 켜니 서버가 켜지고(`/` · `/api/usage` 200), 앱 화면이 `in-app`으로 뜨며(`window.floeApp` 있음) 창이 섬 크기를 따라가고(947×187, 섬 940×180) 휴대폰 탭 막대가 없는 것을 CDP로 봤다. 처음엔 `libasound2`가 없어 켜지지 않아 deb 의존 목록에 더했다(`package.json` `deb.depends`). **못 본 것:** 진짜 마우스 클릭 · 투명 · 항상-위 · 트레이(합성기 있는 데스크톱이 필요) — 이재엽이 우분투 PC(x86_64)에서 확인.
 - **0.4.0(처음 설정 · 옛 서버 알아보기, #113 브랜치에서만 — 병합 때 #115의 "늘 자기 서버"로 합쳐 옛 서버 알아보기는 뺐고 앱은 5.0.0):** `npm run dist`로 `Floe-0.4.0-arm64.dmg`. 묶은 앱을 포트 4398로 켜서 `/api/setup`의 지문이 저장소 코드의 지문과 같은 것(`9d9dd5cd0b87`), 첫 화면에 처음 설정("반가워요! 저는 길잡이 물범 플로로예요.")이 뜨고 `window.floeApp.saveKey`가 있는 것을 CDP로 봤다(누르지는 않았다 — 처음 설정 기록이 남지 않게). 옛 서버가 먼저 떠 있을 때의 묻는 창은 **사람이 아직 눌러 보지 않았다**(판단 함수만 시험: `electron-setup.test.js`).
 
@@ -67,6 +68,7 @@ npm run dist:linux          # 우분투용(Mac · Linux에서 됨): dist/Floe-<�
 - 서명 · 공증 없음(Apple 개발자 계정 필요 — 이재엽 결정). 아이콘은 `build/icon.png`(플로로 SVG를 1024px로 그린 것 — 원본 그림이 아니라 코드로 그린 플로로).
 - 창 자리를 기억하지 않는다(켤 때마다 위쪽 가운데). 크기는 섬을 따라가지만, 설정 창을 열면 1,000px 넘게 길어져 작은 화면에서는 아래가 잘릴 수 있다.
 - 접힌 띠 · 한 줄 상태에서는 창을 끌 수 없다(위쪽 줄이 있는 펼침 상태에서만).
+- **설정 창은 섬 오른쪽에**(6.2.0) — 창이 오른쪽으로 넓어지고 섬은 제자리(anchor left). 화면 오른쪽 끝에 붙어 있으면 창을 안쪽으로 당긴다. **서고로 들어가면**(`/library/`) 창이 화면만큼(최대 1440×960) 넓어지고, 내비게이터로 돌아오면 다시 섬 크기로 줄어든다.
 - **휴대폰 화면은 없다** — 앱 안에서는 창이 600px보다 좁아져도 PC 화면 그대로다(5.2.0, 이재엽 "모바일 화면은 아직 만들지 않도록"). 휴대폰 화면은 브라우저에서 좁게 열 때만 나온다.
 - Windows `.exe`는 Windows에서 묶어야 한다(CI가 묶는다, 사람이 써 본 기록은 아직). 노치 모양은 하지 않는다(Mac 전용). **Linux는 이 Mac의 도커(우분투 24.04, arm64)에서 deb를 설치해 켜 본 것까지다** — 진짜 우분투 PC(x86_64)에서 화면 · 클릭 · 트레이는 이재엽이 확인해야 한다(아래 "확인한 것").
 - 자동 업데이트 없음 — 새 버전은 다시 내려받는다.

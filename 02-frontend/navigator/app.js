@@ -291,9 +291,18 @@
       <button type="button" class="lnk" data-act="lib-learn">지나온 단계 · 배운 말 · 설계도는 ${END.more}${I.arrow}</button></div>`;
   }
   // 설정 — 플로로와 나, 보기 방식, Claude Code·Codex 연결 상태, 자동으로 살펴보기, 소리, 기록. PC·iPhone 모두 톱니 뒤에
+  // 설정 — 묶음별로 나눠 한눈에(6.2.0, 이재엽 2026-10-19 "설정창도 직관적으로"): 플로로와 나 · 연결 · 보기 · 알림 기록 · 느낀 점 · 기록. PC에서는 섬 옆(오른쪽)에 열린다(settingsPop · .nav.side)
+  const SG = {
+    link: icon('<path d="M10 14a5 5 0 0 1 0-7l2-2a5 5 0 0 1 7 7l-1 1"></path><path d="M14 10a5 5 0 0 1 0 7l-2 2a5 5 0 0 1-7-7l1-1"></path>', 14),
+    eye: icon('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>', 14),
+    box: icon('<path d="M4 7h16v13H4z"></path><path d="M4 7l2-3h12l2 3"></path><path d="M10 11h4"></path>', 14),
+    bell: icon('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 20a2 2 0 0 0 4 0"></path>', 14),
+  };
+  const sgrp = (ic, title, body) => `<section class="sgrp"><h3 class="sg-h">${ic}${title}</h3>${body}</section>`;
+  const srow = (label, control) => `<div class="srow"><span>${label}</span>${control}</div>`;
   function settingsBody() {
     // 연결 칸 — 서버로 열었으면 보기 방식과 상관없이 보인다(연습 중에도 알림은 들어오니까). '연결 끊기'를 누르면 들어온 알림을 받지 않는다
-    const link = canLive ? `<div class="link"><div class="row"><span class="led ${conn() === "on" ? "on" : conn()}"></span><span class="grow">${st.unplug
+    const link = canLive ? sgrp(SG.link, "연결", `<div class="row"><span class="led ${conn() === "on" ? "on" : conn()}"></span><span class="grow">${st.unplug
         ? "연결을 끊었어요 — 작업 알림이 와도 글 칸을 채우거나 살펴보지 않아요"
         : st.feed.at ? `${toolName(st.feed.tool)}와 연결됨 · ${esc(st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}`
         : "Claude Code·Codex 알림을 기다리는 중 — connect.js로 연결해 주세요"}</span>
@@ -301,21 +310,23 @@
       ${st.mode === "live" ? `<label class="chk"><input type="checkbox" data-act="auto" ${st.auto ? "checked" : ""} ${st.unplug ? "disabled" : ""}>AI 코딩 도구가 작업을 마치면 자동으로 살펴보기</label>
       <span>켜면 그때마다 최근 작업 대화가 AI(Claude)로 보내져요. 비밀번호처럼 보이는 게 있으면 보내기 전에 멈춰요.</span>` : ""}${
       // 앱 안에서는 폴더 고르기로 훅을 더하고 뺀다(터미널의 floe.js · connect.js와 같은 일) — preload.js가 열어 준 셋만
-      window.floeApp ? `<div class="row"><button type="button" class="btn" data-act="app-connect">프로젝트 폴더 연결…</button><button type="button" class="btn" data-act="app-disconnect">연결 빼기…</button><button type="button" class="btn" data-act="app-settings">.env 폴더 열기</button></div>` : ""}</div>` : "";
+      window.floeApp ? `<div class="row"><button type="button" class="btn" data-act="app-connect">프로젝트 폴더 연결…</button><button type="button" class="btn" data-act="app-disconnect">연결 빼기…</button><button type="button" class="btn" data-act="app-settings">.env 폴더 열기</button></div>` : ""}`) : "";
     // 처음 설정(setup.js) 다시 하기 — Claude Code / API 키를 바꿀 때 (2026-10-19)
-    const keep = `${window.FloeSetup ? `<div class="row"><span class="grow">AI를 어떻게 부를지(Claude Code / API 키) 다시 고를 수 있어요.</span><button class="btn" data-act="setup">처음 설정 다시 하기</button></div>` : ""}<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`;
+    const keep = sgrp(SG.box, "기록 · 처음 설정", `${window.FloeSetup ? `<div class="row"><span class="grow">AI를 어떻게 부를지(Claude Code / API 키) 다시 고를 수 있어요.</span><button class="btn" data-act="setup">처음 설정 다시 하기</button></div>` : ""}<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`);
     // 만드는 크기 — 진짜 AI에게 물을 때 같이 보낸다(tier). 고르는 건 사용자
-    const tier = `<div class="row tiers"><span>만드는 크기</span><span class="row" role="radiogroup" aria-label="만드는 크기">${TIERS.map(([v, label]) =>
-      `<label class="chk"><input type="radio" name="tier" data-act="tier" value="${v}" ${st.tier === v ? "checked" : ""}>${label}</label>`).join("")}</span>${termTag(st.tier)}</div>`;
-    return `${bondCard()}${link}${alertLog()}${notesCard()}<div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>
-      <div class="row">보기 방식 <select data-act="mode" aria-label="보기 방식">
+    const tier = srow("만드는 크기", `<span class="row tiers" role="radiogroup" aria-label="만드는 크기">${TIERS.map(([v, label]) =>
+      `<label class="chk"><input type="radio" name="tier" data-act="tier" value="${v}" ${st.tier === v ? "checked" : ""}>${label}</label>`).join("")}${termTag(st.tier)}</span>`);
+    const view = sgrp(SG.eye, "보기", `${srow("보기 방식", `<select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
-        <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select></div>
-      <div class="row">글자 크기 <select data-act="text-size" aria-label="글자 크기">${TEXT_SIZES.map(([v, name]) =>
-        `<option value="${v}" ${st.textSize === v ? "selected" : ""}>${name}</option>`).join("")}</select></div>
-      ${tier}<div class="row tiers"><span>버튼 말</span><span class="row" role="radiogroup" aria-label="명령 칸의 말">${[["work", "일 말 (맡기기 · 살피기)"], ["game", "게임 말 (공격 · 행동)"]].map(([v, label]) =>
-        `<label class="chk"><input type="radio" name="words" data-act="words" value="${v}" ${st.words === v ? "checked" : ""}>${label}</label>`).join("")}</span></div>
-      <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>${keep}`;
+        <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select>`)}
+      ${srow("글자 크기", `<select data-act="text-size" aria-label="글자 크기">${TEXT_SIZES.map(([v, name]) =>
+        `<option value="${v}" ${st.textSize === v ? "selected" : ""}>${name}</option>`).join("")}</select>`)}
+      ${tier}${srow("버튼 말", `<span class="row tiers" role="radiogroup" aria-label="명령 칸의 말">${[["work", "일 말 (맡기기 · 살피기)"], ["game", "게임 말 (공격 · 행동)"]].map(([v, label]) =>
+        `<label class="chk"><input type="radio" name="words" data-act="words" value="${v}" ${st.words === v ? "checked" : ""}>${label}</label>`).join("")}</span>`)}
+      <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>
+      <div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>`);
+    const log = sgrp(SG.bell, "알림 · 느낀 점", `${alertLog()}${notesCard()}`);
+    return `${bondCard()}${link}${view}${log}${keep}`;
   }
   // 알림 기록(FR-7) — [때 · 도구 · 무슨 알림 · 서버가 준 한 줄 · 이 알림으로 끝낸 할 일]. 비밀번호처럼 보이는 글은 숨긴 채로 남는다(alerts.js)
   const clock = (t) => (Number.isFinite(t) ? new Date(t).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) : "");
@@ -785,6 +796,7 @@
   // 내 서고 들어가기 — 오버레이가 화면 가득 물속이 되고, 책을 안은 플로로가 내려간 뒤 서고가 물속에서 떠오른다(dive.js, 목업 영상 24~28초)
   // then="learn"이면 서고에 올라온 뒤 '내 배움'을 연다(#lib-dive-learn, F-05). iPhone은 물속 없이 바로 '내 배움'(#lib-learn)으로
   function enterLibrary(then = "") {
+    if (window.floeApp) window.floeApp.expand();   // 앱: 섬 크기에 묶인 창을 화면만큼 넓힌다 — 물속 전환과 서고가 커질 자리(6.2.0)
     if (then && isPhone()) { location.href = `${LIB_URL}#lib-${then}`; return; }
     const href = `${LIB_URL}#lib-dive${then ? `-${then}` : ""}`;
     if (!window.FloeDive) { location.href = href; return; }
@@ -818,7 +830,8 @@
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
   }
-  const settingsPop = () => (st.settings ? `<div class="pop" role="dialog" aria-label="설정">${settingsBody()}</div>` : "");
+  const X_ICON = icon('<path d="M6 6l12 12M18 6L6 18"></path>', 16);
+  const settingsPop = () => (st.settings ? `<div class="pop" role="dialog" aria-label="설정"><div class="pop-h"><b>설정</b><span class="grow"></span><button type="button" class="ti" data-act="settings" aria-label="설정 닫기" title="닫기 (Esc)">${X_ICON}</button></div>${settingsBody()}</div>` : "");
   const countdownOn = () => st.ui === "home" && !hovering && !pinned() && !!timer;
   const countdown = () => (countdownOn() ? `<div class="cd" title="곧 접혀요 — 핀을 누르면 열어 둬요"><i style="animation-duration:${DELAY.home}ms;animation-delay:-${Date.now() - idleAt}ms"></i></div>` : "");
   // 한 줄 — 플로로가 앞지느러미를 걸치고 있다. 알릴 일이 있으면 파란 테두리로 살짝 흔든다
@@ -873,6 +886,7 @@
     else if (st.ui === "greet") $nav.innerHTML = greetHTML(enter);
     else if (st.ui === "petit") $nav.innerHTML = `<div class="${enter.trim()}">${pillHTML()}</div>`;
     else $nav.innerHTML = islandHTML(enter);
+    $nav.classList.toggle("side", !!$nav.querySelector(":scope > .pop"));   // 설정 창은 섬 옆(오른쪽)에 — 아래에 열리면 글자를 키웠을 때 설정이 바로 안 보였다(6.2.0)
     const ind = $nav.querySelector(".ti-ind"), to = tabIdx();
     if (!ind) return;
     if (tabFrom !== null && tabFrom !== to) tabMove = { from: tabFrom, to, at: performance.now() };
@@ -980,7 +994,8 @@
     if (!holdH || !el) return;
     if (st.busy) { el.style.minHeight = `${holdH}px`; return; }
     const from = holdH, to = el.offsetHeight; holdH = 0;
-    if (!STILL && Math.abs(to - from) > 4) el.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)" });
+    // 앱 안에서는 높이 애니메이션을 하지 않는다 — 창은 바로 새 크기가 되는데 섬만 늦게 커져 "따라오는 게 버벅"으로 보였다(6.2.0)
+    if (!STILL && !window.floeApp && Math.abs(to - from) > 4) el.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)" });
   }
   // 다시 그려도 쓰던 글 칸은 그대로 — 커서 자리와 스크롤까지 되돌린다
   function render() {
@@ -1000,16 +1015,29 @@
     if (cardSay !== lastCardSay) { lastCardSay = cardSay; if (cardSay) { const t = cardSay; requestAnimationFrame(() => say(t)); } }
     reportSize();
   }
-  // Electron 앱(2026-10-19): 지금 보이는 것(띠 · 한 줄 · 펼침 · 설정 창까지)의 크기를 앱에 알려 창을 딱 맞춘다 — 투명한 빈 영역이 뒤 창의 클릭을 가로채지 않게.
-  // 그린 직후와 조금 뒤(글 칸이 늘어나거나 움직임이 끝난 뒤) 두 번 잰다
+  // Electron 앱(2026-10-19): 지금 보이는 것(띠 · 한 줄 · 펼침 · 옆의 설정 창까지)의 크기를 앱에 알려 창을 딱 맞춘다 — 투명한 빈 영역이 뒤 창의 클릭을 가로채지 않게.
+  // 6.2.0: 시간을 정해 두 번 재는 대신 ResizeObserver가 크기가 바뀔 때마다(글 칸이 늘어나거나 글자 크기를 바꿀 때) 한 프레임에 한 번만 보낸다 — 같은 크기면 보내지 않는다.
+  // 설정 창이 옆에 열려 있거나 막 닫혔으면 왼쪽을 고정(anchor "left")해 섬이 제자리에 있고 창만 오른쪽으로 넓어진다
+  let sizeRaf = 0, lastSize = "", sideWas = false, sizeObs = null;
+  function measureSize() {
+    sizeRaf = 0;
+    if (!window.floeApp || isPhone()) return;
+    let r = 0, b = 0;
+    for (const el of $nav.children) { const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
+    if (!r || !b) return;
+    const side = $nav.classList.contains("side"), anchor = side || sideWas ? "left" : "center";
+    sideWas = side;
+    const key = `${Math.ceil(r)}x${Math.ceil(b)}:${anchor}`;
+    if (key === lastSize) return;
+    lastSize = key;
+    window.floeApp.resize(r, b, anchor);
+  }
+  const queueSize = () => { if (!sizeRaf) sizeRaf = requestAnimationFrame(measureSize); };
   function reportSize() {
     if (!window.floeApp || isPhone()) return;
-    const measure = () => {
-      let r = 0, b = 0;
-      for (const el of $nav.children) { const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
-      if (r && b) window.floeApp.resize(r, b);
-    };
-    requestAnimationFrame(measure); setTimeout(measure, 450);
+    if (!sizeObs && "ResizeObserver" in window) sizeObs = new ResizeObserver(queueSize);
+    if (sizeObs) { sizeObs.disconnect(); for (const el of $nav.children) sizeObs.observe(el); }   // 다시 그릴 때마다 새 자식을 본다
+    queueSize(); setTimeout(queueSize, 300);   // 300ms 뒤 한 번 더 — 글꼴 · 그림이 늦게 오는 경우
   }
   PHONE.addEventListener("change", render);
 

@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld("floeApp", {
   clearKey: () => ipcRenderer.invoke("floe:clear-key"),       // 키를 뺀다 — 그다음부터 이 컴퓨터의 Claude Code로
   // 창 밖의 커서 — 플로로의 눈이 따라오게(2026-10-19). 돌려주는 함수를 부르면 그만 듣는다
   onCursor: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:cursor", h); return () => ipcRenderer.removeListener("floe:cursor", h); },
-  resize: (w, h) => ipcRenderer.send("floe:resize", w, h),     // 창을 지금 보이는 섬(띠 · 한 줄 · 펼침) 크기에 맞춘다 — 투명한 빈 영역이 뒤 창의 클릭을 가로채지 않게
+  resize: (w, h, anchor) => ipcRenderer.send("floe:resize", w, h, anchor),   // 창을 지금 보이는 섬(띠 · 한 줄 · 펼침 · 옆의 설정 창) 크기에 맞춘다. anchor "left"면 왼쪽을 고정
+  expand: () => ipcRenderer.send("floe:expand"),                // 서고로 들어갈 때 — 창을 화면만큼 넓힌다(6.2.0)
 });
