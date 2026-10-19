@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v9.2 | 2026-10-20 | 이재엽 | 고칠 목록에 F-32(릴리스 비용 주석이 실제보다 큼) · F-33(sprintf-js 보안 알림, 묶는 도구에만 있음) (#137) | `01-docs/07-maintenance/` · `changes/` |
 | v9.1 | 2026-10-20 | 이재엽 | 앱 받기 안내를 알파 8.0.0으로 (팀원만 받기 · 8.0.0은 폴더 다시 연결) (#136) | `01-docs/00-overview/` · `changes/` |
 | v9.0 | 2026-10-20 | 이재엽 | 앱 8.0.0 — ① 켤 때 인사(C-10, `greet.js` 시간표 · 서버 기다리는 동안 '켜지는 중') ② 모아 보기 창(C-11, `02-frontend/hub/` — 바이브 코딩 고르기 · 알림 · AI 진행, 메뉴 · 트레이 · Dock · 섬 단추로 열림) ③ AI 진행(C-12, Claude Code PostToolUse 훅 → `steps.js` · `GET /api/steps`, 파일 내용 · 명령 결과는 안 받음) ④ 서재 전환(F-30 — 서고 → 작업 화면 물속 전환, 작업 화면 떠오름, 서고 창 크기 조절, 플로로가 섬 가운데에서 잠수, 플로로 크기는 창 크기) ⑤ 서재 로딩 4.3초 → 2.4초(F-31) ⑥ 기능 GIF 다시 찍음(F-29). 요구 C-10~C-12 문서(#134, v8.2)는 먼저 들어갔다. 이재엽 2026-10-20 "지금까지 PR 다 합친 내용들로 다 올려야해 … 릴리즈까지" | `02-frontend/navigator/`(app.js · app.css · dive.js · greet.js, 담당 임유정 — 이 줄이 알림) · `02-frontend/library/` · `02-frontend/hub/`(새) · `02-frontend/electron/`(8.0.0) · `03-backend/navigator/`(hook.js · connect.js · server.js · steps.js · API.md, 담당 두승현) · `04-tests/` · `01-docs/`(requirements · features · fix-map · 넘김 문서) |
 | v8.2 | 2026-10-20 | 이재엽 | 요구 후보 C-10 켜짐과 인사 · C-11 모아 보기 창(바이브 코딩 · 알림) · C-12 AI 진행(Claude Code가 하는 일 — 바이브 코딩과 따로)을 requirements.md에, 페이블 세션 넘김 문서(만드는 법 · 시험 · 앱 버전업 · 릴리스 노트 초안), 고칠 목록 F-28 · F-29(우선순위 문서의 낡은 상태 고침), legal.md D-1에 coucou 라이선스 원문 확인 (#134) | `01-docs/00-overview/` · `01-docs/07-maintenance/` · `changes/` |
