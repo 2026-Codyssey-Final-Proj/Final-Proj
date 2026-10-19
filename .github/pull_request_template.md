@@ -13,6 +13,7 @@ v
 
 - [ ] `CHANGELOG.md` 맨 위에 이 버전 한 줄을 적었다 (버전 · 날짜 · 누가 · 무엇 · 건드린 곳)
 - [ ] Jira 이슈가 있으면 PR 제목에 키를 넣었다 (병합되면 그 이슈에 버전이 붙는다)
+- [ ] 앱 버전(`02-frontend/electron/package.json`)은 그대로 두었다 — 올리면 Release가 나간다. 팀이 버전업을 정한 PR에서만 올린다 (2026-10-19)
 - [ ] `python3 04-tests/run_all_tests.py` 통과 (코드를 바꾼 경우)
 - [ ] 비밀값·인터뷰 응답자 이름·연락처가 없다
 - [ ] Claude가 쓴 부분에는 `claude-drafted` 표시가 있다

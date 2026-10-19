@@ -26,6 +26,7 @@ git 명령을 실행하기 전에 읽는다. 위험한 명령 일부는 훅(`.cl
 - 올릴 때마다 [CHANGELOG.md](../../CHANGELOG.md) **맨 위에 한 줄**(버전 · 날짜 · 누가 · 무엇 · 건드린 곳)을 같은 PR에 넣고, PR 제목 앞에 `[vN.M]`을 붙인다. 버전은 **올린 사람이 고른다.**
 - **동의를 기다리지 않고 병합한다.** 그 한 줄과 PR이 알림이다 — 남의 담당 폴더를 고쳤어도 같다("건드린 곳"에 그 폴더를 적는다).
 - `main`에 직접 올릴 때도 같은 커밋에 한 줄을 넣는다.
+- **앱 버전 · 릴리스는 따로 (이재엽 2026-10-19 "지금 작업들에서 릴리즈는 나중에 우리가 버전업을 할때 해줘"):** CHANGELOG vN.M은 PR마다 올리지만, 앱 버전(`02-frontend/electron/package.json`의 `version`)은 **팀이 버전업을 정할 때만** 올린다 — 올리면 CI가 Release `app-v<버전>`을 만든다. 작업 PR(Claude가 연 것도)은 앱 버전을 건드리지 않는다. 그사이 앱으로 써 보려면 각자 `npm run dist`로 묶는다([electron/README.md](../../02-frontend/electron/README.md)).
 - 두 사람이 같은 번호를 고르면 **나중에 병합하는 쪽이** 최신 `main`을 받아 다음 번호로 고친다. [test_changelog.py](../../04-tests/repo/test_changelog.py)가 겹침·건너뜀을 잡는다.
 - **Claude가 연 PR도 같다** — Claude가 버전 줄을 적고, 병합은 사람이 한다(위 표, 훅).
 - **Jira:** 할 일은 Jira 프로젝트 Floe에 있다. Jira 이슈가 있으면 브랜치 · PR 제목 · 커밋 제목에 키(`<키>-12`)를 넣는다 — PR 제목은 `[vN.M] <키>-12 타입(범위): 설명`. `main`에 올라오면 GitHub Action이 맨 위 버전을 Jira 릴리스로 만들고 그 이슈들에 붙인다([jira.md](../../01-docs/00-overview/jira.md)).

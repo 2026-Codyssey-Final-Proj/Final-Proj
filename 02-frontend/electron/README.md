@@ -42,7 +42,9 @@ npm run dist:linux          # 우분투용(Mac · Linux에서 됨): dist/Floe-<�
 
 ## 받기 · 업데이트 — 자동화
 
-묶은 파일은 저장소가 아니라 [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에 올린다(비공개 레포라 팀원만 받는다). 지금 알파는 `app-v6.0.0`(2026-10-19 — Mac `.dmg` · Windows `.exe` · 우분투 `.AppImage` / `.deb`, 각 100~130MB. 0.3.0 · 3.0.0은 위 문제로 내렸다).
+묶은 파일은 저장소가 아니라 [GitHub Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases)에 올린다(비공개 레포라 팀원만 받는다). 지금 알파는 `app-v7.0.0`(2026-10-19 — Mac `.dmg` · Windows `.exe` · 우분투 `.AppImage` / `.deb`, 각 100~130MB. 0.3.0 · 3.0.0은 위 문제로 내렸다).
+
+**언제 새 버전을 내나 — 팀이 버전업을 정할 때만**(이재엽 2026-10-19 "지금 작업들에서 릴리즈는 나중에 우리가 버전업을 할때 해줘"). 작업 PR은 CHANGELOG 한 줄만 넣고 아래 `version`은 그대로 둔다 — 그사이 고친 것을 앱으로 써 보려면 각자 `npm run dist`로 묶는다.
 
 **새 버전을 내는 법 — 사람이 할 일은 숫자 하나:** 이 폴더 `package.json`의 `version`을 올려 PR → main에 병합. 그러면 [`.github/workflows/app-release.yml`](../../.github/workflows/app-release.yml)이
 ① Release `app-v<버전>`을 만들고(이미 있으면 그대로) ② **Mac(arm64) · Windows · Linux** 러너에서 `npm run dist` / `dist:win` / `dist:linux`를 돌려 ③ `.dmg` · `.exe` · `.AppImage` · `.deb`를 그 Release에 올린다. 비밀값 없음(저장소 기본 토큰), 서명 없음.
