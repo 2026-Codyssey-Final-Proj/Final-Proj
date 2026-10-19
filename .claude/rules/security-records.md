@@ -31,7 +31,7 @@ PRD의 `Security & Compliance` 칸을 쓸 때 읽는다.
 | Claude (AI 서비스) | 대화와 읽은 파일 전부 | 위 1절 전제 |
 | draw.io MCP `search_shapes` | 도형 검색어만 (그림은 안 나감) | — |
 | GitHub for Jira 앱 | 브랜치 이름 · 커밋 메시지 · PR 제목 · 작성자 GitHub 계정 | Final-Proj 저장소 하나만. [jira.md](../../01-docs/00-overview/jira.md) 1절 |
-| `jira-release` GitHub Action | 버전 이름 · 날짜 · CHANGELOG "무엇" 칸 · 이슈 키 | 토큰은 GitHub 비밀값에만, `*.atlassian.net`이 아니면 보내지 않음. jira.md 3절 |
+| `jira-release` GitHub Action | 버전 이름 · 날짜 · CHANGELOG "무엇" 칸 · 이슈 키. 그 전에 `changes/*.md` 조각을 CHANGELOG에 합쳐 `main`에 커밋한다(저장소 안에서만, 밖으로 나가지 않음) | 토큰은 GitHub 비밀값에만, `*.atlassian.net`이 아니면 보내지 않음. jira.md 3절 |
 | Atlassian MCP (`atlassian`) | Claude가 읽거나 쓴 Jira 이슈 내용, 검색어 · 요청 | 각자 자기 Atlassian 계정 OAuth. 쓰기는 사람 확인 뒤([jira.md](../../01-docs/00-overview/jira.md) 4절) |
 | 새 MCP·외부 도구 | 도구마다 다름 | 들이기 전에 [external-integration.md](external-integration.md)의 점검표(전송·인증·도구·데이터·비용). 결제·구독·삭제 도구는 `settings.json` deny 제안 |
 | `mcp-builder/scripts/evaluation.py` | Anthropic API 호출 (유료) | 그 자리에서 동의하기 전에는 실행하지 않는다 ([skill-authoring.md](skill-authoring.md)) |
