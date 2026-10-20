@@ -154,11 +154,11 @@
 
   // 설계도 화면의 플로로 — 초안을 받기 전, 받은 뒤, 다시 봐 준 뒤, 확정한 뒤
   function docFace(v) {
-    const t = trouble(v, "설계도를 읽고 있어요…");
+    const t = trouble(v, "문서를 읽고 있어요…");
     if (t) return t;
     if (v.review) return [v.review.ready ? "happy" : "think", v.review.say];
     if (v.draftSay) return ["happy", v.draftSay];
-    if (v.done) return ["done", "확정한 설계도예요. 고치고 싶으면 언제든 다시 열어요."];
+    if (v.done) return ["done", "확정한 문서예요. 고치고 싶으면 언제든 다시 열어요."];
     return ["idle", "초안은 제가 먼저 써 볼게요. 고치고 확정하는 건 직접 해요."];
   }
 

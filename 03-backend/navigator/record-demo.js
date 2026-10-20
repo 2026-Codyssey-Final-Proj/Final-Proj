@@ -18,13 +18,13 @@ function demoRequests() {
   const judge = cases.map((c) => ({ kind: "judge", label: `${c.stage}단계 판정 · ${c.label}`, stage: c.stage, text: c.text, prompt: Nav.judgePrompt(c.text, c.stage), schema: Nav.JUDGE_SCHEMA }));
   const draft = [1, 2, 3, 4].map((stage) => {
     const c = cases.find((x) => x.stage === stage);
-    return { kind: "draft", label: `${stage}단계 설계도 초안`, stage, text: c.text, prompt: Nav.draftPrompt(stage, c.text), schema: Nav.DRAFT_SCHEMA };
+    return { kind: "draft", label: `${stage}단계 단계 문서 초안`, stage, text: c.text, prompt: Nav.draftPrompt(stage, c.text), schema: Nav.DRAFT_SCHEMA };
   });
   return [...judge, ...draft];
 }
 
 // 화면은 설계도 글(초안 그대로면 초안)을 그대로 보낸다 — 같아야 재생된다
-const reviewRequest = ({ stage, text, draftText }) => ({ kind: "review", label: `${stage}단계 설계도 다시 보기`, stage, text, prompt: Nav.reviewPrompt(stage, text, draftText), schema: Nav.REVIEW_SCHEMA });
+const reviewRequest = ({ stage, text, draftText }) => ({ kind: "review", label: `${stage}단계 단계 문서 다시 보기`, stage, text, prompt: Nav.reviewPrompt(stage, text, draftText), schema: Nav.REVIEW_SCHEMA });
 
 const argAfter = (args, flag) => { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : undefined; };
 

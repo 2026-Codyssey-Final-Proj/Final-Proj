@@ -22,6 +22,10 @@
 //   규칙은 navigator.js nextPlace. 주소로 연 장면(#ex= …)은 바이브 코딩, #base(&pane=alerts|ai)는 기본 화면. 켤 때 인사가 끝나면 인사 카드 대신 기본 화면이 된다.
 //   섬이 접히고 펼쳐질 때 모양을 갈아 끼우는 대신 바탕 껍데기(.shell)가 늘어나고 줄어든다(morph.js — FLIP · transform만, 창은 커질 때 먼저 · 작아질 때 나중에),
 //   접힌 한 줄에 마우스를 올리면 살짝 커진다(창은 안 바꾼다 — 접힌 창에 여유). 움직임 줄이기면 전처럼 바로 바뀐다.
+// claude-drafted: 2026-10-20 — C-15 플로로에게 먹이 주기 · C-16 도서관의 책(이재엽 "설계도는 너무 어려운 말 … 파일을 오버레이에 주면 … 분석을 시작하는거야 … 기능을 한곳에 통합시켜줘",
+//   넘김 문서 fable-handoff-2026-10-20-feed.md): ① 처음 카드가 **먹이 주기** 화면 — 파일을 끌어다 놓거나 글을 붙여 넣으면 feed.js가 구간으로 나눠 주제 · 비밀값 · 개인적인 일을 표시하고,
+//   사람이 구간마다 고친 뒤 확인하면 빠진 구간 없이 어디쯤인지 본다(정리는 책의 '받은 먹이'로 — 빠진 구간의 글은 어디에도 남기지 않는다) ② 단계 문서 탭을 없애고 도서관의 책 안에서
+//   초안 · 고치기 · 다시 봐 줌 · 확정(FR-3 그대로, draft · review · confirmDoc) ③ 화면 글에서 '설계도'를 뺐다 — 단계 문서(아이디어 정리표 …)로. 코드 이름(doc · /api/draft)은 그대로.
 (function () {
   const N = window.NavRules, S = window.NavScenario, C = window.NavSeal;
   // 새 규칙 파일 다섯(03-backend/navigator/glossary·understand·priority·alerts·tiers.js) — server.js가 내주는 목록에 있는지는 static-files.test.js가 확인한다
@@ -30,6 +34,7 @@
   const M = window.FloeMine, NT = window.FloeNotes;
   // 기본 화면 · 섬의 움직임(2026-10-20): 모아 보기 창의 순수 함수(hub.js) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js). 없어도 화면은 돈다
   const HUB = window.FloeHub, STEPS = window.NavSteps, MO = window.FloeMorph;
+  const FD = window.NavFeed;   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
   const SESS = (() => { try { return window.sessionStorage; } catch { return null; } })();
   const PLACE_KEY = "floe:place", SEEN_KEY = "floe:alerts-seen";   // 이 창(섬)에만 — 기록(KEY)에는 넣지 않는다(다음에 켤 때는 늘 기본 화면)
   const STORE = (() => { try { return window.localStorage; } catch { return null; } })();
@@ -56,10 +61,12 @@
     step: "ask", hard: [], question: "", answer: "", noCount: 0, history: [], learned: [],
     auto: false, feed: { at: 0, project: "", tool: "" },   // Claude Code·Codex 연결: 자동으로 살펴보기(기본 꺼짐), 마지막 알림
     settings: false,                               // 설정(보기 방식·연결·자동 살펴보기·소리·기록)은 톱니를 눌러야 보인다
-    doc: null, docs: [],                           // 설계도: 고치는 중인 것 {stage, text, say, review, rounds}, 확정한 것들
+    doc: null, docs: [],                           // 단계 문서: 고치는 중인 것 {stage, text, say, review, rounds}, 확정한 것들
+    meal: null, fed: [],                           // 먹이 주기(C-15): 정리 중인 것(st.feed는 연결 — 이름이 겹쳐 meal) {sections, checks, marks, example}, 책에 꽂은 정리(주제 · 빠진 수 · 까닭 — 글은 없다)
+    libDoc: null,                                  // 도서관의 책 안에서 여는 단계 문서(C-16) — 단계 번호
     project: "", back: "",                         // 알림에서 받은 프로젝트 폴더 이름, 다시 왔을 때 인사
     finished: false,                               // 7단계까지 모두 마쳤는가
-    askConfirm: 0,                                 // 빈칸이 남은 설계도를 확정하려 할 때 — 남은 빈칸 수(한 번 더 묻는 중)
+    askConfirm: 0,                                 // 빈칸이 남은 단계 문서를 확정하려 할 때 — 남은 빈칸 수(한 번 더 묻는 중)
     textSize: 1,                                   // 글자 크기 배율(설정) — 브라우저 기본 글자 크기에 곱한다
     pets: 0, since: "", sound: false,              // 플로로와 교감: 쓰다듬은 횟수, 처음 만난 날, 작은 소리(기본 꺼짐)
     mapSel: null, showCrit: false,                 // 단계 지도에서 고른 단계, 펼침 카드 아래 '이 단계 할 일' 펼침
@@ -121,6 +128,7 @@
   const cat = C.svg;
   const toolName = (t) => ({ claude: "Claude Code", codex: "Codex" })[t] || "AI 코딩 도구";
   const ymd = () => new Date().toLocaleDateString("sv");   // 이 컴퓨터 시간으로 YYYY-MM-DD
+  const eul = (w) => { const c = String(w).charCodeAt(String(w).length - 1); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? "을" : "를"; };   // 받침에 따라 을/를
   // 프로젝트 이름 — 연결된 AI 코딩 도구가 알려 준 폴더 이름, 연습용이면 예시 이름. 모르면 빈칸(위쪽 줄에 안 보인다)
   const project = () => st.project || (st.mode === "fixture" ? S.PROJECT : "");
   // 지금 몇 번째 할 일을 하는가 — 한 것 다음이 지금(2026-10-18 임유정 요청: "4개 중 3개"는 남은 수로 읽혀서)
@@ -129,7 +137,7 @@
   // 그 단계에서 만든 것 — 확인 질문에 답하기 전에는 정답이라 '?'로 가린다(understand.js). 만든 것을 그리는 곳은 모두 이것을 쓴다
   const gv = (s) => U.shownGives(s, st.screen === "gate" && st.step === "check" ? st.check : null);
   const hardTexts = () => st.hard.map((i) => st.j.criteria[i].text);   // 넘어가기 전 확인에서 헷갈린다고 고른 할 일(이 등급의 목록에서)
-  const docDone = (n) => st.docs.find((x) => x.stage === n);              // 그 단계에서 확정한 설계도
+  const docDone = (n) => st.docs.find((x) => x.stage === n);              // 그 단계에서 확정한 단계 문서
   const pingHead = () => st.ping.split(" — ")[0];
   // 지금 단계 — 코드가 정한다: 게이트를 통과한 다음 단계(처음엔 0단계). AI는 이 단계의 할 일만 본다
   const atStage = () => (st.j ? st.j.stage : 0);
@@ -140,8 +148,8 @@
   const PLACEHOLDER = "예) 동아리 행사 등록 앱을 만들고 있어요. 필요한 기능을 문장으로 써 봤어요.";
   const SENT = "보여 주신 글은 AI(Claude)에게 보내져요. 비밀번호나 다른 사람 연락처는 빼 주세요.";
   const DOC = {
-    first: "먼저 '이번 단계'에서 어디쯤인지 봐요. 설계도는 그 단계에 맞춰 만들어요.",
-    none: "설계도는 1~4단계에서 만들어요. 확정한 설계도는 단계 지도에서 다시 볼 수 있어요.",
+    first: "먼저 '이번 단계'에서 어디쯤인지 봐요. 단계 문서는 그 단계에 맞춰 만들어요.",
+    none: "단계 문서는 1~4단계에서 만들어요. 확정한 문서는 단계 지도와 책에서 다시 볼 수 있어요.",
     draft: "지금까지 작업을 보고 AI가 초안을 먼저 써 드려요. 고치고 완성하는 건 직접 해요. 확정도 직접 눌러야만 돼요.",
   };
   // 7단계까지 마쳤을 때 — last: 마지막 확인에서 "예" 뒤, title·sub: 마무리 카드
@@ -156,7 +164,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words"];
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words", "fed"];
   let forgotten = false;
   function load() {
     let s;
@@ -167,7 +175,7 @@
     if (st.mode === "live" && !canLive) st.mode = "fixture";
     st.pets = Math.max(0, Number(st.pets) || 0);
     st.libGone = [...new Set([...(Array.isArray(st.libGone) ? st.libGone.map(String) : []), ...readBound()])];
-    for (const k of ["checks", "todoLater", "alerts"]) if (!Array.isArray(st[k])) st[k] = [];
+    for (const k of ["checks", "todoLater", "alerts", "fed"]) if (!Array.isArray(st[k])) st[k] = [];
     if (!st.hold || typeof st.hold.when !== "string") st.hold = null;
     if (!TIERS.some(([v]) => v === st.tier)) st.tier = "Full";
     if (st.j) st.j = T.refit(st.j, st.tier);   // 할 일 목록이 바뀌었으면(등급·규칙) 지금 목록에 맞춘다 — 글자가 같은 할 일만 이어 간다
@@ -387,29 +395,10 @@
   // [id, PC 이름, iPhone 이름, 아이콘]. 마지막(도서관)은 PC에만 있다 — iPhone은 앞의 셋. 탭 순서가 바뀌면 고른 동그라미(.ti-ind)는 순서(tabIdx)를 따라간다
   // '내 배움' 탭은 2026-10-18에 뺐다(F-05, PRD 2-7) — 플로로와 나는 설정 맨 위. 서재의 '내 배움'도 2026-10-19에 지움.
   // 2026-10-18 임유정 요청: 첫 탭 이름 '지금' → '이번 단계', '한곳에서 보기' 탭(FR-6)도 뺐다 — FR-6 등급은 팀이 정한다(PR #105)
-  const TABS = [["today", "이번 단계", "오늘", "today"], ["doc", "설계도", "설계도", "doc"], ["map", "단계 지도", "단계 지도", "map"], ["lib", "도서관", "도서관", "lib"]];
-  const PHONE_TABS = TABS.slice(0, 3);
-  // 설계도(FR-3, iPhone) — 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
-  function docBody(size) {
-    const s = st.j && stage();
-    if (!s) return sayRow(size, ["idle", DOC.first]);
-    const { done, d, face: f } = docState(s), say = sayRow(size, f), label = `설계도 · ${s.n}단계`;
-    if (!s.doc) return say + box(label, `${s.n}단계는 설계도 없이 진행해요`, DOC.none);
-    if (!d && done) return say + box(label, esc(s.doc), `${esc(done.at)}에 직접 확정했어요.`,
-      `<details><summary>확정한 설계도 보기</summary><pre class="doc-view">${esc(done.text)}</pre></details><button class="btn wide" data-act="reopen-doc">고쳐 쓰기</button>`);
-    if (!d) return say + box(label, esc(s.doc), DOC.draft,
-      `${docNotes()}<button class="btn pri wide" data-act="draft" ${st.busy ? "disabled" : ""}>초안 받기</button>
-      ${st.mode === "live" ? `<span class="meta">작업 글이 AI(Claude)에게 보내져요.</span>` : ""}`);
-    const ready = d.review && d.review.ready;
-    const confirm = `<button class="btn ${ready ? "pri" : ""}" data-act="confirm-doc">${ready ? "이걸로 확정할게요" : "이대로 확정"}</button>`;
-    const again = `<button class="btn ${ready ? "" : "pri"} grow" data-act="review" ${st.busy ? "disabled" : ""}>다시 봐 주세요</button>`;
-    return `${say}<div class="stack"><div class="stage-head"><span class="stage-title">${esc(s.doc)}</span>
-      <span class="meta" data-blanks>${blankMeta(d)}</span></div>
-      <textarea class="doc" data-act="doc" aria-label="설계도">${esc(d.text)}</textarea>
-      ${reviewList(d.review)}${docNotes()}<div class="row">${again}${confirm}</div>
-      <span class="meta">고친 뒤 '다시 봐 주세요'를 누르면 고칠 곳을 알려 드려요. 대신 고쳐 쓰지는 않아요.</span></div>`;
-  }
-  // 이 단계의 설계도 — 확정한 것(done), 고치는 중인 것(d), 플로로의 표정과 한마디(face)
+  // 2026-10-20(C-16, 이재엽 "우리 도서관이 있잖아 책들로 정리를 해서 거기에 저장을 하고 책에 들어가서 내용 확인 후 작업"): 단계 문서 탭을 뺐다 — 문서는 도서관의 책 안에서(bookDocs · deskDoc)
+  const TABS = [["today", "이번 단계", "오늘", "today"], ["map", "단계 지도", "단계 지도", "map"], ["lib", "도서관", "도서관", "lib"]];
+  const PHONE_TABS = TABS.slice(0, 2);
+  // 이 단계의 단계 문서 — 확정한 것(done), 고치는 중인 것(d), 플로로의 표정과 한마디(face)
   function docState(s) {
     const done = docDone(s.n), d = st.doc && st.doc.stage === s.n ? st.doc : null;
     return { done, d, face: N.docFace({ busy: st.busy, warn: st.warn, error: st.error, review: d && d.review, draftSay: d && d.say, done }) };
@@ -463,7 +452,7 @@
   const chips = () => `<div class="chips">${N.STAGES.map((x) => `<span class="chip ${stepClass(x.n)}">${stepClass(x.n) === "done" ? "✓ " : ""}${x.n} ${esc(x.short)}</span>`).join("")}</div>`;
   const flow = () => { const s = stage(); return `<div class="flow"><div class="box"><b>받은 것</b>${esc(s.gets)}</div><span class="arrow">→</span>
     <div class="box"><b>한 일</b>${esc(s.does)}</div><span class="arrow">→</span><div class="box"><b>만든 것</b>${esc(gv(s))}${
-    docDone(s.n) ? `<span class="sub ok">✓ 설계도 확정함</span>` : ""}</div></div>`; };
+    docDone(s.n) ? `<span class="sub ok">✓ 문서 확정함</span>` : ""}</div></div>`; };
   // iPhone의 지금 결정할 것 하나 — 다 했으면 "넘어가기", 순서를 정했으면 그 첫 일, 아니면 같이 정하기
   function focusCard() {
     const n = st.j.next, now = esc(tick().now);
@@ -512,7 +501,7 @@
   const mini = () => `<span class="mini" aria-hidden="true">${met().map((_, i) => `<i class="${i < nowAt() ? "on" : ""}"></i>`).join("")}</span>`;
   const stageMeta = () => { const s = stage(); return `<span class="mm-stage">${s.n}단계 · ${esc(s.title)}</span><span>${allDone() ? `할 일 ${met().length}개 모두 했어요` : progress()}</span>${mini()}`; };
   const flowLine = () => { const s = stage(); return `<span class="flowline"><span>${esc(s.gets)}</span>${I.arrow}<span>${esc(s.does)}</span>${I.arrow}<span>${esc(gv(s))}</span>${
-    docDone(s.n) ? `<span class="okchip">${I.check}설계도 확정함</span>` : ""}</span>`; };
+    docDone(s.n) ? `<span class="okchip">${I.check}문서 확정함</span>` : ""}</span>`; };
   const dots = `<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>`;
   const deskInput = () => `<textarea class="mc-input" data-act="text" rows="3" aria-label="지금 만드는 것"
     placeholder="${PLACEHOLDER}">${esc(st.text)}</textarea>${st.mode === "live" ? `<p class="mc-fine">${SENT}</p>` : ""}`;
@@ -537,6 +526,7 @@
     if (st.error) return { tone: "red", mood: "think", extra: "oops", badge: "×", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요", sub: esc(st.error),
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
     if (st.screen === "gate") return momentGate();
+    if (st.meal) return feedSortMoment();   // 먹이를 나눠 정리하는 중(C-15)
     if (st.ping) return { tone: "gray", mood: "look", badge: "…",
       meta: `<span class="mm-stage">${esc(pingHead())}</span>${s ? `<span>${s.n}단계 · ${progress()}</span>${mini()}` : ""}`,
       title: "바뀐 작업을 보고, 어디쯤인지 알려 드릴까요?",
@@ -545,12 +535,13 @@
       acts: [{ label: "살펴봐 주세요", act: "look-now", key: "Enter", pri: true }, { label: "보낼 글 먼저 보기", act: "peek-text" }] };
     if (!st.j || st.openInput) {
       const first = !st.j;
-      return { tone: "blue", mood: f[0], badge: "", say: first ? "" : f[1], meta: first ? `<span class="mm-stage">시작하기</span>` : stageMeta(),
-        title: first ? "지금 만들고 있는 걸 보여 주세요" : "보낼 글을 확인해 주세요",
-        sub: first ? "무엇을 만들고 있는지, 어디까지 했는지 편하게 적어 주세요." : "AI 코딩 도구에서 가져온 작업이에요. 고칠 곳이 있으면 고친 뒤 보내 주세요.",
+      // 처음 카드는 먹이 주기 화면(C-15, 2026-10-20) — 파일 · 붙여 넣기 한곳. '예시 먹이 주기'는 서버 없이 보이는 예시(FR-10). 글을 바로 보내지 않고 나눠 정리한 뒤 확인하면 보낸다
+      return { tone: "blue", mood: f[0], badge: "", say: first ? "" : f[1], meta: first ? `<span class="mm-stage">플로로에게 먹이 주기</span>` : stageMeta(),
+        title: first ? "플로로에게 먹이를 주세요" : "보낼 글을 확인해 주세요",
+        sub: first ? "파일을 끌어다 놓거나 글을 붙여 넣으면 플로로가 읽고 나눠 정리해요. 비밀번호 · 개인적인 일 같은 구간은 빼고 보내요." : "AI 코딩 도구에서 가져온 작업이에요. 고칠 곳이 있으면 고친 뒤 보내 주세요.",
         body: deskInput(),
-        // 처음 카드는 시연용 '예시 글 넣기' 하나(연습·진짜 AI 모두) — 넣기만 하고 보내지는 않는다 (2026-10-18 임유정 요청)
-        acts: [...(first ? [{ label: "예시 글 넣기", act: "fill-example", kind: "soft" }] : exampleActs()), { label: "어디쯤인지 보기", act: "judge", key: "c-Enter", pri: true },
+        acts: [...(first && FD && st.mode === "fixture" ? [{ label: "예시 먹이 주기", act: "feed-example", kind: "soft" }] : first ? [] : exampleActs()),
+          ...(first && FD ? [{ label: "나눠 정리하기", act: "feed-sort", key: "c-Enter", pri: true }] : [{ label: "어디쯤인지 보기", act: "judge", key: "c-Enter", pri: true }]),
           ...(first ? [] : [{ label: "닫기", act: "close-input", key: "Escape", kind: "ghost" }])] };
     }
     if (st.finished) return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">모든 단계를 마쳤어요</span>`,
@@ -580,6 +571,59 @@
       acts: [...n.options.map((o, i) => ({ label: o, act: "pick-opt", i, key: String(i + 1), kind: "opt" })),
         { label: "직접 쓸게요", act: "own", key: String(n.options.length + 1), kind: "opt" }] };
   }
+  // ── 먹이 주기(C-15, 2026-10-20 — 규칙은 feed.js) ──
+  const feedState = (text, example = false) => { const sections = FD ? FD.split(text) : []; return sections.length ? { sections, checks: sections.map(FD.check), marks: [], example } : null; };
+  const feedSkip = (fd, i) => { const c = fd.checks[i], m = fd.marks[i]; return m === "skip" || (m !== "keep" && (c.secret || c.personal)); };
+  // 정리 화면 — 구간마다 주제 · 표시(못 먹어요 / 안 먹을게요 / 먹어요), 사람이 구간마다 고치고 확인하면 빠진 구간 없이 보낸다
+  function feedSortMoment() {
+    const fd = st.meal, packed = FD.pack(fd.sections, fd.marks);
+    const rows = fd.sections.map((s, i) => { const c = fd.checks[i], skip = feedSkip(fd, i);
+      return `<li class="${skip ? "skip" : "keep"}"><span class="fi">${i + 1}</span><span class="ft"><b>${esc(c.topic)}</b><small>${esc(skip ? (fd.marks[i] === "skip" ? "빼 달라고 하셨어요" : c.why) : "먹어요")}</small></span>
+        <button type="button" class="b ghost" data-act="feed-mark" data-i="${i}" aria-pressed="${skip}">${skip ? "먹어도 돼요" : "빼 주세요"}</button></li>`; }).join("");
+    return { tone: "blue", mood: "look", badge: "", meta: `<span class="mm-stage">먹이 ${fd.sections.length}구간${fd.example ? " · 예시예요 · 시연용" : ""}</span>`,
+      title: packed.kept ? `${packed.kept}구간을 먹을게요${packed.left.length ? ` — ${packed.left.length}구간은 빼요` : ""}` : "먹을 수 있는 구간이 없어요",
+      sub: "빠진 구간의 글은 AI에게 보내지 않고 책에도 남기지 않아요. 구간마다 바꿀 수 있어요.",
+      body: `<ol class="feedlist" aria-label="나눈 구간">${rows}</ol>`,
+      acts: [{ label: "확인하고 어디쯤인지 보기", act: "feed-confirm", key: "c-Enter", pri: true }, { label: "다시 쓰기", act: "feed-back", key: "Escape", kind: "ghost" }] };
+  }
+  // 글을 구간으로 나눠 표시 — AI에게 보내기 전, 이 컴퓨터에서만
+  function feedSort(text, example = false) {
+    if (!FD) return judge(false);
+    const fd = feedState(text, example);
+    if (!fd) return stop("먹일 글이 없어요. 파일을 끌어다 놓거나 글을 붙여 넣어 주세요.");
+    Object.assign(st, { meal: fd, error: "", warn: null, openInput: false });
+    render();
+    const p = FD.pack(fd.sections);
+    say(p.left.length ? `${p.left.length}구간은 빼고 먹을게요` : "다 먹을 수 있어요!");
+  }
+  // 확인 — 빠진 구간 없이 보낼 글을 만들어 어디쯤인지 보고, 정리(주제 · 빠진 수 · 까닭 — 글은 없다)는 책의 '받은 먹이'로
+  function feedConfirm() {
+    const fd = st.meal; if (!fd || !FD) return;
+    const p = FD.pack(fd.sections, fd.marks);
+    if (!p.kept) { flash("think", 1200); return say("먹을 구간이 하나는 있어야 해요"); }
+    const topics = fd.sections.map((_, i) => fd.checks[i].topic).filter((_, i) => !p.left.some((l) => l.i === i));
+    st.fed = [{ at: Date.now(), topics, left: p.left.map((l) => ({ topic: l.topic, why: l.why })), kept: p.kept, example: !!fd.example }, ...st.fed].slice(0, 20);
+    // 연습 모드의 예시 먹이는 정해진 장면(연습 첫 글)으로 이어진다 — 연습용 예시는 정해진 글만 알아서(FR-10). 진짜 AI면 먹은 글 그대로
+    Object.assign(st, { text: fd.example && st.mode === "fixture" ? S.first.text : p.text, meal: null, undo: [] });
+    judge(false);
+  }
+  // 파일 끌어다 놓기 — 띠 · 한 줄 · 펼침 어디에 놓아도 펼쳐서 먹이 주기로. 글 파일(.md · .txt) 1MB 아래만, 내용은 file.text()로 읽는다(경로가 필요 없어 앱을 고치지 않는다).
+  // 앱 창은 파일을 놓으면 그 파일 주소로 넘어가므로 섬 밖에 놓아도 먼저 막는다(넘김 문서 7절)
+  document.addEventListener("dragover", (e) => { e.preventDefault(); });
+  document.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (!f || !FD || isPhone()) return;
+    activity(); setPlace("vibe");
+    Object.assign(st, { tab: "today", screen: "main", settings: false, openInput: false, libDoc: null });
+    go("home");
+    const why = FD.accept(f.name, f.size);
+    if (why) { flash("think", 1500); return say(why); }
+    let text = "";
+    try { text = await f.text(); } catch { flash("think", 1500); return say("파일을 읽지 못했어요"); }
+    st.text = text; feedSort(text);
+  });
+
   // 넘어가기 전 확인 — 이해했나요? → (아니요) 헷갈린 곳 → 묻기 → 한 장 요약 → (예) 다음 단계 순서 정하기
   function momentGate() {
     const s = stage(), nx = nextStage(), meta = `<span class="mm-stage">${s.n}단계에서 한 일</span>${flowLine()}`;
@@ -686,13 +730,13 @@
       const out = [];
       if (j) out.push({ b: `이 단계 할 일 ${met().length}개`, sm: `${metCount()}개 했어요 · 용어는 눌러서 풀이`, act: "crit-box" });
       if (st.text.trim() || st.judged) out.push({ b: "어디쯤인지 보기", sm: live ? `보여 준 글을 AI(Claude)가 봐요 · ${tok}` : "연습용 예시로 봐요", act: "judge" });
-      if (j && stage().doc) out.push({ b: `설계도 · ${stage().doc}`, sm: docDone(j.stage) ? "확정함 — 다시 보기 · 고쳐 쓰기" : "초안 받기 → 고치기 → 확정", act: "tab", i: 1 });
-      out.push({ b: "단계 지도", sm: "여덟 단계 중 어디까지 왔나", act: "tab", i: 2 });
+      if (j && stage().doc) out.push({ b: `${stage().doc} · 책에서`, sm: docDone(j.stage) ? "확정함 — 다시 보기 · 고쳐 쓰기" : "초안 받기 → 고치기 → 확정", act: "lib-doc-now" });
+      out.push({ b: "단계 지도", sm: "여덟 단계 중 어디까지 왔나", act: "tab", i: 1 });
       return out;
     }
     if (c === 2) return [
       ...(st.mode === "fixture" ? stageExamples().map((e) => ({ b: e.label, sm: "연습 장면 — 미리 써 둔 글", act: "ex", i: S.examples.indexOf(e) })) : []),
-      { b: "도서관 · 내 책", sm: "열어 둔 책 · 예시 책 · 서고", act: "tab", i: 3 },
+      { b: "도서관 · 내 책", sm: "열어 둔 책 · 단계 문서 · 서고", act: "tab", i: 2 },
       { b: END.more, sm: "서고로 내려가요 — 엮은 책 · 예시 책이 꽂혀 있어요", act: "lib-enter" },
       { b: "느낀 점 남기기", sm: "쓰다가 걸린 것 한 줄 · Jira용 복사", act: "notes-open" }];
     return [{ b: "접기", sm: "띠로 작게 — 마우스를 올리면 나와요", act: "fold" },
@@ -720,15 +764,16 @@
       <div class="main"><div class="box">${box}</div>${stats}${cmds}</div></section>`;
   }
 
-  // 설계도 — 왼쪽 플로로와 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만
+  // 단계 문서 — 왼쪽 플로로와 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만. 2026-10-20(C-16): 도서관의 책 안에서 연다(deskLib → bookDocs)
   const docShell = (mood, say, side, main) => `<div class="docx"><div class="doc-side">${petCat(mood, 92)}<p class="doc-say">${esc(say)}</p>
     <div class="doc-acts">${side}</div></div><div class="doc-main">${main}</div></div>`;
-  function deskDoc() {
-    const s = st.j && stage();
+  // 지금 여는 단계 문서의 단계 — 책 안에서 고른 단계(libDoc), 아니면 지금 단계
+  const docStage = () => (Number.isInteger(st.libDoc) ? N.STAGES[st.libDoc] : stage());
+  function deskDoc(s = st.j && docStage()) {
     if (!s) return docShell("idle", DOC.first, `<button class="b pri" data-act="tab" data-i="0">'이번 단계'로 가기</button>`,
-      `<div class="doc-empty">${I.doc}<b>아직 설계도가 없어요</b><span>어디쯤인지 보고 나면, 그 단계에 맞는 설계도를 같이 만들어요.</span></div>`);
+      `<div class="doc-empty">${I.doc}<b>아직 단계 문서가 없어요</b><span>어디쯤인지 보고 나면, 그 단계에 맞는 문서를 같이 만들어요.</span></div>`);
     const { done, d, face: [mood, say] } = docState(s);
-    if (!s.doc) return docShell(mood, say, "", `<div class="doc-empty">${I.doc}<b>${s.n}단계는 설계도 없이 진행해요</b><span>${DOC.none}</span></div>`);
+    if (!s.doc) return docShell(mood, say, "", `<div class="doc-empty">${I.doc}<b>${s.n}단계는 문서 없이 진행해요</b><span>${DOC.none}</span></div>`);
     if (!d && done) return docShell(mood, say, `<span class="meta">${esc(done.at)}에 직접 확정했어요</span><button class="b" data-act="reopen-doc">고쳐 쓰기</button>`,
       `<div class="doc-head"><h3>${esc(s.doc)}</h3><span class="okchip">${I.check}확정함</span></div><pre class="doc-view">${esc(done.text)}</pre>`);
     if (!d) return docShell(mood, say, `<button class="b pri" data-act="draft" ${st.busy ? "disabled" : ""}>초안 받기</button>${
@@ -739,7 +784,7 @@
         <button class="b ${ready ? "" : "pri"}" data-act="review" ${st.busy ? "disabled" : ""}>다시 봐 주세요</button>
         <button class="b ${ready ? "pri" : ""}" data-act="confirm-doc">${ready ? "이걸로 확정할게요" : "이대로 확정"}</button>
         <span class="meta">고칠 곳만 알려 드려요. 대신 고쳐 쓰지는 않아요.</span>`,
-      `<div class="doc-head"><h3>${esc(s.doc)}</h3><span class="meta">${s.n}단계</span></div><textarea class="doc" data-act="doc" aria-label="설계도">${esc(d.text)}</textarea>${reviewList(d.review)}${docNotes()}`);
+      `<div class="doc-head"><h3>${esc(s.doc)}</h3><span class="meta">${s.n}단계</span></div><textarea class="doc" data-act="doc" aria-label="단계 문서">${esc(d.text)}</textarea>${reviewList(d.review)}${docNotes()}`);
   }
   // 단계 지도 — 여덟 단계를 한 줄로. 플로로는 지금 단계 위에 앉아 있다. 누르면 그 단계를 자세히 본다
   function deskMap() {
@@ -753,8 +798,8 @@
     return `<div class="map"><ol class="track" aria-label="여덟 단계">${track}</ol>
       <div class="map-detail"><div class="md-head"><h3>${s.n}단계 · ${esc(s.title)}</h3>${where}</div>
         <p class="mc-sub">${esc(s.does)}</p>
-        <span class="flowline"><span>받은 것 · ${esc(s.gets)}</span>${I.arrow}<span>만든 것 · ${esc(gv(s))}</span>${s.doc ? `<span class="meta">설계도: ${esc(s.doc)}</span>` : ""}</span>
-        <ul class="crit">${crit}</ul>${docDone(sel) ? `<details><summary>확정한 설계도 보기 · ${esc(docDone(sel).at)}</summary><pre class="doc-view">${esc(docDone(sel).text)}</pre></details>` : ""}</div></div>`;
+        <span class="flowline"><span>받은 것 · ${esc(s.gets)}</span>${I.arrow}<span>만든 것 · ${esc(gv(s))}</span>${s.doc ? `<span class="meta">단계 문서: ${esc(s.doc)}</span>` : ""}</span>
+        <ul class="crit">${crit}</ul>${docDone(sel) ? `<details><summary>확정한 문서 보기 · ${esc(docDone(sel).at)}</summary><pre class="doc-view">${esc(docDone(sel).text)}</pre></details>` : ""}</div></div>`;
   }
   // ── 도서관(FR-8 위젯) — 서고 시안(../library)의 더미 책(books.js)과 마감 계산(schedule.js)을 같이 쓴다.
   // 같은 화면이 둘이 되지 않게 서고 시안의 작업 화면 위젯을 여기로 옮겼다(2026-10-17). 첫 책(s1)은 이 화면의 단계·할 일을 그대로 따른다.
@@ -798,6 +843,13 @@
       <div class="ob-foot">${exToggle()}<span class="grow"></span>
         <button class="enter-lib" data-act="lib-enter"><span class="mb"></span>내 서고 들어가기</button></div></div>`;
     const fin = bookDone(b);
+    // 책 안의 단계 문서(C-16) — 하나를 열면 그 자리에서 초안 · 고치기 · 다시 봐 줌 · 확정
+    if (b.mine && Number.isInteger(st.libDoc) && N.STAGES[st.libDoc]) {
+      deskKeys.Escape = { act: "lib-doc-close" };
+      const s = N.STAGES[st.libDoc];
+      return `<div class="libtab"><div class="row bdoc-head"><button type="button" class="b" data-act="lib-doc-close">‹ 책으로${kbd("Escape")}</button><b class="grow">${esc(b.title)} · ${s.n}단계 ${esc(s.doc || "")}</b>${
+        st.j && s.n > st.j.stage ? `<span class="meta">아직 안 온 단계예요 — 지금은 ${st.j.stage}단계</span>` : ""}</div>${deskDoc(s)}</div>`;
+    }
     deskKeys.Escape = { act: "lib-close" };
     deskKeys.Enter = { act: st.libConfirm ? "lib-shelve" : fin ? "lib-bind" : "lib-shelve-ask" };
     return `<div class="libtab"><div class="minispread" data-spread>
@@ -806,10 +858,27 @@
         <section><div class="stg">꽂은 책갈피 ${b.bookmarks.length}장</div><h3>배운 것</h3>
           <div class="marks">${b.bookmarks.map((m) => `<span>${esc(m)}</span>`).join("")}</div>
           <div class="stg soft" style="margin-top:12px">마지막으로 연 때 · ${esc(b.updated)}</div></section></div>
+      ${b.mine ? bookDocs() : ""}
       ${st.libConfirm ? `<div class="confirm" role="alertdialog" aria-label="서고에 보관 확인">${cat("think", 34)}<span><b>‘${esc(b.title)}’</b>을 서고에 보관할까요? 언제든 다시 꺼내 펼칠 수 있어요.</span><span class="grow"></span>
           <button class="b pri" data-act="lib-shelve">보관하기${kbd("Enter")}</button><button class="b" data-act="lib-shelve-no">그대로 두기</button></div>`
         : `<div class="ob-foot"><button class="b" data-act="lib-close">‹ 목록으로${kbd("Escape")}</button>
           ${fin ? `<button class="b pri" data-act="lib-bind">📖 한 권으로 엮어 서고에 꽂기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">서고에 보관하기${kbd("Enter")}</button>`}</div>`}</div>`;
+  }
+  // 책 안의 단계 문서 목록(C-16) — 단계마다 문서 이름 · 상태(아직 · 초안 · 다시 봐 줌 · 확정). 받은 먹이(C-15)도 여기에
+  const docStatus = (n) => (docDone(n) ? "확정" : st.doc && st.doc.stage === n ? (st.doc.review ? "다시 봐 줌" : "초안") : "아직");
+  function bookDocs() {
+    const cur = st.j ? st.j.stage : -1;
+    const rows = N.STAGES.filter((s) => s.doc).map((s) => { const stt = docStatus(s.n);
+      return `<button type="button" class="bdoc${stt === "확정" ? " ok" : ""}${s.n === cur ? " cur" : ""}" data-act="lib-doc" data-i="${s.n}" aria-label="${s.n}단계 ${esc(s.doc)} — ${stt}">
+        <span class="n">${s.n}</span><span class="t"><b>${esc(s.doc)}</b><small>${stt}${s.n === cur ? " · 지금 단계" : s.n > cur ? " · 아직 안 온 단계" : ""}</small></span></button>`; }).join("");
+    const fed = st.fed.length ? `<div class="stg soft" style="margin-top:10px">받은 먹이 ${st.fed.length}번</div><ul class="fedlist">${st.fed.slice(0, 3).map((f) =>
+      `<li>${esc(f.topics.join(" · ") || "(빠진 구간뿐)")}${f.left.length ? ` <small>· ${f.left.length}구간 뺌</small>` : ""}${f.example ? " <small>· 예시</small>" : ""}</li>`).join("")}</ul>` : "";
+    return `<section class="bdocs"><div class="stg">단계 문서 — 들어가서 확인하고 작업해요</div><div class="bdoc-grid">${rows}</div>${fed}</section>`;
+  }
+  // 이번 단계 카드에서 '단계 문서'를 누르면 — 도서관 탭 · 내 책(없으면 첫 책) · 그 단계 문서를 연다
+  function openBookDoc(n) {
+    const b = openBooks().find((x) => x.mine) || openBooks()[0];
+    set({ tab: "lib", libSel: b ? b.id : null, libDoc: n, libConfirm: false, settings: false, askConfirm: 0 });
   }
   // 한 권의 책으로 엮기 — 책이 작아지며 서고로 넘어간다(서고 시안이 #lib-bound-<id>로 받아 책장에 꽂는다)
   function bindBook() {
@@ -1020,7 +1089,7 @@
     const slid = placeFrom !== null && !moved && (placeFrom !== st.place || paneFrom !== st.pane);   // 모드 · 판이 바뀌면 판만 옆으로 밀려 바뀐다(탭 바뀜과 같은 움직임)
     placeFrom = st.place; paneFrom = st.pane;
     deskKeys = {}; cardSay = "";
-    if (st.ui === "hidden") $nav.innerHTML = stripHTML();
+    if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); hideSay(); }
     else if (st.ui === "greet") $nav.innerHTML = greetHTML(enter);
     else if (st.ui === "petit") $nav.innerHTML = `<div class="${enter.trim()}">${pillHTML()}</div>`;
     else $nav.innerHTML = islandHTML(enter);
@@ -1061,7 +1130,6 @@
     return h + `<div class="card"><div class="proj">${ring()}<div><div class="meta">${esc(project())}</div><div class="big" style="font-size:18px">${s.n}단계 · ${esc(s.title)}</div></div></div>
       ${seg()}<span class="meta">전체 8단계 중 ${s.n + 1}번째 단계예요</span></div>${notes()}${focusCard()}<div class="card">${more()}</div>`;
   }
-  const phoneDoc = () => phoneHead("1~4단계에서 만들어요", "설계도") + docBody(72);
   const phoneMap = () => phoneHead("전체 8단계", "단계 지도") + mapBody();
   function phoneCheck() {
     const s = stage(), [body, actions] = checkStep();
@@ -1073,7 +1141,7 @@
   function renderPhone() {
     const gate = st.screen === "gate";
     $phone.className = "phone" + (gate ? " check" : "");
-    const views = { today: phoneToday, doc: phoneDoc, map: phoneMap }, tab = views[st.tab] ? st.tab : "today";   // 한곳에서 보기·도서관은 PC에서만
+    const views = { today: phoneToday, map: phoneMap }, tab = views[st.tab] ? st.tab : "today";   // 한곳에서 보기·도서관 · 단계 문서는 PC에서만(C-16)
     $phone.innerHTML = gate ? phoneCheck() : views[tab]() +
       `<nav class="tabbar glass" aria-label="화면">${PHONE_TABS.map(([id, , label, ic], i) => `<button class="tab" data-act="tab" data-i="${i}" data-tab="${id}" ${tab === id ? 'aria-current="page"' : ""}>${I[ic]}${label}</button>`).join("")}</nav>`;
   }
@@ -1172,6 +1240,9 @@
     let r = 0, b = 0;
     for (const el of $nav.children) { if (el.classList.contains("shell")) continue; const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
     if (!r || !b) return;
+    // 떠 있는 말풍선(#fx의 .pop-say)의 아래쪽까지 — 한 줄로 접혀 있을 때 말이 창 밖에서 잘렸다(F-40, 이재엽 버튼 "창을 잠깐 늘림"). 가로는 넓히지 않는다(islandX가 가운데로 다시 놓아 한 줄이 밀린다)
+    const pop = $fx && $fx.querySelector(".pop-say.show");
+    if (pop) b = Math.max(b, pop.getBoundingClientRect().bottom);
     if ($nav.classList.contains("peekroom") && MO) { r += MO.RESERVE.w / 2; b += MO.RESERVE.h; }   // 접힌 창의 여유 — 올리면 커질 자리(왼쪽 여유는 .nav.peekroom의 padding)
     const side = $nav.classList.contains("side"), anchor = side || sideWas ? "left" : "center";
     sideWas = side;
@@ -1215,6 +1286,9 @@
     b.classList.toggle("below", below);
     b.style.left = `${Math.round(side ? r.left - 6 : r.left + r.width * 0.66)}px`;
     b.style.top = `${Math.round(side ? r.top + r.height * 0.2 : below ? r.bottom + 6 : r.top + 6)}px`;
+    // 한 줄(.pill) 안의 플로로면 말풍선을 한 줄 폭 안에 — 창 가로가 말풍선 때문에 바뀌지 않게(F-40). 아니면 평소대로
+    const pill = host.closest(".pill");
+    b.style.maxWidth = pill ? `${Math.max(120, Math.min(280, Math.round(pill.getBoundingClientRect().right - (r.left + r.width * 0.66) - 4)))}px` : "";
   }
   function say(text) {
     if (!liveCat() || !$fx) return;
@@ -1231,8 +1305,11 @@
     b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
     sayRaf = requestAnimationFrame(follow);
     clearTimeout(sayTimer);
-    sayTimer = setTimeout(() => b.classList.remove("show"), ms);
+    queueSize();   // 접힌 한 줄이면 창을 말풍선 아래까지(F-40) — 크기가 같으면 보내지 않는다
+    sayTimer = setTimeout(() => { b.classList.remove("show"); queueSize(); }, ms);   // 사라지면 한 줄 높이로
   }
+  // 띠로 접히면 떠 있던 말풍선을 닫는다 — 띠에는 플로로가 없어 말풍선이 제자리에 남은 채 창만 줄어든다(F-40 4번)
+  function hideSay() { const b = $fx && $fx.querySelector(".pop-say.show"); if (b) { b.classList.remove("show"); clearTimeout(sayTimer); } }
   // 한 번 하는 움직임(seal.css · app.css). 끝나면 떼어 낸다 — 헤엄의 물방울처럼 붙어 있는 동안 계속 보이는 것이 있어서
   const playOn = (host, cls) => {
     if (STILL || !host) return;
@@ -1262,7 +1339,7 @@
     }
   }
   // 축하 — 할 일을 다 했을 때, 단계를 넘어갔을 때, 설계도를 확정했을 때
-  const CHEER = { done: "와, 할 일을 다 했어요!", doc: "설계도 확정! 멋져요", finish: "끝까지 왔어요! 정말 멋져요" };
+  const CHEER = { done: "와, 할 일을 다 했어요!", doc: "문서 확정! 멋져요", finish: "끝까지 왔어요! 정말 멋져요" };
   function celebrate(kind) {
     requestAnimationFrame(() => {
       const host = liveCat();
@@ -1461,7 +1538,7 @@
   // 설계도 — 초안 받기 / 다시 봐 주세요. 연습용은 미리 써 둔 초안과 빈칸 확인만, 진짜 AI는 server.js를 거친다
   const newDoc = (n, text, say) => ({ stage: n, text, say, review: null, rounds: 0 });
   function draft(skipCheck) {
-    const s = stage(), made = (text, say) => { st.doc = newDoc(s.n, text, say); };
+    const s = docStage(), made = (text, say) => { st.doc = newDoc(s.n, text, say); };   // 책 안에서 고른 단계(C-16), 아니면 지금 단계
     Object.assign(st, { error: "", warn: null, askConfirm: 0 });
     if (st.mode === "fixture") {
       const d = S.drafts[s.n];
@@ -1474,7 +1551,7 @@
   function review(skipCheck) {
     const d = st.doc, reviewed = (v) => { Object.assign(d, { review: v, say: "" }); d.rounds++; };
     Object.assign(st, { error: "", warn: null, askConfirm: 0 });
-    if (!d.text.trim()) return stop("설계도가 비어 있어요.");
+    if (!d.text.trim()) return stop("문서가 비어 있어요.");
     if (st.mode === "fixture") { reviewed(S.reviewFixture(d.text, d.stage)); return render(); }
     return askAI("/api/review", { stage: d.stage, text: st.text, doc: d.text, tier: st.tier }, "다시 봐 드리지 못했어요", (r) => reviewed(r.review),
       !skipCheck && [`${st.text}\n${d.text}`, "review"]);
@@ -1484,7 +1561,7 @@
     const d = st.doc, s = N.STAGES[d.stage], left = N.blanks(d.text).length;
     if (left && !force) return set({ askConfirm: left });
     st.docs = st.docs.filter((x) => x.stage !== d.stage).concat({ stage: d.stage, name: s.doc, text: d.text, at: ymd() });
-    Object.assign(st, { doc: null, warn: null, error: "", askConfirm: 0, notice: `${s.n}단계 설계도를 확정했어요. 단계 지도에서 다시 볼 수 있어요.` });
+    Object.assign(st, { doc: null, warn: null, error: "", askConfirm: 0, notice: `${s.n}단계 ${s.doc}${eul(s.doc)} 확정했어요 — 도서관의 책과 단계 지도에서 다시 볼 수 있어요.` });
     render();
     celebrate("doc");
   }
@@ -1495,7 +1572,7 @@
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`,
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
         last ? ` · 확인 질문 ${last.ok ? "맞힘" : "정답 보고 넘어감"}` : ""} · ${ymd()}` });
-    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, cmd: null });
+    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, cmd: null, libDoc: null });
     if (nx) st.j = { stage: nx.n, reason: `${s.n}단계를 마쳤어요! 이제 ${nx.n}단계 "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;
@@ -1562,11 +1639,21 @@
     "base-back": () => set({ pane: "" }),
     "hub-alerts": () => openHub("alerts"), "hub-ai": () => openHub("ai"),
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
-    tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false }),
+    tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false, libDoc: null }),
+    // 먹이 주기(C-15) — 예시 · 나눠 정리 · 구간 표시 바꾸기 · 확인 · 다시 쓰기
+    "feed-example": () => { if (FD) { st.text = FD.EXAMPLE; feedSort(FD.EXAMPLE, true); } },
+    "feed-sort": () => feedSort(st.text),
+    "feed-mark": (i) => { const fd = st.meal; if (!fd || !fd.checks[i]) return; fd.marks[i] = feedSkip(fd, i) ? "keep" : "skip"; render(); },
+    "feed-confirm": () => feedConfirm(),
+    "feed-back": () => set({ meal: null }),
+    // 책 안의 단계 문서(C-16) — 열기 · 닫기 · 이번 단계 카드에서 바로
+    "lib-doc": (i) => set({ libDoc: i, askConfirm: 0, libConfirm: false }),
+    "lib-doc-close": () => set({ libDoc: null, askConfirm: 0 }),
+    "lib-doc-now": () => openBookDoc(st.j ? st.j.stage : 1),
     // 도서관 탭 — 책 고르기 · 목록으로 · 서고에 보관(확인 뒤) · 한 권으로 엮기
     "lib-enter": () => enterLibrary(),
-    "lib-book": (i, el) => set({ libSel: (el && el.dataset.id) || openBooks()[i].id, libConfirm: false }),
-    "lib-close": () => set({ libSel: null, libConfirm: false }),
+    "lib-book": (i, el) => set({ libSel: (el && el.dataset.id) || openBooks()[i].id, libConfirm: false, libDoc: null }),
+    "lib-close": () => set({ libSel: null, libConfirm: false, libDoc: null }),
     "lib-shelve-ask": () => set({ libConfirm: true }),
     "lib-shelve-no": () => set({ libConfirm: false }),
     "lib-shelve": () => shelveBook(),
@@ -1586,7 +1673,7 @@
     "confirm-doc": () => confirmDoc(false),
     "confirm-anyway": () => confirmDoc(true),
     "confirm-cancel": () => set({ askConfirm: 0 }),
-    "reopen-doc": () => { const x = docDone(st.j.stage); set({ doc: newDoc(x.stage, x.text, "") }); },
+    "reopen-doc": () => { const x = docDone(docStage().n); if (x) set({ doc: newDoc(x.stage, x.text, "") }); },
     forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
     setup: () => { set({ settings: false }); if (window.FloeSetup) window.FloeSetup.open(); },
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false, check: null }),
@@ -1868,13 +1955,15 @@
     if (!h) return;
     const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(decodeURIComponent)).map(([k, v]) => [k, v === undefined ? true : v]));
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
-      termOpen: "", check: null, undo: [], own: false });
+      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null });
     // 주소로 연 장면은 바이브 코딩(녹화 · 시험이 그대로), #base(&pane=alerts|ai)만 기본 화면(C-13, 넘김 문서 9절 7번)
     // 서고에서 돌아온 주소(&back)는 장면이 아니다 — 떠난 모드 그대로(F-36, PR #139 리뷰: 기본 화면에서 서재에 다녀오면 바이브 코딩이 됐다)
     if (q.base) { st.place = "base"; st.pane = q.pane === "alerts" || q.pane === "ai" ? q.pane : ""; } else setPlace(q.back ? "library" : "scene");
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
     if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null });
+    // #feed — 먹이 주기의 정리 장면(예시 먹이, C-15 — 녹화 · 시험용)
+    if (q.feed && FD) Object.assign(st, { j: null, finished: false, todos: null, tab: "today", hold: null, text: FD.EXAMPLE, meal: feedState(FD.EXAMPLE, true) });
     if (q.ex !== undefined) {
       const n = Number(q.ex), mine = S.examples.filter((e) => e.judgement.stage === n);
       const ex = q.done ? mine.find((e) => e.judgement.criteria.every((c) => c.met)) : mine.find((e) => !e.hidden);
@@ -1889,6 +1978,11 @@
     if (q.tab === "learn") { save(); location.replace(`${LIB_URL}#lib`); return; }
     if (q.tab && TABS.some((t) => t[0] === q.tab)) st.tab = q.tab;
     if (q.book) st.libSel = String(q.book);
+    // 옛 주소 &tab=doc(단계 문서 탭, 2026-10-20 C-16에 뺌)은 도서관의 책 안 그 단계 문서로 — 녹화(record-demo-gifs.py)와 e2e 장면이 그대로 이어진다. &doc=<단계>도 같다
+    if (q.tab === "doc" || q.doc !== undefined) {
+      const b = openBooks().find((x) => x.mine) || openBooks()[0];
+      Object.assign(st, { tab: "lib", libSel: b ? b.id : st.libSel, libDoc: q.doc !== undefined ? Number(q.doc) : st.j ? st.j.stage : 1 });
+    }
     if (q.crit) st.showCrit = true;
     if (q.gate && st.j && allDone()) Object.assign(st, { screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0 });
   }

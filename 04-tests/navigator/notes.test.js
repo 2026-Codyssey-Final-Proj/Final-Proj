@@ -42,12 +42,12 @@ test("지우기 · 상한: id로 지우고, 200개를 넘지 않는다. 같은 �
 
 test("Jira용 글: 시간 순 글머리표, 때 · 어디 · 글. 비밀값 · 이메일 모양은 공유 규칙으로 가린다. 비면 빈 글", () => {
   // 아래 키는 가짜(시험 입력) — 가려지는지 보려고 일부러 둔다. secret-check: allow
-  const list = NT.add(NT.add([], { text: "먼저 느낀 것", at: AT, stage: 1, tab: "doc", mode: "fixture" }), { text: "키가 sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJ 이렇게 보여요 — me@example.com", at: AT + 60_000, stage: 1, tab: "doc", mode: "live" });   // secret-check: allow
+  const list = NT.add(NT.add([], { text: "먼저 느낀 것", at: AT, stage: 1, tab: "map", mode: "fixture" }), { text: "키가 sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJ 이렇게 보여요 — me@example.com", at: AT + 60_000, stage: 1, tab: "map", mode: "live" });   // secret-check: allow
   const out = NT.toJira(list, Sensitive.redact);
   const lines = out.split("\n");
   assert.equal(lines[0], "Floe 실사용 느낀 점 (2개)");
-  assert.equal(lines[2], "- [2026-10-19 14:03] 1단계 · 설계도 탭 · 연습용 예시 — 먼저 느낀 것");
-  assert.match(lines[3], /^- \[2026-10-19 14:04\] 1단계 · 설계도 탭 · 진짜 AI — /);
+  assert.equal(lines[2], "- [2026-10-19 14:03] 1단계 · 단계 지도 탭 · 연습용 예시 — 먼저 느낀 것");
+  assert.match(lines[3], /^- \[2026-10-19 14:04\] 1단계 · 단계 지도 탭 · 진짜 AI — /);
   assert.ok(!out.includes("sk-ant-api03"), "키 값이 그대로 나가면 안 된다");
   assert.ok(!out.includes("me@example.com"), "이메일이 그대로 나가면 안 된다");
   assert.equal(NT.toJira([]), "");

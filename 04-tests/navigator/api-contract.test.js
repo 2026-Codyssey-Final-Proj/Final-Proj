@@ -579,9 +579,9 @@ test("POST /api/draft: 등급은 요청문에 들어간다 — Lite로 녹화한
   refused(await call("POST", "/api/draft", { body: { ...R.draftLite.body, tier: undefined } }), 502, /^녹화에 없는 요청/);
 });
 
-test("POST /api/draft·/api/review: 설계도가 없는 단계(0·5·6·7)나 정수가 아닌 단계는 400 '설계도를 만드는 단계가 아님'", async () => {
+test("POST /api/draft·/api/review: 설계도가 없는 단계(0·5·6·7)나 정수가 아닌 단계는 400 '단계 문서를 만드는 단계가 아님'", async () => {
   for (const url of ["/api/draft", "/api/review"]) {
-    for (const stage of [0, 5, 6, 7, 8, undefined, "2", "length"]) refused(await call("POST", url, { body: { text: "글", stage, doc: "1. 신청" } }), 400, "설계도를 만드는 단계가 아님", `${url} ${JSON.stringify(stage)}`);
+    for (const stage of [0, 5, 6, 7, 8, undefined, "2", "length"]) refused(await call("POST", url, { body: { text: "글", stage, doc: "1. 신청" } }), 400, "단계 문서를 만드는 단계가 아님", `${url} ${JSON.stringify(stage)}`);
   }
   assert.deepEqual(Nav.STAGES.filter((s) => s.doc).map((s) => s.n), [1, 2, 3, 4], "설계도가 있는 단계");
 });
@@ -614,7 +614,7 @@ test("POST /api/review: 잘한 점·고칠 곳은 3개까지, 다른 칸은 버�
   refused(await call("POST", "/api/review", { body: { ...R.reviewXpress.body, tier: "Lite" } }), 502, /^녹화에 없는 요청/, "등급이 요청문에 들어간다");
 });
 
-test("POST /api/review: 설계도가 비면 400 '설계도가 비어 있음', 모양이 틀린 AI 답은 502", async () => {
-  for (const doc of [undefined, "", "  "]) refused(await call("POST", "/api/review", { body: { ...R.review.body, doc } }), 400, "설계도가 비어 있음", JSON.stringify(doc));
+test("POST /api/review: 설계도가 비면 400 '단계 문서가 비어 있음', 모양이 틀린 AI 답은 502", async () => {
+  for (const doc of [undefined, "", "  "]) refused(await call("POST", "/api/review", { body: { ...R.review.body, doc } }), 400, "단계 문서가 비어 있음", JSON.stringify(doc));
   for (const req of R.badReview) refused(await post(req), 502, "다시 봐 준 결과의 형식이 맞지 않음", req.body.doc);
 });

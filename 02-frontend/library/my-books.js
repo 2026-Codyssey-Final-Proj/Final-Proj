@@ -47,7 +47,9 @@
       dues: [],                                   // 내 책에는 마감이 없다 — 마감 칩은 그리지 않는다(app.js dueChip)
       todos: finished ? todos.map((t) => ({ ...t, done: true })) : todos,
       steps: history.map((x) => (str(x.short) ? x.short : x.text)),
-      decided: docs.map((d) => `${d.stage}단계 ${str(d.name) ? d.name : "설계도"}${str(d.at) ? ` — ${d.at}에 확정` : ""}`),
+      decided: docs.map((d) => `${d.stage}단계 ${str(d.name) ? d.name : "단계 문서"}${str(d.at) ? ` — ${d.at}에 확정` : ""}`),
+      docStages: docs.map((d) => d.stage),         // 확정한 단계 문서의 단계(C-16 — 책 안에서 연다)
+      fed: list(s.fed).filter((f) => Array.isArray(f.topics)).map((f) => ({ topics: f.topics.filter(str), left: list(f.left).length, example: f.example === true })),   // 받은 먹이(C-15) — 주제와 빠진 수만, 글은 없다
       bookmarks: [...new Set(learned.map((x) => x.term))],
       insights: [], made: [],
       finished,

@@ -96,7 +96,7 @@ const STATIC = {
   "02-frontend/hub": ["index.html", "hub.css", "hub.js"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 모아 보기 창이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js"],
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js"],
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -282,11 +282,11 @@ async function handle(req, res) {
     if (!Nav.filled(body.question)) return refuse(res, "질문이 비어 있음");
     return ask(res, Nav.answerPrompt(body.stage, hard, body.question, body.text), Nav.ANSWER_SCHEMA, as("answer", (d) => (Nav.filled(d.answer) ? d.answer : null)), "답");   // 다른 답처럼 모양을 본다(호환 모드는 스키마를 강제하지 않는다)
   }
-  // FR-3 설계도 — 설계도를 만드는 단계(1~4)만. 남은 주소는 /api/draft와 /api/review뿐이다(POST_ROUTES)
+  // FR-3 단계 문서(2026-10-20까지 '설계도' — 화면 글에서 뺐다, C-16) — 문서를 만드는 단계(1~4)만. 남은 주소는 /api/draft와 /api/review뿐이다(POST_ROUTES)
   const s = stageOf(body.stage);
-  if (!s || !s.doc) return refuse(res, "설계도를 만드는 단계가 아님");
+  if (!s || !s.doc) return refuse(res, "단계 문서를 만드는 단계가 아님");
   if (route === "/api/draft") return ask(res, Nav.draftPrompt(s.n, body.text, tier), Nav.DRAFT_SCHEMA, Nav.parseDraft, "초안");
-  if (!Nav.filled(body.doc)) return refuse(res, "설계도가 비어 있음");
+  if (!Nav.filled(body.doc)) return refuse(res, "단계 문서가 비어 있음");
   return ask(res, Nav.reviewPrompt(s.n, body.text, body.doc, tier), Nav.REVIEW_SCHEMA, as("review", Nav.parseReview), "다시 봐 준 결과의");
 }
 

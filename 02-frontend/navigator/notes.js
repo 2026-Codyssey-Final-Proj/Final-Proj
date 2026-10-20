@@ -6,7 +6,7 @@
 (function (root) {
   const KEY = "floe:notes";
   const MAX = 200, TEXT_MAX = 2000;
-  const TAB = { today: "이번 단계", doc: "설계도", map: "단계 지도", lib: "도서관" };
+  const TAB = { today: "이번 단계", map: "단계 지도", lib: "도서관" };   // 단계 문서 탭은 2026-10-20(C-16)에 뺐다 — 문서는 도서관 탭의 책 안
   const MODE = { live: "진짜 AI", fixture: "연습용 예시" };
 
   const str = (x) => typeof x === "string" && x.trim() !== "";
