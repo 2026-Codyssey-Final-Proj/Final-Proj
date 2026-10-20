@@ -12,6 +12,7 @@
 | `screen-flow-wireframe.md` · `library-view-design.md` | 화면 흐름·와이어, 서재 설계 |
 | `api-intake.md` | 외부 API를 받았을 때 분석하는 법 |
 | [`game-overlay/`](game-overlay/README.md) | 게임처럼 일하는 오버레이 목업 세 개 — 지금 고른 방향은 레벨 오버레이(2026-10-19, 제품 코드는 그대로) |
+| [`onboarding-storyboard.md`](onboarding-storyboard.md) · [그림판](onboarding-storyboard.html) | 첫 5분 스토리보드 초안 — 한 줄 적기 → AI 없이 LV 0 · 첫 경험치 → 그다음 Claude 연결 (2026-10-20, KAN-55, 제품 코드는 그대로) |
 
 **우리 팀(Floe)의 이 단계 결과물:** [유스케이스](uc/README.md), [화면 흐름](screen-flow-wireframe.md). 코드는 [frontend](../../02-frontend/README.md)·[backend](../../03-backend/README.md)
 
