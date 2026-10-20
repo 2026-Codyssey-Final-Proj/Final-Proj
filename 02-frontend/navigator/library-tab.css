@@ -32,6 +32,10 @@
 .minispread .stg.soft{color:#5b6789}
 .minispread ul{margin:8px 0 0;padding-left:18px;font-size:calc(13.5px * var(--ui-scale,1));line-height:1.7}
 .minispread.binding{animation:bindbook .95s ease-in forwards}
+/* 책 보기 설정(C-9 · C-3, 2026-10-20 — ../library/book-view.css) — 종이색 바탕의 색. 왼쪽 머리의 '보기 설정' 단추는 아래에 */
+.minispread{--bv-sub:#5b6789;--bv-line:rgba(34,48,94,.2);--bv-soft:rgba(74,134,232,.1);--bv-acc:#22305e}   /* 눌린 단추는 남색 바탕 + 흰 글 — 하늘색(#4a86e8)은 흰 글과 대비가 모자랐다(axe) */
+.minispread .bv-head .bv-btn{margin-top:12px;align-self:flex-start}
+.minispread .bv-head{display:flex;flex-direction:column;align-items:flex-start}
 @keyframes bindbook{55%{transform:scale(.98);opacity:1}to{transform:translateY(40px) scale(.45);opacity:0}}
 .marks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .marks span{font-size:calc(12.5px * var(--ui-scale,1));padding:3px 10px;border-radius:999px;background:#e3ecfb;color:#22305e}
