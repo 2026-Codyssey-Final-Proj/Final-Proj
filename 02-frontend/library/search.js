@@ -1,15 +1,16 @@
 // claude-drafted: 2026-10-17 — 서고 검색. 화면과 떨어진 순수 함수라 search.test.js가 Node에서 시험한다.
-// 끝낸 책(이름 · 배운 것 · 단계마다 정한 것 · 인사이트 · 만든 것), 열어 둔 책(이름 · 정한 것 · 책갈피), 레퍼런스(이름 · 한 줄 · 배운 것)를 찾는다.
+// 끝낸 책(이름 · 단계마다 정한 것 · 인사이트 · 만든 것), 열어 둔 책(이름 · 정한 것 · 책갈피), 레퍼런스(이름 · 한 줄 · 주제)를 찾는다.
+// 2026-10-20(C-21, 이재엽 "배운 말은 필요 없을거 같아"): 끝낸 책의 배운 말(tags)로는 찾지 않는다 — 책 안의 '배운 것' 칸(insights)은 그대로
 // 띄어 쓴 낱말은 모두 들어 있어야 맞는다(AND). 대소문자는 가리지 않는다. 본문 전체 색인은 하지 않는다 — 표지에 있는 글만 본다.
 (function (root) {
   const norm = (s) => String(s).toLowerCase().replace(/\s+/g, " ").trim();
   const terms = (q) => norm(q).split(" ").filter(Boolean);
 
   function fieldsOf(kind, b, STAGES) {
-    if (kind === "shelf") return [["책 이름", `${b.title}${b.sub ? ` ${b.sub}` : ""}`], ...b.tags.map((t) => ["배운 것", t]),
+    if (kind === "shelf") return [["책 이름", `${b.title}${b.sub ? ` ${b.sub}` : ""}`],
       ...b.steps.map((s, i) => [`${i}단계 ${STAGES[i]}`, s]), ...b.insights.map((t) => ["인사이트", t]), ...b.made.map((t) => ["만든 것", t])];
     if (kind === "open") return [["책 이름", b.title], ...b.decided.map((t) => ["이 세션에서 정한 것", t]), ...b.bookmarks.map((t) => ["책갈피", t])];
-    return [["레퍼런스 이름", b.title], ["한 줄", b.line], ["배운 것", b.tag]];
+    return [["레퍼런스 이름", b.title], ["한 줄", b.line], ["주제", b.tag]];
   }
 
   function searchLibrary(q, data) {

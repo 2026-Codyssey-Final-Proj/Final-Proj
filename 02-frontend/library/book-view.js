@@ -10,7 +10,7 @@
   const SIZES = [["short", "짧게", "섬 안에서"], ["full", "전체 화면", "서고에서 크게"]];
   const FIELDS = [["steps", "지나온 단계"], ["decided", "정한 것"], ["insights", "배운 것"], ["made", "만든 것"], ["bookmarks", "책갈피"], ["todos", "할 일"]];
   const GROUPS = { structure: STRUCTURES, view: VIEWS, size: SIZES };
-  const KIND_LABEL = { steps: "지나온 단계", decided: "정한 것", fed: "받은 먹이" };
+  const KIND_LABEL = { steps: "지나온 단계", decided: "정한 것", fed: "받은 먹이", insights: "배운 것", todos: "할 일", bookmarks: "책갈피" };
 
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const str = (v) => (typeof v === "string" ? v : "");

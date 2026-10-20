@@ -13,6 +13,15 @@
   // 개인적인 일 — 이메일 · 전화번호 · IP(sensitive.js의 mask)와 흔한 말 [제안]. 사람이 구간마다 고칠 수 있으니 맞히는 비율은 미정(넘김 문서 5절)
   const PERSONAL = /(일기|가족|연애|병원|진료|월급|연봉|계좌|통장|집 ?주소|개인적인|사적인)/;
   const WHY = { secret: "이건 못 먹어요 — 비밀번호 같아요", personal: "이건 안 먹을게요 — 개인적인 일 같아요" };
+  // 종류 다섯(FR-15 더함 2026-10-20 — C-8의 분류): 빠지지 않은 구간마다 하나. 글의 말로 고르고(이 컴퓨터에서, AI 없이 [제안 — 요구서 C-15 ⑥]) 사람이 고친다. 모르면 참고
+  const KINDS = [["req", "요구"], ["decision", "결정"], ["learned", "배운 것"], ["todo", "할 일"], ["ref", "참고"]];
+  const KIND_RULES = [
+    ["todo", /(^|\n)\s*(-\s*\[[ x]\]|☐|TODO|할 일)|(해야|하기)\s*$|(붙이기|만들기|넣기|고치기|정하기)\s*(\n|$)/m],
+    ["decision", /(정했|정함|로 한다|로 했|결정|하기로|골랐|고르기로|확정)/],
+    ["learned", /(배웠|배운|알게|깨달|인사이트|느낀|느꼈|배움)/],
+    ["req", /(하면|한다\.?|해요\.?|필요|기능|화면|사용자|회원|시스템|앱은)/],
+  ];
+  const INBOX_MAX = 2000;
 
   const str = (v) => (typeof v === "string" ? v : "");
   const cut = (t) => (t.length > TOPIC_MAX ? `${t.slice(0, TOPIC_MAX - 1)}…` : t);
@@ -91,7 +100,28 @@
     "테스트 서버 비밀번호: 예시용-자리표시",
   ].join("\n");
 
-  const api = { MAX_FILE, ACCEPT, TOPIC_MAX, WHY, split, check, pack, accept, EXAMPLE };
+  // 구간 하나 → 종류 key. 제목 + 글의 말로 차례로 본다(할 일 → 결정 → 배운 것 → 요구), 아무것도 아니면 참고
+  function guessKind(section) {
+    const whole = `${str(section && section.title)}\n${str(section && section.text)}`;
+    if (/^\s*$/.test(whole)) return "ref";
+    for (const [k, re] of KIND_RULES) if (re.test(whole)) return k;
+    return "ref";
+  }
+  const kindLabel = (k) => (KINDS.find(([key]) => key === k) || KINDS[KINDS.length - 1])[1];
+  // 확인하면 책에 넣기 전 '확인할 먹이'로 — 빠지지 않은 구간만 {topic, kind, text}. 빠진 구간의 글은 없다. kinds[i]: 사람이 고친 종류(없으면 guessKind)
+  function inbox(sections, marks = [], kinds = []) {
+    const list = Array.isArray(sections) ? sections : [];
+    const out = [];
+    list.forEach((s, i) => {
+      const c = check(s), mark = Array.isArray(marks) ? marks[i] : undefined;
+      if (mark === "skip" || (mark !== "keep" && (c.secret || c.personal))) return;
+      const k = Array.isArray(kinds) && KINDS.some(([key]) => key === kinds[i]) ? kinds[i] : guessKind(s);
+      out.push({ topic: c.topic, kind: k, text: str(s.text).slice(0, INBOX_MAX) });
+    });
+    return out;
+  }
+
+  const api = { MAX_FILE, ACCEPT, TOPIC_MAX, WHY, KINDS, INBOX_MAX, split, check, pack, accept, guessKind, kindLabel, inbox, EXAMPLE };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavFeed = api;
 })(typeof window !== "undefined" ? window : globalThis);

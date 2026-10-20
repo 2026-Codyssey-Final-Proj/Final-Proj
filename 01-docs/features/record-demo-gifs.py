@@ -174,6 +174,28 @@ def approve(page, r):                # 13 FR-17(2026-10-20): 허락이 필요한
     r.still(1200)
 
 
+def shelves(page, r):                # 05 C-21(2026-10-20): 책장 만들기 → 펼친 책에서 옮기기 → 이름 바꾸기 → 지우기
+    page.goto(f"{LIB}#lib"); page.evaluate("localStorage.removeItem('floe:shelves')"); page.reload(); page.wait_for_timeout(900); r.still(1200)
+    r.click("#shelf-add", hold=600); page.type("#shelf-name", "알림", delay=60); r.hold(400); page.keyboard.press("Enter"); r.hold(900)
+    r.click("[data-read=f1]", hold=1200); r.click("#rd-cover", hold=1500)
+    opt = page.evaluate("[...document.querySelectorAll('#rd-shelf option')].find(o => o.textContent === '알림').value"); page.select_option("#rd-shelf", opt); r.hold(800)
+    r.click("#rd-close", hold=900)
+    r.click("[data-act=shelf-rename]", hold=500); page.fill("form[data-rename] input", "알림 · 폼"); page.keyboard.press("Enter"); r.hold(900)
+    r.click("[data-act=shelf-remove]", hold=1400); r.still(1000)
+    page.evaluate("localStorage.removeItem('floe:shelves')")
+
+
+def block(page, r):                  # 08 C-20 · C-19(2026-10-20): 접히기까지 5초 → 테두리 빛 → 먹이 검사 중 '어디쯤인지 보기' 막힘(화난 플로로 · X 표지판)
+    open_nav(page, "ex=1"); page.evaluate("localStorage.removeItem('floe:fold-delay')"); r.still(800)
+    r.click("[data-act=settings]", hold=700); r.click(".fold-opt[data-i='5']", hold=700); r.click("[data-act=settings]", hold=400)
+    page.evaluate("document.querySelector('[data-act=pin][aria-pressed=\"true\"]')?.click()"); page.mouse.move(5, 790); r.hold(2600)
+    open_nav(page, "feed"); r.still(900)
+    r.click("[data-act=cmd][data-i='1']", hold=700)
+    i = page.evaluate("[...document.querySelectorAll('[data-act=path]')].findIndex(p => p.textContent.includes('어디쯤인지'))")
+    r.click(f"[data-act=path][data-i='{i}']", hold=2600); r.still(800)
+    page.evaluate("localStorage.removeItem('floe:fold-delay')")
+
+
 def hub(page, r):                    # 11 C-11 · C-12: 모아 보기 창 — 바이브 코딩(카드 둘) → 알림 → AI 진행. 파일로 열어 예시(2026-10-20)
     page.goto(f"{HUB}#vibe"); page.wait_for_timeout(900); r.still(1400)
     r.click("[data-space=alerts]", hold=1400)
@@ -185,7 +207,7 @@ SCENES = {
     "01-stage-guide": (stage_guide, NAV_CROP), "02-blueprint": (blueprint, NAV_CROP), "03-gate": (gate, NAV_CROP),
     "04-overview": (overview, NAV_CROP), "05-library": (library, None),
     "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "greeting": (greeting, NAV_CROP), "entry": (entry, None),
-    "11-hub": (hub, None), "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP), "book-view": (book_view, None), "13-task-approval": (approve, NAV_CROP),
+    "11-hub": (hub, None), "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP), "book-view": (book_view, None), "13-task-approval": (approve, NAV_CROP), "shelves": (shelves, None), "block": (block, NAV_CROP),
 }
 
 if __name__ == "__main__":
@@ -199,7 +221,7 @@ if __name__ == "__main__":
             r = Rec(page, crop); print(n)
             try:
                 fn(page, r)
-                r.save(OUT / "demo-entry.gif" if n == "entry" else OUT / "08-floro" / "greeting.gif" if n == "greeting" else OUT / "11-hub" / "base.gif" if n == "base" else OUT / "05-library" / "book-view.gif" if n == "book-view" else OUT / n / "demo.gif")
+                r.save(OUT / "demo-entry.gif" if n == "entry" else OUT / "08-floro" / "greeting.gif" if n == "greeting" else OUT / "11-hub" / "base.gif" if n == "base" else OUT / "05-library" / "book-view.gif" if n == "book-view" else OUT / "05-library" / "shelves.gif" if n == "shelves" else OUT / "08-floro" / "block.gif" if n == "block" else OUT / n / "demo.gif")
             except Exception as e:
                 print("  ✗", n, type(e).__name__, str(e)[:300])
             ctx.close()

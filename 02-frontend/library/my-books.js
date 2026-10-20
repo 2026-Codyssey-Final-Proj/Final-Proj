@@ -37,6 +37,11 @@
     const docs = list(s.docs).filter((x) => Number.isInteger(x.stage) && str(x.text));
     const history = list(s.history).filter((x) => str(x.short) || str(x.text));
     const todos = s.j.criteria.filter((c) => c && str(c.text)).map((c) => ({ t: c.text, done: c.met === true }));
+    // 확인한 먹이(FR-15 더함 2026-10-20 — 종류별로 책의 칸에): 요구 · 결정 → 정한 것, 배운 것 → 배운 것, 할 일 → 할 일(아직 안 함), 참고 → 책갈피 [제안]. 확인하기 전(inbox)은 수만
+    const sorted = list(s.sorted).filter((x) => str(x.text));
+    const ofKind = (...ks) => sorted.filter((x) => ks.includes(x.kind));
+    const sortedDecided = ofKind("req", "decision").map((x) => (x.kind === "req" ? `요구 · ${x.text}` : x.text));
+    const sortedTodos = ofKind("todo").map((x) => ({ t: x.text, done: false }));
     const finished = s.finished === true;
     return {
       id: ME, mine: true, example: false, practice: s.mode === "fixture",
@@ -47,18 +52,20 @@
       tone: TONE,
       started: isDate(s.since) ? s.since : today,
       dues: [],                                   // 내 책에는 마감이 없다 — 마감 칩은 그리지 않는다(app.js dueChip)
-      todos: finished ? todos.map((t) => ({ ...t, done: true })) : todos,
+      todos: [...(finished ? todos.map((t) => ({ ...t, done: true })) : todos), ...sortedTodos],
       steps: history.map((x) => (str(x.short) ? x.short : x.text)),
-      decided: docs.map((d) => `${d.stage}단계 ${str(d.name) ? d.name : "단계 문서"}${str(d.at) ? ` — ${d.at}에 확정` : ""}`),
+      decided: [...docs.map((d) => `${d.stage}단계 ${str(d.name) ? d.name : "단계 문서"}${str(d.at) ? ` — ${d.at}에 확정` : ""}`), ...sortedDecided],
       docStages: docs.map((d) => d.stage),         // 확정한 단계 문서의 단계(C-16 — 책 안에서 연다)
       fed: list(s.fed).filter((f) => Array.isArray(f.topics)).map((f) => ({ topics: f.topics.filter(str), left: list(f.left).length, example: f.example === true })),   // 받은 먹이(C-15) — 주제와 빠진 수만, 글은 없다
-      bookmarks: [...new Set(learned.map((x) => x.term))],
-      insights: [], made: [],
+      bookmarks: [...new Set(learned.map((x) => x.term)), ...ofKind("ref").map((x) => x.text)],
+      insights: ofKind("learned").map((x) => x.text), made: [],
+      inbox: list(s.inbox).length,   // 확인할 먹이 — 수만(글은 책에 넣지 않는다)
       // 세션별 보기(C-3, book-view.js)의 재료 — 날짜가 남은 기록만: 지나온 단계(기록 끝의 날짜 또는 at) · 확정한 문서(at) · 받은 먹이(at). 본문은 싣지 않는다
       dated: [
         ...history.map((x) => ({ at: ymdOf(x.at) || tailDate(x.text), kind: "steps", text: str(x.short) ? x.short : x.text })),
         ...docs.map((d) => ({ at: ymdOf(d.at), kind: "decided", text: `${d.stage}단계 ${str(d.name) ? d.name : "단계 문서"} 확정` })),
         ...list(s.fed).filter((f) => Array.isArray(f.topics)).map((f) => ({ at: ymdOf(Number(f.at)), kind: "fed", text: `먹이 — ${f.topics.filter(str).join(" · ") || "(빠진 구간뿐)"}` })),
+        ...sorted.map((x) => ({ at: ymdOf(isDate(x.at) ? x.at : Number(x.at)), kind: { req: "decided", decision: "decided", learned: "insights", todo: "todos", ref: "bookmarks" }[x.kind] || "bookmarks", text: x.text })),
       ].filter((x) => x.at),
       finished,
     };

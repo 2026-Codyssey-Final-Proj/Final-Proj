@@ -4,7 +4,7 @@
      서버·AI·저장 없음 — 이 파일을 브라우저로 바로 연다. 물범 그림은 ../navigator/seal.js를 그대로 쓴다.
      2026-10-17 같은 날: 작업 화면 위 위젯(지금·단계 지도·한곳에서 보기·도서관 탭)은 내비게이터(../navigator/index.html)의 탭으로 옮겼다 — 같은 화면이 둘이 되지 않게.
      여기는 입구 → 서고 → 펼친 책 · 전체 돌아보기 · 별자리 하늘만 남는다. 내비게이터에서 "한 권의 책으로 엮기"를 누르면 #lib-bound-<id>로 와서 책장에 꽂힌다.
-     주소 끝으로 장면 바로 열기: #hall(입구) #pick(시안 고르기) #lib(내 서고) #lib-f1(서고에서 책 펼침) #lib-open-f1(표지 없이 — 열어 둔 책 #lib-open-s1도, 2026-10-20) #lib-ask(플로로 답) #lib-dive(내비게이터에서 물속으로 들어오기) #lib-review(전체 돌아보기) #lib-q=EARS(찾기) #lib-bound-s3(엮은 책 받기)
+     주소 끝으로 장면 바로 열기: #hall(입구) #pick(시안 고르기) #lib(내 서고) #lib-f1(서고에서 책 펼침) #lib-open-f1(표지 없이 — 열어 둔 책 #lib-open-s1도, 2026-10-20) #lib-ask(레퍼런스 서가) #lib-dive(내비게이터에서 물속으로 들어오기) #lib-review(전체 돌아보기) #lib-q=신청(찾기) #lib-bound-s3(엮은 책 받기). #lib-hover(잇는 선)는 2026-10-20 C-21로 없어졌다
      2026-10-19(이재엽): '내 배움'(learn.js) · 역량 지도(skills.js)를 지웠다. 옛 주소 #lib-learn · #lib-dive-learn은 서고로. 지식 은하(sky.html)로 가는 길은 막았다(코드는 남김).
      2026-10-18(F-17, 원칙 P7): 머리의 "예시 데이터예요 · 시연용" — 책장 · 책은 더미 데이터다
      2026-10-19(실사용): 내비게이터 기록이 있으면 열어 둔 책에 '내 책'이 더해지고(my-books.js), "예시 책 지우기"를 누르면 예시 책 · 레퍼런스가 비고 내 기록만 남는다.
@@ -85,10 +85,13 @@
     <input id="q" type="search" placeholder="서고에서 찾기 — 책 이름 · 배운 것 · 정한 것 · 만든 파일" enterkeyhint="search">
     <span class="kbd" aria-hidden="true">/</span>
   </form>
-  <div class="lib-refs"><button class="pillbtn glass" id="review-btn">↺ 전체 돌아보기</button><button class="pillbtn glass" id="refs-btn">레퍼런스 서가</button></div>
+  <div class="lib-refs"><button class="pillbtn glass" id="review-btn">↺ 전체 돌아보기</button><button class="pillbtn glass" id="refs-btn">레퍼런스 서가</button><button class="pillbtn glass" id="shelf-add" aria-expanded="false">+ 책장 만들기</button></div>
+  <!-- 책장 만들기(C-21, 2026-10-20) — 이름 하나. 책장은 이 브라우저에 저장(shelves.js) -->
+  <form class="shelf-form glass" id="shelf-form" hidden><label class="sr" for="shelf-name">새 책장 이름</label><input id="shelf-name" maxlength="20" placeholder="새 책장 이름 — 예) 알림" autocomplete="off"><button class="pillbtn glass" type="submit">만들기</button><button class="pillbtn glass" type="button" id="shelf-cancel">닫기</button></form>
+  <!-- 책장(C-21): 처음엔 '분류 안 함' 하나, 내가 만든 책장이 양옆으로 흐르며 늘어난다(가운데는 플로로). 떠 있는 배운 말 표 · 잇는 선은 뺐다(이재엽 "이렇게 떠있는 싫고 … 연결되어 보이는게 너무 많아질거 같아서 싫어") -->
   <div class="stage" id="stage">
-    <svg class="arcs" id="arcs" aria-hidden="true"></svg>
     <div class="slot" id="slot"></div>
+    <div class="shelves" id="shelves"></div>
   </div>
   <div class="center">
     <div class="floe">
@@ -111,7 +114,7 @@
       <div class="rd-foot" id="rd-foot"></div>
     </section>
     <section style="position:relative">
-      <div class="rd-tools"><button type="button" class="bv-btn" id="rd-view" aria-expanded="false" title="구조 · 칸 · 보기 · 크기 — 이 컴퓨터에 저장돼요">보기 설정</button></div>
+      <div class="rd-tools"><button type="button" class="bv-btn" id="rd-view" aria-expanded="false" title="구조 · 칸 · 보기 · 크기 — 이 컴퓨터에 저장돼요">보기 설정</button><label class="rd-shelf" id="rd-shelf-row">책장 <select id="rd-shelf" aria-label="이 책을 꽂을 책장"></select></label></div>
       <div class="bv" id="rd-right"></div>
       <h4 id="rd-links-h">이어진 책</h4><div class="tags" id="rd-links"></div>
       <div class="stamp" id="rd-stamp"></div>
@@ -139,6 +142,7 @@
 <script src="books.js"></script>
 <script src="my-books.js"></script>
 <script src="book-view.js"></script>
+<script src="shelves.js"></script>
 <script src="search.js"></script>
 <script src="spotlight.js"></script>
 <script src="../../03-backend/navigator/glossary.js"></script>

@@ -411,3 +411,52 @@ test("F-26: 넘어가기 전 확인에서 네 / 아니요를 물을 때 밖의 �
     assert.equal(c.length, 4); assert.ok(c.every((x) => x.off), "다른 장면에서는 네 칸 잠김");
   } finally { await browser.close(); }
 });
+
+test("FR-15 더함: 먹이 정리에서 먹는 구간마다 종류를 고르고, 확인하면 '확인할 먹이'가 도서관 탭 맨 위에 — '맞아요'를 누르면 그 종류로 내 책의 칸에 들어간다", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.evaluate(() => localStorage.removeItem("navigator-prototype:v1"));
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#feed&noex"), { waitUntil: "load" }); await wait(400);
+    const sel = await page.evaluate(() => [...document.querySelectorAll(".feedlist select.kind")].map((s) => ({ i: s.dataset.i, v: s.value, n: s.options.length })));
+    assert.deepEqual(sel, [{ i: "0", v: "req", n: 5 }], "먹는 구간 하나에만 종류 고르기(다섯 중 하나)");
+    await page.select('.feedlist select.kind[data-i="0"]', "todo"); await wait(100);
+    await page.click("[data-act=feed-confirm]"); await wait(600);
+    await page.click("[data-act=tab][data-tab=lib]"); await wait(300);
+    const box = await page.evaluate(() => ({ n: document.querySelectorAll(".inboxlist li").length, title: document.querySelector(".inbox .stg")?.textContent || "", kind: document.querySelector(".inboxlist select.kind")?.value, text: document.getElementById("nav").innerText }));
+    assert.equal(box.n, 1); assert.ok(box.title.includes("확인할 먹이 1개")); assert.equal(box.kind, "todo");
+    assert.ok(!box.text.includes("분류함"));
+    await page.click("[data-act=inbox-ok]"); await wait(300);
+    assert.equal(await page.evaluate(() => document.querySelectorAll(".inboxlist li").length), 0);
+    await page.click('[data-act=lib-book][data-id="me"]'); await wait(400);
+    const todos = await page.evaluate(() => [...document.querySelectorAll('.bv-sec[data-k="todos"] li')].map((l) => l.textContent));
+    assert.ok(todos.some((t) => t.includes("회원이 행사를 보고 신청하는 앱")), JSON.stringify(todos));
+  } finally { await browser.close(); }
+});
+
+test("C-21: 서고의 책장은 내가 만든다 — 처음엔 '분류 안 함' 하나(예시 책도 거기), 떠 있는 배운 말 · 잇는 선 없음, 만들기 → 펼친 책에서 옮기기 → 이름 바꾸기 → 새로 고침해도 그대로 → 지우면 책은 '분류 안 함'으로", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(url("library/index.html#lib"), { waitUntil: "load" }); await page.evaluate(() => localStorage.removeItem("floe:shelves")); await page.reload(); await wait(500);
+    const shelvesOf = () => page.evaluate(() => [...document.querySelectorAll(".shelfbox")].map((x) => [x.querySelector(".label span").textContent, x.querySelectorAll(".front").length]));
+    assert.deepEqual(await shelvesOf(), [["분류 안 함", 5]]);
+    assert.equal(await page.evaluate(() => document.querySelectorAll("#s-lib .chip, #s-lib .arcs, #arcs").length), 0, "배운 말 표 · 잇는 선이 없다");
+    assert.ok(!(await page.evaluate(() => document.body.innerText)).includes("EARS"), "서고 화면에 배운 말이 없다");
+    await page.click("#shelf-add"); await wait(200); await page.type("#shelf-name", "알림"); await page.keyboard.press("Enter"); await wait(300);
+    assert.deepEqual(await shelvesOf(), [["분류 안 함", 5], ["알림", 0]]);
+    await page.click('[data-read="f1"]'); await wait(900); await page.click("#rd-cover"); await wait(1300);
+    const opt = await page.evaluate(() => [...document.querySelectorAll("#rd-shelf option")].find((o) => o.textContent === "알림").value);
+    await page.select("#rd-shelf", opt); await wait(300);
+    await page.click("#rd-close"); await wait(300);
+    assert.deepEqual(await shelvesOf(), [["분류 안 함", 4], ["알림", 1]]);
+    await page.click('[data-act="shelf-rename"]'); await wait(200);
+    await page.evaluate(() => { document.querySelector("form[data-rename] input").value = "알림 · 폼"; }); await page.keyboard.press("Enter"); await wait(300);
+    await page.reload(); await wait(500);
+    assert.deepEqual(await shelvesOf(), [["분류 안 함", 4], ["알림 · 폼", 1]], "이 브라우저에 남는다");
+    await page.click('[data-act="shelf-remove"]'); await wait(300);
+    assert.deepEqual(await shelvesOf(), [["분류 안 함", 5]], "지우면 책은 '분류 안 함'으로");
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("floe:shelves")));
+    assert.deepEqual(saved, { list: [], books: {} });
+  } finally { await browser.close(); }
+});

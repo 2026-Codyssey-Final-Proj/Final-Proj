@@ -69,6 +69,7 @@
     auto: false, feed: { at: 0, project: "", tool: "" },   // Claude Code·Codex 연결: 자동으로 살펴보기(기본 꺼짐), 마지막 알림
     settings: false,                               // 설정(보기 방식·연결·자동 살펴보기·소리·기록)은 톱니를 눌러야 보인다
     doc: null, docs: [],                           // 단계 문서: 고치는 중인 것 {stage, text, say, review, rounds}, 확정한 것들
+    inbox: [], sorted: [],                         // FR-15 더함(2026-10-20): 확인할 먹이(종류를 붙였지만 아직 사람이 확인하지 않은 구간 — 글 포함, 이 브라우저에만) · 확인한 먹이(책의 칸으로)
     meal: null, fed: [],                           // 먹이 주기(C-15): 정리 중인 것(st.feed는 연결 — 이름이 겹쳐 meal) {sections, checks, marks, example}, 책에 꽂은 정리(주제 · 빠진 수 · 까닭 — 글은 없다)
     libDoc: null,                                  // 도서관의 책 안에서 여는 단계 문서(C-16) — 단계 번호
     project: "", back: "",                         // 알림에서 받은 프로젝트 폴더 이름, 다시 왔을 때 인사
@@ -175,7 +176,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words", "fed"];
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words", "fed", "inbox", "sorted"];
   let forgotten = false;
   function load() {
     let s;
@@ -186,7 +187,7 @@
     if (st.mode === "live" && !canLive) st.mode = "fixture";
     st.pets = Math.max(0, Number(st.pets) || 0);
     st.libGone = [...new Set([...(Array.isArray(st.libGone) ? st.libGone.map(String) : []), ...readBound()])];
-    for (const k of ["checks", "todoLater", "alerts", "fed"]) if (!Array.isArray(st[k])) st[k] = [];
+    for (const k of ["checks", "todoLater", "alerts", "fed", "inbox", "sorted"]) if (!Array.isArray(st[k])) st[k] = [];
     if (!st.hold || typeof st.hold.when !== "string") st.hold = null;
     if (!TIERS.some(([v]) => v === st.tier)) st.tier = "Full";
     if (st.j) st.j = T.refit(st.j, st.tier);   // 할 일 목록이 바뀌었으면(등급·규칙) 지금 목록에 맞춘다 — 글자가 같은 할 일만 이어 간다
@@ -584,13 +585,14 @@
         { label: "직접 쓸게요", act: "own", key: String(n.options.length + 1), kind: "opt" }] };
   }
   // ── 먹이 주기(C-15, 2026-10-20 — 규칙은 feed.js) ──
-  const feedState = (text, example = false) => { const sections = FD ? FD.split(text) : []; return sections.length ? { sections, checks: sections.map(FD.check), marks: [], example } : null; };
+  const feedState = (text, example = false) => { const sections = FD ? FD.split(text) : []; return sections.length ? { sections, checks: sections.map(FD.check), marks: [], kinds: sections.map(FD.guessKind), example } : null; };   // kinds — 구간마다 종류(FR-15 더함)
   const feedSkip = (fd, i) => { const c = fd.checks[i], m = fd.marks[i]; return m === "skip" || (m !== "keep" && (c.secret || c.personal)); };
   // 정리 화면 — 구간마다 주제 · 표시(못 먹어요 / 안 먹을게요 / 먹어요), 사람이 구간마다 고치고 확인하면 빠진 구간 없이 보낸다
   function feedSortMoment() {
     const fd = st.meal, packed = FD.pack(fd.sections, fd.marks);
     const rows = fd.sections.map((s, i) => { const c = fd.checks[i], skip = feedSkip(fd, i);
-      return `<li class="${skip ? "skip" : "keep"}"><span class="fi">${i + 1}</span><span class="ft"><b>${esc(c.topic)}</b><small>${esc(skip ? (fd.marks[i] === "skip" ? "빼 달라고 하셨어요" : c.why) : "먹어요")}</small></span>
+      return `<li class="${skip ? "skip" : "keep"}"><span class="fi">${i + 1}</span><span class="ft"><b>${esc(c.topic)}</b><small>${esc(skip ? (fd.marks[i] === "skip" ? "빼 달라고 하셨어요" : c.why) : "먹어요")}</small></span>${
+        skip ? "" : kindSelect("feed-kind", i, fd.kinds[i])}
         <button type="button" class="b ghost" data-act="feed-mark" data-i="${i}" aria-pressed="${skip}">${skip ? "먹어도 돼요" : "빼 주세요"}</button></li>`; }).join("");
     return { tone: "blue", mood: "look", badge: "", meta: `<span class="mm-stage">먹이 ${fd.sections.length}구간${fd.example ? " · 예시예요 · 시연용" : ""}</span>`,
       title: packed.kept ? `${packed.kept}구간을 먹을게요${packed.left.length ? ` — ${packed.left.length}구간은 빼요` : ""}` : "먹을 수 있는 구간이 없어요",
@@ -598,6 +600,8 @@
       body: `<ol class="feedlist" aria-label="나눈 구간">${rows}</ol>`,
       acts: [{ label: "확인하고 어디쯤인지 보기", act: "feed-confirm", key: "c-Enter", pri: true }, { label: "다시 쓰기", act: "feed-back", key: "Escape", kind: "ghost" }] };
   }
+  // 종류 고르기(FR-15 더함) — 요구 · 결정 · 배운 것 · 할 일 · 참고. 먹이 정리 화면과 확인할 먹이가 같이 쓴다
+  const kindSelect = (act, i, cur) => `<select class="kind" data-act="${act}" data-i="${i}" aria-label="종류">${FD.KINDS.map(([k, label]) => `<option value="${k}" ${k === cur ? "selected" : ""}>${label}</option>`).join("")}</select>`;
   // 글을 구간으로 나눠 표시 — AI에게 보내기 전, 이 컴퓨터에서만
   function feedSort(text, example = false) {
     if (!FD) return judge(false);
@@ -615,6 +619,10 @@
     if (!p.kept) { flash("think", 1200); return say("먹을 구간이 하나는 있어야 해요"); }
     const topics = fd.sections.map((_, i) => fd.checks[i].topic).filter((_, i) => !p.left.some((l) => l.i === i));
     st.fed = [{ at: Date.now(), topics, left: p.left.map((l) => ({ topic: l.topic, why: l.why })), kept: p.kept, example: !!fd.example }, ...st.fed].slice(0, 20);
+    // 종류를 붙인 구간은 '확인할 먹이'로(FR-15 더함) — 사람이 확인하기 전에는 책의 칸에 넣지 않는다(C-8 ②). 도서관 탭 맨 위에서 확인한다
+    const items = FD.inbox(fd.sections, fd.marks, fd.kinds).map((x) => ({ ...x, at: Date.now(), example: !!fd.example }));
+    st.inbox = [...items, ...st.inbox].slice(0, 60);
+    if (items.length) setTimeout(() => say(`확인할 먹이 ${items.length}개는 도서관 탭 맨 위에 두었어요`), 3200);
     // 연습 모드의 예시 먹이는 정해진 장면(연습 첫 글)으로 이어진다 — 연습용 예시는 정해진 글만 알아서(FR-10). 진짜 AI면 먹은 글 그대로
     Object.assign(st, { text: fd.example && st.mode === "fixture" ? S.first.text : p.text, meal: null, undo: [] });
     judge(false);
@@ -877,7 +885,7 @@
   function deskLib() {
     if (!L() || !SCH()) return libMissing();
     const books = openBooks(), b = libSelected();
-    if (!b) return `<div class="libtab"><div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
+    if (!b) return `<div class="libtab">${inboxBox()}<div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
         <div class="ob-say">열어 둔 책 ${books.length}권${exHidden ? " · 내 기록만" : ""}</div>
         <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : exHidden && !st.j ? "아직 책이 없어요" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
         ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">${exHidden && !st.j ? "'이번 단계'에서 지금 만드는 걸 보여 주면 내 책이 생겨요." : "새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요."}</p>`}</div></div>
@@ -906,6 +914,14 @@
         : `<div class="ob-foot"><button class="b" data-act="lib-close">‹ 목록으로${kbd("Escape")}</button>
           ${fin ? `<button class="b pri" data-act="lib-bind">📖 한 권으로 엮어 서고에 꽂기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">서고에 보관하기${kbd("Enter")}</button>`}</div>`}</div>`;
   }
+  // 확인할 먹이(FR-15 더함 2026-10-20 — 이재엽 버튼 "먹이 주기에 더하기"): 종류를 붙였지만 아직 확인하지 않은 구간. 도서관 탭 맨 위 [제안 ⑦]. 맞아요 → 그 종류로 내 책의 칸(my-books.js), 빼기 → 버림.
+  //   이름은 '확인할 먹이' [제안 ⑧] — C-21의 '분류 안 함' 책장(책을 꽂는 곳)과 헷갈리지 않게. 예시 먹이의 것은 '예시'라고 표시
+  function inboxBox() {
+    if (!FD || !st.inbox.length) return "";
+    const rows = st.inbox.slice(0, 5).map((x, i) => `<li><span class="ft"><b>${esc(x.topic)}</b>${x.example ? " <small>· 예시</small>" : ""}<small>${esc(String(x.text || "").replace(/\s+/g, " ").slice(0, 90))}</small></span>${kindSelect("inbox-kind", i, x.kind)}
+      <button type="button" class="b pri" data-act="inbox-ok" data-i="${i}">맞아요 → 책에</button><button type="button" class="b ghost" data-act="inbox-drop" data-i="${i}">빼기</button></li>`).join("");
+    return `<section class="inbox" aria-label="확인할 먹이"><div class="stg">확인할 먹이 ${st.inbox.length}개 — 종류가 맞는지 보고 책에 넣어요</div><ol class="inboxlist">${rows}</ol>${st.inbox.length > 5 ? `<p class="meta">먼저 온 5개만 보여요 — 확인하면 다음 것이 올라와요</p>` : ""}</section>`;
+  }
   // 책 안의 단계 문서 목록(C-16) — 단계마다 문서 이름 · 상태(아직 · 초안 · 다시 봐 줌 · 확정). 받은 먹이(C-15)도 여기에
   const docStatus = (n) => (docDone(n) ? "확정" : st.doc && st.doc.stage === n ? (st.doc.review ? "다시 봐 줌" : "초안") : "아직");
   function bookDocs() {
@@ -915,7 +931,8 @@
         <span class="n">${s.n}</span><span class="t"><b>${esc(s.doc)}</b><small>${stt}${s.n === cur ? " · 지금 단계" : s.n > cur ? " · 아직 안 온 단계" : ""}</small></span></button>`; }).join("");
     const fed = st.fed.length ? `<div class="stg soft" style="margin-top:10px">받은 먹이 ${st.fed.length}번</div><ul class="fedlist">${st.fed.slice(0, 3).map((f) =>
       `<li>${esc(f.topics.join(" · ") || "(빠진 구간뿐)")}${f.left.length ? ` <small>· ${f.left.length}구간 뺌</small>` : ""}${f.example ? " <small>· 예시</small>" : ""}</li>`).join("")}</ul>` : "";
-    return `<section class="bdocs"><div class="stg">단계 문서 — 들어가서 확인하고 작업해요</div><div class="bdoc-grid">${rows}</div>${fed}</section>`;
+    const inboxNote = st.inbox.length ? `<p class="meta"><button type="button" class="lnk" data-act="lib-close">확인할 먹이 ${st.inbox.length}개 — 목록 맨 위에서 확인해요</button></p>` : "";
+    return `<section class="bdocs"><div class="stg">단계 문서 — 들어가서 확인하고 작업해요</div><div class="bdoc-grid">${rows}</div>${fed}${inboxNote}</section>`;
   }
   // 이번 단계 카드에서 '단계 문서'를 누르면 — 도서관 탭 · 내 책(없으면 첫 책) · 그 단계 문서를 연다
   function openBookDoc(n) {
@@ -1767,6 +1784,9 @@
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false, libDoc: null }),
     // 먹이 주기(C-15) — 예시 · 나눠 정리 · 구간 표시 바꾸기 · 확인 · 다시 쓰기
+    // 확인할 먹이(FR-15 더함) — 맞아요: 그 종류로 책의 칸에, 빼기: 버림. 종류 고치기는 change 손잡이
+    "inbox-ok": (i) => { const x = st.inbox[i]; if (!x) return; st.sorted = [{ at: ymd(), kind: x.kind, text: x.text, topic: x.topic }, ...st.sorted].slice(0, 200); st.inbox.splice(i, 1); render(); say(`'${FD ? FD.kindLabel(x.kind) : x.kind}' 칸에 넣었어요`); },
+    "inbox-drop": (i) => { if (!st.inbox[i]) return; st.inbox.splice(i, 1); render(); say("뺐어요"); },
     "feed-example": () => { if (refuse(busyWhy())) return; if (FD) { st.text = FD.EXAMPLE; feedSort(FD.EXAMPLE, true); } },
     "feed-sort": () => feedSort(st.text),
     "feed-mark": (i) => { const fd = st.meal; if (!fd || !fd.checks[i]) return; fd.marks[i] = feedSkip(fd, i) ? "keep" : "skip"; render(); },
@@ -1950,6 +1970,8 @@
       if (a === "hard") toggleHard(Number(e.target.dataset.i), e.target.checked);
       if (a === "tier") setTier(e.target.value);
       if (a === "words" && CMD[e.target.value]) set({ words: e.target.value });
+      if (a === "feed-kind" && st.meal) st.meal.kinds[Number(e.target.dataset.i)] = e.target.value;   // FR-15 더함 — 구간의 종류를 고친다(다시 그리지 않는다)
+      if (a === "inbox-kind" && st.inbox[Number(e.target.dataset.i)]) { st.inbox[Number(e.target.dataset.i)].kind = e.target.value; save(); }
     });
     $root.addEventListener("input", (e) => {
       activity();
