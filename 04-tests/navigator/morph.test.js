@@ -54,7 +54,7 @@ test("app.js — 모양이 바뀌면 바탕 껍데기(.shell)가 FLIP으로 움�
   assert.match(app, /r \+= MO\.RESERVE\.w \/ 2; b \+= MO\.RESERVE\.h;/, "접힌 창의 여유");
   assert.match(css, /\.nav \.shell\{position:absolute;z-index:-1;transform-origin:0 0;will-change:transform;pointer-events:none\}/);
   assert.match(css, /\.nav \.morph-bg\{background:transparent!important;box-shadow:none!important/);
-  assert.match(css, /\.in-app \.nav\.peekroom\{padding:0 0 8px 12px\}/);
+  assert.match(css, /\.in-app \.nav\.peekroom\{padding:0 12px 8px\}/);
 });
 
 test("app.css — 접힌 한 줄에 올리면 살짝 커진다(0.2초 튕김, 떠나면 0.16초), 움직임 줄이기면 그대로", () => {

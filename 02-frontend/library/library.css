@@ -47,9 +47,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .floe .ripple { width: 330px; height: 40px; margin-top: -26px; border-radius: 50%; border: 1px solid rgba(190, 215, 255, .25); }
 .bob { animation: bob 3.6s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-5px); } }
-.say { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 300px; max-width: 420px; padding: 12px 18px; border-radius: 18px; font-size: 15.5px; text-align: center; word-break: keep-all; }   /* 한국어는 낱말 사이에서만 줄을 바꾼다(2026-10-19) */
+.say { position: absolute; bottom: calc(100% + 6px); left: 50%; translate: -50% 0; min-width: 300px; max-width: 420px; padding: 12px 18px; border-radius: 18px; font-size: 15.5px; text-align: center; word-break: keep-all; }   /* 한국어는 낱말 사이에서만 줄을 바꾼다(2026-10-19) */
 .say.hello { animation: say-pop .45s cubic-bezier(.3, 1.5, .5, 1); }   /* 물속에서 올라온 뒤 첫인사 */
-@keyframes say-pop { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.85); } }
+@keyframes say-pop { from { opacity: 0; transform: translateY(10px) scale(.85); } }   /* F-45: 가운데 맞춤(translate 속성)과 움직임(transform)을 나눴다 */
 
 /* ── ① 입구: 큰 책 ── */
 .hall { display: grid; place-items: center; height: 100%; }
@@ -58,10 +58,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .altar { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: 8vh; }
 .tome-btn { position: relative; border: 0; background: none; padding: 0; transition: transform .25s ease; }
 .tome-btn:hover, .tome-btn:focus-visible { transform: translateY(-6px) scale(1.02); }
-.tome-btn .halo { position: absolute; left: 50%; top: 62%; width: 420px; height: 90px; transform: translate(-50%, -50%); border-radius: 50%;
+.tome-btn .halo { position: absolute; left: 50%; top: 62%; width: 420px; height: 90px; translate: -50% -50%; border-radius: 50%;
   border: 3px solid rgba(255, 217, 138, .75); box-shadow: 0 0 30px rgba(255, 217, 138, .6), inset 0 0 24px rgba(255, 217, 138, .45); animation: spin 6s linear infinite; }
 .tome-btn .halo.b { width: 330px; height: 64px; animation-duration: 9s; animation-direction: reverse; opacity: .7; }
-@keyframes spin { 50% { transform: translate(-50%, -50%) scaleX(1.06); opacity: .75; } }
+@keyframes spin { 50% { transform: scaleX(1.06); opacity: .75; } }
 .bigbook { position: relative; width: 300px; height: 190px; display: flex; perspective: 900px; filter: drop-shadow(0 0 28px rgba(255, 217, 138, .45)); }
 .bigbook .pg { flex: 1; background: linear-gradient(90deg, #fffaf0, #f3ead7); border: 2px solid #e9cf8f; position: relative; overflow: hidden; }
 .bigbook .pg.l { border-radius: 14px 4px 4px 14px; transform: rotateY(8deg); transform-origin: right; }

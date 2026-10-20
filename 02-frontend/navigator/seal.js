@@ -8,7 +8,7 @@
 // 그림 말고도 교감에 쓰는 순수 함수(쓰다듬기 알아채기·친해진 정도·인사·졸음)와 화면 효과(하트·별·물방울 튀기기·작은 소리)가 여기 있다.
 (function (root) {
   // 앞의 여섯은 안내 화면(navigator.js의 face·docFace)이 쓰고, 뒤의 다섯은 교감할 때 잠깐 짓는 표정이다
-  const MOODS = ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow"];
+  const MOODS = ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow", "angry"];   // angry — 막을 때(C-19, 2026-10-20): 화난 눈 + 손의 X 표지판(s-sign)
   // 좌표는 120칸. 몸은 x 18~102, 머리 가운데 x 50, 눈 높이 y 35
   const BODY = "M50 10 C66 10 78 21 80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 57 115 C39 115 27 112 22 103 C17 94 18 78 19 63 C20 47 20 31 26 21 C32 13 40 10 50 10 Z";
   const SHADE = "M80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 62 115 C80 108 90 96 87 82 C84 70 79 58 80 38 Z";
@@ -42,6 +42,7 @@
           <path class="e-blink" d="${both((x) => `M${x - 3.5} ${EY} L${x + 3.5} ${EY}`)}"></path>
           <g class="e-think"><circle cx="${EYE[0]}" cy="${EY}" r="3.4"></circle><path d="M56 33.5 L64 36.5"></path></g>
           <g class="e-heart">${both((x) => `<path d="${heart(x, EY)}"></path>`)}</g>
+          <g class="e-angry">${both((x) => `<circle cx="${x}" cy="${EY + 0.5}" r="3.4"></circle>`)}<path d="M${EYE[0] - 5} ${EY - 6.5} L${EYE[0] + 4} ${EY - 3.5} M${EYE[1] + 5} ${EY - 6.5} L${EYE[1] - 4} ${EY - 3.5}"></path></g>
         </g>
         <g class="c-snout">
           <path class="c-nose" d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z"></path>
@@ -52,6 +53,8 @@
       ${paws ? `<g class="c-paws"><ellipse cx="36" cy="114" rx="9" ry="4"></ellipse><ellipse cx="58" cy="114" rx="9" ry="4"></ellipse></g>` : ""}</g>`;
   }
   // 머리 밖 작은 표시 — 살펴보는 중(점점), 다 했어요(반짝), 생각(?), 깜짝(!), 하트, 잠(z), 땀방울, 헤엄칠 때 오르는 물방울(s-bub)
+  // X 표지판(C-19) — 왼쪽 앞지느러미 쪽에 막대와 둥근 판, 그 안에 X. 막을 때만 보인다(seal.css .m-angry)
+  const SIGN = `<g class="s-sign"><path class="sg-pole" d="M22 70 L22 104"></path><circle class="sg-board" cx="22" cy="62" r="13"></circle><path class="sg-x" d="M16 56 L28 68 M28 56 L16 68"></path></g>`;
   const MARKS = `<g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
@@ -59,7 +62,7 @@
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
       <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
-      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g>`;
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g>${SIGN}`;
 
   // 숨구멍(2026-10-17 B안): 얼음 테 · 동그란 틀 대신 물빛이 번진 웅덩이에서 몸을 내민다. 머리는 웅덩이 밖으로 나오고
   // 몸 아래는 물결 아래로 잠긴다. 물 아래(y 110 밑)만 잘라서, 헤엄치며 잠수하면 물속으로 사라진다. 꼬리는 물속이라 그리지 않는다

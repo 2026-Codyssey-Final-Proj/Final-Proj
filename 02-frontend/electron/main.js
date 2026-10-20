@@ -14,6 +14,13 @@ const path = require("node:path");
 const { spawnSync, execFile } = require("node:child_process");
 const L = require("./lib.js");
 
+// F-42(2026-10-20): 한 번에 하나만 — 옛 앱이 켜진 채 새 것을 열면 둘이 다른 포트로 떠 섬이 겹치고 훅은 옛 쪽으로 갔다. 두 번째는 켜진 쪽을 앞으로 부르고 쉬운 말로 알린 뒤 끝난다.
+//   켜진 쪽이 옛 버전이어도 바꿔 켜지 않는다 [제안] — 사람이 옛 것을 끝내고 새 것을 연다(알림 글에 적는다)
+if (!app.requestSingleInstanceLock()) {
+  dialog.showErrorBox("Floe", "Floe가 이미 켜져 있어요. 켜진 Floe를 먼저 끝낸 뒤(메뉴 Floe → 끝내기) 새 것을 열어 주세요.");
+  app.quit();
+}
+app.on("second-instance", () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
 const P = L.paths(app.isPackaged, __dirname);
 const WANT = Number(process.env.NAV_PORT) || 4317;
 const RELEASES = "https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases";

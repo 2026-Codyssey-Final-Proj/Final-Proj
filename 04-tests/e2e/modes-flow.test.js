@@ -331,3 +331,83 @@ test("FR-17: #base&pane=ai&approve=1 — 승인 카드 둘(보통 · 되돌리�
     assert.ok(await page.evaluate(() => !!document.querySelector("#task-text")));
   } finally { await browser.close(); }
 });
+
+// ── 앱 9.0.0 섬 묶음(2026-10-20, 이재엽 "모든 요구사항들을 … 하나도 빠짐없이") — 코드보다 먼저 썼다 ──
+test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본 15)를 고르면 이 컴퓨터에 남고, 마우스가 나가면 아래 게이지바 대신 테두리 빛(.glow)이 그 시간으로 돈다", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.evaluate(() => localStorage.removeItem("floe:fold-delay"));
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1"), { waitUntil: "load" }); await wait(400);
+    await page.click("[data-act=settings]"); await wait(300);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".fold-opt")].map((x) => Number(x.dataset.i))), [5, 10, 15, 30, 60]);
+    assert.equal(await page.evaluate(() => document.querySelector('.fold-opt[aria-pressed="true"]')?.dataset.i), "15", "기본 15초(지금 값)");
+    await page.click('.fold-opt[data-i="5"]'); await wait(300);
+    assert.equal(await page.evaluate(() => localStorage.getItem("floe:fold-delay")), "5");
+    await page.click("[data-act=settings]"); await wait(200);
+    await page.evaluate(() => { const p = document.querySelector('[data-act=pin][aria-pressed="true"]'); if (p) p.click(); });
+    await page.mouse.move(5, 850); await wait(400);
+    const g = await page.evaluate(() => { const g = document.querySelector(".isl .glow"); return { on: !!g, dur: g && getComputedStyle(g).animationDuration, cd: !!document.querySelector(".cd") }; });
+    assert.deepEqual(g, { on: true, dur: "5s", cd: false });
+    await page.mouse.move(700, 120); await wait(300);
+    assert.ok(!(await page.evaluate(() => !!document.querySelector(".isl .glow"))), "다시 들어오면 빛을 거둔다");
+    // 새로 고침해도 5초
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1"), { waitUntil: "load" }); await wait(400);
+    await page.click("[data-act=settings]"); await wait(200);
+    assert.equal(await page.evaluate(() => document.querySelector('.fold-opt[aria-pressed="true"]')?.dataset.i), "5");
+  } finally { await browser.close(); }
+});
+
+test("C-18: 파일을 섬 위로 끌면 파란 먹이 층('플로로에게 먹이를 주세요' + 폴더 안 물고기)이 섬을 덮고, 자식을 지나도 깜빡이지 않으며, 벗어나거나 놓으면 거둔다", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1"), { waitUntil: "load" }); await wait(400);
+    const drag = (type, sel) => page.evaluate((type, sel) => { const dt = new DataTransfer(); dt.items.add(new File(["# 글"], "a.md")); (sel ? document.querySelector(sel) : document.body).dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: dt })); }, type, sel);
+    const shown = () => page.evaluate(() => { const l = document.querySelector(".feedlayer"); return l ? l.classList.contains("show") : false; });
+    await drag("dragenter"); await wait(400);   // 나타남 움직임(0.24초)이 끝난 뒤 잰다
+    assert.equal(await shown(), true);
+    const s = await page.evaluate(() => { const l = document.querySelector(".feedlayer"), n = document.getElementById("nav").getBoundingClientRect(), r = l.getBoundingClientRect(); return { text: l.textContent, fish: !!l.querySelector(".fl-fish"), cover: Math.abs(r.left - n.left) < 2 && Math.abs(r.width - n.width) < 2 }; });
+    assert.ok(s.text.includes("플로로에게 먹이를 주세요") && s.fish && s.cover, JSON.stringify(s));
+    await drag("dragenter", ".isl"); await drag("dragleave", ".isl"); await wait(100);   // 자식을 지나는 짝 — 층은 그대로
+    assert.equal(await shown(), true, "자식을 지날 때 깜빡이지 않는다");
+    await drag("dragleave"); await wait(150);
+    assert.equal(await shown(), false, "벗어나면 거둔다");
+    await drag("dragenter"); await wait(100); await drag("drop"); await wait(500);
+    assert.equal(await shown(), false, "놓으면 거두고 먹이 주기로");
+    assert.ok(await page.evaluate(() => !!document.querySelector(".feedlist")), "먹이 정리 화면");
+  } finally { await browser.close(); }
+});
+
+test("C-19: 먹이를 검사하는 동안 '어디쯤인지 보기'를 누르면 하지 않고 플로로가 까닭을 말하며 화난 눈 · X 표지판(m-angry), 먹이 화면은 그대로", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#feed"), { waitUntil: "load" }); await wait(400);
+    await page.click("[data-act=cmd][data-i='1']"); await wait(300);
+    const i = await page.evaluate(() => [...document.querySelectorAll("[data-act=path]")].findIndex((p) => p.textContent.includes("어디쯤인지")));
+    assert.ok(i >= 0);
+    await page.click(`[data-act=path][data-i='${i}']`); await wait(400);
+    const s = await page.evaluate(() => { const svg = document.querySelector("[data-live] svg.cat"), sign = svg && svg.querySelector(".s-sign"), eyes = svg && svg.querySelector(".e-angry");
+      return { angry: !!svg && /\bm-angry\b/.test(svg.getAttribute("class")), sign: sign && getComputedStyle(sign).display, eyes: eyes && getComputedStyle(eyes).display, say: document.querySelector(".pop-say")?.textContent || "", meal: !!document.querySelector(".feedlist"), judged: !!document.querySelector(".lv b") };
+    });
+    assert.equal(s.angry, true); assert.equal(s.sign, "inline"); assert.equal(s.eyes, "inline");
+    assert.ok(s.say.includes("검사하는 중"), s.say);
+    assert.ok(s.meal && !s.judged, "먹이 화면은 그대로, 살펴보기는 안 했다");
+  } finally { await browser.close(); }
+});
+
+test("F-26: 넘어가기 전 확인에서 네 / 아니요를 물을 때 밖의 칸이 둘(1 · 2)이 되고 같은 동작을 한다. 그 뒤 장면에서는 네 칸이 잠긴 채", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&done&gate"), { waitUntil: "load" }); await wait(400);
+    const cmds = () => page.evaluate(() => [...document.querySelectorAll(".cmds .cmd")].map((x) => ({ act: x.dataset.act, off: x.disabled })));
+    let c = await cmds();
+    assert.deepEqual(c, [{ act: "yes", off: false }, { act: "no", off: false }]);
+    await page.keyboard.press("2"); await wait(400);
+    assert.ok(await page.evaluate(() => (document.querySelector(".lvc .say")?.textContent || "").includes("헷갈렸나요")), "2 키 = 아니요");
+    c = await cmds();
+    assert.equal(c.length, 4); assert.ok(c.every((x) => x.off), "다른 장면에서는 네 칸 잠김");
+  } finally { await browser.close(); }
+});

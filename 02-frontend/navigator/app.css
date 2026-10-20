@@ -5,6 +5,8 @@
 /* 글자 크기 — 모든 font-size에 --ui-scale(브라우저 기본 글자 크기 ÷ 16 × 설정의 글자 크기, app.js가 정함)을 곱한다 (2026-10-18) */
 
 :root{
+  /* 움직임 묶음(F-45 · 넘김 문서 motion 3절, 2026-10-20): 짧게 · 보통 · 큰 전환, 곡선은 셋 — 들어옴(스프링) · 나감 · 기본. morph.js MS · EASE와 같은 값. 새 움직임부터 이것을 쓴다 */
+  --t-short:.16s; --t-base:.24s; --t-long:.4s; --ease-in:cubic-bezier(.3,1.4,.5,1); --ease-out:cubic-bezier(.4,0,.2,1); --ease-base:cubic-bezier(.2,.8,.2,1);
   --desk:#DCE4EE; --win:#FFFFFF; --winbar:#F7F7F8; --side:#F5F6F8; --line:#E6E8EC;
   --ink:#1D1D1F; --ink2:#3A3A3C; --mute:#6E6E73; --sub:#4A5260;
   --glass:rgba(255,255,255,.80); --glass2:rgba(255,255,255,.90); --soft:#F5F6F8; --card:#FFFFFF; --phone:#F2F3F7;
@@ -61,13 +63,15 @@ html.in-app,html.in-app body{background:transparent;overflow:hidden}   /* 창이
 .in-app .isl,.in-app .pill,.in-app .strip,.in-app .pop,.in-app .glass{-webkit-backdrop-filter:none;backdrop-filter:none}
 .in-app .isl,.in-app .pill{background:#1A2766}
 /* 앱 창은 섬 크기에 맞춰 줄어든다(main.js floe:resize) — 섬을 창의 왼쪽 위에 붙이고 가운데 정렬을 푼다. 창 자체가 화면 가운데에 놓인다 */
-.in-app .nav{left:0;top:0;transform:none;width:940px;max-width:none;align-items:flex-start}   /* 창 폭(100vw)에 묶지 않는다 — 접혀서 창이 좁아진 뒤 펼치면 섬이 940px로 돌아오고 창이 따라 넓어진다 */
+/* F-45(2026-10-20): 기준점 하나 — 섬의 위 가운데. 창(main.js islandX)도 섬도 이 점을 붙든다: 섬을 창 가운데에 두면(left:50% + translate) 창이 가운데를 붙든 채 커지고 줄어도 섬은 제자리.
+   전에는 섬이 창의 왼쪽 위에 붙어 창이 넓어질 때마다 늘어난 폭의 절반만큼 밀렸다. 자리는 left · translate로, 움직임은 transform · opacity로만(섞지 않는다) */
+.in-app .nav{left:50%;top:0;transform:none;translate:-50% 0;width:940px;max-width:none;align-items:center}   /* 창 폭(100vw)에 묶지 않는다 — 접혀서 창이 좁아진 뒤 펼치면 섬이 940px로 돌아오고 창이 따라 넓어진다 */
 /* 앱 창이 600px보다 좁아져도(접힘 · 처음 설정) 휴대폰 규칙(.nav 숨김 · .phone 보임)을 타지 않는다 — 안 그러면 섬이 0×0이 되어 창이 다시 넓어지지 못한다(5.2.0) */
 @media (max-width:600px){html.in-app .nav{display:flex}html.in-app .phone{display:none}html.in-app body{background:transparent}}
 /* 창 높이(100vh)가 섬을 따라오므로 화면 높이에 기댄 제한을 푼다 — 안 풀면 설정 창이 20px로 눌려 돌고 돈다 */
 .in-app .pop{align-self:flex-start;max-height:none;overflow:visible}
 /* 설정이 옆에 열리면(.nav.side) 섬은 940px 그대로, 창만 오른쪽으로 넓어진다(floe:resize anchor left). 아주 길어지면 설정 창 안에서 스크롤 */
-.in-app .nav.side{width:auto}
+.in-app .nav.side{width:auto;left:0;translate:0 0;align-items:flex-start}   /* 설정 창이 옆에 열릴 때만 왼쪽 고정(anchor "left") — 창이 오른쪽으로만 넓어지고 섬은 제자리(F-45의 하나뿐인 예외) */
 .in-app .nav.side>.isl{flex:0 0 940px;width:940px}
 .in-app .nav.side>.pop{max-height:820px;overflow:auto}
 .in-app .isl{max-height:none}
@@ -75,7 +79,7 @@ html.in-app,html.in-app body{background:transparent;overflow:hidden}   /* 창이
 .in-app .tb button,.in-app .tb select{-webkit-app-region:no-drag}
 /* Mac 노치(다이내믹 아일랜드, 2026-10-19 이재엽 결정) — 앱이 노치 크기를 보내면(app.js → --notch-w · --notch-h) 띠는 노치와 같은 검정으로 노치를 덮고,
    한 줄 · 펼침은 노치 아래로 늘어난다. 위 모서리는 화면 맨 위에 붙으니 각지게, 아래만 둥글게. 노치 없는 컴퓨터 · 브라우저에는 .notch가 안 붙는다 */
-html.notch .strip{width:max(150px,calc(var(--notch-w,200px) + 28px));height:calc(var(--notch-h,38px) + 18px);background:#000;border-radius:0 0 18px 18px}
+html.notch .strip{width:max(150px,calc(var(--notch-w,200px) + 28px));height:calc(var(--notch-h,38px) + 18px);background:transparent;border-radius:0 0 18px 18px}   /* F-47(2026-10-20 이재엽 "원래대로 배경은 투명으로"): 검게 칠하니 노치가 더 커 보였다. 크기는 그대로 */
 html.notch .strip .head{bottom:6px}
 html.notch .pill,html.notch .isl{border-radius:0 0 28px 28px}
 html.notch .pill{border-radius:0 0 25px 25px}
@@ -90,7 +94,7 @@ html.notch .pill{border-radius:0 0 25px 25px}
 /* 접힌 한 줄에 마우스를 올리면 살짝 커진다(세로 +6 · 가로 +24 — 비율 --px · --py는 app.js peekReady가 크기마다 잰다). 떠나면 돌아온다. 창은 바꾸지 않는다(접힌 창에 여유) */
 .pill{transform-origin:50% 0;transition:transform .16s ease-out}
 .pill:hover{transform:scale(var(--px,1.06),var(--py,1.12));transition:transform .2s cubic-bezier(.3,1.4,.5,1)}
-.in-app .nav.peekroom{padding:0 0 8px 12px}   /* 접힌 창의 여유(가로 24 · 세로 8) — 왼쪽 12는 여기, 오른쪽 12 · 아래 8은 app.js measureSize가 더한다 */
+.in-app .nav.peekroom{padding:0 12px 8px}   /* 접힌 창의 여유(가로 24 · 세로 8) — 양옆 12는 여기(가운데 기준점이 어긋나지 않게 대칭, F-45), 오른쪽 12 · 아래 8은 app.js measureSize가 더한다 */
 @media (prefers-reduced-motion:reduce){.pill,.pill:hover{transform:none;transition:none}}
 
 /* 기본 화면(C-13, 2026-10-20 — app.js baseBody · basePane): 플로로와 지금 한 줄, 단추 넷(2×2). 알림 · AI 진행 판은 왼쪽 플로로 · 프로젝트 · 도구, 오른쪽 목록
@@ -327,7 +331,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 @keyframes lvpop{0%{transform:scale(1)}35%{transform:scale(1.6)}100%{transform:scale(1)}}
 .lvc .xp-l{font-size:calc(12px * var(--ui-scale,1));font-weight:700;letter-spacing:.04em}
 .lvc .xp{position:relative;flex:1 1 200px;min-width:120px;max-width:460px;height:14px;border-radius:7px;background:var(--seg);overflow:hidden}
-.lvc .xp i{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:var(--tink);transition:width .7s cubic-bezier(.3,.9,.3,1)}
+.lvc .xp i{position:absolute;left:0;top:0;bottom:0;width:100%;border-radius:7px;background:var(--tink);transform-origin:left center;transition:transform .7s cubic-bezier(.3,.9,.3,1)}   /* F-46(2026-10-20): width 대신 transform — 배치를 다시 계산하지 않는다 */
 .lvc .xp.full i{box-shadow:0 0 12px var(--tink)}
 .lvc .xp .tick{position:absolute;top:3px;bottom:3px;width:2px;border-radius:1px;background:var(--tint)}
 .lvc .xp-n{font-variant-numeric:tabular-nums;color:var(--ink2)}
@@ -347,7 +351,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .lvc .path small{grid-column:2;font-size:calc(12px * var(--ui-scale,1));color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lvc .path:hover,.lvc .path:focus-visible{background:var(--acc-soft)}
 .lvc .hint{margin:0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
-@media (prefers-reduced-motion:reduce){.lvc .xp i,.lvc .cmd{transition:none}.lvc .lv b.pop{animation:none}}
+@media (prefers-reduced-motion:reduce){.lvc .xp i,.lvc .cmd{transition:none}.lvc .lv b.pop{animation:none}.isl .glow{animation:none;--glow-p:1;opacity:.35}.feedlayer.show{animation:none}}
 @media (max-width:760px){.lvc{grid-template-columns:1fr}.lvc .cmds{grid-template-columns:repeat(2,minmax(0,1fr))}.lvc .paths{grid-template-columns:1fr}}
 .flowline>span{padding:2px 10px;border-radius:999px;background:var(--card);color:var(--sub);font-size:calc(13px * var(--ui-scale,1))}
 .flowline>span.meta{background:none;padding:0}
@@ -365,9 +369,26 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .crit-grid ul.crit{columns:2;column-gap:28px}.crit-grid ul.crit li{break-inside:avoid;border-top:0}
 
 /* 곧 접혀요 */
-.cd{position:absolute;left:30px;right:30px;bottom:5px;height:3px;border-radius:3px;background:var(--seg);overflow:hidden}
-.cd i{display:block;height:3px;border-radius:3px;background:var(--acc);animation:shrink linear forwards}
-@keyframes shrink{from{width:100%}to{width:0}}
+/* 테두리 빛(C-20, 2026-10-20 — 아래 게이지바 .cd 대신): 위 가운데에서 켜져 양쪽 테두리를 따라 내려가 아래 가운데에서 만난다. 각도(--glow-p 0→1)만 움직여 섬 전체를 다시 그리지 않는다.
+   밝기는 리퀴드 글래스 반짝임 정도(흰빛 .7). 노치 섬은 위 가운데가 노치에 가려져 양쪽 모서리에서 보이기 시작한다 [제안] */
+@property --glow-p{syntax:"<number>";inherits:false;initial-value:0}
+.isl .glow{position:absolute;inset:0;border-radius:inherit;pointer-events:none;padding:2.5px;box-sizing:border-box;opacity:.9;
+  background:conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,.72) 0deg,rgba(255,255,255,.72) calc(var(--glow-p) * 180deg),transparent calc(var(--glow-p) * 180deg),transparent calc(360deg - var(--glow-p) * 180deg),rgba(255,255,255,.72) calc(360deg - var(--glow-p) * 180deg),rgba(255,255,255,.72) 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
+  animation:glow linear forwards}
+@keyframes glow{from{--glow-p:0}to{--glow-p:1}}
+.fold .fold-opt{min-height:32px;padding:0 12px;border-radius:999px;font-size:calc(13px * var(--ui-scale,1))}
+.fold .fold-opt[aria-pressed="true"]{background:var(--acc-btn);color:var(--acc-ink);border-color:transparent}
+.fold .meta{flex-basis:100%;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+/* 파란 먹이 층(C-18, 2026-10-20) — 파일을 끌고 있는 동안 섬을 덮는다. 창(앱)은 섬 크기라 fixed로 섬의 자리에 */
+.feedlayer{position:fixed;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;gap:6px;border-radius:28px;color:#fff;text-align:center;pointer-events:none;
+  background:rgba(43,106,230,.88);border:2px dashed rgba(255,255,255,.75);box-shadow:0 0 0 4px rgba(43,106,230,.25)}
+.feedlayer.show{display:flex;animation:feedlayer-in var(--t-base) var(--ease-out)}
+.feedlayer b{font-size:calc(18px * var(--ui-scale,1))}.feedlayer small{font-size:calc(12.5px * var(--ui-scale,1));opacity:.9}
+.feedlayer .fl-pic{width:min(120px,40%);height:auto}.feedlayer .fl-folder{fill:#F6D36B}.feedlayer .fl-flap{fill:#FFE28A}.feedlayer .fl-fish path{fill:#4FC3F7}.feedlayer .fl-fish circle{fill:#0F1D55}
+@keyframes feedlayer-in{from{opacity:0;transform:scale(.97)}}
+.lvc .cmds.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lvc .cmd.pri{background:var(--acc-btn);color:var(--acc-ink);border-color:transparent}
 
 /* 처음 인사 */
 .hint{display:inline-flex;align-items:center;gap:6px;font-size:calc(13px * var(--ui-scale,1));color:var(--acc);font-weight:600}
@@ -525,10 +546,10 @@ button.pet:focus-visible{outline-offset:4px}
 
 /* 하트·별·물방울과 플로로의 한마디 — 화면 맨 위 층 */
 #fx{position:fixed;inset:0;pointer-events:none;z-index:30}
-.fx{position:fixed;transform:translate(-50%,-50%);animation:fly 1s cubic-bezier(.2,.7,.3,1) forwards;opacity:0}
+.fx{position:fixed;translate:-50% -50%;animation:fly 1s cubic-bezier(.2,.7,.3,1) forwards;opacity:0}   /* F-45: 가운데 맞춤은 translate 속성, 움직임은 transform — 키프레임마다 -50%를 다시 적지 않는다 */
 .fx svg{display:block}
-@keyframes fly{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}15%{opacity:1}70%{opacity:1}
-  100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--r)) scale(1.05)}}
+@keyframes fly{0%{opacity:0;transform:scale(.4)}15%{opacity:1}70%{opacity:1}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r)) scale(1.05)}}
 .pop-say{position:fixed;max-width:280px;padding:8px 13px;border-radius:16px 16px 16px 4px;background:var(--ink);color:var(--win);font-size:calc(13px * var(--ui-scale,1));font-weight:600;line-height:1.45;
   box-shadow:0 8px 24px rgba(0,0,0,.18);translate:0 -100%;opacity:0;pointer-events:none}
 .pop-say.below{translate:0 0;border-radius:4px 16px 16px 16px}

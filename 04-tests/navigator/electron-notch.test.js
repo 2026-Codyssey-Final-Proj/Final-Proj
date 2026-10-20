@@ -64,7 +64,7 @@ test("앱 → 화면: preload가 노치 구독(onNotch)을 두고, 화면은 그
   assert.match(app, /classList\.add\("notch"\)/);
   assert.match(app, /--notch-w/);
   assert.match(app, /--notch-h/);
-  assert.match(css, /html\.notch \.strip\{[^}]*#000/);   // 띠는 노치와 같은 검정
+  assert.doesNotMatch(css, /html\.notch \.strip\{[^}]*#000/);   // F-47(2026-10-20): 띠 바탕은 투명 — 검게 칠하니 노치가 더 커 보였다
   assert.match(css, /html\.notch \.strip\{[^}]*var\(--notch-w/);   // 폭은 노치 폭 이상
   assert.match(css, /html\.notch \.pill,html\.notch \.isl\{[^}]*border-radius:0 0 /);   // 위 모서리는 각지게(화면 위에 붙음)
 });
