@@ -11,9 +11,10 @@ test("빈 검색어·공백만이면 아무것도 돌려주지 않는다", () =>
   assert.deepEqual(searchLibrary("   ", D), []);
 });
 
-test("배운 것(태그)·책갈피·레퍼런스를 한 번에 찾는다 — 대소문자는 가리지 않는다", () => {
+test("단계마다 정한 것 · 책갈피 · 레퍼런스를 한 번에 찾는다 — 대소문자는 가리지 않는다. 끝낸 책의 배운 말(tags)로는 찾지 않는다(C-21, 2026-10-20)", () => {
   const r = ids(searchLibrary("ears", D));
-  for (const want of ["shelf:f1", "shelf:f2", "open:s1", "ref:r1"]) assert.ok(r.includes(want), want);
+  for (const want of ["shelf:f1", "open:s1", "ref:r1"]) assert.ok(r.includes(want), want);
+  assert.ok(!r.includes("shelf:f2"), "f2는 배운 말(tags)에만 EARS가 있다 — 이제 안 찾는다");
   assert.deepEqual(ids(searchLibrary("EARS", D)), r);
 });
 

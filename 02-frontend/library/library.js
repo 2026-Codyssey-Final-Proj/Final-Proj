@@ -6,7 +6,7 @@
 // 2026-10-19(실사용): 내비게이터 기록이 있으면 열어 둔 책에 '내 책'을 더하고, "예시 책 지우기"(HIDE_KEY)를 눌렀으면 예시 책 · 레퍼런스 · 물어볼 것을 비운다(my-books.js).
 //   그때 '오늘'은 시안의 고정 날짜가 아니라 실제 오늘이다. 주소 끝 &noex는 이 화면만 예시 없이(저장하지 않음). 책이 하나도 없어도 서고 · 전체 돌아보기가 멈추지 않는다.
 (function () {
-  const D = window.LibData, Seal = window.NavSeal, BV = window.FloeBookView;   // BV — 책 보기 설정(C-9 · C-3, 2026-10-20): 섬의 도서관 탭과 같은 설정
+  const D = window.LibData, Seal = window.NavSeal, BV = window.FloeBookView, Shelves = window.FloeShelves;   // BV — 책 보기 설정(C-9 · C-3), Shelves — 내가 만드는 책장(C-21, 2026-10-20)
   const NAV = "../navigator/index.html";
   const $ = (id) => document.getElementById(id);
   // 내 책 · 예시 책 지우기 — 화면을 그리기 전에 데이터에 적용한다. 저장소를 못 쓰면(사생활 보호 창) 예시 그대로
@@ -30,7 +30,13 @@
   }, true);
 
   // 화면 안에서만 바뀌는 상태 (새로 고침하면 처음으로)
-  const st = { open: D.OPEN.map((b) => ({ ...b })), shelved: [], answer: null, reading: null };
+  const st = { open: D.OPEN.map((b) => ({ ...b })), shelved: [], answer: null, reading: null, renaming: null };
+  // C-21(2026-10-20 이재엽 버튼): 책장은 내가 만든다 — 처음엔 '분류 안 함' 하나, 개수 제한 없음, 예시 책도 같은 목록. 이 브라우저에 저장(shelves.js). 책을 지우는 길은 없다
+  const NONE = Shelves ? Shelves.NONE : "none";
+  let shelves = Shelves ? Shelves.read(storage) : { list: [{ id: NONE, name: "분류 안 함" }], books: {} };
+  const saveShelves = (next) => { shelves = next; if (Shelves) Shelves.write(storage, shelves); };
+  const shelfOf = (id) => (Shelves ? Shelves.shelfOf(shelves, id) : NONE);
+  const shelfName = (id) => (shelves.list.find((x) => x.id === id) || shelves.list[0]).name;
 
   // ── 배경 별 ──
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -46,7 +52,7 @@
     $("spread").classList.remove("on"); $("reader").classList.remove("on"); $("review").classList.remove("on");
     if (where === "hall") { show("hall"); setHash("hall"); $("tome").focus(); return; }
     if (where === "pick") { show("hall"); $("spread").classList.add("on"); setHash("pick"); $("spread").querySelector(".go").focus(); return; }
-    if (where === "lib") { show("lib"); spot.clear(); spot.close(); st.answer = arg === "ask" ? D.ASK[0] : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
+    if (where === "lib") { show("lib"); spot.clear(); spot.close(); st.answer = arg === "ask" ? D.ASK.find((a) => a.refs) || null : null; renderLib(); setHash(arg === "ask" ? "lib-ask" : "lib"); return; }
   }
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-go]"); if (b) go(b.dataset.go); });
   // 작업 화면으로 돌아가기(2026-10-20 이재엽 "서재에서 오버레이로 넘어갈 때 애니메이션") — 물이 차오르고 플로로가 잠수한 뒤 내비게이터가 물속에서 떠오른다(주소 끝 &back → dive.js surface)
@@ -109,8 +115,8 @@
     const p = st.open.find((b) => b.id === id);
     if (!p) return st.shelved.find((b) => b.id === id)?.bound || null;
     const fid = `f${D.SHELF.length + 1}`, tags = p.tags || [];
-    const links = D.SHELF.filter((b) => b.tags.some((t) => tags.includes(t))).map((b) => b.id).slice(0, 2);
-    D.SHELF.push({ id: fid, started: p.started, days: dayOf(p.started), title: p.title, shelf: 2, date: D.TODAY.slice(5).replace("-", "."), tags, links,
+    // 꽂는 책장은 고르지 않으면 '분류 안 함'(C-21) — 펼친 책의 '책장' 고르기로 옮긴다. 잇는 선(links)은 없앴다
+    D.SHELF.push({ id: fid, started: p.started, days: dayOf(p.started), title: p.title, date: D.TODAY.slice(5).replace("-", "."), tags, links: [],
       steps: p.steps, insights: p.insights || [], made: p.made || [], marks: p.bookmarks.length });
     st.open = st.open.filter((b) => b.id !== id); st.shelved.push({ ...p, bound: fid });
     return fid;
@@ -120,48 +126,39 @@
     const fresh = st.open.some((b) => b.id === id), fid = bindInto(id);
     if (!fid) return go("lib");
     go("lib"); setHash(`lib-${fid}`);
-    if (fresh) toast(`‘${D.SHELF.find((b) => b.id === fid).title}’ 한 권 완성! 서고 ‘숫자 · 돈’ 책장에 꽂았어요`);
+    if (fresh) toast(`‘${D.SHELF.find((b) => b.id === fid).title}’ 한 권 완성! ‘${shelfName(NONE)}’에 꽂았어요 — 펼친 책에서 책장을 고를 수 있어요`);
     setTimeout(() => openReader(fid), fresh ? 500 : 0);
   }
   for (const id of readBound()) bindInto(id);   // 지난번에 엮은 책은 처음부터 책장에
 
   // ── ③ 내 서고 ──
   const SEAL = 190;   // 가운데 플로로 크기(2026-10-18 UI를 키우며 170 → 190)
-  const SHELVES = [
-    { label: "기록 · 폼", style: "left:5vw;top:2%" }, { label: "알림", style: "right:5vw;top:2%" },
-    { label: "숫자 · 돈", style: "left:2vw;top:40%" }, { label: "정리 도구", style: "right:2vw;top:40%" },
-  ];
-  // 책장을 키우며(2026-10-18) 책장과 겹치지 않게 가운데 쪽으로 옮겼다
-  const CHIPS = [["EARS", "left:31vw;top:32%"], ["MoSCoW", "left:28vw;top:68%"], ["숫자로 말하기", "left:30vw;top:12%"], ["얼음 보내기", "right:31vw;top:30%"],
-    ["재시도", "right:30vw;top:12%"], ["한 번에 하나만", "right:28vw;top:68%"]];
+  // 책장(C-21): 처음엔 '분류 안 함' 하나. 내가 만든 책장은 왼쪽 · 오른쪽 열에 번갈아 흐른다(가운데는 플로로). 고정 책장 넷('기록 · 폼' 등)과 떠 있는 배운 말 표 · 잇는 선은 2026-10-20에 뺐다
   function renderLib() {
     const marks = D.SHELF.reduce((n, b) => n + marksOf(b), 0);
-    $("lib-count").textContent = `끝낸 프로젝트 ${D.SHELF.length}권 · 책갈피 ${marks}장 · 열어 둔 책 ${st.open.length}권`;
-    const stage = $("stage");
-    stage.querySelectorAll(".shelfbox,.chip").forEach((n) => n.remove());
-    SHELVES.forEach((sh, i) => {
+    $("lib-count").textContent = `끝낸 프로젝트 ${D.SHELF.length}권 · 책갈피 ${marks}장 · 열어 둔 책 ${st.open.length}권 · 책장 ${shelves.list.length}개`;
+    const stage = $("stage"), wrap = $("shelves");
+    wrap.innerHTML = "";
+    const groups = Shelves ? Shelves.groups(shelves, D.SHELF) : [{ shelf: shelves.list[0], books: D.SHELF }];
+    groups.forEach((g, i) => {
       let h = 7; const spines = (k) => Array.from({ length: k }, () => `<i class="spine" style="height:${84 + ((h = (h * 37) % 41))}px"></i>`).join("");
-      const box = document.createElement("div"); box.className = "shelfbox"; box.style.cssText = sh.style;
-      const books = D.SHELF.filter((b) => b.shelf === i);
-      box.innerHTML = `<div class="row">${spines(3)}${books.map((b) => `<button class="front" data-read="${b.id}" aria-label="${esc(b.title)} 펼치기">${esc(b.title)}${b.sub ? ` ${esc(b.sub)}` : ""}</button>`).join("")}${spines(4)}</div>
-        <div class="board"></div><div class="label">${sh.label}</div>`;
-      stage.appendChild(box);
+      const mine = g.shelf.id !== NONE;
+      const box = document.createElement("div"); box.className = "shelfbox"; box.dataset.shelf = g.shelf.id; box.style.gridColumn = i % 2 ? "3" : "1";
+      const label = st.renaming === g.shelf.id
+        ? `<form class="shelf-form" data-rename="${esc(g.shelf.id)}"><input value="${esc(g.shelf.name)}" maxlength="20" aria-label="책장 이름"><button class="pillbtn glass" type="submit">저장</button><button class="pillbtn glass" type="button" data-act="shelf-rename-cancel">닫기</button></form>`
+        : `<span>${esc(g.shelf.name)}</span><small>${g.books.length}권</small>${mine ? `<button type="button" class="lnk" data-act="shelf-rename" data-id="${esc(g.shelf.id)}">이름 바꾸기</button><button type="button" class="lnk" data-act="shelf-remove" data-id="${esc(g.shelf.id)}">지우기</button>` : ""}`;
+      box.innerHTML = `<div class="row">${spines(mine ? 2 : 3)}${g.books.map((b) => `<button class="front" data-read="${b.id}" aria-label="${esc(b.title)} 펼치기">${esc(b.title)}${b.sub ? ` ${esc(b.sub)}` : ""}</button>`).join("")}${spines(mine ? 3 : 4)}</div>
+        <div class="board"></div><div class="label">${label}</div>`;
+      wrap.appendChild(box);
     });
-    // 책장 사이 배운 말 — 예시가 보이면 시안의 여섯 개, 예시를 지웠으면 내 책의 배운 말(없으면 없음). 내 배운 말은 이름이 길 수 있어 플로로에서 먼 자리(위쪽)부터 쓴다
-    const MINE_ORDER = [2, 4, 0, 3, 1, 5];
-    const chipNames = D.HIDDEN ? [...new Set(st.open.flatMap((b) => b.tags || []))].slice(0, CHIPS.length) : CHIPS.map(([t]) => t);
-    chipNames.forEach((t, i) => { const w = document.createElement("div"); w.innerHTML = termHtml(t, `chip${D.HIDDEN ? " mine" : ""}`); const c = w.firstElementChild; c.style.cssText = CHIPS[D.HIDDEN ? MINE_ORDER[i] : i][1]; stage.appendChild(c); });
+    const f = wrap.querySelector("form[data-rename] input"); if (f) { f.focus(); f.select(); }
     const last = st.shelved[st.shelved.length - 1];
     $("slot").innerHTML = last ? `방금 꽂은 책<br><b style="color:var(--ink)">${esc(last.title)}</b>` : `지금 쓰는 책 ${st.open.length}권<br>끝내면 여기 꽂혀요`;
     // 머리 표시 · 예시 책 단추(2026-10-19) — 예시가 보이면 "예시 데이터예요", 지웠으면 "내 기록이에요"
     document.querySelector(".lib-head .fake").textContent = exHidden ? "내 기록 · 예시 없음" : mine.book ? "예시 + 내 책 · 시연용" : "예시 데이터예요 · 시연용";
     $("ex-toggle").textContent = exHidden ? "예시 책 다시 보기" : "예시 책 지우기";
     $("ex-toggle").title = exHidden ? "예시(더미) 책 · 레퍼런스를 다시 꺼내요" : "예시(더미) 책 · 레퍼런스를 숨기고 내 기록만 봐요";
-    stage.querySelectorAll("[data-read]").forEach((b) => {
-      b.onclick = () => openReader(b.dataset.read, { from: b });
-      b.onmouseenter = b.onfocus = () => drawArcs(b.dataset.read);
-      b.onmouseleave = b.onblur = () => drawArcs(null);
-    });
+    stage.querySelectorAll("[data-read]").forEach((b) => { b.onclick = () => openReader(b.dataset.read, { from: b }); });
     st.results = st.search ? window.LibSearch.searchLibrary(st.search, D) : null;
     const none = st.results && !st.results.length;
     $("lib-seal").innerHTML = seal(none ? "think" : st.answer ? "look" : "idle", SEAL);
@@ -169,9 +166,33 @@
       : st.results ? `찾았어요! 검색창 밑에 ${st.results.length}곳을 펼쳐 뒀어요.` : st.answer ? "찾았어요! 오른쪽에 펼쳐 둘게요."
       : !D.SHELF.length ? (st.open.length ? "아직 꽂힌 책이 없어요. 지금 쓰는 책을 끝내면 여기 꽂혀요." : "아직 책이 없어요. 작업 화면에서 만드는 걸 보여 주면 내 책이 생겨요.")
       : "기억 안 나는 건 위 검색창에 적어 봐요.";
-    renderAnswer();
-    drawArcs(null);
+    renderAnswer(); litFound();
   }
+  // 책장 만들기 · 이름 바꾸기 · 지우기(C-21) — 지우면 그 안의 책은 '분류 안 함'으로(shelves.js remove). 이름 바꾸기는 그 자리에서 입력
+  $("shelf-add").onclick = () => { const f = $("shelf-form"); f.hidden = !f.hidden; $("shelf-add").setAttribute("aria-expanded", String(!f.hidden)); if (!f.hidden) $("shelf-name").focus(); };
+  $("shelf-cancel").onclick = () => { $("shelf-form").hidden = true; $("shelf-add").setAttribute("aria-expanded", "false"); };
+  $("shelf-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!Shelves) return;
+    const name = $("shelf-name").value, next = Shelves.add(shelves, name);
+    if (next === shelves) { toast("책장 이름을 적어 주세요"); return; }
+    saveShelves(next); $("shelf-name").value = ""; $("shelf-form").hidden = true; $("shelf-add").setAttribute("aria-expanded", "false");
+    renderLib(); toast(`‘${next.list[next.list.length - 1].name}’ 책장을 만들었어요 — 펼친 책에서 옮겨 꽂아요`);
+  });
+  $("stage").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-act]"); if (!b || !Shelves) return;
+    const id = b.dataset.id;
+    if (b.dataset.act === "shelf-rename") { st.renaming = id; renderLib(); }
+    if (b.dataset.act === "shelf-rename-cancel") { st.renaming = null; renderLib(); }
+    if (b.dataset.act === "shelf-remove") { const n = (Shelves.groups(shelves, D.SHELF).find((g) => g.shelf.id === id) || { books: [] }).books.length; saveShelves(Shelves.remove(shelves, id)); renderLib(); toast(n ? `책장을 지웠어요 — 책 ${n}권은 ‘${shelfName(NONE)}’으로 옮겼어요` : "책장을 지웠어요"); }
+  });
+  $("stage").addEventListener("submit", (e) => {
+    const f = e.target.closest("form[data-rename]"); if (!f || !Shelves) return;
+    e.preventDefault();
+    const next = Shelves.rename(shelves, f.dataset.rename, f.querySelector("input").value);
+    if (next !== shelves) saveShelves(next);
+    st.renaming = null; renderLib();
+  });
   $("refs-btn").onclick = () => { spot.clear(); spot.close(); st.answer = D.ASK.find((a) => a.refs) || null; renderLib(); };
   // 예시 책 지우기 / 다시 보기 — 저장하고 같은 장면으로 다시 연다(화면 안 상태가 예시 책을 품고 있어서 다시 그리는 것보다 확실하다). &noex로 연 화면은 저장만 바꾼다
   $("ex-toggle").onclick = () => {
@@ -184,7 +205,7 @@
 
   // ── 서고에서 찾기 — 결과는 검색창 바로 밑에 펼친다(spotlight.js). 오른쪽 열은 "어디에 있는지" ──
   const KIND = { shelf: "끝낸 책", open: "열어 둔 책", ref: "레퍼런스" };
-  const WHERE = (x) => x.kind === "shelf" ? `서고 › ${SHELVES[D.SHELF.find((b) => b.id === x.id).shelf].label} 책장` : x.kind === "open" ? "작업 화면 › 내비게이터 도서관 탭" : "서고 › 레퍼런스 서가";
+  const WHERE = (x) => x.kind === "shelf" ? `서고 › ${shelfName(shelfOf(x.id))} 책장` : x.kind === "open" ? "작업 화면 › 내비게이터 도서관 탭" : "서고 › 레퍼런스 서가";
   const ICON = (x) => x.kind === "ref" ? '<span class="ic-ref">🔖</span>'
     : `<i class="ic-book" style="background:linear-gradient(160deg,${x.kind === "open" ? D.OPEN.find((b) => b.id === x.id).tone : "#cfe6ff"},#6f9cf0)"></i>`;
   const spot = window.Spotlight.attach({
@@ -199,23 +220,8 @@
     onChange: (q) => { st.search = q.trim() ? q : ""; if (st.search) st.answer = null; renderLib(); },
   });
 
-  // 같은 배움(태그)을 쓴 책끼리 금빛 선으로 잇는다 — 영상 7번 장면
-  function drawArcs(id) {
-    const svg = $("arcs"), box = $("stage").getBoundingClientRect();
-    const found = (fid) => (st.results ? st.results.some((x) => x.kind === "shelf" && x.id === fid) : Boolean(st.answer && st.answer.tag && D.SHELF.find((b) => b.id === fid)?.tags.includes(st.answer.tag)));
-    document.querySelectorAll(".front").forEach((f) => f.classList.toggle("lit", found(f.dataset.read)));
-    if (!id) { svg.innerHTML = ""; return; }
-    const from = D.SHELF.find((b) => b.id === id);
-    document.querySelectorAll(".front").forEach((f) => { if (f.dataset.read === id || from.links.includes(f.dataset.read)) f.classList.add("lit"); });
-    const at = (bid) => { const r = document.querySelector(`[data-read="${bid}"]`)?.getBoundingClientRect(); return r && { x: r.left + r.width / 2 - box.left, y: r.top - box.top }; };
-    const a = at(id);
-    svg.innerHTML = from.links.map((lid) => {
-      const to = D.SHELF.find((b) => b.id === lid), b = at(lid); if (!a || !b) return "";
-      const shared = from.tags.find((t) => to.tags.includes(t)) || "이어짐", n = D.SHELF.filter((x) => x.tags.includes(shared)).length;
-      const mx = (a.x + b.x) / 2, my = Math.max(-40, Math.min(a.y, b.y) - 60), ly = Math.max(14, (Math.min(a.y, b.y) + my) / 2 + 4);   // 선 꼭대기는 화면 안, 이름표는 선 위에
-      return `<path d="M${a.x} ${a.y} Q${mx} ${my} ${b.x} ${b.y}"></path><text x="${mx}" y="${ly}" text-anchor="middle">★ ${esc(shared)} · ${n}권</text>`;
-    }).join("");
-  }
+  // 찾은 책 비추기 — 검색 결과의 책만 금빛(잇는 선 · 배운 말 답은 2026-10-20 C-21로 뺐다)
+  const litFound = () => document.querySelectorAll(".front").forEach((f) => f.classList.toggle("lit", !!st.results && st.results.some((x) => x.kind === "shelf" && x.id === f.dataset.read)));
 
   function renderAnswer() {
     const box = $("answer"), a = st.answer;
@@ -224,12 +230,8 @@
     if (a.refs) {
       box.innerHTML = `<h3>${seal("happy", 28)}플로로가 찾은 레퍼런스 ${D.REFS.length}개</h3><ul>${D.REFS.map((r) => `<li><button data-read="${r.used[0]}"><i></i><span>${esc(r.title)} · ${esc(r.kind)}</span><small>${esc(r.line)} — 쓰인 책: ${r.used.map((u) => esc(D.SHELF.find((b) => b.id === u).title)).join(", ")}</small></button></li>`).join("")}</ul>
         <div class="foot">링크와 한 줄만 모아 둬요. 본문은 열 때 원래 자리에서 가져와요.</div>`;
-    } else {
-      const found = D.SHELF.filter((b) => b.tags.includes(a.tag));
-      box.innerHTML = `<h3>${seal("happy", 28)}플로로가 찾은 책 ${found.length}권</h3><ul>${found.map((b) => `<li><button data-read="${b.id}"><i></i><span>${esc(b.title)} · ${D.STAGES.length - 1}단계까지</span><small>${esc(b.insights[0] || "")}</small></button></li>`).join("")}</ul>
-        <div class="foot">모두 <b>‘${esc(a.tag)}’</b> 책갈피가 꽂힌 책이에요. 이번 책에도 꺼내 쓸까요? <button class="pillbtn" id="ans-close" style="margin-left:6px">닫기</button></div>`;
-      $("ans-close").onclick = () => { st.answer = null; renderLib(); setHash("lib"); };
-    }
+    } else { box.hidden = true; return; }   // 배운 말로 찾은 책 답은 뺐다(C-21)
+    litFound();
     box.querySelectorAll("[data-read]").forEach((b) => (b.onclick = () => openReader(b.dataset.read)));
   }
 
@@ -265,10 +267,10 @@
     $("reader").classList.toggle("cover", cover);
     $("rd-title").textContent = `${b.title}${b.sub ? ` ${b.sub}` : ""} — ${fin ? "단계마다 내가 정한 것" : "지금까지 정한 것"}`;
     renderBook(b);
-    const links = fin ? b.links : [];
-    $("rd-links-h").hidden = !links.length; $("rd-links").hidden = !links.length;
-    $("rd-links").innerHTML = links.map((l) => `<button data-read="${l}">${esc(D.SHELF.find((x) => x.id === l).title)}</button>`).join("");
-    $("rd-links").querySelectorAll("[data-read]").forEach((x) => (x.onclick = () => openReader(x.dataset.read, { cover: false })));
+    $("rd-links-h").hidden = true; $("rd-links").hidden = true;   // 이어진 책(배운 말로 잇기)은 뺐다 — C-21
+    // 책장 고르기(C-21) — 끝낸 책만. 고르면 바로 그 책장으로 옮기고 서고를 다시 그린다
+    $("rd-shelf-row").hidden = !fin;
+    if (fin) $("rd-shelf").innerHTML = shelves.list.map((s) => `<option value="${esc(s.id)}" ${shelfOf(b.id) === s.id ? "selected" : ""}>${esc(s.name)}</option>`).join("");
     show("lib"); $("reader").classList.add("on"); setHash(`lib-${id}`);
     (cover ? $("rd-cover") : $("rd-close")).focus();
     if (cover && from) flyFrom(from);
@@ -331,6 +333,7 @@
     R.animate([{ opacity: 0 }, { opacity: 0, offset: 0.28 }, { opacity: 1, offset: 0.32 }, { opacity: 1 }], o).onfinish = done;
   }
   $("rd-cover").onclick = openBook;
+  $("rd-shelf").onchange = () => { if (!Shelves || !st.reading) return; saveShelves(Shelves.place(shelves, st.reading, $("rd-shelf").value)); renderLib(); toast(`‘${shelfName(shelfOf(st.reading))}’ 책장으로 옮겼어요`); };
 
   // ── 전체 돌아보기 — 끝낸 책과 열어 둔 책, 자주 쓴 배움, 되풀이한 인사이트 ──
   function openReview() {
@@ -386,7 +389,6 @@
     if (h === "lib-dive") return arrive();
     if (h.startsWith("lib-dive-open-")) return arrive(() => openReader(h.slice(14), { cover: false }));   // 도서관 탭의 '전체 화면' 보기(C-3, 2026-10-20)
     if (h === "lib-dive-learn") return arrive();   // 옛 주소(내 배움, 2026-10-19 지움) — 서고로
-    if (h === "lib-hover") { go("lib"); return drawArcs("f1"); }
     if (h === "lib-review") { go("lib"); return openReview(); }
     if (h === "lib-learn") return go("lib");   // 옛 주소(내 배움, 2026-10-19 지움)
     if (h.startsWith("lib-bound-")) return bound(h.slice(10));

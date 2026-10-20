@@ -48,7 +48,12 @@
     const h = document.documentElement;
     h.classList.add("notch"); h.style.setProperty("--notch-w", `${n.width}px`); h.style.setProperty("--notch-h", `${n.height}px`);
   });
-  const DELAY = { greet: 6000, home: 15000, petit: 30000 };   // 저절로 접히기까지(밀리초)
+  const DELAY = { greet: 6000, home: 15000, petit: 30000 };   // 저절로 접히기까지(밀리초). home은 설정 '접히기까지'(C-20)가 덮는다 — foldDelay()
+  // C-20(2026-10-20, 이재엽 버튼 "단추로 고르기"): 펼친 섬이 접히기까지의 초 — 5 · 10 · 15 · 30 · 60, 기본 15(지금 값). 이 컴퓨터에만 저장. 한 줄 → 띠(30초)는 그대로 [제안]
+  const FOLD_KEY = "floe:fold-delay", FOLD_CHOICES = [5, 10, 15, 30, 60];
+  const readFold = () => { try { const v = Number(localStorage.getItem(FOLD_KEY)); return FOLD_CHOICES.includes(v) ? v : 15; } catch { return 15; } };
+  let foldSec = readFold();
+  const foldDelay = () => foldSec * 1000;
   const GR = window.FloeGreet;   // 켤 때 인사의 시간표 · 규칙(greet.js, C-10 2026-10-20). 없으면 인사 움직임 없이 카드만
   let greetSkip = null;         // 인사 움직임이 도는 동안만 — 누름 · Esc로 바로 끝낸다
   const PHONE = matchMedia("(max-width: 600px)");
@@ -64,6 +69,7 @@
     auto: false, feed: { at: 0, project: "", tool: "" },   // Claude Code·Codex 연결: 자동으로 살펴보기(기본 꺼짐), 마지막 알림
     settings: false,                               // 설정(보기 방식·연결·자동 살펴보기·소리·기록)은 톱니를 눌러야 보인다
     doc: null, docs: [],                           // 단계 문서: 고치는 중인 것 {stage, text, say, review, rounds}, 확정한 것들
+    inbox: [], sorted: [],                         // FR-15 더함(2026-10-20): 확인할 먹이(종류를 붙였지만 아직 사람이 확인하지 않은 구간 — 글 포함, 이 브라우저에만) · 확인한 먹이(책의 칸으로)
     meal: null, fed: [],                           // 먹이 주기(C-15): 정리 중인 것(st.feed는 연결 — 이름이 겹쳐 meal) {sections, checks, marks, example}, 책에 꽂은 정리(주제 · 빠진 수 · 까닭 — 글은 없다)
     libDoc: null,                                  // 도서관의 책 안에서 여는 단계 문서(C-16) — 단계 번호
     project: "", back: "",                         // 알림에서 받은 프로젝트 폴더 이름, 다시 왔을 때 인사
@@ -170,7 +176,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words", "fed"];
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words", "fed", "inbox", "sorted"];
   let forgotten = false;
   function load() {
     let s;
@@ -181,7 +187,7 @@
     if (st.mode === "live" && !canLive) st.mode = "fixture";
     st.pets = Math.max(0, Number(st.pets) || 0);
     st.libGone = [...new Set([...(Array.isArray(st.libGone) ? st.libGone.map(String) : []), ...readBound()])];
-    for (const k of ["checks", "todoLater", "alerts", "fed"]) if (!Array.isArray(st[k])) st[k] = [];
+    for (const k of ["checks", "todoLater", "alerts", "fed", "inbox", "sorted"]) if (!Array.isArray(st[k])) st[k] = [];
     if (!st.hold || typeof st.hold.when !== "string") st.hold = null;
     if (!TIERS.some(([v]) => v === st.tier)) st.tier = "Full";
     if (st.j) st.j = T.refit(st.j, st.tier);   // 할 일 목록이 바뀌었으면(등급·규칙) 지금 목록에 맞춘다 — 글자가 같은 할 일만 이어 간다
@@ -250,7 +256,7 @@
     // 마우스가 올라가 있으면 인사도 접지 않는다(플로로를 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
     if (isPhone() || st.ui === "hidden" || hovering || (st.ui !== "greet" && pinned())) return;
     idleAt = Date.now();
-    timer = setTimeout(() => { timer = null; view("idle"); }, DELAY[st.ui]);
+    timer = setTimeout(() => { timer = null; view("idle"); }, st.ui === "home" ? foldDelay() : DELAY[st.ui]);
   }
   function go(ui) { if (ui !== st.ui) { st.ui = ui; clearIdle(); } render(); }
   const view = (ev) => go(N.nextView(st.ui, ev, pinned()));   // 일(enter·click·esc·idle·alert)에 따라 다음 모습으로
@@ -364,6 +370,7 @@
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select>`)}
       ${srow("글자 크기", `<select data-act="text-size" aria-label="글자 크기">${TEXT_SIZES.map(([v, name]) =>
         `<option value="${v}" ${st.textSize === v ? "selected" : ""}>${name}</option>`).join("")}</select>`)}
+      ${srow("접히기까지", `<span class="row tiers fold" role="group" aria-label="펼친 섬이 접히기까지">${FOLD_CHOICES.map((v) => `<button type="button" class="b fold-opt" data-act="fold-delay" data-i="${v}" aria-pressed="${foldSec === v}">${v}초</button>`).join("")}<span class="meta">마우스가 나간 뒤 — 테두리 빛이 아래에서 만나면 접혀요</span></span>`)}
       ${tier}${srow("버튼 말", `<span class="row tiers" role="radiogroup" aria-label="명령 칸의 말">${[["work", "일 말 (맡기기 · 살피기)"], ["game", "게임 말 (공격 · 행동)"]].map(([v, label]) =>
         `<label class="chk"><input type="radio" name="words" data-act="words" value="${v}" ${st.words === v ? "checked" : ""}>${label}</label>`).join("")}</span>`)}
       <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>
@@ -578,13 +585,14 @@
         { label: "직접 쓸게요", act: "own", key: String(n.options.length + 1), kind: "opt" }] };
   }
   // ── 먹이 주기(C-15, 2026-10-20 — 규칙은 feed.js) ──
-  const feedState = (text, example = false) => { const sections = FD ? FD.split(text) : []; return sections.length ? { sections, checks: sections.map(FD.check), marks: [], example } : null; };
+  const feedState = (text, example = false) => { const sections = FD ? FD.split(text) : []; return sections.length ? { sections, checks: sections.map(FD.check), marks: [], kinds: sections.map(FD.guessKind), example } : null; };   // kinds — 구간마다 종류(FR-15 더함)
   const feedSkip = (fd, i) => { const c = fd.checks[i], m = fd.marks[i]; return m === "skip" || (m !== "keep" && (c.secret || c.personal)); };
   // 정리 화면 — 구간마다 주제 · 표시(못 먹어요 / 안 먹을게요 / 먹어요), 사람이 구간마다 고치고 확인하면 빠진 구간 없이 보낸다
   function feedSortMoment() {
     const fd = st.meal, packed = FD.pack(fd.sections, fd.marks);
     const rows = fd.sections.map((s, i) => { const c = fd.checks[i], skip = feedSkip(fd, i);
-      return `<li class="${skip ? "skip" : "keep"}"><span class="fi">${i + 1}</span><span class="ft"><b>${esc(c.topic)}</b><small>${esc(skip ? (fd.marks[i] === "skip" ? "빼 달라고 하셨어요" : c.why) : "먹어요")}</small></span>
+      return `<li class="${skip ? "skip" : "keep"}"><span class="fi">${i + 1}</span><span class="ft"><b>${esc(c.topic)}</b><small>${esc(skip ? (fd.marks[i] === "skip" ? "빼 달라고 하셨어요" : c.why) : "먹어요")}</small></span>${
+        skip ? "" : kindSelect("feed-kind", i, fd.kinds[i])}
         <button type="button" class="b ghost" data-act="feed-mark" data-i="${i}" aria-pressed="${skip}">${skip ? "먹어도 돼요" : "빼 주세요"}</button></li>`; }).join("");
     return { tone: "blue", mood: "look", badge: "", meta: `<span class="mm-stage">먹이 ${fd.sections.length}구간${fd.example ? " · 예시예요 · 시연용" : ""}</span>`,
       title: packed.kept ? `${packed.kept}구간을 먹을게요${packed.left.length ? ` — ${packed.left.length}구간은 빼요` : ""}` : "먹을 수 있는 구간이 없어요",
@@ -592,6 +600,8 @@
       body: `<ol class="feedlist" aria-label="나눈 구간">${rows}</ol>`,
       acts: [{ label: "확인하고 어디쯤인지 보기", act: "feed-confirm", key: "c-Enter", pri: true }, { label: "다시 쓰기", act: "feed-back", key: "Escape", kind: "ghost" }] };
   }
+  // 종류 고르기(FR-15 더함) — 요구 · 결정 · 배운 것 · 할 일 · 참고. 먹이 정리 화면과 확인할 먹이가 같이 쓴다
+  const kindSelect = (act, i, cur) => `<select class="kind" data-act="${act}" data-i="${i}" aria-label="종류">${FD.KINDS.map(([k, label]) => `<option value="${k}" ${k === cur ? "selected" : ""}>${label}</option>`).join("")}</select>`;
   // 글을 구간으로 나눠 표시 — AI에게 보내기 전, 이 컴퓨터에서만
   function feedSort(text, example = false) {
     if (!FD) return judge(false);
@@ -609,17 +619,45 @@
     if (!p.kept) { flash("think", 1200); return say("먹을 구간이 하나는 있어야 해요"); }
     const topics = fd.sections.map((_, i) => fd.checks[i].topic).filter((_, i) => !p.left.some((l) => l.i === i));
     st.fed = [{ at: Date.now(), topics, left: p.left.map((l) => ({ topic: l.topic, why: l.why })), kept: p.kept, example: !!fd.example }, ...st.fed].slice(0, 20);
+    // 종류를 붙인 구간은 '확인할 먹이'로(FR-15 더함) — 사람이 확인하기 전에는 책의 칸에 넣지 않는다(C-8 ②). 도서관 탭 맨 위에서 확인한다
+    const items = FD.inbox(fd.sections, fd.marks, fd.kinds).map((x) => ({ ...x, at: Date.now(), example: !!fd.example }));
+    st.inbox = [...items, ...st.inbox].slice(0, 60);
+    if (items.length) setTimeout(() => say(`확인할 먹이 ${items.length}개는 도서관 탭 맨 위에 두었어요`), 3200);
     // 연습 모드의 예시 먹이는 정해진 장면(연습 첫 글)으로 이어진다 — 연습용 예시는 정해진 글만 알아서(FR-10). 진짜 AI면 먹은 글 그대로
     Object.assign(st, { text: fd.example && st.mode === "fixture" ? S.first.text : p.text, meal: null, undo: [] });
     judge(false);
   }
+  // ── C-19 먹이 검사와 다른 작업은 서로 막는다(2026-10-20, 이재엽 "내용물을 검사하고 있으면 작업을 실행하지 못하게 하고 다른 작업들을 하고 있으면 내용물 검사하지 못하게") ──
+  // 막는 조건은 상태 둘뿐: 먹이를 검사하는 중(st.meal — 나눈 구간을 확인하는 화면이 떠 있는 동안 전부 [제안]) · 다른 작업 중(st.busy — AI 판정 · 초안 · 다시 봐 주기).
+  // 막을 때 플로로가 까닭을 말하고(말풍선) 화난 눈으로 X 표지판을 든다(seal.js angry). 끝나면 다시 하면 된다 — 이어서 하지 않는다 [제안]
+  const mealWhy = () => (st.meal ? "지금은 먹이를 검사하는 중이에요 — 구간을 확인하고 나서 해요" : "");
+  const busyWhy = () => (st.busy ? "지금은 살펴보는 중이에요 — 끝나면 먹이를 줄 수 있어요" : "");
+  function refuse(why) { if (!why) return false; activity(); st.cmd = null; render(); flash("angry", 2600); say(why); return true; }   // 명령 칸의 길 목록은 닫고 하던 화면으로
+  // ── C-18 파란 먹이 층(2026-10-20, 이재엽 "파란색 레이어가 나와서 플로로에게 먹이를 주세요라고 중앙에 메세지와 폴더 모양안에 물고기 모양") ──
+  // 파일을 섬 위로 끌고 있는 동안만. dragenter · dragleave는 자식을 지날 때마다 번갈아 오므로 횟수를 센다(넘김 문서 7절 함정). 놓거나 벗어나면 거둔다.
+  // 띠로 접혀 있으면 한 줄로 살짝 열어 받을 자리를 만든다 [제안 — 요구서 C-18 ①]. 글이 아닌 파일도 같은 층(놓으면 "아직 글 파일만")
+  const FISH = `<svg class="fl-pic" viewBox="0 0 120 90" aria-hidden="true"><path class="fl-folder" d="M8 22 Q8 14 16 14 H44 L54 24 H104 Q112 24 112 32 V72 Q112 80 104 80 H16 Q8 80 8 72 Z"></path><path class="fl-flap" d="M8 36 H112 V72 Q112 80 104 80 H16 Q8 80 8 72 Z"></path><g class="fl-fish"><path d="M44 58 Q58 42 78 58 Q58 74 44 58 Z"></path><path d="M78 58 L90 50 L88 58 L90 66 Z"></path><circle cx="54" cy="56" r="2.2"></circle></g></svg>`;
+  let dragDepth = 0, $feedlayer = null;
+  const hasFiles = (e) => !!(e.dataTransfer && [...(e.dataTransfer.types || [])].includes("Files"));
+  function feedLayer(on) {
+    if (!$feedlayer) { $feedlayer = document.createElement("div"); $feedlayer.className = "feedlayer"; $feedlayer.setAttribute("role", "status"); $feedlayer.innerHTML = `${FISH}<b>플로로에게 먹이를 주세요</b><small>글 파일(.md · .txt)을 여기에 놓아요</small>`; document.body.appendChild($feedlayer); }
+    if (on) { const r = $nav.getBoundingClientRect(); $feedlayer.style.cssText = `left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px`; }
+    $feedlayer.classList.toggle("show", on);
+  }
+  document.addEventListener("dragenter", (e) => {
+    if (!hasFiles(e) || isPhone()) return;
+    if (dragDepth++ === 0) { if (st.ui === "hidden") go("petit"); requestAnimationFrame(() => feedLayer(true)); }
+  });
+  document.addEventListener("dragleave", (e) => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; feedLayer(false); } });
   // 파일 끌어다 놓기 — 띠 · 한 줄 · 펼침 어디에 놓아도 펼쳐서 먹이 주기로. 글 파일(.md · .txt) 1MB 아래만, 내용은 file.text()로 읽는다(경로가 필요 없어 앱을 고치지 않는다).
   // 앱 창은 파일을 놓으면 그 파일 주소로 넘어가므로 섬 밖에 놓아도 먼저 막는다(넘김 문서 7절)
   document.addEventListener("dragover", (e) => { e.preventDefault(); });
   document.addEventListener("drop", async (e) => {
     e.preventDefault();
+    dragDepth = 0; feedLayer(false);
     const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (!f || !FD || isPhone()) return;
+    if (refuse(busyWhy())) return;   // C-19: 살펴보는 중에는 먹이를 받지 않는다
     activity(); setPlace("vibe");
     Object.assign(st, { tab: "today", screen: "main", settings: false, openInput: false, libDoc: null });
     go("home");
@@ -699,7 +737,7 @@
   const XP_EACH = 10;
   const CMD = { work: ["맡기기", "살피기", "꺼내기", "쉬어 가기"], game: ["공격", "행동", "아이템", "자비"] };
   const CMD_IC = ["hand", "look", "bag", "moon"];
-  const MOOD_WORD = { idle: "같이 보고 있어요", look: "귀 기울이는 중", think: "살펴보는 중", happy: "신났어요", done: "뿌듯해요", wow: "레벨 업!", sleep: "쉬는 중", love: "기분 좋아요", purr: "기분 좋아요", alert: "잠깐!", dozy: "졸려요" };
+  const MOOD_WORD = { idle: "같이 보고 있어요", look: "귀 기울이는 중", think: "살펴보는 중", happy: "신났어요", done: "뿌듯해요", wow: "레벨 업!", sleep: "쉬는 중", love: "기분 좋아요", purr: "기분 좋아요", alert: "잠깐!", dozy: "졸려요", angry: "안 돼요!" };
   const cmdWords = () => CMD[st.words] || CMD.work;
   const tokFmt = (n) => (n >= 10000 ? `${(n / 10000).toFixed(1).replace(/\.0$/, "")}만` : n.toLocaleString());
   let lvPop = false;
@@ -762,9 +800,14 @@
     if (st.cmd !== null) deskKeys.Escape = { act: "cmd-close" };
     const ticks = Array.from({ length: Math.max(0, n - 1) }, (_, k) => `<span class="tick" style="left:${((k + 1) / n) * 100}%"></span>`).join("");
     const stats = st.j ? `<div class="stats"><span class="me">나</span><span class="lv"><b class="${lvPop ? "pop" : ""}">LV ${st.j.stage}</b><span>${esc(s.short)}</span></span>
-        <span class="xp-l">EXP</span><span class="xp${done === n ? " full" : ""}" role="progressbar" aria-label="경험치" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${xp}"><i style="width:${(xp / max) * 100}%"></i>${ticks}</span><span class="xp-n">${xp} / ${max}</span>
+        <span class="xp-l">EXP</span><span class="xp${done === n ? " full" : ""}" role="progressbar" aria-label="경험치" aria-valuemin="0" aria-valuemax="${max}" aria-valuenow="${xp}"><i style="transform:scaleX(${(xp / max).toFixed(3)})"></i>${ticks}</span><span class="xp-n">${xp} / ${max}</span>
         <span class="chip" style="margin-left:auto">책갈피 <b>${st.learned.length}</b></span>${st.tokens ? `<span class="chip">토큰 <b>${tokFmt(st.tokens)}</b></span>` : ""}</div>` : "";
-    const cmds = `<div class="cmds" role="group" aria-label="할 일 고르기">${cmdWords().map((w, i) => `<button type="button" class="cmd${st.cmd === i ? " sel" : ""}" data-act="cmd" data-i="${i}" aria-pressed="${st.cmd === i}" ${locked ? "disabled" : ""}><span class="ic">${I[CMD_IC[i]]}</span><span>${esc(w)}</span><kbd>${i + 1}</kbd></button>`).join("")}</div>`;
+    // F-26(이재엽 2026-10-19 "밖에 있는 것들이 유동적으로 4개에서 2개로 줄어서 네 아니요를 입력하든 아니면 밖에서 입력을 주는 버튼으로"): 상자 안이 네 / 아니요 둘뿐이면
+    //   밖의 칸도 그 둘이 된다(1 · 2 키와 y · n — 같은 동작). 그 밖의 게이트 장면(헷갈린 곳 고르기 · 질문 · 확인 질문)은 네 칸이 잠긴 채 그대로 [제안]. 상자 안의 버튼은 남긴다
+    const pair = inGate && v.acts.length === 2 && v.acts.every((a) => a.act === "yes" || a.act === "no") ? v.acts : null;
+    if (pair) pair.forEach((a, i) => { deskKeys[String(i + 1)] = a; });
+    const cmds = pair ? `<div class="cmds two" role="group" aria-label="네 · 아니요">${pair.map((a, i) => `<button type="button" class="cmd${a.pri ? " pri" : ""}" data-act="${a.act}"><span class="ic">${I[a.act === "yes" ? "check" : "back"]}</span><span>${esc(a.label)}</span><kbd>${i + 1}</kbd></button>`).join("")}</div>`
+      : `<div class="cmds" role="group" aria-label="할 일 고르기">${cmdWords().map((w, i) => `<button type="button" class="cmd${st.cmd === i ? " sel" : ""}" data-act="cmd" data-i="${i}" aria-pressed="${st.cmd === i}" ${locked ? "disabled" : ""}><span class="ic">${I[CMD_IC[i]]}</span><span>${esc(w)}</span><kbd>${i + 1}</kbd></button>`).join("")}</div>`;
     const box = st.cmd !== null && !locked ? pathsBox(st.cmd) : momentBox(v);
     return `<section class="mc lvc tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}<span class="mood">${esc(MOOD_WORD[v.mood] || "")}</span></div>
       <div class="main"><div class="box">${box}</div>${stats}${cmds}</div></section>`;
@@ -842,7 +885,7 @@
   function deskLib() {
     if (!L() || !SCH()) return libMissing();
     const books = openBooks(), b = libSelected();
-    if (!b) return `<div class="libtab"><div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
+    if (!b) return `<div class="libtab">${inboxBox()}<div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
         <div class="ob-say">열어 둔 책 ${books.length}권${exHidden ? " · 내 기록만" : ""}</div>
         <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : exHidden && !st.j ? "아직 책이 없어요" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
         ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">${exHidden && !st.j ? "'이번 단계'에서 지금 만드는 걸 보여 주면 내 책이 생겨요." : "새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요."}</p>`}</div></div>
@@ -871,6 +914,14 @@
         : `<div class="ob-foot"><button class="b" data-act="lib-close">‹ 목록으로${kbd("Escape")}</button>
           ${fin ? `<button class="b pri" data-act="lib-bind">📖 한 권으로 엮어 서고에 꽂기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">서고에 보관하기${kbd("Enter")}</button>`}</div>`}</div>`;
   }
+  // 확인할 먹이(FR-15 더함 2026-10-20 — 이재엽 버튼 "먹이 주기에 더하기"): 종류를 붙였지만 아직 확인하지 않은 구간. 도서관 탭 맨 위 [제안 ⑦]. 맞아요 → 그 종류로 내 책의 칸(my-books.js), 빼기 → 버림.
+  //   이름은 '확인할 먹이' [제안 ⑧] — C-21의 '분류 안 함' 책장(책을 꽂는 곳)과 헷갈리지 않게. 예시 먹이의 것은 '예시'라고 표시
+  function inboxBox() {
+    if (!FD || !st.inbox.length) return "";
+    const rows = st.inbox.slice(0, 5).map((x, i) => `<li><span class="ft"><b>${esc(x.topic)}</b>${x.example ? " <small>· 예시</small>" : ""}<small>${esc(String(x.text || "").replace(/\s+/g, " ").slice(0, 90))}</small></span>${kindSelect("inbox-kind", i, x.kind)}
+      <button type="button" class="b pri" data-act="inbox-ok" data-i="${i}">맞아요 → 책에</button><button type="button" class="b ghost" data-act="inbox-drop" data-i="${i}">빼기</button></li>`).join("");
+    return `<section class="inbox" aria-label="확인할 먹이"><div class="stg">확인할 먹이 ${st.inbox.length}개 — 종류가 맞는지 보고 책에 넣어요</div><ol class="inboxlist">${rows}</ol>${st.inbox.length > 5 ? `<p class="meta">먼저 온 5개만 보여요 — 확인하면 다음 것이 올라와요</p>` : ""}</section>`;
+  }
   // 책 안의 단계 문서 목록(C-16) — 단계마다 문서 이름 · 상태(아직 · 초안 · 다시 봐 줌 · 확정). 받은 먹이(C-15)도 여기에
   const docStatus = (n) => (docDone(n) ? "확정" : st.doc && st.doc.stage === n ? (st.doc.review ? "다시 봐 줌" : "초안") : "아직");
   function bookDocs() {
@@ -880,7 +931,8 @@
         <span class="n">${s.n}</span><span class="t"><b>${esc(s.doc)}</b><small>${stt}${s.n === cur ? " · 지금 단계" : s.n > cur ? " · 아직 안 온 단계" : ""}</small></span></button>`; }).join("");
     const fed = st.fed.length ? `<div class="stg soft" style="margin-top:10px">받은 먹이 ${st.fed.length}번</div><ul class="fedlist">${st.fed.slice(0, 3).map((f) =>
       `<li>${esc(f.topics.join(" · ") || "(빠진 구간뿐)")}${f.left.length ? ` <small>· ${f.left.length}구간 뺌</small>` : ""}${f.example ? " <small>· 예시</small>" : ""}</li>`).join("")}</ul>` : "";
-    return `<section class="bdocs"><div class="stg">단계 문서 — 들어가서 확인하고 작업해요</div><div class="bdoc-grid">${rows}</div>${fed}</section>`;
+    const inboxNote = st.inbox.length ? `<p class="meta"><button type="button" class="lnk" data-act="lib-close">확인할 먹이 ${st.inbox.length}개 — 목록 맨 위에서 확인해요</button></p>` : "";
+    return `<section class="bdocs"><div class="stg">단계 문서 — 들어가서 확인하고 작업해요</div><div class="bdoc-grid">${rows}</div>${fed}${inboxNote}</section>`;
   }
   // 이번 단계 카드에서 '단계 문서'를 누르면 — 도서관 탭 · 내 책(없으면 첫 책) · 그 단계 문서를 연다
   function openBookDoc(n) {
@@ -955,7 +1007,8 @@
   const X_ICON = icon('<path d="M6 6l12 12M18 6L6 18"></path>', 16);
   const settingsPop = () => (st.settings ? `<div class="pop" role="dialog" aria-label="설정"><div class="pop-h"><b>설정</b><span class="grow"></span><button type="button" class="ti" data-act="settings" aria-label="설정 닫기" title="닫기 (Esc)">${X_ICON}</button></div>${settingsBody()}</div>` : "");
   const countdownOn = () => st.ui === "home" && !hovering && !pinned() && !!timer;
-  const countdown = () => (countdownOn() ? `<div class="cd" title="곧 접혀요 — 핀을 누르면 열어 둬요"><i style="animation-duration:${DELAY.home}ms;animation-delay:-${Date.now() - idleAt}ms"></i></div>` : "");
+  // 테두리 빛(C-20, 이재엽 "밑에 게이지바로 하면 너무 촉박한 느낌"): 위 가운데에서 켜져 양쪽 테두리를 따라 내려가고 아래 가운데에서 만나면 접힌다 — 접히는 시계(scheduleIdle)와 같은 시간 · 같은 시작점
+  const countdown = () => (countdownOn() ? `<i class="glow" aria-hidden="true" title="곧 접혀요 — 핀을 누르면 열어 둬요" style="animation-duration:${foldDelay()}ms;animation-delay:-${Date.now() - idleAt}ms"></i>` : "");
   // 한 줄 — 플로로가 앞지느러미를 걸치고 있다. 알릴 일이 있으면 파란 테두리로 살짝 흔든다
   function pillHTML() {
     const s = st.j && stage();
@@ -1119,7 +1172,11 @@
     const to = el.getBoundingClientRect(); if (!to.width || !to.height) return;
     const p = MO.plan({ w: prev.w, h: prev.h }, { w: to.width, h: to.height }, { still: STILL });
     if (!p.ms) return;
-    const f = MO.flip(prev, { x: to.left, y: to.top, w: to.width, h: to.height }), cs = getComputedStyle(el), nr = $nav.getBoundingClientRect();
+    // F-45(2026-10-20): 기준점은 섬의 위 가운데 — 전 상자와 새 상자의 가운데를 맞춘다. 창이 커지고 줄며 섬이 창 안에서 옮겨 가도(가운데 맞춤) 화면에서는 같은 자리라, 잰 x 대신 가운데로 계산한다.
+    //   설정 창이 옆에 열린 때(side — 왼쪽 고정)는 잰 그대로. 커질 때는 창을 먼저 키운다(morph.js plan "resize-then-animate" — 전에는 움직임이 먼저 시작돼 한 번 튀었다)
+    const from = $nav.classList.contains("side") ? prev : { ...prev, x: to.left + (to.width - prev.w) / 2 };
+    if (p.order === "resize-then-animate" && !morphHold) measureSize();
+    const f = MO.flip(from, { x: to.left, y: to.top, w: to.width, h: to.height }), cs = getComputedStyle(el), nr = $nav.getBoundingClientRect();
     if (morphShell) morphShell.remove();
     const shell = morphShell = document.createElement("div");
     shell.className = "shell"; shell.setAttribute("aria-hidden", "true");
@@ -1268,7 +1325,10 @@
     if (!STILL && !window.floeApp && Math.abs(to - from) > 4) el.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)" });
   }
   // 다시 그려도 쓰던 글 칸은 그대로 — 커서 자리와 스크롤까지 되돌린다
+  // F-46(2026-10-20): 지금 모습을 html에 적어 둔다 — 띠로 접혀 있거나 창이 안 보일 때 물범의 무한 움직임을 멈춘다(app.css [data-ui="hidden"] · .page-hidden)
+  document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("page-hidden", document.hidden));
   function render() {
+    document.documentElement.dataset.ui = st.ui;
     save();
     if (!timer) scheduleIdle();
     const a = document.activeElement, keep = isField(a) && a.dataset.act ? a.dataset.act : "";
@@ -1358,7 +1418,9 @@
     placeSay(b);
     // 떠 있는 동안 플로로를 따라간다 — 카드 크기가 바뀌어 플로로 자리가 옮겨져도 (2026-10-18 임유정 요청)
     cancelAnimationFrame(sayRaf);
-    const follow = () => { if (!b.classList.contains("show")) return; placeSay(b); sayRaf = requestAnimationFrame(follow); };
+    // F-46(2026-10-20 재기): 프레임마다 자리를 다시 재면(getBoundingClientRect) 말풍선이 떠 있는 동안 매 프레임 배치 계산이 났다(3초에 181번). 0.1초에 한 번이면 충분하다
+    let lastFollow = 0;
+    const follow = (now) => { if (!b.classList.contains("show")) return; if (now - lastFollow > 100) { lastFollow = now; placeSay(b); } sayRaf = requestAnimationFrame(follow); };
     // 긴 말은 더 오래 — 글자당 70ms, 2.9초~7초
     const ms = Math.min(7000, Math.max(2900, 1500 + text.length * 70));
     b.style.animationDuration = `${ms}ms`;
@@ -1660,7 +1722,7 @@
       if (st.mode === "fixture") return judge(true);
       render(); focusText(); say("예시 글을 넣었어요. 보내려면 '어디쯤인지 보기'를 눌러요");
     },
-    judge: () => { st.notice = ""; judge(false); },
+    judge: () => { if (refuse(mealWhy())) return; st.notice = ""; judge(false); },
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
     restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [] }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => RETRY[st.warn.then](),
@@ -1697,6 +1759,7 @@
     "base-alerts": () => { seenAlerts = HUB ? HUB.latestAt(st.alerts) : Date.now(); try { if (SESS) SESS.setItem(SEEN_KEY, String(seenAlerts)); } catch {} set({ pane: "alerts" }); },
     "base-ai": () => { set({ pane: "ai" }); pollSteps().then(render); },
     "base-back": () => set({ pane: "" }),
+    "fold-delay": (v) => { if (!FOLD_CHOICES.includes(v)) return; foldSec = v; try { localStorage.setItem(FOLD_KEY, String(v)); } catch {} render(); if (timer) scheduleIdle(); say(`${v}초 뒤에 접힐게요`); },
     // FR-17 할 일 적기 · 정리 · 넘기기 · 승인
     "task-tidy": async () => {
       const text = st.task.text.trim(); if (!text) return;
@@ -1721,7 +1784,10 @@
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false, libDoc: null }),
     // 먹이 주기(C-15) — 예시 · 나눠 정리 · 구간 표시 바꾸기 · 확인 · 다시 쓰기
-    "feed-example": () => { if (FD) { st.text = FD.EXAMPLE; feedSort(FD.EXAMPLE, true); } },
+    // 확인할 먹이(FR-15 더함) — 맞아요: 그 종류로 책의 칸에, 빼기: 버림. 종류 고치기는 change 손잡이
+    "inbox-ok": (i) => { const x = st.inbox[i]; if (!x) return; st.sorted = [{ at: ymd(), kind: x.kind, text: x.text, topic: x.topic }, ...st.sorted].slice(0, 200); st.inbox.splice(i, 1); render(); say(`'${FD ? FD.kindLabel(x.kind) : x.kind}' 칸에 넣었어요`); },
+    "inbox-drop": (i) => { if (!st.inbox[i]) return; st.inbox.splice(i, 1); render(); say("뺐어요"); },
+    "feed-example": () => { if (refuse(busyWhy())) return; if (FD) { st.text = FD.EXAMPLE; feedSort(FD.EXAMPLE, true); } },
     "feed-sort": () => feedSort(st.text),
     "feed-mark": (i) => { const fd = st.meal; if (!fd || !fd.checks[i]) return; fd.marks[i] = feedSkip(fd, i) ? "keep" : "skip"; render(); },
     "feed-confirm": () => feedConfirm(),
@@ -1731,7 +1797,7 @@
     "lib-doc-close": () => set({ libDoc: null, askConfirm: 0 }),
     "lib-doc-now": () => openBookDoc(st.j ? st.j.stage : 1),
     // 도서관 탭 — 책 고르기 · 목록으로 · 서고에 보관(확인 뒤) · 한 권으로 엮기
-    "lib-enter": () => enterLibrary(),
+    "lib-enter": () => { if (refuse(mealWhy())) return; enterLibrary(); },
     "lib-book": (i, el) => {
       const id = (el && el.dataset.id) || openBooks()[i].id;
       if (BV && bv.size === "full") return enterLibrary(`open-${id}`);   // 보기 설정 '전체 화면' — 서고의 펼친 책으로(C-3)
@@ -1753,8 +1819,8 @@
     "look-now": () => { st.notice = ""; lookAfterWork(lastPing); },
     "peek-text": () => { set({ ping: "", openInput: !!st.j }); focusText(); },
     "ping-later": () => { st.ping = ""; go("petit"); },
-    draft: () => draft(false),
-    review: () => review(false),
+    draft: () => { if (refuse(mealWhy())) return; draft(false); },
+    review: () => { if (refuse(mealWhy())) return; review(false); },
     "confirm-doc": () => confirmDoc(false),
     "confirm-anyway": () => confirmDoc(true),
     "confirm-cancel": () => set({ askConfirm: 0 }),
@@ -1904,6 +1970,8 @@
       if (a === "hard") toggleHard(Number(e.target.dataset.i), e.target.checked);
       if (a === "tier") setTier(e.target.value);
       if (a === "words" && CMD[e.target.value]) set({ words: e.target.value });
+      if (a === "feed-kind" && st.meal) st.meal.kinds[Number(e.target.dataset.i)] = e.target.value;   // FR-15 더함 — 구간의 종류를 고친다(다시 그리지 않는다)
+      if (a === "inbox-kind" && st.inbox[Number(e.target.dataset.i)]) { st.inbox[Number(e.target.dataset.i)].kind = e.target.value; save(); }
     });
     $root.addEventListener("input", (e) => {
       activity();

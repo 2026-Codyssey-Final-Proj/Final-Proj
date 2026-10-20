@@ -2,8 +2,9 @@
 # main에 올라온 앱 버전(02-frontend/electron/package.json의 version)이 바뀌면, Mac(arm64) · Windows · Linux(AppImage · deb, x64 · arm64)에서 묶어 GitHub Release `app-v<버전>`에 올린다.
 # Linux는 6.0.0부터(이재엽 2026-10-19 "우분투 리눅스에서도 돌아가는 버전"). ubuntu 러너는 1배로 세어 가장 싸다.
 # 사람이 할 일은 PR에서 version을 올리는 것뿐이다. 같은 버전의 Release가 이미 있으면(손으로 먼저 올린 경우) 새로 만들지 않고 파일만 갈아 끼운다(--clobber).
-# 비밀값 없음 — 저장소의 기본 토큰(github.token)만 쓴다. 서명 · 공증은 하지 않는다(Apple 계정 — 이재엽 결정 대기).
-# 비용: 비공개 저장소의 Actions 분(分) — macOS 러너는 10배로 센다(한 번에 약 5분 → 50분어치). 무료 2,000분/월 안에서 한 달 수십 번은 된다.
+# 비밀값 없음 — 저장소의 기본 토큰(github.token)만 쓴다. Apple 서명 · 공증은 하지 않는다(Hold — 이재엽 2026-10-20). 대신 Mac은 **간이 서명**(ad-hoc, package.json mac.identity '-')으로 묶고
+#   묶은 앱을 codesign --verify로 검사해 실패하면 올리지 않는다(F-41 — 8.1.0까지는 서명이 깨진 채 나가 '손상된 앱'으로 막혔다).
+# 비용(F-32, 2026-10-20 실측으로 고침): 비공개 저장소의 Actions 분(分) — macOS 러너는 10배로 세지만 실제 Mac 빌드는 1분 미만(10분어치). 릴리스 한 번은 무료 한도(한 달 2,000분)에서 20~23분어치.
 name: app-release
 on:
   push:
@@ -46,5 +47,10 @@ jobs:
       - run: node --version && npm ci --no-audit --no-fund
       - run: npm run ${{ matrix.script }}
         env: { CSC_IDENTITY_AUTO_DISCOVERY: "false" }
+      # F-41: 간이 서명이 앱 전체에 제대로 됐는지 — 깨져 있으면 여기서 멈춰 릴리스에 올리지 않는다
+      - if: runner.os == 'macOS'
+        run: |
+          APP=$(ls -d dist/mac*/Floe.app | head -1)
+          codesign --verify --deep --strict --verbose=2 "$APP"
       - run: gh release upload "${{ needs.version.outputs.tag }}" ${{ matrix.glob }} --clobber
         env: { GH_TOKEN: "${{ github.token }}" }

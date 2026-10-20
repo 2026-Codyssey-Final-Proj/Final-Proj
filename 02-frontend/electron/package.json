@@ -1,7 +1,7 @@
 {
   "name": "floe-app",
   "productName": "Floe",
-  "version": "8.1.0",
+  "version": "9.0.0",
   "private": true,
   "description": "Floe — 코딩 도구 위에 떠 있는 길잡이 오버레이 (Electron 껍데기). 화면 02-frontend · 서버 03-backend를 그대로 감싼다",
   "author": "2026-Codyssey-Final-Proj",
@@ -48,7 +48,7 @@
         }
       ],
       "category": "public.app-category.developer-tools",
-      "identity": null,
+      "identity": "-",
       "extraResources": [
         {
           "from": "build",
@@ -57,7 +57,8 @@
             "notch-probe"
           ]
         }
-      ]
+      ],
+      "hardenedRuntime": false
     },
     "win": {
       "target": "nsis"
@@ -74,7 +75,25 @@
       "artifactName": "Floe-${version}-${arch}.${ext}"
     },
     "dmg": {
-      "artifactName": "Floe-${version}-${arch}.${ext}"
+      "background": "build/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "iconSize": 100,
+      "contents": [
+        {
+          "x": 140,
+          "y": 190,
+          "type": "file"
+        },
+        {
+          "x": 400,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
     },
     "nsis": {
       "artifactName": "Floe-Setup-${version}.${ext}",

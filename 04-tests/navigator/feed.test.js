@@ -84,3 +84,52 @@ test("쉬운 말 — 화면 글(app.js · index.html · notes.js · 연습용 �
   const rec = fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/recordings/demo.json"), "utf8");
   assert.ok(!rec.includes("설계도"), "녹화된 연습 응답(화면에 보인다)");
 });
+
+// ── FR-15 더함(2026-10-20, 이재엽 버튼 "먹이 주기에 더하기" — C-8에서 빠졌던 것): 구간마다 종류 하나 · 확인할 먹이. 코드보다 먼저 썼다 ──
+test("종류 — 다섯(요구 · 결정 · 배운 것 · 할 일 · 참고), 쉬운 말. guessKind는 글의 말로 하나를 고르고 모르면 참고. 빠진 구간은 종류를 붙이지 않는다", () => {
+  assert.deepEqual(F.KINDS.map(([, label]) => label), ["요구", "결정", "배운 것", "할 일", "참고"]);
+  assert.equal(F.guessKind({ title: "행사 목록", text: "회원이 행사를 보고 신청하면, 앱은 신청서를 보여 준다" }), "req");
+  assert.equal(F.guessKind({ title: "", text: "저장은 시트로 하기로 정했어요" }), "decision");
+  assert.equal(F.guessKind({ title: "", text: "입력 칸이 적을수록 매일 쓰게 된다는 걸 배웠다" }), "learned");
+  assert.equal(F.guessKind({ title: "할 일", text: "- [ ] 마감 알림 붙이기\n- [ ] 승인 화면 만들기" }), "todo");
+  assert.equal(F.guessKind({ title: "참고 링크", text: "https://example.com/guide" }), "ref");
+  assert.equal(F.guessKind({ title: "", text: "그냥 메모" }), "ref");
+  assert.equal(F.guessKind(null), "ref");
+  assert.ok(F.KINDS.every(([k]) => F.kindLabel(k)) && F.kindLabel("nope") === "참고");
+});
+
+test("inbox — 확인하면 빠지지 않은 구간만 {topic, kind, text}로(사람이 고친 종류 우선), 빠진 구간의 글은 없다. 글은 2,000자까지", () => {
+  const sections = F.split(F.EXAMPLE), kinds = sections.map(F.guessKind);
+  const items = F.inbox(sections, ["keep", undefined, undefined], kinds);
+  assert.equal(items.length, 1, "예시 먹이는 구간 셋 중 하나만 먹는다");
+  assert.deepEqual(Object.keys(items[0]).sort(), ["kind", "text", "topic"]);
+  assert.equal(items[0].topic, "동아리 행사 등록 앱");
+  assert.ok(!JSON.stringify(items).includes("자리표시") && !JSON.stringify(items).includes("가족"));
+  const fixed = F.inbox(sections, ["keep", "keep", "skip"], ["todo", "learned", "req"]);
+  assert.deepEqual(fixed.map((x) => x.kind), ["todo", "learned"], "사람이 고친 종류를 쓴다");
+  assert.equal(F.inbox([{ title: "a", text: "가".repeat(3000) }], [], ["ref"])[0].text.length, 2000);
+  assert.deepEqual(F.inbox(null), []);
+});
+
+test("확인할 먹이 → 책의 칸(my-books.js) — 요구 · 결정은 정한 것, 배운 것은 배운 것, 할 일은 할 일(아직 안 함), 참고는 책갈피. 확인하기 전(inbox)에는 책에 넣지 않는다", () => {
+  const M = require("../../02-frontend/library/my-books.js");
+  const s = { j: { stage: 1, criteria: [{ text: "a", met: false }] }, project: "p",
+    sorted: [{ at: "2026-10-20", kind: "req", text: "회원이 신청하면 신청서를 보여 준다", topic: "행사" }, { at: "2026-10-20", kind: "decision", text: "시트에 저장", topic: "저장" },
+      { at: "2026-10-20", kind: "learned", text: "칸이 적을수록 매일 쓴다", topic: "배움" }, { at: "2026-10-20", kind: "todo", text: "마감 알림 붙이기", topic: "할 일" }, { at: "2026-10-20", kind: "ref", text: "https://example.com", topic: "링크" }],
+    inbox: [{ at: 1, kind: "req", text: "아직 확인 안 한 글", topic: "x" }] };
+  const b = M.fromState(s, "2026-10-20");
+  assert.deepEqual(b.decided, ["요구 · 회원이 신청하면 신청서를 보여 준다", "시트에 저장"]);
+  assert.deepEqual(b.insights, ["칸이 적을수록 매일 쓴다"]);
+  assert.deepEqual(b.todos.slice(-1), [{ t: "마감 알림 붙이기", done: false }]);
+  assert.deepEqual(b.bookmarks.slice(-1), ["https://example.com"]);
+  assert.ok(!JSON.stringify(b).includes("아직 확인 안 한 글"), "확인하기 전에는 책에 없다");
+  assert.equal(b.inbox, 1, "확인할 먹이 수만");
+  assert.ok(b.dated.some((d) => d.kind === "decided" && d.text.includes("시트에 저장")) && b.dated.some((d) => d.kind === "todos"), "세션별 보기의 재료");
+});
+
+test("화면 글 — 종류 다섯이 먹이 정리 화면에 고르기로 있고, 도서관 탭 맨 위에 '확인할 먹이'가 있다(C-21의 '분류 안 함' 책장과 다른 말)", () => {
+  const app = read("navigator/app.js");
+  assert.ok(app.includes('kindSelect("feed-kind"') && app.includes("확인할 먹이"));
+  assert.ok(!app.includes("분류함"), "'분류함'은 쓰지 않는다(C-21 책장과 헷갈림)");
+  for (const k of ["inbox-ok", "inbox-drop", "inbox-kind"]) assert.ok(app.includes(`"${k}"`), k);
+});

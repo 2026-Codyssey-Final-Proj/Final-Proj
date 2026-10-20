@@ -47,9 +47,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .floe .ripple { width: 330px; height: 40px; margin-top: -26px; border-radius: 50%; border: 1px solid rgba(190, 215, 255, .25); }
 .bob { animation: bob 3.6s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-5px); } }
-.say { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 300px; max-width: 420px; padding: 12px 18px; border-radius: 18px; font-size: 15.5px; text-align: center; word-break: keep-all; }   /* 한국어는 낱말 사이에서만 줄을 바꾼다(2026-10-19) */
+.say { position: absolute; bottom: calc(100% + 6px); left: 50%; translate: -50% 0; min-width: 300px; max-width: 420px; padding: 12px 18px; border-radius: 18px; font-size: 15.5px; text-align: center; word-break: keep-all; }   /* 한국어는 낱말 사이에서만 줄을 바꾼다(2026-10-19) */
 .say.hello { animation: say-pop .45s cubic-bezier(.3, 1.5, .5, 1); }   /* 물속에서 올라온 뒤 첫인사 */
-@keyframes say-pop { from { opacity: 0; transform: translateX(-50%) translateY(10px) scale(.85); } }
+@keyframes say-pop { from { opacity: 0; transform: translateY(10px) scale(.85); } }   /* F-45: 가운데 맞춤(translate 속성)과 움직임(transform)을 나눴다 */
 
 /* ── ① 입구: 큰 책 ── */
 .hall { display: grid; place-items: center; height: 100%; }
@@ -58,10 +58,10 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .altar { position: relative; display: flex; flex-direction: column; align-items: center; margin-top: 8vh; }
 .tome-btn { position: relative; border: 0; background: none; padding: 0; transition: transform .25s ease; }
 .tome-btn:hover, .tome-btn:focus-visible { transform: translateY(-6px) scale(1.02); }
-.tome-btn .halo { position: absolute; left: 50%; top: 62%; width: 420px; height: 90px; transform: translate(-50%, -50%); border-radius: 50%;
+.tome-btn .halo { position: absolute; left: 50%; top: 62%; width: 420px; height: 90px; translate: -50% -50%; border-radius: 50%;
   border: 3px solid rgba(255, 217, 138, .75); box-shadow: 0 0 30px rgba(255, 217, 138, .6), inset 0 0 24px rgba(255, 217, 138, .45); animation: spin 6s linear infinite; }
 .tome-btn .halo.b { width: 330px; height: 64px; animation-duration: 9s; animation-direction: reverse; opacity: .7; }
-@keyframes spin { 50% { transform: translate(-50%, -50%) scaleX(1.06); opacity: .75; } }
+@keyframes spin { 50% { transform: scaleX(1.06); opacity: .75; } }
 .bigbook { position: relative; width: 300px; height: 190px; display: flex; perspective: 900px; filter: drop-shadow(0 0 28px rgba(255, 217, 138, .45)); }
 .bigbook .pg { flex: 1; background: linear-gradient(90deg, #fffaf0, #f3ead7); border: 2px solid #e9cf8f; position: relative; overflow: hidden; }
 .bigbook .pg.l { border-radius: 14px 4px 4px 14px; transform: rotateY(8deg); transform-origin: right; }
@@ -97,7 +97,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
 #ex-toggle { position: absolute; left: 22px; top: 70px; z-index: 3; font-size: 13px; padding: 7px 14px; }   /* "← 작업 화면으로" 아래 — 머리글 · 오른쪽 단추 줄과 겹치지 않는 빈자리 */
 .lib-out { position: absolute; top: 22px; left: 22px; z-index: 3; text-decoration: none; color: var(--ink); }
 .lib-refs { position: absolute; top: 22px; right: 22px; z-index: 3; display: flex; gap: 8px; }
-.stage { position: absolute; inset: 168px 0 0 0; }
+.stage { position: absolute; inset: 168px 0 0 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 60px; }   /* 책장이 많아지면 아래로 내려 본다(C-21) */
+/* 책장 흐름(C-21, 2026-10-20): 왼쪽 · 오른쪽 열에 번갈아, 가운데 열은 플로로 자리. 책장은 고정 좌표가 아니라 개수대로 흐른다 */
+.shelves { display: grid; grid-template-columns: minmax(300px, 480px) minmax(120px, 1fr) minmax(300px, 480px); gap: 26px 0; padding: 210px 2vw 0; align-items: start; }
+.shelfbox .label { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.shelfbox .label small { color: var(--mute); }
+.shelfbox .label .lnk { background: none; border: 0; padding: 0; color: var(--ice-2); font: inherit; font-size: 12.5px; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.shelf-form { display: flex; align-items: center; gap: 6px; }
+.shelf-form input { font: inherit; font-size: 14px; color: var(--ink); background: rgba(14, 26, 80, .55); border: 1px solid var(--edge); border-radius: 999px; padding: 5px 12px; min-width: 150px; }
+#shelf-form { position: absolute; top: 66px; right: 22px; z-index: 4; padding: 8px 10px; border-radius: 999px; }
+.rd-shelf { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-2); }
+.rd-shelf select { font: inherit; font-size: 13px; color: var(--ink); background: rgba(14, 26, 80, .55); border: 1px solid var(--edge); border-radius: 999px; padding: 3px 8px; }
 .search { position: absolute; top: 100px; left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 32px)); height: 50px; border-radius: 999px; display: flex; align-items: center; gap: 8px; padding: 0 14px; z-index: 5; }
 .search svg { width: 20px; height: 20px; flex: none; stroke: var(--ink-2); fill: none; stroke-width: 2; stroke-linecap: round; }
 .search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: 16px; outline: none; }
@@ -107,11 +117,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .answer mark { background: rgba(255, 217, 138, .35); color: inherit; border-radius: 3px; padding: 0 1px; }
 .answer .kind { font-size: 11px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--edge); color: var(--ink-2); margin-left: 6px; }
 .answer ul { max-height: 46vh; overflow-y: auto; }
-.shelfbox { position: absolute; width: 340px; display: flex; flex-direction: column; align-items: center; }
-.shelfbox .row { display: flex; align-items: flex-end; gap: 5px; height: 152px; padding: 0 12px; }
+.shelfbox { position: relative; width: auto; min-width: 300px; max-width: 480px; display: flex; flex-direction: column; align-items: center; }   /* 책이 많으면 줄을 바꾼다(C-21) */
+.shelfbox .row { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 5px; min-height: 152px; padding: 0 12px; }
 .shelfbox .spine { width: 16px; border-radius: 2px; background: linear-gradient(180deg, #8fb2ff, #4062c8); opacity: .9; }
 .shelfbox .board { width: 100%; height: 14px; border-radius: 3px; background: linear-gradient(180deg, #e9efff, #a7b8e8); box-shadow: 0 10px 20px rgba(0, 0, 0, .3); }
 .shelfbox .label { margin-top: 8px; font-size: 14px; color: var(--ink-2); }
+.shelfbox .row:empty { min-width: 120px; }
 .front { width: 102px; height: 140px; border: 0; padding: 12px 10px 10px 15px; border-radius: 4px 9px 9px 4px; margin: 0 6px; text-align: left; font-size: 13.5px; font-weight: 800; line-height: 1.3; color: #0f1d55;
   background: linear-gradient(160deg, #cfe6ff, #6f9cf0); box-shadow: inset 4px 0 0 rgba(0, 0, 0, .15), 0 10px 20px rgba(0, 0, 0, .35); position: relative; transition: transform .2s ease; }
 .front::after { content: ""; position: absolute; right: 9px; bottom: 9px; width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(15, 29, 85, .55); }
@@ -168,6 +179,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* 작은 노트북 화면 — 키운 책장이 가운데 플로로·이름표와 겹치지 않게 조금 줄인다 */
 @media (min-width: 761px) and (max-width: 1366px), (min-width: 761px) and (max-height: 800px) {
   .shelfbox { transform: scale(.84); transform-origin: top center; }
+  .shelves { grid-template-columns: minmax(280px, 420px) minmax(100px, 1fr) minmax(280px, 420px); padding-top: 180px; }
   .slot { width: 112px; height: 140px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
@@ -280,9 +292,12 @@ button { font: inherit; color: inherit; cursor: pointer; }
    겹치지 않게만 한 것이다 — 휴대폰에 맞춘 기능 · 화면 설계는 추후 업데이트(roadmap-demo-to-beta.md 5절). 책장 자리는 JS가 style로 주므로 !important로 푼다 */
 @media (max-width: 760px) {
   #s-lib { overflow-y: auto; overscroll-behavior: contain; }
-  #s-lib .stage { position: relative; inset: auto; margin-top: 232px; display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; align-items: flex-start; gap: 10px 8px; padding: 0 12px 8px; }
+  #s-lib .stage { position: relative; inset: auto; margin-top: 232px; display: flex; flex-wrap: wrap; justify-content: center; align-content: flex-start; align-items: flex-start; gap: 10px 8px; padding: 0 12px 8px; overflow: visible; }
+  #s-lib .shelves { display: flex; flex-direction: column; gap: 10px; padding: 0; width: 100%; }
+  #s-lib .shelfbox { grid-column: auto !important; }
+  #shelf-form { top: 226px; right: 12px; left: 12px; }
   #s-lib .shelfbox { position: relative !important; left: auto !important; right: auto !important; top: auto !important; flex: 0 0 100%; min-width: 0; width: auto; transform: none; margin-bottom: 6px; }
-  #s-lib .shelfbox .row { height: 132px; max-width: 100%; overflow: hidden; }
+  #s-lib .shelfbox .row { min-height: 132px; max-width: 100%; }
   #s-lib .stage > .chip { position: relative !important; left: auto !important; right: auto !important; top: auto !important; flex: none; max-width: calc(100vw - 32px); white-space: normal; }
   #s-lib .slot { position: relative; left: auto; top: auto; transform: none; order: 9; flex: 0 0 112px; height: 140px; margin: 8px calc(50% - 56px) 0; }   /* 양옆 여백으로 혼자 한 줄 */
   #s-lib .center { position: relative; left: auto; bottom: auto; transform: none; margin: 96px auto 48px; width: fit-content; }
