@@ -453,11 +453,11 @@ test("연결: 글자 수가 넘치면 오래된 말부터 버린다", () => {
   assert.equal(recent([], 70), "");
 });
 
-test("연결: 훅은 세 개만 더하고(2026-10-20 C-12로 PostToolUse 추가), 두 번 해도 하나씩이고, 다른 설정·훅은 그대로 둔다", () => {
+test("연결: 훅은 네 개만 더하고(2026-10-20 C-12로 PostToolUse, FR-17로 PermissionRequest 추가), 두 번 해도 하나씩이고, 다른 설정·훅은 그대로 둔다", () => {
   const mine = { hooks: [{ type: "command", command: "echo 내 훅" }] };
   const before = { model: "sonnet", hooks: { Stop: [mine] } };
   const once = Connect.addHooks(before), twice = Connect.addHooks(once);
-  assert.deepEqual(Object.keys(once.hooks).sort(), ["PostToolUse", "Stop", "UserPromptSubmit"]);
+  assert.deepEqual(Object.keys(once.hooks).sort(), ["PermissionRequest", "PostToolUse", "Stop", "UserPromptSubmit"]);
   assert.deepEqual(twice, once, "두 번 해도 같다");
   assert.equal(once.model, "sonnet");
   assert.deepEqual(once.hooks.Stop[0], mine, "원래 있던 훅은 그대로");
@@ -616,4 +616,24 @@ test("6단계 연습 예시: 글에 잰 값은 있고 못 한 것은 없다 — 
   assert.equal(met.length, crit.length, "예시의 칸 수가 할 일 수와 같다");
   assert.equal(met[crit.findIndex((c) => c.text.includes("잰 값"))], true, "잰 값은 했다");
   assert.equal(met[crit.findIndex((c) => /못\s?한/.test(c.text))], false, "못 한 것은 안 했다");
+});
+
+// FR-17 대화로 일 넘기기(C-4, 2026-10-20 — 넘김 문서 c4-views ②): 섬에 적은 할 일 → 요구 문장으로 정리 → 사람이 고쳐 확정. 코드보다 먼저 썼다
+test("일 넘기기: 요청문은 적은 글을 넘기고 지어내지 말라고 하며, 답은 줄(lines) · 말(say)만 쓴다. 모양이 틀리면 null. 줄은 12개 · 200자까지", () => {
+  const p = Nav.taskPrompt("회원 신청 화면 만들고 마감 알림도 넣어 줘");
+  assert.ok(p.includes("회원 신청 화면") && p.includes("지어내지") && /한 줄에 한 가지/.test(p));
+  assert.deepEqual(jargonIn(p.replace(/<[^>]+>/g, "")), []);
+  assert.deepEqual(Nav.TASK_SCHEMA.required.sort(), ["lines", "say"]);
+  assert.deepEqual(Nav.parseTask({ lines: ["회원이 신청 단추를 누르면, 앱은 신청서를 보여 준다", " "], say: "정리했어요" }), { lines: ["회원이 신청 단추를 누르면, 앱은 신청서를 보여 준다"], say: "정리했어요" });
+  assert.equal(Nav.parseTask({ lines: Array.from({ length: 20 }, (_, i) => `줄 ${i}`), say: "s" }).lines.length, 12);
+  assert.equal(Nav.parseTask({ lines: ["가".repeat(300)], say: "s" }).lines[0].length, 200);
+  for (const bad of [null, {}, { lines: [], say: "x" }, { lines: ["a"] }, { lines: "a", say: "x" }, { lines: [1], say: "x" }]) assert.equal(Nav.parseTask(bad), null, JSON.stringify(bad));
+});
+
+test("일 넘기기(연습): 서버 없이도 적은 글을 줄로 나눈다 — 줄 · 문장마다 하나, 빈 줄은 빼고 6줄까지, 말은 연습이라고 알린다", () => {
+  const t = Nav.taskLines("회원 신청 화면 만들어 줘. 마감 알림도 넣어 줘\n\n관리자가 승인하는 화면");
+  assert.deepEqual(t.lines, ["회원 신청 화면 만들어 줘", "마감 알림도 넣어 줘", "관리자가 승인하는 화면"]);
+  assert.ok(t.say.includes("연습") && !t.say.includes("설계도"));
+  assert.equal(Nav.taskLines(Array.from({ length: 10 }, (_, i) => `일 ${i}`).join("\n")).lines.length, 6);
+  assert.deepEqual(Nav.taskLines("").lines, []); assert.deepEqual(Nav.taskLines(null).lines, []);
 });

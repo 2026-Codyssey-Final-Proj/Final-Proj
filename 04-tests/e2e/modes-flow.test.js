@@ -4,6 +4,7 @@
 //   F-37 서고로 잠수할 때 물이 다 커진 순간 판이 화면을 덮는다(섬이 가운데 · 왼쪽 · 오른쪽)
 //   F-38 앱인 척(window.floeApp 흉내) 빠르게 펼쳤다 접으면 접기 움직임(0.24초) 안에 작은 크기로의 resize가 오지 않는다
 //   C-9 · C-3 책 보기 설정(2026-10-20, 넘김 문서 c4-views ①) — 칸 끄기 · 탭 구조 · 세션별 · 새로 고침 유지 · '전체 화면'이면 서고의 펼친 책, 서고의 설정도 같은 저장
+//   FR-17 섬에서 허용 · 거절(2026-10-20, 넘김 문서 c4-views ②) — 예시 승인 카드 둘, 거절하면 사라짐, 되돌리기 어려운 일은 '정말 허용'을 한 번 더, 할 일 적기 → 정리(연습) → 넘기기(연습은 보내지 않음)
 // 실행: node --test 04-tests/e2e/modes-flow.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -288,5 +289,45 @@ test("C-9 · C-3: 책 보기 설정 — 칸 끄기(내용은 그대로) · 탭 �
     await page.click('#reader .bv-opt[data-bv="size"][data-v="short"]');
     await page.waitForFunction(() => location.href.includes("navigator/index.html"), { timeout: 6000 }); await wait(400);
     assert.equal(await page.evaluate(() => `${location.hash} ${document.querySelector(".bv-head h3")?.textContent}`), "#tab=lib&book=s1 동아리 행사 등록 앱");
+  } finally { await browser.close(); }
+});
+
+// FR-17 대화로 일 넘기기 · 섬에서 허용 · 거절(C-4, 2026-10-20) — 서버 없이(FR-10) 예시 카드와 연습 정리만. 진짜 Claude Code는 부르지 않는다
+test("FR-17: #base&pane=ai&approve=1 — 승인 카드 둘(보통 · 되돌리기 어려운 일), 거절하면 사라지고, 위험한 일은 '정말 허용'을 한 번 더 묻는다. 할 일 적기 → 요구 문장(연습) → 고쳐서 넘기기(연습은 보내지 않고 예시 카드)", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#base&pane=ai&approve=1"), { waitUntil: "load" }); await wait(500);
+    const cards = () => page.evaluate(() => [...document.querySelectorAll(".ap")].map((x) => ({ id: x.dataset.ap, danger: x.classList.contains("danger"), allow: x.querySelector("[data-act=ap-allow]")?.textContent })));
+    let c = await cards();
+    assert.equal(c.length, 2); assert.deepEqual(c.map((x) => x.danger), [false, true]);
+    assert.ok(await page.evaluate(() => (document.querySelector(".aplist .note")?.textContent || "").includes("예시")), "예시라고 알린다");
+    const text = await page.evaluate(() => document.getElementById("nav").innerText);
+    for (const w of ["허락을 기다려요", "허용", "거절", "할 일 적기"]) assert.ok(text.includes(w), w);
+    for (const w of ["diff", "permission", "설계도", "판정"]) assert.ok(!text.includes(w), `화면 글에 '${w}'`);
+    // 보통 일 거절 → 사라진다
+    await page.click(`.ap[data-ap="${c[0].id}"] [data-act=ap-deny]`); await wait(300);
+    c = await cards(); assert.equal(c.length, 1); assert.equal(c[0].danger, true);
+    // 위험한 일 허용 → 한 번 더 → 정말 허용 → 사라진다
+    await page.click(`.ap[data-ap="${c[0].id}"] [data-act=ap-allow]`); await wait(300);
+    c = await cards(); assert.equal(c.length, 1, "한 번 눌러서는 사라지지 않는다"); assert.equal(c[0].allow, "정말 허용");
+    assert.ok(await page.evaluate(() => (document.querySelector(".ap-danger")?.textContent || "").includes("정말")));
+    await page.click("[data-act=ap-unsure]"); await wait(200);
+    assert.equal((await cards())[0].allow, "허용", "'아니요'면 되돌아온다");
+    await page.click(`.ap[data-ap="${c[0].id}"] [data-act=ap-allow]`); await wait(200);
+    await page.click(`.ap[data-ap="${c[0].id}"] [data-act=ap-allow]`); await wait(300);
+    assert.equal((await cards()).length, 0);
+    // 할 일 적기 → 정리(연습) → 줄 고치기 → 넘기기(연습) → 예시 카드가 다시 뜨고 '넘겼어요 — 연습'
+    assert.ok(await page.evaluate(() => document.querySelector("[data-act=task-tidy]").disabled), "빈 글이면 정리 단추가 꺼져 있다");
+    await page.type("#task-text", "회원 신청 화면 만들어 줘. 마감 알림도 넣어 줘"); await wait(100);
+    await page.click("[data-act=task-tidy]"); await wait(300);
+    const lines = await page.evaluate(() => document.querySelector("textarea[data-act=task-lines]")?.value || "");
+    assert.deepEqual(lines.split("\n"), ["회원 신청 화면 만들어 줘", "마감 알림도 넣어 줘"]);
+    await page.evaluate(() => { const t = document.querySelector("textarea[data-act=task-lines]"); t.value += "\n관리자가 승인하는 화면"; t.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.click("[data-act=task-send]"); await wait(400);
+    assert.ok(await page.evaluate(() => (document.querySelector(".tbox.sent b")?.textContent || "").includes("연습")));
+    assert.equal((await cards()).length, 2, "연습은 예시 카드를 보인다");
+    await page.click("[data-act=task-reset]"); await wait(200);
+    assert.ok(await page.evaluate(() => !!document.querySelector("#task-text")));
   } finally { await browser.close(); }
 });

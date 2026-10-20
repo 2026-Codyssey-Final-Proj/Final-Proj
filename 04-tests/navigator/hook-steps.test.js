@@ -128,14 +128,14 @@ test("VERBS: 도구 이름 → 쉬운 말 표", () => {
 });
 
 // ── ⑤ connect ──
-test("connect: EVENTS에 PostToolUse — 두 번 더해도 하나씩, 빼면 셋 다 빠진다", () => {
+test("connect: EVENTS에 PostToolUse — 두 번 더해도 하나씩, 빼면 넷 다 빠진다(PermissionRequest는 FR-17 허락 훅, 2026-10-20)", () => {
   assert.deepEqual([...Connect.EVENTS].sort(), ["PostToolUse", "Stop", "UserPromptSubmit"]);
   const once = Connect.addHooks({}), twice = Connect.addHooks(once);
-  assert.deepEqual(Object.keys(once.hooks).sort(), ["PostToolUse", "Stop", "UserPromptSubmit"]);
+  assert.deepEqual(Object.keys(once.hooks).sort(), ["PermissionRequest", "PostToolUse", "Stop", "UserPromptSubmit"]);
   assert.deepEqual(twice, once);
   assert.equal(once.hooks.PostToolUse.length, 1);
   assert.equal(once.hooks.PostToolUse[0].matcher, undefined, "matcher를 비우면 모든 도구(Claude Code 훅 문서)");
-  assert.deepEqual(Connect.removeHooks(once), {}, "빼면 셋 다");
+  assert.deepEqual(Connect.removeHooks(once), {}, "빼면 넷 다");
 });
 
 // ── ⑥ · ⑦ hook.js를 실제로 돌린다 ──

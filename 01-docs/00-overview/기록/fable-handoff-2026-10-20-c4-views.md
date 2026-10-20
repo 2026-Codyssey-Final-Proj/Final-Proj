@@ -5,6 +5,7 @@
 > **기록 문서.** 2026-10-20 `main` 9be7c85(앱 8.1.0 뒤) 기준이다. 요구는 [requirements.md](../requirements.md) 2절 **FR-17**, 2-2 **C-4 · C-3 · C-9**, 정한 것은 13-1. `[제안]`은 Claude가 정한 기본값이다.
 
 > **① 끝남(2026-10-20, 페이블 세션 · PR `v2/book-view-settings`):** 이재엽 버튼 — PR "둘로", 기본 구조 **간결**, 기본 보기 **책별**. 순수 모듈 `02-frontend/library/book-view.js`(설정 읽기 · 쓰기 · 칸 · 세션별 · HTML)를 두 화면(섬의 도서관 탭 `app.js` · 서고의 펼친 책 `library.js`)이 같이 쓴다. 시험은 `04-tests/library/book-view.test.js` · e2e `modes-flow.test.js` "C-9 · C-3". 기록은 [05-library](../../features/05-library/README.md). **② FR-17은 다음 PR.** <!-- claude-drafted: 2026-10-20 -->
+> **② 끝남(2026-10-20, 페이블 세션 · PR `v2/task-approval`):** 이재엽 버튼 "Go — 이대로"(해석대로) · PR은 ①과 "둘로". 허락 훅 `approve-hook.js`(PermissionRequest — 섬의 결정을 기다리고, 없으면 빈 출력) · 카드 규칙 `approve.js` · 서버 `/api/approval`(길게 열기) · `/api/approvals` · `/api/approvals/decide` · `/api/task/*` · `provider.js startTask`(claude를 여는 한 곳) · 섬의 할 일 적기와 승인 카드. 시험 `approve.test.js` · `task-api.test.js` · e2e "FR-17". 기록은 [13-task-approval](../../features/13-task-approval/README.md). **진짜 Claude Code와는 아직 사람이 안 써 봤다.** ①은 PR `v2/book-view-settings`. <!-- claude-drafted: 2026-10-20 -->
 
 ## 0. 먼저
 

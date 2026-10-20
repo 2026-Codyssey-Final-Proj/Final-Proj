@@ -1,5 +1,6 @@
 // claude-drafted: 2026-10-14
-// Claude Code·Codex와 Navigator 연결하기 — 바이브 코딩할 때 쓰는 도구에 훅 세 개를 더한다(요청 받음 · 작업 마침 · 도구를 쓴 뒤).
+// Claude Code·Codex와 Navigator 연결하기 — 바이브 코딩할 때 쓰는 도구에 훅 네 개를 더한다(요청 받음 · 작업 마침 · 도구를 쓴 뒤 · **허락을 구할 때**).
+// 허락을 구할 때(PermissionRequest, 2026-10-20 FR-17)는 approve-hook.js — 섬의 허용 · 거절을 기다린다. 나머지 셋은 hook.js(답을 기다리지 않는다).
 //
 //   node connect.js [폴더]            무엇을 어디에 더할지 보여 주기만 한다 (아무것도 바꾸지 않음)
 //   node connect.js [폴더] --apply    백업을 만든 뒤 더한다
@@ -16,11 +17,16 @@ const path = require("node:path");
 
 const HOOK = path.join(__dirname, "hook.js").replace(/\\/g, "/");
 const COMMAND = `node "${HOOK}"`;
+// 허락을 구할 때(FR-17): 섬의 결정을 기다리는 훅 — Claude Code 훅의 timeout은 초 단위(문서 2026-10-20 확인). 훅 안의 기다림(95초)보다 길게 120초
+const APPROVE_HOOK = path.join(__dirname, "approve-hook.js").replace(/\\/g, "/");
+const APPROVE_COMMAND = `node "${APPROVE_HOOK}"`;
+const APPROVE_EVENT = "PermissionRequest";
+const APPROVE_TIMEOUT = 120;
 // PostToolUse(2026-10-20, C-12 AI 진행): 도구를 쓸 때마다 — hook.js가 이름 · 첫 줄 · 줄 수만 보낸다. matcher 칸은 비운다:
 // Claude Code 훅 문서상 PostToolUse의 matcher는 도구 이름 정규식이고, 비우거나 없으면 모든 도구에 걸린다
 const EVENTS = ["UserPromptSubmit", "Stop", "PostToolUse"];
 // 옛 위치(implementations/navigator-prototype, backend/navigator — 2026-10-17 정리 전)에 단 훅도 우리 것으로 알아본다. "backend/navigator/hook.js"는 03-backend/… 경로에도 들어 있다 — 다시 연결하면 새 경로로 바뀐다
-const MARKS = ["backend/navigator/hook.js", "navigator-prototype/hook.js"];
+const MARKS = ["backend/navigator/hook.js", "navigator-prototype/hook.js", "backend/navigator/approve-hook.js"];
 const ours = (h) => !!h && typeof h.command === "string" && MARKS.some((m) => h.command.includes(m));
 const clone = (o) => JSON.parse(JSON.stringify(o || {}));
 
@@ -28,9 +34,11 @@ const clone = (o) => JSON.parse(JSON.stringify(o || {}));
 function addHooks(settings, command = COMMAND) {
   const s = clone(settings);
   s.hooks = s.hooks || {};
-  for (const e of EVENTS) {
-    const list = (s.hooks[e] || []).map((g) => ({ ...g, hooks: (g.hooks || []).filter((h) => !ours(h) || h.command === command) })).filter((g) => g.hooks.length);
-    if (!list.some((g) => (g.hooks || []).some(ours))) list.push({ hooks: [{ type: "command", command, timeout: 5 }] });
+  // 허락 훅의 명령은 받은 명령과 같은 폴더의 approve-hook.js — 앱(electron/lib.js)은 app.asar.unpacked 경로를 넘기므로 APPROVE_COMMAND(이 파일의 자리)를 그대로 쓰면 안 된다
+  const approve = command.includes("approve-hook.js") ? command : command.replace(/(^|[\\/])hook\.js"/, '$1approve-hook.js"');
+  for (const [e, cmd, timeout] of [...EVENTS.map((e) => [e, command, 5]), [APPROVE_EVENT, approve, APPROVE_TIMEOUT]]) {
+    const list = (s.hooks[e] || []).map((g) => ({ ...g, hooks: (g.hooks || []).filter((h) => !ours(h) || h.command === cmd) })).filter((g) => g.hooks.length);
+    if (!list.some((g) => (g.hooks || []).some(ours))) list.push({ hooks: [{ type: "command", command: cmd, timeout }] });
     s.hooks[e] = list;
   }
   return s;
@@ -75,4 +83,4 @@ function main(argv) {
 }
 
 if (require.main === module) process.exitCode = main(process.argv.slice(2));
-module.exports = { addHooks, removeHooks, COMMAND, EVENTS };
+module.exports = { addHooks, removeHooks, COMMAND, EVENTS, APPROVE_COMMAND, APPROVE_EVENT, APPROVE_TIMEOUT };

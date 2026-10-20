@@ -183,6 +183,17 @@ function callCli(prompt, schema) {
   });
 }
 
+// ── FR-17 대화로 일 넘기기(2026-10-20): 허락한 일을 사용자의 Claude Code로 넘긴다 — 연결한 폴더(dir)에서 `claude -p`를 셸 없이 열고 글은 표준 입력으로 ──
+// 판정(callCli)과 다르다: 도구 · 설정(훅 포함)을 그대로 쓰고, 권한 건너뛰기 옵션은 쓰지 않는다 — 파일을 고치거나 명령을 쓰기 전의 허락은 PermissionRequest 훅(approve-hook.js)이 섬에 묻는다.
+// 대화 기록은 잇지 않는다(--resume · --continue 없음 — 열어 둔 창과 한 세션을 두 곳에서 쓰지 않게) [제안]. NAV_CLAUDE_BIN은 시험용 가짜 claude(.js면 node로 연다)
+function startTask({ dir, text, bin = process.env.NAV_CLAUDE_BIN || "claude" }) {
+  const args = ["-p"], js = bin.endsWith(".js");
+  const child = spawn(js ? process.execPath : bin, js ? [bin, ...args] : args, { cwd: dir, stdio: ["pipe", "ignore", "ignore"], windowsHide: true });
+  child.stdin.on("error", () => {});
+  child.stdin.end(`Floe(섬)에서 넘긴 일이에요. 아래 요구 문장대로 해 주세요. 파일을 고치거나 명령을 쓰기 전에 허락을 구하면 Floe 섬에서 허용 · 거절을 받아요.\n\n${String(text).trim()}\n`);
+  return child;
+}
+
 // 녹화 파일을 환경에서 읽는다 — NAV_REPLAY: 재생(토큰 0), NAV_RECORD: 진짜로 부른 답을 저장
 const replayFrom = (env) => (env.NAV_REPLAY ? REC.load(env.NAV_REPLAY) : null);
 const recorderFrom = (env) => (env.NAV_RECORD ? (key, data) => { const items = REC.load(env.NAV_RECORD); items[key] = data; REC.save(env.NAV_RECORD, items); } : null);
@@ -231,4 +242,4 @@ const meter = createMeter(settings(process.env).budget, fileStore(usageFile), { 
 const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); return new Anthropic(); };   // 키는 ANTHROPIC_API_KEY에서 SDK가 읽는다
 const callClaude = createCaller({ makeClient, meter });
 
-module.exports = { RELAY_MODELS, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion };
+module.exports = { RELAY_MODELS, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, startTask };
