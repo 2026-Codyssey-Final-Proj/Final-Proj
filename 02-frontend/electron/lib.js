@@ -10,6 +10,10 @@ function paths(isPackaged, dirname) {
   return { root, backend: path.join(root, "03-backend/navigator"), frontend: path.join(root, "02-frontend") };
 }
 
+// 개발 실행(npm start)의 Dock 그림 — 묶은 앱은 icon.icns가 들어 있지만 개발 실행은 Electron 기본 그림이 뜬다(2026-10-20 이재엽 "깃허브에 있는 앱 아이콘이 있잖아 그걸로").
+// build/icon.png는 묶을 때 쓰는 그 그림이다. 묶은 앱이면 null — 건드리지 않는다
+const devIcon = (isPackaged, dirname) => (isPackaged ? null : path.join(dirname, "build/icon.png"));
+
 // .env 글 → {KEY: VALUE}. 주석(#) · 빈 줄은 건너뛰고, 양끝 따옴표는 뗀다. 값은 돌려주기만 하고 어디에도 출력하지 않는다
 function parseEnv(text) {
   const out = {};
@@ -176,4 +180,4 @@ function hubBounds(wa, saved) {
   return { x, y, width, height };
 }
 
-module.exports = { paths, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl, HUB, hubBounds };
+module.exports = { paths, devIcon, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl, HUB, hubBounds };
