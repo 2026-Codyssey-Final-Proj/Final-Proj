@@ -143,7 +143,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .reader .book { width: min(calc(var(--pw) * 2), 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-radius: 16px; overflow: hidden; position: relative;
   background: #16245f; border: 1px solid var(--edge); box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
 .reader .book::after { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 30px; transform: translateX(-50%); background: linear-gradient(90deg, transparent, rgba(0, 0, 0, .35), transparent); pointer-events: none; }
-.reader section { padding: 32px 34px; min-height: var(--ph); }
+.reader .book > section { padding: 32px 34px; min-height: var(--ph); }   /* 두 쪽만 — 보기 설정의 칸(.bv-sec)도 section이라 자손 선택자를 쓰지 않는다(2026-10-20) */
 .reader .kick { font-size: 13px; color: var(--ink-2); }
 .reader h2 { margin: 2px 0 16px; font-size: 23px; }
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
@@ -206,6 +206,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .bigcover .stamp { position: absolute; right: 30px; bottom: 56px; width: 88px; height: 88px; border-radius: 50%; border: 3px solid #12205a; display: grid; place-items: center; text-align: center; font-weight: 800; font-size: 13px; transform: rotate(-10deg); }
 .bigcover em { position: absolute; left: 38px; bottom: 22px; font-style: normal; font-size: 13.5px; opacity: .7; }
 .rd-foot { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--edge); font-size: 13px; color: var(--ink-2); }
+/* 책 보기 설정(C-9 · C-3, 2026-10-20 — book-view.css) — 남색 쪽의 색. 오른쪽 쪽 위에 '보기 설정' 단추 */
+.reader .book { --bv-sub: var(--ink-2); --bv-line: var(--edge); --bv-soft: rgba(207, 230, 255, .1); --bv-acc: var(--acc); }
+.reader .bv-list { font-size: 15px; }
+.reader .bv-tab[aria-selected="true"], .reader .bv-opt[aria-pressed="true"], .reader .bv-btn[aria-expanded="true"] { color: #0f1d55; }
+.rd-tools { display: flex; justify-content: flex-start; margin: 0 0 10px; }   /* 오른쪽 위에는 책 덮기 단추가 있다 — 왼쪽에 둔다 */
 .rv { width: min(1080px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; border-radius: 22px; padding: 22px 26px; position: relative; background: rgba(14, 24, 72, .92); }
 .rv header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .rv header .kick { font-size: 12px; color: var(--ink-2); }
@@ -237,21 +242,21 @@ button { font: inherit; color: inherit; cursor: pointer; }
 /* ── 책 펼치기 (2026-10-18 claude-drafted, library.js openBook) — 넘어가는 동안 표지와 펼친 책이 겹쳐 보인다 ── */
 .reader.opening .book { display: grid; background: transparent; border-color: transparent; box-shadow: none; overflow: visible; }
 .reader.opening .book::after, .reader.opening .close { visibility: hidden; }
-.reader.opening section { background: #16245f; box-shadow: 0 30px 80px rgba(0, 0, 0, .45); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-.reader.opening section:first-child { border-radius: 16px 0 0 16px; transform-origin: right center; }
-.reader.opening section:last-child { border-radius: 0 16px 16px 0; }
+.reader.opening .book > section { background: #16245f; box-shadow: 0 30px 80px rgba(0, 0, 0, .45); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.reader.opening .book > section:first-child { border-radius: 16px 0 0 16px; transform-origin: right center; }
+.reader.opening .book > section:last-child { border-radius: 0 16px 16px 0; }
 .reader.opening .bigcover { animation: none; z-index: 2; }
-.reader.opening section > * { opacity: 0; }   /* 넘기는 동안 쪽은 비어 있고, 다 펼친 뒤 글이 차례로 떠오른다(영상 41~42초) */
+.reader.opening .book > section > * { opacity: 0; }   /* 넘기는 동안 쪽은 비어 있고, 다 펼친 뒤 글이 차례로 떠오른다(영상 41~42초) */
 /* 다 펼친 뒤 쪽 안의 글이 차례로 떠오른다 */
-.book.fresh section > *, .book.fresh .steps li { animation: pg-in .45s cubic-bezier(.2, .8, .2, 1) both; }
-.book.fresh section > :nth-child(2) { animation-delay: .05s; } .book.fresh section > :nth-child(3) { animation-delay: .1s; }
-.book.fresh section > :nth-child(4) { animation-delay: .15s; } .book.fresh section > :nth-child(5) { animation-delay: .2s; }
-.book.fresh section > :nth-child(6) { animation-delay: .25s; } .book.fresh section > :nth-child(n+7) { animation-delay: .3s; }
+.book.fresh > section > *, .book.fresh .bv-list li { animation: pg-in .45s cubic-bezier(.2, .8, .2, 1) both; }
+.book.fresh > section > :nth-child(2) { animation-delay: .05s; } .book.fresh > section > :nth-child(3) { animation-delay: .1s; }
+.book.fresh > section > :nth-child(4) { animation-delay: .15s; } .book.fresh > section > :nth-child(5) { animation-delay: .2s; }
+.book.fresh > section > :nth-child(6) { animation-delay: .25s; } .book.fresh > section > :nth-child(n+7) { animation-delay: .3s; }
 .book.fresh .steps li:nth-child(1) { animation-delay: .12s; } .book.fresh .steps li:nth-child(2) { animation-delay: .17s; }
 .book.fresh .steps li:nth-child(3) { animation-delay: .22s; } .book.fresh .steps li:nth-child(4) { animation-delay: .27s; }
 .book.fresh .steps li:nth-child(5) { animation-delay: .32s; } .book.fresh .steps li:nth-child(6) { animation-delay: .37s; }
 .book.fresh .steps li:nth-child(7) { animation-delay: .42s; } .book.fresh .steps li:nth-child(n+8) { animation-delay: .47s; }
-.reader .book.fresh section > .stamp { animation: stamp-in .5s cubic-bezier(.3, 1.6, .5, 1) .5s both; }
+.reader .book.fresh > section > .stamp { animation: stamp-in .5s cubic-bezier(.3, 1.6, .5, 1) .5s both; }
 @keyframes pg-in { from { opacity: 0; transform: translateY(8px); } }
 @keyframes stamp-in { from { opacity: 0; transform: rotate(-12deg) scale(1.8); } }
 

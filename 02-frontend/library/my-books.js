@@ -17,6 +17,8 @@
   const ymd = (t) => new Date(t).toLocaleDateString("sv");   // 이 컴퓨터 시간으로 YYYY-MM-DD
   const todayOf = (now = Date.now()) => ymd(now);
   const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s));
+  const ymdOf = (v) => (isDate(v) ? v : Number.isFinite(v) && v > 0 ? ymd(v) : "");   // 날짜 글 또는 때(밀리초) → YYYY-MM-DD, 아니면 ""
+  const tailDate = (t) => ((/(\d{4}-\d{2}-\d{2})\s*$/.exec(str(t) ? t : "") || [])[1] || "");   // 기록 끝의 날짜("… · 2026-10-18")
   // 기록을 남긴 때 → "오늘 14:20" · "어제" · "10/15" (예시 책의 updated와 같은 모양)
   function when(at, now = Date.now()) {
     if (!Number.isFinite(at)) return "지금";
@@ -52,6 +54,12 @@
       fed: list(s.fed).filter((f) => Array.isArray(f.topics)).map((f) => ({ topics: f.topics.filter(str), left: list(f.left).length, example: f.example === true })),   // 받은 먹이(C-15) — 주제와 빠진 수만, 글은 없다
       bookmarks: [...new Set(learned.map((x) => x.term))],
       insights: [], made: [],
+      // 세션별 보기(C-3, book-view.js)의 재료 — 날짜가 남은 기록만: 지나온 단계(기록 끝의 날짜 또는 at) · 확정한 문서(at) · 받은 먹이(at). 본문은 싣지 않는다
+      dated: [
+        ...history.map((x) => ({ at: ymdOf(x.at) || tailDate(x.text), kind: "steps", text: str(x.short) ? x.short : x.text })),
+        ...docs.map((d) => ({ at: ymdOf(d.at), kind: "decided", text: `${d.stage}단계 ${str(d.name) ? d.name : "단계 문서"} 확정` })),
+        ...list(s.fed).filter((f) => Array.isArray(f.topics)).map((f) => ({ at: ymdOf(Number(f.at)), kind: "fed", text: `먹이 — ${f.topics.filter(str).join(" · ") || "(빠진 구간뿐)"}` })),
+      ].filter((x) => x.at),
       finished,
     };
   }

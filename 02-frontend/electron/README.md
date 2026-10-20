@@ -20,7 +20,7 @@
 cd 02-frontend/electron
 npm install                 # 한 번 (Electron 100MB를 받는다)
 npm start                   # 개발 중 — 저장소의 화면 · 서버 코드를 바로 읽는다
-npm run dist                # Mac: dist/Floe-<버전>-arm64.dmg  (서명 없음 — 처음 열 때 우클릭 → 열기)
+npm run dist                # Mac: dist/Floe-<버전>-arm64.dmg  (서명이 깨져 있다 — F-41. 직접 묶어 쓰면 그대로 열린다)
 npm run dist:win            # Windows에서만: dist/Floe-Setup-<버전>.exe
 npm run dist:linux          # 우분투용(Mac · Linux에서 됨): dist/Floe-<버전>-x86_64.AppImage · -amd64.deb · -arm64.AppImage · -arm64.deb
 ```
