@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v13.2 | 2026-10-20 | 이재엽 | 요구 후보 C-21 — 서고의 분류(책장)를 사용자가 만들고, 떠 있는 배운 말 표 · 책을 잇는 선은 뺌 — 페이블 넘김 문서 (#155) | `01-docs/00-overview/` |
 | v13.1 | 2026-10-20 | 이재엽 | 개발 실행(npm start)도 Dock에 플로로 아이콘 — 묶은 앱 · GitHub 첫 화면과 같은 그림(build/icon.png). 전에는 Electron 기본 그림 (#151) | `02-frontend/electron/`(lib.js devIcon · main.js) · `04-tests/navigator/electron-lib.test.js` |
 | v13.0 | 2026-10-20 | 이재엽 | FR-17 대화로 일 넘기기 · 섬에서 허용 · 거절(C-4) — 할 일 적기 → 요구 문장 정리 → 고쳐 확정 → 허락하면 연결한 폴더에서 Claude Code를 열고, 허락을 구하면(PermissionRequest 훅) 섬의 승인 카드로 허용 · 거절. 대신 허용 없음 · 결정은 요청과 짝이 맞을 때만 · 위험한 일은 한 번 더. 묶은 앱은 훅 파일 전부를 asar 밖에 (#153) | `03-backend/navigator/`(새 `approve.js` · `approve-hook.js`, `server.js` · `connect.js` · `provider.js` · `navigator.js` · `API.md`, 담당 두승현) · `02-frontend/navigator/`(담당 임유정) · `02-frontend/electron/package.json`(asarUnpack) · `04-tests/` · `01-docs/` · `.claude/rules/security-records.md` |
 | v12.3 | 2026-10-20 | 이재엽 | 움직임의 기준점 · 랙 · 노치 띠 검은 바탕을 고칠 목록에 올리고(F-45 · F-46 · F-47) 요구 후보 C-17~C-19(작아질 때 움직임 · 파란 먹이 층 · 먹이 검사와 다른 작업 서로 막기)를 더함 — 페이블 넘김 문서 | `01-docs/00-overview/` · `01-docs/07-maintenance/` |
