@@ -4,310 +4,435 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>첫 5분 스토리보드</title>
-<!-- claude-drafted: 2026-10-20 — 두승현의 요청("첫 5분 흐름을 스토리보드로 … 초안")으로 Claude가 만든 그림판. 글은 onboarding-storyboard.md와 같다(어긋나면 .md가 맞다).
+<!-- claude-drafted: 2026-10-20 — 두승현의 요청("첫 5분 흐름을 스토리보드로 … 초안", 같은 날 "실제 화면처럼 하나 하나 목업으로 보이는 방식으로 — 지금은 한 곳에 정보량이 많음")으로 Claude가 만든 그림판.
+     한 장면씩 실제 화면처럼 크게 보인다. 글은 onboarding-storyboard.md와 같다(어긋나면 .md가 맞다).
      서버 · AI를 부르지 않고 아무것도 저장하지 않는다. 플로로는 02-frontend/navigator/seal.js · seal.css를 그대로 불러온다(제품의 플로로가 바뀌면 같이 바뀐다).
-     섬 · 레벨 오버레이 모양은 game-overlay/level-overlay.html의 색을 따랐다 — 제품 화면을 그대로 옮긴 것이 아니라 장면을 보여 주는 그림이다. Jira KAN-55. -->
+     섬 · 레벨 오버레이 모양은 game-overlay/level-overlay.html의 색을 따랐다 — 제품 화면을 그대로 옮긴 것이 아니라 장면을 보여 주는 목업이다. Jira KAN-55. -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="../../02-frontend/navigator/seal.css">
 <style>
 :root {
-  --bg: #070B2A; --bg2: #0D1440; --desk: #10184A;
+  --bg: #05081F; --panel: #0B1138;
   --ink: #F2F6FF; --ink2: #D6E0F5; --mute: #9DAED6;
   --ice: #A9DDFF; --ice-hi: #E6F6FF; --ice-ink: #0E1A4F; --ice-soft: rgba(169, 221, 255, .16);
-  --fill: rgba(255, 255, 255, .07); --fill2: rgba(255, 255, 255, .11); --line: rgba(255, 255, 255, .14);
-  --night: rgba(6, 10, 38, .82); --gold: #FFD27A; --ok: #8FE3B0; --new: #FF9DB8; --part: #FFD27A;
+  --fill: rgba(255, 255, 255, .07); --fill2: rgba(255, 255, 255, .12); --line: rgba(255, 255, 255, .15);
+  --night: rgba(8, 12, 44, .86); --gold: #FFD27A; --ok: #8FE3B0; --new: #FF9DB8; --part: #FFD27A; --warn: #FFB37A;
   --ui: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --mono: ui-monospace, "Cascadia Code", Consolas, monospace;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--ui); }
-body { padding: 28px 16px 64px; line-height: 1.5; }
-.wrap { max-width: 1240px; margin: 0 auto; }
-h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: -.01em; }
-.lead { color: var(--ink2); margin: 0 0 4px; max-width: 860px; }
-.fine { color: var(--mute); font-size: 13px; margin: 0; }
+body { min-height: 100vh; display: flex; flex-direction: column; }
+button { font-family: var(--ui); }
 a { color: var(--ice); }
 
-/* 시간 막대 */
-.timeline { margin: 22px 0 8px; position: relative; height: 54px; }
-.tl-bar { position: absolute; left: 0; right: 0; top: 22px; height: 6px; border-radius: 3px; background: var(--fill2); overflow: hidden; }
-.tl-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--ice), var(--gold)); transition: width .4s ease; }
-.tl-dot { position: absolute; top: 14px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; border: 2px solid var(--ice);
-  background: var(--bg); color: var(--ice); font-size: 10px; font-weight: 700; display: grid; place-items: center; cursor: pointer; padding: 0; font-family: var(--ui); }
-.tl-dot.on { background: var(--ice); color: var(--ice-ink); }
-.tl-dot.star { border-color: var(--gold); color: var(--gold); }
-.tl-dot.star.on { background: var(--gold); color: var(--ice-ink); }
-.tl-time { position: absolute; top: 40px; font-size: 11px; color: var(--mute); transform: translateX(-50%); white-space: nowrap; }
-.tl-time.first { transform: none; } .tl-time.last { transform: translateX(-100%); }
-.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 4px 0 18px; }
-.btn { font-family: var(--ui); font-size: 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--ink); padding: 7px 14px; cursor: pointer; }
-.btn.pri { background: var(--ice); color: var(--ice-ink); border-color: var(--ice); font-weight: 700; }
-.btn:focus-visible, .tl-dot:focus-visible, .frame:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-.legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--mute); margin-left: auto; }
-.tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; color: var(--ice-ink); }
-.tag.have { background: var(--ok); } .tag.part { background: var(--part); } .tag.new { background: var(--new); }
+/* ── 위 막대: 제목 · 장면 점 · 넘기기 ── */
+.bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 14px 16px 10px; max-width: 1240px; width: 100%; margin: 0 auto; }
+.bar h1 { font-size: 17px; margin: 0; white-space: nowrap; }
+.bar h1 small { color: var(--mute); font-weight: 500; font-size: 12px; margin-left: 6px; }
+.dots { display: flex; gap: 6px; flex: 1; justify-content: center; min-width: 0; flex-wrap: wrap; }
+.dot { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--line); background: transparent; color: var(--mute); font-size: 12px; font-weight: 700; cursor: pointer; padding: 0; }
+.dot.seen { border-color: var(--ice); color: var(--ice); }
+.dot.on { background: var(--ice); border-color: var(--ice); color: var(--ice-ink); }
+.dot.star { border-color: var(--gold); color: var(--gold); }
+.dot.star.on { background: var(--gold); color: var(--ice-ink); }
+.nav { display: flex; gap: 6px; }
+.nb { border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--ink); padding: 6px 14px; font-size: 14px; cursor: pointer; }
+.nb.pri { background: var(--ice); color: var(--ice-ink); border-color: var(--ice); font-weight: 700; }
+.nb:disabled { opacity: .35; cursor: default; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 
-/* 장면 칸 */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 18px; }
-.frame { background: var(--bg2); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; transition: border-color .3s, transform .3s, box-shadow .3s; }
-.frame.on { border-color: var(--ice); box-shadow: 0 0 0 1px var(--ice), 0 16px 40px rgba(0, 0, 0, .45); transform: translateY(-2px); }
-.frame.star.on { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 16px 40px rgba(0, 0, 0, .45); }
-.f-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px 10px; }
-.f-id { font-weight: 800; color: var(--ice); font-size: 13px; }
-.frame.star .f-id { color: var(--gold); }
-.f-name { font-weight: 700; font-size: 15px; }
-.f-time { margin-left: auto; font-size: 12px; color: var(--mute); font-variant-numeric: tabular-nums; }
-.screen { position: relative; height: 336px; margin: 0 12px; border-radius: 12px; overflow: hidden;
-  background: radial-gradient(120% 80% at 50% -10%, #23307A 0%, var(--desk) 55%, #0A1035 100%); }
-.screen::after { content: "코딩 도구 화면"; position: absolute; left: 12px; bottom: 10px; font-size: 10px; color: rgba(255, 255, 255, .22); letter-spacing: .04em; }
-.fake-code { position: absolute; left: 14px; right: 14px; bottom: 30px; display: grid; gap: 6px; opacity: .18; }
-.fake-code i { display: block; height: 6px; border-radius: 3px; background: var(--ink2); }
-.f-body { padding: 12px 14px 14px; display: grid; gap: 6px; font-size: 13px; }
-.f-row { display: grid; grid-template-columns: 64px 1fr; gap: 8px; color: var(--ink2); }
-.f-row b { color: var(--mute); font-weight: 600; font-size: 12px; }
-.f-feel { color: var(--ink); font-weight: 600; }
+/* ── 무대: 실제 화면 크기(1200 × 750)로 그리고 창 폭에 맞춰 줄인다 ── */
+.stage { width: 100%; max-width: 1240px; margin: 0 auto; padding: 0 16px; flex: 1; }
+.fit { position: relative; width: 100%; }
+.desk { position: absolute; left: 0; top: 0; width: 1200px; height: 750px; transform-origin: 0 0; border-radius: 14px; overflow: hidden;
+  background: #0E1330; box-shadow: 0 24px 60px rgba(0, 0, 0, .5), 0 0 0 1px var(--line); }
 
-/* 섬 */
-.island { position: absolute; z-index: 1; left: 50%; top: 10px; transform: translateX(-50%); background: var(--night); border: 1px solid var(--line);
-  backdrop-filter: blur(6px); color: var(--ink); }
-.island.band { width: 150px; height: 18px; border-radius: 999px; top: 8px; display: grid; place-items: center; }
-.wave { width: 110px; height: 8px; }
-.wave path { fill: none; stroke: var(--ice); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 140; stroke-dashoffset: 140; animation: draw 1.6s ease forwards infinite; }
-@keyframes draw { 60%, 100% { stroke-dashoffset: 0; } }
-.island.open { width: 326px; border-radius: 22px; padding: 10px 12px 12px; }
-.island.wide { width: 336px; border-radius: 18px; padding: 12px 14px; top: 10px; }
-.i-top { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--mute); }
-.lv { font-weight: 800; color: var(--gold); font-size: 12px; }
-.i-title { color: var(--ink); font-weight: 700; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.exp { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 10px; color: var(--mute); }
-.exp-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--fill2); overflow: hidden; }
-.exp-bar span { display: block; height: 100%; background: linear-gradient(90deg, var(--ice), var(--gold)); border-radius: 3px; }
-.exp-plus { color: var(--gold); font-weight: 800; animation: rise 1.4s ease-out infinite; }
-@keyframes rise { 0% { opacity: 0; transform: translateY(4px); } 30%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px); } }
-.i-main { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; }
-.pet { flex: none; width: 64px; height: 64px; display: grid; place-items: end center; }
-.says { display: grid; gap: 5px; flex: 1; min-width: 0; }
-.say { background: var(--ice-hi); color: var(--ice-ink); border-radius: 12px 12px 12px 4px; padding: 6px 9px; font-size: 11.5px; line-height: 1.4; font-weight: 600; }
-.say.dim { background: var(--fill2); color: var(--ink2); font-weight: 500; }
-.box { margin-top: 8px; background: var(--fill); border: 1px solid var(--line); border-radius: 12px; padding: 7px 9px; font-size: 11px; color: var(--ink2); display: grid; gap: 4px; }
-.box .todo { display: flex; gap: 6px; align-items: baseline; }
-.box .ck { width: 12px; height: 12px; flex: none; border-radius: 3px; border: 1.5px solid var(--mute); display: inline-grid; place-items: center; font-size: 9px; position: relative; top: 2px; }
-.box .ck.ok { background: var(--ok); border-color: var(--ok); color: var(--ice-ink); }
-.box .now { color: var(--ink); font-weight: 700; }
-.box .term { font-size: 9.5px; color: var(--mute); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-left: 4px; }
-.input { background: rgba(255, 255, 255, .92); color: #5B6890; border-radius: 9px; padding: 7px 9px; font-size: 11px; }
-.input.typed { color: var(--ice-ink); font-weight: 600; }
-.caret { display: inline-block; width: 1px; height: 12px; background: var(--ice-ink); vertical-align: -2px; animation: blink 1s steps(1) infinite; }
+/* 뒤의 코딩 도구 — 흐리게. 섬이 주인공이다 */
+.ide { position: absolute; inset: 0; display: grid; grid-template-columns: 220px 1fr; grid-template-rows: 34px 1fr 190px; opacity: .55; }
+.ide-top { grid-column: 1 / 3; background: #0A0F28; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; align-items: center; gap: 8px; padding: 0 12px; }
+.ide-top i { width: 11px; height: 11px; border-radius: 50%; background: #3A4370; display: inline-block; }
+.ide-tab { margin-left: 18px; font: 12px var(--mono); color: #8C97C4; background: #141B42; padding: 6px 12px; border-radius: 6px 6px 0 0; }
+.ide-side { background: #0B1030; border-right: 1px solid rgba(255,255,255,.06); padding: 14px 12px; font: 12px/2 var(--mono); color: #6E7AAB; }
+.ide-code { padding: 18px 22px; font: 13px/1.85 var(--mono); color: #7F8BBE; white-space: pre; overflow: hidden; }
+.ide-code .k { color: #B39DFF; } .ide-code .s { color: #8FE3B0; } .ide-code .c { color: #4D5788; } .ide-code .f { color: #7FC8FF; }
+.ide-term { grid-column: 2 / 3; background: #080C24; border-top: 1px solid rgba(255,255,255,.08); padding: 12px 18px; font: 12.5px/1.8 var(--mono); color: #7F8BBE; white-space: pre; }
+.ide-term b { color: #C8D2F5; font-weight: 500; }
+
+/* 섬 — 화면 위쪽 가운데 */
+.island { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 2; background: var(--night); border: 1px solid var(--line);
+  backdrop-filter: blur(8px); box-shadow: 0 18px 50px rgba(0, 0, 0, .55); color: var(--ink); transition: width .5s cubic-bezier(.2,.8,.2,1), height .5s, border-radius .5s; }
+.island.band { width: 230px; height: 30px; border-radius: 999px; display: grid; place-items: center; }
+.island.open { width: 600px; border-radius: 30px; padding: 18px 22px 20px; }
+.island.wide { width: 700px; border-radius: 26px; padding: 22px 26px 24px; top: 40px; }
+.wave { width: 170px; height: 12px; }
+.wave path { fill: none; stroke: var(--ice); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 220; stroke-dashoffset: 220; animation: draw 1.2s ease forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+
+.i-top { display: flex; align-items: center; gap: 10px; }
+.lv { font-weight: 800; color: var(--gold); font-size: 15px; letter-spacing: .02em; }
+.i-title { font-weight: 700; font-size: 16px; }
+.exp { display: flex; align-items: center; gap: 10px; margin-top: 9px; font-size: 12.5px; color: var(--mute); }
+.exp-bar { flex: 1; height: 9px; border-radius: 5px; background: var(--fill2); overflow: hidden; }
+.exp-bar span { display: block; height: 100%; width: var(--from, 0%); background: linear-gradient(90deg, var(--ice), var(--gold)); border-radius: 5px; animation: fill 1.1s .5s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes fill { to { width: var(--to); } }
+.exp-plus { color: var(--gold); font-weight: 800; font-size: 15px; opacity: 0; animation: plus 1.6s 1.1s ease-out forwards; }
+@keyframes plus { 0% { opacity: 0; transform: translateY(6px); } 25% { opacity: 1; transform: none; } 100% { opacity: 1; } }
+
+.i-main { display: flex; gap: 14px; align-items: flex-start; margin-top: 14px; }
+.pet { flex: none; width: 104px; height: 104px; display: grid; place-items: end center; }
+.pet.pop { animation: pop .7s .2s cubic-bezier(.3,1.4,.5,1) both; }
+@keyframes pop { from { transform: translateY(36px) scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
+.says { display: grid; gap: 8px; flex: 1; min-width: 0; padding-top: 6px; }
+.say { background: var(--ice-hi); color: var(--ice-ink); border-radius: 18px 18px 18px 6px; padding: 10px 14px; font-size: 16px; line-height: 1.45; font-weight: 600; justify-self: start;
+  opacity: 0; animation: say .4s ease forwards; }
+.say:nth-child(2) { animation-delay: .9s; }
+@keyframes say { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.box { margin-top: 14px; background: var(--fill); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink2); }
+.todo { display: flex; gap: 10px; align-items: center; }
+.ck { width: 19px; height: 19px; flex: none; border-radius: 6px; border: 2px solid var(--mute); display: inline-grid; place-items: center; font-size: 12px; font-weight: 800; color: var(--ice-ink); }
+.ck.ok { background: var(--ok); border-color: var(--ok); animation: tick .4s 1s both; }
+@keyframes tick { from { transform: scale(.4); } to { transform: none; } }
+.todo.now span:last-child { color: var(--ink); font-weight: 700; }
+.term { font-size: 11px; color: var(--mute); border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; margin-left: 6px; }
+.label { font-size: 12px; color: var(--mute); }
+.input { background: #F4F7FF; color: var(--ice-ink); border-radius: 14px; padding: 12px 14px; font-size: 16px; font-weight: 600; min-height: 48px; }
+.input .ph { color: #8A95BD; font-weight: 500; }
+.caret { display: inline-block; width: 2px; height: 18px; background: var(--ice-ink); vertical-align: -3px; margin-left: 1px; animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
-.acts { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-.b { font-family: var(--ui); font-size: 10.5px; border-radius: 999px; padding: 4px 10px; border: 1px solid var(--line); background: var(--fill); color: var(--ink); white-space: nowrap; }
+.acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+/* 짜임(두승현 2026-10-20) — 플로로 줄(플로로 + 옆의 말, 같은 높이) 아래로 내용 → 단추 → 안내를 섬 폭 그대로 쌓는다.
+   층: ① 상태(LV · EXP, 아래 옅은 선) ② 플로로의 말 ③ 내용 카드 ④ 행동(주 단추 하나, 맨 앞) ⑤ 안내(작은 글). 간격은 8(층 안) · 14(층 사이) · 20(가장자리) */
+.island.open, .island.wide { display: grid; grid-template-columns: 140px minmax(0, 1fr); column-gap: 18px; align-content: start; }
+.island.open > *, .island.wide > * { grid-column: 1 / -1; }   /* 플로로 줄 아래(내용 · 단추 · 안내)는 섬 폭을 다 쓴다 — 플로로 밑이 비지 않게(두승현 2026-10-20) */
+.island .i-top, .island .exp, .island .carry { grid-column: 1 / -1; }
+.island .i-main { display: contents; }
+/* 플로로는 옆의 말(말풍선 · 제목)과 같은 줄, 같은 세로 크기로(두승현 2026-10-20, CouCou처럼 — 마스코트와 글의 높이를 맞춘다). 크기는 render()의 fitPets가 말의 높이로 정한다 */
+.island .i-main > .pet { grid-column: 1; align-self: start; justify-self: end; }
+.island .i-main > .says, .island .i-main > .w-head { grid-column: 2; padding-top: 0; align-self: center; }
+.island .exp { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.w-head .w-title { margin-top: 4px; }
+.b { font-size: 14.5px; border-radius: 999px; padding: 9px 18px; border: 1px solid var(--line); background: var(--fill); color: var(--ink); white-space: nowrap; }
 .b.pri { background: var(--ice); color: var(--ice-ink); border-color: var(--ice); font-weight: 700; }
 .b.soft { background: transparent; color: var(--mute); border-style: dashed; }
 .b.off { opacity: .4; }
-.ifine { margin-top: 6px; font-size: 9.5px; color: var(--mute); }
-.carry { background: rgba(255, 210, 122, .14); border: 1px solid rgba(255, 210, 122, .4); color: var(--gold); border-radius: 9px; padding: 5px 8px; font-size: 10.5px; margin-bottom: 7px; }
-.steps { display: grid; gap: 4px; margin-top: 6px; font-size: 11px; }
-.steps li { list-style: none; display: flex; gap: 6px; align-items: center; color: var(--ink2); }
-.steps ol { margin: 0; padding: 0; }
-.steps .ck { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--mute); display: inline-grid; place-items: center; font-size: 8px; }
-.steps .ok .ck { background: var(--ok); border-color: var(--ok); color: var(--ice-ink); }
-.steps .doing .ck { border-color: var(--ice); box-shadow: 0 0 0 3px var(--ice-soft); }
-.picks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
-.pick { background: var(--fill); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; font-size: 10.5px; color: var(--ink2); }
-.pick b { display: block; color: var(--ink); font-size: 11px; }
-.pick.rec { border-color: var(--ice); }
-.pick .rec-t { font-size: 9px; color: var(--ice-ink); background: var(--ice); border-radius: 999px; padding: 0 5px; margin-left: 4px; }
-.preview { margin-top: 8px; border: 1px dashed var(--ice); border-radius: 10px; padding: 6px 8px; font-size: 10.5px; color: var(--ice-hi); background: var(--ice-soft); }
-.map { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-top: 6px; }
-.map span { height: 18px; border-radius: 5px; background: var(--fill2); display: grid; place-items: center; font-size: 9px; color: var(--mute); }
-.home4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-top: 8px; }
-.home4 span { background: var(--fill); border: 1px solid var(--line); border-radius: 10px; padding: 6px 2px; text-align: center; font-size: 10px; color: var(--ink); }
-.home4 kbd { display: block; font-size: 9px; color: var(--mute); font-family: var(--ui); }
-.shelf { margin-top: 8px; display: flex; gap: 8px; align-items: center; font-size: 10.5px; color: var(--ink2); }
-.book { width: 20px; height: 30px; border-radius: 3px 5px 5px 3px; background: linear-gradient(180deg, #8EA2FF, #5A6BE0); box-shadow: inset -3px 0 0 rgba(0, 0, 0, .2); flex: none; }
-.spark { position: absolute; color: var(--gold); font-size: 14px; animation: twinkle 1.6s ease-in-out infinite; pointer-events: none; }
-@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.6); } 50% { opacity: 1; transform: scale(1.1); } }
-.greet-line { position: absolute; left: 50%; top: 40px; transform: translateX(-50%); display: flex; gap: 10px; align-items: flex-end; }
-.phase { position: absolute; left: 12px; right: 12px; top: 210px; display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
-.phase span { font-size: 10px; color: var(--mute); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
-.phase span.on { color: var(--ice-ink); background: var(--ice); border-color: var(--ice); }
+.b kbd { font: 11px var(--ui); opacity: .6; margin-left: 6px; }
+.ifine { margin-top: 10px; font-size: 12.5px; color: var(--mute); }
+.carry { background: rgba(255, 210, 122, .12); border: 1px solid rgba(255, 210, 122, .45); color: var(--gold); border-radius: 12px; padding: 9px 13px; font-size: 14px; margin-bottom: 14px; }
+.w-title { font-size: 21px; font-weight: 800; margin: 0; }
+.w-sub { color: var(--ink2); font-size: 14.5px; margin: 6px 0 0; }
+.steps { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 10px; }
+.steps li { display: flex; gap: 12px; align-items: center; font-size: 15px; color: var(--ink2); }
+.steps .dotc { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--mute); display: inline-grid; place-items: center; font-size: 12px; font-weight: 800; color: var(--ice-ink); flex: none; }
+.steps .ok .dotc { background: var(--ok); border-color: var(--ok); }
+.steps .doing .dotc { border-color: var(--ice); box-shadow: 0 0 0 5px var(--ice-soft); }
+.steps .doing { color: var(--ink); font-weight: 700; }
+.steps small { color: var(--mute); font-weight: 400; margin-left: 6px; }
+.picks { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.pick { background: var(--fill); border: 1px solid var(--line); border-radius: 16px; padding: 13px 15px; font-size: 13.5px; color: var(--ink2); }
+.pick b { display: block; color: var(--ink); font-size: 15.5px; margin-bottom: 3px; }
+.pick.rec { border-color: var(--ice); box-shadow: 0 0 0 1px var(--ice) inset; }
+.rec-t { font-size: 11px; color: var(--ice-ink); background: var(--ice); border-radius: 999px; padding: 1px 8px; margin-left: 6px; vertical-align: 2px; }
+.preview { margin-top: 14px; border: 1.5px dashed var(--ice); border-radius: 16px; padding: 12px 14px; font-size: 14.5px; color: var(--ice-hi); background: var(--ice-soft); display: grid; gap: 6px; }
+.preview b { color: var(--ice); font-size: 12.5px; }
+.map { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-top: 14px; }
+.map span { height: 54px; border-radius: 12px; background: var(--fill); border: 1px solid var(--line); display: grid; place-items: center; text-align: center; font-size: 11.5px; color: var(--mute); padding: 4px; line-height: 1.25; }
+.map span b { display: block; color: var(--ink2); font-size: 14px; }
+.map span.q { animation: q 2s ease-in-out infinite; }
+@keyframes q { 50% { border-color: var(--ice); color: var(--ice); } }
+.home4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+.home4 span { background: var(--fill); border: 1px solid var(--line); border-radius: 16px; padding: 13px 4px; text-align: center; font-size: 14.5px; font-weight: 600; }
+.home4 kbd { display: block; font: 11px var(--ui); color: var(--mute); margin-top: 2px; }
+.shelf { margin-top: 14px; display: flex; gap: 12px; align-items: center; font-size: 14.5px; color: var(--ink2); background: var(--fill); border: 1px solid var(--line); border-radius: 16px; padding: 10px 14px; }
+.book { width: 30px; height: 44px; border-radius: 4px 7px 7px 4px; background: linear-gradient(180deg, #8EA2FF, #5A6BE0); box-shadow: inset -4px 0 0 rgba(0, 0, 0, .22); flex: none; animation: slide .6s 1s both; }
+@keyframes slide { from { transform: translateY(-14px) rotate(-8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.warnbox { margin-top: 14px; border: 1.5px solid var(--warn); background: rgba(255, 179, 122, .1); border-radius: 16px; padding: 12px 14px; font-size: 14.5px; color: #FFD9BD; }
+.chip { display: inline-block; font-size: 12.5px; border-radius: 999px; padding: 3px 10px; border: 1px solid var(--warn); color: var(--warn); margin-top: 6px; }
+.fixture { display: inline-block; font-size: 11.5px; font-weight: 700; color: var(--ice-ink); background: var(--gold); border-radius: 999px; padding: 1px 8px; margin-left: 8px; }
+.spark { position: absolute; z-index: 3; color: var(--gold); font-size: 22px; opacity: 0; animation: twinkle 1.8s ease-in-out infinite; pointer-events: none; }
+@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.5); } 50% { opacity: 1; transform: scale(1.15); } }
+.hello-say { position: absolute; z-index: 2; left: calc(50% + 10px); top: 92px; }
+.hello-pet { position: absolute; z-index: 2; left: calc(50% - 130px); top: 56px; }
 
-/* 갈래 */
-h2 { font-size: 19px; margin: 40px 0 6px; }
-.branches { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 12px; }
-.br { background: var(--bg2); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; font-size: 13px; color: var(--ink2); display: grid; gap: 6px; }
-.br-h { display: flex; align-items: center; gap: 8px; }
-.br-h b { color: var(--ink); font-size: 14px; }
-.br-id { color: var(--new); font-weight: 800; font-size: 12px; }
-.br .say { justify-self: start; max-width: 100%; }
-.br .when { color: var(--mute); font-size: 12px; }
-.notes { margin-top: 36px; color: var(--mute); font-size: 13px; display: grid; gap: 4px; }
+/* ── 아래 한 줄 설명 ── */
+.cap { max-width: 1240px; width: 100%; margin: 0 auto; padding: 14px 16px 22px; }
+.cap-main { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.cap-id { color: var(--ice); font-weight: 800; font-size: 15px; }
+.cap-id.star { color: var(--gold); }
+.cap-id.br { color: var(--new); }
+.cap-name { font-weight: 800; font-size: 19px; }
+.cap-time { color: var(--mute); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.cap-feel { color: var(--ink2); font-size: 15px; flex-basis: 100%; margin-top: 2px; }
+.cap-feel b { color: var(--ink); }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 1px 9px; border-radius: 999px; color: var(--ice-ink); }
+.tag.have { background: var(--ok); } .tag.part { background: var(--part); } .tag.new { background: var(--new); }
+.cap-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.brc { border-radius: 999px; border: 1px dashed var(--new); background: transparent; color: var(--new); font-size: 13px; padding: 5px 12px; cursor: pointer; }
+.brc.back { border-style: solid; border-color: var(--line); color: var(--ink2); }
+details { margin-top: 10px; color: var(--ink2); font-size: 14px; }
+summary { cursor: pointer; color: var(--mute); font-size: 13px; }
+.det { display: grid; grid-template-columns: 70px 1fr; gap: 6px 10px; margin-top: 8px; }
+.det b { color: var(--mute); font-weight: 600; font-size: 12.5px; }
+.foot { max-width: 1240px; width: 100%; margin: 0 auto; padding: 0 16px 26px; color: var(--mute); font-size: 12.5px; }
 
-@media (max-width: 420px) {
-  .grid { grid-template-columns: 1fr; }
-  .screen { height: 320px; }
-  .island.open, .island.wide { width: calc(100% - 16px); }
-}
+@media (max-width: 640px) { .bar h1 small { display: none; } .dot { width: 26px; height: 26px; font-size: 11px; } }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; }
-  .wave path { stroke-dashoffset: 0; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition: none !important; }
 }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>첫 5분 스토리보드 <span class="fine">초안 · 2026-10-20 · KAN-55</span></h1>
-  <p class="lead">플로로가 먼저 인사하고 "무엇을 만들고 있어요?"라고 묻는다. 한 줄을 적으면 <b>AI 없이도</b> 지금 단계와 첫 할 일을 보여 주고 첫 경험치를 준다.
-    그 <b>뒤에</b> "이어 가려면 Claude 연결이 필요해요"라고 말한다.</p>
-  <p class="fine">글은 <a href="onboarding-storyboard.md">onboarding-storyboard.md</a>와 같다(어긋나면 .md가 맞다). 근거: <a href="../00-overview/onboarding.md">온보딩 안내</a> "첫 5분" 제안(두승현).
-    지금 앱(9.0.0)은 이 순서가 아니다 — 바꿀 모습을 그린 그림이다. 서버 · AI 없음, 아무것도 저장하지 않는다.</p>
-
-  <div class="timeline" aria-label="5분 시간 막대">
-    <div class="tl-bar"><div class="tl-fill" id="tlFill"></div></div>
-    <div id="tlDots"></div>
+<header class="bar">
+  <h1>첫 5분 스토리보드<small>초안 · 2026-10-20 · KAN-55</small></h1>
+  <div class="dots" id="dots" role="tablist" aria-label="장면"></div>
+  <div class="nav">
+    <button class="nb" id="prev" type="button" aria-label="이전 장면">‹ 이전</button>
+    <button class="nb pri" id="next" type="button" aria-label="다음 장면">다음 ›</button>
+    <button class="nb" id="play" type="button" aria-label="자동으로 넘기기">▶</button>
   </div>
-  <div class="controls">
-    <button class="btn pri" id="play" type="button">▶ 순서대로 보기</button>
-    <button class="btn" id="prev" type="button" aria-label="이전 장면">‹</button>
-    <button class="btn" id="next" type="button" aria-label="다음 장면">›</button>
-    <span class="fine" id="nowLabel"></span>
-    <span class="legend"><span><span class="tag have">있음</span> 지금 앱에 있다</span><span><span class="tag part">일부</span> 조금 더한다</span><span><span class="tag new">새로</span> 새로 만든다</span><span>★ 아하 모먼트</span></span>
-  </div>
+</header>
 
-  <div class="grid" id="grid"></div>
+<main class="stage"><div class="fit" id="fit"><div class="desk" id="desk"></div></div></main>
 
-  <h2>갈래 — 길이 다른 사람</h2>
-  <p class="fine">흐름 그림은 <a href="onboarding-storyboard.md">.md</a> 3절. 어느 갈래로 가도 <b>적은 글은 그대로</b> 남는다.</p>
-  <div class="branches" id="branches"></div>
-
-  <div class="notes">
-    <span>· 플로로의 말은 한 번에 두 문장 · 60자 안(<code>navigator.js</code> <code>SAY_MAX</code>). 큰 글에는 전문 용어를 쓰지 않는다(FR-13).</span>
-    <span>· 5분 안에 AI 호출은 한 번(S6, 약 1,800토큰 — 이슈 #79). 누르기 전에는 0 토큰.</span>
-    <span>· 시간은 어림한 값이다. 사람이 이 흐름을 써 본 적은 아직 없다 — 사용자 테스트(#13)에서 잰다.</span>
-    <span>· 정할 것: 처음 설정을 S4로 미룰지 · S3의 스스로 확인으로 첫 경험치를 줄지(이재엽), 말투(고한결), 화면(임유정).</span>
-  </div>
-</div>
+<section class="cap" aria-live="polite">
+  <div class="cap-main"><span class="cap-id" id="capId"></span><span class="cap-name" id="capName"></span><span id="capTag"></span><span class="cap-time" id="capTime"></span>
+    <span class="cap-feel" id="capFeel"></span></div>
+  <div class="cap-row" id="capRow"></div>
+  <details id="det"><summary>자세히 — 사용자가 하는 일 · 지금 코드</summary><div class="det" id="detBody"></div></details>
+</section>
+<p class="foot">← → 키로 넘긴다. 글은 <a href="onboarding-storyboard.md">onboarding-storyboard.md</a>와 같다(어긋나면 .md가 맞다). 지금 앱(9.0.0)은 이 순서가 아니다 — 바꿀 모습을 그린 목업이다. 서버 · AI 없음, 아무것도 저장하지 않는다.</p>
 
 <script src="../../02-frontend/navigator/seal.js"></script>
 <script>
 (() => {
   "use strict";
   const Seal = window.NavSeal;
-  const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const pet = (mood, size = 60) => (Seal ? Seal.svg(mood, size) : "");
+  const pet = (mood, size = 140, pop) => `<div class="pet${pop ? " pop" : ""}" style="width:${size}px;height:${size}px">${Seal ? Seal.svg(mood, size, { hole: true }) : ""}</div>`;
   const LINE = "동아리 행사 신청을 받는 앱을 만들고 싶어요";
   const QUOTE = LINE.slice(0, 16) + "…";
   const TODOS = ["어떤 불편을 풀고 싶은지 한 문장으로 쓰기", "다 만들면 무엇이 달라지는지 쓰기", "누가 쓰는지 쓰기", "얼마나 크게 만들지 정하기"];   // navigator.js STAGES[0]
-  const says = (arr) => `<div class="says">${arr.map((t) => `<div class="say${t.startsWith("~") ? " dim" : ""}">${esc(t.replace(/^~/, ""))}</div>`).join("")}</div>`;
-  const acts = (arr) => `<div class="acts">${arr.map(([t, k]) => `<span class="b ${k || ""}">${esc(t)}</span>`).join("")}</div>`;
-  const top = (lv, title, exp, plus) => `<div class="i-top"><span class="lv">LV ${lv}</span><span class="i-title">${esc(title)}</span></div>
-    <div class="exp"><span>EXP</span><div class="exp-bar"><span style="width:${exp / 40 * 100}%"></span></div><span>${exp} / 40</span>${plus ? `<span class="exp-plus">+${plus}</span>` : ""}</div>`;
-  const todos = (done, now, withTerm) => `<div class="box">${TODOS.map((t, i) => `<div class="todo"><span class="ck${done.includes(i) ? " ok" : ""}">${done.includes(i) ? "✓" : ""}</span>
-    <span class="${i === now ? "now" : ""}">${i + 1}. ${esc(t)}${withTerm && i === 3 ? '<span class="term">규모 등급</span>' : ""}</span></div>`).join("")}</div>`;
-  const sparks = () => `<span class="spark" style="left:62%;top:18px">✦</span><span class="spark" style="left:34%;top:40px;animation-delay:.5s">✦</span><span class="spark" style="left:70%;top:88px;animation-delay:.9s">✦</span>`;
-  const code = '<div class="fake-code"><i style="width:62%"></i><i style="width:80%"></i><i style="width:46%"></i><i style="width:70%"></i></div>';
+  const STAGE_NAMES = ["정하기", "적어 두기", "기능 정리", "방법 고르기", "뼈대", "만들기", "재 보기", "돌아보기"];               // navigator.js STAGES[].short
+
+  // 조각
+  const says = (arr) => `<div class="says">${arr.map((t) => `<div class="say">${esc(t)}</div>`).join("")}</div>`;
+  const talk = (mood, lines, pop) => `<div class="i-main">${pet(mood, 140, pop)}${says(lines)}</div>`;
+  const acts = (arr) => `<div class="acts">${arr.map(([t, k, key]) => `<span class="b ${k || ""}">${esc(t)}${key ? `<kbd>${key}</kbd>` : ""}</span>`).join("")}</div>`;
+  const fine = (t) => `<div class="ifine">${esc(t)}</div>`;
+  const top = (lv, title, from, to, plus, extra = "") => `<div class="i-top"><span class="lv">LV ${lv}</span><span class="i-title">${esc(title)}</span>${extra}</div>
+    <div class="exp"><span>EXP</span><div class="exp-bar"><span style="--from:${from / 40 * 100}%;--to:${to / 40 * 100}%"></span></div><span>${to} / 40</span>${plus ? `<span class="exp-plus">+${plus}</span>` : ""}</div>`;
+  const todos = (done, now, fresh) => `<div class="box">${TODOS.map((t, i) => `<div class="todo${i === now ? " now" : ""}"><span class="ck${done.includes(i) ? " ok" : ""}"${done.includes(i) && !fresh.includes(i) ? ' style="animation:none"' : ""}>${done.includes(i) ? "✓" : ""}</span>
+    <span>${i + 1}. ${esc(t)}${i === 3 ? '<span class="term">규모 등급</span>' : ""}</span></div>`).join("")}</div>`;
+  const sparks = (pts) => pts.map(([x, y, d]) => `<span class="spark" style="left:${x}px;top:${y}px;animation-delay:${d}s">✦</span>`).join("");
+  const open = (inner) => `<div class="island open">${inner}</div>`;
+  const wide = (inner) => `<div class="island wide">${inner}</div>`;
+
+  // 뒤의 코딩 도구 — 장면마다 같다
+  const IDE = `<div class="ide" aria-hidden="true">
+    <div class="ide-top"><i></i><i></i><i></i><span class="ide-tab">app.js</span></div>
+    <div class="ide-side">▾ club-event-app<br>&nbsp;&nbsp;index.html<br>&nbsp;&nbsp;app.js<br>&nbsp;&nbsp;style.css<br>&nbsp;&nbsp;README.md</div>
+    <div class="ide-code"><span class="c">// 동아리 행사 신청 — 아직 아무것도 없다</span>
+<span class="k">const</span> events = [];
+
+<span class="k">function</span> <span class="f">addEvent</span>(title, date) {
+  events.<span class="f">push</span>({ title, date });
+}
+
+<span class="c">// TODO: 신청 받기?</span></div>
+    <div class="ide-term"><b>~/club-event-app $</b> claude
+<b>&gt;</b> 행사 신청 페이지를 만들고 싶어
+  …</div></div>`;
 
   // 장면 — onboarding-storyboard.md 2절과 같은 글
   const SCENES = [
-    { id: "S0", name: "켜짐과 인사", t: "0:00–0:05", at: 0, impl: "have", feel: "귀엽다, 살아 있네",
-      act: "아무것도 안 해도 된다. 누르거나 Esc면 바로 S1", how: "greet.js 시간표 3.4초 · 시간대 인사(seal.js greeting)",
-      screen: () => `<div class="island band"><svg class="wave" viewBox="0 0 110 8"><path d="M2 4 Q 15 0 28 4 T 55 4 T 82 4 T 108 4"></path></svg></div>
-        <div class="greet-line"><div class="pet">${pet("happy", 72)}</div><div class="says" style="width:150px"><div class="say">오후도 같이 힘내요!</div></div></div>
-        <div class="phase">${["wave", "open", "pop", "hello", "settle"].map((p) => `<span class="${p === "hello" ? "on" : ""}">${p}</span>`).join("")}</div>${code}` },
-    { id: "S1", name: "자기소개 · 질문", t: "0:05–0:20", at: 5, impl: "new", feel: "나를 도와주러 왔구나",
-      act: "처음 시작해요 / 이미 만드는 중이에요 / 그냥 둘러볼게요", how: "지금 setup.js hello 단계를 이 질문으로 — 처음 설정은 S5로 미룬다",
-      screen: () => `<div class="island open"><div class="i-main"><div class="pet">${pet("look")}</div>
-        ${says(["반가워요! 저는 길잡이 물범 플로로예요.", "지금 어떤 앱을 만들고 있어요? 알려 주면 길을 잡고 정리해 줄게요."])}</div>
-        ${acts([["처음 시작해요", "pri"], ["이미 만드는 중이에요"], ["그냥 둘러볼게요", "soft"]])}</div>${code}` },
-    { id: "S2", name: "한 줄 적기", t: "0:20–1:00", at: 20, impl: "part", feel: "내 얘기를 들어 주네",
-      act: "한 줄을 적고 '다 적었어요'. 막막하면 예시 넣기", how: "입력 칸 · 예시 글은 있다(app.js deskInput · PLACEHOLDER) — 문구만 한 줄용으로",
-      screen: () => `<div class="island open"><div class="i-main"><div class="pet">${pet("look")}</div>${says(["좋아요! 만들고 싶은 걸 한 줄로 적어 주세요."])}</div>
-        <div class="box" style="background:transparent;border:0;padding:0"><div class="input typed">${esc(LINE)}<span class="caret"></span></div></div>
-        ${acts([["다 적었어요", "pri"], ["예시 넣기", "soft"]])}<div class="ifine">여기 적은 글은 이 컴퓨터에만 있어요. AI에게는 아직 보내지 않아요.</div></div>${code}` },
-    { id: "S3", name: "작은 답 · 첫 경험치", t: "1:00–1:40", at: 60, impl: "part", star: true, feel: "벌써 한 걸음 갔다 — 아하 모먼트",
-      act: "'방금 적은 한 줄이 1번을 말하고 있나요?' → 네 → EXP +10", how: "LV · 할 일 넷은 코드에 고정(STAGES[0]) · 레벨 오버레이 · 별 튀기기는 있음. 인용 · 스스로 확인은 새로(규칙 결정 필요)",
-      screen: () => `<div class="island open">${top(0, "무엇을 만들지 정하기", 10, 10)}
-        <div class="i-main"><div class="pet">${pet("happy")}</div>${says([`'${QUOTE}' 좋은 시작이에요!`, "처음 시작하는 거라 LV 0부터예요. 첫 할 일을 같이 봐요."])}</div>
-        ${todos([0], 1, true)}${acts([["네, 말하고 있어요", "pri"], ["아직이에요"]])}</div>${sparks()}${code}` },
-    { id: "S4", name: "연결 제안", t: "1:40–2:00", at: 100, impl: "new", feel: "이어 가려면 필요하구나",
-      act: "연결할게요 / 나중에 할게요", how: "새 카드. 안내 문구는 지금 setup.js 그대로",
-      screen: () => `<div class="island open">${top(0, "무엇을 만들지 정하기", 10)}
-        <div class="i-main"><div class="pet">${pet("idle")}</div>${says(["남은 할 일 셋은 Claude와 같이 보면 빨라요.", "연결하면 어디쯤인지 같이 봐 줄게요. 1분이면 돼요."])}</div>
-        <div class="preview">연결하면 받는 것 — 지금 몇 단계인지 · 다음 할 일 하나 · 다 했는지 확인</div>
-        ${acts([["연결할게요", "pri"], ["나중에 할게요"]])}<div class="ifine">연결하면 보여 준 글이 AI(Claude)에게 가요. 비밀번호나 다른 사람 연락처는 빼 주세요.</div></div>${code}` },
-    { id: "S5", name: "처음 설정", t: "2:00–3:30", at: 120, impl: "have", feel: "1분이면 된다더니 정말이네",
-      act: "Claude Code로 연결(추천) 또는 API 키 넣기 → 단계마다 체크", how: "setup.js 그대로(cliSteps · apiSteps · recommend). 맨 위 '적어 둔 한 줄' 띠만 새로",
-      screen: () => `<div class="island wide"><div class="carry">적어 둔 한 줄: ${esc(QUOTE)} — 그대로 있어요</div>
-        <div class="i-top"><span class="i-title" style="font-size:13px">Claude Code로 연결해요</span></div>
-        <div class="steps"><ol>${[["찾기", "ok"], ["로그인", "ok"], ["폴더 연결", "doing"], ["연결 확인", ""]].map(([t, k]) => `<li class="${k}"><span class="ck">${k === "ok" ? "✓" : ""}</span>${t}</li>`).join("")}</ol></div>
-        <div class="picks"><div class="pick rec"><b>Claude Code로 연결<span class="rec-t">추천</span></b>내 구독 안에서 불러요</div><div class="pick"><b>API 키 넣기</b>내 키의 한도에서 빠져요</div></div>
-        <div class="i-main" style="margin-top:6px"><div class="pet" style="width:44px;height:44px">${pet("think", 44)}</div>${says(["~폴더를 고르면 거의 끝이에요."])}</div></div>${code}` },
-    { id: "S6", name: "적은 글로 이어 가기", t: "3:30–4:00", at: 210, impl: "part", feel: "다시 안 적어도 되네",
-      act: "어디쯤인지 보기 — 누를 때만 AI(약 1,800토큰)", how: "floe:setup-done 신호는 있다(app.js). 적은 글이 있으면 이 단추를 띄운다 — 자동으로 부르지 않는다. 보내기 전 sensitive.js 검사",
-      screen: () => `<div class="island open">${top(0, "무엇을 만들지 정하기", 10)}
-        <div class="i-main"><div class="pet">${pet("done")}</div>${says(["준비 끝! 적어 둔 내용으로 어디쯤인지 볼까요?"])}</div>
-        <div class="box"><span style="color:var(--mute)">보여 줄 글</span><span class="now">${esc(LINE)}</span></div>
-        ${acts([["어디쯤인지 보기", "pri"]])}<div class="ifine">보여 준 글을 AI(Claude)가 봐요 · 약 1,800토큰</div></div>${code}` },
-    { id: "S7", name: "첫 보상", t: "4:00–4:30", at: 240, impl: "have", feel: "게임 같다, 재밌다",
-      act: "결과를 본다 — 다음 할 일 하나에 불", how: "판정(/api/judge) · LV = 코드가 정한 단계 · EXP = 채운 할 일 × 10",
-      screen: () => `<div class="island open">${top(0, "무엇을 만들지 정하기", 20, 10)}
-        <div class="i-main"><div class="pet">${pet("happy")}</div>${says(["벌써 할 일 둘을 하셨네요! 남은 건 둘이에요."])}</div>
-        ${todos([0, 1], 2, false)}</div>${sparks()}${code}` },
-    { id: "S8", name: "다음에 이어지기", t: "4:30–5:00", at: 270, impl: "have", feel: "내일도 켜야지",
-      act: "기본 화면으로. 다음에 켜면 '어제 0단계 할 일 4개 중 2개까지 하셨어요. 이어서 해요!'", how: "지금 쓰는 책(library.js) · 다시 켤 때 인사(navigator.js welcome) · 기본 화면(C-13)",
-      screen: () => `<div class="island open"><div class="i-main"><div class="pet">${pet("love")}</div>${says(["오늘 한 건 내 책 첫 장으로 남았어요.", "다음에 켜면 여기서 이어져요. 언제든 불러 주세요!"])}</div>
+    { id: "S0", name: "켜짐과 인사", t: "0:00–0:05", impl: "have", feel: "귀엽다, 살아 있네",
+      act: "아무것도 안 해도 된다. 누르거나 Esc면 바로 다음 장면", how: "greet.js 시간표(3.4초) · 시간대 인사는 seal.js greeting",
+      view: () => `<div class="island band"><svg class="wave" viewBox="0 0 170 12"><path d="M3 6 Q 24 0 45 6 T 87 6 T 129 6 T 167 6"></path></svg></div>
+        <div class="hello-pet">${pet("happy", 120, true)}</div><div class="hello-say"><div class="say" style="animation-delay:1s">오후도 같이 힘내요!</div></div>` },
+    { id: "S1", name: "자기소개 · 질문", t: "0:05–0:20", impl: "new", feel: "나를 도와주러 왔구나",
+      act: "처음 시작해요 / 이미 만드는 중이에요 / 그냥 둘러볼게요", how: "지금 setup.js의 hello 단계(\"AI를 어떻게 불러 올지 …\")를 이 질문으로 — 처음 설정은 S5로 미룬다(shouldOpen)",
+      branches: ["B1", "B2"],
+      view: () => open(`${talk("look", ["반가워요! 저는 길잡이 물범 플로로예요.", "지금 어떤 앱을 만들고 있어요? 알려 주면 길을 잡고 정리해 줄게요."], true)}
+        ${acts([["처음 시작해요", "pri", "1"], ["이미 만드는 중이에요", "", "2"], ["그냥 둘러볼게요", "soft"]])}`) },
+    { id: "S2", name: "한 줄 적기", t: "0:20–1:00", impl: "part", feel: "내 얘기를 들어 주네",
+      act: "한 줄을 적고 '다 적었어요'. 막막하면 예시 넣기", how: "입력 칸 · 예시 글은 있다(app.js deskInput · PLACEHOLDER, '예시 글 넣기') — 문구만 한 줄용으로",
+      branches: ["B4"],
+      view: () => open(`${talk("look", ["좋아요! 만들고 싶은 걸 한 줄로 적어 주세요."])}
+        <div style="margin-top:14px"><div class="input" id="typing"></div></div>
+        ${acts([["다 적었어요", "pri", "Enter"], ["예시 넣기", "soft"]])}${fine("여기 적은 글은 이 컴퓨터에만 있어요. AI에게는 아직 보내지 않아요.")}`),
+      after: () => type($("typing"), LINE) },
+    { id: "S3", name: "작은 답 · 첫 경험치", t: "1:00–1:40", impl: "part", star: true, feel: "<b>벌써 한 걸음 갔다</b> — 아하 모먼트. AI 없이, 2분 안에",
+      act: "'방금 적은 한 줄이 1번을 말하고 있나요?' → 네, 말하고 있어요 → 경험치 +10", how: "LV · 할 일 넷은 코드에 고정된 데이터(navigator.js STAGES[0]) · 레벨 오버레이 · 별 튀기기는 있다. 인용 말풍선 · 스스로 확인 단추는 새로 — 규칙 결정 필요(이재엽)",
+      view: () => open(`${top(0, "무엇을 만들지 정하기", 0, 10, 10)}
+        ${talk("happy", [`'${QUOTE}' 좋은 시작이에요!`, "처음 시작하는 거라 LV 0부터예요. 첫 할 일을 같이 봐요."])}
+        ${todos([0], 1, [0])}<div class="label" style="margin-top:12px">방금 적은 한 줄이 1번을 말하고 있나요?</div>
+        ${acts([["네, 말하고 있어요", "pri", "Enter"], ["아직이에요"]])}`) + sparks([[916, 28, 1.2], [266, 140, 1.6], [914, 330, 2]]) },
+    { id: "S4", name: "연결 제안", t: "1:40–2:00", impl: "new", feel: "이어 가려면 필요하구나 — 번거로운 일에 이유가 생긴다",
+      act: "연결할게요 / 나중에 할게요", how: "새 카드. 아래 안내 문구는 지금 setup.js 그대로",
+      branches: ["B2"],
+      view: () => open(`${top(0, "무엇을 만들지 정하기", 10, 10)}
+        ${talk("idle", ["남은 할 일 셋은 Claude와 같이 보면 빨라요.", "연결하면 어디쯤인지 같이 봐 줄게요. 1분이면 돼요."])}
+        <div class="preview"><b>연결하면 받는 것</b>지금 몇 단계인지 · 다음 할 일 하나 · 다 했는지 확인</div>
+        ${acts([["연결할게요", "pri", "Enter"], ["나중에 할게요"]])}${fine("연결하면 보여 준 글이 AI(Claude)에게 가요. 비밀번호나 다른 사람 연락처는 빼 주세요.")}`) },
+    { id: "S5", name: "처음 설정", t: "2:00–3:30", impl: "have", feel: "1분이면 된다더니 정말이네 — 단계가 보이고 하나씩 체크된다",
+      act: "Claude Code로 연결(이 컴퓨터에서 찾으면 '추천') 또는 API 키 넣기 → 단계마다 체크", how: "setup.js 그대로(cliSteps · apiSteps · recommend · chipCli). 맨 위 '적어 둔 한 줄' 띠만 새로",
+      branches: ["B3"],
+      view: () => wide(`<div class="carry">적어 둔 한 줄 — ${esc(QUOTE)} 그대로 있어요</div>
+        <div class="i-main">${pet("think", 140)}<div class="w-head"><h2 class="w-title">Claude Code로 연결해요</h2>
+        <p class="w-sub">폴더를 고르면 거의 끝이에요.</p></div></div>
+        <ul class="steps">${[["찾기", "ok", "이 컴퓨터에서 찾았어요"], ["로그인", "ok", "로그인돼 있어요"], ["폴더 연결", "doing", "만드는 앱의 폴더를 골라요"], ["연결 확인", "", "아주 작은 요청 하나로 정말 되는지 봐요"]]
+          .map(([t, k, s]) => `<li class="${k}"><span class="dotc">${k === "ok" ? "✓" : ""}</span>${t}<small>${s}</small></li>`).join("")}</ul>
+        <div class="picks"><div class="pick rec"><b>Claude Code로 연결<span class="rec-t">추천</span></b>키를 넣지 않아도 되고, 내 구독 안에서 불러요</div>
+          <div class="pick"><b>API 키 넣기</b>쓴 토큰은 내 키의 한도에서 빠져요</div></div>
+        ${acts([["‹ 다시 고르기"], ["AI 없이 연습용 예시로 둘러보기", "soft"]])}`) },
+    { id: "S6", name: "적은 글로 이어 가기", t: "3:30–4:00", impl: "part", feel: "다시 안 적어도 되네 — 내 글이 그대로 이어진다",
+      act: "어디쯤인지 보기 — 누를 때만 AI(약 1,800토큰). 보내기 직전에 비밀값 검사", how: "처음 설정이 끝나면 floe:setup-done 신호가 이미 온다(app.js). 적은 글이 있으면 이 단추를 띄운다 — 자동으로 부르지 않는다. 보내기 전 sensitive.js",
+      branches: ["B5"],
+      view: () => open(`${top(0, "무엇을 만들지 정하기", 10, 10)}
+        ${talk("done", ["준비 끝! 적어 둔 내용으로 어디쯤인지 볼까요?"])}
+        <div class="box"><span class="label">보여 줄 글</span><span style="color:var(--ink);font-weight:700">${esc(LINE)}</span></div>
+        ${acts([["어디쯤인지 보기", "pri", "Enter"]])}${fine("보여 준 글을 AI(Claude)가 봐요 · 약 1,800토큰")}`) },
+    { id: "S7", name: "첫 보상", t: "4:00–4:30", impl: "have", feel: "게임 같다, 재밌다 — 내가 한 만큼 막대가 찬다",
+      act: "결과를 본다 — 다음 할 일 하나에 불", how: "판정(/api/judge · judgePrompt · parseJudgement) · LV = 코드가 정한 단계 · EXP = 채운 할 일 × 10",
+      view: () => open(`${top(0, "무엇을 만들지 정하기", 10, 20, 10)}
+        ${talk("happy", ["벌써 할 일 둘을 하셨네요! 남은 건 둘이에요."])}
+        ${todos([0, 1], 2, [1])}<div class="label" style="margin-top:10px">다음 할 일 — 3. 누가 쓰는지 쓰기</div>`) + sparks([[916, 28, 1.2], [266, 150, 1.5], [914, 280, 1.9]]) },
+    { id: "S8", name: "다음에 이어지기", t: "4:30–5:00", impl: "have", feel: "<b>내일도 켜야지</b> — 배운 게 쌓이고, 끊긴 자리에서 이어진다",
+      act: "기본 화면으로 돌아온다", how: "서재의 '지금 쓰는 책'(library.js) · 다시 켤 때 인사(navigator.js welcome) · 기본 화면(C-13)",
+      branches: ["B7"],
+      view: () => open(`${talk("love", ["오늘 한 건 내 책 첫 장으로 남았어요.", "다음에 켜면 여기서 이어져요. 언제든 불러 주세요!"])}
         <div class="shelf"><span class="book"></span><span>지금 쓰는 책 1권 — 끝내면 서고에 꽂혀요</span></div>
-        <div class="home4">${[["바이브 코딩", 1], ["서재", 2], ["알림", 3], ["AI 진행", 4]].map(([t, k]) => `<span>${t}<kbd>${k}</kbd></span>`).join("")}</div></div>${code}` },
+        <div class="home4">${[["바이브 코딩", 1], ["서재", 2], ["알림", 3], ["AI 진행", 4]].map(([t, k]) => `<span>${t}<kbd>${k}</kbd></span>`).join("")}</div>`) },
   ];
-  const BRANCHES = [
-    { id: "B1", name: "이미 만드는 중", when: "S1에서 '이미 만드는 중이에요'", say: "어디쯤인지는 Claude와 같이 봐야 정확해요.", then: "단계 지도 미리 보기(0~7단계 여덟 칸, 아직 불 없음) → S4", impl: "part", extra: `<div class="map">${[0, 1, 2, 3, 4, 5, 6, 7].map((n) => `<span>${n}</span>`).join("")}</div>` },
-    { id: "B2", name: "연습 예시", when: "'그냥 둘러볼게요' · '나중에 할게요' · 처음 설정의 '연습용 예시로'", say: "그럼 연습 예시로 한 바퀴 돌아봐요. 토큰은 안 들어요.", then: "동아리 행사 등록 앱 예시로 0단계부터 → 끝에 '내 앱으로 해 볼래요?' → S4", impl: "have" },
-    { id: "B3", name: "연결 실패", when: "Claude Code 없음 · 로그인 안 됨 · 키 401/404", say: "괜찮아요, 적어 둔 건 그대로예요. 연습 예시로 먼저 둘러봐요.", then: "무엇이 안 됐는지 한 줄(지금 처음 설정의 칩) → B2", impl: "part" },
-    { id: "B4", name: "아무것도 안 적음", when: "S2에서 비어 있음", say: "막막하면 예시를 넣어 봐요.", then: "'다 적었어요'는 눌리지 않는다. 10초 넘게 비어 있으면 이 말과 함께 예시 넣기에 불", impl: "part" },
-    { id: "B5", name: "비밀값이 보임", when: "S6에서 보내기 직전", say: "보내기 전에 잠깐! 키 · 토큰 모양이 보여요.", then: "고치기 / 그대로 보내기 — 값은 다시 보이지 않는다(기록·보안 기준 6-3)", impl: "have" },
-    { id: "B6", name: "인사 건너뛰기", when: "S0에서 누름 · Esc", say: "", then: "바로 S1", impl: "have" },
-    { id: "B7", name: "다음 날 다시 켬", when: "두 번째부터", say: "어제 0단계 할 일 4개 중 2개까지 하셨어요. 이어서 해요!", then: "S0 인사 → 이어지기 → 기본 화면. S1~S5는 다시 안 나온다", impl: "have" },
-  ];
+  // 갈래 — 장면 아래의 칩으로 연다(.md 3절)
+  const BRANCHES = {
+    B1: { name: "이미 만드는 중", from: 1, impl: "part", feel: "어디쯤인지는 연결하면 알려 준다 — 단계 지도를 미리 보여 준다",
+      act: "S1에서 '이미 만드는 중이에요' → 한 줄 적기 → 이 화면 → S4", how: "단계 지도는 있다(바이브 코딩의 단계 지도 탭). 미리 보기 문구는 새로",
+      view: () => open(`${talk("look", ["어디쯤인지는 Claude와 같이 봐야 정확해요.", "연결하면 이 중 어디인지 불을 켜 줄게요."])}
+        <div class="map">${STAGE_NAMES.map((n, i) => `<span class="q" style="animation-delay:${i * .2}s"><b>${i}</b>${n}</span>`).join("")}</div>
+        ${acts([["연결할게요", "pri", "Enter"], ["나중에 할게요"]])}`) },
+    B2: { name: "연습 예시", from: 1, impl: "have", feel: "토큰 없이 한 바퀴 — 끝나면 '내 앱으로 해 볼래요?'",
+      act: "'그냥 둘러볼게요' · '나중에 할게요' · 처음 설정의 '연습용 예시로'에서 온다", how: "연습 모드(scenario.js, mode: fixture). 끝의 '내 앱으로' 단추는 새로",
+      view: () => open(`${top(0, "무엇을 만들지 정하기", 0, 20, 0, '<span class="fixture">연습 예시</span>')}
+        ${talk("happy", ["그럼 연습 예시로 한 바퀴 돌아봐요. 토큰은 안 들어요."])}
+        <div class="box"><span class="label">예시 — 동아리 행사 등록 앱</span><span>"동아리 행사를 만들면 부원이 신청할 수 있는 앱"</span></div>
+        ${acts([["다음 할 일 보기", "pri", "Enter"], ["내 앱으로 해 볼래요"]])}`) },
+    B3: { name: "연결 실패", from: 5, impl: "part", feel: "실패해도 적은 글은 그대로 — 막히지 않고 연습 예시로",
+      act: "Claude Code 없음 · 로그인 안 됨 · 키가 틀림(401/404)", how: "무엇이 안 됐는지는 지금 처음 설정의 칩(chipCli · chipApi). 플로로 말은 새로",
+      view: () => wide(`<div class="carry">적어 둔 한 줄 — ${esc(QUOTE)} 그대로 있어요</div>
+        ${talk("look", ["괜찮아요, 적어 둔 건 그대로예요.", "연습 예시로 먼저 둘러봐요. 연결은 언제든 다시 할 수 있어요."])}
+        <div class="warnbox">Claude Code를 이 컴퓨터에서 찾지 못했어요.<br><span class="chip">설치가 필요해요</span></div>
+        ${acts([["연습 예시로 둘러보기", "pri", "Enter"], ["‹ 다시 고르기"]])}`) },
+    B4: { name: "아무것도 안 적음", from: 2, impl: "part", feel: "빈칸 앞에서 막막할 때 — 예시로 시작하게 돕는다",
+      act: "입력 칸이 비어 있으면 '다 적었어요'가 눌리지 않는다. 10초 넘게 비어 있으면 안내", how: "예시 넣기는 있다. 10초 안내는 새로",
+      view: () => open(`${talk("look", ["막막하면 예시를 넣어 봐요."])}
+        <div style="margin-top:14px"><div class="input"><span class="ph">예) 동아리 행사 신청을 받는 앱을 만들고 싶어요</span><span class="caret"></span></div></div>
+        ${acts([["예시 넣기", "pri"], ["다 적었어요", "off"]])}`) },
+    B5: { name: "비밀값이 보임", from: 6, impl: "have", feel: "보내기 전에 멈추고 묻는다 — 막지는 않는다",
+      act: "고치기 / 그대로 보내기. 값은 다시 보이지 않는다(기록·보안 기준 6-3)", how: "sensitive.js — 보내기 전에 멈추고 묻기",
+      view: () => open(`${talk("alert", ["보내기 전에 잠깐! 키 · 토큰 모양이 보여요."])}
+        <div class="warnbox">보여 줄 글에 <b>키 · 토큰 모양</b>이 하나 있어요. 그대로 보내면 AI(Claude)에게 가요.</div>
+        ${acts([["고치기", "pri", "Enter"], ["그대로 보내기"]])}`) },
+    B7: { name: "다음 날 다시 켬", from: 8, impl: "have", feel: "다시 켜면 끊긴 자리에서 — 처음 설정은 다시 안 나온다",
+      act: "인사 → 이어지기 → 기본 화면", how: "다시 켤 때 인사(navigator.js welcome) · 처음 설정 기록(floe:setup:v1)",
+      view: () => open(`${top(0, "무엇을 만들지 정하기", 20, 20)}
+        ${talk("happy", ["좋은 아침이에요!", "어제 0단계 할 일 4개 중 2개까지 하셨어요. 이어서 해요!"], true)}
+        <div class="home4">${[["바이브 코딩", 1], ["서재", 2], ["알림", 3], ["AI 진행", 4]].map(([t, k]) => `<span>${t}<kbd>${k}</kbd></span>`).join("")}</div>`) },
+  };
   const TAG = { have: "있음", part: "일부", new: "새로" };
-  const TOTAL = 300;
+  const TIP = { have: "지금 앱에 있다", part: "조금 더한다", new: "새로 만든다" };
 
   const $ = (id) => document.getElementById(id);
-  $("grid").innerHTML = SCENES.map((s, i) => `<article class="frame${s.star ? " star" : ""}" id="f${i}" tabindex="0" aria-label="${s.id} ${esc(s.name)}">
-      <div class="f-head"><span class="f-id">${s.id}${s.star ? " ★" : ""}</span><span class="f-name">${esc(s.name)}</span><span class="tag ${s.impl}">${TAG[s.impl]}</span><span class="f-time">${s.t}</span></div>
-      <div class="screen">${s.screen()}</div>
-      <div class="f-body"><div class="f-row"><b>느낌</b><span class="f-feel">${esc(s.feel)}</span></div>
-        <div class="f-row"><b>사용자</b><span>${esc(s.act)}</span></div><div class="f-row"><b>구현</b><span>${esc(s.how)}</span></div></div></article>`).join("");
-  $("branches").innerHTML = BRANCHES.map((b) => `<div class="br"><div class="br-h"><span class="br-id">${b.id}</span><b>${esc(b.name)}</b><span class="tag ${b.impl}">${TAG[b.impl]}</span></div>
-      <span class="when">${esc(b.when)}</span>${b.say ? `<div class="say">${esc(b.say)}</div>` : ""}<span>${esc(b.then)}</span>${b.extra || ""}</div>`).join("");
-  $("tlDots").innerHTML = SCENES.map((s, i) => `<button class="tl-dot${s.star ? " star" : ""}" type="button" data-i="${i}" style="left:${s.at / TOTAL * 100}%" aria-label="${s.id} ${esc(s.name)} ${s.t}">${s.id.slice(1)}</button>`).join("")
-    + [0, 60, 120, 180, 240, 300].map((sec) => `<span class="tl-time${sec === 0 ? " first" : sec === TOTAL ? " last" : ""}" style="left:${sec / TOTAL * 100}%">${sec / 60}분</span>`).join("");
+  let cur = 0, branch = null, timer = null, typeTimer = null;
 
-  let cur = -1, timer = null;
-  function show(i, scroll) {
-    cur = (i + SCENES.length) % SCENES.length;
-    document.querySelectorAll(".frame").forEach((f, k) => f.classList.toggle("on", k === cur));
-    document.querySelectorAll(".tl-dot").forEach((d, k) => d.classList.toggle("on", k <= cur));
-    const s = SCENES[cur], end = SCENES[cur + 1] ? SCENES[cur + 1].at : TOTAL;
-    $("tlFill").style.width = `${end / TOTAL * 100}%`;
-    $("nowLabel").textContent = `${s.id} ${s.name} · ${s.t}`;
-    if (scroll) $(`f${cur}`).scrollIntoView({ behavior: STILL ? "auto" : "smooth", block: "nearest" });
+  function type(el, text) {
+    if (!el) return;
+    const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let n = still ? text.length : 0;
+    const draw = () => { el.innerHTML = `${esc(text.slice(0, n))}<span class="caret"></span>`; };
+    draw();
+    if (still) return;
+    typeTimer = setInterval(() => { n++; draw(); if (n >= text.length) clearInterval(typeTimer); }, 70);
   }
-  function stop() { clearInterval(timer); timer = null; $("play").textContent = "▶ 순서대로 보기"; }
+
+  // 플로로의 **보이는 높이**(머리 꼭대기 ~ 물 띠 아래) = 옆 말의 높이 — 70~130. 숨구멍 그림은 120칸 중 위 26칸이 비어 있어(seal.js hole)
+  // 그림 상자를 그만큼 키우고 위로 끌어올려, 보이는 몸이 말과 같은 줄 · 같은 높이에 서게 한다. 말풍선은 나타나는 움직임 중에도 자리를 차지하므로 바로 잰다
+  const ART = 94 / 120, TOP = 26 / 120;
+  function fitPets() {
+    document.querySelectorAll("#desk .island .i-main").forEach((m) => {
+      const p = m.querySelector(".pet"), t = m.querySelector(".says, .w-head");
+      if (!p || !t) return;
+      const vis = Math.max(70, Math.min(130, t.getBoundingClientRect().height / deskScale()));
+      const k = Math.round(vis / ART);
+      p.style.width = p.style.height = `${k}px`;
+      p.style.marginTop = `${-Math.round(k * TOP)}px`;
+      // 맨 위 줄이면(LV · EXP 줄이 없는 장면) 끌어올린 그림 상자의 머리 위 표시(생각 방울 등)가 섬 테두리를 넘지 않게 위 여백을 그만큼 둔다
+      if (!m.previousElementSibling) m.parentElement.style.paddingTop = `${Math.round(k * TOP) + 6}px`;
+      const svg = p.querySelector("svg"); if (svg) { svg.setAttribute("width", k); svg.setAttribute("height", k); }
+    });
+  }
+  const deskScale = () => { const m = /scale\(([\d.]+)\)/.exec($("desk").style.transform || ""); return m ? Number(m[1]) : 1; };
+
+  function render() {
+    clearInterval(typeTimer);
+    const s = branch ? BRANCHES[branch] : SCENES[cur];
+    $("desk").innerHTML = IDE + s.view();
+    fitPets();
+    if (s.after) s.after();
+    const id = branch || s.id;
+    $("capId").textContent = id + (s.star ? " ★" : "");
+    $("capId").className = `cap-id${s.star ? " star" : ""}${branch ? " br" : ""}`;
+    $("capName").textContent = branch ? `갈래 · ${s.name}` : s.name;
+    $("capTag").innerHTML = `<span class="tag ${s.impl}" title="${TIP[s.impl]}">${TAG[s.impl]}</span>`;
+    $("capTime").textContent = branch ? `${SCENES[s.from].id}에서 갈라짐` : s.t;
+    $("capFeel").innerHTML = s.feel;
+    $("capRow").innerHTML = branch
+      ? `<button class="brc back" type="button" data-back="1">‹ ${SCENES[s.from].id} ${esc(SCENES[s.from].name)}로 돌아가기</button>`
+      : (s.branches || []).map((b) => `<button class="brc" type="button" data-br="${b}">갈래 ${b} · ${esc(BRANCHES[b].name)} 보기</button>`).join("");
+    $("detBody").innerHTML = `<b>사용자</b><span>${esc(s.act)}</span><b>지금 코드</b><span><span class="tag ${s.impl}">${TAG[s.impl]}</span> ${esc(s.how)}</span>`;
+    const at = branch ? s.from : cur;
+    document.querySelectorAll(".dot").forEach((d, k) => { d.classList.toggle("on", k === at); d.classList.toggle("seen", k < at); d.setAttribute("aria-selected", k === at); });
+    $("prev").disabled = !branch && cur === 0;
+    $("next").disabled = !branch && cur === SCENES.length - 1;
+    try { history.replaceState(null, "", `#${id}`); } catch {}
+  }
+  function go(i) { branch = null; cur = Math.max(0, Math.min(SCENES.length - 1, i)); render(); }
+  function stop() { clearInterval(timer); timer = null; $("play").textContent = "▶"; }
+
+  $("dots").innerHTML = SCENES.map((s, i) => `<button class="dot${s.star ? " star" : ""}" type="button" role="tab" data-i="${i}" title="${s.id} ${esc(s.name)} · ${s.t}" aria-label="${s.id} ${esc(s.name)}">${i}</button>`).join("");
+  $("dots").addEventListener("click", (e) => { const d = e.target.closest(".dot"); if (d) { stop(); go(Number(d.dataset.i)); } });
+  $("prev").addEventListener("click", () => { stop(); branch ? go(BRANCHES[branch].from) : go(cur - 1); });
+  $("next").addEventListener("click", () => { stop(); branch ? go(BRANCHES[branch].from + 1) : go(cur + 1); });
   $("play").addEventListener("click", () => {
     if (timer) return stop();
-    show(cur + 1 >= SCENES.length ? 0 : cur + 1, true);
-    timer = setInterval(() => { if (cur >= SCENES.length - 1) return stop(); show(cur + 1, true); }, 2600);
-    $("play").textContent = "❚❚ 멈추기";
+    if (branch || cur === SCENES.length - 1) go(0);
+    $("play").textContent = "❚❚";
+    timer = setInterval(() => { if (cur >= SCENES.length - 1) return stop(); go(cur + 1); }, 5000);
   });
-  $("prev").addEventListener("click", () => { stop(); show(cur <= 0 ? 0 : cur - 1, true); });
-  $("next").addEventListener("click", () => { stop(); show(cur + 1, true); });
-  $("tlDots").addEventListener("click", (e) => { const d = e.target.closest(".tl-dot"); if (d) { stop(); show(Number(d.dataset.i), true); } });
-  document.querySelectorAll(".frame").forEach((f, k) => f.addEventListener("click", () => { stop(); show(k, false); }));
+  $("capRow").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-br]"), back = e.target.closest("[data-back]");
+    if (b) { stop(); branch = b.dataset.br; render(); }
+    if (back) { stop(); go(BRANCHES[branch].from); }
+  });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowRight") { stop(); show(cur + 1, true); }
-    if (e.key === "ArrowLeft") { stop(); show(cur <= 0 ? 0 : cur - 1, true); }
+    if (e.target.closest && e.target.closest("summary")) return;
+    if (e.key === "ArrowRight") $("next").click();
+    if (e.key === "ArrowLeft") $("prev").click();
   });
-  show(3, false);   // 처음에는 아하 모먼트(S3)에 불
+
+  // 무대 맞추기 — 1200 × 750으로 그리고 폭에 맞춰 줄인다
+  function fit() {
+    const w = $("fit").clientWidth, k = Math.min(1, w / 1200);
+    $("desk").style.transform = `scale(${k})`;
+    $("fit").style.height = `${750 * k}px`;
+  }
+  addEventListener("resize", fit);
+  fit();
+
+  // 주소 끝(#S3, #B2)으로 바로 연다
+  const h = location.hash.slice(1);
+  if (BRANCHES[h]) { branch = h; render(); }
+  else { const i = SCENES.findIndex((s) => s.id === h); go(i >= 0 ? i : 0); }
 })();
 </script>
 </body>
