@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v10.6 | 2026-10-20 | 이재엽 | 요구 후보 C-15 플로로에게 먹이 주기(받기 · 나누기 · 확인 · 정리를 한곳에서 — C-2 · C-8을 합침) · C-16 설계도 탭 대신 도서관의 책 · 페이블 넘김 문서 (#145) | `01-docs/00-overview/requirements.md` · `01-docs/00-overview/team-priorities.md` · `01-docs/00-overview/기록/` |
 | v10.5 | 2026-10-20 | 이재엽 | 고칠 목록 F-40 — 한 줄로 접힌 섬에서 플로로의 말풍선 아래가 잘림(재현 · 버튼 "창을 잠깐 늘림") · 페이블 넘김 문서 (#144) | `01-docs/07-maintenance/fix-map.md` · `01-docs/00-overview/기록/` |
 | v10.4 | 2026-10-20 | 두승현 | Windows 앱에서 처음 설정이 섬 크기 창에 끼어 아주 작게 나오던 것을 고침 — 처음 설정이 떠 있는 동안은 창을 넓히고 닫히면 섬 크기로. Windows에서만 깨지던 시험 셋(경로 둘 · 줄 끝)을 고치고 루트 .gitattributes로 줄 끝을 LF로 고정. 고칠 목록에 한 브랜치의 묶음을 따로 쌓는 fixes/ 조각을 더함 (F-39, KAN-57). 앱 버전은 그대로 (#143) | `02-frontend/navigator/`(app.js · setup.js, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/`(floe.test.js 담당 이재엽 — 이 줄이 알림) · 루트(.gitattributes — 이재엽 — 이 줄이 알림) · `01-docs/07-maintenance/`(fix-map 0절 · 2절, 새 fixes/) · `.claude/rules/`(consistency.md) |
 | v10.3 | 2026-10-20 | 이재엽 | PR #139 리뷰의 고침 셋 — F-37 서고로 잠수할 때 물이 화면 오른쪽을 다 덮지 못하던 것(판의 끝 자리 계산 `coverTransform` 한 줄), F-36 기본 화면에서 서재에 다녀오면 바이브 코딩 모드가 되던 것(돌아온 주소 `&back`은 장면이 아님 · 움직임 줄이기도 `&back` · 기본 화면이면 주소 끝을 통째로 지움), F-38 빠르게 펼쳤다 접으면 창이 움직임보다 먼저 줄어들던 것(마지막 움직임만 미룸을 풂). 셋 다 잡는 시험을 먼저 써서 지금 코드에서 실패하는 것을 본 뒤 고침(e2e `modes-flow.test.js` 새 파일, `dive.test.js` 숫자 시험) (#142) | `02-frontend/navigator/`(app.js · dive.js, 담당 임유정 — 이 줄이 알림) · `02-frontend/library/`(library.js) · `04-tests/` · `01-docs/07-maintenance/` |
