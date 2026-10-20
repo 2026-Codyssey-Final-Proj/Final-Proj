@@ -31,6 +31,10 @@ test("내 책: 기록에서 지금 단계 · 할 일 · 확정한 설계도 · �
   assert.equal(b.title, "동네 책방 예약"); assert.equal(b.stage, 2); assert.equal(b.started, "2026-10-12");
   assert.deepEqual(b.todos, [{ t: "필요한 기능을 문장으로 쓰기", done: true }, { t: "모호한 말을 숫자로 바꾸기", done: false }]);
   assert.deepEqual(b.decided, ["1단계 아이디어 정리표 — 2026-10-14에 확정"]);
+  assert.deepEqual(b.docStages, [1], "확정한 단계 문서의 단계(C-16 — 책 안에서 연다)");
+  assert.deepEqual(b.fed, [], "받은 먹이(C-15)가 없으면 빈 목록");
+  const fed = M.fromState({ ...SAVED, fed: [{ at: 1, topics: ["앱", "화면"], left: [{ topic: "서버", why: "비밀번호 같아요" }], kept: 2, example: false }, { bad: true }] }, "2026-10-19", Date.UTC(2026, 9, 19, 6, 0)).fed;
+  assert.deepEqual(fed, [{ topics: ["앱", "화면"], left: 1, example: false }], "받은 먹이는 주제와 빠진 수만 — 글은 없다");
   assert.deepEqual(b.bookmarks, ["EARS", "규모 등급"]); assert.deepEqual(b.tags, ["EARS", "규모 등급"]);
   assert.deepEqual(b.steps, ["0단계 무엇을 만들지 정하기 마침", "1단계 적어 두기 마침"]);
   assert.deepEqual(b.dues, [], "내 책에는 마감이 없다 — 마감 칩을 그리지 않는다");

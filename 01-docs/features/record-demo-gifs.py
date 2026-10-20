@@ -57,9 +57,10 @@ def open_nav(page, hash_):
     page.goto(f"{NAV}#{hash_}"); page.wait_for_timeout(900)
 
 
-def stage_guide(page, r):            # 01 FR-1·2: 글 넣기 → 지금 단계(LV) · 할 일 하나 → 살피기 → 이 단계 할 일 펼치기 (2026-10-19 레벨 오버레이)
+def stage_guide(page, r):            # 01 FR-1·2: 먹이 주기(글이 들어 있음) → 나눠 정리 → 확인 → 지금 단계(LV) · 할 일 하나 → 살피기 → 이 단계 할 일 펼치기 (2026-10-20 C-15)
     open_nav(page, "start"); r.still(900)
-    r.click("[data-act=judge]", hold=1600)
+    r.click("[data-act=feed-sort]", hold=1200)
+    r.click("[data-act=feed-confirm]", hold=1600)
     r.click("[data-act=cmd][data-i='1']", hold=1000)
     r.click("[data-act=path][data-i='0']", hold=1400)
     r.still(1500)
@@ -141,6 +142,16 @@ def base(page, r):                   # 11 C-13(2026-10-20): 섬의 기본 화면
     r.still(800)
 
 
+def feed(page, r):                   # 12 C-15 · C-16(2026-10-20): 예시 먹이 → 나눠 정리(구간 셋 · 둘은 뺌) → 일기 '먹어도 돼요' → 확인 → 어디쯤인지 → 책 안 단계 문서
+    open_nav(page, "start"); r.still(900)
+    r.click("[data-act=feed-example]", hold=1600)
+    r.click("[data-act=feed-mark][data-i='1']", hold=1000)
+    r.click("[data-act=feed-confirm]", hold=1600)
+    r.click("[data-act=cmd][data-i='1']", hold=900)
+    r.click("[data-act=path][data-i='2']", hold=1600)
+    r.still(1200)
+
+
 def hub(page, r):                    # 11 C-11 · C-12: 모아 보기 창 — 바이브 코딩(카드 둘) → 알림 → AI 진행. 파일로 열어 예시(2026-10-20)
     page.goto(f"{HUB}#vibe"); page.wait_for_timeout(900); r.still(1400)
     r.click("[data-space=alerts]", hold=1400)
@@ -152,7 +163,7 @@ SCENES = {
     "01-stage-guide": (stage_guide, NAV_CROP), "02-blueprint": (blueprint, NAV_CROP), "03-gate": (gate, NAV_CROP),
     "04-overview": (overview, NAV_CROP), "05-library": (library, None),
     "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "greeting": (greeting, NAV_CROP), "entry": (entry, None),
-    "11-hub": (hub, None), "base": (base, NAV_CROP),
+    "11-hub": (hub, None), "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP),
 }
 
 if __name__ == "__main__":
