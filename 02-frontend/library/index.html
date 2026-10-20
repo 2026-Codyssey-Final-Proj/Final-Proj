@@ -4,7 +4,7 @@
      서버·AI·저장 없음 — 이 파일을 브라우저로 바로 연다. 물범 그림은 ../navigator/seal.js를 그대로 쓴다.
      2026-10-17 같은 날: 작업 화면 위 위젯(지금·단계 지도·한곳에서 보기·도서관 탭)은 내비게이터(../navigator/index.html)의 탭으로 옮겼다 — 같은 화면이 둘이 되지 않게.
      여기는 입구 → 서고 → 펼친 책 · 전체 돌아보기 · 별자리 하늘만 남는다. 내비게이터에서 "한 권의 책으로 엮기"를 누르면 #lib-bound-<id>로 와서 책장에 꽂힌다.
-     주소 끝으로 장면 바로 열기: #hall(입구) #pick(시안 고르기) #lib(내 서고) #lib-f1(서고에서 책 펼침) #lib-open-f1(표지 없이) #lib-ask(플로로 답) #lib-dive(내비게이터에서 물속으로 들어오기) #lib-review(전체 돌아보기) #lib-q=EARS(찾기) #lib-bound-s3(엮은 책 받기)
+     주소 끝으로 장면 바로 열기: #hall(입구) #pick(시안 고르기) #lib(내 서고) #lib-f1(서고에서 책 펼침) #lib-open-f1(표지 없이 — 열어 둔 책 #lib-open-s1도, 2026-10-20) #lib-ask(플로로 답) #lib-dive(내비게이터에서 물속으로 들어오기) #lib-review(전체 돌아보기) #lib-q=EARS(찾기) #lib-bound-s3(엮은 책 받기)
      2026-10-19(이재엽): '내 배움'(learn.js) · 역량 지도(skills.js)를 지웠다. 옛 주소 #lib-learn · #lib-dive-learn은 서고로. 지식 은하(sky.html)로 가는 길은 막았다(코드는 남김).
      2026-10-18(F-17, 원칙 P7): 머리의 "예시 데이터예요 · 시연용" — 책장 · 책은 더미 데이터다
      2026-10-19(실사용): 내비게이터 기록이 있으면 열어 둔 책에 '내 책'이 더해지고(my-books.js), "예시 책 지우기"를 누르면 예시 책 · 레퍼런스가 비고 내 기록만 남는다.
@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="../navigator/seal.css">
 <link rel="stylesheet" href="library.css">
 <link rel="stylesheet" href="../navigator/dive.css">
+<link rel="stylesheet" href="book-view.css">
 <!-- 내비게이터에서 물속으로 넘어왔으면(#lib-dive) 처음 그릴 때부터 물이 덮게 한다 — 물이 걷히는 건 ../navigator/dive.js -->
 <script>if (location.hash.startsWith("#lib-dive")) document.documentElement.classList.add("dive-in");</script>
 </head>
@@ -102,18 +103,17 @@
 <div class="reader" id="reader" role="dialog" aria-modal="true" aria-labelledby="rd-title">
   <button class="bigcover" id="rd-cover" aria-label="표지 넘기기"></button>
   <div class="book">
+    <!-- 쪽의 칸 · 구조 · 보기는 보기 설정(book-view.js, 섬의 도서관 탭과 같은 설정)대로 — 왼쪽은 지나온 단계, 오른쪽은 나머지 칸(C-9 · C-3, 2026-10-20). 열어 둔 책(#lib-open-<id>)도 펼친다 -->
     <section>
-      <div class="kick">지나온 단계</div>
+      <div class="kick" id="rd-kick">지나온 단계</div>
       <h2 id="rd-title"></h2>
-      <ol class="steps" id="rd-steps"></ol>
+      <div class="bv" id="rd-left"></div>
       <div class="rd-foot" id="rd-foot"></div>
     </section>
     <section style="position:relative">
-      <div class="kick">배운 것</div>
-      <div class="tags" id="rd-tags"></div>
-      <h4>내가 남긴 인사이트</h4><ul class="ins" id="rd-ins"></ul>
-      <h4>만든 것</h4><div class="tags" id="rd-made"></div>
-      <h4>이어진 책</h4><div class="tags" id="rd-links"></div>
+      <div class="rd-tools"><button type="button" class="bv-btn" id="rd-view" aria-expanded="false" title="구조 · 칸 · 보기 · 크기 — 이 컴퓨터에 저장돼요">보기 설정</button></div>
+      <div class="bv" id="rd-right"></div>
+      <h4 id="rd-links-h">이어진 책</h4><div class="tags" id="rd-links"></div>
       <div class="stamp" id="rd-stamp"></div>
     </section>
     <button class="pillbtn close glass" id="rd-close">책 덮기<span class="kbd">Esc</span></button>
@@ -138,6 +138,7 @@
 <script src="../navigator/seal.js"></script>
 <script src="books.js"></script>
 <script src="my-books.js"></script>
+<script src="book-view.js"></script>
 <script src="search.js"></script>
 <script src="spotlight.js"></script>
 <script src="../../03-backend/navigator/glossary.js"></script>

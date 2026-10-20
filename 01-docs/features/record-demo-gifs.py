@@ -106,6 +106,17 @@ def library(page, r):                # 05 FR-8: 도서관 탭 → 한 권의 책
     page.goto("about:blank"); page.goto(f"{LIB}#lib-review"); page.wait_for_timeout(900); r.hold(600); r.still(2000)
 
 
+def book_view(page, r):              # 05 C-9 · C-3(2026-10-20) 책 보기 설정: 펼친 책 → 보기 설정 → 할 일 칸 끄기 → 탭 구조 → 정한 것 탭 → 전체 화면(서고의 펼친 책)
+    open_nav(page, "ex=1&tab=lib&book=s1"); page.evaluate("localStorage.removeItem('floe:book-view')"); page.reload(); page.wait_for_timeout(900); r.still(1200)   # 빈 페이지에서는 저장소를 못 읽는다 — 연 뒤에 지운다
+    r.click("[data-act=bv-open]", hold=1200)
+    r.click("input[data-bv=field][data-v=todos]", hold=1000)
+    r.click(".bv-opt[data-bv=structure][data-v=tabs]", hold=1000)
+    r.click(".bv-tab[data-v=decided]", hold=1200)
+    r.click(".bv-opt[data-bv=size][data-v=full]", hold=3200)
+    page.wait_for_timeout(600); r.still(1600)
+    page.evaluate("localStorage.removeItem('floe:book-view')")   # 다음 장면이 기본값으로 시작하게
+
+
 def plain_words(page, r):            # 07 FR-13: 용어는 작게 → 누르면 한 줄 풀이(서재의 '내 배움'은 2026-10-19에 지움)
     open_nav(page, "ex=2&crit"); r.still(1400)
     r.click("[data-act=term]", hold=1800)
@@ -163,7 +174,7 @@ SCENES = {
     "01-stage-guide": (stage_guide, NAV_CROP), "02-blueprint": (blueprint, NAV_CROP), "03-gate": (gate, NAV_CROP),
     "04-overview": (overview, NAV_CROP), "05-library": (library, None),
     "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "greeting": (greeting, NAV_CROP), "entry": (entry, None),
-    "11-hub": (hub, None), "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP),
+    "11-hub": (hub, None), "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP), "book-view": (book_view, None),
 }
 
 if __name__ == "__main__":
@@ -177,7 +188,7 @@ if __name__ == "__main__":
             r = Rec(page, crop); print(n)
             try:
                 fn(page, r)
-                r.save(OUT / "demo-entry.gif" if n == "entry" else OUT / "08-floro" / "greeting.gif" if n == "greeting" else OUT / "11-hub" / "base.gif" if n == "base" else OUT / n / "demo.gif")
+                r.save(OUT / "demo-entry.gif" if n == "entry" else OUT / "08-floro" / "greeting.gif" if n == "greeting" else OUT / "11-hub" / "base.gif" if n == "base" else OUT / "05-library" / "book-view.gif" if n == "book-view" else OUT / n / "demo.gif")
             except Exception as e:
                 print("  ✗", n, type(e).__name__, str(e)[:300])
             ctx.close()

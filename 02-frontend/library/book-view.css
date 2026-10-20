@@ -1,0 +1,31 @@
+/* claude-drafted: 2026-10-20 — 책 보기 설정(C-9 · C-3, book-view.js)의 모양. 두 화면이 같이 쓴다: 섬의 도서관 탭(종이색 바탕 .minispread 안)과 서고의 펼친 책(남색 .reader 안).
+   색은 바탕의 변수(--bv-ink · --bv-sub · --bv-line · --bv-soft)를 따른다 — 각 화면이 자기 색으로 정한다. */
+/* 변수는 여기서 정하지 않는다 — 각 화면이 바깥(.minispread · .reader .book)에서 정하고, 없으면 아래 fallback. 안쪽에서 다시 정하면 바깥 값을 덮어 대비가 깨졌다(axe, 2026-10-20) */
+.bv { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bv-sec { min-width: 0; }
+.bv-k { font-size: calc(12px * var(--ui-scale, 1)); font-weight: 700; color: var(--bv-sub, #6b7a9c); display: flex; align-items: baseline; gap: 6px; }
+.bv-k small { font-weight: 600; opacity: .8; }
+.bv-list { margin: 4px 0 0; padding-left: 18px; font-size: calc(13.5px * var(--ui-scale, 1)); line-height: 1.7; }
+.bv-list li.done { color: var(--bv-sub, #6b7a9c); }
+.bv-list li em { font-style: normal; font-size: .85em; color: var(--bv-sub, #6b7a9c); margin-right: 6px; }
+.bv-empty, .bv-note { margin: 4px 0 0; font-size: calc(12.5px * var(--ui-scale, 1)); color: var(--bv-sub, #6b7a9c); }
+.bv-note { padding: 6px 10px; border-radius: 10px; background: var(--bv-soft, rgba(127, 182, 255, .14)); }
+.bv-sessions { display: flex; flex-direction: column; gap: 10px; }
+.bv-day .bv-k { font-size: calc(13px * var(--ui-scale, 1)); color: inherit; }
+/* 탭 구조 — 한 번에 한 칸 */
+.bv-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.bv-tab { border: 1.5px solid var(--bv-line, rgba(0, 0, 0, .18)); background: transparent; color: inherit; font: inherit; font-size: calc(12.5px * var(--ui-scale, 1)); font-weight: 700; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
+.bv-tab[aria-selected="true"] { background: var(--bv-acc, #22305e); border-color: var(--bv-acc, #22305e); color: #fff; }
+/* 보기 설정 판 */
+.bv-panel { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--bv-line, rgba(0, 0, 0, .18)); background: var(--bv-soft, rgba(127, 182, 255, .14)); font-size: calc(13px * var(--ui-scale, 1)); }
+.bv-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.bv-h small { color: var(--bv-sub, #6b7a9c); }
+.bv-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; align-items: start; }
+.bv-t { font-weight: 700; color: var(--bv-sub, #6b7a9c); padding-top: 4px; }
+.bv-opts { display: flex; flex-wrap: wrap; gap: 4px; }
+.bv-opt { border: 1.5px solid var(--bv-line, rgba(0, 0, 0, .18)); background: transparent; color: inherit; font: inherit; font-size: calc(12.5px * var(--ui-scale, 1)); font-weight: 700; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
+.bv-opt[aria-pressed="true"] { background: var(--bv-acc, #22305e); border-color: var(--bv-acc, #22305e); color: #fff; }
+.bv-chk { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; border: 1.5px solid var(--bv-line, rgba(0, 0, 0, .18)); cursor: pointer; }
+.bv-chk input { margin: 0; }
+.bv-btn { border: 1.5px solid var(--bv-line, rgba(0, 0, 0, .18)); background: transparent; color: inherit; font: inherit; font-size: calc(12.5px * var(--ui-scale, 1)); font-weight: 700; padding: 3px 10px; border-radius: 999px; cursor: pointer; }
+.bv-btn[aria-expanded="true"] { background: var(--bv-acc, #22305e); border-color: var(--bv-acc, #22305e); color: #fff; }

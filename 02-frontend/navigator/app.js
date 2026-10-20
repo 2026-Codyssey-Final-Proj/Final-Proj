@@ -32,6 +32,7 @@
   const G = window.NavGlossary, U = window.NavUnderstand, P = window.NavPriority, A = window.NavAlerts, T = window.NavTiers;
   // 실사용(2026-10-19): 내 책 · 예시 책 지우기(../library/my-books.js), 느낀 점(notes.js). 둘 다 없어도 화면은 돈다(옛 동작)
   const M = window.FloeMine, NT = window.FloeNotes;
+  const BV = window.FloeBookView;   // 책 보기 설정(C-9 · C-3, 2026-10-20) — ../library/book-view.js, 서고와 같은 설정을 읽는다
   // 기본 화면 · 섬의 움직임(2026-10-20): 모아 보기 창의 순수 함수(hub.js) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js). 없어도 화면은 돈다
   const HUB = window.FloeHub, STEPS = window.NavSteps, MO = window.FloeMorph;
   const FD = window.NavFeed;   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
@@ -85,6 +86,9 @@
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
   let exHidden = M ? M.readHidden(STORE) : false;
+  // 책 보기 설정(C-9 · C-3) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠(book-view.js KEY)를 읽는다. bvOpen: 설정 판을 펼쳤나, bvTab: 탭 구조에서 고른 칸
+  let bv = BV ? BV.read(STORE) : null;
+  st.bvOpen = false; st.bvTab = "";
   // 느낀 점 목록 — 따로 둔다(기록 지우기와 별개). 새것이 위
   let noteList = NT ? NT.read(STORE) : [];
   // 만드는 크기 [보내는 값, 화면 이름] — tiers.js
@@ -852,12 +856,13 @@
     }
     deskKeys.Escape = { act: "lib-close" };
     deskKeys.Enter = { act: st.libConfirm ? "lib-shelve" : fin ? "lib-bind" : "lib-shelve-ask" };
+    // 책의 칸 · 구조 · 보기는 보기 설정(book-view.js)대로 — 왼쪽은 책의 머리(단계 · 이름 · 연 때 · 보기 설정 단추), 오른쪽은 켜 둔 칸들(C-9 · C-3, 2026-10-20)
     return `<div class="libtab"><div class="minispread" data-spread>
-        <section><div class="stg">${fin ? "돌아보기까지 끝" : `지금 ${b.stage}단계 · ${esc(L().STAGES[b.stage])}`}${b.mine ? " · 이 화면의 프로젝트" : isEx(b) ? " · 예시 책" : ""}</div><h3>${esc(b.title)}</h3>
-          <div class="stg soft">이 세션에서 정한 것</div><ul>${b.decided.map((d) => `<li>${esc(d)}</li>`).join("")}</ul></section>
-        <section><div class="stg">꽂은 책갈피 ${b.bookmarks.length}장</div><h3>배운 것</h3>
-          <div class="marks">${b.bookmarks.map((m) => `<span>${esc(m)}</span>`).join("")}</div>
-          <div class="stg soft" style="margin-top:12px">마지막으로 연 때 · ${esc(b.updated)}</div></section></div>
+        <section class="bv-head"><div class="stg">${fin ? "돌아보기까지 끝" : `지금 ${b.stage}단계 · ${esc(L().STAGES[b.stage])}`}${b.mine ? " · 이 화면의 프로젝트" : isEx(b) ? " · 예시 책" : ""}</div><h3>${esc(b.title)}</h3>
+          <div class="stg soft">꽂은 책갈피 ${b.bookmarks.length}장 · 마지막으로 연 때 ${esc(b.updated)}</div>
+          ${BV ? `<button type="button" class="bv-btn" data-act="bv-open" aria-expanded="${st.bvOpen}" title="구조 · 칸 · 보기 · 크기 — 이 컴퓨터에 저장돼요">보기 설정</button>` : ""}</section>
+        <section class="bv">${BV ? `${st.bvOpen ? BV.panelHTML(bv) : ""}${BV.bodyHTML(b, bv, { tab: st.bvTab })}`
+          : `<div class="stg soft">정한 것</div><ul>${b.decided.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>`}</section></div>
       ${b.mine ? bookDocs() : ""}
       ${st.libConfirm ? `<div class="confirm" role="alertdialog" aria-label="서고에 보관 확인">${cat("think", 34)}<span><b>‘${esc(b.title)}’</b>을 서고에 보관할까요? 언제든 다시 꺼내 펼칠 수 있어요.</span><span class="grow"></span>
           <button class="b pri" data-act="lib-shelve">보관하기${kbd("Enter")}</button><button class="b" data-act="lib-shelve-no">그대로 두기</button></div>`
@@ -1569,7 +1574,7 @@
   function advance() {
     if (!N.canAdvance(met(), "yes")) return;
     const s = stage(), nx = nextStage(), last = [...st.checks].reverse().find((c) => c.stage === s.n);
-    st.history.push({ short: `${s.n}단계 ${s.title} 마침`,
+    st.history.push({ short: `${s.n}단계 ${s.title} 마침`, at: ymd(),   // at — 세션별 보기(C-3, my-books.js dated)가 읽는다(2026-10-20). 옛 기록은 글 끝의 날짜로
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
         last ? ` · 확인 질문 ${last.ok ? "맞힘" : "정답 보고 넘어감"}` : ""} · ${ymd()}` });
     Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, cmd: null, libDoc: null });
@@ -1652,8 +1657,13 @@
     "lib-doc-now": () => openBookDoc(st.j ? st.j.stage : 1),
     // 도서관 탭 — 책 고르기 · 목록으로 · 서고에 보관(확인 뒤) · 한 권으로 엮기
     "lib-enter": () => enterLibrary(),
-    "lib-book": (i, el) => set({ libSel: (el && el.dataset.id) || openBooks()[i].id, libConfirm: false, libDoc: null }),
-    "lib-close": () => set({ libSel: null, libConfirm: false, libDoc: null }),
+    "lib-book": (i, el) => {
+      const id = (el && el.dataset.id) || openBooks()[i].id;
+      if (BV && bv.size === "full") return enterLibrary(`open-${id}`);   // 보기 설정 '전체 화면' — 서고의 펼친 책으로(C-3)
+      set({ libSel: id, libConfirm: false, libDoc: null });
+    },
+    "bv-open": () => set({ bvOpen: !st.bvOpen }),
+    "lib-close": () => set({ libSel: null, libConfirm: false, libDoc: null, bvOpen: false }),
     "lib-shelve-ask": () => set({ libConfirm: true }),
     "lib-shelve-no": () => set({ libConfirm: false }),
     "lib-shelve": () => shelveBook(),
@@ -1798,8 +1808,20 @@
       activity();
       run({ act: t.dataset.act, i: t.dataset.i === undefined ? undefined : Number(t.dataset.i) }, t);
     });
+    // 책 보기 설정(C-9 · C-3) — 판의 단추(구조 · 보기 · 크기 · 탭)와 칸 체크. 고르면 바로 저장하고 다시 그린다. '전체 화면'을 고르면 지금 책을 서고에서 연다
+    $root.addEventListener("click", (e) => {
+      const t = e.target.closest("[data-bv]");
+      if (!t || !BV || t.dataset.bv === "field") return;
+      activity();
+      if (t.dataset.bv === "tab") return set({ bvTab: t.dataset.v });
+      bv = BV.choose(bv, t.dataset.bv, t.dataset.v); BV.write(STORE, bv);
+      const b = libSelected();
+      if (t.dataset.bv === "size" && bv.size === "full" && b) return enterLibrary(`open-${b.id}`);
+      render();
+    });
     $root.addEventListener("change", (e) => {
       const a = e.target.dataset.act;
+      if (e.target.dataset.bv === "field" && BV) { bv = BV.toggle(bv, e.target.dataset.v); BV.write(STORE, bv); return render(); }
       if (a === "mode") set({ mode: e.target.value, error: "", warn: null });
       if (a === "auto") set({ auto: e.target.checked });
       if (a === "text-size") { set({ textSize: Number(e.target.value) || 1 }); applyScale(); }
@@ -1978,6 +2000,7 @@
     if (q.tab === "learn") { save(); location.replace(`${LIB_URL}#lib`); return; }
     if (q.tab && TABS.some((t) => t[0] === q.tab)) st.tab = q.tab;
     if (q.book) st.libSel = String(q.book);
+    st.bvOpen = !!q.view;   // &view — 책의 보기 설정 판을 펼친 채(C-9, 녹화 · 시험용)
     // 옛 주소 &tab=doc(단계 문서 탭, 2026-10-20 C-16에 뺌)은 도서관의 책 안 그 단계 문서로 — 녹화(record-demo-gifs.py)와 e2e 장면이 그대로 이어진다. &doc=<단계>도 같다
     if (q.tab === "doc" || q.doc !== undefined) {
       const b = openBooks().find((x) => x.mine) || openBooks()[0];
