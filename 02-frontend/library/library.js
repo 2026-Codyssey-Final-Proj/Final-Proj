@@ -6,7 +6,7 @@
 // 2026-10-19(실사용): 내비게이터 기록이 있으면 열어 둔 책에 '내 책'을 더하고, "예시 책 지우기"(HIDE_KEY)를 눌렀으면 예시 책 · 레퍼런스 · 물어볼 것을 비운다(my-books.js).
 //   그때 '오늘'은 시안의 고정 날짜가 아니라 실제 오늘이다. 주소 끝 &noex는 이 화면만 예시 없이(저장하지 않음). 책이 하나도 없어도 서고 · 전체 돌아보기가 멈추지 않는다.
 (function () {
-  const D = window.LibData, Seal = window.NavSeal;
+  const D = window.LibData, Seal = window.NavSeal, BV = window.FloeBookView;   // BV — 책 보기 설정(C-9 · C-3, 2026-10-20): 섬의 도서관 탭과 같은 설정
   const NAV = "../navigator/index.html";
   const $ = (id) => document.getElementById(id);
   // 내 책 · 예시 책 지우기 — 화면을 그리기 전에 데이터에 적용한다. 저장소를 못 쓰면(사생활 보호 창) 예시 그대로
@@ -239,29 +239,67 @@
   const ORD = ["첫", "두", "세", "네", "다섯", "여섯", "일곱", "여덟", "아홉", "열"];
   // 움직임을 쓸 수 있을 때만 — 책이 날아오고 펼쳐지는 것(2026-10-18, 목업 영상 40~42초)
   const MOVE = !matchMedia("(prefers-reduced-motion: reduce)").matches && typeof Element.prototype.animate === "function";
+  // 끝낸 책(서고) 또는 열어 둔 책(내비게이터 도서관 탭의 '전체 화면' 보기, 2026-10-20 C-3)을 찾는다
+  const bookOf = (id) => D.SHELF.find((x) => x.id === id) || st.open.find((x) => x.id === id) || D.OPEN.find((x) => x.id === id) || null;
+  const isFin = (b) => D.SHELF.includes(b);
+  let rdPanel = false, rdTab = "";   // 펼친 책의 보기 설정 판을 펼쳤나 · 탭 구조에서 고른 칸
   function openReader(id, { cover = true, from = null } = {}) {
-    const b = D.SHELF.find((x) => x.id === id); if (!b) return;
+    const b = bookOf(id); if (!b) return;
+    const fin = isFin(b), marks = fin ? marksOf(b) : (b.bookmarks || []).length;
     if (!$("reader").classList.contains("on")) lastFocus = document.activeElement;
     st.reading = id;
-    // 표지 — 영상 8번 장면: ○번째 책 · 기간 · 8단계 · 책갈피 수 · 완주 도장. 누르거나 Enter로 넘긴다
-    const order = [...D.SHELF].sort((x, y) => x.started.localeCompare(y.started)).findIndex((x) => x.id === id);
-    const end = new Date(Date.parse(b.started) + (b.days - 1) * 864e5).toISOString().slice(0, 10);
-    $("rd-cover").innerHTML = `<span class="kick">플로로의 얼음 서고 · ${ORD[order] || order + 1}번째 책</span><b>${esc(b.title)}${b.sub ? ` ${esc(b.sub)}` : ""}</b><i></i>
-      <span>${b.started.replaceAll("-", ".")} — ${end.slice(5).replace("-", ".")}</span><span>8단계 · 책갈피 ${marksOf(b)}장</span><span class="stamp">${b.date}<br>완주</span><em>눌러서 펼치기</em>`;
-    $("rd-foot").textContent = `${b.days}일 · 단계 8개 · 책갈피 ${marksOf(b)}장 · 만든 것 ${b.made.length}개`;
+    // 표지 — 영상 8번 장면: ○번째 책 · 기간 · 8단계 · 책갈피 수 · 완주 도장. 누르거나 Enter로 넘긴다. 열어 둔 책은 '지금 N단계'
+    if (fin) {
+      const order = [...D.SHELF].sort((x, y) => x.started.localeCompare(y.started)).findIndex((x) => x.id === id);
+      const end = new Date(Date.parse(b.started) + (b.days - 1) * 864e5).toISOString().slice(0, 10);
+      $("rd-cover").innerHTML = `<span class="kick">플로로의 얼음 서고 · ${ORD[order] || order + 1}번째 책</span><b>${esc(b.title)}${b.sub ? ` ${esc(b.sub)}` : ""}</b><i></i>
+        <span>${b.started.replaceAll("-", ".")} — ${end.slice(5).replace("-", ".")}</span><span>8단계 · 책갈피 ${marks}장</span><span class="stamp">${b.date}<br>완주</span><em>눌러서 펼치기</em>`;
+      $("rd-foot").textContent = `${b.days}일 · 단계 8개 · 책갈피 ${marks}장 · 만든 것 ${b.made.length}개`;
+      $("rd-stamp").innerHTML = `${b.date}<br>완독`;
+    } else {
+      $("rd-cover").innerHTML = `<span class="kick">열어 둔 책${b.mine ? " · 내 책" : b.example ? " · 예시 책" : ""}</span><b>${esc(b.title)}</b><i></i>
+        <span>${String(b.started || "").replaceAll("-", ".")}부터</span><span>지금 ${b.stage}단계 · ${esc(D.STAGES[b.stage] || "")}</span><span class="stamp">${b.stage}단계<br>진행 중</span><em>눌러서 펼치기</em>`;
+      $("rd-foot").textContent = `지금 ${b.stage}단계 ${D.STAGES[b.stage] || ""} · 책갈피 ${marks}장 · 할 일 ${(b.todos || []).filter((t) => t.done).length}/${(b.todos || []).length} · 덮고 꽂는 건 작업 화면의 도서관 탭에서`;
+      $("rd-stamp").innerHTML = `${b.stage}단계<br>진행 중`;
+    }
     $("reader").classList.toggle("cover", cover);
-    $("rd-title").textContent = `${b.title}${b.sub ? ` ${b.sub}` : ""} — 단계마다 내가 정한 것`;
-    $("rd-steps").innerHTML = b.steps.map((s, i) => `<li><b>${i}</b><span>${D.STAGES[i]}</span><em>${esc(s)}</em></li>`).join("");
-    $("rd-tags").innerHTML = b.tags.map((t) => termHtml(t)).join("");
-    $("rd-ins").innerHTML = b.insights.map((t) => `<li>${esc(t)}</li>`).join("");
-    $("rd-made").innerHTML = b.made.map((t) => `<span>${esc(t)}</span>`).join("");
-    $("rd-links").innerHTML = b.links.map((l) => `<button data-read="${l}">${esc(D.SHELF.find((x) => x.id === l).title)}</button>`).join("");
+    $("rd-title").textContent = `${b.title}${b.sub ? ` ${b.sub}` : ""} — ${fin ? "단계마다 내가 정한 것" : "지금까지 정한 것"}`;
+    renderBook(b);
+    const links = fin ? b.links : [];
+    $("rd-links-h").hidden = !links.length; $("rd-links").hidden = !links.length;
+    $("rd-links").innerHTML = links.map((l) => `<button data-read="${l}">${esc(D.SHELF.find((x) => x.id === l).title)}</button>`).join("");
     $("rd-links").querySelectorAll("[data-read]").forEach((x) => (x.onclick = () => openReader(x.dataset.read, { cover: false })));
-    $("rd-stamp").innerHTML = `${b.date}<br>완독`;
     show("lib"); $("reader").classList.add("on"); setHash(`lib-${id}`);
     (cover ? $("rd-cover") : $("rd-close")).focus();
     if (cover && from) flyFrom(from);
   }
+  // 펼친 책의 두 쪽 — 보기 설정(book-view.js)대로. 왼쪽은 지나온 단계(단계 이름과 함께), 오른쪽은 나머지 칸 · 보기 설정 판. 세션별이면 오른쪽에 날짜 묶음만
+  function renderBook(b) {
+    const s = BV ? BV.read(storage) : null;
+    if (!BV) { $("rd-left").innerHTML = `<ul class="bv-list">${(b.steps || []).map((t) => `<li>${esc(t)}</li>`).join("")}</ul>`; $("rd-right").innerHTML = ""; return; }
+    const session = s.view === "session" && BV.sessions(b, s).length > 0;
+    $("rd-kick").textContent = session ? "작업한 날짜별로" : "지나온 단계";
+    const left = session ? "" : BV.bodyHTML(b, s, { only: ["steps"], stages: isFin(b) ? D.STAGES : null });
+    $("rd-left").innerHTML = left || `<p class="bv-empty">${session ? "오른쪽에 날짜별로 모았어요" : "이 칸은 꺼 두었어요 — 보기 설정에서 켤 수 있어요"}</p>`;
+    $("rd-view").setAttribute("aria-expanded", String(rdPanel));
+    $("rd-right").innerHTML = `${rdPanel ? BV.panelHTML(s) : ""}${BV.bodyHTML(b, s, session ? {} : { except: ["steps"], tab: rdTab })}`;
+  }
+  // 보기 설정 손잡이(data-bv) — 섬의 도서관 탭과 같은 손잡이. 고르면 바로 저장하고 펼친 책을 다시 그린다. '짧게'를 고르면 열어 둔 책은 작업 화면의 도서관 탭으로
+  $("rd-view").onclick = () => { rdPanel = !rdPanel; const b = bookOf(st.reading); if (b) renderBook(b); };
+  $("reader").addEventListener("click", (e) => {
+    const t = e.target.closest("[data-bv]");
+    if (!t || !BV || t.dataset.bv === "field") return;
+    const b = bookOf(st.reading); if (!b) return;
+    if (t.dataset.bv === "tab") { rdTab = t.dataset.v; return renderBook(b); }
+    const s = BV.choose(BV.read(storage), t.dataset.bv, t.dataset.v); BV.write(storage, s);
+    if (t.dataset.bv === "size" && s.size === "short" && !isFin(b)) return toNav(`tab=lib&book=${b.id}`);
+    renderBook(b);
+  });
+  $("reader").addEventListener("change", (e) => {
+    if (!BV || e.target.dataset.bv !== "field") return;
+    BV.write(storage, BV.toggle(BV.read(storage), e.target.dataset.v));
+    const b = bookOf(st.reading); if (b) renderBook(b);
+  });
   // 책장의 책이 화면 가운데로 날아와 크게 보인다 — 책장 자리는 비워 두고, 책을 덮으면 돌아온다
   function flyFrom(src) {
     if (!MOVE) return;
@@ -346,6 +384,7 @@
     if (h === "lib") return go("lib");
     if (h === "lib-ask") return go("lib", "ask");
     if (h === "lib-dive") return arrive();
+    if (h.startsWith("lib-dive-open-")) return arrive(() => openReader(h.slice(14), { cover: false }));   // 도서관 탭의 '전체 화면' 보기(C-3, 2026-10-20)
     if (h === "lib-dive-learn") return arrive();   // 옛 주소(내 배움, 2026-10-19 지움) — 서고로
     if (h === "lib-hover") { go("lib"); return drawArcs("f1"); }
     if (h === "lib-review") { go("lib"); return openReview(); }
