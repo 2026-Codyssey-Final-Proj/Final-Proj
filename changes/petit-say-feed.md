@@ -1,4 +1,0 @@
-종류: 큰 묶음
-누가: 이재엽
-무엇: 앱 8.1.0 — ① 한 줄로 접힌 섬에서 플로로의 말이 잘리던 것(F-40 — 말하는 동안만 창을 말풍선 아래까지, 가로는 그대로) ② 플로로에게 먹이 주기(C-15 — 처음 화면이 먹이 주기, 파일 끌어다 놓기 · 붙여 넣기 한곳, `feed.js`가 구간으로 나눠 주제 · 비밀번호 · 개인적인 일을 표시하고 사람이 고친 뒤 빠진 구간 없이 보냄, 빠진 구간의 글은 어디에도 남기지 않음, 예시 먹이) ③ 단계 문서 탭 대신 도서관의 책(C-16 — 책 안 '단계 문서'에서 초안 · 고치기 · 다시 봐 줌 · 확정, 받은 먹이도 책에, `#ex=1&tab=doc`은 그대로 이어짐) ④ 화면 글에서 '설계도'를 뺌(단계 문서). 오퍼스 넘김 문서 둘(petit-say · feed)대로, 이재엽 버튼 "한 PR에 다 + 8.1.0". Release `app-v8.1.0`
-건드린 곳: `02-frontend/navigator/`(app.js · app.css · index.html · notes.js, 담당 임유정 — 이 줄이 알림) · `02-frontend/library/`(my-books.js) · `02-frontend/electron/`(8.1.0 · 릴리스 노트) · `02-frontend/index.html` · `03-backend/navigator/`(feed.js(새) · navigator.js · server.js · scenario.js · record-demo.js · recordings, 담당 두승현) · `04-tests/` · `01-docs/`(features · fix-map · requirements · 넘김 문서)
