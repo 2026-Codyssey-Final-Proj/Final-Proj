@@ -50,6 +50,14 @@ test("코드 자리: 개발 중은 저장소, 묶은 뒤는 payload/", () => {
   assert.equal(packed.frontend, path.normalize("/app/app.asar/payload/02-frontend"));
 });
 
+// claude-drafted: 2026-10-20 — 이재엽 "깃허브에 있는 앱 아이콘이 있잖아 그걸로 만들어줘": npm start(개발 실행)는 Dock에 Electron 기본 그림이 떴다
+test("개발 실행 아이콘: 묶지 않았으면 build/icon.png(묶은 앱 · GitHub 첫 화면과 같은 플로로), 묶은 앱은 제 아이콘 그대로", () => {
+  const dir = path.join(__dirname, "../../02-frontend/electron");
+  assert.equal(L.devIcon(false, dir), path.join(dir, "build/icon.png"));
+  assert.ok(fs.existsSync(L.devIcon(false, dir)), "그림 파일이 있어야 한다");
+  assert.equal(L.devIcon(true, dir), null, "묶은 앱은 icns가 들어 있어 건드리지 않는다");
+});
+
 test("폴더 연결: 훅을 더하고(connect.js와 같은 모양 · 백업) 빼며, JSON이 아닌 설정은 건드리지 않는다", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "floe-app-")), file = path.join(tmp, ".claude/settings.local.json");
   const r1 = L.connectDir(tmp, BACK, true, { now: new Date("2026-10-19T00:00:00Z") });

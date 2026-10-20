@@ -249,6 +249,8 @@ ipcMain.handle("floe:clear-key", () => {
 
 app.whenReady().then(async () => {
   menu();
+  const icon = L.devIcon(app.isPackaged, __dirname);   // 개발 실행도 Dock에 플로로(묶은 앱과 같은 그림)
+  if (icon && process.platform === "darwin" && app.dock) app.dock.setIcon(icon);
   // Linux: ready 직후 바로 만들면 투명 창이 검게 나오는 일이 있어(Electron 안내) 잠깐 기다린다
   if (LINUX) await new Promise((r) => setTimeout(r, 300));
   createWindow();   // 먼저 — '켜지는 중'(물결 선)을 보이는 동안 아래에서 PATH · 서버를 준비한다(C-10, 2026-10-20)
