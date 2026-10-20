@@ -27,7 +27,8 @@ const path = require("node:path");
 const Nav = require("./navigator.js");
 const Sensitive = require("./sensitive.js");
 const Steps = require("./steps.js");   // AI 진행(C-12) — 한 일의 말 · 80자 — claude-drafted: 2026-10-20
-const { callClaude, usage, claudeVersion } = require("./provider.js");
+const AP = require("./approve.js");    // FR-17 승인 카드의 모양(2026-10-20)
+const { callClaude, usage, claudeVersion, startTask: openClaude } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번)
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 
 const PORT = Number(process.env.NAV_PORT) || 4317;
@@ -50,9 +51,11 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check"];
-const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES];
-const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy"];   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20)
+// FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
+const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
+const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES];
+const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -96,7 +99,8 @@ const STATIC = {
   "02-frontend/hub": ["index.html", "hub.css", "hub.js"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 모아 보기 창이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js"],
+  // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js"],
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -166,8 +170,9 @@ const cut = (t) => (t.length > Steps.MAX ? `${t.slice(0, Steps.MAX - 1)}…` : t
 // 세션 표의 한 줄 — 없으면 만들고, 최근에 쓴 것을 맨 뒤로. 작업 폴더 이름은 가린다(S4)
 function workSession(body, tool) {
   const id = `${tool}:${String(body.session_id || "")}`;
-  const s = work.get(id) || { id, project: "", tool, state: "", at: 0, steps: [] };
+  const s = work.get(id) || { id, project: "", tool, state: "", at: 0, steps: [], dir: "" };
   s.project = Sensitive.redact(path.basename(String(body.cwd || ""))) || s.project;
+  s.dir = String(body.cwd || "") || s.dir;   // FR-17 일 넘기기가 claude를 열 폴더 — 서버 메모리에만, 화면에는 주지 않는다(stepsSince가 뺀다)
   s.at = Date.now();
   work.delete(id); work.set(id, s);
   if (work.size > MAX_WORK_SESSIONS) work.delete(work.keys().next().value);
@@ -183,7 +188,67 @@ function addStep(body, tool) {
   return { seq: stepSeq };
 }
 // 화면이 묻는 모양 — since보다 뒤의 한 일만, 세션은 최근 쓴 순
-const stepsSince = (since) => ({ latest: stepSeq, sessions: [...work.values()].reverse().map((s) => ({ ...s, steps: s.steps.filter((st) => st.seq > since) })) });
+const stepsSince = (since) => ({ latest: stepSeq, sessions: [...work.values()].reverse().map(({ dir, ...s }) => ({ ...s, steps: s.steps.filter((st) => st.seq > since) })) });
+
+// ── FR-17 섬에서 허용 · 거절 — claude-drafted: 2026-10-20 (이재엽 버튼 "섬에서 진짜 승인", 넘김 문서 c4-views 2절 ② · 3절) ──
+// 훅(approve-hook.js)이 POST /api/approval로 승인 카드를 보내고 **답을 기다린다**(길게 여는 요청). 섬은 GET /api/approvals로 보고 POST /api/approvals/decide로 누른다.
+// 결정은 그 요청(id · sig)과 짝이 맞을 때만 — 늦은 결정(404) · 다른 요청의 결정(409)은 버린다. 되돌리기 어려운 일(card.danger)은 sure:true가 있어야 허용(409로 한 번 더 묻는다).
+// 아무도 누르지 않으면 APPROVAL_WAIT 뒤 none — 훅은 아무것도 출력하지 않아 Claude Code가 스스로 묻는다. **대신 허용하는 길이 없다.** 카드는 메모리에만, 결정하면 지운다(바뀔 내용을 저장 · 전송하지 않는다)
+const APPROVAL_WAIT = Math.max(100, Number(process.env.NAV_APPROVAL_WAIT) || 90_000), MAX_PENDING = 20;   // [제안 2026-10-20] — 훅의 기다림(95초)보다 짧게
+const pending = new Map();   // id → {item, res, timer}
+const ID_SHAPE = /^[A-Za-z0-9_-]{8,64}$/, SIG_SHAPE = /^[0-9a-f]{64}$/, KINDS = new Set(["edit", "write", "run", "other"]);
+const cutTo = (t, n) => { const s = Sensitive.redact(String(t)); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
+// 훅이 보낸 카드를 믿지 않는다 — 칸마다 모양을 보고, 가리고, 자른다(S4). 모양이 아니면 null
+function cleanCard(c) {
+  if (!c || typeof c !== "object" || !Array.isArray(c.lines)) return null;
+  return { tool_name: cutTo(c.tool_name || "", 40), verb: cutTo(c.verb || "", 20), what: cutTo(c.what || "", 200), kind: KINDS.has(c.kind) ? c.kind : "other",
+    danger: cutTo(c.danger || "", 120), lines: c.lines.slice(0, 40).map((l) => cutTo(typeof l === "string" ? l : "", 200)) };
+}
+// 승인 요청 하나를 기다리는 표에 넣고 답을 붙들어 둔다. 돌려주는 것: 거절 이유(글) 또는 ""(붙들었다)
+function holdApproval(body, req, res) {
+  if (!body || typeof body !== "object" || !ID_SHAPE.test(String(body.id)) || !SIG_SHAPE.test(String(body.sig))) return "승인 요청 모양이 아님";
+  const card = cleanCard(body.card);
+  if (!card) return "승인 요청 모양이 아님 — card가 없음";
+  if (pending.size >= MAX_PENDING) return "기다리는 승인 요청이 너무 많음";
+  const id = String(body.id);
+  const item = { id, sig: String(body.sig), at: Date.now(), project: Sensitive.redact(path.basename(String(body.cwd || ""))), tool: body.tool === "codex" ? "codex" : "claude", tool_name: card.tool_name, card };
+  const finish = (decision) => { const p = pending.get(id); if (!p) return; pending.delete(id); clearTimeout(p.timer); send(p.res, 200, { ok: true, id, decision }); };
+  pending.set(id, { item, res, timer: setTimeout(() => finish("none"), APPROVAL_WAIT), finish });
+  req.on("close", () => { const p = pending.get(id); if (p && p.res === res) { pending.delete(id); clearTimeout(p.timer); } });   // 훅이 먼저 끊으면(시간 초과) 표에서 뺀다
+  return "";
+}
+const listApprovals = () => ({ items: [...pending.values()].map((p) => p.item) });
+// 섬이 누른 결정 — [상태 코드, 답]
+function decideApproval(body) {
+  const b = body && typeof body === "object" ? body : {};
+  const p = pending.get(String(b.id));
+  if (!p) return [404, { ok: false, reason: "기다리는 요청이 아님 — 늦었거나 이미 정해졌어요" }];
+  if (String(b.sig) !== p.item.sig) return [409, { ok: false, reason: "결정이 요청과 짝이 맞지 않음 — 버렸어요" }];
+  if (b.decision !== "allow" && b.decision !== "deny") return [400, { ok: false, reason: "decision은 allow 또는 deny" }];
+  if (b.decision === "allow" && p.item.card.danger && b.sure !== true) return [409, { ok: false, reason: `되돌리기 어려운 일이에요 — ${p.item.card.danger}. 한 번 더 확인(sure)해 주세요` }];
+  p.finish(b.decision);
+  return [200, { ok: true, id: p.item.id, decision: b.decision }];
+}
+function clearApprovals() { for (const p of [...pending.values()]) p.finish("none"); }
+
+// ── FR-17 대화로 일 넘기기 — 허락하면 연결한 폴더에서 claude를 연다(셸 없이, -p, 글은 표준 입력으로). 권한 건너뛰기 옵션은 쓰지 않는다 — 허락은 섬의 승인 카드(위)로 ──
+// 폴더는 훅 알림이 알려 준 세션의 cwd에서만 고른다(화면이 보낸 경로는 받지 않는다). 한 번에 하나. 여는 법은 provider.js startTask(셸 없음 · -p · 표준 입력 · 권한 건너뛰기 없음)
+const TASK_MAX = 4000;
+let task = null;   // {state: running|done|failed, project, at, code, child}
+const publicTask = () => (task ? { state: task.state, project: task.project, at: task.at, code: task.code } : null);
+function startTask(text) {
+  if (String(text).length > TASK_MAX) return [400, { ok: false, reason: `넘긴 글이 너무 김 — ${TASK_MAX.toLocaleString()}자까지` }];
+  const s = [...work.values()].reverse().find((x) => x.dir);
+  if (!s) return [400, { ok: false, reason: "연결한 프로젝트 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열면(훅 알림) 알게 돼요" }];
+  if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 넘겨요" }];
+  let child;
+  try { child = openClaude({ dir: s.dir, text }); }
+  catch { return [502, { ok: false, reason: "claude를 열지 못함 — Claude Code가 설치됐는지 확인하세요" }]; }
+  task = { state: "running", project: s.project, at: Date.now(), code: null, child };
+  child.on("error", () => { if (task && task.child === child) task.state = "failed"; });
+  child.on("close", (code) => { if (task && task.child === child) { task.state = code === 0 ? "done" : "failed"; task.code = code; } });
+  return [200, { ok: true, project: s.project, task: publicTask() }];
+}
 
 function addEvent(body) {
   // Codex(GPT)도 Claude Code와 같은 모양으로 알린다(2026-10-14 실측) — 어느 도구인지만 hook.js가 붙여 준다
@@ -211,6 +276,7 @@ function clearEvents() {
   events.length = 0;
   sessions.clear();
   work.clear();   // C-12: 한 일과 세션 상태도 같이(stepSeq는 되돌리지 않는다 — 열어 둔 모아 보기 창이 since로 묻는다)
+  clearApprovals();   // FR-17: 기다리던 승인 요청에는 none — 훅이 빈 출력으로 끝나 Claude Code가 스스로 묻는다
   return n;
 }
 
@@ -257,6 +323,8 @@ async function handle(req, res) {
     return send(res, 200, { ok: true, ...stepsSince(since) });
   }
   if (req.method === "POST" && route === "/api/events/clear") return send(res, 200, { ok: true, cleared: clearEvents() });   // S5
+  if (req.method === "GET" && route === "/api/approvals") return send(res, 200, { ok: true, ...listApprovals() });   // FR-17 섬이 기다리는 승인 요청을 본다(API.md 3-14)
+  if (req.method === "GET" && route === "/api/task") return send(res, 200, { ok: true, task: publicTask() });   // FR-17 넘긴 일의 상태(API.md 3-16)
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다
   if (req.method === "GET" && route === "/api/setup") return send(res, 200, { ok: true, ...setupNow() });   // 처음 설정 — 있다 · 없다만(API.md 3-10)
   if (req.method === "POST" && route === "/api/setup/check") return checkAi(res);   // 연결 확인(API.md 3-11) — 본문 없음
@@ -267,7 +335,14 @@ async function handle(req, res) {
     const ev = body && addEvent(body);
     return ev ? send(res, 200, { ok: true, seq: ev.seq }) : refuse(res, "알 수 없는 알림");
   }
+  if (route === "/api/approval") { const why = holdApproval(body, req, res); return why ? refuse(res, why, why.includes("너무 많") ? 429 : 400) : undefined; }   // FR-17 훅 — 답은 결정이 오거나 시간이 지나면(3-13)
+  if (route === "/api/approvals/decide") { const [code, out] = decideApproval(body); return send(res, code, out); }   // FR-17 섬의 결정(3-15)
   if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
+  if (route === "/api/task/start") { const [code, out] = startTask(body.text); return send(res, code, out); }   // FR-17 허락하고 넘기기(3-16)
+  if (route === "/api/task/tidy") {   // FR-17 요구 문장으로 정리(3-16) — AI 한 번
+    if (body.text.length > TASK_MAX) return refuse(res, `넘긴 글이 너무 김 — ${TASK_MAX.toLocaleString()}자까지`);
+    return ask(res, Nav.taskPrompt(body.text), Nav.TASK_SCHEMA, Nav.parseTask, "정리");
+  }
   // 규모 등급 — 안 보내면 Full(navigator.js). 보냈는데 Full·Xpress·Lite가 아니면 거절한다(즉시 처리는 밟을 단계가 없다)
   const { tier } = body;
   if (tier != null && !Nav.TIERS.includes(tier)) return refuse(res, "모르는 등급");

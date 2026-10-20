@@ -34,7 +34,8 @@
   const M = window.FloeMine, NT = window.FloeNotes;
   // 기본 화면 · 섬의 움직임(2026-10-20): 모아 보기 창의 순수 함수(hub.js) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js). 없어도 화면은 돈다
   const HUB = window.FloeHub, STEPS = window.NavSteps, MO = window.FloeMorph;
-  const FD = window.NavFeed;   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
+  const FD = window.NavFeed;
+  const AP = window.NavApprove;   // FR-17 승인 카드(2026-10-20) — 서버 없이 보일 예시 카드   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
   const SESS = (() => { try { return window.sessionStorage; } catch { return null; } })();
   const PLACE_KEY = "floe:place", SEEN_KEY = "floe:alerts-seen";   // 이 창(섬)에만 — 기록(KEY)에는 넣지 않는다(다음에 켤 때는 늘 기본 화면)
   const STORE = (() => { try { return window.localStorage; } catch { return null; } })();
@@ -82,6 +83,7 @@
     noteText: "", notesOpen: false, noteCopy: "",  // 느낀 점(2026-10-19): 적는 중인 글, 설정에서 펼쳤나, 'Jira용 복사'가 실패했을 때 손으로 복사할 글
     cmd: null, words: "work",                      // 레벨 오버레이(2026-10-19): 고른 명령 칸(0~3 · null이면 지금 하는 일), 버튼 말(work 일 말 · game 게임 말)
     place: "base", pane: "",                       // 기본 화면(base) · 바이브 코딩(vibe) — 펼친 섬에 어떤 판을 보이나(C-13, 2026-10-20). pane: 기본 화면 안의 알림 · AI 진행 판
+    task: { text: "", lines: null, say: "", sent: "" }, apSure: "",   // FR-17(2026-10-20): 적은 할 일 · 정리한 요구 문장 · 한마디 · 넘긴 곳(프로젝트). apSure: 되돌리기 어려운 일에 '정말 허용'을 묻는 중인 카드
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
   let exHidden = M ? M.readHidden(STORE) : false;
@@ -1024,12 +1026,65 @@
     const proj = kind === "ai" && last ? last.project : project();
     const counts = kind === "ai" && last ? Object.entries((last.steps || []).reduce((m, s) => { m[s.verb || ""] = (m[s.verb || ""] || 0) + 1; return m; }, {})) : [];
     const body = !HUB ? `<p class="empty">아직 준비 중이에요</p>` : kind === "ai" ? HUB.aiHTML(aiSessions, aiMode, STEPS, now) : HUB.alertsHTML(st.alerts, now);
+    const top = kind === "ai" ? `${approvalsHTML()}${taskBox()}` : "";   // FR-17: 허락이 필요한 카드(맨 위) · 할 일 적기
     return `<section class="mc base pane tone-gray"><div class="who">${petCat("look", 92)}<b class="pj">${esc(proj || "프로젝트")}</b><span class="tl">${esc(tool)}</span>${
         kind === "ai" && last && HUB && HUB.STATE_WORD[last.state] ? `<span class="st ${esc(last.state)}">${esc(HUB.STATE_WORD[last.state])}</span>` : ""}${
         counts.length ? `<ul class="verbs">${counts.map(([v, n]) => `<li><span>${esc(v)}</span><b>${n}</b></li>`).join("")}</ul>` : ""}</div>
       <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b>
-        <button type="button" class="btn" data-act="hub-${kind}" title="모아 보기 창에서 크게 봐요">크게 보기</button></div><p class="meta">${esc(lead)}</p><div class="pane-body">${body}</div></div></section>`;
+        <button type="button" class="btn" data-act="hub-${kind}" title="모아 보기 창에서 크게 봐요">크게 보기</button></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div></div></section>`;
   }
+  // ── FR-17 대화로 일 넘기기 · 섬에서 허용 · 거절(C-4, 2026-10-20 — 이재엽 버튼 "섬에서 진짜 승인" · "허락하면 세션이 진행하는 내용을 오버레이에서도") ──
+  // 할 일 적기 → 요구 문장으로 정리(진짜 AI면 /api/task/tidy, 연습이면 navigator.js taskLines) → 사람이 고쳐 확정 → 허락하고 넘기기(/api/task/start — 서버가 연결한 폴더에서 claude를 연다).
+  // 연습 · 서버 없이(FR-10)는 넘기지 않고 예시 승인 카드를 보인다
+  function taskBox() {
+    const t = st.task;
+    if (t.sent) return `<div class="tbox sent"><b>넘겼어요 — ${esc(t.sent)}</b><p class="meta">진행은 아래에 한 줄씩 쌓여요. 파일을 고치거나 명령을 쓰기 전에 허락을 구하면 위에 카드가 떠요.</p><div class="row"><button type="button" class="btn" data-act="task-reset">다른 일 적기</button></div></div>`;
+    if (t.lines) return `<div class="tbox"><b>요구 문장으로 정리했어요 — 고쳐서 확정해요</b>
+      <textarea class="mc-input" data-act="task-lines" rows="4" aria-label="요구 문장">${esc(t.lines.join("\n"))}</textarea>${t.say ? `<p class="meta">${esc(t.say)}</p>` : ""}
+      <div class="row"><button type="button" class="btn pri" data-act="task-send">허락하고 넘기기</button><button type="button" class="btn" data-act="task-reset">그만두기</button></div></div>`;
+    return `<div class="tbox"><label class="kicker" for="task-text">할 일 적기 — Claude Code에 시킬 일</label>
+      <textarea id="task-text" class="mc-input" data-act="task-text" rows="2" placeholder="예) 회원 신청 화면 만들고 마감 알림도 넣어 줘">${esc(t.text)}</textarea>
+      <div class="row"><button type="button" class="btn pri" data-act="task-tidy" ${t.text.trim() ? "" : "disabled"}>요구 문장으로 정리</button><span class="meta">정리 → 고치기 → 허락하면 Claude Code가 이어서 해요</span></div></div>`;
+  }
+  // 기다리는 승인 요청(approve.js 카드) — 서버가 2초마다 알려 준다. 연습 · 주소 &approve=1이면 예시 카드
+  let approvals = [], apMode = "none", apKnown = new Set();
+  const approvalsHTML = () => (!approvals.length ? "" : `<div class="aplist" role="region" aria-label="허락이 필요해요">${apMode === "example" ? `<p class="note" role="status">예시 데이터예요 · 시연용</p>` : ""}${approvals.map(apCard).join("")}</div>`);
+  function apCard(a) {
+    const c = a.card || {}, sure = st.apSure === a.id, lines = Array.isArray(c.lines) ? c.lines : [];
+    return `<section class="ap${c.danger ? " danger" : ""}" data-ap="${esc(a.id)}"><div class="row ap-h">${I.look}<b class="grow">${esc(toolName(a.tool))}가 허락을 기다려요</b><span class="meta">${esc(a.project || "")}</span></div>
+      <p class="ap-what"><b>${esc(c.verb || "")}</b> · ${esc(c.what || c.tool_name || "")}</p>${lines.length ? `<pre class="ap-lines">${lines.map(esc).join("\n")}</pre>` : ""}${
+      c.danger ? `<p class="ap-danger">⚠ ${esc(c.danger)}${sure ? " — 정말 허용할까요?" : ""}</p>` : ""}
+      <div class="row"><button type="button" class="btn pri" data-act="ap-allow" data-id="${esc(a.id)}">${sure ? "정말 허용" : "허용"}</button><button type="button" class="btn" data-act="ap-deny" data-id="${esc(a.id)}">거절</button>${sure ? `<button type="button" class="btn" data-act="ap-unsure">아니요</button>` : ""}</div></section>`;
+  }
+  async function decideApproval(id, decision) {
+    const a = approvals.find((x) => x.id === id); if (!a) return;
+    if (decision === "allow" && a.card && a.card.danger && st.apSure !== id) return set({ apSure: id });   // 되돌리기 어려운 일 — 한 번 더 묻는다
+    const sure = st.apSure === id; st.apSure = "";
+    approvals = approvals.filter((x) => x.id !== id);
+    if (apMode !== "live") { say(decision === "allow" ? "연습이라 실제로 허용하지는 않았어요" : "연습이라 실제로 거절하지는 않았어요"); return render(); }
+    render();
+    try {
+      const r = await (await fetch("/api/approvals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, sig: a.sig, decision, sure }) })).json();
+      say(r && r.ok ? (decision === "allow" ? "허용했어요 — Claude Code가 이어서 해요" : "거절했어요") : (r && r.reason) || "보내지 못했어요");
+    } catch { say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
+    pollApprovals();
+  }
+  // 서버에 기다리는 승인 요청이 있나 — 새 요청이 오면 한 줄로 알리고(접혀 있으면 살짝), AI 진행 판을 보이게
+  async function pollApprovals() {
+    if (!canLive || apMode === "example") return;
+    let j;
+    try { j = await (await fetch("/api/approvals", { credentials: "same-origin" })).json(); } catch { return; }
+    if (!j || !j.ok || !Array.isArray(j.items)) return;
+    const before = approvals.map((a) => a.id).join(), fresh = j.items.filter((a) => !apKnown.has(a.id));
+    apMode = "live"; approvals = j.items.filter((a) => st.apSure !== a.id || true);
+    for (const a of j.items) apKnown.add(a.id);
+    if (fresh.length) {
+      st.place = "base"; st.pane = "ai";   // 허락은 AI 진행 판에서 — 바이브 코딩 중이어도 거기로
+      if (st.ui === "home") { activity(); say("허락이 필요해요 — 위 카드를 봐 주세요"); } else { st.ping = `${toolName(fresh[0].tool)}가 허락을 기다려요 — 눌러서 볼까요?`; peek(); }
+    }
+    if (approvals.map((a) => a.id).join() !== before && st.ui === "home") render();
+  }
+  if (canLive) setInterval(pollApprovals, 2000);
   function islandHTML(enter) {
     let body;
     if (st.place === "base") body = baseBody();
@@ -1637,6 +1692,26 @@
     "base-alerts": () => { seenAlerts = HUB ? HUB.latestAt(st.alerts) : Date.now(); try { if (SESS) SESS.setItem(SEEN_KEY, String(seenAlerts)); } catch {} set({ pane: "alerts" }); },
     "base-ai": () => { set({ pane: "ai" }); pollSteps().then(render); },
     "base-back": () => set({ pane: "" }),
+    // FR-17 할 일 적기 · 정리 · 넘기기 · 승인
+    "task-tidy": async () => {
+      const text = st.task.text.trim(); if (!text) return;
+      if (!canLive || st.mode === "fixture") { const r = N.taskLines(text); return set({ task: { ...st.task, lines: r.lines, say: r.say } }); }
+      const r = await callAI("/api/task/tidy", { text });
+      if (r.ok) set({ task: { ...st.task, lines: r.lines, say: r.say } }); else { render(); say(r.reason || "정리하지 못했어요"); }
+    },
+    "task-send": async () => {
+      const text = (st.task.lines || []).map((l) => l.trim()).filter(Boolean).join("\n"); if (!text) return say("요구 문장이 비어 있어요");
+      if (!canLive || st.mode === "fixture") {
+        if (AP) { approvals = AP.EXAMPLE.map((a) => ({ ...a, at: Date.now() })); apMode = "example"; }
+        set({ task: { ...st.task, sent: "연습 · 보내지 않았어요" } }); return say("연습이라 Claude Code에 보내지 않았어요 — 승인 카드는 예시예요");
+      }
+      const r = await callAI("/api/task/start", { text });
+      if (r.ok) { set({ task: { ...st.task, sent: r.project || "연결한 프로젝트" } }); say("넘겼어요 — 허락이 필요하면 카드가 떠요"); pollSteps().then(render); } else { render(); say(r.reason || "넘기지 못했어요"); }
+    },
+    "task-reset": () => set({ task: { text: "", lines: null, say: "", sent: "" } }),
+    "ap-allow": (i, el) => decideApproval(el && el.dataset.id, "allow"),
+    "ap-deny": (i, el) => decideApproval(el && el.dataset.id, "deny"),
+    "ap-unsure": () => set({ apSure: "" }),
     "hub-alerts": () => openHub("alerts"), "hub-ai": () => openHub("ai"),
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
     tab: (i) => set({ tab: TABS[i][0], error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false, libDoc: null }),
@@ -1818,6 +1893,9 @@
         if (grew) say("와, 꼼꼼하게 쓰셨네요!");
       }
       if (e.target.dataset.act === "question") st.question = e.target.value;
+      // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다
+      if (e.target.dataset.act === "task-text") { st.task.text = e.target.value; const b = $nav.querySelector("[data-act=task-tidy]"); if (b) b.disabled = !st.task.text.trim(); }
+      if (e.target.dataset.act === "task-lines") st.task.lines = e.target.value.split("\n");
       if (e.target.dataset.act === "own-text") st.ownText = e.target.value;
       // 느낀 점 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '남기기' 단추만 켠다
       if (e.target.dataset.act === "note-text") { st.noteText = e.target.value; const b = document.querySelector("[data-act=note-add]"); if (b) b.disabled = !st.noteText.trim(); }
@@ -1959,6 +2037,7 @@
     // 주소로 연 장면은 바이브 코딩(녹화 · 시험이 그대로), #base(&pane=alerts|ai)만 기본 화면(C-13, 넘김 문서 9절 7번)
     // 서고에서 돌아온 주소(&back)는 장면이 아니다 — 떠난 모드 그대로(F-36, PR #139 리뷰: 기본 화면에서 서재에 다녀오면 바이브 코딩이 됐다)
     if (q.base) { st.place = "base"; st.pane = q.pane === "alerts" || q.pane === "ai" ? q.pane : ""; } else setPlace(q.back ? "library" : "scene");
+    if (q.approve && AP) { approvals = AP.EXAMPLE.map((a) => ({ ...a, at: Date.now() })); apMode = "example"; st.task = { text: "", lines: null, say: "", sent: "" }; st.apSure = ""; }   // &approve=1 — 예시 승인 카드(FR-17, 녹화 · 시험용)
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
     if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null });

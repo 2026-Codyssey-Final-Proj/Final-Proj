@@ -120,6 +120,19 @@ html.notch .pill{border-radius:0 0 25px 25px}
 .mc.base.pane .ph{align-items:center;gap:8px}.mc.base.pane .ph b{font-size:calc(16px * var(--ui-scale,1));color:var(--ink)}
 .mc.base.pane .ph .lnk{color:var(--sub)}
 .mc.base.pane .meta{margin:0;color:var(--sub)}
+/* FR-17(2026-10-20) 할 일 적기 상자 · 허락이 필요한 카드 — AI 진행 판 위쪽 */
+.tbox{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:16px;background:var(--card);border:1.5px solid var(--line)}
+.tbox .kicker{font-size:calc(12px * var(--ui-scale,1));font-weight:800;color:var(--tink)}
+.tbox .mc-input{min-height:0}.tbox .row{align-items:center;gap:8px;flex-wrap:wrap}.tbox .meta{margin:0;color:var(--sub);font-size:calc(12.5px * var(--ui-scale,1))}
+.tbox.sent b{color:var(--ok)}
+.aplist{display:grid;gap:8px;max-height:380px;overflow:auto}.aplist .note{margin:0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.ap{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:16px;background:var(--card);border:2px solid var(--tink)}
+.ap.danger{border-color:#c9452f}
+.ap .ap-h{align-items:center;gap:8px}.ap .ap-h svg{width:20px;height:20px;color:var(--tink)}.ap .ap-h b{font-size:calc(15px * var(--ui-scale,1))}
+.ap-what{margin:0;font-size:calc(14px * var(--ui-scale,1));overflow-wrap:anywhere}
+.ap-lines{margin:0;max-height:150px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:calc(12px * var(--ui-scale,1));line-height:1.5;background:rgba(127,127,127,.12);border-radius:10px;padding:8px 10px}
+.ap-danger{margin:0;font-weight:700;color:#ffb4ab}   /* 어두운 카드 위 — 짙은 빨강은 대비가 모자랐다(axe) */
+.ap .row{gap:8px;flex-wrap:wrap}
 .pane-body{max-height:300px;overflow:auto;border-radius:14px;background:var(--card);padding:4px 14px}
 .pane-body .alist,.pane-body .steps{list-style:none;margin:0;padding:0}
 .pane-body .al{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);min-width:0;font-size:calc(13px * var(--ui-scale,1))}

@@ -110,7 +110,7 @@ flowchart LR
 
 | 무엇 | 어떻게 |
 |---|---|
-| **훅** | `connect.js`가 더하는 훅이 셋이 됐다 — 요청 받음 · 작업 마침에 **도구를 쓴 뒤(`PostToolUse`)** 추가. matcher는 비워 모든 도구. **이미 연결한 폴더는 다시 연결해야** 새 훅이 걸린다 |
+| **훅** | `connect.js`가 더하는 훅이 셋이 됐다 — 요청 받음 · 작업 마침에 **도구를 쓴 뒤(`PostToolUse`)** 추가. matcher는 비워 모든 도구. **이미 연결한 폴더는 다시 연결해야** 새 훅이 걸린다. **같은 날 넷째 — 허락을 구할 때(`PermissionRequest`)** `approve-hook.js`: 섬의 허용 · 거절을 기다린다(FR-17, [13-task-approval](../13-task-approval/README.md)) |
 | **훅이 넘기는 것** | `hook.js` → [`steps.js`](../../../03-backend/navigator/steps.js) `fromHook`: 말(읽었어요 · 고쳤어요 · 만들었어요 · 실행했어요 · 찾았어요 · 했어요) · 파일 경로(작업 폴더 밖이면 이름만)나 명령 첫 줄 · 고친 줄 수 `+N −M`. 80자까지 |
 | **넘기지 않는 것** | 파일 내용(`content`) · 고친 글(`old_string` · `new_string`) · 도구 결과(`tool_response`) · 명령의 둘째 줄부터. 훅이 싣지 않고 서버도 받으면 버린다 |
 | **Claude Code를 느리게 하지 않음** | PostToolUse 훅은 답을 기다리지 않고 끝난다(요청 상한 300ms). 서버가 꺼져 있어도 조용히 0으로 |

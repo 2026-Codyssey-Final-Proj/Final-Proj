@@ -7,9 +7,9 @@
 
 | | |
 |---|---|
-| 판 | **v1.1 · 2026-10-20** — AI 진행(C-12): `/api/event`가 도구를 쓴 뒤(PostToolUse)의 한 일을 받고, 새 주소 `GET /api/steps`(3-12). v1은 2026-10-18 |
+| 판 | **v1.2 · 2026-10-20** — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
 | 기준 코드 | `server.js` — 시연 안전장치(#94: 확인 값·받은 글 가림·기록 비우기)와 판정 규칙(#96: 등급별 할 일)을 합친 상태. **2026-10-18 F-04: AI 네 주소도 확인 값**, 6단계 할 일 넷(F-03). 2026-10-20 AI 진행(`steps.js` · `hook.js` PostToolUse) |
-| 시험 | [`04-tests/navigator/api-contract.test.js`](../../04-tests/navigator/api-contract.test.js) — 실제 AI를 부르지 않는다(5절) |
+| 시험 | [`04-tests/navigator/api-contract.test.js`](../../04-tests/navigator/api-contract.test.js) — 실제 AI를 부르지 않는다(5절). FR-17 주소는 [`task-api.test.js`](../../04-tests/navigator/task-api.test.js)(가짜 claude · 재생) |
 | 바꾸는 법 | 이 문서·시험·`server.js`를 한 PR에서 같이 고친다. 화면이 읽는 칸이 바뀌면 화면 담당에게 알린다 |
 | 다루지 않는 것 | 본 제품(Next `src/app/api/`)의 API — 아직 없다. 그때 이 약속을 출발점으로 쓴다 |
 
@@ -29,6 +29,12 @@
 | `POST /api/answer` | 화면 "물어보기" | 출처 · 확인 값(쿠키) | `{ok, answer, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/draft` | 화면 설계도 "초안 받기" | 출처 · 확인 값(쿠키) | `{ok, draft, say, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/review` | 화면 설계도 "다시 봐 주세요" | 출처 · 확인 값(쿠키) | `{ok, review:{say, good[], fix[], ready}, tokens}` | 403 · 413 · 400 · 502 |
+| `POST /api/approval` | 허락 훅(`approve-hook.js`) — **답을 기다린다**(FR-17, 2026-10-20) | 출처 · 확인 값(머리글) | `{ok, id, decision: "allow"\|"deny"\|"none"}` — 결정이 오거나 90초가 지나면 | 403 · 413 · 400 · 429 |
+| `GET /api/approvals` | 섬(2초마다) | 출처 · 확인 값(쿠키) | `{ok, items[]}` 기다리는 승인 카드 | 403 |
+| `POST /api/approvals/decide` | 섬 "허용" · "거절" | 출처 · 확인 값(쿠키) | `{ok, id, decision}` | 403 · 404 · 409 · 400 |
+| `POST /api/task/tidy` | 섬 "요구 문장으로 정리" | 출처 · 확인 값(쿠키) | `{ok, lines[], say, tokens}` | 403 · 413 · 400 · 502 |
+| `POST /api/task/start` | 섬 "허락하고 넘기기" | 출처 · 확인 값(쿠키) | `{ok, project, task:{state, project, at, code}}` — 연결한 폴더에서 `claude -p`를 연다 | 403 · 413 · 400 · 409 · 502 |
+| `GET /api/task` | 섬 | 출처 · 확인 값(쿠키) | `{ok, task}` 넘긴 일의 상태(없으면 null) | 403 |
 | 그 밖의 주소·방법 | — | 출처 | — | 404 `없는 주소` |
 
 ## 2. 공통 약속
@@ -52,7 +58,8 @@
 | 권한(역할) · 소유권 | — | — | — | **없다.** 한 사람의 컴퓨터에서 한 사람이 쓰는 서버라 역할도 자원의 주인도 없다. 서비스로 낼 때 채울 칸(기록·보안 기준 5절) |
 | 주소 | 있는 주소·방법인가 | `handle()` | **404** `없는 주소` | 본문을 읽기 전에 거절한다 |
 | 크기 · 형식 | 40,000자 안인가, JSON인가 | `readJson()` | **413** `보낸 글이 너무 김 — 40,000자까지` · JSON이 아니면 400(주소별 이유) | — |
-| 사업 조건 | 칸이 맞나(글·등급·단계·질문·설계도) | 주소별 | **400** (주소별 이유, 3절) | 고칠 칸을 쉬운 말로 알린다 |
+| 짝 확인(FR-17, 2026-10-20) | 결정이 **기다리는 요청**과 짝이 맞나 — `id`가 기다리는 표에 있나(아니면 **404** `기다리는 요청이 아님` — 늦었거나 이미 정해짐), `sig`(세션 · 도구 · 입력의 지문)가 같나(아니면 **409** `짝이 맞지 않음`) | `decideApproval()` | 404 · 409 | 늦은 결정 · 다른 요청의 결정을 버린다(요구서 C-4 ③, 장부 W-25 · W-26). 존재를 숨길 까닭은 없지만 "그 요청은 이제 없다"가 404의 뜻이다 |
+| 사업 조건 | 칸이 맞나(글·등급·단계·질문·설계도). FR-17: 되돌리기 어려운 일은 `sure:true`가 있어야 허용(**409** `한 번 더`), 넘긴 일이 진행 중이면 **409**, 연결한 폴더를 모르면 **400** | 주소별 | **400** (주소별 이유, 3절) | 고칠 칸을 쉬운 말로 알린다 |
 | AI 답 | AI가 답했나, 모양이 맞나 | `ask()` · `provider.js` | **502** (2-2) | 서버 뒤의 AI가 실패했다는 뜻. 지어낸 답을 주지 않는다 |
 
 ### 2-2. AI가 실패하면 — 502
@@ -399,6 +406,45 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
       { "seq": 11, "at": 1792316170004, "verb": "읽었어요", "what": "src/signup.js", "add": 0, "del": 0 },
       { "seq": 12, "at": 1792316180211, "verb": "고쳤어요", "what": "src/signup.js", "add": 12, "del": 3 } ] } ] }
 ```
+
+<!-- claude-drafted: 2026-10-20 — FR-17 대화로 일 넘기기 · 섬에서 허용 · 거절(C-4, 이재엽 버튼 "섬에서 진짜 승인" · "허락하면 세션이 진행하는 내용을 오버레이에서도"). 넘김 문서 fable-handoff-2026-10-20-c4-views.md 2절 ② · 3절 -->
+### 3-13. `POST /api/approval` — 허락 훅이 승인 카드를 보내고 **답을 기다린다** (FR-17, 2026-10-20)
+
+- **누가:** [`approve-hook.js`](approve-hook.js) — Claude Code의 **PermissionRequest** 훅(파일을 고치거나 명령을 쓰기 전에 허락을 구할 때). 지켜보기 훅(`hook.js`)과 따로다 — 이 훅만 기다린다.
+- **확인:** 출처 + 확인 값 머리글.
+- **본문:** `id`(훅이 만든 임의 글 8~64자), `sig`(세션 · 도구 · 입력의 지문 — sha256 64자, [approve.js](approve.js) `sig`), `session_id` · `cwd` · `tool` · `tool_name`, `card`([approve.js](approve.js) `card` — `tool_name` · `verb` · `what` · `kind` · `lines[]` · `danger`). **`tool_input` 원문은 보내지 않는다.**
+- **서버가 하는 일:** 카드를 믿지 않는다 — 칸마다 모양을 보고 **다시 가리고**(S4) 자른다(줄 40개 · 한 줄 200자). 기다리는 표(메모리, 20개까지)에 넣고 **응답을 붙들어 둔다.** 섬이 결정하면(3-15) 그 결정을, 아무도 누르지 않고 90초(`NAV_APPROVAL_WAIT`)가 지나면 `"none"`을 답하고 표에서 지운다. 훅이 먼저 끊어도 지운다. `POST /api/events/clear`(3-4)는 기다리던 요청 모두에 `"none"`.
+- **성공:** `{ "ok": true, "id", "decision": "allow" | "deny" | "none" }`. 훅은 `allow` · `deny`일 때만 Claude Code에 JSON을 출력하고, `none` · 오류 · 서버 꺼짐이면 아무것도 출력하지 않아 Claude Code가 **스스로 묻는다**(터미널) — 대신 허용하는 길이 없다.
+- **거절:** 403 출처 · 403 확인 값 · 413 · 400 `승인 요청 모양이 아님`(id · sig · card) · 429 `기다리는 승인 요청이 너무 많음`.
+- **남지 않는 것:** 카드(바뀔 내용)는 메모리에만 있고 결정하면 지운다. 디스크 · 녹화 · 알림 목록(3-3) · AI 진행(3-12)에 들어가지 않는다.
+
+```jsonc
+// 요청 (X-Nav-Token 머리글)
+{ "id": "k3Jd…", "sig": "9f1c…(64자)", "session_id": "s-1", "cwd": "/Users/me/club-app", "tool": "claude", "tool_name": "Bash",
+  "card": { "tool_name": "Bash", "verb": "실행했어요", "what": "git push --force origin main", "kind": "run", "lines": ["git push --force origin main"], "danger": "강제로 올리는 명령이에요 — 다른 사람의 것이 사라질 수 있어요" } }
+// 응답 — 섬이 누른 뒤(또는 90초 뒤 "none")
+{ "ok": true, "id": "k3Jd…", "decision": "deny" }
+```
+
+### 3-14. `GET /api/approvals` — 섬이 기다리는 승인 카드를 본다
+
+- **누가:** 섬(`app.js`, 2초마다, 쿠키로). 서버 없이 열면 부르지 않고 [approve.js](approve.js) `EXAMPLE`을 보인다(FR-10, 주소 끝 `&approve=1`).
+- **성공:** `{ "ok": true, "items": [ { "id", "sig", "at", "project", "tool", "tool_name", "card" } ] }` — 오래된 것부터. `sig`는 결정(3-15)에 그대로 돌려보낸다.
+- **거절:** 403.
+
+### 3-15. `POST /api/approvals/decide` — 섬이 허용 · 거절을 누른다
+
+- **본문:** `id` · `sig`(3-14에서 받은 것 그대로) · `decision`(`"allow"` · `"deny"`) · `sure`(되돌리기 어려운 일을 허용할 때만 `true`).
+- **판정 차례(2-1):** 확인 값 → `id`가 기다리는 표에 있나(아니면 **404** `기다리는 요청이 아님 — 늦었거나 이미 정해졌어요`) → `sig`가 같나(아니면 **409** `결정이 요청과 짝이 맞지 않음 — 버렸어요`) → `decision`(아니면 **400** `decision은 allow 또는 deny`) → `card.danger`가 있는데 `allow`이고 `sure`가 없으면 **409** `되돌리기 어려운 일이에요 — … 한 번 더 확인(sure)해 주세요`(섬은 '정말 허용' 단추를 한 번 더 보인다).
+- **성공:** `{ "ok": true, "id", "decision" }` — 같은 순간 붙들어 둔 훅(3-13)에도 같은 답이 간다. 요청은 표에서 빠진다.
+
+### 3-16. 일 넘기기 — `POST /api/task/tidy` · `POST /api/task/start` · `GET /api/task`
+
+- **`/api/task/tidy`** — 섬에 적은 할 일(`text`, 4,000자까지)을 요구 문장으로 정리한다. AI 한 번(`provider.js`, [navigator.js](navigator.js) `taskPrompt` · `TASK_SCHEMA`). 성공 `{ ok, lines, say, tokens }` — `lines`는 1~12줄 · 한 줄 200자. 거절: 400 `작업 내용이 비어 있음` · 400 `넘긴 글이 너무 김 — 4,000자까지` · 502 `정리 형식이 맞지 않음`. 연습 모드 · 서버 없이는 섬이 부르지 않고 `taskLines`(줄 · 문장 나누기)만 쓴다.
+- **`/api/task/start`** — 사람이 고쳐 확정한 요구 문장(`text`)을 **사용자의 Claude Code**에 넘긴다. 서버는 훅 알림(3-2)이 알려 준 **가장 최근 세션의 폴더**에서 `claude -p`를 **셸 없이** 열고 글은 표준 입력으로 준다([provider.js](provider.js) `startTask` — 외부 AI 호출은 그 파일 한 곳). 권한 건너뛰기 · 설정 끄기 · 세션 잇기 옵션은 쓰지 않는다 — 그 세션이 허락을 구하면 3-13의 훅이 섬에 묻는다. 화면이 보낸 폴더 경로는 받지 않는다. 한 번에 하나.
+  성공 `{ ok, project, task: { state: "running", project, at, code: null } }`. 거절: 400 `연결한 프로젝트 폴더를 아직 몰라요 — …`(훅 알림이 온 적 없음) · 400 비어 있음 · 400 4,000자 · 409 `넘긴 일이 아직 진행 중이에요` · 502 `claude를 열지 못함`.
+- **`/api/task`** — `{ ok, task }`: 넘긴 일의 상태 `running` · `done` · `failed`와 끝 코드. 없으면 `null`. 진행(한 일)은 3-12에, 허락은 3-14에 따로 온다.
+- **남지 않는 것:** 폴더 경로는 서버 메모리에만 — 3-12 `sessions[]`에 내지 않는다(`project` 이름만).
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

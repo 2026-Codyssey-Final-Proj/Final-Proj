@@ -152,6 +152,17 @@ def feed(page, r):                   # 12 C-15 · C-16(2026-10-20): 예시 먹�
     r.still(1200)
 
 
+def approve(page, r):                # 13 FR-17(2026-10-20): 허락이 필요한 카드 둘 → 보통 일 거절 → 위험한 일 허용은 한 번 더 → 할 일 적기 → 정리(연습) → 허락하고 넘기기(연습)
+    open_nav(page, "base&pane=ai&approve=1"); r.still(1600)
+    r.click(".ap:not(.danger) [data-act=ap-deny]", hold=900)
+    r.click(".ap.danger [data-act=ap-allow]", hold=1300)
+    r.click(".ap.danger [data-act=ap-allow]", hold=900)
+    page.click("#task-text"); page.keyboard.type("회원 신청 화면 만들어 줘. 마감 알림도 넣어 줘", delay=40); r.hold(600)
+    r.click("[data-act=task-tidy]", hold=1400)
+    r.click("[data-act=task-send]", hold=1800)
+    r.still(1200)
+
+
 def hub(page, r):                    # 11 C-11 · C-12: 모아 보기 창 — 바이브 코딩(카드 둘) → 알림 → AI 진행. 파일로 열어 예시(2026-10-20)
     page.goto(f"{HUB}#vibe"); page.wait_for_timeout(900); r.still(1400)
     r.click("[data-space=alerts]", hold=1400)
@@ -163,7 +174,7 @@ SCENES = {
     "01-stage-guide": (stage_guide, NAV_CROP), "02-blueprint": (blueprint, NAV_CROP), "03-gate": (gate, NAV_CROP),
     "04-overview": (overview, NAV_CROP), "05-library": (library, None),
     "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "greeting": (greeting, NAV_CROP), "entry": (entry, None),
-    "11-hub": (hub, None), "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP),
+    "11-hub": (hub, None), "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP), "13-task-approval": (approve, NAV_CROP),
 }
 
 if __name__ == "__main__":

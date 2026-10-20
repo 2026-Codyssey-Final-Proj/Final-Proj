@@ -56,6 +56,7 @@ test("폴더 연결: 훅을 더하고(connect.js와 같은 모양 · 백업) 빼
   assert.equal(r1.ok, true); assert.ok(r1.message.includes("연결했어요"));
   const s = JSON.parse(fs.readFileSync(file, "utf8"));
   for (const e of ["UserPromptSubmit", "Stop", "PostToolUse"]) assert.ok(s.hooks[e].some((g) => g.hooks.some((h) => h.command.includes("03-backend/navigator/hook.js"))), e);   // PostToolUse — 2026-10-20 C-12
+  assert.ok(s.hooks.PermissionRequest.some((g) => g.hooks.some((h) => h.command.includes("03-backend/navigator/approve-hook.js") && h.timeout >= 100)), "허락 훅(FR-17)은 같은 폴더의 approve-hook.js");
   // 두 번째 연결은 또 더하지 않고 백업을 남긴다
   L.connectDir(tmp, BACK, true, { now: new Date("2026-10-19T00:01:00Z") });
   const s2 = JSON.parse(fs.readFileSync(file, "utf8"));

@@ -36,7 +36,7 @@
       "payload/**/*"
     ],
     "asarUnpack": [
-      "payload/03-backend/navigator/hook.js"
+      "payload/03-backend/navigator/*.js"
     ],
     "mac": {
       "target": [

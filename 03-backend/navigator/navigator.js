@@ -194,6 +194,7 @@
   const ANSWER_SCHEMA = obj({ answer: str });
   const DRAFT_SCHEMA = obj({ draft: str, say: str });
   const REVIEW_SCHEMA = obj({ say: str, good: list(str, 0, 3), fix: list(obj({ where: str, why: str, hint: str }), 0, 3), ready: { type: "boolean" } });
+  const TASK_SCHEMA = obj({ lines: list(str, 1, 12), say: str });   // FR-17 대화로 일 넘기기(2026-10-20) — 요구 문장 줄들과 한마디
 
   // ── 요청문 — [역할 · 상황] · 규칙 · 쉬운 말 규칙 · 넘길 글. 네 요청이 같은 틀을 쓴다 ──
   const ROLE = "너는 앱을 만드는 사람 옆에서 길을 알려 주는 동료다.";
@@ -251,6 +252,23 @@
     ], tag("작업내용", text), tag("설계도", doc));
   }
 
+  // FR-17 대화로 일 넘기기(C-4, 2026-10-20): 섬의 대화창에 적은 할 일 → 요구 문장(한 줄에 한 가지)으로 정리 → 사람이 고쳐 확정 → 허락하면 Claude Code에 넘긴다
+  const TASK_MAX = 12, TASK_LINE_MAX = 200;
+  function taskPrompt(text) {
+    return prompt(["사용자가 코딩 도구(Claude Code)에 시킬 일을 짧게 적었다. 그 일을 코딩 도구가 그대로 받아 할 수 있게 요구 문장으로 정리한다."], [
+      "적은 글에 있는 것만 쓴다. 없는 기능 · 숫자 · 파일 이름은 지어내지 않는다. 모르는 자리는 [정해 주세요: 무엇을] 으로 비워 둔다.",
+      "lines는 한 줄에 한 가지, '누가 무엇을 하면, 앱은 무엇을 한다' 모양으로. 1~12줄, 한 줄 200자 안쪽. 번호 · 기호 장식은 쓰지 않는다.",
+      `say는 정리한 줄을 건네며 하는 말이다. ${SHORT}으로, 사용자가 고쳐서 확정하라고 알린다.`,
+    ], tag("적은글", text));
+  }
+  const parseTask = (o) => (o && has(o, ["say"]) && Array.isArray(o.lines) && o.lines.length && o.lines.every((l) => typeof l === "string")
+    ? (() => { const lines = o.lines.filter(filled).slice(0, TASK_MAX).map((l) => l.trim().slice(0, TASK_LINE_MAX)); return lines.length ? { lines, say: o.say } : null; })() : null);
+  // 서버 없이(FR-10) — 적은 글을 줄 · 문장으로만 나눈다(지어내지 않는다), 6줄까지
+  function taskLines(text) {
+    const lines = String(text || "").split(/\r?\n|(?<=[.!?。])\s+/).map((l) => l.trim().replace(/[.!?。]$/, "")).filter(Boolean).slice(0, 6);
+    return { lines, say: lines.length ? "연습이라 적은 그대로 줄만 나눴어요 — 고쳐서 확정해요" : "적은 글이 없어요" };
+  }
+
   // ── Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함") ──
   const filled = (x) => typeof x === "string" && x.trim() !== "";
   const has = (o, keys) => !!o && keys.every((k) => filled(o[k]));        // 글자 칸이 모두 채워졌나
@@ -288,8 +306,8 @@
   }
 
   const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
-    JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt,
-    parseJudgement, parseDraft, parseReview, filled };
+    JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, TASK_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt, taskPrompt,
+    parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
 })(typeof window !== "undefined" ? window : globalThis);
