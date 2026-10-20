@@ -3,6 +3,7 @@
 //   F-36 기본 화면 → 서재 → '← 작업 화면으로' = 기본 화면(움직임 줄이기 · 새로 고침에도), 바이브 코딩에서 갔으면 바이브 코딩, 주소로 연 #tab=lib는 바이브 코딩 그대로
 //   F-37 서고로 잠수할 때 물이 다 커진 순간 판이 화면을 덮는다(섬이 가운데 · 왼쪽 · 오른쪽)
 //   F-38 앱인 척(window.floeApp 흉내) 빠르게 펼쳤다 접으면 접기 움직임(0.24초) 안에 작은 크기로의 resize가 오지 않는다
+//   C-9 · C-3 책 보기 설정(2026-10-20, 넘김 문서 c4-views ①) — 칸 끄기 · 탭 구조 · 세션별 · 새로 고침 유지 · '전체 화면'이면 서고의 펼친 책, 서고의 설정도 같은 저장
 // 실행: node --test 04-tests/e2e/modes-flow.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -240,5 +241,52 @@ test("C-16: 탭은 셋(이번 단계 · 단계 지도 · 도서관), #ex=1&tab=d
     assert.deepEqual(ok, ["아이디어 정리표"]);
     const text = await page.evaluate(() => document.getElementById("nav").innerText);
     assert.ok(!text.includes("설계도"), "화면 글에 '설계도'가 없다");
+  } finally { await browser.close(); }
+});
+
+// 책 보기 설정(C-9 · C-3 → FR-8 세부, 2026-10-20) — 코드보다 먼저 썼다. 섬의 도서관 탭에서 칸을 끄면 숨기만 하고(내용은 그대로), 탭 구조 · 세션별이 되고, 새로 고침해도 같은 설정이며,
+// '전체 화면'을 고르면 서고의 펼친 책으로 가고 서고의 '보기 설정'도 같은 저장(floe:book-view)을 읽고 쓴다
+test("C-9 · C-3: 책 보기 설정 — 칸 끄기(내용은 그대로) · 탭 구조 · 세션별(기록 없는 예시 책은 책별로 알림) · 새로 고침 유지 · '전체 화면'이면 서고의 펼친 책 · 서고의 설정도 같은 저장", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.evaluate(() => { localStorage.removeItem("floe:book-view"); localStorage.removeItem("navigator-prototype:v1"); });
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tab=lib&book=s1&view=1"), { waitUntil: "load" }); await wait(400);
+    const keys = () => page.evaluate(() => [...document.querySelectorAll(".bv-sec")].map((x) => x.dataset.k));
+    assert.deepEqual(await keys(), ["steps", "decided", "bookmarks", "todos"], "예시 책의 칸 넷 — FIELDS 차례");
+    assert.ok(await page.evaluate(() => !!document.querySelector(".bv-panel") && document.querySelector('.bv-opt[data-bv="structure"][data-v="simple"]').getAttribute("aria-pressed") === "true"), "&view=1 — 판이 열리고 기본은 간결");
+    await page.click('input[data-bv="field"][data-v="todos"]'); await wait(200);
+    assert.deepEqual(await keys(), ["steps", "decided", "bookmarks"], "할 일 칸을 끄면 숨긴다");
+    assert.equal(await page.evaluate(() => window.LibData.OPEN.find((b) => b.id === "s1").todos.length), 4, "책의 내용은 그대로");
+    await page.click('.bv-opt[data-bv="structure"][data-v="tabs"]'); await wait(200);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".bv-tab")].map((x) => x.dataset.v)), ["steps", "decided", "bookmarks"]);
+    assert.deepEqual(await keys(), ["steps"], "탭 구조 — 한 번에 한 칸");
+    await page.click('.bv-tab[data-v="bookmarks"]'); await wait(200);
+    assert.deepEqual(await keys(), ["bookmarks"]);
+    await page.click('.bv-opt[data-bv="view"][data-v="session"]'); await wait(200);
+    assert.ok(await page.evaluate(() => (document.querySelector(".bv-note")?.textContent || "").includes("책별로")), "기록이 없는 예시 책은 책별로 보이고 알린다");
+    // 새로 고침 — 설정은 남고 판은 닫힌다
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tab=lib&book=s1"), { waitUntil: "load" }); await wait(400);
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("floe:book-view")));
+    assert.equal(saved.structure, "tabs"); assert.equal(saved.view, "session"); assert.equal(saved.fields.todos, false);
+    assert.ok(await page.evaluate(() => !document.querySelector(".bv-panel") && !!document.querySelector(".bv-note")));
+    // '전체 화면' → 서고의 펼친 책(표지 없이), 서고의 보기 설정은 같은 저장을 읽는다
+    await page.click("[data-act=bv-open]"); await wait(200);
+    await page.click('.bv-opt[data-bv="size"][data-v="full"]');
+    await page.waitForFunction(() => location.href.includes("library/index.html"), { timeout: 6000 });
+    await page.waitForFunction(() => !document.documentElement.classList.contains("dive-in"), { timeout: 8000 }); await wait(300);
+    const rd = await page.evaluate(() => ({ hash: location.hash, on: document.getElementById("reader").classList.contains("on"), cover: document.getElementById("reader").classList.contains("cover"), note: !!document.querySelector("#rd-right .bv-note") }));
+    assert.deepEqual(rd, { hash: "#lib-s1", on: true, cover: false, note: true });
+    await page.click("#rd-view"); await wait(200);
+    assert.equal(await page.evaluate(() => document.querySelector('#reader .bv-opt[data-bv="view"][data-v="session"]').getAttribute("aria-pressed")), "true", "서고의 판도 세션별이 눌려 있다");
+    await page.click('#reader .bv-opt[data-bv="view"][data-v="book"]'); await wait(200);
+    await page.click('#reader input[data-bv="field"][data-v="todos"]'); await wait(200);
+    const after = await page.evaluate(() => ({ s: JSON.parse(localStorage.getItem("floe:book-view")), left: [...document.querySelectorAll("#rd-left .bv-sec")].map((x) => x.dataset.k), right: [...document.querySelectorAll("#rd-right .bv-sec")].map((x) => x.dataset.k) }));
+    assert.equal(after.s.view, "book"); assert.equal(after.s.fields.todos, true);
+    assert.deepEqual(after.left, ["steps"]); assert.deepEqual(after.right, ["decided"], "탭 구조 — 오른쪽은 고른 칸 하나(첫 칸)");
+    // '짧게'를 고르면 열어 둔 책은 작업 화면의 도서관 탭으로
+    await page.click('#reader .bv-opt[data-bv="size"][data-v="short"]');
+    await page.waitForFunction(() => location.href.includes("navigator/index.html"), { timeout: 6000 }); await wait(400);
+    assert.equal(await page.evaluate(() => `${location.hash} ${document.querySelector(".bv-head h3")?.textContent}`), "#tab=lib&book=s1 동아리 행사 등록 앱");
   } finally { await browser.close(); }
 });
