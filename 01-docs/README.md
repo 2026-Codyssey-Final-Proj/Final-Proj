@@ -6,7 +6,7 @@
 
 | 문서 | 무엇 |
 |---|---|
-| [요구사항](00-overview/requirements.md) | **제품 요구의 원본.** 기능 13개(FR-1~13), 우선순위, 접수 중인 후보 |
+| [요구사항](00-overview/requirements.md) | **제품 요구의 원본.** 기능 17개(FR-1~17 — 2026-10-20 FR-14~17을 더함), 우선순위, 접수 중인 후보 |
 | [기능 지도](features/README.md) | **기능 하나에 폴더 하나** — 무엇 · 왜 · 어떻게 진행됐나 · 흐름 그림 · 시연 GIF · 시험 · 담당 (2026-10-18) |
 | [기획안](00-overview/final-project-plan.md) | 왜 만드나 — 문제, 대상, 검증 계획 |
 | [캔버스](00-overview/canvas.md) · [비즈니스 모델 캔버스](00-overview/business-model-canvas-2026-10-17.html) | 기획을 한 장으로 |
