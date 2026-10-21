@@ -269,6 +269,35 @@
     return { lines, say: lines.length ? "연습이라 적은 그대로 줄만 나눴어요 — 고쳐서 확정해요" : "적은 글이 없어요" };
   }
 
+  // C-22 퀘스트 제작(2026-10-21, 이재엽 "지금부터 만들어서 릴리즈"): 사용자가 말한 것(idea)과 코드가 정한 단계의 할 일로 플로로가 퀘스트 글을 만든다 —
+  //   설명(desc) · 왜(why) · 할 일마다 질문 하나와 예시 답(qa). 할 일 이름 · 개수는 코드(STAGES · criteriaFor), AI는 글만 [정할 것 7 · 12]. 화면은 서버 없이(연습)는 quest.js의 기본 글을 쓴다
+  // 플로로 말투 — 이재엽이 다듬을 자리(요청문의 규칙 한 줄로 들어간다). 바꿔도 모양(스키마)은 그대로
+  const FLORO_VOICE = "너는 길잡이 물범 '플로로'다. 초등학생도 알아듣는 말로, 짧고 다정하게, '~해요'로 말한다. 재촉하지 않고, 사용자가 말한 것을 그대로 예로 든다.";
+  const IDEA_MAX = 400, QA_EX_MAX = 3;
+  const QUEST_SCHEMA = obj({ desc: str, why: str, qa: list(obj({ question: str, examples: list(str, 1, QA_EX_MAX) }), 1, 8) });
+  function questPrompt(stage, idea, tier) {
+    const s = STAGES[stage], todo = criteriaFor(stage, tier);
+    return prompt([`사용자가 "${String(idea).trim()}"를 만들고 싶다고 했다. 지금은 ${s.n + 1}단계 "${s.title}"(${s.does})다. 이 단계를 게임의 퀘스트처럼 보여 주려고 한다 — 퀘스트 글을 만든다.`,
+      `할 일(이름 · 개수는 정해져 있다 — 바꾸지 않는다): ${todoOf(todo)}`], [
+      FLORO_VOICE,
+      "desc는 이 퀘스트에서 무엇을 하는지 두세 문장, 200자 안쪽. 사용자가 만들고 싶다고 한 것을 예로 든다.",
+      "why는 이 퀘스트를 왜 하는지 한 문장, 100자 안쪽.",
+      `qa는 할 일과 같은 개수(${todo.length}개), 같은 순서다. question은 그 할 일을 하려면 사용자가 말해야 할 것을 묻는 짧은 질문(60자 안쪽). examples는 사용자가 만들고 싶다고 한 것에 맞춘 예시 답 1~${QA_EX_MAX}개(각 80자 안쪽), 한 줄에 한 가지.`,
+      "사용자가 말하지 않은 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. examples는 보기일 뿐 정답이 아니다.",
+    ], tag("만들고싶은것", String(idea).trim()));
+  }
+  // 답의 모양 — qa는 할 일 개수와 같아야 한다(다르면 null). 긴 글은 잘라 쓴다
+  function parseQuest(o, stage, tier) {
+    const todo = criteriaFor(stage, tier);
+    if (!o || !has(o, ["desc", "why"]) || !Array.isArray(o.qa) || o.qa.length !== todo.length) return null;
+    const qa = [];
+    for (const x of o.qa) {
+      if (!x || !filled(x.question) || !Array.isArray(x.examples) || !x.examples.length || !x.examples.every(filled)) return null;
+      qa.push({ question: x.question.trim().slice(0, 120), examples: x.examples.slice(0, QA_EX_MAX).map((e) => e.trim().slice(0, 200)) });
+    }
+    return { desc: o.desc.trim().slice(0, 400), why: o.why.trim().slice(0, 200), qa };
+  }
+
   // ── Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함") ──
   const filled = (x) => typeof x === "string" && x.trim() !== "";
   const has = (o, keys) => !!o && keys.every((k) => filled(o[k]));        // 글자 칸이 모두 채워졌나
@@ -307,7 +336,8 @@
 
   const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, TASK_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt, taskPrompt,
-    parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled };
+    parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
+    FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest };   // C-22 퀘스트 제작(2026-10-21)
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
 })(typeof window !== "undefined" ? window : globalThis);

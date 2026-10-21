@@ -35,6 +35,7 @@
 | `POST /api/task/tidy` | 섬 "요구 문장으로 정리" | 출처 · 확인 값(쿠키) | `{ok, lines[], say, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/task/start` | 섬 "허락하고 넘기기" | 출처 · 확인 값(쿠키) | `{ok, project, task:{state, project, at, code}}` — 연결한 폴더에서 `claude -p`를 연다 | 403 · 413 · 400 · 409 · 502 |
 | `GET /api/task` | 섬 | 출처 · 확인 값(쿠키) | `{ok, task}` 넘긴 일의 상태(없으면 null) | 403 |
+| `POST /api/quest` | 섬 — 퀘스트를 만들 때(C-22, 2026-10-21) | 출처 · 확인 값(쿠키) | `{ok, quest:{desc, why, qa[]}, tokens}` | 403 · 413 · 400 · 502 |
 | 그 밖의 주소·방법 | — | 출처 | — | 404 `없는 주소` |
 
 ## 2. 공통 약속
@@ -445,6 +446,14 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
   성공 `{ ok, project, task: { state: "running", project, at, code: null } }`. 거절: 400 `연결한 프로젝트 폴더를 아직 몰라요 — …`(훅 알림이 온 적 없음) · 400 비어 있음 · 400 4,000자 · 409 `넘긴 일이 아직 진행 중이에요` · 502 `claude를 열지 못함`.
 - **`/api/task`** — `{ ok, task }`: 넘긴 일의 상태 `running` · `done` · `failed`와 끝 코드. 없으면 `null`. 진행(한 일)은 3-12에, 허락은 3-14에 따로 온다.
 - **남지 않는 것:** 폴더 경로는 서버 메모리에만 — 3-12 `sessions[]`에 내지 않는다(`project` 이름만).
+
+### 3-17. `POST /api/quest` — 플로로가 퀘스트 글을 만든다 (C-22, 2026-10-21)
+
+<!-- claude-drafted: 2026-10-21 -->
+- 본문 `{ idea, stage, tier? }` — `idea`는 사용자가 "무엇을 만들고 싶은지" 말한 글(400자까지), `stage`는 코드가 정한 지금 단계(0~7), `tier`는 등급(없으면 Full).
+- AI 한 번([navigator.js](navigator.js) `questPrompt` · `QUEST_SCHEMA` · `parseQuest`). **할 일 이름 · 개수는 코드(`criteriaFor`)가 정하고 AI는 글만 만든다** — `desc`(무엇을 하는지, 400자) · `why`(왜, 200자) · `qa[]`(할 일과 같은 개수 · 같은 순서, 각 `{question, examples[1~3]}`). 플로로 말투는 `FLORO_VOICE` 한 줄 — 이재엽이 다듬는 자리.
+- 성공 `{ ok, quest: { desc, why, qa }, tokens }`. 거절: 400 `만들고 싶은 것이 비어 있음` · 400 `만들고 싶은 것이 너무 김 — 400자까지` · 400 `모르는 등급` · 400 `지금 단계가 없음` · 502 `퀘스트 형식이 맞지 않음`(qa 개수가 할 일과 다르거나 칸이 빔).
+- 화면: 퀘스트를 만들 때(처음 시작 · 장을 넘어갈 때) 진짜 AI 모드에서만 부르고, 못 받으면 [quest.js](quest.js)의 기본 글(할 일 이름 그대로 묻기)로 둔다. 연습 모드 · 서버 없이는 부르지 않는다(FR-10). `idea`에 비밀번호 같은 것이 보이면 보내지 않는다.
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

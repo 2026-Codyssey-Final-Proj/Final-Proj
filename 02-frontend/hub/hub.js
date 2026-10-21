@@ -48,7 +48,7 @@
     const s = parse(text);
     if (!s || !s.j || !Number.isFinite(s.j.stage)) return "아직 시작 전이에요";
     const proj = s.project ? ` · ${s.project}` : "";
-    return s.finished ? `모든 단계를 마쳤어요${proj}` : `지금 ${s.j.stage}단계${proj}`;
+    return s.finished ? `모든 단계를 마쳤어요${proj}` : `지금 ${s.j.stage + 1}단계${proj}`;   // 번호는 화면에 1~8(C-22, 2026-10-21)
   }
 
   // ── AI 진행 — 서버 답 {sessions:[{id, project, tool, state, at, steps:[{seq, at, verb, what, add, del}]}]}을 세션별로 합친다 ──

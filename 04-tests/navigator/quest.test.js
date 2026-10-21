@@ -101,3 +101,48 @@ test("쉬운 말(FR-13): 화면에 보이는 글(퀘스트 글 · 질문 · 칭�
   for (const s of Nav.STAGES) { const q = mk(s.n); texts.push(q.cond, q.when, q.desc, q.why, ...q.objs.map((_, i) => Q.question(q, i)), Q.localJudgement(q).reason); }
   for (const t of texts) for (const w of Nav.JARGON) assert.ok(!t.includes(w), `"${t}"에 ${w}`);
 });
+
+test("곁 퀘스트: 그 단계의 할 일 가운데 이 등급의 목록에 없는 것 — Full은 없고, Lite의 2단계(코드 1)에는 있다. 안 해도 되고 적는 자리도 없다", () => {
+  assert.deepEqual(Q.makeQuest(Nav.STAGES[1], Nav.criteriaFor(1, "Full")).side, []);
+  const lite = Q.makeQuest(Nav.STAGES[1], Nav.criteriaFor(1, "Lite"));
+  assert.ok(lite.side.length >= 1 && lite.side.every((s) => s.icon && s.name && !("need" in s)));
+  assert.ok(lite.side.every((s) => !lite.objs.some((o) => o.name === s.name)), "할 일과 겹치지 않는다");
+  assert.equal(lite.objs.length + lite.side.length, Nav.STAGES[1].criteria.length, "할 일 + 곁 = 그 단계의 전부");
+});
+
+test("AI 글 얹기(withAI): 설명 · 왜 · 질문 · 예시가 퀘스트에 들어가고, qa 개수가 다르면 qa는 안 받는다, 원본은 그대로. 질문 · 예시는 AI 것이 먼저", () => {
+  const q = mk(0), n = q.objs.length;
+  const ai = { desc: "설명이에요", why: "왜냐하면", qa: q.objs.map((o, i) => ({ question: `${o.name}는요?`, examples: [`보기 ${i}`, `보기 ${i}-2`] })) };
+  const w = Q.withAI(q, ai);
+  assert.equal(w.desc, "설명이에요"); assert.equal(w.why, "왜냐하면"); assert.equal(w.qa.length, n); assert.notEqual(q.desc, "설명이에요", "원본은 그대로");
+  assert.equal(Q.question(w, 0), `${q.objs[0].name}는요?`); assert.equal(Q.example(w, 0), "보기 0");
+  assert.equal(Q.example(Q.fill(w, 0, "하나"), 0), "보기 0-2", "적은 만큼 다음 예시");
+  const bad = Q.withAI(q, { desc: "  ", why: "", qa: ai.qa.slice(1) });
+  assert.equal(bad.desc, q.desc); assert.equal(bad.why, q.why); assert.ok(!bad.qa, "개수가 다르면 안 받는다");
+  assert.equal(Q.withAI(q, null), q); assert.equal(Q.withAI(null, ai), null);
+});
+
+test("꾸미기: 같은 자리를 다시 고르면 벗는다, 모르는 아이디는 그대로, 기록을 읽을 때 이상한 값은 버린다", () => {
+  let w = Q.toggleWear({}, "ribbon"); assert.deepEqual(w, { hat: "ribbon" });
+  w = Q.toggleWear(w, "scarf"); assert.deepEqual(w, { hat: "ribbon", neck: "scarf" });
+  w = Q.toggleWear(w, "beanie"); assert.deepEqual(w, { hat: "beanie", neck: "scarf" }, "같은 자리는 바꿔 쓴다");
+  w = Q.toggleWear(w, "beanie"); assert.deepEqual(w, { neck: "scarf" }, "다시 고르면 벗는다");
+  assert.deepEqual(Q.toggleWear(w, "x"), w); assert.deepEqual(Q.toggleWear(undefined, "x"), {});
+  assert.deepEqual(Q.cleanWear({ hat: "scarf", neck: "scarf", x: "crown" }), { neck: "scarf" }, "자리가 맞는 것만");
+  assert.deepEqual(Q.cleanOwned(["ribbon", "ribbon", "zzz", 3]), ["ribbon"]);
+  assert.equal(Q.itemOf("crown").slot, "hat"); assert.equal(Q.itemOf("nope"), null);
+});
+
+test("퀘스트 제작 요청문(navigator.js questPrompt): 말한 것 · 번호 1~8 · 할 일 개수 · 플로로 말투가 들어가고, parseQuest는 개수가 다르거나 칸이 비면 null", () => {
+  const p = Nav.questPrompt(0, "독서 모임 알림 앱", "Full");
+  assert.ok(p.includes("독서 모임 알림 앱") && p.includes("1단계") && p.includes(`${Nav.criteriaFor(0).length}개`) && p.includes(Nav.FLORO_VOICE));
+  assert.ok(p.includes("<만들고싶은것>"), "넘길 글은 꼬리표 안에");
+  const good = { desc: "설명", why: "왜", qa: Nav.criteriaFor(0).map(() => ({ question: "무엇을?", examples: ["예", "예2", "예3", "예4"] })) };
+  const r = Nav.parseQuest(good, 0, "Full");
+  assert.ok(r && r.qa.length === Nav.criteriaFor(0).length && r.qa[0].examples.length === 3, "예시는 셋까지");
+  assert.equal(Nav.parseQuest({ ...good, qa: good.qa.slice(1) }, 0, "Full"), null);
+  assert.equal(Nav.parseQuest({ ...good, desc: " " }, 0, "Full"), null);
+  assert.equal(Nav.parseQuest({ ...good, qa: good.qa.map((x) => ({ ...x, examples: [] })) }, 0, "Full"), null);
+  assert.ok(Nav.parseQuest({ ...good, qa: Nav.criteriaFor(0, "Lite").map(() => ({ question: "q", examples: ["e"] })) }, 0, "Lite"), "등급의 개수로");
+  assert.equal(Nav.IDEA_MAX, 400); assert.ok(Nav.QUEST_SCHEMA.required.includes("qa"));
+});

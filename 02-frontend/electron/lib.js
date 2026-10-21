@@ -180,4 +180,17 @@ function hubBounds(wa, saved) {
   return { x, y, width, height };
 }
 
-module.exports = { paths, devIcon, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl, HUB, hubBounds };
+// ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "창 셋") — 섬 창 옆에 뜨는 창 둘의 자리 ──
+// kind: "settings" | "quest". side: 설정 창의 자리("left" | "right") — 퀘스트 창은 반대쪽. isl: 섬 창의 상자, wa: 작업 영역, size: [가로, 세로].
+// 섬과 8px 띄워 같은 높이(위를 맞춤)에. 작업 영역 밖이면 안으로 당기고, 세로는 작업 영역만큼만
+const SIDE_GAP = 8;
+function sideWinBounds(kind, side, isl, wa, size) {
+  const width = Math.max(200, Math.min(Math.round(size && size[0]) || 460, wa.width)), height = Math.max(160, Math.min(Math.round(size && size[1]) || 640, wa.height));
+  const onLeft = kind === "settings" ? side !== "right" : side === "right";
+  let x = onLeft ? isl.x - width - SIDE_GAP : isl.x + isl.width + SIDE_GAP;
+  x = Math.max(wa.x, Math.min(Math.round(x), wa.x + wa.width - width));
+  const y = Math.max(wa.y, Math.min(Math.round(isl.y), wa.y + wa.height - height));
+  return { x, y, width, height };
+}
+
+module.exports = { SIDE_GAP, sideWinBounds, paths, devIcon, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl, HUB, hubBounds };

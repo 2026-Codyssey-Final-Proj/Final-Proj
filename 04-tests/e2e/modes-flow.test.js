@@ -278,7 +278,7 @@ test("C-9 · C-3: 책 보기 설정 — 칸 끄기(내용은 그대로) · 탭 �
     await page.click("[data-act=bv-open]"); await wait(200);
     await page.click('.bv-opt[data-bv="size"][data-v="full"]');
     await page.waitForFunction(() => location.href.includes("library/index.html"), { timeout: 6000 });
-    await page.waitForFunction(() => !document.documentElement.classList.contains("dive-in"), { timeout: 8000 }); await wait(300);
+    await page.waitForFunction(() => !document.documentElement.classList.contains("dive-in") && document.getElementById("reader").classList.contains("on"), { timeout: 8000 }); await wait(200);   // 펼친 책이 열릴 때까지(고정 300ms는 가끔 모자랐다, 2026-10-21)
     const rd = await page.evaluate(() => ({ hash: location.hash, on: document.getElementById("reader").classList.contains("on"), cover: document.getElementById("reader").classList.contains("cover"), note: !!document.querySelector("#rd-right .bv-note") }));
     assert.deepEqual(rd, { hash: "#lib-s1", on: true, cover: false, note: true });
     await page.click("#rd-view"); await wait(200);
@@ -510,5 +510,31 @@ test("C-22: 처음 실행 — 무엇을 만들지 말하면 '퀘스트를 시작
     assert.ok(!(await page.$(".setwin")) && await page.$(".qwin"), "Esc는 설정 창부터 닫는다");
     await page.keyboard.press("Escape"); await wait(200);
     assert.ok(!(await page.$(".qwin")), "한 번 더 Esc — 퀘스트 창");
+  } finally { await browser.close(); }
+});
+
+test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기 창, 열면 하나가 나와 플로로가 바로 쓰고(.deco) 기록에 남는다, 설정 창의 꾸미기 줄에서 벗는다. 곁 퀘스트는 Lite의 공책 목차 아래 · 도전과제 옆 가지. 서고 탭의 책도 1~8", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.evaluate(() => localStorage.removeItem("navigator-prototype:v1"));
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&shells=3"), { waitUntil: "load" }); await wait(400);
+    await page.click(".tb .shells"); await wait(300);
+    assert.ok(await page.$(".gacha-layer") && !(await page.evaluate(() => document.querySelector("[data-act=gacha-roll]").disabled)), "뽑기 창 · 열 수 있다");
+    assert.equal(await page.evaluate(() => document.querySelectorAll(".odds span").length), 4, "확률표 넷");
+    await page.click("[data-act=gacha-roll]"); await wait(1800);
+    const s = await page.evaluate(() => { const r = JSON.parse(localStorage.getItem("navigator-prototype:v1")); return { got: document.querySelector(".gacha .got")?.textContent || "", deco: !!document.querySelector(".pet .deco"), shells: document.querySelector(".tb .shells span")?.textContent, owned: r.owned, wear: r.wear }; });
+    assert.ok(s.got.includes("나왔어요") && s.deco && s.shells === "0" && s.owned.length === 1 && Object.values(s.wear)[0] === s.owned[0], JSON.stringify(s));
+    await page.keyboard.press("Escape"); await wait(200);
+    assert.ok(!(await page.$(".gacha-layer")), "Esc로 닫힌다");
+    await page.click("[data-act=settings]"); await wait(300);
+    await page.click(".closet [data-act=wear]"); await wait(300);
+    assert.ok(!(await page.$(".pet .deco")) && (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("navigator-prototype:v1")).wear).length)) === 0, "벗으면 기록도");
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tier=Lite&q=quest"), { waitUntil: "load" }); await wait(400);
+    assert.ok(await page.$(".toc .side-h") && (await page.evaluate(() => document.querySelectorAll(".toc button.lock[disabled]").length)) >= 1, "곁 퀘스트 — 목차 아래");
+    await page.click("[data-act=qtab][data-tab=tree]"); await wait(300);
+    assert.ok((await page.evaluate(() => document.querySelectorAll(".sidebn").length)) >= 1, "도전과제 옆 가지");
+    await page.click("[data-act=qtab][data-tab=lib]"); await wait(300);
+    assert.ok((await page.evaluate(() => document.querySelector(".cover .s")?.textContent || "")).includes("2단계"), "서고 탭의 책도 1~8(코드 1 = 2단계)");
   } finally { await browser.close(); }
 });

@@ -46,7 +46,7 @@ npm run dist:linux          # 우분투용(Mac · Linux에서 됨): dist/Floe-<�
 
 **언제 새 버전을 내나 — 팀이 버전업을 정할 때만**(이재엽 2026-10-19 "지금 작업들에서 릴리즈는 나중에 우리가 버전업을 할때 해줘"). 작업 PR은 CHANGELOG 한 줄만 넣고 아래 `version`은 그대로 둔다 — 그사이 고친 것을 앱으로 써 보려면 각자 `npm run dist`로 묶는다.
 
-> **지금은 잠겨 있다 (이재엽 2026-10-21 — 다시 풀 때까지):** [`version-lock.json`](version-lock.json)이 있는 동안 버전은 9.0.0에 묶이고 Release가 만들어지지 않는다. 아래 방법은 그 파일을 지운 뒤에 쓴다. <!-- claude-drafted: 2026-10-21 -->
+> **잠금(2026-10-21 낮 9.0.0 → 같은 날 밤 풀림, 10.0.0):** `version-lock.json`이 있는 동안 버전은 그 값에 묶이고 Release가 만들어지지 않는다. 다시 잠그려면 그 파일(version · since · decidedBy · why · unlock)을 두는 PR. <!-- claude-drafted: 2026-10-21 -->
 
 **새 버전을 내는 법 — 사람이 할 일은 숫자 하나:** 이 폴더 `package.json`의 `version`을 올려 PR → main에 병합. 그러면 [`.github/workflows/app-release.yml`](../../.github/workflows/app-release.yml)이
 ① Release `app-v<버전>`을 만들고(이미 있으면 그대로) ② **Mac(arm64) · Windows · Linux** 러너에서 `npm run dist` / `dist:win` / `dist:linux`를 돌려 ③ `.dmg` · `.exe` · `.AppImage` · `.deb`를 그 Release에 올린다. 비밀값 없음(저장소 기본 토큰), 서명 없음.
