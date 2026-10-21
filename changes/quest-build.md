@@ -1,0 +1,4 @@
+종류: 큰 묶음
+누가: 이재엽
+무엇: C-22 게임식 디자인 1차 뼈대 — 위 줄 하나 · 채팅 중심 섬(큰 플로로 + 플로로 말 · 내 말 · 칩 · 입력) · 설정 창(⚙, 자리 왼쪽 · 오른쪽) · 퀘스트 창(📜, 반대쪽, S/M/L, 퀘스트 · 도전과제 · 서고) · 처음 실행 → '퀘스트를 시작하시겠습니까?' → 1단계 받기 화면 → 공책 → 한 줄씩 → 완료 보고 → 조개 · 칭호. 단계 번호는 화면에 1~8. 규칙은 quest.js(순수), 판정은 그대로. Electron 창 둘 · AI 퀘스트 제작 · 뽑기 · 꾸미기는 다음 PR
+건드린 곳: `02-frontend/navigator/`(app.js · app.css · index.html, 담당 임유정), `03-backend/navigator/`(quest.js 새로, server.js STATIC), `04-tests/`(quest.test.js 새로, modes · app-9 · e2e modes-flow 고침), `01-docs/`(스토리보드 10 · 11절 · requirements C-22 · fix-map · features 14)

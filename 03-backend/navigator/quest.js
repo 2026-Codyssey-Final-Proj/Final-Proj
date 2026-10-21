@@ -1,0 +1,107 @@
+// claude-drafted: 2026-10-21 — 퀘스트 규칙(C-22 게임식 디자인 1차 뼈대). 이재엽 결정(2026-10-21): 창 셋(설정 창 · 퀘스트 창 · 채팅 창), 단계는 1단계부터, 지금부터 만들어 릴리즈.
+// 설계: 01-docs/04-pattern-implementation/game-overlay/quest-storyboard.md 10절, 캔버스 quest-canvas.html.
+// 장 하나 = 퀘스트 하나. 할 일은 navigator.js STAGES의 그 단계 할 일 **그대로**(이름 · 용어 · 개수) — 판정 규칙은 바꾸지 않는다(서버 · navigator.js).
+// 서버 · DB 없이 순수 함수만. 화면(app.js)이 쓰고, 시험(04-tests/navigator/quest.test.js)이 본다. 플로로가 묻는 말 · 예시 답을 AI가 만드는 것은 다음 판(/api/quest [제안]).
+// 쉬운 말 규칙: 화면에 보이는 글에 전문 용어를 쓰지 않는다(navigator.js JARGON) — quest.test.js가 확인한다.
+(function (root) {
+  // 단계 번호 표시 — 코드(STAGES.n)는 0~7 그대로, 화면은 1~8(이재엽 2026-10-21 "단계는 1단계부터 시작"). 서고 · 모아 보기 창의 번호는 다음 판에서 맞춘다
+  const LABEL = (n) => `${Number(n) + 1}단계`;
+  const ROMAN = ["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ", "Ⅴ", "Ⅵ", "Ⅶ", "Ⅷ"];
+  const roman = (i) => ROMAN[i] || String(i + 1);
+  // 장마다 그림(자리표시 — 진짜 그림은 고한결 [정할 것 2 · 5]) — [장 그림, 할 일 그림들(순서대로, 모자라면 마지막 것)]
+  const ICONS = [
+    ["📝", ["😮‍💨", "✨", "🧑‍🤝‍🧑", "📏"]], ["🗂️", ["✍️", "🧭", "1️⃣", "📑", "🔒"]], ["📋", ["📋", "🔢", "⭐", "🔗", "🚫"]], ["🧭", ["🔀", "⚖️", "👆", "🖼️", "🔒"]],
+    ["🦴", ["🧩", "🔢", "⚠️", "🔒"]], ["🛠️", ["🔨", "🤖", "🛂", "🧪", "🔒"]], ["🧪", ["🖱️", "📊", "📝", "👀"]], ["📖", ["🪞", "✂️", "📚"]],
+  ];
+  const iconOf = (n, i) => { const c = ICONS[n] || ICONS[0]; return c[1][Math.min(i, c[1].length - 1)]; };
+  const chapIcon = (n) => (ICONS[n] || ICONS[0])[0];
+  // 칭호 — 장을 지날 때마다 바뀐다(설정 창 · 플로로 옆). 숫자 레벨은 설정 창에만 [정할 것 6]
+  const RANKS = ["출발한 사람", "적어 두는 사람", "기능 정리꾼", "길 고르는 사람", "뼈대 세우는 사람", "만드는 사람", "재 보는 사람", "책 한 권 지은이"];
+  // 묶음 셋(설정 창의 초기 개발자 → 중급자 → 상급자) — [이름, 이 레벨부터] [정할 것 11 제안: 0~2장 · 3~5장 · 6~7장]
+  const BANDS = [["초기 개발자", 0], ["중급자", 3], ["상급자", 6]];
+  const rankOf = (lv) => RANKS[Math.max(0, Math.min(RANKS.length - 1, Number(lv) || 0))];
+  const bandOf = (lv) => BANDS.filter((b) => (Number(lv) || 0) >= b[1]).length - 1;
+  // 레벨 = 지금 단계(코드가 정한다 — FR-4). 모두 마쳤으면 8
+  const lvOf = (j, finished) => (finished ? RANKS.length : j && Number.isInteger(j.stage) ? j.stage : 0);
+  // 창 자리 — 설정 창이 왼쪽이면 퀘스트 창은 오른쪽, 반대도(이재엽 2026-10-21). 모르는 값은 왼쪽
+  const SIDES = ["left", "right"];
+  const sideOf = (v) => (SIDES.includes(v) ? v : "left");
+  const otherSide = (v) => (sideOf(v) === "left" ? "right" : "left");
+  // 퀘스트 창 크기 S · M · L — [가로, 세로] px(화면이 작으면 CSS가 줄인다)
+  const SIZES = { s: [320, 300], m: [460, 640], l: [560, 820] };
+  const sizeOf = (v) => (SIZES[v] ? v : "m");
+  // 보상 — 조개는 장을 지날 때 하나, 셋이면 뽑기(확률은 늘 화면에 — 다음 판). 돈으로 사는 것은 없다
+  const SHELL_COST = 3;
+  const ITEMS = [
+    { id: "ribbon", name: "얼음 리본", emoji: "🎀", slot: "hat", rar: "흔함", p: 60 },
+    { id: "beanie", name: "털모자", emoji: "🧢", slot: "hat", rar: "보통", p: 30 },
+    { id: "scarf", name: "별 목도리", emoji: "🧣", slot: "neck", rar: "드묾", p: 9 },
+    { id: "crown", name: "무지개 왕관", emoji: "👑", slot: "hat", rar: "아주 드묾", p: 1 },
+  ];
+  // 뽑기 — r은 0 이상 100 미만의 수(Math.random() * 100). 확률 합이 100이 아니면 마지막 것
+  function draw(items, r) {
+    let left = Number(r) || 0;
+    for (const it of items) { left -= it.p; if (left < 0) return it; }
+    return items[items.length - 1];
+  }
+  const oddsOk = (items) => items.reduce((n, it) => n + it.p, 0) === 100 && items.every((it) => it.p > 0);
+
+  // 장(단계) 하나를 퀘스트로 — stage: 단계 표의 한 줄(navigator.js STAGES[n]), criteria: 그 단계 · 그 등급의 할 일(criteriaFor)
+  // 돌려주는 것: {chap, title, objs:[{icon, name, term, need}], lines:[[줄…]…], phase, edit, sel, cond, when, desc, why}
+  function makeQuest(stage, criteria) {
+    const n = stage.n, list = Array.isArray(criteria) ? criteria : [];
+    return {
+      chap: n, title: stage.title, phase: "draft", edit: false, sel: 0,
+      objs: list.map((c, i) => ({ icon: iconOf(n, i), name: c.text, term: c.term || "", need: 1 })),
+      lines: list.map(() => []),
+      cond: n === 0 ? "처음 시작하는 사람 — 만드는 크기는 나중에 정해도 돼요" : `${LABEL(n - 1)}을 지난 사람`,
+      when: "마감 없음 — 이 세션을 끝낼 때까지",
+      desc: `${stage.does}. 할 일 ${list.length}개를 한 줄씩 저와 이야기하면 돼요.`,
+      why: `이 장을 지나면 '${stage.gives}'이 책에 남아요`,
+    };
+  }
+  const total = (q) => q.objs.reduce((n, o) => n + o.need, 0);
+  const got = (q) => q.objs.reduce((n, o, i) => n + Math.min(o.need, (q.lines[i] || []).length), 0);
+  // 지금 할 일 — 아직 다 적지 않은 첫 것. 다 적었으면 -1
+  const curIdx = (q) => (q ? q.objs.findIndex((o, i) => (q.lines[i] || []).length < o.need) : -1);
+  const isDone = (q) => !!q && curIdx(q) < 0;
+  const filled = (q, i) => !!q && (q.lines[i] || []).length >= q.objs[i].need;
+  // 한 줄 적기 — 원본은 안 바꾼다. 빈 줄은 적지 않는다
+  function fill(q, i, text) {
+    const t = String(text || "").trim();
+    if (!q || !q.objs[i] || !t) return q;
+    const lines = q.lines.map((l, k) => (k === i ? [...l, t] : l));
+    return { ...q, lines, sel: i };
+  }
+  // 줄 고치기(공책에서) — i번 할 일의 k번 줄. 빈 글이면 그 줄을 지운다
+  function setLine(q, i, k, text) {
+    if (!q || !q.objs[i]) return q;
+    const t = String(text || "").trim();
+    const lines = q.lines.map((l, idx) => (idx !== i ? l : t ? l.map((x, j) => (j === k ? t : x)) : l.filter((_, j) => j !== k)));
+    return { ...q, lines };
+  }
+  const retitle = (q, title) => { const t = String(title || "").trim(); return t ? { ...q, title: t } : q; };
+  const rename = (q, i, name) => { const t = String(name || "").trim(); return q && q.objs[i] && t ? { ...q, objs: q.objs.map((o, k) => (k === i ? { ...o, name: t } : o)) } : q; };
+  const setNeed = (q, i, need) => { const v = Math.max(1, Math.min(5, Number(need) || 1)); return q && q.objs[i] ? { ...q, objs: q.objs.map((o, k) => (k === i ? { ...o, need: v } : o)) } : q; };
+  // 플로로가 묻는 말 — 다음 판에는 AI가 만든다(프롬프트는 이재엽). 지금은 할 일 이름 그대로
+  const question = (q, i) => { const o = q && q.objs[i]; if (!o) return ""; const k = (q.lines[i] || []).length; return k ? `좋아요, ${k}개 됐어요. ${o.name} — 하나 더 말해 주세요` : `${o.name} — 한 줄이면 돼요`; };
+  // 예시 답 — 연습(연습용 예시)에서만 '예시로 적어 줘'가 쓴다. 1단계만 적어 두었다(캔버스와 같은 글). 없으면 null
+  const EXAMPLES = { 0: ["동아리 행사 신청을 종이로 받아서 누가 냈는지 매번 헷갈려요", "신청이 한곳에 모이고, 마감 전에 알림이 가요", "동아리 운영진 3명과 회원 40명", "작게 — 신청 받기와 알림까지만"] };
+  const example = (q, i) => { const ex = q && EXAMPLES[q.chap]; return ex && ex[i] ? ex[i] : null; };
+  // 적은 글 전부 — 어디쯤인지 보기(judge)에 보내는 작업 글. 처음 말한 것(idea)이 맨 위
+  const textOf = (q, idea) => [String(idea || "").trim(), ...(q ? q.objs.flatMap((o, i) => (q.lines[i] || []).map((l) => `${o.name}: ${l}`)) : [])].filter(Boolean).join("\n");
+  // 연습(서버 없이)의 완료 보고 — 적은 줄이 있으면 그 할 일을 한 것으로. 진짜 AI는 서버(/api/judge)가 본다. 모양은 서버 답과 같아서 parseJudgement를 그대로 지난다
+  // next: 서버 답의 모양(parseJudgement가 요구한다 — 질문 · 선택지 2~4). 할 일을 다 적었으면 화면은 '넘어가기 전 확인'으로 가서 이 질문은 보이지 않는다
+  function localJudgement(q, reason) {
+    return { stage: q.chap, reason: reason || `${LABEL(q.chap)} 할 일을 적은 대로 봤어요 — 연습이라 글의 내용은 보지 않아요`,
+      criteria: q.objs.map((o, i) => { const l = q.lines[i] || []; return { text: o.name, term: o.term, met: l.length > 0, evidence: l.length ? `${o.name}: ${l[0]}` : "" }; }),
+      next: { what: "아직 안 적은 할 일 적기", why: "연습이라 적은 줄만 보고 정해요", question: "다음은 무엇부터 할까요?", action: "고르면 적어 두고 다시 봐요", options: ["아직 안 적은 줄 적기", "적은 것 다듬기"] } };
+  }
+  // 위 줄의 진행 — "M개 중 k번째 할 일"(다 했으면 M)
+  const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
+
+  const api = { LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
+    makeQuest, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
+  root.NavQuest = api;
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+})(typeof window !== "undefined" ? window : globalThis);
