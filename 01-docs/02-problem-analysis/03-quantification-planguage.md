@@ -79,6 +79,11 @@ Wish: 모든 변경 이력이 영구 보존됨 (git 자체가 이미 이 조건�
   `키 | 기본값 | 근거(요구 ID·가정)` 세 칸. 코드의 판정과 화면 문구는 **같은 키를 읽는다** — 같은 수치를 두 곳에 적지 않는다.
   값을 정하지 못했으면 기본값 칸에 "미정"을 두고 근거 칸에 언제 정할지를 적는다. 구현 뒤에는
   [Twelve-Factor Config](../06-service/01-twelve-factor-app.md)처럼 코드 밖(설정 파일·환경변수)에 둔다.
+<!-- claude-drafted: 2026-10-21 — 장부 W-35(ai-engineering-from-scratch 52강), 이재엽 채택 2026-10-21 -->
+- **성공 수치에는 반대 지표를 하나 붙인다** — 그 수치가 좋아지는 동안 다른 쪽이 나빠지지 않았는지 보는 수치다(예: 완주율이
+  오르는 대신 과제 하나에 걸린 시간이 늘지 않았나). 같은 Scale · Meter로 적고, Goal 대신 "이만큼 넘게 나빠지면 실패" 선을 적는다.
+- **재기 전에 통과 · 실패 · 애매를 적는다** — Goal 이상이면 통과, 실패선(Fail 또는 반대 지표의 선)에 걸리면 실패, 그 사이이거나
+  사람 수가 적어 흔들리면 애매(무엇을 더 재야 하는지 적는다). 결과를 보고 나서 선을 옮기지 않는다.
 
 ## 출처
 - Gilb, T., *Specifying Quality Requirements With Planguage*, [ModernAnalyst](https://www.modernanalyst.com/Resources/Articles/tabid/115/ID/2926/Specifying-Quality-Requirements-With-Planguage.aspx)

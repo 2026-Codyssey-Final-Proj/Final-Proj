@@ -27,6 +27,9 @@
    한 브랜치에서 여러 개를 고쳐 가는 **묶음**이면 2절에는 묶음 한 줄만 두고, 줄마다의 내용 · 상태는 [`fixes/<브랜치 끝 이름>.md`](fixes/KAN-57-windows-app-fixes.md)에 `F-번호-n`으로 쌓는다 — 동시에 열린 PR이 2절 끝줄에서 부딪치지 않게(두승현 2026-10-19). <!-- claude-drafted: 2026-10-19 -->
 4. **등급을 정한다**([scope-tiers.md](../00-overview/scope-tiers.md)): 2~5분이면 즉시처리, 한 파일 수준이면 Lite(한 줄 기록 → 고침 → 짧은 회고), 여러 파일 · 동작이 바뀌면 Xpress. 새 기능이면 11/3 뒤에는 받지 않는다 — 대회 뒤로 적는다.
 5. **고친다:** 시험을 먼저 쓰고([code.md](../../.claude/rules/code.md)), 고친 뒤 `python3 04-tests/run_all_tests.py`. 브랜치에서 하고 PR을 연다(Claude는 `main`에 올리지 않는다).
+   <!-- claude-drafted: 2026-10-21 --> **같은 문제에 고침이 세 번 실패하면 멈춘다** — 네 번째 고침 전에 "구조가 잘못된 건 아닌지"를 사람과 상의한다.
+   고칠 때마다 다른 곳에서 새 증상이 나오면 구조 문제의 신호다. 고칠 목록 그 줄의 상태 칸에 시도 횟수를 적는다
+   (장부 W-34 — superpowers `systematic-debugging`, 이재엽 채택 2026-10-21).
 6. **버전 한 줄로 알린다** — PR에 조각 [`changes/<브랜치>.md`](../../changes/README.md) 한 장(종류는 고침이면 대개 작은 고침, "건드린 곳"에 1절 "담당"의 폴더). 병합되면 Action이 [CHANGELOG.md](../../CHANGELOG.md) 맨 위 다음 번호로 합친다(2026-10-19). 동의를 기다리지 않는다(팀 결정 2026-10-18).
 7. 같은 유형이 세 번 나오면 7단계 회고에서 [checklist.md](../catalog/checklist.md)로 올린다.
 
