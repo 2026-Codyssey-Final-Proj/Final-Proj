@@ -54,7 +54,7 @@
       dues: [],                                   // 내 책에는 마감이 없다 — 마감 칩은 그리지 않는다(app.js dueChip)
       todos: [...(finished ? todos.map((t) => ({ ...t, done: true })) : todos), ...sortedTodos],
       steps: history.map((x) => (str(x.short) ? x.short : x.text)),
-      decided: [...docs.map((d) => `${d.stage}단계 ${str(d.name) ? d.name : "단계 문서"}${str(d.at) ? ` — ${d.at}에 확정` : ""}`), ...sortedDecided],
+      decided: [...docs.map((d) => `${d.stage + 1}단계 ${str(d.name) ? d.name : "단계 문서"}${str(d.at) ? ` — ${d.at}에 확정` : ""}`), ...sortedDecided],   // 번호는 화면에 1~8(C-22)
       docStages: docs.map((d) => d.stage),         // 확정한 단계 문서의 단계(C-16 — 책 안에서 연다)
       fed: list(s.fed).filter((f) => Array.isArray(f.topics)).map((f) => ({ topics: f.topics.filter(str), left: list(f.left).length, example: f.example === true })),   // 받은 먹이(C-15) — 주제와 빠진 수만, 글은 없다
       bookmarks: [...new Set(learned.map((x) => x.term)), ...ofKind("ref").map((x) => x.text)],
@@ -63,7 +63,7 @@
       // 세션별 보기(C-3, book-view.js)의 재료 — 날짜가 남은 기록만: 지나온 단계(기록 끝의 날짜 또는 at) · 확정한 문서(at) · 받은 먹이(at). 본문은 싣지 않는다
       dated: [
         ...history.map((x) => ({ at: ymdOf(x.at) || tailDate(x.text), kind: "steps", text: str(x.short) ? x.short : x.text })),
-        ...docs.map((d) => ({ at: ymdOf(d.at), kind: "decided", text: `${d.stage}단계 ${str(d.name) ? d.name : "단계 문서"} 확정` })),
+        ...docs.map((d) => ({ at: ymdOf(d.at), kind: "decided", text: `${d.stage + 1}단계 ${str(d.name) ? d.name : "단계 문서"} 확정` })),
         ...list(s.fed).filter((f) => Array.isArray(f.topics)).map((f) => ({ at: ymdOf(Number(f.at)), kind: "fed", text: `먹이 — ${f.topics.filter(str).join(" · ") || "(빠진 구간뿐)"}` })),
         ...sorted.map((x) => ({ at: ymdOf(isDate(x.at) ? x.at : Number(x.at)), kind: { req: "decided", decision: "decided", learned: "insights", todo: "todos", ref: "bookmarks" }[x.kind] || "bookmarks", text: x.text })),
       ].filter((x) => x.at),

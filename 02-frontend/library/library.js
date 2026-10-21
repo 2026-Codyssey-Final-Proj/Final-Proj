@@ -260,9 +260,9 @@
       $("rd-stamp").innerHTML = `${b.date}<br>완독`;
     } else {
       $("rd-cover").innerHTML = `<span class="kick">열어 둔 책${b.mine ? " · 내 책" : b.example ? " · 예시 책" : ""}</span><b>${esc(b.title)}</b><i></i>
-        <span>${String(b.started || "").replaceAll("-", ".")}부터</span><span>지금 ${b.stage}단계 · ${esc(D.STAGES[b.stage] || "")}</span><span class="stamp">${b.stage}단계<br>진행 중</span><em>눌러서 펼치기</em>`;
-      $("rd-foot").textContent = `지금 ${b.stage}단계 ${D.STAGES[b.stage] || ""} · 책갈피 ${marks}장 · 할 일 ${(b.todos || []).filter((t) => t.done).length}/${(b.todos || []).length} · 덮고 꽂는 건 작업 화면의 도서관 탭에서`;
-      $("rd-stamp").innerHTML = `${b.stage}단계<br>진행 중`;
+        <span>${String(b.started || "").replaceAll("-", ".")}부터</span><span>지금 ${b.stage + 1}단계 · ${esc(D.STAGES[b.stage] || "")}</span><span class="stamp">${b.stage + 1}단계<br>진행 중</span><em>눌러서 펼치기</em>`;
+      $("rd-foot").textContent = `지금 ${b.stage + 1}단계 ${D.STAGES[b.stage] || ""} · 책갈피 ${marks}장 · 할 일 ${(b.todos || []).filter((t) => t.done).length}/${(b.todos || []).length} · 덮고 꽂는 건 작업 화면의 도서관 탭에서`;
+      $("rd-stamp").innerHTML = `${b.stage + 1}단계<br>진행 중`;   // 단계 번호는 화면에 1~8(C-22, 2026-10-21) — 자료의 stage(0~7)는 그대로
     }
     $("reader").classList.toggle("cover", cover);
     $("rd-title").textContent = `${b.title}${b.sub ? ` ${b.sub}` : ""} — ${fin ? "단계마다 내가 정한 것" : "지금까지 정한 것"}`;
@@ -350,8 +350,8 @@
       .sort((x, y) => x.b.started.localeCompare(y.b.started));
     $("rv-paths").innerHTML = rows.map(({ b, done, fin }) => `<li><button data-rv="${fin ? "f" : "o"}:${b.id}">
         <span class="nm">${esc(b.title)}${b.sub ? ` ${esc(b.sub)}` : ""}</span>
-        <span class="dots" aria-label="${fin ? "8단계 완주" : `지금 ${b.stage}단계`}">${D.STAGES.map((_, i) => `<i class="${i < done ? "on" : i === b.stage && !fin ? "cur" : ""}"></i>`).join("")}</span>
-        <span class="st">${fin ? `완주 · ${b.date}` : `${b.stage}단계 ${D.STAGES[b.stage]} · 내비게이터에서`}</span></button></li>`).join("");
+        <span class="dots" aria-label="${fin ? "8단계 완주" : `지금 ${b.stage + 1}단계`}">${D.STAGES.map((_, i) => `<i class="${i < done ? "on" : i === b.stage && !fin ? "cur" : ""}"></i>`).join("")}</span>
+        <span class="st">${fin ? `완주 · ${b.date}` : `${b.stage + 1}단계 ${D.STAGES[b.stage]} · 내비게이터에서`}</span></button></li>`).join("");
     // 끝낸 책은 여기서 펼치고, 열어 둔 책은 내비게이터로 — 이 화면의 책(내 책, 예시가 보일 때는 첫 책 s1)은 그쪽 단계 지도, 나머지는 도서관 탭
     $("rv-paths").querySelectorAll("[data-rv]").forEach((x) => (x.onclick = () => {
       const [k, id] = x.dataset.rv.split(":");

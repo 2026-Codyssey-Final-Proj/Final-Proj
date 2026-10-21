@@ -40,6 +40,7 @@ function requestOf(route, b) {
   if (route === "/api/judge") return [Nav.judgePrompt(b.text, b.stage, b.tier), Nav.JUDGE_SCHEMA];
   if (route === "/api/answer") return [Nav.answerPrompt(b.stage, Array.isArray(b.hard) ? b.hard.map(String) : [], b.question, b.text), Nav.ANSWER_SCHEMA];
   if (route === "/api/draft") return [Nav.draftPrompt(b.stage, b.text, b.tier), Nav.DRAFT_SCHEMA];
+  if (route === "/api/quest") return [Nav.questPrompt(b.stage, b.idea, b.tier), Nav.QUEST_SCHEMA];   // C-22(2026-10-21)
   return [Nav.reviewPrompt(b.stage, b.text, b.doc, b.tier), Nav.REVIEW_SCHEMA];
 }
 const items = {};
@@ -71,6 +72,15 @@ const R = {
   ].map((a, i) => rec("/api/judge", { text: `동아리 행사 등록 앱 — 모양이 틀린 판정 ${i}`, stage: 2 }, a)),
   long: rec("/api/judge", { text: LONG, stage: 0 }, judgeRaw(0)),
   answer: rec("/api/answer", { stage: 2, hard: [Nav.criteriaFor(2)[1].text], question: "'30초 안에'면 충분히 빠른 건가요?", text: EX.text }, { answer: S.answers[2][1] }),
+  // C-22 퀘스트 제작(2026-10-21) — qa는 할 일 개수와 같게, 개수가 다른 답은 502
+  quest: rec("/api/quest", { idea: "동아리 행사 등록 앱", stage: 0 }, { desc: "무엇이 불편한지부터 네 줄로 정해요. 동아리 행사 신청처럼요.", why: "첫 장이 책의 길잡이가 돼요",
+    qa: Nav.criteriaFor(0).map((c, i) => ({ question: `${c.text}, 한 줄로 말해 주세요`, examples: [`예시 ${i + 1}`, `예시 ${i + 1}-2`] })) }),
+  questLite: rec("/api/quest", { idea: "동아리 행사 등록 앱", stage: 1, tier: "Lite" }, { desc: "적어 두기", why: "왜", qa: Nav.criteriaFor(1, "Lite").map(() => ({ question: "무엇을?", examples: ["예"] })) }),
+  badQuest: [
+    { desc: "설명", why: "왜", qa: Nav.criteriaFor(0).slice(1).map(() => ({ question: "q", examples: ["e"] })) },
+    { desc: "", why: "왜", qa: Nav.criteriaFor(0).map(() => ({ question: "q", examples: ["e"] })) },
+    { desc: "설명", why: "왜", qa: Nav.criteriaFor(0).map(() => ({ question: "q", examples: [] })) },
+  ].map((a, i) => rec("/api/quest", { idea: `모양이 틀린 퀘스트 ${i}`, stage: 0 }, a)),
   answerNoHard: rec("/api/answer", { stage: 2, hard: [], question: "헷갈린 곳을 안 골랐어요", text: EX.text }, { answer: S.answers[2][0] }),
   badAnswer: [{ answer: "" }, { answer: { 글: "모양이 다름" } }, {}].map((a, i) => rec("/api/answer", { stage: 2, hard: [], question: `모양이 틀린 답 ${i}`, text: EX.text }, a)),
   drafts: [1, 2, 3, 4].map((n) => rec("/api/draft", { stage: n, text: textAt(n).text }, { draft: S.drafts[n].draft, say: S.drafts[n].say })),
@@ -108,7 +118,7 @@ after(() => { srv && srv.close(); fs.rmSync(TMP, { recursive: true, force: true 
 
 // body: 객체면 JSON으로, raw: 글자 그대로 보낸다
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI 네 주소도 확인 값이 있어야 한다 — 화면이 쿠키로 싣듯 여기서는 머리글을 기본으로 싣는다. token:false면 싣지 않는다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review"];
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/quest"];   // /api/quest — C-22(2026-10-21)
 function call(method, url, { headers = {}, body, raw, token: withTok = AI_ROUTES.includes(url.split("?")[0]) } = {}) {
   return new Promise((resolve, reject) => {
     const data = raw !== undefined ? raw : body === undefined ? undefined : JSON.stringify(body);
@@ -499,6 +509,26 @@ test("POST /api/judge: 연습 예시(동아리 행사 등록 앱 2단계)에 {ok
   assert.deepEqual(r.json.judgement.next, NEXT);
 });
 
+test("POST /api/quest(C-22): {ok, quest:{desc, why, qa[]}, tokens} — qa는 그 단계 · 그 등급의 할 일 개수 · 순서, 등급을 보내면 그 등급의 개수", async () => {
+  const r = await post(R.quest);
+  succeeded(r, ["quest", "tokens"]);
+  assert.equal(r.json.quest.qa.length, Nav.criteriaFor(0).length);
+  assert.ok(r.json.quest.qa.every((x) => typeof x.question === "string" && x.question && Array.isArray(x.examples) && x.examples.length >= 1 && x.examples.length <= 3));
+  assert.equal(typeof r.json.quest.desc, "string"); assert.equal(typeof r.json.quest.why, "string");
+  const l = await post(R.questLite);
+  succeeded(l, ["quest", "tokens"]);
+  assert.equal(l.json.quest.qa.length, Nav.criteriaFor(1, "Lite").length);
+});
+
+test("POST /api/quest(C-22): 거절 — 빈 idea · 401자 · 없는 단계 · 모르는 등급은 400(AI를 부르기 전), 개수가 다르거나 칸이 빈 답은 502 '퀘스트 형식이 맞지 않음'", async () => {
+  assert.equal((await post({ route: "/api/quest", body: { idea: "", stage: 0 } })).status, 400);
+  assert.equal((await post({ route: "/api/quest", body: { idea: "가".repeat(401), stage: 0 } })).status, 400);
+  assert.equal((await post({ route: "/api/quest", body: { idea: "앱", stage: 8 } })).status, 400);
+  assert.equal((await post({ route: "/api/quest", body: { idea: "앱", stage: "0" } })).status, 400);
+  assert.equal((await post({ route: "/api/quest", body: { idea: "앱", stage: 0, tier: "Huge" } })).status, 400);
+  for (const b of R.badQuest) { const r = await post(b); assert.equal(r.status, 502, JSON.stringify(r.json)); assert.match(r.json.reason, /퀘스트 형식/); }
+});
+
 test("POST /api/judge: 0~7단계 모두 할 일 개수는 criteriaFor(단계).length", async () => {
   for (const req of R.stages) judgementShape((await post(req)).json.judgement, req.body.stage);
 });
@@ -532,8 +562,8 @@ test("POST /api/judge: 녹화에 없는 요청(AI 실패)은 502와 공급자가
 // 네 AI 주소가 같이 쓰는 거절 — 본문 칸 순서: 글 → 등급 → 주소별 칸
 const good = { stage: 2, question: "질문", doc: "1. 신청" };
 
-test("AI 네 주소 공통: 글이 없거나 비면 400 '작업 내용이 비어 있음', 모르는 등급은 400 '모르는 등급' — AI를 부르지 않는다", async () => {
-  for (const url of AI_ROUTES) {
+test("AI 네 주소 공통: 글이 없거나 비면 400 '작업 내용이 비어 있음', 모르는 등급은 400 '모르는 등급' — AI를 부르지 않는다 (/api/quest는 글 대신 idea — 위의 자기 시험)", async () => {
+  for (const url of AI_ROUTES.filter((u) => u !== "/api/quest")) {
     for (const text of [undefined, "", "   \n", 42, ["글"]]) refused(await call("POST", url, { body: { ...good, text } }), 400, "작업 내용이 비어 있음", `${url} ${JSON.stringify(text)}`);
     for (const tier of ["Huge", "full", "즉시처리", "", 3]) refused(await call("POST", url, { body: { ...good, text: "글", tier } }), 400, "모르는 등급", `${url} ${JSON.stringify(tier)}`);
   }

@@ -19,4 +19,13 @@ contextBridge.exposeInMainWorld("floeApp", {
   openHub: (space) => ipcRenderer.send("floe:open-hub", space || ""),   // space(2026-10-20, C-13): "alerts" · "ai"면 그 칸으로(기본 화면의 '크게 보기')
   enter: () => ipcRenderer.send("floe:enter"),
   onEnter: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:enter", h); return () => ipcRenderer.removeListener("floe:enter", h); },
+  // 설정 창 · 퀘스트 창(C-22, 2026-10-21) — 섬: 열기(kind, {side, size, html, place}) · 내용 보내기 · 크기 · 닫기 · 창의 누름 받기 · 창이 닫힘 알림. 창(win.html): 내용 받기 · 누름 보내기
+  openWin: (kind, opt) => ipcRenderer.send("floe:win-open", kind, opt || {}),
+  sendWin: (kind, html) => ipcRenderer.send("floe:win-html", kind, html),
+  sizeWin: (kind, size) => ipcRenderer.send("floe:win-size", kind, size),
+  closeWin: (kind) => ipcRenderer.send("floe:win-close", kind),
+  onWinEvent: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:win-event", h); return () => ipcRenderer.removeListener("floe:win-event", h); },
+  onWinClosed: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:win-closed", h); return () => ipcRenderer.removeListener("floe:win-closed", h); },
+  onWinHtml: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:win-html", h); return () => ipcRenderer.removeListener("floe:win-html", h); },
+  winEvent: (p) => ipcRenderer.send("floe:win-event", p),
 });
