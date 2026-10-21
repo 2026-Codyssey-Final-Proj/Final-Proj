@@ -43,10 +43,13 @@ test("C-19: 막는 조건은 상태 둘(st.meal · st.busy)뿐 — 판정 규칙
   assert.match(app, /angry: "안 돼요!"/, "기분 말");
 });
 
-test("F-26: 네 / 아니요 둘뿐인 게이트 장면에서 밖의 칸이 그 둘(1 · 2 키)이 된다", () => {
-  assert.match(app, /const pair = inGate && v\.acts\.length === 2 && v\.acts\.every\(\(a\) => a\.act === "yes" \|\| a\.act === "no"\)/);
-  assert.match(app, /class="cmds two"/);
-  assert.match(css, /\.lvc \.cmds\.two\{grid-template-columns:repeat\(2/);
+// F-26(네 / 아니요가 밖의 칸 둘이 됨)은 2026-10-21 C-22로 레벨 오버레이(명령 네 칸)와 함께 뺐다 — 게이트의 네 / 아니요는 채팅의 칩 둘(y · n 키)
+test("C-22: 게이트 장면의 네 / 아니요는 채팅의 칩 둘(y · n 키) — 명령 네 칸 · LV · EXP는 없다", () => {
+  assert.match(app, /const yes = \{ label: "네, 이해했어요", act: "yes", key: "y", pri: true \}, no = \{ label: "아니요, 같이 풀어요", act: "no", key: "n" \}/);
+  assert.match(app, /chips\.map\(\(a\) => btn\(\{ \.\.\.a, chip: true \}\)\)/, "결정할 것의 단추가 칩이 된다");
+  for (const gone of ['class="cmds', "XP_EACH", "levelCard(", "pathsFor(", 'class="xp']) assert.ok(!app.includes(gone), `${gone}가 없어야`);
+  assert.match(app, /\(LV \$\{lv\}\)/, "숫자 레벨은 설정 창에만(둘째 레프런스)");
+  assert.ok(!/\.lvc\b/.test(css), "옛 레벨 오버레이 CSS가 없다");
 });
 
 test("F-45: 기준점 하나 — 앱 안의 섬은 창 가운데(left:50% + translate), 설정 창이 옆에 열릴 때만 왼쪽 고정, 접힌 창 여유는 대칭. 움직임 키프레임에 -50% 가운데 맞춤이 없다", () => {
@@ -61,9 +64,7 @@ test("F-45: 기준점 하나 — 앱 안의 섬은 창 가운데(left:50% + tran
   assert.match(css, /--t-short:\.16s; --t-base:\.24s; --t-long:\.4s;/, "시간 · 곡선 묶음");
 });
 
-test("F-46: 배치를 바꾸는 움직임을 줄였다 — 경험치 막대는 transform(scaleX), 보이지 않을 때 물범 움직임 멈춤(data-ui · page-hidden)", () => {
-  assert.match(css, /\.lvc \.xp i\{[^}]*transition:transform/); assert.ok(!/\.lvc \.xp i\{[^}]*transition:width/.test(css));
-  assert.match(app, /transform:scaleX\(\$\{\(xp \/ max\)\.toFixed\(3\)\}\)/);
+test("F-46: 배치를 바꾸는 움직임을 줄였다 — 보이지 않을 때 물범 움직임 멈춤(data-ui · page-hidden). (경험치 막대는 2026-10-21 C-22로 뺐다)", () => {
   assert.match(app, /document\.documentElement\.dataset\.ui = st\.ui;/);
   assert.match(sealCss, /html\[data-ui="hidden"\] \.cat \*, html\.page-hidden \.cat \* \{ animation-play-state: paused; \}/);
 });
