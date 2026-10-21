@@ -10,6 +10,7 @@
 | 자리 | 무엇 | 올리는 사람 |
 |---|---|---|
 | [`alcovibe/`](alcovibe/README.md) | 이재엽의 개인 프로젝트 "Alcovibe"에서 가져온 화면 테마·스타일 가이드 후보·이미지 | 이재엽 |
+| [`agent-workflow-repos/`](agent-workflow-repos/README.md) | 공개 저장소 넷(superpowers · multica · ai-engineering-from-scratch · andrej-karpathy-skills)을 우리 방법론 · Floe와 맞대 본 비교 (2026-10-21, 링크와 원칙만) | 이재엽 (비교는 Claude) |
 | `<이름>/` | 각자 가져온 자료는 자기 이름(또는 출처 이름)의 폴더에 | 각자 |
 
 새 묶음은 폴더를 하나 만들고 안에 `README.md`(무엇·어디서 왔나·확인 수준)를 둔다.
