@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v15.0 | 2026-10-21 | 이재엽 | C-22 게임식 디자인 1차 뼈대 — 위 줄 하나 · 채팅 중심 섬(큰 플로로 + 플로로 말 · 내 말 · 칩 · 입력) · 설정 창(⚙, 자리 왼쪽 · 오른쪽) · 퀘스트 창(📜, 반대쪽, S/M/L, 퀘스트 · 도전과제 · 서고) · 처음 실행 → '퀘스트를 시작하시겠습니까?' → 1단계 받기 화면 → 공책 → 한 줄씩 → 완료 보고 → 조개 · 칭호. 단계 번호는 화면에 1~8. 규칙은 quest.js(순수), 판정은 그대로. Electron 창 둘 · AI 퀘스트 제작 · 뽑기 · 꾸미기는 다음 PR (#163) | `02-frontend/navigator/`(app.js · app.css · index.html, 담당 임유정), `03-backend/navigator/`(quest.js 새로, server.js STATIC), `04-tests/`(quest.test.js 새로, modes · app-9 · e2e modes-flow 고침), `01-docs/`(스토리보드 10 · 11절 · requirements C-22 · fix-map · features 14) |
 | v14.5 | 2026-10-21 | 이재엽 | 앱 버전을 9.0.0에 잠금 — 잠금 파일이 있는 동안 버전업 시험이 실패하고 Release를 만들지 않는다 (#162) | `02-frontend/electron/`(담당 화면 구현 — 이 줄이 알림) · `.github/workflows/` · `04-tests/navigator/` |
 | v14.4 | 2026-10-21 | 이재엽 | 퀘스트 캔버스 목업 마무리 — 레프런스 여섯(처음 실행 → '퀘스트를 시작하시겠습니까?' → 1단계 퀘스트 창이 바로 뜸, 설정 · 퀘스트 창 켜고 끄기 · 자리 고르기, 받기 화면 → 공책 · 고치기, 도전과제는 그림만 + 마우스 설명, 무지개 조개 → 뽑기 → 꾸미기) · 스토리보드 9절 + 10절(만들 때 보는 요약) · C-22 세부 (#161) | `01-docs/04-pattern-implementation/game-overlay/` · `01-docs/00-overview/requirements.md`(C-22 · 13-1) |
 | v14.3 | 2026-10-21 | 이재엽 | 새 디자인 스토리보드 · 목업 — 플로로와 대화하며 퀘스트를 받고 7단계를 도전과제로(C-22, 등급 미정). 코드는 바꾸지 않음 (#160) | `01-docs/04-pattern-implementation/game-overlay/` · `01-docs/00-overview/requirements.md` · `changes/` |
