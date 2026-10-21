@@ -299,18 +299,18 @@
 | 퀘스트 창 | `qwinHTML` · `questPane` · `treePane` · `deskLib` | 설정 창의 반대쪽. 머리띠(크기 S/M/L · 닫기) · 탭 퀘스트(없음 / 받기 화면 / 공책) · 도전과제(세로 탭 = 장, 그림만, 마우스 설명) · 서고(전의 도서관 탭 그대로 — 책 안 단계 문서 · 확인할 먹이). Esc로 닫힌다 |
 | 저장 | `floe:win-side` · `floe:qwin-size` · `floe:qwin-auto` · `floe:name`(이 컴퓨터), 기록 `KEEP`에 `quest` · `idea` · `shells` | 창 자리 · 크기 · 이름은 기록(KEY)과 따로 |
 | 주소 장면 | `fromHash` | `#start`(처음) · `#start&ask`(시작하시겠습니까?) · `#ex=1&q=draft|quest|done`(받기 화면 · 공책 · 다 적음) · `&tab=map|lib`(퀘스트 창의 도전과제 · 서고) · `&set=1`(설정 창) · `&side=right` |
-| 시험 | `04-tests/navigator/quest.test.js`(규칙 10개), `modes.test.js` · `app-9.test.js`(새 모양으로), `04-tests/e2e/modes-flow.test.js`(C-22 처음 실행 흐름 · 창 자리, 옛 탭 · 명령 칸 시험은 새 모양으로) | 브라우저 확인: 처음 실행 → 2단계까지 오류 0, 400px · 1000px 넘침 없음 |
+| 시험 | `04-tests/navigator/quest.test.js`(규칙 14개), `modes.test.js` · `app-9.test.js`(새 모양으로), `api-contract.test.js`(`/api/quest`), `electron-side.test.js`(창 둘), `04-tests/e2e/modes-flow.test.js`(C-22 처음 실행 흐름 · 창 자리 · 뽑기 · 곁 퀘스트, 옛 탭 · 명령 칸 시험은 새 모양으로) | 브라우저 확인: 처음 실행 → 2단계까지 오류 0, 뽑기 → 꾸미기, 400px · 1000px 넘침 없음 |
 
-### 11-2. 다음 PR로 미룬 것
+### 11-2. 같은 날 밤, 같은 PR에 더 들어간 것 (이재엽 "전부 해보자")
 
-| # | 무엇 | 왜 |
+| # | 무엇 | 어디 · 어떻게 |
 |---|---|---|
-| 1 | 설정 창 · 퀘스트 창을 **Electron 둘째 · 셋째 창**으로(끌어 옮기기 · 모서리 크기 조절 · 창끼리 상태 맞추기) | 정할 것 10 — 지금은 섬 옆의 판이라 앱에서는 섬 창이 넓어진다(왼쪽 창이 열리면 섬이 오른쪽으로 밀림) |
-| 2 | **AI 퀘스트 제작**(`/api/quest` — 설명 · 플로로의 질문 · 예시 답, 고치기), Claude Code가 한 일의 쉬운 말 풀이 | 플로로 말투 프롬프트는 이재엽. 지금은 할 일 이름 그대로 묻는다 |
-| 3 | **뽑기 · 꾸미기**(조개 셋 → 확률표 → 플로로에 얹기) | 규칙(`quest.js` ITEMS · draw)은 있다. 그림은 고한결 [정할 것 2 · 5] |
-| 4 | 단계 번호 1~8을 **서고 · 모아 보기 창 · 책**에도 | 정할 것 13 — 지금은 섬 · 두 창만 |
-| 5 | 곁 퀘스트(등급에 따라 안 나오는 할 일을 목차 아래에) · Claude Code 진행 띠를 채팅에 | 캔버스에는 있었고 뼈대에서는 뺐다 |
-| 6 | 휴대폰(600px 이하)은 전처럼 탭 둘 | 퀘스트는 PC 먼저 |
+| 1 | 설정 창 · 퀘스트 창이 **앱에서는 Electron 창 둘**로 뜬다(설정 창은 고른 쪽, 퀘스트 창은 반대쪽, 머리띠로 끌기, 퀘스트 창은 모서리로 크기 · S/M/L). 브라우저에서는 전처럼 섬 옆의 판 | `electron/main.js`(`openSideWin` · `floe:win-*`), `electron/lib.js`(`sideWinBounds`), `preload.js`, `navigator/win.html` · `win.js`. **상태는 섬 하나**: 섬이 창의 내용(HTML)을 그려 보내고(바뀐 것만), 창의 누름 · 바뀜 · 입력 · Esc는 섬으로 돌아와 같은 손잡이(`clickAct` · `bvClick` · `onChange` · `onInput`)로 처리된다. 사람이 창을 닫으면 섬의 ⚙ · 📜가 꺼지고, 서고로 가거나 섬 창이 닫히면 같이 닫힌다 |
+| 2 | **AI 퀘스트 제작** — 진짜 AI 모드에서 퀘스트를 만들 때(처음 · 장을 넘어갈 때) 플로로가 설명 · 왜 · 할 일마다 질문 하나와 예시 답을 만든다. 못 받으면 기본 글 | `POST /api/quest`([API.md 3-17](../../../03-backend/navigator/API.md)), `navigator.js` `questPrompt` · `QUEST_SCHEMA` · `parseQuest`(qa 개수 = 할 일 개수), **플로로 말투는 `FLORO_VOICE` 한 줄 — 이재엽이 다듬는 자리**. 화면 `questText()`, `quest.js withAI`. 쉬운 말 풀이 = 판정의 `reason`이 채팅에 남는다. Claude Code가 일하는 동안 채팅에 '일하고 있어요' 띠, 알림은 채팅에 한 줄 |
+| 3 | **뽑기 · 꾸미기** — 위 줄의 조개 · 설정 창의 '조개 열기' → 뽑기 창(확률표 늘 보임, 조개 셋에 한 번, 돈으로 사는 것 없음) → 나온 것을 플로로가 바로 쓴다(모자 · 목). 설정 창의 꾸미기 줄에서 벗거나 바꾼다. 기록에 남는다(`owned` · `wear`) | `app.js` `gachaHTML` · `gachaRoll` · `deco`, `quest.js` `draw` · `toggleWear`. 그림(이모지)은 자리표시 — 진짜 그림은 고한결 |
+| 4 | 단계 번호 1~8을 **서고 · 내 책 · 모아 보기 창**에도(자료의 `stage`는 0~7 그대로) · **곁 퀘스트**(이 등급에서 빠진 할 일 — 공책 목차 아래 · 도전과제 옆 가지, 잠긴 채) | `library.js` · `my-books.js` · `hub.js`의 보이는 글, `quest.js makeQuest(...).side` |
+
+아직 안 한 것: 휴대폰(600px 이하)은 전처럼 탭 둘(퀘스트는 PC 먼저), 앱(Electron)에서 사람이 창 둘을 켜 본 기록, 진짜 AI로 `/api/quest`를 불러 본 기록(계약 시험은 재생으로), 앱 버전업(릴리즈는 이재엽이 버전업을 말할 때).
 
 ### 11-3. 바뀐 규칙은 없다
 

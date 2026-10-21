@@ -104,7 +104,7 @@ function createWindow() {
     const m = L.cursorMsg(screen.getCursorScreenPoint(), win.getContentBounds(), lastCursor);
     if (m) { lastCursor = m; win.webContents.send("floe:cursor", m); }
   }, 33);
-  win.on("closed", () => { clearInterval(cursorTick); win = null; });
+  win.on("closed", () => { clearInterval(cursorTick); win = null; closeSideWins(); });   // 섬 창이 닫히면 옆 창 둘도(C-22)
   // 화면의 바깥 링크(처음 설정의 'Claude Code 설치 안내' 등)는 앱 창이 아니라 기본 브라우저로
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
   // Windows · Linux: 창 우클릭 → 같은 메뉴(메뉴 줄이 없으니). Mac은 위 메뉴 줄 그대로
@@ -113,7 +113,7 @@ function createWindow() {
   win.webContents.on("did-start-navigation", (ev, legacyUrl, _inPlace, legacyMain) => {
     const url = typeof ev.url === "string" ? ev.url : legacyUrl, main = typeof ev.isMainFrame === "boolean" ? ev.isMainFrame : legacyMain;
     const same = typeof ev.isSameDocument === "boolean" ? ev.isSameDocument : false;
-    if (main && !same && /\/library\//.test(String(url || ""))) expandWindow();
+    if (main && !same && /\/library\//.test(String(url || ""))) { closeSideWins(); expandWindow(); }   // 서고로 가면 옆 창 둘은 닫는다(C-22)
     else if (main && !same && expanded) restoreWindow();   // 서고에서 작업 화면으로 — 섬 자리로 되돌린다(2026-10-20)
   });
   // 서버가 아직이면 '켜지는 중'(물결 선) — 서버가 켜지면 whenReady가 loadURL(URL_)로 바꾼다(C-10)
@@ -221,13 +221,43 @@ function openHub(space = "") {
   hub.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
   hub.loadURL(`${URL_}hub/index.html${hubSpace(space) ? `#${hubSpace(space)}` : ""}`);
 }
-ipcMain.on("floe:open-hub", (_e, space) => openHub(space));   // 섬 위쪽 줄의 '모아 보기' 단추 · 기본 화면의 '크게 보기'(그 칸으로)
+ipcMain.on("floe:open-hub", (_e, space) => openHub(space));
 // 바이브 코딩 '들어가기' — 섬 창을 앞으로 보이고 화면에 "이번 단계로"를 보낸다(app.js onEnter). 섬 창이 없으면 만든다(처음 화면이 '이번 단계'다)
 ipcMain.on("floe:enter", () => {
   if (!win) return createWindow();
   win.show(); win.focus();
   win.webContents.send("floe:enter");
 });
+// ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "설정 창과 퀘스트 창 그리고 채팅을 입력하는 창 이렇게 3개") — 섬 창 옆에 뜨는 창 둘 ──
+// 상태는 섬(app.js) 하나가 갖는다: 섬이 창의 내용(HTML)을 그려 보내고(floe:win-html), 창의 누름 · 바뀜 · 입력은 섬으로 돌아가(floe:win-event) 섬이 처리하고 다시 그려 보낸다.
+// 창은 테두리 없음 · 항상 위(섬처럼) · 불투명 네이비, 머리띠를 잡고 끌고(win.html의 app-region), 퀘스트 창은 모서리로 크기를 바꾼다. 자리는 섬 창 옆(lib.js sideWinBounds — 설정 창은 고른 쪽, 퀘스트 창은 반대쪽).
+// 사람이 창을 닫으면 섬에 알린다(floe:win-closed). 섬 창이 닫히거나 서고로 가면 같이 닫는다. 화면 파일은 서버 주소로(navigator/win.html — STATIC에 있어야 한다)
+const wins = { settings: null, quest: null };
+const sideKind = (k) => (k === "settings" || k === "quest" ? k : null);
+function openSideWin(kind, opt = {}) {
+  if (!win || win.isDestroyed()) return;
+  const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
+  const b = L.sideWinBounds(kind, opt.side, isl, wa, opt.size);
+  let w = wins[kind];
+  if (w && !w.isDestroyed()) { if (opt.place) w.setBounds(b); w.show(); if (typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); return; }
+  w = wins[kind] = new BrowserWindow({ ...b, frame: false, transparent: false, backgroundColor: "#16225E", alwaysOnTop: true, resizable: kind === "quest", minimizable: false, hasShadow: true, show: false,
+    minWidth: 260, minHeight: 200, title: kind === "quest" ? "Floe — 퀘스트" : "Floe — 설정",
+    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  w.setAlwaysOnTop(true, "floating");
+  w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
+  w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
+  w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (win && !win.isDestroyed()) win.webContents.send("floe:win-closed", kind); });
+  w.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
+  w.loadURL(`${URL_}navigator/win.html#${kind}`);
+}
+const closeSideWins = () => { for (const k of Object.keys(wins)) { const w = wins[k]; if (w && !w.isDestroyed()) w.close(); } };
+const fromIsland = (e) => !!win && !win.isDestroyed() && e.sender === win.webContents;
+const fromSide = (e) => Object.values(wins).some((w) => w && !w.isDestroyed() && e.sender === w.webContents);
+ipcMain.on("floe:win-open", (e, kind, opt) => { if (fromIsland(e) && sideKind(kind)) openSideWin(kind, opt || {}); });
+ipcMain.on("floe:win-html", (e, kind, html) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.webContents.send("floe:win-html", String(html || "")); });
+ipcMain.on("floe:win-close", (e, kind) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.close(); });
+ipcMain.on("floe:win-size", (e, kind, size) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed() && Array.isArray(size)) { const b = w.getBounds(); w.setBounds({ ...b, width: Math.max(260, Math.round(size[0]) || b.width), height: Math.max(200, Math.round(size[1]) || b.height) }); } });
+ipcMain.on("floe:win-event", (e, payload) => { if (fromSide(e) && win && !win.isDestroyed()) win.webContents.send("floe:win-event", payload); });   // 창의 누름은 섬으로   // 섬 위쪽 줄의 '모아 보기' 단추 · 기본 화면의 '크게 보기'(그 칸으로)
 // 처음 설정(setup.js) — 키를 설정 폴더의 .env(나만 읽기 600)에 쓰고 이 프로세스의 환경에도 넣는다. 서버가 이 앱 안에 있으니 다시 켜지 않아도
 // 다음 AI 호출부터 그 키로 부른다(provider.js는 부를 때마다 환경을 본다). 값은 어디에도 출력하지 않는다
 function writeEnv(updates) {

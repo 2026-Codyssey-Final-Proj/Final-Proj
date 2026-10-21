@@ -68,3 +68,28 @@ test("F-46: 배치를 바꾸는 움직임을 줄였다 — 보이지 않을 때 
   assert.match(app, /document\.documentElement\.dataset\.ui = st\.ui;/);
   assert.match(sealCss, /html\[data-ui="hidden"\] \.cat \*, html\.page-hidden \.cat \* \{ animation-play-state: paused; \}/);
 });
+
+// C-22 뽑기 · 꾸미기 · AI 퀘스트 글 · 채팅의 '일하고 있어요' 띠(2026-10-21, 이재엽 "전부 해보자") — 글 · 규칙 시험. 동작은 e2e modes-flow.test.js가 본다
+test("C-22: 뽑기는 조개 셋에 한 번(quest.js SHELL_COST · draw — 확률은 창에 늘 보인다), 얻은 것 · 입은 것은 기록에 남고(owned · wear), 입은 것은 플로로 위에 겹친다(.deco), Esc는 뽑기 창부터 닫는다", () => {
+  assert.match(app, /st\.shells -= QU\.SHELL_COST; st\.gacha = \{ phase: "rolling" \}; render\(\);/);
+  assert.match(app, /const it = QU\.draw\(QU\.ITEMS, Math\.random\(\) \* 100\);/, "확률은 quest.js의 표");
+  assert.match(app, /QU\.ITEMS\.map\(\(it\) => `<span><b>\$\{it\.emoji\} \$\{esc\(it\.name\)\}<\/b>\$\{esc\(it\.rar\)\} \$\{it\.p\}%<\/span>`\)/, "확률표가 창에 있다");
+  assert.ok(app.includes("돈으로 사는 것은 없어요"), "돈으로 사지 않는다");
+  const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
+  assert.ok(keep.includes('"owned"') && keep.includes('"wear"') && keep.includes('"shells"'), "기록에 남는다");
+  assert.match(app, /const deco = \(\) => \(QU \? Object\.values\(st\.wear\)\.map\(QU\.itemOf\)/);
+  assert.match(css, /\.deco\.hat\{top:-6%;font-size:calc\(var\(--fs,100px\) \* \.32\)\}/);
+  assert.match(app, /if \(st\.gacha\) return set\(\{ gacha: st\.gacha\.phase === "rolling" \? st\.gacha : null \}\);/, "Esc — 여는 중에는 안 닫힌다");
+  assert.match(app, /wear: \(i, el\) => \{ if \(!QU \|\| !el\) return; set\(\{ wear: QU\.toggleWear\(st\.wear, el\.dataset\.v\) \}\); \},/, "설정 창의 꾸미기 줄");
+});
+
+test("C-22: 퀘스트 글은 진짜 AI 모드에서만 /api/quest로 받고(연습 · 서버 없이는 기본 글), 못 받으면 기본 글로 두고 까닭만 말한다, 비밀값이 보이면 보내지 않는다. 판정의 쉬운 말(reason)과 Claude Code 알림은 채팅에 남는다", () => {
+  assert.match(app, /const q = st\.quest; if \(!q \|\| !QU \|\| st\.mode !== "live" \|\| !canLive\) return;/);
+  assert.match(app, /if \(sensitive\(idea\)\.length\) return say\(/);
+  assert.match(app, /const r = await callAI\("\/api\/quest", \{ idea, stage: q\.chap, tier: st\.tier \}\);/);
+  assert.match(app, /st\.quest = QU\.withAI\(st\.quest, r\.quest\)/);
+  assert.match(app, /if \(!r\.ok\) say\(`퀘스트 글은 기본 글로 둘게요/);
+  assert.match(app, /if \(j\.reason\) logMsg\("floro", esc\(j\.reason\)\);/, "쉬운 말 풀이");
+  assert.match(app, /working\(\) \? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요/, "일하고 있어요 띠");
+  assert.match(css, /\.msg\.sys \.bar i\{[^}]*animation:barrun/);
+});

@@ -61,7 +61,7 @@ test("app.js — 알림 · AI 진행 판은 섬 안에서 바로, 모아 보기 
   assert.match(app, /HUB\.anyWorking\(aiSessions\)/, "일하는 중 점");
   assert.match(app, /"hub-alerts": \(\) => openHub\("alerts"\), "hub-ai": \(\) => openHub\("ai"\),/);
   assert.match(app, /fetch\(`\/api\/steps\?since=\$\{aiLatest\}`/, "AI 진행만 묻는다");
-  assert.match(app, /if \(st\.place !== "base" \|\| st\.ui !== "home"\) return;/, "기본 화면이 펼쳐져 있을 때만 2초마다");
+  assert.match(app, /if \(st\.ui !== "home"\) return; const was = aiLatest;/, "펼쳐져 있을 때만 2초마다(C-22부터는 채팅의 '일하고 있어요' 띠가 쓴다)");
   assert.match(app, /aiSessions = HUB\.exampleSessions\(STEPS, Date\.now\(\)\)/, "서버 없이는 예시(FR-10)");
   // C-12 규칙 — 파일 내용 · 고친 글 · 명령 결과를 다루는 이름이 섬에 없다
   for (const bad of ["tool_input", "tool_response", "old_string", "new_string", "content:"]) assert.ok(!app.includes(bad), `app.js에 ${bad}가 없어야`);

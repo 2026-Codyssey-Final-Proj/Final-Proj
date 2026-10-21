@@ -696,6 +696,10 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .msg .b{display:block;padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--soft);color:var(--ink);font-size:calc(14px * var(--ui-scale,1));line-height:1.5;min-width:0;border:1px solid var(--line);overflow-wrap:anywhere}
 .msg.me .b{background:var(--acc-btn);color:var(--acc-ink);border-radius:16px 16px 4px 16px;font-weight:600;border-color:transparent}
 .msg.sys .b{background:var(--warnbg);color:var(--warn);font-size:calc(13px * var(--ui-scale,1));border-radius:12px}
+.msg.sys .bar{display:block;height:6px;border-radius:3px;background:rgba(127,127,127,.2);overflow:hidden;margin-top:6px}
+.msg.sys .bar i{display:block;height:100%;width:40%;background:var(--warn);border-radius:3px;animation:barrun 1.4s linear infinite}
+@keyframes barrun{from{translate:-100% 0}to{translate:260% 0}}
+@media (prefers-reduced-motion:reduce){.msg.sys .bar i{animation:none;width:100%}}
 .msg.now{max-width:100%}
 .msg.now .b{display:flex;flex-direction:column;gap:8px;border-color:var(--tink);width:100%}
 .msg.now .say{font-size:calc(18px * var(--ui-scale,1));font-weight:800;line-height:1.4;letter-spacing:-.2px;text-wrap:balance}
@@ -832,7 +836,37 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .qwin .cover .due.late{color:#6E1226}.qwin .cover .due.soon,.qwin .cover .due.today{color:#4A3300}
 .qwin .minispread{grid-template-columns:1fr}
 .qwin .docx{grid-template-columns:1fr}
-@media (prefers-reduced-motion:reduce){.bn.cur,.win.pop{animation:none}}
+.toc .side-h{font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45;text-align:center;margin-top:6px}
+.chain{grid-template-columns:72px minmax(0,1fr);justify-items:start;align-items:center;gap:4px 12px}
+.chain>div:first-child{display:grid;justify-items:center}
+.sides{display:flex;gap:10px;align-items:center}
+.sides .hl{width:22px;height:4px;background:#6B5B3E}
+.bn.sidebn{width:50px;height:50px;font-size:calc(22px * var(--ui-scale,1));border-radius:50%}
+/* 꾸미기 — 입은 것을 플로로 위에(모자 · 목). 크기는 플로로 크기(--fs)를 따른다 */
+.pet{position:relative}
+.deco{position:absolute;left:50%;translate:-50% 0;line-height:1;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.deco.hat{top:-6%;font-size:calc(var(--fs,100px) * .32)}
+.deco.neck{top:58%;font-size:calc(var(--fs,100px) * .28)}
+.closet{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.closet button{border:1.5px solid var(--line);background:var(--soft);border-radius:10px;padding:4px 8px;font-size:calc(12.5px * var(--ui-scale,1));color:var(--ink);display:inline-flex;align-items:center;gap:6px;min-height:32px}
+.closet button[aria-pressed=true]{border-color:var(--warn);background:var(--warnbg)}
+/* 뽑기 — 섬을 덮는 층 */
+.gacha-layer{position:absolute;inset:0;z-index:5;display:grid;place-items:center;background:rgba(4,8,40,.72);border-radius:inherit;padding:16px}
+.gacha{width:min(420px,100%);border-radius:24px;background:var(--card);border:1.5px solid var(--line);box-shadow:var(--shadow);padding:18px;display:grid;gap:12px;text-align:center;color:var(--ink)}
+.gacha h3{margin:0;font-size:calc(18px * var(--ui-scale,1))}
+.gacha .have{display:flex;justify-content:center;gap:8px;align-items:center;color:var(--ink2);font-size:calc(14px * var(--ui-scale,1))}
+.gacha .stage{height:140px;display:grid;place-items:center;border-radius:18px;background:rgba(0,0,0,.25);position:relative;overflow:hidden}
+.gacha .stage .big{font-size:calc(64px * var(--ui-scale,1));line-height:1;animation:winpop .6s cubic-bezier(.3,1.6,.5,1)}
+.gacha .bigshell{width:90px;height:90px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:conic-gradient(from 200deg,#FF9AA2,#FFD38A,#C3F584,#8AE0FF,#C9A8FF,#FF9AA2);box-shadow:inset 0 -8px 0 rgba(0,0,0,.18),0 0 30px rgba(255,255,255,.25);display:block}
+.gacha.rolling .bigshell{animation:shake .12s linear infinite}
+@keyframes shake{50%{rotate:8deg}100%{rotate:-8deg}}
+.gacha .got{margin:0;font-size:calc(15px * var(--ui-scale,1))}.gacha .got b{color:var(--warn)}
+.gacha .acts{justify-content:center}
+.odds{font-size:calc(12px * var(--ui-scale,1));color:var(--sub);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.odds span b{display:block;color:var(--ink2);font-size:calc(12.5px * var(--ui-scale,1))}
+.gacha .fine{font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);margin:0}
+@media (min-width:601px){.gacha{background:#16225E}}
+@media (prefers-reduced-motion:reduce){.bn.cur,.win.pop,.gacha .stage .big,.gacha.rolling .bigshell{animation:none}}
 @media (min-width:601px){.tt{background:#0E1745;color:#FFFFFF;border:1px solid rgba(255,255,255,.25)}}
 /* PC 리퀴드 글래스 위의 창 · 채팅 — 반투명 흰 층이 겹치면 글자 대비가 4.5에 못 미친다(axe). 창은 설정 창(.pop)처럼 불투명 네이비, 채팅 바탕은 어둡게 */
 @media (min-width:601px){

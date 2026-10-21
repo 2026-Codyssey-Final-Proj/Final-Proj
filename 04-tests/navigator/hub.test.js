@@ -95,8 +95,8 @@ test("읽지 않은 수 — 마지막으로 본 때보다 새로 온 알림만 �
 test("섬의 기록 읽기 — 지금 단계 · 연결한 프로젝트 한 줄. 없으면 '아직 시작 전이에요', 깨진 글이면 조용히 같은 말", () => {
   assert.equal(H.nowLine(null), "아직 시작 전이에요");
   assert.equal(H.nowLine("{not json"), "아직 시작 전이에요");
-  assert.equal(H.nowLine(JSON.stringify({ j: { stage: 2, criteria: [] } })), "지금 2단계");
-  assert.equal(H.nowLine(JSON.stringify({ j: { stage: 2, criteria: [] }, project: "my-app" })), "지금 2단계 · my-app");
+  assert.equal(H.nowLine(JSON.stringify({ j: { stage: 2, criteria: [] } })), "지금 3단계")   // 번호는 화면에 1~8(C-22, 2026-10-21);
+  assert.equal(H.nowLine(JSON.stringify({ j: { stage: 2, criteria: [] }, project: "my-app" })), "지금 3단계 · my-app");
   assert.equal(H.nowLine(JSON.stringify({ j: { stage: 7, criteria: [] }, finished: true, project: "my-app" })), "모든 단계를 마쳤어요 · my-app");
   assert.equal(H.nowLine(JSON.stringify({ alerts: [] })), "아직 시작 전이에요");
   assert.deepEqual(H.readAlerts(JSON.stringify({ alerts: [base] })), [base]);

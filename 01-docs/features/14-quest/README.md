@@ -29,7 +29,8 @@
 |---|---|
 | 2026-10-21 낮 | 스토리보드 · 첫 목업(PR #160), 레프런스 여섯을 받아 캔버스 목업(PR #161 — 마무리, 10절 = 만들 때 보는 요약) |
 | 2026-10-21 밤 | 이재엽 결정: 창 셋 · 1단계부터 · 지금부터 만들어 릴리즈. 버튼: 제자리에서 고치기 · 첫 PR은 뼈대 → **1차 뼈대 PR**(이 문서) |
-| 다음 PR | Electron 둘째 · 셋째 창(끌기 · 모서리 크기) · AI 퀘스트 제작(플로로 말투 프롬프트는 이재엽) · 뽑기 · 꾸미기 · 서고 · 모아 보기 창의 번호 1~8 — [스토리보드 11-2](../../04-pattern-implementation/game-overlay/quest-storyboard.md) |
+| 2026-10-21 밤 · 같은 PR | 이재엽 "전부 해보자" → 앱에서는 설정 창 · 퀘스트 창이 **Electron 창 둘**(상태는 섬 하나, 창은 내용을 보이고 누름을 돌려보낸다), **AI 퀘스트 제작**(`/api/quest` — 설명 · 질문 · 예시, 말투는 `FLORO_VOICE` 한 줄 — 이재엽), **뽑기 · 꾸미기**(조개 셋 · 확률표 · 플로로에 얹기), 서고 · 모아 보기 창의 번호 1~8, 곁 퀘스트, 채팅의 '일하고 있어요' 띠 — [스토리보드 11-2](../../04-pattern-implementation/game-overlay/quest-storyboard.md) |
+| 아직 | 앱(Electron)에서 사람이 창 둘을 켜 본 기록, 진짜 AI로 퀘스트 글을 받아 본 기록, 휴대폰, 진짜 그림(고한결), 앱 버전업 |
 
 ## 흐름
 
@@ -50,12 +51,15 @@ flowchart LR
 
 | 무엇 | 어디 |
 |---|---|
-| 규칙(순수) | [`03-backend/navigator/quest.js`](../../../03-backend/navigator/quest.js) — 장 = 퀘스트, 번호 1~8, 한 줄씩 · 고치기, 칭호 · 묶음, 창 자리 · 크기, 뽑기 확률(다음 판), 연습의 완료 보고 |
+| 규칙(순수) | [`03-backend/navigator/quest.js`](../../../03-backend/navigator/quest.js) — 장 = 퀘스트, 곁 퀘스트, 번호 1~8, 한 줄씩 · 고치기, AI 글 얹기, 칭호 · 묶음, 창 자리 · 크기, 뽑기 확률 · 꾸미기, 연습의 완료 보고 |
+| AI(한 곳) | [`navigator.js`](../../../03-backend/navigator/navigator.js) `questPrompt` · `QUEST_SCHEMA` · `parseQuest` · `FLORO_VOICE`, [`server.js`](../../../03-backend/navigator/server.js) `POST /api/quest`([API.md 3-17](../../../03-backend/navigator/API.md)) — 부르는 곳은 전처럼 `provider.js` 하나 |
+| 앱의 창 둘 | [`electron/main.js`](../../../02-frontend/electron/main.js) `openSideWin`, [`lib.js`](../../../02-frontend/electron/lib.js) `sideWinBounds`, [`preload.js`](../../../02-frontend/electron/preload.js), [`navigator/win.html`](../../../02-frontend/navigator/win.html) · [`win.js`](../../../02-frontend/navigator/win.js) |
 | 화면 | [`02-frontend/navigator/app.js`](../../../02-frontend/navigator/app.js) — `topbar` · `chatCard` · `send` · `momentQuest` · `questReport` · `qwinHTML` · `questPane` · `treePane` · `setwinHTML`, 모양은 [`app.css`](../../../02-frontend/navigator/app.css) 맨 아래 |
-| 시험 | [`quest.test.js`](../../../04-tests/navigator/quest.test.js)(규칙 10개), [`modes.test.js`](../../../04-tests/navigator/modes.test.js) · [`app-9.test.js`](../../../04-tests/navigator/app-9.test.js)(새 모양), [e2e `modes-flow.test.js`](../../../04-tests/e2e/modes-flow.test.js)(처음 실행 흐름 · 창 자리 · 게이트의 칩) |
-| 주소 장면 | `#start` · `#start&ask` · `#ex=1&q=draft` · `#ex=1&q=quest` · `#ex=1&q=done` · `&tab=map` · `&tab=lib` · `&set=1` · `&side=right` |
+| 시험 | [`quest.test.js`](../../../04-tests/navigator/quest.test.js)(규칙 14개), [`api-contract.test.js`](../../../04-tests/navigator/api-contract.test.js)(`/api/quest`), [`electron-side.test.js`](../../../04-tests/navigator/electron-side.test.js)(창 둘), [`modes.test.js`](../../../04-tests/navigator/modes.test.js) · [`app-9.test.js`](../../../04-tests/navigator/app-9.test.js)(새 모양), [e2e `modes-flow.test.js`](../../../04-tests/e2e/modes-flow.test.js)(처음 실행 흐름 · 창 자리 · 게이트의 칩 · 뽑기 · 곁 퀘스트) |
+| 주소 장면 | `#start` · `#start&ask` · `#ex=1&q=draft` · `#ex=1&q=quest` · `#ex=1&q=done` · `&tab=map` · `&tab=lib` · `&set=1` · `&side=right` · `&shells=3`(뽑기) · `&tier=Lite&q=quest`(곁 퀘스트) |
 
 ## 담당 · 정할 것
 
 - 화면 담당 임유정 — 이 PR은 이재엽(팀장)이 Claude와 만들었다(`claude-drafted`). 그림(이모지)은 자리표시, 진짜 그림은 고한결([스토리보드 10-5](../../04-pattern-implementation/game-overlay/quest-storyboard.md) 2 · 5).
-- 사람이 앱(Electron)에서 켜 본 기록은 아직 없다 — 브라우저(파일로 열기)와 시험으로만 확인했다.
+- 사람이 앱(Electron)에서 켜 본 기록은 아직 없다 — 브라우저(파일로 열기)와 시험으로만 확인했다. 앱의 창 둘은 글 시험(`electron-side.test.js`)뿐이라 **앱으로 켜 보는 것이 첫 할 일**이다.
+- 플로로 말투는 `navigator.js`의 `FLORO_VOICE` 한 줄 — 이재엽이 다듬는 자리(모양 · 개수 규칙은 그대로).

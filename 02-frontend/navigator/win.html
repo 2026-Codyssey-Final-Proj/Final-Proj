@@ -1,0 +1,30 @@
+<!doctype html>
+<!-- claude-drafted: 2026-10-21 — 앱(Electron)의 설정 창 · 퀘스트 창(C-22, 이재엽 "창 셋"). 주소 끝 #settings · #quest.
+     내용은 섬(app.js setwinHTML · qwinHTML)이 그려서 보내고(floeApp.onWinHtml), 여기서는 보이기만 한다. 누름 · 바뀜 · 입력 · Esc는 섬으로 돌려보낸다(win.js → floeApp.winEvent).
+     브라우저로 열면(앱 밖) 내용이 없다 — 브라우저에서는 섬 옆의 판(index.html)이 같은 것을 보인다. 모양은 app.css(맨 아래 C-22)를 그대로 쓴다 -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floe — 창</title>
+<link rel="stylesheet" href="seal.css">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="library-tab.css">
+<link rel="stylesheet" href="../library/book-view.css">
+<style>
+/* 창 하나가 곧 판 하나 — 창 가득, 테두리 · 그림자 없이. 머리띠를 잡고 창을 끈다(단추는 빼고) */
+html.in-win,html.in-win body{margin:0;background:#16225E;overflow:hidden;height:100%}
+html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
+#root{height:100vh}
+#root>.win{width:100%!important;height:100vh!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}
+#root .wh{-webkit-app-region:drag;cursor:grab}
+#root .wh button,#root .wh select{-webkit-app-region:no-drag}
+.win-empty{padding:24px;color:#B9C7E6;font:14px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+</style>
+</head>
+<body>
+<div id="root"><p class="win-empty">앱 안에서 섬이 보내는 내용이 여기에 떠요.</p></div>
+<div id="fx"></div>
+<script src="win.js"></script>
+</body>
+</html>

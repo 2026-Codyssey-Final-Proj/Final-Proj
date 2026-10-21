@@ -45,15 +45,22 @@
     return items[items.length - 1];
   }
   const oddsOk = (items) => items.reduce((n, it) => n + it.p, 0) === 100 && items.every((it) => it.p > 0);
+  const itemOf = (id) => ITEMS.find((it) => it.id === id) || null;
+  // 입은 것 — {자리: 아이디}. 같은 자리를 다시 고르면 벗는다. 모르는 아이디는 그대로
+  function toggleWear(wear, id) { const it = itemOf(id); if (!it) return wear || {}; const w = { ...(wear || {}) }; if (w[it.slot] === id) delete w[it.slot]; else w[it.slot] = id; return w; }
+  const cleanWear = (wear) => Object.fromEntries(Object.entries(wear && typeof wear === "object" ? wear : {}).filter(([slot, id]) => { const it = itemOf(id); return it && it.slot === slot; }));
+  const cleanOwned = (owned) => [...new Set((Array.isArray(owned) ? owned : []).filter((id) => itemOf(id)))];
 
   // 장(단계) 하나를 퀘스트로 — stage: 단계 표의 한 줄(navigator.js STAGES[n]), criteria: 그 단계 · 그 등급의 할 일(criteriaFor)
   // 돌려주는 것: {chap, title, objs:[{icon, name, term, need}], lines:[[줄…]…], phase, edit, sel, cond, when, desc, why}
+  // side(곁 퀘스트): 그 단계의 할 일 가운데 이 등급의 목록(criteria)에 없는 것 — 안 해도 관문은 열린다. 공책 목차 아래 · 도전과제 옆 가지에 잠긴 채 보인다 [정할 것 3]
   function makeQuest(stage, criteria) {
     const n = stage.n, list = Array.isArray(criteria) ? criteria : [];
+    const side = (stage.criteria || []).filter((c) => !list.some((x) => x.text === c.text)).map((c, i) => ({ icon: iconOf(n, list.length + i), name: c.text, term: c.term || "" }));
     return {
       chap: n, title: stage.title, phase: "draft", edit: false, sel: 0,
       objs: list.map((c, i) => ({ icon: iconOf(n, i), name: c.text, term: c.term || "", need: 1 })),
-      lines: list.map(() => []),
+      lines: list.map(() => []), side,
       cond: n === 0 ? "처음 시작하는 사람 — 만드는 크기는 나중에 정해도 돼요" : `${LABEL(n - 1)}을 지난 사람`,
       when: "마감 없음 — 이 세션을 끝낼 때까지",
       desc: `${stage.does}. 할 일 ${list.length}개를 한 줄씩 저와 이야기하면 돼요.`,
@@ -83,11 +90,22 @@
   const retitle = (q, title) => { const t = String(title || "").trim(); return t ? { ...q, title: t } : q; };
   const rename = (q, i, name) => { const t = String(name || "").trim(); return q && q.objs[i] && t ? { ...q, objs: q.objs.map((o, k) => (k === i ? { ...o, name: t } : o)) } : q; };
   const setNeed = (q, i, need) => { const v = Math.max(1, Math.min(5, Number(need) || 1)); return q && q.objs[i] ? { ...q, objs: q.objs.map((o, k) => (k === i ? { ...o, need: v } : o)) } : q; };
-  // 플로로가 묻는 말 — 다음 판에는 AI가 만든다(프롬프트는 이재엽). 지금은 할 일 이름 그대로
-  const question = (q, i) => { const o = q && q.objs[i]; if (!o) return ""; const k = (q.lines[i] || []).length; return k ? `좋아요, ${k}개 됐어요. ${o.name} — 하나 더 말해 주세요` : `${o.name} — 한 줄이면 돼요`; };
-  // 예시 답 — 연습(연습용 예시)에서만 '예시로 적어 줘'가 쓴다. 1단계만 적어 두었다(캔버스와 같은 글). 없으면 null
+  // AI가 만든 글(서버 /api/quest — navigator.js parseQuest가 확인한 것)을 퀘스트에 얹는다. qa는 할 일 개수와 같을 때만. 원본은 안 바꾼다
+  function withAI(q, ai) {
+    if (!q || !ai) return q;
+    const qa = Array.isArray(ai.qa) && ai.qa.length === q.objs.length ? ai.qa : null;
+    return { ...q, desc: typeof ai.desc === "string" && ai.desc.trim() ? ai.desc.trim() : q.desc, why: typeof ai.why === "string" && ai.why.trim() ? ai.why.trim() : q.why, ...(qa ? { qa } : {}) };
+  }
+  // 플로로가 묻는 말 — AI가 만든 질문(qa)이 있으면 그것, 없으면 할 일 이름 그대로
+  const question = (q, i) => { const o = q && q.objs[i]; if (!o) return ""; const k = (q.lines[i] || []).length, ai = q.qa && q.qa[i] && q.qa[i].question; return k ? `좋아요, ${k}개 됐어요. ${o.name} — 하나 더 말해 주세요` : ai || `${o.name} — 한 줄이면 돼요`; };
+  // 예시 답 — AI가 만든 예시(qa[i].examples, 적은 만큼 다음 것)가 있으면 그것, 없으면 1단계의 연습 글(캔버스와 같은 글). 없으면 null
   const EXAMPLES = { 0: ["동아리 행사 신청을 종이로 받아서 누가 냈는지 매번 헷갈려요", "신청이 한곳에 모이고, 마감 전에 알림이 가요", "동아리 운영진 3명과 회원 40명", "작게 — 신청 받기와 알림까지만"] };
-  const example = (q, i) => { const ex = q && EXAMPLES[q.chap]; return ex && ex[i] ? ex[i] : null; };
+  const example = (q, i) => {
+    if (!q || !q.objs[i]) return null;
+    const ai = q.qa && q.qa[i] && q.qa[i].examples;
+    if (ai && ai.length) return ai[Math.min((q.lines[i] || []).length, ai.length - 1)];
+    const ex = EXAMPLES[q.chap]; return ex && ex[i] ? ex[i] : null;
+  };
   // 적은 글 전부 — 어디쯤인지 보기(judge)에 보내는 작업 글. 처음 말한 것(idea)이 맨 위
   const textOf = (q, idea) => [String(idea || "").trim(), ...(q ? q.objs.flatMap((o, i) => (q.lines[i] || []).map((l) => `${o.name}: ${l}`)) : [])].filter(Boolean).join("\n");
   // 연습(서버 없이)의 완료 보고 — 적은 줄이 있으면 그 할 일을 한 것으로. 진짜 AI는 서버(/api/judge)가 본다. 모양은 서버 답과 같아서 parseJudgement를 그대로 지난다
@@ -101,7 +119,7 @@
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
   const api = { LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
-    makeQuest, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
+    itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);
