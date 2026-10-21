@@ -147,7 +147,7 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 - Claude에게 올려 달라고 하면 브랜치에 올리게 하고, 사람이 `main`에 반영한다.
 - **`--force`는 하지 않는다** — 다른 사람의 커밋이 사라진다.
 - **버전 vN.M (팀 결정 2026-10-18 — 이재엽):** [CHANGELOG.md](CHANGELOG.md) 맨 위에 한 줄 — N=큰 묶음(기능 추가·변경), M=작은 고침(버그·문서).
-  **동의를 기다리지 않고 병합한다** — 그 한 줄과 PR이 알림이다(남의 담당 폴더를 고쳤어도). **2026-10-19부터 PR은 CHANGELOG 대신 [`changes/<브랜치>.md`](changes/README.md) 조각 한 장**(종류 · 누가 · 무엇 · 건드린 곳)을 넣고, 병합되면 Action이 다음 번호를 붙여 합친다. Claude가 연 PR도 조각을 넣는다. **앱 버전(Release)은 팀이 버전업을 정할 때만 올린다**(2026-10-19). **2026-10-21부터는 잠겨 있다** — [`version-lock.json`](02-frontend/electron/version-lock.json)을 지우기 전에는 올리지 않는다.
+  **동의를 기다리지 않고 병합한다** — 그 한 줄과 PR이 알림이다(남의 담당 폴더를 고쳤어도). **2026-10-19부터 PR은 CHANGELOG 대신 [`changes/<브랜치>.md`](changes/README.md) 조각 한 장**(종류 · 누가 · 무엇 · 건드린 곳)을 넣고, 병합되면 Action이 다음 번호를 붙여 합친다. Claude가 연 PR도 조각을 넣는다. **앱 버전(Release)은 팀이 버전업을 정할 때만 올린다**(2026-10-19). 잠금 파일(`02-frontend/electron/version-lock.json`)이 있으면 그 값에 묶인다 — 2026-10-21 낮에 9.0.0으로 잠갔다가 같은 날 밤 이재엽 결정으로 풀고 10.0.0을 냈다([git-workflow.md](.claude/rules/git-workflow.md)).
 - 커밋 제목은 `타입(범위): 설명`, 작성자 이메일은 각자의 GitHub noreply 주소. 세부: [git-workflow.md](.claude/rules/git-workflow.md).
 - **한계:** 훅은 Claude Code가 Bash로 실행하는 명령만 본다. GitHub에서 "Claude 계정만" 막는 설정은 없다.
 

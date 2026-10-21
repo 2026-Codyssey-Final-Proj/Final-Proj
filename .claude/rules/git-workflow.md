@@ -30,7 +30,7 @@ git 명령을 실행하기 전에 읽는다. 위험한 명령 일부는 훅(`.cl
 - **동의를 기다리지 않고 병합한다.** 그 한 줄과 PR이 알림이다 — 남의 담당 폴더를 고쳤어도 같다("건드린 곳"에 그 폴더를 적는다).
 - `main`에 직접 올릴 때는 조각 대신 CHANGELOG 맨 위에 한 줄을 직접 써도 된다(다음 조각은 그 줄의 다음 번호를 받는다).
 - **앱 버전 · 릴리스는 따로 (이재엽 2026-10-19 "지금 작업들에서 릴리즈는 나중에 우리가 버전업을 할때 해줘"):** CHANGELOG vN.M은 병합마다 올라가지만, 앱 버전(`02-frontend/electron/package.json`의 `version`)은 **팀이 버전업을 정할 때만** 올린다 — 올리면 CI가 Release `app-v<버전>`을 만든다. 작업 PR(Claude가 연 것도)은 앱 버전을 건드리지 않는다. 그사이 앱으로 써 보려면 각자 `npm run dist`로 묶는다([electron/README.md](../../02-frontend/electron/README.md)).
-- **앱 버전 잠금 (이재엽 2026-10-21 — 다시 풀 때까지):** [`02-frontend/electron/version-lock.json`](../../02-frontend/electron/version-lock.json)이 있는 동안 앱 버전은 그 파일의 값(9.0.0)에 묶인다. 버전을 바꾸면 [version-lock.test.js](../../04-tests/navigator/version-lock.test.js)가 실패해 커밋 전 시험에서 막히고, `app-release.yml`은 Release를 만들지 않고 멈춘다. 풀 때는 그 파일을 지우는 PR 하나면 된다. <!-- claude-drafted: 2026-10-21 -->
+- **앱 버전 잠금(이재엽 2026-10-21 낮, 같은 날 밤 풀림):** `02-frontend/electron/version-lock.json`이 있는 동안 앱 버전은 그 파일의 값에 묶인다 — 버전을 바꾸면 [version-lock.test.js](../../04-tests/navigator/version-lock.test.js)가 실패해 커밋 전 시험에서 막히고, `app-release.yml`은 Release를 만들지 않고 멈춘다. 풀 때는 그 파일을 지우는 PR 하나면 된다. **2026-10-21 밤 이재엽 "앱까지 해서 저 모습으로 버전업"으로 그 파일을 지우고 10.0.0으로 올렸다** — 다시 잠그려면 같은 모양의 파일을 두는 PR. <!-- claude-drafted: 2026-10-21 -->
 - [test_changelog.py](../../04-tests/repo/test_changelog.py)가 겹침·건너뜀과 조각의 네 줄을 잡는다. 직접 쓴 줄끼리 겹치면 **나중에 올리는 쪽이** 다음 번호로 고친다.
 - **Claude가 연 PR도 같다** — Claude가 조각 파일을 적고, 병합은 사람이 한다(위 표, 훅).
 - **Jira:** 할 일은 Jira 프로젝트 Floe에 있다. Jira 이슈가 있으면 브랜치 · PR 제목 · 커밋 제목에 키(`<키>-12`)를 넣는다 — PR 제목은 `<키>-12 타입(범위): 설명`. `main`에 올라오면 GitHub Action이 조각을 합친 뒤 맨 위 버전을 Jira 릴리스로 만들고 그 이슈들에 붙인다([jira.md](../../01-docs/00-overview/jira.md)).
