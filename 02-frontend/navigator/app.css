@@ -877,3 +877,22 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
   .msg.now .b{background:rgba(0,0,0,.14)}
   .msg.now .flowline>span{background:rgba(255,255,255,.07)}
 }
+
+/* 앱의 설정 창 · 퀘스트 창(win.html, C-22) — 창 폭이 601px보다 좁아도 섬과 같은 네이비(위 PC 팔레트와 같은 값 — 바꾸면 둘 다). 글자 크기 설정은 섬의 값을 따르지 않는다(창은 1배) */
+html.in-win{
+--win:#0F1847; --winbar:#121D55; --side:#0D1642; --line:rgba(255,255,255,.14);
+    --ink:#F2F6FF; --ink2:#D6E0F5; --mute:#9DAED6; --sub:#B9C7E6;
+    --glass2:rgba(34,52,128,.42); --soft:rgba(255,255,255,.05); --card:rgba(255,255,255,.07);
+    --acc:#A9DDFF; --acc-btn:#A9DDFF; --acc-ink:#0E1A4F; --acc-soft:rgba(169,221,255,.16); --acc-mid:rgba(169,221,255,.5); --seg:rgba(255,255,255,.18);
+    --ok:#A9DDFF; --okbg:rgba(169,221,255,.14); --warn:#FFD08A; --warnbg:rgba(255,208,138,.14); --bad:#FFA3A3; --badbg:rgba(255,163,163,.14);
+    --t-blue:rgba(255,255,255,.06); --t-blue-ink:#A9DDFF; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9DDFF; --ok-btn:#A9DDFF;
+    --t-amber:rgba(255,255,255,.06); --t-amber-ink:#FFD08A; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#C9D6F0;
+    --t-red:rgba(255,255,255,.06); --t-red-ink:#FFA3A3; --bad-btn:#FFA3A3;
+    --shadow:0 24px 60px rgba(0,4,30,.55);
+  color-scheme:dark;
+}
+html.in-win .win{background:#16225E}
+html.in-win .wh{background:rgba(0,0,0,.22)}
+html.in-win .gacha{background:#16225E}
+html.in-win .tt{background:#0E1745;color:#FFFFFF;border:1px solid rgba(255,255,255,.25)}
+html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}

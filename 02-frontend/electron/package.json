@@ -1,7 +1,7 @@
 {
   "name": "floe-app",
   "productName": "Floe",
-  "version": "9.0.0",
+  "version": "10.0.0",
   "private": true,
   "description": "Floe — 코딩 도구 위에 떠 있는 길잡이 오버레이 (Electron 껍데기). 화면 02-frontend · 서버 03-backend를 그대로 감싼다",
   "author": "2026-Codyssey-Final-Proj",
