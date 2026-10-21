@@ -21,6 +21,14 @@ jobs:
       fresh: ${{ steps.v.outputs.fresh }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # 앱 버전 잠금(이재엽 2026-10-21 — 다시 풀 때까지): version-lock.json이 있으면 Release를 만들지 않고 여기서 멈춘다. 손으로 돌려도 같다.
+      # 풀려면 그 파일을 지우는 PR을 병합한다. 04-tests/navigator/version-lock.test.js가 이 단계가 Release 만들기보다 앞에 있는지 본다.
+      - name: 앱 버전 잠금 확인
+        run: |
+          if [ -f 02-frontend/electron/version-lock.json ]; then
+            echo "::error::앱 버전이 잠겨 있다 (02-frontend/electron/version-lock.json) — Release를 만들지 않는다. 풀려면 그 파일을 지운다."
+            exit 1
+          fi
       - id: v
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
