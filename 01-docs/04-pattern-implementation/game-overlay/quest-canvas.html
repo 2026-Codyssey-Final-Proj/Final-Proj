@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>퀘스트 캔버스 목업</title>
+<!-- claude-drafted: 2026-10-21 — 이재엽 요청("다음 버전의 레프런스 … UI 캔버스를 만들어 줘 … 메인은 버튼이 아니라 플로로와 소통 … 왼쪽은 퀘스트 창 … 요구를 받으면 퀘스트를 제작해서 확인을 받고 진행 … 보상은 무지개 조개 → 확률형 뽑기 → 플로로 꾸미기 … 설정 창은 가운데 플로로 · 왼쪽 위 사용자 이름 · 레벨이 오르면 칭호 · 서재 단추 · 세션마다 칸").
+     화면 시안일 뿐 — 서버 · AI · 저장 없음. 플로로의 말 · Claude Code 알림 · 뽑기 결과는 정해 둔 글과 흉내 낸 확률이다. 플로로는 seal.js · seal.css를 그대로 불러온다.
+     첫 초안(quest-overlay.html)과 다른 점: 퀘스트 창이 왼쪽, 대화가 오른쪽(주 공간), 요구 → 퀘스트 제작 → 확인, 무지개 조개 · 뽑기 · 꾸미기, 설정 창(칭호 · 서재 · 세션 칸). 스토리보드: quest-storyboard.md 9절 -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="../../../02-frontend/navigator/seal.css">
+<style>
+/* 배치: 섬 하나 — 위 줄(늘 같다) / 왼쪽 퀘스트 창 / 오른쪽 플로로와 대화(주 공간). 설정 창은 섬 안에서 통째로 바뀐다. 뽑기는 섬 위에 뜨는 작은 창 */
+:root {
+  --ink: #F2F6FF; --ink2: #D6E0F5; --mute: #9DAED6;
+  --ice: #A9DDFF; --ice-hi: #E6F6FF; --ice-ink: #0E1A4F; --ice-soft: rgba(169, 221, 255, .16);
+  --fill: rgba(255, 255, 255, .07); --fill2: rgba(255, 255, 255, .11); --line: rgba(255, 255, 255, .14);
+  --gold: #FFD98A; --gold-soft: rgba(255, 217, 138, .18); --ok: #6FD3A6; --warn: #FFB4AB;
+  --shell: conic-gradient(from 200deg, #FF9AA2, #FFD38A, #C3F584, #8AE0FF, #C9A8FF, #FF9AA2);
+  --ui: "Pretendard", "Apple SD Gothic Neo", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font: 15px/1.6 var(--ui); color: var(--ink2); background-color: #091142; min-height: 100vh;
+  background: radial-gradient(1.5px 1.5px at 12% 18%, #fff, transparent) fixed, radial-gradient(1px 1px at 31% 8%, #DDE8FF, transparent) fixed,
+    radial-gradient(1.5px 1.5px at 47% 27%, #fff, transparent) fixed, radial-gradient(1px 1px at 78% 22%, #fff, transparent) fixed,
+    linear-gradient(105deg, transparent 30%, rgba(140, 190, 255, .10) 36%, transparent 44%) fixed,
+    linear-gradient(180deg, #0B1550, #091142 60%, #060B33) fixed; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--ice); outline-offset: 2px; }
+.note { max-width: 1040px; margin: 18px auto 0; padding: 0 20px; font-size: 13px; color: var(--mute); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.note b { color: var(--ice); }
+.note button { background: var(--fill); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 12.5px; }
+
+/* ── 섬 ── */
+.isl { width: min(1040px, calc(100% - 32px)); margin: 14px auto 40px; border-radius: 28px; background: #1A2766; box-shadow: 0 24px 60px rgba(0, 0, 0, .5), 0 0 0 .5px rgba(255, 255, 255, .08); overflow: hidden; position: relative; }
+.tb { display: flex; align-items: center; gap: 10px; padding: 10px 14px 8px; }
+.tb .home { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--fill2); display: grid; place-items: center; }
+.tb .home svg { width: 18px; height: 18px; stroke: var(--ice); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tb .brand { font-weight: 800; color: var(--ink); font-size: 16px; }
+.tb .prog { margin-left: 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); flex-wrap: wrap; }
+.tb .prog b { color: var(--ice); }
+.tb .dots { display: inline-flex; gap: 4px; }
+.tb .dots i { width: 18px; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .18); }
+.tb .dots i.on { background: var(--ice); }
+.tb .dots i.done { background: var(--gold); }
+.tb .right { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.tb .ti { width: 34px; height: 34px; border-radius: 50%; border: 0; background: transparent; color: var(--mute); display: grid; place-items: center; }
+.tb .ti svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+.tb .ti.on { background: var(--fill2); color: var(--ice); }
+/* 무지개 조개 — 보상의 단위. 위 줄에 늘 보인다 */
+.shells { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 5px; border-radius: 999px; background: var(--fill); border: 1px solid var(--line); font-weight: 800; color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.shell { width: 20px; height: 20px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: var(--shell); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .18), 0 0 8px rgba(255, 255, 255, .25); display: inline-block; flex: none; }
+.shells.got { animation: pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes pop { from { transform: scale(.6); } }
+.body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 12px; padding: 4px 14px 14px; }
+.view { display: none; } .view.on { display: grid; }
+
+/* 왼쪽 — 퀘스트 창(글로 된 정보는 모두 여기) */
+.side { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.seg { display: flex; gap: 4px; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 4px; width: fit-content; }
+.seg button { border: 0; background: transparent; color: var(--mute); border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 700; }
+.seg button[aria-selected="true"] { background: var(--fill2); color: var(--ice); }
+.pane { display: none; } .pane.on { display: block; }
+.qcard { border-radius: 18px; overflow: hidden; border: 1.5px solid var(--line); background: rgba(0, 0, 0, .14); }
+.qcard.draft { border-style: dashed; border-color: var(--gold); }
+.qhead { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 12px 14px; background: linear-gradient(135deg, #2A4AC8, #1E3BA6); color: #fff; align-items: center; }
+.qhead .k { font-size: 12px; opacity: .85; }
+.qhead h3 { margin: 2px 0 0; font-size: 17px; line-height: 1.3; }
+.qhead .floro { width: 64px; height: 64px; }
+.qbody { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.qbody .k { font-size: 12px; font-weight: 800; color: var(--ice); }
+.obj { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.obj li { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink); }
+.obj .ic { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--fill2); font-size: 14px; flex: none; }
+.obj .n { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--mute); }
+.obj li.done { color: var(--ok); } .obj li.done .n { color: var(--ok); }
+.qdesc { font-size: 13.5px; color: var(--ink2); line-height: 1.6; margin: 0; }
+.qinfo { display: grid; gap: 4px; font-size: 13px; color: var(--ink2); border-top: 1px dashed var(--line); padding-top: 8px; }
+.qinfo b { color: var(--ink); }
+.qacts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.qacts button { border: 1.5px solid var(--line); background: var(--fill); color: var(--ink); border-radius: 12px; padding: 8px 4px; font-size: 12.5px; font-weight: 700; }
+.qacts button.pri { background: var(--ice); color: var(--ice-ink); border-color: transparent; }
+.qacts button:disabled { opacity: .4; cursor: not-allowed; }
+.reward { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink2); flex-wrap: wrap; }
+.piece { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); border: 1px solid rgba(255, 217, 138, .35); font-weight: 700; }
+.piece .shell { width: 14px; height: 14px; }
+.empty { border: 1.5px dashed var(--line); border-radius: 18px; padding: 22px 16px; text-align: center; color: var(--mute); font-size: 13.5px; }
+.empty b { color: var(--ink); display: block; margin-bottom: 4px; }
+/* 도전과제 나무 */
+.tree { border-radius: 18px; border: 1.5px solid var(--line); background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 22px), repeating-linear-gradient(90deg, rgba(255, 255, 255, .025) 0 1px, transparent 1px 22px), rgba(0, 0, 0, .14); padding: 10px 12px; max-height: 440px; overflow: auto; }
+.chap { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; align-items: start; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.chap:last-child { border-bottom: 0; }
+.chap .no { font-size: 12px; font-weight: 800; color: var(--mute); padding-top: 8px; line-height: 1.3; }
+.chap .no b { display: block; font-size: 15px; color: var(--ink); }
+.chap.done .no b { color: var(--gold); } .chap.cur .no b { color: var(--ice); }
+.row { display: flex; align-items: center; flex-wrap: wrap; }
+.node { width: 38px; height: 38px; border-radius: 10px; border: 2px solid var(--line); background: var(--fill); display: grid; place-items: center; font-size: 17px; position: relative; cursor: pointer; flex: none; }
+.node.done { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 10px rgba(255, 217, 138, .35); }
+.node.cur { border-color: var(--ice); background: var(--ice-soft); box-shadow: 0 0 0 3px rgba(169, 221, 255, .25); animation: pulse 1.6s ease-in-out infinite; }
+.node.lock { opacity: .4; filter: grayscale(1); }
+.node.gate { border-radius: 50%; border-style: double; border-width: 4px; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(169, 221, 255, .12); } }
+@media (prefers-reduced-motion: reduce) { .node.cur, .shells.got, .piece.got, .bar i { animation: none; } }
+.gap { width: 12px; height: 2px; background: var(--line); flex: none; }
+.branch { display: flex; flex-direction: column; align-items: center; gap: 2px; margin-left: 12px; }
+.branch .node { width: 30px; height: 30px; border-radius: 50%; font-size: 13px; }
+.branch small { font-size: 10px; color: var(--mute); white-space: nowrap; }
+.tree .tip, .detail { font-size: 12.5px; color: var(--mute); margin: 0 0 6px; }
+.detail { margin: 8px 0 0; border-top: 1px solid var(--line); padding-top: 8px; color: var(--ink2); min-height: 36px; }
+.lib { display: grid; gap: 8px; }
+.lib .book { border-radius: 14px; border: 1.5px solid var(--line); padding: 10px 12px; background: var(--fill); font-size: 13.5px; }
+.lib .book b { display: block; color: var(--ink); }
+
+/* 오른쪽 — 플로로와 대화(주 공간) */
+.chat { display: flex; flex-direction: column; gap: 10px; border-radius: 20px; background: rgba(0, 0, 0, .18); padding: 12px; min-height: 480px; min-width: 0; }
+.chat .head { display: flex; align-items: center; gap: 10px; color: var(--mute); font-size: 12.5px; }
+.chat .head .floro { width: 44px; height: 44px; }
+.log { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; max-height: 400px; }
+.msg { display: flex; gap: 8px; align-items: flex-end; max-width: 92%; }
+.msg.me { align-self: flex-end; flex-direction: row-reverse; }
+.msg .b { padding: 9px 13px; border-radius: 16px 16px 16px 4px; background: var(--fill2); color: var(--ink); font-size: 14px; line-height: 1.5; min-width: 0; }
+.msg.me .b { background: var(--ice); color: var(--ice-ink); border-radius: 16px 16px 4px 16px; font-weight: 600; }
+.msg.sys .b { background: var(--gold-soft); color: var(--gold); border: 1px solid rgba(255, 217, 138, .35); font-size: 13px; border-radius: 12px; }
+.msg .floro { width: 30px; height: 30px; flex: none; }
+.bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .15); overflow: hidden; margin-top: 6px; }
+.bar i { display: block; height: 100%; width: 40%; background: var(--gold); border-radius: 3px; animation: run 1.4s linear infinite; }
+@keyframes run { from { translate: -100% 0; } to { translate: 260% 0; } }
+.opts { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 38px; }
+.opts button { border: 1.5px solid var(--ice); background: transparent; color: var(--ice-hi); border-radius: 999px; padding: 6px 14px; font-size: 13.5px; font-weight: 600; }
+.opts button:hover { background: var(--ice-soft); }
+.opts button.pri { background: var(--ice); color: var(--ice-ink); }
+.input { display: flex; gap: 8px; align-items: center; border: 1.5px dashed var(--line); border-radius: 16px; padding: 8px 10px 8px 14px; color: var(--mute); font-size: 13.5px; }
+.input input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; color: var(--ink); font: inherit; }
+.input .send { border: 0; border-radius: 999px; background: var(--fill2); padding: 6px 12px; font-size: 13px; color: var(--ink); }
+
+/* 플로로 + 꾸미기(뽑기로 얻은 것을 겹쳐 그린다) */
+.floro { position: relative; display: inline-block; line-height: 0; }
+.floro svg.cat { width: 100%; height: 100%; }
+.deco { position: absolute; left: 50%; translate: -50% 0; line-height: 1; pointer-events: none; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .35)); }
+.deco.hat { top: -8%; font-size: calc(var(--fs) * .34); }
+.deco.eyes { top: 30%; font-size: calc(var(--fs) * .22); }
+.deco.neck { top: 56%; font-size: calc(var(--fs) * .3); }
+
+/* ── 설정 창 — 가운데 플로로, 왼쪽 위 이름, 칭호, 서재 단추, 세션마다 칸 ── */
+.set { grid-template-columns: 1fr; gap: 14px; padding: 4px 14px 16px; }
+.profile { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: center; border-radius: 22px; background: rgba(0, 0, 0, .18); padding: 16px; }
+.who { align-self: start; }
+.who .name { font-size: 18px; font-weight: 800; color: var(--ink); }
+.who small { display: block; color: var(--mute); font-size: 12.5px; }
+.center { text-align: center; display: grid; justify-items: center; gap: 6px; }
+.center .floro { width: 180px; height: 180px; --fs: 180px; }
+.rank { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px; border-radius: 999px; background: var(--gold-soft); border: 1px solid rgba(255, 217, 138, .4); color: var(--gold); font-weight: 800; font-size: 14px; }
+.rank small { font-weight: 600; color: var(--ink2); }
+.center .next { font-size: 12.5px; color: var(--mute); }
+.golib { justify-self: end; align-self: start; display: grid; justify-items: center; gap: 6px; border: 1.5px solid var(--line); background: var(--fill); border-radius: 18px; padding: 12px 18px; color: var(--ink); font-weight: 800; font-size: 14px; }
+.golib:hover { background: var(--fill2); }
+.golib svg { width: 72px; height: 52px; }
+.golib small { font-weight: 500; color: var(--mute); font-size: 12px; }
+.secs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.sec { border-radius: 18px; border: 1.5px solid var(--line); background: rgba(0, 0, 0, .14); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.sec h4 { margin: 0; font-size: 13px; color: var(--ice); display: flex; align-items: center; gap: 8px; }
+.sec h4 .tag { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--ice-soft); color: var(--ice); font-weight: 800; }
+.sec h4 .tag.done { background: var(--gold-soft); color: var(--gold); }
+.sec h4 .tag.off { background: var(--fill2); color: var(--mute); }
+.opt { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink); }
+.opt small { color: var(--mute); font-size: 12px; }
+.opt .sw { margin-left: auto; width: 36px; height: 20px; border-radius: 999px; background: var(--fill2); border: 0; position: relative; flex: none; }
+.opt .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--mute); transition: translate .15s; }
+.opt .sw[aria-checked="true"] { background: var(--ice); } .opt .sw[aria-checked="true"]::after { background: var(--ice-ink); translate: 16px 0; }
+.opt .pick { margin-left: auto; display: inline-flex; gap: 2px; background: var(--fill); border-radius: 999px; padding: 2px; }
+.opt .pick button { border: 0; background: transparent; color: var(--mute); border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700; }
+.opt .pick button[aria-pressed="true"] { background: var(--fill2); color: var(--ice); }
+.closet { display: flex; gap: 6px; flex-wrap: wrap; }
+.closet button { border: 1.5px solid var(--line); background: var(--fill); border-radius: 12px; padding: 6px 10px; font-size: 13px; color: var(--ink); display: inline-flex; gap: 6px; align-items: center; }
+.closet button[aria-pressed="true"] { border-color: var(--gold); background: var(--gold-soft); }
+.closet .r { font-size: 10px; color: var(--mute); }
+.sec .go { border: 1.5px solid var(--line); background: var(--fill); border-radius: 12px; padding: 8px; font-size: 13px; font-weight: 700; color: var(--ink); }
+.sec .go.pri { background: var(--ice); color: var(--ice-ink); border-color: transparent; }
+
+/* ── 뽑기 창 ── */
+.modal { position: absolute; inset: 0; display: none; place-items: center; background: rgba(4, 8, 40, .72); z-index: 5; padding: 16px; }
+.modal.on { display: grid; }
+.gacha { width: min(440px, 100%); border-radius: 24px; background: #1A2766; border: 1.5px solid var(--line); box-shadow: 0 30px 80px rgba(0, 0, 0, .6); padding: 18px; display: grid; gap: 12px; text-align: center; }
+.gacha h3 { margin: 0; font-size: 18px; color: var(--ink); }
+.gacha .have { display: flex; justify-content: center; gap: 8px; align-items: center; color: var(--ink2); font-size: 14px; }
+.gacha .stage { height: 150px; display: grid; place-items: center; border-radius: 18px; background: rgba(0, 0, 0, .25); position: relative; overflow: hidden; }
+.gacha .stage .big { font-size: 64px; line-height: 1; animation: pop .6s cubic-bezier(.3, 1.6, .5, 1); }
+.gacha .stage .bigshell { width: 90px; height: 90px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: var(--shell); box-shadow: inset 0 -8px 0 rgba(0, 0, 0, .18), 0 0 30px rgba(255, 255, 255, .25); }
+.gacha .stage.rolling .bigshell { animation: shake .12s linear infinite; }
+@keyframes shake { 50% { rotate: 8deg; } 100% { rotate: -8deg; } }
+.gacha .got { font-size: 15px; color: var(--ink); } .gacha .got b { color: var(--gold); }
+.gacha .acts { display: flex; gap: 8px; justify-content: center; }
+.gacha .acts button { border: 1.5px solid var(--line); background: var(--fill); color: var(--ink); border-radius: 999px; padding: 8px 18px; font-weight: 700; }
+.gacha .acts button.pri { background: var(--ice); color: var(--ice-ink); border-color: transparent; }
+.gacha .acts button:disabled { opacity: .4; cursor: not-allowed; }
+.odds { font-size: 12px; color: var(--mute); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.odds span b { display: block; color: var(--ink2); font-size: 12.5px; }
+.gacha .fine { font-size: 11.5px; color: var(--mute); margin: 0; }
+@media (max-width: 820px) { .body { grid-template-columns: 1fr; } .tb .prog { display: none; } .profile { grid-template-columns: 1fr; justify-items: center; } .who, .golib { justify-self: center; } }
+</style>
+</head>
+<body>
+<p class="note"><b>캔버스 목업</b> 서버 · AI 없음 — 단추를 누르면 정해 둔 대로 흘러가요. 스토리보드: <code>quest-storyboard.md</code> 9절
+  <button type="button" id="reset">처음부터</button><button type="button" id="alert">Claude Code가 일하는 것처럼</button><button type="button" id="give">무지개 조개 +3 (시험용)</button></p>
+
+<div class="isl" id="isl">
+  <!-- 위 줄 — 홈이든 바이브 코딩이든 설정이든 늘 같다 -->
+  <div class="tb">
+    <button class="home" type="button" id="home" title="홈"><svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/></svg></button>
+    <span class="brand">Floe</span>
+    <span class="prog"><b id="p-chap">2장 · 꼭 필요한 기능 정리하기</b><span id="p-q">퀘스트 1/5</span><span class="dots" id="p-dots"></span></span>
+    <span class="right">
+      <span class="shells" id="shells" title="무지개 조개 — 퀘스트를 끝내면 받아요"><i class="shell"></i><span id="shell-n">0</span></span>
+      <button class="ti" type="button" id="btn-set" title="설정"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
+      <button class="ti on" type="button" title="열어 두기"><svg viewBox="0 0 24 24"><path d="M12 17v5M8 7l1 7h6l1-7M6 7h12M9 3h6v4H9z"/></svg></button>
+      <button class="ti" type="button" title="접기"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
+    </span>
+  </div>
+
+  <!-- 메인 — 왼쪽 퀘스트 창 · 오른쪽 플로로와 대화 -->
+  <div class="body view on" id="view-main">
+    <section class="side" aria-label="퀘스트 창">
+      <div class="seg" role="tablist">
+        <button type="button" role="tab" data-tab="quest" aria-selected="true">퀘스트</button>
+        <button type="button" role="tab" data-tab="tree" aria-selected="false">도전과제</button>
+        <button type="button" role="tab" data-tab="lib" aria-selected="false">서고</button>
+      </div>
+      <div class="pane on" id="pane-quest"></div>
+      <div class="pane" id="pane-tree"></div>
+      <div class="pane" id="pane-lib"></div>
+    </section>
+    <section class="chat" aria-label="플로로와 대화">
+      <div class="head"><span id="cat-head"></span><span id="head-text">플로로 · 무엇을 만들고 싶은지 말해 주면 퀘스트로 만들어 줘요 · 파일을 놓으면 먹이로 받아요</span></div>
+      <div class="log" id="log"></div>
+      <div class="opts" id="opts"></div>
+      <div class="input"><input id="say" placeholder="플로로에게 말하기 — 예) 행사 신청을 받는 화면이 있어야 해요"><button class="send" type="button" id="send">보내기</button></div>
+    </section>
+  </div>
+
+  <!-- 설정 창 -->
+  <div class="body set view" id="view-set">
+    <div class="profile">
+      <div class="who"><div class="name">이재엽 님의 작업실</div><small>이 컴퓨터의 Floe · 세션 2개 · 2026-10-21</small></div>
+      <div class="center"><span id="cat-big"></span><span class="rank" id="rank"></span><span class="next" id="rank-next"></span></div>
+      <button type="button" class="golib" id="golib" title="서재로 가기">
+        <svg viewBox="0 0 72 52" aria-hidden="true"><rect x="4" y="12" width="12" height="36" rx="2" fill="#2A4AC8"/><rect x="18" y="6" width="13" height="42" rx="2" fill="#FFD98A"/><rect x="33" y="14" width="11" height="34" rx="2" fill="#6FD3A6"/><g transform="rotate(-12 58 30)"><rect x="50" y="10" width="14" height="38" rx="2" fill="#A9DDFF"/></g><rect x="0" y="48" width="72" height="4" rx="2" fill="rgba(255,255,255,.35)"/><path d="M7 20h6M21 14h7M36 22h5" stroke="rgba(0,0,0,.35)" stroke-width="2" stroke-linecap="round"/></svg>
+        서재로<small>끝낸 책 5권 · 책장 2개</small>
+      </button>
+    </div>
+    <div class="secs" id="secs"></div>
+  </div>
+
+  <!-- 뽑기 -->
+  <div class="modal" id="modal"><div class="gacha" role="dialog" aria-label="무지개 조개 뽑기">
+    <h3>무지개 조개 뽑기</h3>
+    <div class="have">가진 조개 <span class="shells"><i class="shell"></i><span id="g-n">0</span></span> · 한 번에 3개</div>
+    <div class="stage" id="stage"><i class="bigshell"></i></div>
+    <div class="got" id="g-got">조개를 열면 플로로를 꾸밀 것이 하나 나와요</div>
+    <div class="acts"><button type="button" class="pri" id="g-roll">조개 열기</button><button type="button" id="g-close">닫기</button></div>
+    <div class="odds" id="odds"></div>
+    <p class="fine">나올 확률은 여기에 늘 적어 둬요. 돈으로 사는 것은 없어요 — 조개는 퀘스트로만 받아요.</p>
+  </div></div>
+</div>
+
+<script src="../../../02-frontend/navigator/seal.js"></script>
+<script>
+(() => {
+  const S = window.NavSeal, $ = (id) => document.getElementById(id);
+  // ── 자료 — 2장(navigator.js STAGES[2])의 할 일. 이름은 그대로, 모양만 퀘스트 ──
+  const CHAPTERS = [
+    { n: 0, name: "정하기", main: ["불편 한 문장", "달라지는 것", "누가 쓰나", "얼마나 크게"], side: [], state: "done" },
+    { n: 1, name: "적어 두기", main: ["빈칸 채우기", "왜 · 어디까지 · 언제", "한 문장 한 가지"], side: ["기획서로 키우기", "보안 한 줄"], state: "done" },
+    { n: 2, name: "기능 정리", main: ["'~하면, 앱은 ~한다'로 쓰기", "애매한 말 숫자로", "꼭 · 있으면 좋음 표시"], side: ["출처 표 잇기(5개 이상)", "막아야 할 일 쓰기"], state: "cur" },
+    { n: 3, name: "방법 고르기", main: ["선택지 셋", "장단점", "하나 고르기"], side: ["그림 하나로"], state: "lock" },
+    { n: 4, name: "뼈대", main: ["작은 할 일로", "차례 정하기"], side: ["위험한 일 먼저"], state: "lock" },
+    { n: 5, name: "만들기", main: ["할 일 하나씩", "Claude Code에 넘기기", "허락 · 거절"], side: ["시험 먼저", "느낀 점"], state: "lock" },
+    { n: 6, name: "재 보기", main: ["직접 써 보기", "잰 값 적기", "못 한 것 적기"], side: ["남에게 보여 주기"], state: "lock" },
+    { n: 7, name: "돌아보기", main: ["잘된 것 · 안 된 것", "다음엔 뺄 것"], side: ["책장 고르기"], state: "lock" },
+  ];
+  const ICON = ["📝", "🗂️", "📋", "🧭", "🦴", "🛠️", "🧪", "📖"];
+  // 칭호 [제안] — 레벨(= 지나온 장)마다 하나. 숫자 레벨은 설정 창에만, 채팅에는 안 보인다
+  const RANKS = ["출발한 사람", "적어 두는 사람", "기능 정리꾼", "길 고르는 사람", "뼈대 세우는 사람", "만드는 사람", "재 보는 사람", "책 한 권 지은이"];
+  // 뽑기 — 확률은 늘 화면에 적는다 [제안]. 그림은 나중에 고한결 원본 이용 조건 확인 뒤
+  const ITEMS = [
+    { id: "ribbon", name: "얼음 리본", emoji: "🎀", slot: "hat", rar: "흔함", p: 60 },
+    { id: "beanie", name: "털모자", emoji: "🧢", slot: "hat", rar: "보통", p: 30 },
+    { id: "scarf", name: "별 목도리", emoji: "🧣", slot: "neck", rar: "드묾", p: 9 },
+    { id: "crown", name: "무지개 왕관", emoji: "👑", slot: "hat", rar: "아주 드묾", p: 1 },
+  ];
+  const QUEST = { title: "기능을 '~하면, 앱은 ~한다' 문장으로 쓰기", chap: 2, giver: "플로로가 만들었어요",
+    objs: [["📋", "기능 문장", 3], ["🔢", "애매한 말 숫자로", 1]],
+    desc: "방금 말한 '행사 신청 화면'을 한 줄씩 적어요 — 누가 무엇을 하면 앱이 무엇을 하는지. '빠르게' 같은 말이 나오면 숫자로 바꿔요(모르면 '아직 모름'도 돼요). 다 되면 완료 보고!",
+    why: "이 장을 지나면 무엇을 만들지가 글로 남아서, 5장에서 Claude Code에 넘길 때 그대로 쓸 수 있어요",
+    reward: "무지개 조개 ×1" };
+  const EXAMPLES = ["회원이 신청 단추를 누르면, 앱은 신청서를 보여 준다", "운영진이 승인하면, 앱은 신청자에게 바로 알린다", "마감 하루 전이 되면, 앱은 신청자에게 알림을 보낸다"];
+  const st = { tab: "quest", phase: "home", got: [0, 0], done: false, shells: 0, wear: {}, owned: [], lv: 2, view: "main", easy: true };
+
+  // ── 플로로 + 꾸미기 ──
+  function floro(mood, size, opts) {
+    const deco = Object.values(st.wear).map((it) => `<span class="deco ${it.slot}">${it.emoji}</span>`).join("");
+    return `<span class="floro" style="width:${size}px;height:${size}px;--fs:${size}px">${S.svg(mood, size, opts)}${deco}</span>`;
+  }
+  function refloro() { $("cat-head").innerHTML = floro("idle", 44); $("cat-big").innerHTML = floro(st.done ? "happy" : "look", 180); }
+
+  // ── 대화 ──
+  const log = $("log"), opts = $("opts");
+  function msg(who, text) {
+    const d = document.createElement("div"); d.className = `msg ${who}`;
+    d.innerHTML = `${who === "floro" ? floro("look", 30) : ""}<span class="b">${text}</span>`;
+    log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
+  }
+  function choices(list) { opts.innerHTML = list.map(([label, act, pri]) => `<button type="button" data-act="${act}"${pri ? ' class="pri"' : ""}>${label}</button>`).join(""); }
+  function addShell(n) { st.shells += n; $("shell-n").textContent = st.shells; $("g-n").textContent = st.shells; $("shells").classList.remove("got"); void $("shells").offsetWidth; $("shells").classList.add("got"); $("g-roll").disabled = st.shells < 3; }
+  const ACT = {
+    // 요구 → 플로로가 퀘스트를 만들어 보여 주고 → 확인
+    want() { msg("me", "행사 신청을 받는 화면이 있어야 해요"); draft(); },
+    ok() { st.phase = "quest"; msg("me", "이대로 할게요"); renderProg(); renderQuest(); msg("floro", "시작! 첫 기능을 말해 주세요. 어렵게 생각하지 말고, 누가 무엇을 하는지만 말하면 돼요"); choices([["예시 보여 줘", "example"], ["직접 쓸게요", "own"]]); },
+    fix() { msg("me", "고쳐 주세요"); msg("floro", "어디를 고칠까요? 할 일 수를 줄일 수도, 이름을 바꿀 수도 있어요"); choices([["2개만 할래요", "fewer"], ["이대로 할게요", "ok", true]]); },
+    fewer() { msg("me", "2개만 할래요"); QUEST.objs[0][2] = 2; draft(); msg("floro", "2개로 줄였어요 — 왼쪽 카드를 다시 봐 주세요"); },
+    example() { msg("me", "예시 보여 줘"); msg("floro", `이렇게요 — "${EXAMPLES[st.got[0]]}". 이 문장으로 적을까요?`); choices([["네, 적을게요", "accept", true], ["고칠게요", "own"]]); },
+    own() { msg("floro", "아래 칸에 적어 주세요. 제가 '~하면, 앱은 ~한다'로 다듬어 볼게요"); choices([]); $("say").focus(); },
+    accept() {
+      msg("me", "네, 적을게요"); const need = QUEST.objs[0][2]; st.got[0] = Math.min(need, st.got[0] + 1); renderQuest();
+      if (st.got[0] < need) { msg("floro", `좋아요, ${st.got[0]}개 됐어요. 다음 기능은요?`); choices([["예시 보여 줘", "example"], ["직접 쓸게요", "own"]]); }
+      else { msg("floro", `${need}개 다 됐어요! '빠르게'처럼 애매한 말은 없나요? 없으면 완료 보고할까요?`); choices([["완료 보고", "report", true], ["숫자로 바꿀 게 있어요", "number"]]); }
+    },
+    number() { msg("me", "숫자로 바꿀 게 있어요"); msg("floro", "'빠르게'는 몇 초 안이면 될까요? 모르면 '아직 모름'도 돼요"); choices([["3초 안", "num3", true], ["아직 모름", "numx"]]); },
+    num3() { msg("me", "3초 안"); st.got[1] = 1; renderQuest(); msg("floro", "→ '3초 안'으로 정했어요. 완료 보고할까요?"); choices([["완료 보고", "report", true]]); },
+    numx() { msg("me", "아직 모름"); st.got[1] = 1; renderQuest(); msg("floro", "'아직 모름'으로 적어 뒀어요 — 나중에 정하면 돼요. 완료 보고할까요?"); choices([["완료 보고", "report", true]]); },
+    report() {
+      if (st.done) return; st.done = true; msg("me", "완료 보고"); addShell(1); renderQuest(); renderTree(); refloro();
+      msg("floro", `퀘스트 완료! 무지개 조개를 하나 받았어요(지금 ${st.shells}개). 3개가 모이면 열어서 저를 꾸밀 수 있어요`);
+      choices(st.shells >= 3 ? [["조개 열러 가기", "gacha", true], ["다음 퀘스트 받기", "next"]] : [["다음 퀘스트 받기", "next", true], ["조개는 어디서 열어요?", "where"]]);
+    },
+    where() { msg("me", "조개는 어디서 열어요?"); msg("floro", "위 줄의 조개 수를 누르거나, 설정 창의 '꾸미기'에서요. 3개가 되면 제가 알려 드릴게요"); choices([["다음 퀘스트 받기", "next", true]]); },
+    gacha() { openGacha(); },
+    next() { msg("me", "다음 퀘스트 받기"); msg("floro", "다음은 <b>기능마다 꼭 필요한지, 있으면 좋은지 표시하기</b>예요. 왼쪽에 만들어 둘게요 — 받을래요?"); choices([["받을게요", "end", true], ["나중에", "later"]]); },
+    end() { msg("me", "받을게요"); msg("floro", "(목업은 여기까지예요 — 흐름은 스토리보드 S11~S16과 같아요)"); choices([]); },
+    later() { msg("me", "나중에"); msg("floro", "그럼 쉬어요. 다시 오면 여기서 이어서 해요"); choices([["다음 퀘스트 받기", "next", true]]); },
+    feed() { msg("me", "먹이 주기"); msg("floro", "글 파일(.md · .txt)을 섬에 놓거나 글을 붙여 넣어 주세요 — 구간으로 나눠 정리해 드려요"); choices([["퀘스트 만들어 줘", "want", true]]); },
+    tree() { setTab("tree"); msg("floro", "왼쪽에 도전과제 나무를 펼쳤어요. 금빛은 끝낸 것, 파란 빛은 지금이에요"); choices([["퀘스트 만들어 줘", "want", true]]); },
+    reflect() { msg("me", "반영"); const need = QUEST.objs[0][2]; st.got[0] = Math.min(need, st.got[0] + 1); renderQuest(); msg("floro", `Claude Code가 만든 것을 보고 기능 문장 하나를 더 채웠어요(${st.got[0]}/${need})`); choices(st.got[0] < need ? [["예시 보여 줘", "example"], ["직접 쓸게요", "own"]] : [["완료 보고", "report", true]]); },
+    ignore() { msg("me", "나중에"); choices([["예시 보여 줘", "example"], ["직접 쓸게요", "own"]]); },
+  };
+  // 요구를 받으면 퀘스트를 '만들어' 왼쪽에 초안(점선)으로 두고, 대화에서 확인을 받는다
+  function draft() {
+    st.phase = "draft"; renderQuest();
+    msg("floro", "알겠어요! 그 말을 퀘스트로 만들었어요 — <b>왼쪽 카드</b>를 봐 주세요. 할 일 " + QUEST.objs[0][2] + "개, 끝내면 무지개 조개 하나예요. 이대로 할까요?");
+    choices([["이대로 할게요", "ok", true], ["고쳐 주세요", "fix"]]);
+  }
+  opts.addEventListener("click", (e) => { const b = e.target.closest("[data-act]"); if (b && ACT[b.dataset.act]) ACT[b.dataset.act](); });
+  function send() {
+    const t = $("say").value.trim(); if (!t) return; $("say").value = ""; msg("me", t);
+    if (st.phase === "home") { draft(); return; }
+    if (st.phase === "draft") { msg("floro", "먼저 왼쪽 퀘스트를 이대로 할지 정해 주세요"); choices([["이대로 할게요", "ok", true], ["고쳐 주세요", "fix"]]); return; }
+    const made = t.includes("하면") ? t : `${t.replace(/[.。]$/, "")}이(가) 있으면, 앱은 그 화면을 보여 준다`;
+    msg("floro", `"${made}" — 이렇게 적을까요?`); choices([["네, 적을게요", "accept", true], ["고칠게요", "own"]]);
+  }
+  $("send").onclick = send; $("say").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+  // Claude Code가 움직이는 동안 — 시스템 말 + 진행 띠, 끝나면 플로로가 쉬운 말로 풀어 준다
+  $("alert").onclick = () => {
+    const d = msg("sys", "Claude Code가 일하고 있어요 — 신청서 화면 만드는 중<span class=\"bar\"><i></i></span>"); choices([]);
+    setTimeout(() => {
+      d.querySelector(".b").innerHTML = "Claude Code가 일을 마쳤어요 — 신청서.html을 만들었어요";
+      msg("floro", st.easy ? "쉽게 말하면, 사람들이 이름을 적어 내는 <b>종이 한 장</b>을 화면으로 만든 거예요. 퀘스트에 반영할까요?" : "신청 폼 페이지(신청서.html)가 생성됐어요. 퀘스트 요약에 반영할까요?");
+      if (st.phase === "quest" && !st.done) choices([["반영", "reflect", true], ["나중에", "ignore"]]); else choices([["퀘스트 만들어 줘", "want", true]]);
+    }, 1800);
+  };
+  $("give").onclick = () => { addShell(3); msg("floro", `(시험용) 무지개 조개 3개를 받았어요 — 지금 ${st.shells}개`); choices([["조개 열러 가기", "gacha", true]]); };
+
+  // ── 왼쪽 퀘스트 창 ──
+  function setTab(tab) { st.tab = tab; document.querySelectorAll("[role=tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab))); document.querySelectorAll(".pane").forEach((p) => p.classList.toggle("on", p.id === `pane-${tab}`)); }
+  document.querySelectorAll("[role=tab]").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
+  function renderProg() {
+    $("p-chap").textContent = st.phase === "home" ? "홈 · 2장에서 이어서" : "2장 · 꼭 필요한 기능 정리하기";
+    $("p-q").textContent = st.phase === "home" ? "퀘스트 0/5" : `퀘스트 ${st.done ? 2 : 1}/5`;
+    $("p-dots").innerHTML = [0, 1, 2, 3, 4].map((i) => `<i class="${i === 0 && st.done ? "done" : i === (st.done ? 1 : 0) && st.phase === "quest" ? "on" : ""}"></i>`).join("");
+  }
+  function renderQuest() {
+    const q = QUEST, p = $("pane-quest");
+    if (st.phase === "home") {
+      p.innerHTML = `<div class="empty"><b>아직 퀘스트가 없어요</b>오른쪽에서 플로로에게 무엇을 만들고 싶은지 말하면, 여기에 퀘스트를 만들어 드려요.<br>글로 된 설명 · 할 일 · 보상은 모두 이 창에 모여요.</div>`;
+      return;
+    }
+    const total = q.objs.reduce((n, o) => n + o[2], 0), got = st.got.reduce((n, g) => n + g, 0), draftNow = st.phase === "draft";
+    p.innerHTML = `<div class="qcard${draftNow ? " draft" : ""}"><div class="qhead"><div><div class="k">${draftNow ? "확인 기다리는 중 · " : ""}${q.chap}장 · ${q.giver}</div><h3>${q.title}</h3></div>${floro(st.done ? "done" : draftNow ? "think" : "look", 64, { hole: true })}</div>
+      <div class="qbody"><div class="k">할 일 ${got}/${total}</div><ul class="obj">${q.objs.map((o, i) => `<li class="${st.got[i] >= o[2] ? "done" : ""}"><span class="ic">${o[0]}</span>${o[1]}<span class="n">${st.got[i]} / ${o[2]}</span></li>`).join("")}</ul>
+      <p class="qdesc">${q.desc}</p>
+      <div class="qinfo"><span><b>왜 하나요</b> — ${q.why}</span><span><b>어디서 왔나요</b> — 2장의 할 일(코드에 준비된 것) + 방금 한 말. 전체가 맞는지는 AI가 봐요</span></div>
+      <div class="reward"><span>보상</span><span class="piece${st.done ? " got" : ""}"><i class="shell"></i>${q.reward}</span><span class="piece">▮ 책갈피 +1</span></div>
+      ${draftNow
+        ? `<div class="qacts"><button type="button" class="pri" data-act="ok">이대로 할게요</button><button type="button" data-act="fix">고쳐 주세요</button><button type="button" data-act="later">나중에</button></div>`
+        : `<div class="qacts"><button type="button" class="pri" data-act="report" ${got < total || st.done ? "disabled" : ""}>완료 보고</button><button type="button" data-act="hint">힌트</button><button type="button" data-act="later">나중에</button></div>`}</div></div>`;
+    p.querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => {
+      if (b.dataset.act === "hint") { msg("floro", "힌트: '누가 — 무엇을 하면 — 앱은 — 무엇을 한다' 네 조각이에요. 예시를 보여 드릴까요?"); choices([["예시 보여 줘", "example", true]]); return; }
+      ACT[b.dataset.act]();
+    }));
+  }
+  function renderTree() {
+    const p = $("pane-tree");
+    const node = (label, cls, icon) => `<span class="node ${cls}" title="${label}" data-label="${label}">${icon}</span>`;
+    p.innerHTML = `<div class="tree"><p class="tip">8장 · 금빛 = 끝냄 · 파란 빛 = 지금 · 흐림 = 아직. 누르면 아래에 설명이 떠요</p>${CHAPTERS.map((c) => {
+      const cls = (i) => c.state === "done" ? "done" : c.state === "lock" ? "lock" : (c.n === 2 && st.done && i === 0) ? "done" : (c.n === 2 && i === (st.done ? 1 : 0) && st.phase === "quest") ? "cur" : "lock";
+      return `<div class="chap ${c.state}"><div class="no"><b>${c.n}장</b>${c.name}</div><div class="row">${c.main.map((m, i) => node(m, cls(i), ICON[c.n])).join('<span class="gap"></span>')}<span class="gap"></span>${node("관문 — 이해되셨나요?", `gate ${c.state === "done" ? "done" : "lock"}`, "⛩")}${c.side.map((s) => `<span class="branch">${node(s, c.state === "done" ? "done" : "lock", "✦")}<small>${s}</small></span>`).join("")}</div></div>`;
+    }).join("")}<div class="detail" id="detail">퀘스트를 누르면 무엇을 하는지, 보상이 무엇인지 보여요.</div></div>`;
+    p.querySelectorAll(".node").forEach((n) => (n.onclick = () => { $("detail").innerHTML = `<b>${n.dataset.label}</b> — ${n.classList.contains("done") ? "끝냈어요 · 무지개 조개를 받았어요" : n.classList.contains("cur") ? "지금 하는 퀘스트예요 — 오른쪽에서 플로로와 같이 해요" : n.classList.contains("gate") ? "관문 — 이 장의 주 퀘스트를 다 하면 플로로가 '이해되셨나요?'를 물어요. 지나면 칭호가 바뀌어요" : "아직 열리지 않았어요 — 앞의 퀘스트를 먼저 해요"}`; }));
+  }
+  function renderLib() {
+    $("pane-lib").innerHTML = `<div class="lib"><div class="book"><b>동아리 행사 등록 앱 · 내 책</b>지금 2장 · 정한 것 3 · 받은 먹이 1 · 확인할 먹이 0</div>
+      <div class="book"><b>서고</b>끝낸 책 5권 · 책장 2개 — 7장을 지나면 이 책이 꽂혀요. 설정 창의 '서재로'와 같은 곳이에요</div></div>`;
+  }
+
+  // ── 설정 창 ──
+  function setView(v) { st.view = v; $("view-main").classList.toggle("on", v === "main"); $("view-set").classList.toggle("on", v === "set"); $("btn-set").classList.toggle("on", v === "set"); if (v === "set") renderSet(); }
+  $("btn-set").onclick = () => setView(st.view === "set" ? "main" : "set");
+  $("home").onclick = () => { if (st.view === "set") setView("main"); else reset(); };
+  $("golib").onclick = () => { setView("main"); setTab("lib"); msg("floro", "서고를 열었어요 — 내 책과 끝낸 책이 있어요"); };
+  function renderSet() {
+    refloro();
+    $("rank").innerHTML = `<span>LV ${st.lv}</span>${RANKS[st.lv]}<small>· 2장을 하고 있어요</small>`;
+    $("rank-next").textContent = `다음 칭호 '${RANKS[st.lv + 1]}' — 2장 관문을 지나면`;
+    const sw = (label, on, small) => `<div class="opt"><span>${label}${small ? `<br><small>${small}</small>` : ""}</span><button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${label}"></button></div>`;
+    const pick = (label, items, cur) => `<div class="opt"><span>${label}</span><span class="pick">${items.map((i) => `<button type="button" aria-pressed="${i === cur}">${i}</button>`).join("")}</span></div>`;
+    $("secs").innerHTML = `
+      <div class="sec"><h4>📘 동아리 행사 등록 앱 <span class="tag">진행 중 · 2장</span></h4>
+        ${pick("등급", ["가볍게", "보통", "꼼꼼히"], "보통")}${sw("Claude Code 폴더 이어짐", true, "일이 끝나면 플로로가 알려 줘요")}${sw("허락 카드를 섬에서 받기", true)}<button type="button" class="go">이 세션 이어서 하기</button></div>
+      <div class="sec"><h4>📗 독서 모임 알림 <span class="tag done">끝남 · 서고</span></h4>
+        ${pick("등급", ["가볍게", "보통", "꼼꼼히"], "가볍게")}${sw("Claude Code 폴더 이어짐", false)}<button type="button" class="go">책 펴 보기</button></div>
+      <div class="sec"><h4>🦭 플로로</h4>
+        ${pick("말투", ["쉬운 말", "일 말"], st.easy ? "쉬운 말" : "일 말")}
+        <div class="opt"><span>꾸미기 <small>· 뽑기로 얻은 것</small></span></div>
+        <div class="closet" id="closet">${st.owned.length ? st.owned.map((it) => `<button type="button" data-wear="${it.id}" aria-pressed="${st.wear[it.slot] && st.wear[it.slot].id === it.id}">${it.emoji} ${it.name} <span class="r">${it.rar}</span></button>`).join("") : `<small style="color:var(--mute)">아직 없어요 — 조개 3개로 열어 보세요</small>`}</div>
+        <button type="button" class="go pri" id="set-gacha">무지개 조개 열기 (${st.shells}개)</button></div>
+      <div class="sec"><h4>📖 책 보기</h4>${pick("짜임", ["단순", "탭"], "단순")}${pick("보기", ["책별", "세션별"], "책별")}${pick("길이", ["짧게", "전부"], "짧게")}</div>
+      <div class="sec"><h4>🔔 알림 · 보기</h4>${sw("Claude Code 알림을 대화에 보이기", true)}${pick("접히는 시간", ["5초", "15초", "60초"], "15초")}${sw("바람 소리", false)}</div>
+      <div class="sec"><h4>🔒 내 정보</h4><div class="opt"><span><small>플로로에게 보여 준 글은 AI(Claude)에게 보내져요. 키 · 비밀번호 같은 것이 보이면 먼저 물어봐요.</small></span></div><button type="button" class="go">저장된 것 보기</button></div>`;
+    $("secs").querySelectorAll(".sw").forEach((b) => (b.onclick = () => b.setAttribute("aria-checked", String(b.getAttribute("aria-checked") !== "true"))));
+    $("secs").querySelectorAll(".pick").forEach((g) => g.querySelectorAll("button").forEach((b) => (b.onclick = () => { g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", "true"); if (b.textContent === "쉬운 말" || b.textContent === "일 말") st.easy = b.textContent === "쉬운 말"; })));
+    $("secs").querySelectorAll("[data-wear]").forEach((b) => (b.onclick = () => { const it = ITEMS.find((x) => x.id === b.dataset.wear); if (st.wear[it.slot] && st.wear[it.slot].id === it.id) delete st.wear[it.slot]; else st.wear[it.slot] = it; renderSet(); renderQuest(); }));
+    $("set-gacha").onclick = openGacha;
+  }
+
+  // ── 뽑기 ──
+  $("odds").innerHTML = ITEMS.map((it) => `<span><b>${it.emoji} ${it.name}</b>${it.rar} ${it.p}%</span>`).join("");
+  function openGacha() { $("modal").classList.add("on"); $("g-n").textContent = st.shells; $("g-roll").disabled = st.shells < 3; $("stage").innerHTML = `<i class="bigshell"></i>`; $("g-got").textContent = st.shells >= 3 ? "조개를 열면 플로로를 꾸밀 것이 하나 나와요" : `조개가 ${3 - st.shells}개 더 있어야 열 수 있어요 — 퀘스트를 끝내면 받아요`; }
+  $("g-close").onclick = () => { $("modal").classList.remove("on"); if (st.view === "set") renderSet(); };
+  $("g-roll").onclick = () => {
+    if (st.shells < 3) return; addShell(-3); $("g-roll").disabled = true; $("stage").classList.add("rolling");
+    setTimeout(() => {
+      $("stage").classList.remove("rolling");
+      let r = Math.random() * 100, it = ITEMS[0]; for (const x of ITEMS) { r -= x.p; if (r <= 0) { it = x; break; } }
+      if (!st.owned.includes(it)) st.owned.push(it); st.wear[it.slot] = it;
+      $("stage").innerHTML = `<span class="big">${it.emoji}</span>`; $("g-got").innerHTML = `<b>${it.name}</b>(${it.rar})이(가) 나왔어요! 플로로가 바로 써 봤어요`;
+      $("g-roll").disabled = st.shells < 3; refloro(); renderQuest();
+      if (st.view === "main") msg("floro", `${it.emoji} <b>${it.name}</b>을(를) 받았어요! 설정 창의 꾸미기에서 벗거나 바꿀 수 있어요`);
+    }, 1200);
+  };
+
+  function reset() {
+    Object.assign(st, { tab: "quest", phase: "home", got: [0, 0], done: false }); QUEST.objs[0][2] = 3;
+    log.innerHTML = ""; setView("main"); setTab("quest"); renderProg(); renderQuest(); renderTree(); renderLib(); refloro();
+    msg("floro", "안녕하세요, 재엽 님! 2장 <b>꼭 필요한 기능 정리하기</b>를 하고 있었죠. 무엇을 만들고 싶은지 말해 주면 제가 퀘스트로 만들어 드릴게요");
+    choices([["행사 신청 화면이 있어야 해요", "want", true], ["먹이 주기", "feed"], ["도전과제 보기", "tree"]]);
+  }
+  $("reset").onclick = reset;
+  reset();
+})();
+</script>
+</body>
+</html>
