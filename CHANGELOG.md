@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v14.3 | 2026-10-21 | 이재엽 | 새 디자인 스토리보드 · 목업 — 플로로와 대화하며 퀘스트를 받고 7단계를 도전과제로(C-22, 등급 미정). 코드는 바꾸지 않음 (#160) | `01-docs/04-pattern-implementation/game-overlay/` · `01-docs/00-overview/requirements.md` · `changes/` |
 | v14.2 | 2026-10-20 | 두승현 | KAN-55 첫 5분 온보딩 스토리보드 초안 — 장면 아홉 · 갈래 일곱(한 줄 적기 → AI 없이 LV 0 · 첫 경험치 → 그다음 Claude 연결), 바꿀 곳 · 잴 것 · 정할 것, 그림판 (#159) | `01-docs/04-pattern-implementation/` · `01-docs/00-overview/` |
 | v14.1 | 2026-10-20 | 두승현 | 처음 쓰는 사람용 온보딩 안내(앱 9.0.0 기준 받기 · 처음 설정 · 첫 바퀴 · 막히면)와 첫 5분 제안(가치 먼저 · 설정은 나중에, 코드 검토 · 비슷한 서비스 조사) (#158) | `01-docs/00-overview/` |
 | v14.0 | 2026-10-20 | 이재엽 | 앱 9.0.0 — 남은 요구 후보 · 고칠 목록 전부: 받은 앱 열기(F-41 간이 서명 · F-42 하나만 · F-44 dmg 안내), 노치 띠 투명(F-47), 기준점 하나와 랙(F-45 · F-46 · C-17), 밖의 칸 둘(F-26), 접히기 설정 · 테두리 빛(C-20), 파란 먹이 층(C-18), 서로 막기 · 화난 플로로(C-19), 먹이 종류 · 확인할 먹이(FR-15), 내가 만드는 책장(C-21), CI 비용 주석(F-32) (#157) | `02-frontend/navigator/`(담당 임유정) · `02-frontend/library/`(새 `shelves.js`, 담당 두승현) · `02-frontend/electron/`(package.json 9.0.0 · main.js · build/dmg-background.png) · `03-backend/navigator/`(feed.js · server.js) · `.github/workflows/app-release.yml` · `04-tests/` · `01-docs/` |
