@@ -1,4 +1,0 @@
-종류: 큰 묶음
-누가: 이재엽
-무엇: 앱 10.0.0 — 게임처럼, 플로로와 대화하며 퀘스트(C-22) 둘째 묶음 + 앱: 앱에서는 설정 창 · 퀘스트 창이 Electron 창 둘(상태는 섬 하나), AI 퀘스트 제작(/api/quest, 말투 FLORO_VOICE는 이재엽), 뽑기 · 꾸미기, 서고 · 모아 보기 창의 번호 1~8, 곁 퀘스트, 채팅의 '일하고 있어요' 띠. 앱으로 창 둘을 자동으로 눌러 확인(오류 0). 이재엽 "앱까지 해서 저 모습으로 버전업" → 버전 잠금(version-lock.json)을 풀고 앱 9.0.0 → 10.0.0(release-notes.md)
-건드린 곳: `02-frontend/navigator/`(app.js · app.css · win.html · win.js 새로, 담당 임유정), `02-frontend/electron/`(main.js · lib.js · preload.js · package.json 10.0.0 · release-notes.md · version-lock.json 지움), `02-frontend/library/` · `hub/`(번호 1~8), `03-backend/navigator/`(quest.js · navigator.js · server.js /api/quest · API.md 3-17), `04-tests/`(quest · electron-side 새로, api-contract · modes · app-9 · hub · my-books · e2e 고침), `01-docs/`(스토리보드 11-2 · requirements · fix-map · features 14), `.claude/rules/git-workflow.md` · `CLAUDE.md` · `electron/README.md`(잠금 풀림)
