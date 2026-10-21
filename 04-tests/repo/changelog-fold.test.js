@@ -63,6 +63,15 @@ test("조각이 하나뿐이고 브랜치를 못 맞춰도 push의 PR 번호를 
   assert.match(r2.rows[0].row, /고침 \(#9\) \|/);
 });
 
+// F-48(2026-10-21 변경 리뷰): v9.0 줄이 본문의 "(#134, v8.2)" 때문에 제 번호 #135를 못 받았다 — 끝에 있는 (#n)만 이미 있는 번호로 본다
+test("'무엇' 가운데에 다른 PR을 적어도 끝에 제 PR 번호를 붙인다, 끝에 (#n, #m)이 있으면 그대로", () => {
+  const prs = F.prNumbers(["Merge pull request #135 from org/v2/lib"]);
+  const r = F.fold(CHANGELOG, [{ name: "lib", text: FRAG.replace("문구 고침", "문구 고침. 요구 문서(#134, v8.2)는 먼저 들어갔다") }], { date: "2026-10-20", prs });
+  assert.match(r.rows[0].row, /먼저 들어갔다 \(#135\) \|/);
+  const r2 = F.fold(CHANGELOG, [{ name: "lib", text: FRAG.replace("문구 고침", "문구 고침 (#9, #10)") }], { date: "2026-10-20", prs });
+  assert.match(r2.rows[0].row, /고침 \(#9, #10\) \|/);
+});
+
 test("이상한 조각은 건너뛰고 이유를 모으며, 나머지는 합친다", () => {
   const r = F.fold(CHANGELOG, [{ name: "bad", text: "종류: 작은 고침\n" }, { name: "good", text: FRAG }], { date: "2026-10-20" });
   assert.equal(r.rows.length, 1);
