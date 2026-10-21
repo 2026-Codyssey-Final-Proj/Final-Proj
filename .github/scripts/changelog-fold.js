@@ -63,7 +63,8 @@ function fold(changelog, fragments, { date = kstDate(), prs = { byBranch: {}, al
     const version = nextVersion(text, p.kind);
     if (!version) { errors.push(`${f.name}: CHANGELOG.md에 버전 줄이 없어 다음 번호를 못 정함`); continue; }
     const pr = prs.byBranch[f.name] || (sorted.length === 1 && prs.all.length ? prs.all.join(", #") : null);
-    const what = pr && !/\(#\d+/.test(p.what) ? `${p.what} (#${pr})` : p.what;
+    // 끝에 있는 (#n) · (#n, #m)만 이미 붙은 번호로 본다 — 가운데에 다른 PR을 적은 줄도 제 번호를 받게(F-48)
+    const what = pr && !/\(#\d+[^)]*\)\s*$/.test(p.what) ? `${p.what} (#${pr})` : p.what;
     const row = `| ${version} | ${date} | ${p.who} | ${what} | ${p.where} |`;
     const lines = text.split("\n"), at = lines.findIndex((l) => ROW.test(l));
     lines.splice(at, 0, row);
