@@ -8,6 +8,7 @@
      ② 글: 메인은 플로로와 소통 · 퀘스트 창 · 요구 → 퀘스트 제작 → 확인 · 무지개 조개 → 뽑기 → 꾸미기 · 설정(이름 · 칭호 · 서재 · 세션 칸)
      ③ 그림: 위 줄은 지금 제품 그대로, 왼쪽 큰 플로로, 가운데 채팅(채팅 안에 플로로 그림 없음), 퀘스트 · 도전과제는 따로 뜨는 위젯(크기 조절 · 세션)
      ⑤ 글: 퀘스트 창도 켜고 끄기. 처음 실행해서 요구를 넣으면 '퀘스트를 시작하시겠습니까?' → 1단계 퀘스트를 입력받고, 퀘스트 창이 바로 떠서 확인.
+     ⑥ 글: 설정 창 자리(왼쪽 · 오른쪽)를 설정에서 고르고, 퀘스트 창은 반대쪽에 뜬다.
      ④ 그림 넷: 설정은 **켰다 끄는 왼쪽 창**(이름 + 플로로 · 초기 개발자 → 중급자 → 상급자 · 서재로 가기 · 설정 줄), 퀘스트는 **더 큰 오른쪽 창** —
         처음 받을 때는 이벤트 창 짜임(제목 띠 · 그림 · 참여 조건 · 기간 · REWARD 칸 · 큰 받기 단추), 받은 뒤에는 공책(왼쪽 목차 · 오른쪽 내용, 여기서 고친다),
         도전과제는 **그림만 크게**, 세로 탭, 마우스를 올리면 설명.
@@ -40,6 +41,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
 .note b { color: var(--ice); }
 .note button { background: var(--fill); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 12.5px; }
 .desk { display: flex; gap: 16px; align-items: flex-start; justify-content: center; padding: 14px 16px 40px; }
+.desk.swap #setwin { order: 3; } .desk.swap #qwin { order: 1; } .desk .isl { order: 2; }
 
 /* ── 섬 ── */
 .isl { flex: 1 1 auto; min-width: 0; max-width: 820px; border-radius: 28px; background: #1A2766; box-shadow: 0 24px 60px rgba(0, 0, 0, .5), 0 0 0 .5px rgba(255, 255, 255, .08); overflow: hidden; position: relative; }
@@ -254,7 +256,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
 </style>
 </head>
 <body>
-<p class="note"><b>캔버스 목업</b> 서버 · AI 없음 — 단추를 누르면 정해 둔 대로 흘러가요. ⚙로 설정 창, 📜로 퀘스트 창을 켜고 꺼요. 두 창은 머리띠를 끌어 옮겨요. 퀘스트 창은 모서리나 S · M · L로 크기를 바꿔요. 도전과제의 그림에 마우스를 올리면 설명이 떠요. 스토리보드: <code>quest-storyboard.md</code> 9절
+<p class="note"><b>캔버스 목업</b> 서버 · AI 없음 — 단추를 누르면 정해 둔 대로 흘러가요. ⚙로 설정 창, 📜로 퀘스트 창을 켜고 꺼요. 설정 줄 '설정 창 자리'로 왼쪽 · 오른쪽을 고르면 퀘스트 창은 반대쪽에 떠요. 두 창은 머리띠를 끌어 옮겨요. 퀘스트 창은 모서리나 S · M · L로 크기를 바꿔요. 도전과제의 그림에 마우스를 올리면 설명이 떠요. 스토리보드: <code>quest-storyboard.md</code> 9절
   <button type="button" id="reset">처음 실행(새 세션)</button><button type="button" id="goclub">3단계(기능 정리)에서 이어서</button><button type="button" id="alert">Claude Code가 일하는 것처럼</button><button type="button" id="give">무지개 조개 +3 (시험용)</button></p>
 
 <div class="desk" id="desk">
@@ -368,7 +370,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
     { id: "crown", name: "무지개 왕관", emoji: "👑", slot: "hat", rar: "아주 드묾", p: 1 },
   ];
   const SESS = { new: { start: 0, book: "새 세션", phase: "first" }, club: { start: 2, book: "동아리 행사 등록 앱", phase: "home" }, done: { start: 8, book: "독서 모임 알림" } };
-  const st = { sess: "new", phase: "first", q: null, done: false, shells: 0, wear: {}, owned: [], easy: true, mood: "idle", sel: 0, edit: false, chap: 0, idea: "" };
+  const st = { side: "left", sess: "new", phase: "first", q: null, done: false, shells: 0, wear: {}, owned: [], easy: true, mood: "idle", sel: 0, edit: false, chap: 0, idea: "" };
   const lv = () => Math.min(7, SESS[st.sess].start + (st.done ? 1 : 0));
   // 장 하나 = 퀘스트 하나. 할 일 = 그 장의 주 퀘스트(개수는 CONTENT.need)
   function makeQuest(n) { const c = CHAPTERS[n], k = CONTENT[n] || { need: c.main.map(() => 1) }; return { chap: n, title: c.title, objs: c.main.map((m, i) => [m[1], m[0], k.need[i] || 1]), got: c.main.map(() => 0), ...k }; }
@@ -468,6 +470,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
   });
   // ── 퀘스트 창 — 켜기 · 끄기 · 탭 · 세션 · 크기 ──
   const Q = $("qwin");
+  function setSide(side) { st.side = side; $("desk").classList.toggle("swap", side === "right"); [$("setwin"), $("qwin")].forEach((W) => { W.style.position = ""; W.style.left = ""; W.style.top = ""; W.style.zIndex = ""; W.style.margin = ""; }); }
   function qwinOn(on) { const was = Q.classList.contains("on"); Q.classList.toggle("on", on); Q.classList.remove("mini"); $("btn-q").classList.toggle("on", on); if (on && !was) { Q.classList.remove("pop"); void Q.offsetWidth; Q.classList.add("pop"); } }
   $("btn-q").onclick = () => qwinOn(!Q.classList.contains("on"));
   $("q-x").onclick = () => qwinOn(false);
@@ -576,6 +579,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
       <button type="button" class="golib" id="golib"><span class="bk"><svg viewBox="0 0 72 52" aria-hidden="true"><rect x="4" y="12" width="12" height="36" rx="2" fill="#2A4AC8"/><rect x="18" y="6" width="13" height="42" rx="2" fill="#FFD98A"/><rect x="33" y="14" width="11" height="34" rx="2" fill="#6FD3A6"/><g transform="rotate(-12 58 30)"><rect x="50" y="10" width="14" height="38" rx="2" fill="#A9DDFF"/></g><rect x="0" y="48" width="72" height="4" rx="2" fill="rgba(255,255,255,.35)"/></svg></span><span>서재로 가기<small>끝낸 책 5권 · 책장 2개</small></span></button>
       <div class="rows">
         <div class="row2"><span>세션<small>퀘스트 창의 세션과 같이 바뀌어요</small></span><select id="s-sess" aria-label="세션"><option value="new">새 세션 · 시작 전</option><option value="club">동아리 행사 등록 앱 · 3단계</option><option value="done">독서 모임 알림 · 끝남</option></select></div>
+        ${pick("설정 창 자리", ["왼쪽", "오른쪽"], st.side === "left" ? "왼쪽" : "오른쪽", "퀘스트 창은 반대쪽에 떠요")}
         ${pick("등급", ["가볍게", "보통", "꼼꼼히"], "보통", "이 세션 — 곁 퀘스트가 보이고 안 보여요")}
         ${pick("플로로 말투", ["쉬운 말", "일 말"], st.easy ? "쉬운 말" : "일 말")}
         <div class="row2"><span>꾸미기<small>뽑기로 얻은 것 · 조개 ${st.shells}개</small></span><span class="closet">${st.owned.map((it) => `<button type="button" data-wear="${it.id}" aria-pressed="${!!(st.wear[it.slot] && st.wear[it.slot].id === it.id)}">${it.emoji} ${it.name}</button>`).join("")}<button type="button" id="s-gacha">조개 열기</button></span></div>
@@ -589,7 +593,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
       </div>`;
     const B = $("setbody");
     B.querySelectorAll(".sw").forEach((b) => (b.onclick = () => b.setAttribute("aria-checked", String(b.getAttribute("aria-checked") !== "true"))));
-    B.querySelectorAll(".pick").forEach((g) => g.querySelectorAll("button").forEach((b) => (b.onclick = () => { g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", "true"); if (b.textContent === "쉬운 말" || b.textContent === "일 말") st.easy = b.textContent === "쉬운 말"; if (["S", "M", "L"].includes(b.textContent)) setSize(b.textContent.toLowerCase()); })));
+    B.querySelectorAll(".pick").forEach((g) => g.querySelectorAll("button").forEach((b) => (b.onclick = () => { g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", "true"); if (b.textContent === "쉬운 말" || b.textContent === "일 말") st.easy = b.textContent === "쉬운 말"; if (["S", "M", "L"].includes(b.textContent)) setSize(b.textContent.toLowerCase()); if (b.textContent === "왼쪽" || b.textContent === "오른쪽") setSide(b.textContent === "왼쪽" ? "left" : "right"); })));
     B.querySelectorAll("[data-wear]").forEach((b) => (b.onclick = () => { const it = ITEMS.find((x) => x.id === b.dataset.wear); if (st.wear[it.slot] && st.wear[it.slot].id === it.id) delete st.wear[it.slot]; else st.wear[it.slot] = it; refloro(); }));
     $("s-sess").value = st.sess; $("s-sess").onchange = () => { $("sess").value = $("s-sess").value; $("sess").onchange(); };
     $("s-gacha").onclick = openGacha;
