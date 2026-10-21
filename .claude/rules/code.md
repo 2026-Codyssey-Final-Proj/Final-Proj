@@ -32,6 +32,13 @@
 6. **아키텍처 규칙은 사람 기억이 아니라 도구로 강제한다.** "외부 API·LLM은 한 모듈에서만 부른다",
    "이 접두어 밖의 테이블은 건드리지 않는다" 같은 규칙을 정했으면 린트 규칙(예: ESLint `no-restricted-imports`)이나
    테스트로 막는다 (출처: Intent-Specify(코딩마라톤 팀 과제, 사용자 채택 2026-10-04), llm-contract.md·plan.md P4·P8). 워크스페이스 규칙을 훅으로 강제하는 것과 같은 생각이다.
+7. <!-- claude-drafted: 2026-10-21 --> **Claude가 쓴 코드는 쓴 대화가 아닌 새 맥락에서 리뷰한다.** 사용자가 "써줘"라고 했거나
+   프로젝트가 코드를 Claude에게 맡겼을 때(세컨드 브레인 등), PR을 열기 전에 대화 기록을 물려받지 않는 서브에이전트에게
+   **요구(요구서 · 넘김 문서의 해당 줄)와 바뀐 코드(diff)만** 주고 리뷰를 맡긴다. 순서는 ① 요구에 맞나 ② 품질(karpathy 4원칙 ·
+   ponytail 형식). 받은 지적과 고친 것을 PR 본문에 적는다. 쓴 대화 안의 자체 점검은 그 앞에 해도 되지만 이것을 대신하지 않는다 —
+   왜 그렇게 썼는지 아는 쪽은 빠진 것을 당연하게 넘긴다. `verify` 에이전트는 시험 · 링크만 돌리므로 이 리뷰와 따로다
+   (출처: [후보 장부](../../01-docs/catalog/reference-candidates.md) W-29 — 짧은 자료 promfit.ai, superpowers `subagent-driven-development`,
+   ai-engineering-from-scratch 39강, 이재엽 채택 2026-10-21).
 
 ## 코드 위치 규칙
 
