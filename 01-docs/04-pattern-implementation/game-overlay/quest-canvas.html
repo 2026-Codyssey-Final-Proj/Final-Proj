@@ -7,6 +7,7 @@
 <!-- claude-drafted: 2026-10-21 — 이재엽 요청으로 Claude가 그린 화면 시안. 레프런스 넷(같은 날):
      ② 글: 메인은 플로로와 소통 · 퀘스트 창 · 요구 → 퀘스트 제작 → 확인 · 무지개 조개 → 뽑기 → 꾸미기 · 설정(이름 · 칭호 · 서재 · 세션 칸)
      ③ 그림: 위 줄은 지금 제품 그대로, 왼쪽 큰 플로로, 가운데 채팅(채팅 안에 플로로 그림 없음), 퀘스트 · 도전과제는 따로 뜨는 위젯(크기 조절 · 세션)
+     ⑤ 글: 퀘스트 창도 켜고 끄기. 처음 실행해서 요구를 넣으면 '퀘스트를 시작하시겠습니까?' → 1단계 퀘스트를 입력받고, 퀘스트 창이 바로 떠서 확인.
      ④ 그림 넷: 설정은 **켰다 끄는 왼쪽 창**(이름 + 플로로 · 초기 개발자 → 중급자 → 상급자 · 서재로 가기 · 설정 줄), 퀘스트는 **더 큰 오른쪽 창** —
         처음 받을 때는 이벤트 창 짜임(제목 띠 · 그림 · 참여 조건 · 기간 · REWARD 칸 · 큰 받기 단추), 받은 뒤에는 공책(왼쪽 목차 · 오른쪽 내용, 여기서 고친다),
         도전과제는 **그림만 크게**, 세로 탭, 마우스를 올리면 설명.
@@ -137,7 +138,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
 .closet button[aria-pressed="true"] { border-color: var(--gold); background: var(--gold-soft); }
 
 /* 퀘스트 창 — 오른쪽, 크게. 크기는 모서리 · S/M/L */
-#qwin { width: 520px; height: 760px; min-width: 260px; min-height: 120px; max-width: 100%; resize: both; }
+#qwin { width: 520px; height: 760px; min-width: 260px; min-height: 120px; max-width: 100%; resize: both; display: none; }
+#qwin.on { display: flex; }
+.win.pop { animation: pop .35s cubic-bezier(.3, 1.4, .5, 1); }
 #qwin.mini { height: auto !important; resize: none; }
 #qwin.mini .wbody, #qwin.mini .seg { display: none; }
 .seg { display: flex; gap: 4px; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 4px; width: fit-content; margin: 8px 12px 0; }
@@ -251,8 +254,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
 </style>
 </head>
 <body>
-<p class="note"><b>캔버스 목업</b> 서버 · AI 없음 — 단추를 누르면 정해 둔 대로 흘러가요. ⚙로 설정 창을 켜고 끄고, 두 창은 머리띠를 끌어 옮겨요. 퀘스트 창은 모서리나 S · M · L로 크기를 바꿔요. 도전과제의 그림에 마우스를 올리면 설명이 떠요. 스토리보드: <code>quest-storyboard.md</code> 9절
-  <button type="button" id="reset">처음부터</button><button type="button" id="alert">Claude Code가 일하는 것처럼</button><button type="button" id="give">무지개 조개 +3 (시험용)</button></p>
+<p class="note"><b>캔버스 목업</b> 서버 · AI 없음 — 단추를 누르면 정해 둔 대로 흘러가요. ⚙로 설정 창, 📜로 퀘스트 창을 켜고 꺼요. 두 창은 머리띠를 끌어 옮겨요. 퀘스트 창은 모서리나 S · M · L로 크기를 바꿔요. 도전과제의 그림에 마우스를 올리면 설명이 떠요. 스토리보드: <code>quest-storyboard.md</code> 9절
+  <button type="button" id="reset">처음 실행(새 세션)</button><button type="button" id="goclub">3단계(기능 정리)에서 이어서</button><button type="button" id="alert">Claude Code가 일하는 것처럼</button><button type="button" id="give">무지개 조개 +3 (시험용)</button></p>
 
 <div class="desk" id="desk">
 <!-- 설정 창 — 왼쪽, 켰다 끈다 -->
@@ -267,6 +270,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
     <span class="stage"><b id="p-chap">2단계 · 꼭 필요한 기능 정리하기</b><span id="p-q" class="lbl">5개 중 1번째 할 일</span><span class="dots" id="p-dots"></span></span>
     <span class="right">
       <button type="button" class="shells" id="shells" title="무지개 조개 — 퀘스트를 끝내면 받아요. 누르면 뽑기"><i class="shell"></i><span id="shell-n">0</span></button>
+      <button class="ti" type="button" id="btn-q" title="퀘스트 창 켜기 · 끄기"><svg viewBox="0 0 24 24"><path d="M6 3h11a2 2 0 012 2v16l-3-2-3 2-3-2-3 2-3-2V5a2 2 0 012-2z"/><path d="M8 8h8M8 12h6"/></svg></button>
       <button class="ti" type="button" id="btn-set" title="설정 창 켜기 · 끄기"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg></button>
       <button class="ti on" type="button" title="열어 두기"><svg viewBox="0 0 24 24"><path d="M12 17v5M8 7l1 7h6l1-7M6 7h12M9 3h6v4H9z"/></svg></button>
       <button class="ti" type="button" title="접기"><svg viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></button>
@@ -290,9 +294,10 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
 <div class="win m" id="qwin" aria-label="퀘스트 창">
   <div class="wh" data-drag>
     <span class="grip" aria-hidden="true">⋮⋮</span>
-    <select id="sess" aria-label="세션 고르기"><option value="0">동아리 행사 등록 앱 · 2장</option><option value="1">독서 모임 알림 · 끝남</option></select>
+    <select id="sess" aria-label="세션 고르기"><option value="new">새 세션 · 시작 전</option><option value="club">동아리 행사 등록 앱 · 3단계</option><option value="done">독서 모임 알림 · 끝남</option></select>
     <span class="sz" role="group" aria-label="크기"><button type="button" data-sz="s" aria-pressed="false" title="작게">S</button><button type="button" data-sz="m" aria-pressed="true" title="보통">M</button><button type="button" data-sz="l" aria-pressed="false" title="크게">L</button></span>
     <button type="button" class="wi" id="wmini" title="접기"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button type="button" class="wi" id="q-x" title="끄기">×</button>
   </div>
   <div class="seg" role="tablist">
     <button type="button" role="tab" data-tab="quest" aria-selected="true">퀘스트</button>
@@ -325,15 +330,35 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
   const S = window.NavSeal, $ = (id) => document.getElementById(id);
   // ── 자료 — 할 일은 navigator.js STAGES. 이름 그대로, 모양만 퀘스트. 그림(이모지)은 자리표시 — 진짜 그림은 고한결 ──
   const CHAPTERS = [
-    { n: 0, name: "정하기", icon: "📝", main: [["불편 한 문장", "😮‍💨"], ["달라지는 것", "✨"], ["누가 쓰나", "🧑‍🤝‍🧑"], ["얼마나 크게", "📏"]], side: [], state: "done" },
-    { n: 1, name: "적어 두기", icon: "🗂️", main: [["빈칸 채우기", "✍️"], ["왜 · 어디까지 · 언제", "🧭"], ["한 문장 한 가지", "1️⃣"]], side: [["기획서로 키우기", "📑"], ["보안 한 줄", "🔒"]], state: "done" },
-    { n: 2, name: "기능 정리", icon: "📋", main: [["기능을 '~하면, 앱은 ~한다'로 쓰기", "📋"], ["애매한 말 숫자로", "🔢"], ["꼭 · 있으면 좋음 표시", "⭐"]], side: [["출처 표 잇기(5개 이상)", "🔗"], ["막아야 할 일 쓰기", "🚫"]], state: "cur" },
-    { n: 3, name: "방법 고르기", icon: "🧭", main: [["선택지 셋", "🔀"], ["장단점", "⚖️"], ["하나 고르기", "👆"]], side: [["그림 하나로", "🖼️"]], state: "lock" },
-    { n: 4, name: "뼈대", icon: "🦴", main: [["작은 할 일로", "🧩"], ["차례 정하기", "🔢"]], side: [["위험한 일 먼저", "⚠️"]], state: "lock" },
-    { n: 5, name: "만들기", icon: "🛠️", main: [["할 일 하나씩", "🔨"], ["Claude Code에 넘기기", "🤖"], ["허락 · 거절", "🛂"]], side: [["시험 먼저", "🧪"], ["느낀 점", "💭"]], state: "lock" },
-    { n: 6, name: "재 보기", icon: "🧪", main: [["직접 써 보기", "🖱️"], ["잰 값 적기", "📊"], ["못 한 것 적기", "📝"]], side: [["남에게 보여 주기", "👀"]], state: "lock" },
-    { n: 7, name: "돌아보기", icon: "📖", main: [["잘된 것 · 안 된 것", "🪞"], ["다음엔 뺄 것", "✂️"]], side: [["책장 고르기", "📚"]], state: "lock" },
+    { n: 0, name: "정하기", title: "무엇을 만들지 정하기", icon: "📝", main: [["불편 한 문장", "😮‍💨"], ["달라지는 것", "✨"], ["누가 쓰나", "🧑‍🤝‍🧑"], ["얼마나 크게", "📏"]], side: [] },
+    { n: 1, name: "적어 두기", title: "아이디어 적어 두기", icon: "🗂️", main: [["빈칸 채우기", "✍️"], ["왜 · 어디까지 · 언제", "🧭"], ["한 문장 한 가지", "1️⃣"]], side: [["기획서로 키우기", "📑"], ["보안 한 줄", "🔒"]] },
+    { n: 2, name: "기능 정리", title: "꼭 필요한 기능 정리하기", icon: "📋", main: [["기능을 '~하면, 앱은 ~한다'로 쓰기", "📋"], ["애매한 말 숫자로", "🔢"], ["꼭 · 있으면 좋음 표시", "⭐"]], side: [["출처 표 잇기(5개 이상)", "🔗"], ["막아야 할 일 쓰기", "🚫"]] },
+    { n: 3, name: "방법 고르기", title: "만드는 방법 고르기", icon: "🧭", main: [["선택지 셋", "🔀"], ["장단점", "⚖️"], ["하나 고르기", "👆"]], side: [["그림 하나로", "🖼️"]] },
+    { n: 4, name: "뼈대", title: "뼈대 먼저 이어 보기", icon: "🦴", main: [["작은 할 일로", "🧩"], ["차례 정하기", "🔢"]], side: [["위험한 일 먼저", "⚠️"]] },
+    { n: 5, name: "만들기", title: "하나씩 만들고 확인하기", icon: "🛠️", main: [["할 일 하나씩", "🔨"], ["Claude Code에 넘기기", "🤖"], ["허락 · 거절", "🛂"]], side: [["시험 먼저", "🧪"], ["느낀 점", "💭"]] },
+    { n: 6, name: "재 보기", title: "실제로 써 보고 재 보기", icon: "🧪", main: [["직접 써 보기", "🖱️"], ["잰 값 적기", "📊"], ["못 한 것 적기", "📝"]], side: [["남에게 보여 주기", "👀"]] },
+    { n: 7, name: "돌아보기", title: "돌아보고 배운 것 남기기", icon: "📖", main: [["잘된 것 · 안 된 것", "🪞"], ["다음엔 뺄 것", "✂️"]], side: [["책장 고르기", "📚"]] },
   ];
+  // 단계 번호 표시 — 제품은 0단계(정하기)부터 세지만 이재엽이 "1단계 퀘스트"라고 해서 목업은 1~8로 센다(기능 정리 = 3단계) [정할 것 13]
+  const LABEL = (n) => `${n + 1}단계`;
+  // 장마다 퀘스트 글 — 할 일 수 · 플로로의 질문 · 예시 답. 목업에는 0장(처음 실행) · 2장만 채웠다
+  const CONTENT = {
+    0: { need: [1, 1, 1, 1], cond: "처음 시작하는 사람 — 등급은 나중에 정해도 돼요", when: "마감 없음 — 오늘 10분이면 돼요",
+      desc: "방금 말한 것을 네 줄로 정해요 — 무엇이 불편한지, 만들면 무엇이 달라지는지, 누가 쓰는지, 얼마나 크게 만들지. 한 줄씩 저와 이야기하면 돼요.",
+      why: "이 네 줄이 책의 첫 장이에요. 나중에 길을 잃으면 여기로 돌아와요",
+      pic: "무엇을 만들지 한 문장으로 정하는 첫날 밤 — 1단계",
+      qa: [["어떤 불편을 풀고 싶나요? 한 문장이면 돼요", ["동아리 행사 신청을 종이로 받아서 누가 냈는지 매번 헷갈려요"]],
+        ["만들면 무엇이 달라지나요?", ["신청이 한곳에 모이고, 마감 전에 알림이 가요"]],
+        ["누가 쓰나요?", ["동아리 운영진 3명과 회원 40명"]],
+        ["얼마나 크게 만들까요? 작게 시작해도 돼요", ["작게 — 신청 받기와 알림까지만"]]] },
+    2: { need: [3, 1, 1], cond: "3단계 '꼭 필요한 기능 정리하기'를 하고 있는 사람 · 등급 보통", when: "마감 없음 — 이 세션을 끝낼 때까지",
+      desc: "방금 말한 '행사 신청 화면'을 한 줄씩 적어요 — 누가 무엇을 하면 앱이 무엇을 하는지. '빠르게' 같은 말이 나오면 숫자로 바꿔요(모르면 '아직 모름'도 돼요). 다 되면 완료 보고!",
+      why: "이 장을 지나면 무엇을 만들지가 글로 남아서, 6단계에서 Claude Code에 넘길 때 그대로 쓸 수 있어요",
+      pic: "'행사 신청 화면'을 한 줄씩 글로 남기는 밤 — 3단계 기능 정리",
+      qa: [["첫 기능을 말해 주세요. 누가 무엇을 하는지만 말하면 돼요", ["회원이 신청 단추를 누르면, 앱은 신청서를 보여 준다", "운영진이 승인하면, 앱은 신청자에게 바로 알린다", "마감 하루 전이 되면, 앱은 신청자에게 알림을 보낸다"]],
+        ["'빠르게'처럼 애매한 말이 있나요? 숫자로 바꿔요 — 모르면 '아직 모름'", ["알림은 3초 안에"]],
+        ["기능마다 꼭 필요한지, 있으면 좋은지 표시해요", ["신청 · 승인은 꼭, 마감 알림은 있으면 좋음"]]] },
+  };
   const RANKS = ["출발한 사람", "적어 두는 사람", "기능 정리꾼", "길 고르는 사람", "뼈대 세우는 사람", "만드는 사람", "재 보는 사람", "책 한 권 지은이"];
   const TIERS = [["초기 개발자", 0], ["중급자", 3], ["상급자", 6]];   // [제안] 0~2장 · 3~5장 · 6~7장
   const ITEMS = [
@@ -342,20 +367,18 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
     { id: "scarf", name: "별 목도리", emoji: "🧣", slot: "neck", rar: "드묾", p: 9 },
     { id: "crown", name: "무지개 왕관", emoji: "👑", slot: "hat", rar: "아주 드묾", p: 1 },
   ];
-  const QUEST = { title: "기능을 '~하면, 앱은 ~한다' 문장으로 쓰기", chap: 2,
-    objs: [["📋", "기능 문장", 3], ["🔢", "애매한 말 숫자로", 1]],
-    desc: "방금 말한 '행사 신청 화면'을 한 줄씩 적어요 — 누가 무엇을 하면 앱이 무엇을 하는지. '빠르게' 같은 말이 나오면 숫자로 바꿔요(모르면 '아직 모름'도 돼요). 다 되면 완료 보고!",
-    cond: "2장 '꼭 필요한 기능 정리하기'를 하고 있는 사람 · 등급 보통", when: "마감 없음 — 이 세션을 끝낼 때까지",
-    why: "이 장을 지나면 무엇을 만들지가 글로 남아서, 5장에서 Claude Code에 넘길 때 그대로 쓸 수 있어요" };
-  const EXAMPLES = ["회원이 신청 단추를 누르면, 앱은 신청서를 보여 준다", "운영진이 승인하면, 앱은 신청자에게 바로 알린다", "마감 하루 전이 되면, 앱은 신청자에게 알림을 보낸다"];
-  const st = { tab: "quest", phase: "home", got: [0, 0], done: false, shells: 0, wear: {}, owned: [], lv: 2, easy: true, sess: 0, mood: "idle", sel: 0, edit: false, chap: 2 };
+  const SESS = { new: { start: 0, book: "새 세션", phase: "first" }, club: { start: 2, book: "동아리 행사 등록 앱", phase: "home" }, done: { start: 8, book: "독서 모임 알림" } };
+  const st = { sess: "new", phase: "first", q: null, done: false, shells: 0, wear: {}, owned: [], easy: true, mood: "idle", sel: 0, edit: false, chap: 0, idea: "" };
+  const lv = () => Math.min(7, SESS[st.sess].start + (st.done ? 1 : 0));
+  // 장 하나 = 퀘스트 하나. 할 일 = 그 장의 주 퀘스트(개수는 CONTENT.need)
+  function makeQuest(n) { const c = CHAPTERS[n], k = CONTENT[n] || { need: c.main.map(() => 1) }; return { chap: n, title: c.title, objs: c.main.map((m, i) => [m[1], m[0], k.need[i] || 1]), got: c.main.map(() => 0), ...k }; }
 
   // ── 플로로 ──
   function floro(mood, size) {
     const deco = Object.values(st.wear).map((it) => `<span class="deco ${it.slot}">${it.emoji}</span>`).join("");
     return `<span class="floro" style="width:${size}px;height:${size}px;--fs:${size}px">${S.svg(mood, size)}${deco}</span>`;
   }
-  function refloro(mood) { if (mood) st.mood = mood; $("cat-main").innerHTML = floro(st.mood, 144); $("rankchip").textContent = RANKS[st.lv]; if ($("setwin").classList.contains("on")) renderSet(); }
+  function refloro(mood) { if (mood) st.mood = mood; $("cat-main").innerHTML = floro(st.mood, 144); $("rankchip").textContent = RANKS[lv()]; if ($("setwin").classList.contains("on")) renderSet(); }
 
   // ── 채팅 ──
   const log = $("log"), opts = $("opts");
@@ -367,48 +390,57 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
   }
   function choices(list) { opts.innerHTML = list.map(([label, act, pri]) => `<button type="button" data-act="${act}"${pri ? ' class="pri"' : ""}>${label}</button>`).join(""); }
   function addShell(n) { st.shells += n; $("shell-n").textContent = st.shells; $("g-n").textContent = st.shells; $("shells").classList.remove("got"); void $("shells").offsetWidth; $("shells").classList.add("got"); $("g-roll").disabled = st.shells < 3; }
-  const ACT = {
-    want() { msg("me", "행사 신청을 받는 화면이 있어야 해요"); draft(); },
-    ok() { st.phase = "quest"; st.sel = 0; st.edit = false; msg("me", "퀘스트 받기"); renderProg(); renderQuest(); renderTree(); msg("floro", "받았어요! 퀘스트 창이 공책으로 바뀌었어요 — 왼쪽은 이 장의 퀘스트 목차, 오른쪽은 지금 퀘스트예요. 첫 기능을 말해 주세요", "happy"); choices([["예시 보여 줘", "example"], ["직접 쓸게요", "own"]]); $("mood").textContent = "퀘스트 1 · 같이 하는 중"; },
-    fix() { msg("me", "고쳐 주세요"); st.edit = true; renderQuest(); msg("floro", "퀘스트 창에서 이름과 할 일 수를 바로 고칠 수 있어요. 고친 뒤 '이대로 받기'를 눌러 주세요"); choices([["퀘스트 받기", "ok", true]]); },
-    example() { msg("me", "예시 보여 줘"); msg("floro", `이렇게요 — "${EXAMPLES[st.got[0]] || EXAMPLES[0]}". 이 문장으로 적을까요?`); choices([["네, 적을게요", "accept", true], ["고칠게요", "own"]]); },
-    own() { msg("floro", "아래 칸에 적어 주세요. 제가 '~하면, 앱은 ~한다'로 다듬어 볼게요"); choices([]); $("say").focus(); },
-    accept() {
-      msg("me", "네, 적을게요"); const need = QUEST.objs[0][2]; st.got[0] = Math.min(need, st.got[0] + 1); renderQuest();
-      if (st.got[0] < need) { msg("floro", `좋아요, ${st.got[0]}개 됐어요. 다음 기능은요?`, "happy"); choices([["예시 보여 줘", "example"], ["직접 쓸게요", "own"]]); }
-      else { msg("floro", `${need}개 다 됐어요! '빠르게'처럼 애매한 말은 없나요? 없으면 완료 보고할까요?`, "wow"); choices([["완료 보고", "report", true], ["숫자로 바꿀 게 있어요", "number"]]); }
-    },
-    number() { msg("me", "숫자로 바꿀 게 있어요"); msg("floro", "'빠르게'는 몇 초 안이면 될까요? 모르면 '아직 모름'도 돼요"); choices([["3초 안", "num3", true], ["아직 모름", "numx"]]); },
-    num3() { msg("me", "3초 안"); st.got[1] = 1; renderQuest(); msg("floro", "→ '3초 안'으로 정했어요. 완료 보고할까요?"); choices([["완료 보고", "report", true]]); },
-    numx() { msg("me", "아직 모름"); st.got[1] = 1; renderQuest(); msg("floro", "'아직 모름'으로 적어 뒀어요 — 나중에 정하면 돼요. 완료 보고할까요?"); choices([["완료 보고", "report", true]]); },
-    report() {
-      if (st.done) return; st.done = true; msg("me", "완료 보고"); addShell(1); renderQuest(); renderTree(); renderProg();
-      msg("floro", `퀘스트 완료! 무지개 조개를 하나 받았어요(지금 ${st.shells}개). 3개가 모이면 열어서 저를 꾸밀 수 있어요`, "done");
-      choices(st.shells >= 3 ? [["조개 열러 가기", "gacha", true], ["다음 퀘스트 받기", "next"]] : [["다음 퀘스트 받기", "next", true], ["조개는 어디서 열어요?", "where"]]);
-      $("mood").textContent = "퀘스트 1 끝 · 조개 받음";
-    },
-    where() { msg("me", "조개는 어디서 열어요?"); msg("floro", "위 줄의 조개 수를 누르거나, 설정 창의 '꾸미기' 줄에서요. 3개가 되면 제가 알려 드릴게요"); choices([["다음 퀘스트 받기", "next", true]]); },
-    gacha() { openGacha(); },
-    next() { msg("me", "다음 퀘스트 받기"); st.sel = 1; st.edit = false; renderQuest(); msg("floro", "다음은 <b>애매한 말 숫자로</b>예요 — 목차에서 두 번째. 퀘스트 창에 받기 화면을 띄웠어요"); choices([["받을게요", "end", true], ["나중에", "later"]]); },
-    end() { msg("me", "받을게요"); msg("floro", "(목업은 여기까지예요 — 흐름은 스토리보드 S11~S16과 같아요)"); choices([]); },
-    later() { msg("me", "나중에"); msg("floro", "그럼 쉬어요. 다시 오면 여기서 이어서 해요", "sleep"); choices([["다음 퀘스트 받기", "next", true]]); },
-    feed() { msg("me", "먹이 주기"); msg("floro", "글 파일(.md · .txt)을 섬에 놓거나 글을 붙여 넣어 주세요 — 구간으로 나눠 정리해 드려요", "love"); choices([["퀘스트 만들어 줘", "want", true]]); },
-    tree() { setTab("tree"); msg("floro", "퀘스트 창에 도전과제를 펼쳤어요. 그림에 마우스를 올리면 무엇인지 떠요 — 금빛은 끝낸 것, 파란 빛은 지금"); choices([["퀘스트 만들어 줘", "want", true]]); },
-    reflect() { msg("me", "반영"); const need = QUEST.objs[0][2]; st.got[0] = Math.min(need, st.got[0] + 1); renderQuest(); msg("floro", `Claude Code가 만든 것을 보고 기능 문장 하나를 더 채웠어요(${st.got[0]}/${need})`, "happy"); choices(st.got[0] < need ? [["예시 보여 줘", "example"], ["직접 쓸게요", "own"]] : [["완료 보고", "report", true]]); },
-    ignore() { msg("me", "나중에"); choices([["예시 보여 줘", "example"], ["직접 쓸게요", "own"]]); },
-  };
-  function draft() {
-    st.phase = "draft"; st.edit = false; renderQuest(); $("qwin").classList.remove("mini");
-    msg("floro", "알겠어요! 그 말을 퀘스트로 만들었어요 — <b>퀘스트 창</b>에 받기 화면을 띄웠어요. 조건 · 할 일 · 기간 · 보상을 보고 아래 큰 단추로 받아 주세요", "think");
-    choices([["퀘스트 받기", "ok", true], ["고쳐 주세요", "fix"]]);
+  const curIdx = () => st.q ? st.q.objs.findIndex((o, i) => st.q.got[i] < o[2]) : -1;
+  // 할 일 하나씩 묻기 — 다 차면 완료 보고
+  function askObj() {
+    const i = curIdx();
+    if (i < 0) { msg("floro", "다 됐어요! 완료 보고할까요?", "wow"); choices([["완료 보고", "report", true]]); return; }
+    const o = st.q.objs[i], q = (st.q.qa && st.q.qa[i]) ? st.q.qa[i][0] : `${o[1]} — 말해 주세요`;
+    msg("floro", st.q.got[i] > 0 ? `좋아요, ${st.q.got[i]}개 됐어요. 다음은요?` : `<b>${["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ"][i]}. ${o[1]}</b> — ${q}`, "look");
+    choices([["예시로 적어 줘", "example"], ["직접 쓸게요", "own"]]);
   }
+  const ACT = {
+    // 처음 실행 — 요구를 받으면 "퀘스트를 시작하시겠습니까?"
+    idea() { msg("me", "동아리 행사 등록 앱을 만들고 싶어요"); st.idea = "동아리 행사 등록 앱"; askStart(); },
+    start() {
+      msg("me", "시작할게요"); st.q = makeQuest(SESS[st.sess].start); st.phase = "draft"; st.edit = false; st.sel = 0;
+      qwinOn(true); renderProg(); renderQuest(); renderTree();
+      msg("floro", `<b>${LABEL(st.q.chap)} 퀘스트</b>를 만들었어요 — 퀘스트 창이 바로 떴죠? 조건 · 할 일 · 보상을 보고 아래 큰 단추로 받아 주세요`, "happy");
+      choices([["퀘스트 받기", "ok", true], ["고쳐 주세요", "fix"]]);
+    },
+    notyet() { msg("me", "아직이요"); msg("floro", "괜찮아요. 준비되면 '퀘스트 시작'이라고 말해 주세요 — 저는 여기 있어요", "sleep"); choices([["퀘스트 시작", "start", true]]); },
+    // 2장에서 이어서 — 요구를 말하면 퀘스트 제작
+    want() { msg("me", "행사 신청을 받는 화면이 있어야 해요"); st.q = makeQuest(2); st.phase = "draft"; st.edit = false; st.sel = 0; qwinOn(true); renderProg(); renderQuest(); renderTree(); msg("floro", "알겠어요! 그 말을 퀘스트로 만들었어요 — <b>퀘스트 창</b>에 받기 화면을 띄웠어요. 조건 · 할 일 · 기간 · 보상을 보고 아래 큰 단추로 받아 주세요", "think"); choices([["퀘스트 받기", "ok", true], ["고쳐 주세요", "fix"]]); },
+    ok() { st.phase = "quest"; st.sel = 0; st.edit = false; msg("me", "퀘스트 받기"); renderProg(); renderQuest(); renderTree(); msg("floro", "받았어요! 퀘스트 창이 공책으로 바뀌었어요 — 왼쪽은 목차, 오른쪽은 할 일이에요", "happy"); $("mood").textContent = `${LABEL(st.q.chap)} · 같이 하는 중`; askObj(); },
+    fix() { msg("me", "고쳐 주세요"); st.edit = true; renderQuest(); msg("floro", "퀘스트 창에서 이름과 할 일 수를 바로 고칠 수 있어요. 고친 뒤 '이대로 받기'를 눌러 주세요"); choices([["퀘스트 받기", "ok", true]]); },
+    example() { msg("me", "예시로 적어 줘"); const i = curIdx(); const ex = (st.q.qa && st.q.qa[i]) ? st.q.qa[i][1] : ["(예시)"]; msg("floro", `이렇게요 — "${ex[Math.min(st.q.got[i], ex.length - 1)]}". 이 문장으로 적을까요?`); choices([["네, 적을게요", "accept", true], ["고칠게요", "own"]]); },
+    own() { msg("floro", "아래 칸에 적어 주세요. 제가 한 줄로 다듬어 볼게요"); choices([]); $("say").focus(); },
+    accept() { msg("me", "네, 적을게요"); const i = curIdx(); st.q.got[i]++; renderQuest(); renderTree(); renderProg(); askObj(); },
+    report() {
+      if (st.done) return; st.done = true; msg("me", "완료 보고"); addShell(1); renderQuest(); renderTree(); renderProg(); refloro();
+      msg("floro", `퀘스트 완료! 무지개 조개를 하나 받았어요(지금 ${st.shells}개). 3개가 모이면 열어서 저를 꾸밀 수 있어요. ${LABEL(st.q.chap)}을 지나서 칭호가 <b>${RANKS[lv()]}</b>이 됐어요`, "done");
+      choices(st.shells >= 3 ? [["조개 열러 가기", "gacha", true], ["다음 단계 퀘스트 받기", "next"]] : [["다음 단계 퀘스트 받기", "next", true], ["조개는 어디서 열어요?", "where"]]);
+      $("mood").textContent = `${LABEL(st.q.chap)} 끝 · 조개 받음`;
+    },
+    where() { msg("me", "조개는 어디서 열어요?"); msg("floro", "위 줄의 조개 수를 누르거나, 설정 창의 '꾸미기' 줄에서요. 3개가 되면 제가 알려 드릴게요"); choices([["다음 단계 퀘스트 받기", "next", true]]); },
+    gacha() { openGacha(); },
+    next() { msg("me", "다음 단계 퀘스트 받기"); const n = st.q.chap + 1; if (n > 7) { msg("floro", "7장까지 다 지났어요 — 책 한 권이 완성됐어요!"); choices([]); return; } st.q = makeQuest(n); st.done = false; st.phase = "draft"; st.sel = 0; qwinOn(true); renderProg(); renderQuest(); renderTree(); msg("floro", `<b>${LABEL(n)} · ${st.q.title}</b> 받기 화면을 띄웠어요${CONTENT[n] ? "" : " (목업은 이 장의 글까지는 안 채웠어요)"}`); choices([["퀘스트 받기", "ok", true], ["나중에", "later"]]); },
+    later() { msg("me", "나중에"); msg("floro", "그럼 쉬어요. 다시 오면 여기서 이어서 해요", "sleep"); choices([["퀘스트 받기", "ok", true]]); },
+    feed() { msg("me", "먹이 주기"); msg("floro", "글 파일(.md · .txt)을 섬에 놓거나 글을 붙여 넣어 주세요 — 구간으로 나눠 정리해 드려요", "love"); choices(st.phase === "first" ? [["동아리 행사 등록 앱을 만들고 싶어요", "idea", true]] : [["퀘스트 만들어 줘", "want", true]]); },
+    tree() { qwinOn(true); setTab("tree"); msg("floro", "퀘스트 창에 도전과제를 펼쳤어요. 그림에 마우스를 올리면 무엇인지 떠요 — 금빛은 끝낸 것, 파란 빛은 지금"); choices(st.phase === "first" ? [["동아리 행사 등록 앱을 만들고 싶어요", "idea", true]] : [["퀘스트 만들어 줘", "want", true]]); },
+    reflect() { msg("me", "반영"); const i = curIdx(); if (i >= 0) st.q.got[i]++; renderQuest(); renderTree(); msg("floro", "Claude Code가 만든 것을 보고 할 일 하나를 더 채웠어요", "happy"); askObj(); },
+    ignore() { msg("me", "나중에"); askObj(); },
+  };
+  function askStart() { st.phase = "ask"; msg("floro", `좋아요, <b>${st.idea}</b>! 그럼 <b>퀘스트를 시작하시겠습니까?</b> ${LABEL(0)} '${CHAPTERS[0].title}'부터예요 — 네 줄만 정하면 돼요`, "happy"); choices([["시작할게요", "start", true], ["아직이요", "notyet"]]); }
   opts.addEventListener("click", (e) => { const b = e.target.closest("[data-act]"); if (b && ACT[b.dataset.act]) ACT[b.dataset.act](); });
   function send() {
     const t = $("say").value.trim(); if (!t) return; $("say").value = ""; msg("me", t);
-    if (st.phase === "home") { draft(); return; }
+    if (st.phase === "first") { st.idea = t.replace(/[을를]?\s*만들고 싶어요?$/, "").trim() || t; askStart(); return; }
+    if (st.phase === "ask") { if (/시작|네|응|좋아/.test(t)) { ACT.start(); return; } msg("floro", "준비되면 '시작'이라고 말해 주세요"); choices([["시작할게요", "start", true]]); return; }
+    if (st.phase === "home") { ACT.want(); return; }
     if (st.phase === "draft") { msg("floro", "먼저 퀘스트 창에서 퀘스트를 받아 주세요"); choices([["퀘스트 받기", "ok", true], ["고쳐 주세요", "fix"]]); return; }
-    const made = t.includes("하면") ? t : `${t.replace(/[.。]$/, "")}이(가) 있으면, 앱은 그 화면을 보여 준다`;
-    msg("floro", `"${made}" — 이렇게 적을까요?`); choices([["네, 적을게요", "accept", true], ["고칠게요", "own"]]);
+    if (st.phase === "quest" && curIdx() >= 0) { msg("floro", `"${t.replace(/[.。]$/, "")}" — 이렇게 적을까요?`); choices([["네, 적을게요", "accept", true], ["고칠게요", "own"]]); return; }
+    msg("floro", "지금은 완료 보고만 남았어요"); choices([["완료 보고", "report", true]]);
   }
   $("send").onclick = send; $("say").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
   $("alert").onclick = () => {
@@ -416,7 +448,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
     setTimeout(() => {
       d.querySelector(".b").innerHTML = "Claude Code가 일을 마쳤어요 — 신청서.html을 만들었어요";
       msg("floro", st.easy ? "쉽게 말하면, 사람들이 이름을 적어 내는 <b>종이 한 장</b>을 화면으로 만든 거예요. 퀘스트에 반영할까요?" : "신청 폼 페이지(신청서.html)가 생성됐어요. 퀘스트 요약에 반영할까요?");
-      if (st.phase === "quest" && !st.done) choices([["반영", "reflect", true], ["나중에", "ignore"]]); else choices([["퀘스트 만들어 줘", "want", true]]);
+      if (st.phase === "quest" && !st.done) choices([["반영", "reflect", true], ["나중에", "ignore"]]); else choices(st.phase === "first" ? [["동아리 행사 등록 앱을 만들고 싶어요", "idea", true]] : [["퀘스트 만들어 줘", "want", true]]);
     }, 1800);
   };
   $("give").onclick = () => { addShell(3); msg("floro", `(시험용) 무지개 조개 3개를 받았어요 — 지금 ${st.shells}개`, "wow"); choices([["조개 열러 가기", "gacha", true]]); };
@@ -434,90 +466,90 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
     h.addEventListener("pointermove", (e) => { if (!drag) return; W.style.left = Math.max(0, Math.min(innerWidth - 80, e.clientX - drag.dx)) + "px"; W.style.top = Math.max(0, e.clientY - drag.dy) + "px"; });
     h.addEventListener("pointerup", () => { drag = null; W.classList.remove("drag"); });
   });
-  // ── 퀘스트 창 — 탭 · 세션 · 크기 ──
+  // ── 퀘스트 창 — 켜기 · 끄기 · 탭 · 세션 · 크기 ──
   const Q = $("qwin");
-  function setTab(tab) { st.tab = tab; Q.querySelectorAll("[role=tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab))); Q.querySelectorAll(".pane").forEach((p) => p.classList.toggle("on", p.id === `pane-${tab}`)); }
+  function qwinOn(on) { const was = Q.classList.contains("on"); Q.classList.toggle("on", on); Q.classList.remove("mini"); $("btn-q").classList.toggle("on", on); if (on && !was) { Q.classList.remove("pop"); void Q.offsetWidth; Q.classList.add("pop"); } }
+  $("btn-q").onclick = () => qwinOn(!Q.classList.contains("on"));
+  $("q-x").onclick = () => qwinOn(false);
+  function setTab(tab) { Q.querySelectorAll(".seg [role=tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab))); Q.querySelectorAll(".pane").forEach((p) => p.classList.toggle("on", p.id === `pane-${tab}`)); }
   Q.querySelectorAll(".seg [role=tab]").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
   const SIZES = { s: [300, 220], m: [520, 760], l: [680, 900] };
   function setSize(k) { Q.classList.remove("s", "m", "l", "mini"); Q.classList.add(k); Q.style.width = SIZES[k][0] + "px"; Q.style.height = SIZES[k][1] + "px"; Q.querySelectorAll("[data-sz]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.sz === k))); }
   Q.querySelectorAll("[data-sz]").forEach((b) => (b.onclick = () => setSize(b.dataset.sz)));
   $("wmini").onclick = () => Q.classList.toggle("mini");
-  $("sess").onchange = () => { st.sess = Number($("sess").value); renderQuest(); renderTree(); renderLib(); };
+  $("sess").onchange = () => { if ($("sess").value === "club") reset("club"); else if ($("sess").value === "new") reset("new"); else { st.sess = "done"; st.q = null; st.phase = "done"; st.chap = 7; renderProg(); renderQuest(); renderTree(); renderLib(); } };
   // ── 설정 창 — 켜기 · 끄기 ──
   $("btn-set").onclick = () => { const on = !$("setwin").classList.contains("on"); $("setwin").classList.toggle("on", on); $("btn-set").classList.toggle("on", on); if (on) renderSet(); };
   $("set-x").onclick = () => { $("setwin").classList.remove("on"); $("btn-set").classList.remove("on"); };
-  $("home").onclick = () => reset();
+  $("home").onclick = () => reset(st.sess === "done" ? "new" : st.sess);
 
   function renderProg() {
-    $("p-q").textContent = `5개 중 ${st.done ? 2 : 1}번째 할 일`;
-    $("p-dots").innerHTML = [0, 1, 2, 3, 4].map((i) => `<i class="${i === 0 && st.done ? "done" : i === (st.done ? 1 : 0) ? "on" : ""}"></i>`).join("");
+    if (!st.q) { $("p-chap").textContent = st.sess === "done" ? "독서 모임 알림 · 끝남" : st.sess === "club" ? `${LABEL(2)} · 꼭 필요한 기능 정리하기` : "시작 전 · 무엇을 만들까요"; $("p-q").textContent = st.sess === "club" ? "5개 중 1번째 할 일" : ""; $("p-dots").innerHTML = ""; return; }
+    const n = st.q.objs.length, i = curIdx(), k = st.done || i < 0 ? n : i + 1;
+    $("p-chap").textContent = `${LABEL(st.q.chap)} · ${st.q.title}`; $("p-q").textContent = `${n}개 중 ${k}번째 할 일`;
+    $("p-dots").innerHTML = st.q.objs.map((o, j) => `<i class="${st.q.got[j] >= o[2] ? "done" : j === i && st.phase === "quest" ? "on" : ""}"></i>`).join("");
   }
   // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 고한결
   const PIC = `<svg viewBox="0 0 320 140" aria-hidden="true"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1550"/><stop offset="1" stop-color="#2A4AC8"/></linearGradient><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3BA6"/><stop offset="1" stop-color="#0E1A4F"/></linearGradient></defs><rect width="320" height="140" fill="url(#sky)"/><g fill="#fff"><circle cx="30" cy="22" r="1.4"/><circle cx="80" cy="40" r="1"/><circle cx="140" cy="18" r="1.6"/><circle cx="200" cy="34" r="1"/><circle cx="260" cy="16" r="1.3"/><circle cx="300" cy="46" r="1"/><circle cx="110" cy="60" r=".8"/><circle cx="240" cy="62" r=".9"/></g><circle cx="262" cy="36" r="16" fill="#FFF3C4"/><circle cx="268" cy="31" r="14" fill="url(#sky)"/><path d="M0 95 Q 80 80 160 95 T 320 95 V140 H0z" fill="url(#sea)"/><path d="M70 100 L 110 78 L 200 76 L 250 100 Z" fill="#E6F6FF"/><path d="M70 100 L 250 100 L 240 112 L 85 112 Z" fill="#A9DDFF"/><rect x="130" y="52" width="60" height="30" rx="4" fill="#F3EBD8" stroke="#6B5B3E" stroke-width="2"/><path d="M138 60h44M138 67h36M138 74h40" stroke="#B99A4F" stroke-width="2" stroke-linecap="round"/><path d="M20 70 L 60 48 L 60 70 Z" fill="#8AE0FF" opacity=".5"/></svg>`;
   function renderQuest() {
-    const q = QUEST, p = $("pane-quest");
-    if (st.sess === 1) { p.innerHTML = `<div class="empty"><b>독서 모임 알림 — 끝난 세션</b>7장까지 모두 끝났어요. 책은 서고에 꽂혀 있어요 — 서고 탭에서 펴요.</div>`; return; }
-    if (st.phase === "home") { p.innerHTML = `<div class="empty"><b>아직 퀘스트가 없어요</b>플로로에게 무엇을 만들고 싶은지 말하면, 여기에 받기 화면이 떠요.<br>받은 퀘스트는 공책(목차 · 내용)으로 정리돼요.</div>`; return; }
-    const total = q.objs.reduce((n, o) => n + o[2], 0), got = st.got.reduce((n, g) => n + g, 0);
+    const q = st.q, p = $("pane-quest");
+    if (st.sess === "done") { p.innerHTML = `<div class="empty"><b>독서 모임 알림 — 끝난 세션</b>7장까지 모두 끝났어요. 책은 서고에 꽂혀 있어요 — 서고 탭에서 펴요.</div>`; return; }
+    if (!q) { p.innerHTML = `<div class="empty"><b>아직 퀘스트가 없어요</b>${st.phase === "first" || st.phase === "ask" ? "플로로에게 무엇을 만들고 싶은지 말하면, '퀘스트를 시작하시겠습니까?'를 물어요.<br>시작하면 이 창이 바로 떠서 1단계 퀘스트를 확인해요." : "플로로에게 무엇을 만들고 싶은지 말하면, 여기에 받기 화면이 떠요.<br>받은 퀘스트는 공책(목차 · 내용)으로 정리돼요."}</div>`; return; }
+    const total = q.objs.reduce((n, o) => n + o[2], 0), got = q.got.reduce((n, g) => n + g, 0);
     // 처음 받을 때 — 이벤트 창 짜임
-    if (st.phase === "draft" || (st.phase === "quest" && st.sel === 1 && st.done)) {
-      const second = st.phase === "quest", ed = st.edit && !second;
-      const title = second ? "애매한 말 숫자로" : q.title;
+    if (st.phase === "draft") {
+      const ed = st.edit;
       p.innerHTML = `<div class="ev">
-        <div class="ttl"><span></span><span>${ed ? `<input id="e-title" value="${title}" aria-label="퀘스트 이름">` : title}</span><button type="button" class="q" data-tt="이 퀘스트가 왜 있나요|${q.why}">?</button></div>
-        <div class="pic">${PIC}<div class="cap">${second ? "'빠르게' · '많이' 같은 말을 숫자로 바꾸는 밤" : "'행사 신청 화면'을 한 줄씩 글로 남기는 밤 — 2장 기능 정리"}</div></div>
-        <div class="box"><h4>참여 조건</h4><p>${q.cond}</p></div>
-        <div class="box${ed ? " edit" : ""}"><h4>할 일${ed ? " — 고치는 중" : ""}</h4>${ed ? `<p>기능 문장 <input id="e-n" type="number" min="1" max="5" value="${q.objs[0][2]}" aria-label="기능 문장 수">개 · 애매한 말 숫자로 1개</p>` : `<p>${second ? "애매한 말 1개를 숫자로" : `기능 문장 ${q.objs[0][2]}개 · 애매한 말 숫자로 1개`}</p>`}</div>
-        <div class="box"><h4>기간</h4><p>${q.when}</p></div>
-        <div class="box"><h4>REWARD</h4><div class="slots"><i class="has" tabindex="0" data-tt="무지개 조개 ×1|퀘스트를 끝내면 하나. 3개로 뽑기"><span class="shell"></span></i><i class="has" tabindex="0" data-tt="책갈피 +1|직접 쓴 말은 책에 책갈피로 남아요">▮</i><i class="has" tabindex="0" data-tt="조각 '기능 목록'|이 퀘스트가 만드는 것 — 책에 꽂혀요">🧩</i><i></i><i></i><i></i><i></i></div></div>
-        ${second ? `<button type="button" class="join" data-act="end">퀘스트 받기</button>` : `<button type="button" class="join" data-act="${ed ? "save" : "ok"}">${ed ? "이대로 받기" : "퀘스트 받기"}</button><div class="sub"><button type="button" data-act="${ed ? "cancel" : "fixq"}">${ed ? "고치기 취소" : "고쳐 주세요"}</button><button type="button" data-act="later">나중에</button></div>`}
+        <div class="ttl"><span></span><span>${ed ? `<input id="e-title" value="${q.title}" aria-label="퀘스트 이름">` : q.title}</span><button type="button" class="q" data-tt="이 퀘스트가 왜 있나요|${q.why || "책의 다음 장을 채우는 퀘스트예요"}">?</button></div>
+        <div class="pic">${PIC}<div class="cap">${q.pic || `${LABEL(q.chap)} · ${q.title}`}</div></div>
+        <div class="box"><h4>참여 조건</h4><p>${q.cond || `${LABEL(q.chap - 1)}을 지난 사람`}</p></div>
+        <div class="box${ed ? " edit" : ""}"><h4>할 일${ed ? " — 고치는 중" : ""}</h4><p>${q.objs.map((o, i) => ed ? `${o[1]} <input type="number" min="1" max="5" value="${o[2]}" data-oc="${i}" aria-label="${o[1]} 개수">개` : `${o[1]} ${o[2]}개`).join(" · ")}</p></div>
+        <div class="box"><h4>기간</h4><p>${q.when || "마감 없음"}</p></div>
+        <div class="box"><h4>REWARD</h4><div class="slots"><i class="has" tabindex="0" data-tt="무지개 조개 ×1|퀘스트를 끝내면 하나. 3개로 뽑기"><span class="shell"></span></i><i class="has" tabindex="0" data-tt="책갈피 +1|직접 쓴 말은 책에 책갈피로 남아요">▮</i><i class="has" tabindex="0" data-tt="조각 '${CHAPTERS[q.chap].name}'|이 퀘스트가 만드는 것 — 책에 꽂혀요">🧩</i><i class="has" tabindex="0" data-tt="칭호 '${RANKS[Math.min(7, q.chap + 1)]}'|이 장을 지나면 칭호가 바뀌어요">🏅</i><i></i><i></i><i></i></div></div>
+        <button type="button" class="join" data-act="${ed ? "save" : "ok"}">${ed ? "이대로 받기" : "퀘스트 받기"}</button><div class="sub"><button type="button" data-act="${ed ? "cancel" : "fixq"}">${ed ? "고치기 취소" : "고쳐 주세요"}</button><button type="button" data-act="later">나중에</button></div>
       </div>`;
       p.querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => {
         const a = b.dataset.act;
-        if (a === "save") { const t = $("e-title").value.trim(); if (t) q.title = t; q.objs[0][2] = Math.max(1, Math.min(5, Number($("e-n").value) || 3)); st.edit = false; ACT.ok(); return; }
+        if (a === "save") { const t = $("e-title").value.trim(); if (t) q.title = t; p.querySelectorAll("[data-oc]").forEach((i) => { q.objs[i.dataset.oc][2] = Math.max(1, Math.min(5, Number(i.value) || 1)); }); st.edit = false; ACT.ok(); return; }
         if (a === "cancel") { st.edit = false; renderQuest(); return; }
         if (a === "fixq") { st.edit = true; renderQuest(); return; }
         ACT[a]();
       }));
       return;
     }
-    // 받은 뒤 — 공책: 왼쪽 목차 · 오른쪽 내용(여기서 고친다)
-    const ch = CHAPTERS[2], ed = st.edit;
-    const toc = ch.main.map((m, i) => { const cls = i === 0 ? (st.done ? "done" : "") : i === 1 && st.done ? "" : "lock"; const label = i === 0 ? q.title : m[0];
-      return `<button type="button" data-sel="${i}" aria-pressed="${st.sel === i}" class="${cls}">${["Ⅰ", "Ⅱ", "Ⅲ"][i]}. ${label}<small>${cls === "done" ? "끝냄 ✓" : cls === "lock" ? "★ 아직" : "지금"}</small></button>`; }).join("")
-      + `<div class="side-h">곁 퀘스트 — 안 해도 돼요</div>` + ch.side.map((s) => `<button type="button" class="lock" disabled>${s[1]} ${s[0]}<small>★ 2장을 더 하면</small></button>`).join("");
-    let right;
-    if (st.sel === 0) {
-      right = `<h3>${ed ? `<input id="e-title" value="${q.title}" aria-label="퀘스트 이름">` : q.title}</h3><div class="meta">2장 · 플로로가 만들었어요 · ${st.done ? "끝냄" : "하는 중"}</div>
-        <div class="lines">${q.objs.map((o, i) => `<div class="ln${st.got[i] >= o[2] ? " done" : ""}"><span class="ck">${st.got[i] >= o[2] ? "✓" : ""}</span>${ed ? `<input value="${o[1]}" data-on="${i}" aria-label="할 일 이름">` : o[1]}<span class="n">${st.got[i]} / ${ed ? `<input type="number" min="1" max="5" value="${o[2]}" data-oc="${i}" aria-label="개수">` : o[2]}</span></div>`).join("")}</div>
-        <p>${q.desc}</p><p><b>왜 하나요</b> — ${q.why}</p>
-        <div class="rw"><span>보상</span><span class="piece${st.done ? " got" : ""}"><i class="shell"></i>무지개 조개 ×1</span><span class="piece">▮ 책갈피 +1</span></div>
+    // 받은 뒤 — 공책: 왼쪽 목차(할 일) · 오른쪽 줄(여기서 고친다)
+    const ch = CHAPTERS[q.chap], ed = st.edit, ci = curIdx();
+    const toc = q.objs.map((o, i) => { const cls = q.got[i] >= o[2] ? "done" : i === ci ? "" : "lock";
+      return `<button type="button" data-sel="${i}" aria-pressed="${st.sel === i}" class="${cls}">${["Ⅰ", "Ⅱ", "Ⅲ", "Ⅳ"][i]}. ${o[1]}<small>${cls === "done" ? "끝냄 ✓" : cls === "lock" ? "★ 아직" : "지금"}</small></button>`; }).join("")
+      + (ch.side.length ? `<div class="side-h">곁 퀘스트 — 안 해도 돼요</div>` + ch.side.map((s) => `<button type="button" class="lock" disabled>${s[1]} ${s[0]}<small>★ 이 장을 더 하면</small></button>`).join("") : "");
+    const right = `<h3>${ed ? `<input id="e-title" value="${q.title}" aria-label="퀘스트 이름">` : q.title}</h3><div class="meta">${LABEL(q.chap)} · 플로로가 만들었어요 · ${st.done ? "끝냄" : "하는 중"}</div>
+        <div class="lines">${q.objs.map((o, i) => `<div class="ln${q.got[i] >= o[2] ? " done" : ""}"${st.sel === i ? ' style="background:#FFF4D6"' : ""}><span class="ck">${q.got[i] >= o[2] ? "✓" : ""}</span>${ed ? `<input value="${o[1]}" data-on="${i}" aria-label="할 일 이름">` : o[1]}<span class="n">${q.got[i]} / ${ed ? `<input type="number" min="1" max="5" value="${o[2]}" data-oc="${i}" aria-label="개수">` : o[2]}</span></div>`).join("")}</div>
+        <p>${q.desc || ""}</p>${q.why ? `<p><b>왜 하나요</b> — ${q.why}</p>` : ""}
+        <div class="rw"><span>보상</span><span class="piece${st.done ? " got" : ""}"><i class="shell"></i>무지개 조개 ×1</span><span class="piece">▮ 책갈피 +1</span><span class="piece">🏅 ${RANKS[Math.min(7, q.chap + 1)]}</span></div>
         <div class="pacts">${ed ? `<button type="button" class="pri" data-act="save2">저장</button><button type="button" data-act="cancel">취소</button><span></span>` : `<button type="button" class="pri" data-act="report" ${got < total || st.done ? "disabled" : ""}>완료 보고</button><button type="button" data-act="hint">힌트</button><button type="button" data-act="edit">고치기</button>`}</div>`;
-    } else {
-      right = `<h3>${ch.main[st.sel][0]}</h3><div class="meta">2장 · 아직 — 앞 퀘스트를 끝내면 받아요</div><div class="lines">${[0, 1, 2, 3].map(() => `<div class="ln"><span style="color:var(--paper-mute)">—</span></div>`).join("")}</div>`;
-    }
-    p.innerHTML = `<div class="book"><div class="page l"><h4>목차 · 2장</h4><div class="toc">${toc}</div></div><div class="page r">${right}</div></div>`;
-    p.querySelectorAll("[data-sel]").forEach((b) => (b.onclick = () => { if (b.classList.contains("lock")) return; st.sel = Number(b.dataset.sel); st.edit = false; renderQuest(); }));
+    p.innerHTML = `<div class="book"><div class="page l"><h4>목차 · ${LABEL(q.chap)}</h4><div class="toc">${toc}</div></div><div class="page r">${right}</div></div>`;
+    p.querySelectorAll("[data-sel]").forEach((b) => (b.onclick = () => { st.sel = Number(b.dataset.sel); st.edit = false; renderQuest(); }));
     p.querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => {
       const a = b.dataset.act;
-      if (a === "hint") { msg("floro", "힌트: '누가 — 무엇을 하면 — 앱은 — 무엇을 한다' 네 조각이에요. 예시를 보여 드릴까요?"); choices([["예시 보여 줘", "example", true]]); return; }
+      if (a === "hint") { const i = curIdx(); msg("floro", i >= 0 && q.qa && q.qa[i] ? `힌트: ${q.qa[i][0]} — 예시를 보여 드릴까요?` : "힌트: 한 줄에 한 가지만 적으면 돼요"); choices([["예시로 적어 줘", "example", true]]); return; }
       if (a === "edit") { st.edit = true; renderQuest(); return; }
       if (a === "cancel") { st.edit = false; renderQuest(); return; }
-      if (a === "save2") { const t = $("e-title").value.trim(); if (t) q.title = t; p.querySelectorAll("[data-on]").forEach((i) => { if (i.value.trim()) q.objs[i.dataset.on][1] = i.value.trim(); }); p.querySelectorAll("[data-oc]").forEach((i) => { q.objs[i.dataset.oc][2] = Math.max(1, Math.min(5, Number(i.value) || 1)); }); st.edit = false; renderQuest(); msg("floro", "퀘스트를 고쳐 적었어요 — 할 일 수가 바뀌어도 보상은 그대로예요"); return; }
+      if (a === "save2") { const t = $("e-title").value.trim(); if (t) q.title = t; p.querySelectorAll("[data-on]").forEach((i) => { if (i.value.trim()) q.objs[i.dataset.on][1] = i.value.trim(); }); p.querySelectorAll("[data-oc]").forEach((i) => { q.objs[i.dataset.oc][2] = Math.max(1, Math.min(5, Number(i.value) || 1)); }); st.edit = false; renderQuest(); renderProg(); msg("floro", "퀘스트를 고쳐 적었어요 — 할 일 수가 바뀌어도 보상은 그대로예요"); return; }
       ACT[a]();
     }));
   }
   // 도전과제 — 세로 탭(장) · 그림만 크게 · 마우스를 올리면 설명
+  function chapState(n) { const s = st.q ? st.q.chap : SESS[st.sess].start; return n < s || (n === s && st.done) ? "done" : n === s ? "cur" : "lock"; }
   function renderTree() {
-    const p = $("pane-tree"), doneAll = st.sess === 1, c = CHAPTERS[st.chap];
-    const state = doneAll ? "done" : c.state;
-    const cls = (i) => state === "done" ? "done" : state === "lock" ? "lock" : (st.done && i === 0) ? "done" : (i === (st.done ? 1 : 0) && st.phase === "quest") ? "cur" : "lock";
-    const tt = (label, k, reward) => `${label}|${k === "done" ? "끝냈어요 · " + (reward || "무지개 조개를 받았어요") : k === "cur" ? "지금 하는 퀘스트 — 채팅에서 플로로와 같이 해요" : k === "gate" ? "관문 — 이 장의 퀘스트를 다 하면 플로로가 '이해되셨나요?'를 물어요. 지나면 칭호가 바뀌어요" : "아직 열리지 않았어요 — 앞의 퀘스트를 먼저 해요"}`;
-    const tabs = CHAPTERS.map((x) => `<button type="button" role="tab" aria-selected="${x.n === st.chap}" class="${doneAll || x.state === "done" ? "done" : x.state === "lock" ? "lock" : ""}" data-chap="${x.n}" data-tt="${x.n}장 · ${x.name}|${doneAll || x.state === "done" ? "끝낸 장 — 도장을 받았어요" : x.state === "cur" ? "지금 하는 장" : "아직 — 앞 장을 끝내면 열려요"}">${x.icon}</button>`).join("");
-    const chain = c.main.map((m, i) => { const k = cls(i); const label = i === 0 && st.chap === 2 && st.phase !== "home" ? QUEST.title : m[0];
+    const p = $("pane-tree"), c = CHAPTERS[st.chap], state = chapState(c.n), ci = curIdx();
+    const mine = st.q && st.q.chap === c.n;
+    const cls = (i) => state === "done" ? "done" : state === "lock" ? "lock" : mine && st.q.objs[i] && st.q.got[i] >= st.q.objs[i][2] ? "done" : (mine && i === ci && st.phase === "quest") ? "cur" : "lock";
+    const tt = (label, k, reward) => `${label}|${k === "done" ? "끝냈어요 · " + (reward || "무지개 조개를 받았어요") : k === "cur" ? "지금 하는 할 일 — 채팅에서 플로로와 같이 해요" : k === "gate" ? "관문 — 이 장의 할 일을 다 하면 플로로가 '이해되셨나요?'를 물어요. 지나면 칭호가 바뀌어요" : "아직 열리지 않았어요 — 앞의 할 일을 먼저 해요"}`;
+    const tabs = CHAPTERS.map((x) => { const k = chapState(x.n); return `<button type="button" role="tab" aria-selected="${x.n === st.chap}" class="${k === "done" ? "done" : k === "lock" ? "lock" : ""}" data-chap="${x.n}" data-tt="${LABEL(x.n)} · ${x.title}|${k === "done" ? "끝낸 장 — 도장을 받았어요" : k === "cur" ? "지금 하는 장" : "아직 — 앞 장을 끝내면 열려요"}">${x.icon}</button>`; }).join("");
+    const chain = c.main.map((m, i) => { const k = cls(i); const label = mine && st.q.objs[i] ? st.q.objs[i][1] : m[0];
       return `<div class="chain"><div><span class="bn ${k}" tabindex="0" data-tt="${tt(label, k)}">${m[1]}</span><div class="vline"></div></div><div class="sides">${i === 0 && c.side.length ? c.side.map((s) => `<span class="hl"></span><span class="bn sidebn ${state === "done" ? "done" : "lock"}" tabindex="0" data-tt="${s[0]} (곁 퀘스트)|${state === "done" ? "끝냈어요" : "골라서 하는 퀘스트 — 안 해도 관문은 열려요"}">${s[1]}</span>`).join("") : ""}</div></div>`; }).join("")
       + `<div class="chain"><div><span class="bn gate ${state === "done" ? "done" : "lock"}" tabindex="0" data-tt="${tt("관문 — 이해되셨나요?", state === "done" ? "done" : "gate", "도장 · 칭호가 바뀌었어요")}">⛩</span></div><div></div></div>`;
-    p.innerHTML = `<div class="adv"><div class="vtabs" role="tablist" aria-label="장">${tabs}</div><div class="board"><p class="bt">${c.n}장 · ${c.name} — 그림에 마우스를 올리면 설명이 떠요</p>${chain}</div></div>`;
+    p.innerHTML = `<div class="adv"><div class="vtabs" role="tablist" aria-label="장">${tabs}</div><div class="board"><p class="bt">${LABEL(c.n)} · ${c.title} — 그림에 마우스를 올리면 설명이 떠요</p>${chain}</div></div>`;
     p.querySelectorAll("[data-chap]").forEach((b) => (b.onclick = () => { st.chap = Number(b.dataset.chap); renderTree(); }));
   }
   // 설명(툴팁) — data-tt="제목|설명"
@@ -527,27 +559,29 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
   document.addEventListener("focusin", (e) => { const el = e.target.closest("[data-tt]"); if (el) showTT(el); });
   document.addEventListener("focusout", () => TT.classList.remove("on"));
   function renderLib() {
-    $("pane-lib").innerHTML = st.sess === 1
+    $("pane-lib").innerHTML = st.sess === "done"
       ? `<div class="lib"><div class="bk2"><b>독서 모임 알림 · 끝난 책</b>7장까지 · 도장 8개 · 책장 '알림'</div><div class="bk2"><b>서고</b>끝낸 책 5권 · 책장 2개 — 설정 창의 '서재로 가기'와 같은 곳이에요</div></div>`
-      : `<div class="lib"><div class="bk2"><b>동아리 행사 등록 앱 · 내 책</b>지금 2장 · 정한 것 3 · 받은 먹이 1 · 확인할 먹이 0</div><div class="bk2"><b>서고</b>끝낸 책 5권 · 책장 2개 — 7장을 지나면 이 책이 꽂혀요. 설정 창의 '서재로 가기'와 같은 곳이에요</div></div>`;
+      : st.sess === "club" ? `<div class="lib"><div class="bk2"><b>동아리 행사 등록 앱 · 내 책</b>지금 3단계 · 정한 것 3 · 받은 먹이 1 · 확인할 먹이 0</div><div class="bk2"><b>서고</b>끝낸 책 5권 · 책장 2개 — 7장을 지나면 이 책이 꽂혀요</div></div>`
+      : `<div class="lib"><div class="bk2"><b>새 책</b>${st.idea ? `'${st.idea}' — 1단계부터 채워요` : "아직 이름이 없어요 — 무엇을 만들지 말하면 책이 생겨요"}</div><div class="bk2"><b>서고</b>끝낸 책 5권 · 책장 2개</div></div>`;
   }
 
-  // ── 설정 창 내용 — 그림: 이름 + 플로로 / 초기 개발자 → 중급자 → 상급자 / 서재로 가기 / 설정 줄 ──
+  // ── 설정 창 내용 ──
   function renderSet() {
     const sw = (label, on, small) => `<div class="row2"><span>${label}${small ? `<small>${small}</small>` : ""}</span><button type="button" class="sw" role="switch" aria-checked="${on}" aria-label="${label}"></button></div>`;
     const pick = (label, items, cur, small) => `<div class="row2"><span>${label}${small ? `<small>${small}</small>` : ""}</span><span class="pick">${items.map((i) => `<button type="button" aria-pressed="${i === cur}">${i}</button>`).join("")}</span></div>`;
-    const tierNow = TIERS.filter((t) => st.lv >= t[1]).length - 1;
+    const L = lv(), tierNow = TIERS.filter((t) => L >= t[1]).length - 1;
     $("setbody").innerHTML = `
-      <div class="pcard"><div><div class="name">이재엽 님의 작업실</div><small>이 컴퓨터의 Floe · 세션 2개</small><small>칭호 · ${RANKS[st.lv]} (LV ${st.lv})</small></div><div class="ring">${floro(st.done ? "happy" : "look", 88)}</div></div>
-      <div class="tiers">${TIERS.map((t, i) => `<span class="t ${i === tierNow ? "on" : i < tierNow ? "done" : ""}">${t[0]}</span>${i < TIERS.length - 1 ? "→" : ""}`).join("")}<small>지금 ${TIERS[tierNow][0]} · ${TIERS[tierNow + 1] ? `${TIERS[tierNow + 1][1]}장 관문을 지나면 ${TIERS[tierNow + 1][0]}` : "끝까지 왔어요"}</small></div>
+      <div class="pcard"><div><div class="name">이재엽 님의 작업실</div><small>이 컴퓨터의 Floe · 세션 3개</small><small>칭호 · ${RANKS[L]} (LV ${L})</small></div><div class="ring">${floro(st.done ? "happy" : "look", 88)}</div></div>
+      <div class="tiers">${TIERS.map((t, i) => `<span class="t ${i === tierNow ? "on" : i < tierNow ? "done" : ""}">${t[0]}</span>${i < TIERS.length - 1 ? "→" : ""}`).join("")}<small>지금 ${TIERS[tierNow][0]} · ${TIERS[tierNow + 1] ? `${LABEL(TIERS[tierNow + 1][1])} 관문을 지나면 ${TIERS[tierNow + 1][0]}` : "끝까지 왔어요"}</small></div>
       <button type="button" class="golib" id="golib"><span class="bk"><svg viewBox="0 0 72 52" aria-hidden="true"><rect x="4" y="12" width="12" height="36" rx="2" fill="#2A4AC8"/><rect x="18" y="6" width="13" height="42" rx="2" fill="#FFD98A"/><rect x="33" y="14" width="11" height="34" rx="2" fill="#6FD3A6"/><g transform="rotate(-12 58 30)"><rect x="50" y="10" width="14" height="38" rx="2" fill="#A9DDFF"/></g><rect x="0" y="48" width="72" height="4" rx="2" fill="rgba(255,255,255,.35)"/></svg></span><span>서재로 가기<small>끝낸 책 5권 · 책장 2개</small></span></button>
       <div class="rows">
-        <div class="row2"><span>세션<small>퀘스트 창의 세션과 같이 바뀌어요</small></span><select id="s-sess" aria-label="세션"><option value="0">동아리 행사 등록 앱 · 2장</option><option value="1">독서 모임 알림 · 끝남</option></select></div>
+        <div class="row2"><span>세션<small>퀘스트 창의 세션과 같이 바뀌어요</small></span><select id="s-sess" aria-label="세션"><option value="new">새 세션 · 시작 전</option><option value="club">동아리 행사 등록 앱 · 3단계</option><option value="done">독서 모임 알림 · 끝남</option></select></div>
         ${pick("등급", ["가볍게", "보통", "꼼꼼히"], "보통", "이 세션 — 곁 퀘스트가 보이고 안 보여요")}
         ${pick("플로로 말투", ["쉬운 말", "일 말"], st.easy ? "쉬운 말" : "일 말")}
-        <div class="row2"><span>꾸미기<small>뽑기로 얻은 것 · 조개 ${st.shells}개</small></span><span class="closet">${st.owned.length ? st.owned.map((it) => `<button type="button" data-wear="${it.id}" aria-pressed="${!!(st.wear[it.slot] && st.wear[it.slot].id === it.id)}">${it.emoji} ${it.name}</button>`).join("") : ""}<button type="button" id="s-gacha">조개 열기</button></span></div>
+        <div class="row2"><span>꾸미기<small>뽑기로 얻은 것 · 조개 ${st.shells}개</small></span><span class="closet">${st.owned.map((it) => `<button type="button" data-wear="${it.id}" aria-pressed="${!!(st.wear[it.slot] && st.wear[it.slot].id === it.id)}">${it.emoji} ${it.name}</button>`).join("")}<button type="button" id="s-gacha">조개 열기</button></span></div>
         ${sw("Claude Code 폴더 이어짐", true, "일이 끝나면 플로로가 알려 줘요")}
         ${sw("허락 카드를 섬에서 받기", true)}
+        ${sw("퀘스트를 받으면 퀘스트 창이 바로 뜨기", true)}
         ${pick("퀘스트 창 처음 크기", ["S", "M", "L"], "M")}
         ${pick("접히는 시간", ["5초", "15초", "60초"], "15초")}
         ${sw("바람 소리", false)}
@@ -557,9 +591,9 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
     B.querySelectorAll(".sw").forEach((b) => (b.onclick = () => b.setAttribute("aria-checked", String(b.getAttribute("aria-checked") !== "true"))));
     B.querySelectorAll(".pick").forEach((g) => g.querySelectorAll("button").forEach((b) => (b.onclick = () => { g.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", "false")); b.setAttribute("aria-pressed", "true"); if (b.textContent === "쉬운 말" || b.textContent === "일 말") st.easy = b.textContent === "쉬운 말"; if (["S", "M", "L"].includes(b.textContent)) setSize(b.textContent.toLowerCase()); })));
     B.querySelectorAll("[data-wear]").forEach((b) => (b.onclick = () => { const it = ITEMS.find((x) => x.id === b.dataset.wear); if (st.wear[it.slot] && st.wear[it.slot].id === it.id) delete st.wear[it.slot]; else st.wear[it.slot] = it; refloro(); }));
-    $("s-sess").value = String(st.sess); $("s-sess").onchange = () => { $("sess").value = $("s-sess").value; $("sess").onchange(); };
+    $("s-sess").value = st.sess; $("s-sess").onchange = () => { $("sess").value = $("s-sess").value; $("sess").onchange(); };
     $("s-gacha").onclick = openGacha;
-    $("golib").onclick = () => { setTab("lib"); Q.classList.remove("mini"); msg("floro", "퀘스트 창에 서고를 열었어요 — 내 책과 끝낸 책이 있어요"); };
+    $("golib").onclick = () => { qwinOn(true); setTab("lib"); msg("floro", "퀘스트 창에 서고를 열었어요 — 내 책과 끝낸 책이 있어요"); };
   }
 
   // ── 뽑기 ──
@@ -578,15 +612,24 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
     }, 1200);
   };
 
-  function reset() {
-    Object.assign(st, { tab: "quest", phase: "home", got: [0, 0], done: false, sess: 0, sel: 0, edit: false, chap: 2 }); QUEST.objs[0][2] = 3; $("sess").value = "0";
-    log.innerHTML = ""; setTab("quest"); renderProg(); renderQuest(); renderTree(); renderLib(); refloro("idle"); $("mood").textContent = "2장을 같이 하고 있어요";
-    msg("floro", "안녕하세요, 재엽 님! 2장 <b>꼭 필요한 기능 정리하기</b>를 하고 있었죠. 무엇을 만들고 싶은지 말해 주면 제가 퀘스트로 만들어 드릴게요", "idle");
-    choices([["행사 신청 화면이 있어야 해요", "want", true], ["먹이 주기", "feed"], ["도전과제 보기", "tree"]]);
+  // ── 시작 — 처음 실행(새 세션) 또는 2장에서 이어서 ──
+  function reset(sess = "new") {
+    Object.assign(st, { sess, phase: SESS[sess].phase, q: null, done: false, sel: 0, edit: false, chap: SESS[sess].start, idea: "" }); $("sess").value = sess;
+    log.innerHTML = ""; qwinOn(false); setTab("quest"); renderProg(); renderQuest(); renderTree(); renderLib(); refloro("idle");
+    if (sess === "new") {
+      $("mood").textContent = "처음 만나요";
+      msg("floro", "안녕하세요, 재엽 님! 저는 플로로예요. <b>무엇을 만들고 싶은지</b> 말해 주면, 퀘스트로 만들어서 한 걸음씩 같이 가요", "idle");
+      choices([["동아리 행사 등록 앱을 만들고 싶어요", "idea", true], ["먹이 주기", "feed"], ["도전과제 보기", "tree"]]);
+    } else {
+      $("mood").textContent = `${LABEL(2)}을 같이 하고 있어요`;
+      msg("floro", `${LABEL(2)} <b>꼭 필요한 기능 정리하기</b>를 하고 있었죠. 무엇을 만들고 싶은지 말해 주면 제가 퀘스트로 만들어 드릴게요`, "idle");
+      choices([["행사 신청 화면이 있어야 해요", "want", true], ["먹이 주기", "feed"], ["도전과제 보기", "tree"]]);
+    }
   }
-  $("reset").onclick = reset;
-  setSize("m"); reset();
+  $("reset").onclick = () => reset("new"); $("goclub").onclick = () => reset("club");
+  setSize("m"); reset("new");
 })();
+</script>
 </script>
 </body>
 </html>
