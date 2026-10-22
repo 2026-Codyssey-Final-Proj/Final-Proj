@@ -52,6 +52,14 @@
   const canLive = location.protocol.startsWith("http");
   // Electron 껍데기 안(2026-10-19, 02-frontend/electron — preload.js가 window.floeApp을 둔다): 뒤의 예시 코딩 도구 창을 숨기고 바탕을 투명하게(app.css .in-app)
   if (window.floeApp) document.documentElement.classList.add("in-app");
+  if (window.floeApp && window.floeApp.platform) document.documentElement.classList.add(`plat-${window.floeApp.platform}`);   // 운영체제별 모양(app.css html.plat-win32)
+  // 창의 투명한 자리(바탕 · 섬 바깥)에서는 클릭을 뒤 창으로 — Windows · Mac은 창 폭을 줄이지 않아(접힐 때 튀지 않게, 2026-10-22) 접힌 한 줄 양옆이 빈 창이다.
+  // 앱이 통과시키는 동안에도 움직임은 오므로(forward) 섬 위로 오면 다시 끈다. Linux에서는 앱이 무시한다(main.js floe:thru)
+  if (window.floeApp && window.floeApp.thru) {
+    let thru = null;
+    const bare = (t) => t === document.documentElement || t === document.body || t.id === "nav" || t.id === "fx";
+    document.addEventListener("mousemove", (e) => { const on = bare(e.target); if (on !== thru) { thru = on; window.floeApp.thru(on); } }, { passive: true });
+  }
   // Mac 노치(다이내믹 아일랜드, 2026-10-19 이재엽 결정): 앱이 노치 크기를 보내면 섬을 노치에 맞춘다(app.css html.notch). 브라우저 · 노치 없는 컴퓨터에는 오지 않는다
   if (window.floeApp && window.floeApp.onNotch) window.floeApp.onNotch((n) => {
     const h = document.documentElement;
@@ -560,7 +568,7 @@
   function momentToday() {
     const s = st.j && stage(), f = face();
     if (st.busy) return { tone: "gray", mood: "look", badge: "…", meta: s ? stageMeta() : "", title: `살펴보고 있어요${dots}`,
-      sub: `<span data-wait>${waitText()}</span>`, acts: [] };
+      sub: `<span data-wait>${waitText()}</span>`, acts: [], passing: true };   // passing: 기다리는 동안만 보이는 말 — 지난 말로 쌓지 않는다(chatCard)
     if (st.warn) {
       const fix = st.warn.then === "judge";
       return { tone: "amber", mood: "alert", badge: "!", title: "보내기 전에 잠깐!",
@@ -810,16 +818,22 @@
     for (const a of v.acts) if (a.key) deskKeys[a.key] = a;
     const live = `${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}<b class="say">${v.title}</b>${v.sub ? `<span class="mc-sub">${v.sub}</span>` : ""}`;
     const key = `${v.title}|${v.sub || ""}`;
-    if (lastLive && lastLive.key !== key) logMsg("floro", lastLive.html);   // 지난 말은 위로
-    lastLive = { key, html: live };
-    const chips = [...v.acts, ...(st.screen === "gate" || st.busy || st.warn || st.error || st.ping ? [] : moreActs(v))];
+    // 지난 말은 위로 — 단, '살펴보고 있어요'처럼 기다리는 동안만 보이는 말(passing)은 쌓지 않는다. 경과 초가 바뀔 때마다 다른 말로 보여 같은 말이 계속 쌓였다(임유정 2026-10-22)
+    if (lastLive && lastLive.key !== key && !lastLive.passing) logMsg("floro", lastLive.html);
+    lastLive = { key, html: live, passing: !!v.passing };
+    // 답할 칩(v.acts)과 늘 있는 칩(moreActs)을 두 줄로 — 섞여 있으면 늘 있는 칩이 답 사이에 끼어 줄이 들쭉날쭉했다(임유정 2026-10-22). 늘 있는 칩은 아랫줄 한 줄
+    // '공책 보기'(퀘스트 창 열기)는 답이 아니라 늘 있는 칩과 같은 길이라, 나올 때는 아랫줄 맨 앞에 둔다(임유정 2026-10-22). 단축키(deskKeys)는 위에서 v.acts로 그대로
+    const FIXED_ACTS = ["qwin-quest"];
+    const answers = v.acts.filter((a) => !FIXED_ACTS.includes(a.act));
+    const more = [...v.acts.filter((a) => FIXED_ACTS.includes(a.act)), ...(st.screen === "gate" || st.busy || st.warn || st.error || st.ping ? [] : moreActs(v))];
+    const chip = (a) => btn({ ...a, chip: true });
     const lv = QU ? QU.lvOf(st.j, st.finished) : 0;
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}
         <span class="rank" title="칭호 — 장을 지나면 바뀌어요">${esc(QU ? QU.rankOf(Math.min(lv, 7)) : "")}</span><span class="mood">${esc(MOOD_WORD[v.mood] || "")}</span></div>
       <div class="main"><div class="log" data-log>${st.chat.map((m) => `<div class="msg ${m.who}"><div class="b">${m.html}</div></div>`).join("")}${
         working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast() ? ` — ${esc(stepLine(aiLast()))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
         <div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
-        ${chips.length ? `<div class="opts">${chips.map((a) => btn({ ...a, chip: true })).join("")}</div>` : ""}
+        ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts fixed">${more.map(chip).join("")}</div>` : ""}
         <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`;
   }
   // 채팅 입력(C-22) — 상황에 따라: 처음(무엇을 만들까) → "퀘스트를 시작하시겠습니까?" / 시작 대답 / 퀘스트 한 줄 적기 / 궁금한 것 / 직접 쓴 답 / 바뀐 작업(진짜 AI)
@@ -1494,7 +1508,8 @@
   function holdSize() {
     const el = $nav.querySelector(".isl");
     if (!holdH || !el) return;
-    if (st.busy) { el.style.minHeight = `${holdH}px`; return; }
+    // holding: 붙든 높이에서 칩이 빠진 만큼을 채팅 칸이 채운다 — 입력 칸 아래가 비어 보였다(임유정 2026-10-22, app.css .isl.holding)
+    if (st.busy) { el.style.minHeight = `${holdH}px`; el.classList.add("holding"); return; }
     const from = holdH, to = el.offsetHeight; holdH = 0;
     // 앱 안에서는 높이 애니메이션을 하지 않는다 — 창은 바로 새 크기가 되는데 섬만 늦게 커져 "따라오는 게 버벅"으로 보였다(6.2.0)
     if (!STILL && !window.floeApp && Math.abs(to - from) > 4) el.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)" });
@@ -1508,6 +1523,9 @@
     if (!timer) scheduleIdle();
     const a = document.activeElement, keep = isField(a) && a.dataset.act ? a.dataset.act : "";
     const sel = keep ? [a.selectionStart, a.selectionEnd, a.scrollTop] : null;
+    // 채팅 칸의 스크롤 — 다시 그리면 칸이 새로 생겨 맨 위로 간다. 1초마다 바뀌는 '살펴보고 있어요 16초' 때문에 올려 둔 스크롤이 계속 아래로 끌려갔다(임유정 2026-10-22)
+    const og = $nav.querySelector("[data-log]");
+    const logWas = og ? { top: og.scrollTop, end: og.scrollHeight - og.scrollTop - og.clientHeight < 24, n: og.children.length } : null;
     if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); }
     if (keep) {
       const b = document.querySelector(`[data-act="${keep}"]`);
@@ -1515,7 +1533,10 @@
     }
     if (point) C.follow(isPhone() ? $phone : $nav, point);
     for (const t of document.querySelectorAll("textarea.doc")) grow(t);
-    const lg = $nav.querySelector("[data-log]"); if (lg) lg.scrollTop = lg.scrollHeight;   // 채팅은 늘 마지막 말이 보이게(C-22)
+    // 채팅은 마지막 말이 보이게(C-22) — 단, 맨 아래를 보고 있었거나 새 말이 왔을 때만. 위로 올려 읽는 중이면 그 자리 그대로
+    const lg = $nav.querySelector("[data-log]");
+    if (lg && !logWas) lg.scrollTop = lg.scrollHeight;
+    else if (lg) { lg.scrollTop = logWas.top; if (logWas.end || lg.children.length > logWas.n) lg.scrollTo({ top: lg.scrollHeight, behavior: STILL ? "auto" : "smooth" }); }
     syncWins();
     refract();
     // 카드의 한마디도 다른 한마디처럼 플로로 옆에 잠깐 떴다 사라진다 — 같은 말은 한 번만
@@ -1578,7 +1599,19 @@
     const host = liveCat();
     if (!host) return;
     // 레벨 오버레이에서는 플로로가 왼쪽 칸에 있어 위로 띄우면 상자 제목을 덮는다 — 아래(기분 말 자리)로
-    const r = host.getBoundingClientRect(), aside = r.left > 250, below = !aside && (r.top < 90 || !!host.closest(".chat"));
+    // 채팅 중심 섬(.mc.chat, C-22)에서는 플로로 아래에 칭호 · 기분 말이 있고 오른쪽은 대화 칸이다 — 아래로 띄우면 칭호를 덮었다(임유정 2026-10-22).
+    // 왼쪽 칸 가운데, 플로로 머리 위(그림 위쪽 빈자리)에 띄우고 폭은 그 칸 안으로
+    const col = host.closest(".mc.chat .who");
+    if (col) {
+      const r = host.getBoundingClientRect(), c = col.getBoundingClientRect();
+      b.classList.remove("side", "below"); b.classList.add("over");
+      b.style.left = `${Math.round(c.left + c.width / 2)}px`;
+      b.style.top = `${Math.round(r.top + r.height * 0.22)}px`;
+      b.style.maxWidth = `${Math.max(120, Math.round(c.width - 8))}px`;
+      return;
+    }
+    b.classList.remove("over");
+    const r = host.getBoundingClientRect(), aside = r.left > 250, below = !aside && r.top < 90;
     b.classList.toggle("side", aside);
     b.classList.toggle("below", below);
     b.style.left = `${Math.round(aside ? r.left - 6 : r.left + r.width * 0.66)}px`;

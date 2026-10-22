@@ -87,3 +87,8 @@ test("쉬운 말(FR-13) — 알림 · AI 진행 판과 채팅 중심 섬의 화�
   for (const word of ["알림", "AI 진행", "크게 보기", "단추로"]) assert.ok(pane.includes(word), word);
   for (const word of ["퀘스트 받기", "완료 보고", "보내기", "도전과제", "퀘스트를 시작하시겠습니까?"]) assert.ok(chat.includes(word), word);
 });
+
+test("채팅 — '살펴보고 있어요'(기다리는 동안 경과 초가 바뀌는 말)는 지난 말로 쌓지 않는다(임유정 2026-10-22, 다시 그릴 때마다 같은 말이 쌓였다)", () => {
+  assert.match(app, /title: `살펴보고 있어요\$\{dots\}`,\s*\n\s*sub: `<span data-wait>[^\n]*passing: true/, "기다리는 말에 passing 표시");
+  assert.match(app, /if \(lastLive && lastLive\.key !== key && !lastLive\.passing\) logMsg\("floro", lastLive\.html\);/, "passing인 말은 쌓지 않는다");
+});

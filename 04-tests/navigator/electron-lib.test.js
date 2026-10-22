@@ -85,3 +85,11 @@ test("앱 껍데기는 AI를 부르지 않는다 — 외부 호출은 provider.j
     assert.doesNotMatch(fs.readFileSync(path.join(dir, f), "utf8"), /claude -p|callClaude|api\.anthropic\.com|@anthropic-ai\/sdk/, f);
   }
 });
+
+test("Windows · Mac 섬 창은 폭을 줄이지 않는다 — 접힐 때 x가 옮겨 가며 한 줄이 튀지 않게(2026-10-22). Linux는 섬 크기 그대로", () => {
+  assert.equal(L.islandWidth(422, "win32", 952), 952);
+  assert.equal(L.islandWidth(1338, "win32", 952), 1338);   // 넓어지는 것은 그대로
+  assert.equal(L.islandWidth(422, "darwin", 952), 952);
+  assert.equal(L.islandWidth(422, "linux", 952), 422);
+  assert.deepEqual(["win32", "darwin", "linux"].map(L.keepsWidth), [true, true, false]);   // 클릭 통과(main.js floe:thru)도 같은 기준
+});

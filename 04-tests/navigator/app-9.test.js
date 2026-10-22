@@ -46,7 +46,10 @@ test("C-19: 막는 조건은 상태 둘(st.meal · st.busy)뿐 — 판정 규칙
 // F-26(네 / 아니요가 밖의 칸 둘이 됨)은 2026-10-21 C-22로 레벨 오버레이(명령 네 칸)와 함께 뺐다 — 게이트의 네 / 아니요는 채팅의 칩 둘(y · n 키)
 test("C-22: 게이트 장면의 네 / 아니요는 채팅의 칩 둘(y · n 키) — 명령 네 칸 · LV · EXP는 없다", () => {
   assert.match(app, /const yes = \{ label: "네, 이해했어요", act: "yes", key: "y", pri: true \}, no = \{ label: "아니요, 같이 풀어요", act: "no", key: "n" \}/);
-  assert.match(app, /chips\.map\(\(a\) => btn\(\{ \.\.\.a, chip: true \}\)\)/, "결정할 것의 단추가 칩이 된다");
+  assert.match(app, /const chip = \(a\) => btn\(\{ \.\.\.a, chip: true \}\);/, "결정할 것의 단추가 칩이 된다");
+  assert.match(app, /<div class="opts">\$\{answers\.map\(chip\)/, "답할 칩은 윗줄");
+  assert.match(app, /const FIXED_ACTS = \["qwin-quest"\];/, "'공책 보기'는 답이 아니라 아랫줄(2026-10-22)");
+  assert.match(app, /<div class="opts fixed">\$\{more\.map\(chip\)/, "늘 있는 칩(바뀐 작업 · 어디쯤 · 알림 · 도전과제)은 아랫줄 한 줄(2026-10-22)");
   for (const gone of ['class="cmds', "XP_EACH", "levelCard(", "pathsFor(", 'class="xp']) assert.ok(!app.includes(gone), `${gone}가 없어야`);
   assert.match(app, /\(LV \$\{lv\}\)/, "숫자 레벨은 설정 창에만(둘째 레프런스)");
   assert.ok(!/\.lvc\b/.test(css), "옛 레벨 오버레이 CSS가 없다");

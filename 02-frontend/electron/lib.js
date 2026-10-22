@@ -128,6 +128,13 @@ function notchLayout(probe, display, w, h) {
   const cx = display.x + probe.notch.x + probe.notch.width / 2;
   return { x: Math.round(cx - w / 2), y: display.y, width: w, height: h, level: "screen-saver", cx };
 }
+// 섬 창의 폭 — Windows · Mac은 줄이지 않는다(floor 아래로는 floor). 폭이 바뀌면 가운데를 지키려 x도 함께 옮기는데, Windows는 한 프레임 동안 옛 그림을 새 자리에 그려
+// 접힐 때 한 줄이 옆으로 튀었다(임유정 2026-10-22, 화면 녹화로 확인). Mac도 같은 길(폭 + x를 한 번에)이라 같이 묶었다 — Mac에서 튀었는지는 아직 아무도 확인하지 못했다(F-45).
+// 폭 · x를 그대로 두고 높이만 바꾸면 튈 것이 없다 — 남는 투명한 옆자리는 클릭을 통과시킨다(main.js floe:thru). Linux는 합성기마다 클릭 통과가 달라 그대로 둔다
+const keepsWidth = (platform) => platform === "win32" || platform === "darwin";
+function islandWidth(w, platform, floor) {
+  return keepsWidth(platform) ? Math.max(w, floor) : w;
+}
 // 창 크기가 바뀔 때의 x — anchor "left"면 왼쪽 고정(설정 창이 옆에 열릴 때), 노치가 있으면(cx) 노치 가운데, 아니면 지금 창의 가운데를 지킨다. 화면(workArea) 밖이면 안쪽으로
 function islandX(anchor, bounds, w, cx, wa) {
   let x = anchor === "left" ? bounds.x : typeof cx === "number" ? cx - w / 2 : bounds.x + (bounds.width - w) / 2;
@@ -193,4 +200,4 @@ function sideWinBounds(kind, side, isl, wa, size) {
   return { x, y, width, height };
 }
 
-module.exports = { SIDE_GAP, sideWinBounds, paths, devIcon, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl, HUB, hubBounds };
+module.exports = { SIDE_GAP, sideWinBounds, paths, devIcon, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl, HUB, hubBounds };
