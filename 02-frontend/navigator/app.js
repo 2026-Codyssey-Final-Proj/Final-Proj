@@ -952,11 +952,19 @@
     const stage = g.phase === "got" ? `<span class="big" aria-hidden="true">${g.item.emoji}</span>` : `<i class="bigshell" aria-hidden="true"></i>`;
     const got = g.phase === "got" ? `<b>${esc(g.item.name)}</b>(${esc(g.item.rar)})이 나왔어요! 플로로가 바로 써 봤어요` : g.phase === "rolling" ? "조개를 여는 중…" : st.shells >= QU.SHELL_COST ? "조개를 열면 플로로를 꾸밀 것이 하나 나와요" : `조개가 ${QU.SHELL_COST - st.shells}개 더 있어야 열 수 있어요 — 장을 지나면 받아요`;
     return `<div class="gacha-layer"><section class="gacha${g.phase === "rolling" ? " rolling" : ""}" role="dialog" aria-label="무지개 조개 뽑기"><h3>무지개 조개 뽑기</h3>
+      <button type="button" class="ti gx" data-act="gacha-close" aria-label="뽑기 창 닫기" title="닫기 (Esc)">${X_ICON}</button>
       <div class="have">가진 조개 <span class="shells"><i class="shell"></i>${st.shells}</span> · 한 번에 ${QU.SHELL_COST}개</div>
       <div class="stage">${stage}</div><p class="got" role="status">${got}</p>
-      <div class="acts"><button type="button" class="b pri" data-act="gacha-roll" ${can ? "" : "disabled"}>조개 열기</button><button type="button" class="b" data-act="gacha-close">닫기</button></div>
+      <div class="acts"><button type="button" class="b pri" data-act="gacha-roll" ${can ? "" : "disabled"}>조개 열기</button></div>
       <div class="odds" aria-label="나올 확률">${QU.ITEMS.map((it) => `<span><b>${it.emoji} ${esc(it.name)}</b>${esc(it.rar)} ${it.p}%</span>`).join("")}</div>
       <p class="fine">나올 확률은 여기에 늘 적어 둬요. 돈으로 사는 것은 없어요 — 조개는 장을 지날 때만 받아요.</p></section></div>`;
+  }
+  // 뽑기 창은 섬 위에 겹쳐 뜨는데(.gacha-layer — 섬 안에 꽉) 섬보다 키가 커 위아래가 잘렸다(임유정 2026-10-22). 뽑기 창이 들어갈 만큼 섬을 늘린다 — 앱이면 창도 따라 커진다(measureSize)
+  function fitGacha() {
+    const isl = $nav.querySelector(".isl"), g = isl && isl.querySelector(".gacha");
+    if (!g) return;
+    const need = g.offsetHeight + 32;   // .gacha-layer 위아래 padding 16씩
+    if (isl.offsetHeight < need) isl.style.minHeight = `${need}px`;
   }
   function gachaRoll() {
     const g = st.gacha; if (!g || !QU || g.phase !== "ready" || st.shells < QU.SHELL_COST) return;
@@ -1526,7 +1534,7 @@
     // 채팅 칸의 스크롤 — 다시 그리면 칸이 새로 생겨 맨 위로 간다. 1초마다 바뀌는 '살펴보고 있어요 16초' 때문에 올려 둔 스크롤이 계속 아래로 끌려갔다(임유정 2026-10-22)
     const og = $nav.querySelector("[data-log]");
     const logWas = og ? { top: og.scrollTop, end: og.scrollHeight - og.scrollTop - og.clientHeight < 24, n: og.children.length } : null;
-    if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); }
+    if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); fitGacha(); }
     if (keep) {
       const b = document.querySelector(`[data-act="${keep}"]`);
       if (b && b !== a) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; }
