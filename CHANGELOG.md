@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v16.7 | 2026-10-23 | 이재엽 | 요구 후보 C-28 레벨 누적 · C-29 명령 네 칸(맡기기 · 살피기 · 책 · 배우기) · C-30 배우기(기능마다 튜토리얼), C-25 저장소 만들어 주기 · README에 기록, C-26 README를 받아 와 책으로, 서재 잠시 뺌 (#172) | `01-docs/00-overview/` |
 | v16.6 | 2026-10-23 | 이재엽 | 요구 후보 C-23~C-27(퀘스트 생각 → 행동 → 기록 → 저장 → 버전(V.n) · NotebookLM 공부 묶음 · 내 GitHub 기록 · 내 작업 책 · 관문 계획서) — 다섯 다 11/1 전에, 기능 동결 11/1로 맞춤, 이번 주 계획 (#171) | `01-docs/00-overview/` · `01-docs/03-pattern-analysis/navigator-architecture-draft.md`(P8 날짜) |
 | v16.5 | 2026-10-23 | 임유정 | 오버레이 앱 고침 — Windows 섬 둘레 각진 그림자 · 접고 펼 때 창이 튐(Windows · Mac, 창 폭 유지 + 빈 곳 클릭 통과) · 말풍선이 칭호를 가림 · 대화 말풍선 마우스 반응 · 대화 칸 스크롤 끌려감 · '살펴보고 있어요' 쌓임 · 기다릴 때 입력 칸 아래 빈 공간 · 늘 있는 칩(공책 보기 · 바뀐 작업 · 어디쯤 · 알림 · 도전과제)을 아랫줄 한 줄로 · 조개 뽑기 창 위아래 잘림 · 뽑기 창 닫기를 오른쪽 위 X로 · 칭호 · 기분 말에 글자 커서가 뜨지 않게 (#170) | `02-frontend/navigator/` · `02-frontend/electron/` · `04-tests/navigator/` |
 | v16.4 | 2026-10-22 | 이재엽 | 레퍼런스 비교(#167)에서 남은 후보 여섯을 이재엽 채택으로 반영 — 게이트의 '만드는 사람 점검'(W-31) · 규칙 은퇴 조건(W-33) · 고침 세 번 실패하면 멈춤(W-34) · 반대 지표와 통과 · 실패 · 애매(W-35) · 가정 지도(W-36, Full만) · 스킬 행동 시험(W-38). 장부 W-25 · W-26은 Floe FR-17로 이미 들어가 있어 '반영됨'으로 고침 (#169) | `.claude/skills/dev-workflow/PROCEDURE.md` · `.claude/rules/`(consistency · skill-authoring) · `01-docs/catalog/`(장부 · external-tools) · `01-docs/07-maintenance/fix-map.md` · `01-docs/02-problem-analysis/03-quantification-planguage.md` · `01-docs/03-pattern-analysis/README.md` |
