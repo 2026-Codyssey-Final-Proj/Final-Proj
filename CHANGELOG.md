@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v18.0 | 2026-10-23 | 이재엽 | 섬 위 줄의 퀘스트 창 단추 · 모아 보기 단추를 뺌, 모아 보기 창(C-11)을 기능째 뺌 — 앱의 창 · 메뉴 '모아 보기 열기' · '브라우저로 열기' · 판의 '크게 보기' · 브라우저 새 탭, 트레이 · Dock 클릭은 섬 창을 앞으로 (#174) | `02-frontend/navigator/` · `02-frontend/hub/`(index.html · hub.css 지움, hub.js는 순수 함수만) · `02-frontend/electron/` · `03-backend/navigator/` · `04-tests/` · `01-docs/`(화면 담당 — 이 줄이 알림) |
 | v17.0 | 2026-10-23 | 이재엽 | 섬의 명령 네 칸 맡기기 · 살피기 · 책 · 배우기(C-29), 책 탭은 연결한 폴더의 README를 받아 와 보여 주기만(C-26, GET /api/readme), 배우기 — 기능마다 튜토리얼(C-30), 레벨은 관문마다 +1 누적(C-28), 서재 단추 잠시 뺌 (#173) | `01-docs/00-overview/requirements.md` · `02-frontend/navigator/` · `02-frontend/hub/` · `02-frontend/library/book-view.js`(화면 담당 — 이 줄이 알림) · `03-backend/navigator/` · `04-tests/` |
 | v16.7 | 2026-10-23 | 이재엽 | 요구 후보 C-28 레벨 누적 · C-29 명령 네 칸(맡기기 · 살피기 · 책 · 배우기) · C-30 배우기(기능마다 튜토리얼), C-25 저장소 만들어 주기 · README에 기록, C-26 README를 받아 와 책으로, 서재 잠시 뺌 (#172) | `01-docs/00-overview/` |
 | v16.6 | 2026-10-23 | 이재엽 | 요구 후보 C-23~C-27(퀘스트 생각 → 행동 → 기록 → 저장 → 버전(V.n) · NotebookLM 공부 묶음 · 내 GitHub 기록 · 내 작업 책 · 관문 계획서) — 다섯 다 11/1 전에, 기능 동결 11/1로 맞춤, 이번 주 계획 (#171) | `01-docs/00-overview/` · `01-docs/03-pattern-analysis/navigator-architecture-draft.md`(P8 날짜) |
