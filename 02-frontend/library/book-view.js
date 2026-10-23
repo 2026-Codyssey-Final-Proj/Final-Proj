@@ -105,12 +105,13 @@
     return secs.map((x) => secHTML(x, opts.stages)).join("");
   }
   // 보기 설정 판 HTML — 두 화면이 같은 손잡이(data-bv · data-v)를 쓴다
-  function panelHTML(s) {
+  // opts.noSize — 크기 줄(짧게 / 전체 화면)을 뺀다: 섬은 서재를 잠시 뺀 동안(2026-10-23) 서고로 가는 '전체 화면'을 보이지 않는다
+  function panelHTML(s, opts = {}) {
     const n = normalize(s);
     const row = (group, title) => `<div class="bv-row"><span class="bv-t">${title}</span><span class="bv-opts">${GROUPS[group].map(([v, label, hint]) =>
       `<button type="button" class="bv-opt" data-bv="${group}" data-v="${v}" aria-pressed="${n[group] === v}" title="${esc(hint)}">${esc(label)}</button>`).join("")}</span></div>`;
     return `<div class="bv-panel" role="group" aria-label="보기 설정"><div class="bv-h"><b>보기 설정</b><small>이 컴퓨터에 저장돼요 · 모든 책에 같이</small></div>${
-      row("structure", "구조")}${row("view", "보기")}${row("size", "크기")}<div class="bv-row"><span class="bv-t">칸</span><span class="bv-opts bv-fields">${
+      row("structure", "구조")}${row("view", "보기")}${opts.noSize ? "" : row("size", "크기")}<div class="bv-row"><span class="bv-t">칸</span><span class="bv-opts bv-fields">${
       FIELDS.map(([k, label]) => `<label class="bv-chk"><input type="checkbox" data-bv="field" data-v="${k}"${n.fields[k] ? " checked" : ""}>${esc(label)}</label>`).join("")}</span></div></div>`;
   }
 

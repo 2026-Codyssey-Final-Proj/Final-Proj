@@ -89,3 +89,6 @@ h1{margin:0 0 4px;font-size:26px;letter-spacing:-.4px}
   h1{font-size:22px}
   .when{min-width:44px}
 }
+
+/* 숨긴 칸은 숨긴다 — .card의 display가 hidden 속성을 덮지 않게(서재 칸 잠시 뺌, 2026-10-23) */
+[hidden]{display:none!important}

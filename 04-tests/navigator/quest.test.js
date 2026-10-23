@@ -82,6 +82,19 @@ test("칭호 여덟 · 묶음 셋(초기 개발자 0~ · 중급자 3~ · 상급�
   assert.equal(Q.lvOf(null, false), 0); assert.equal(Q.lvOf({ stage: 4 }, false), 4); assert.equal(Q.lvOf({ stage: 7 }, true), 8);
 });
 
+// claude-drafted: 2026-10-23 — C-28 레벨은 사람에게(이재엽 버튼 "누적 — 관문마다 +1"). 코드보다 먼저 썼다(code.md 1번)
+test("레벨 누적(C-28): 처음은 지금 단계에서 시작하고(이미 넘은 관문), 한 번 저장된 레벨은 새 프로젝트(0단계)여도 그대로, 관문마다 +1", () => {
+  assert.equal(Q.startLevel(null, { stage: 3 }, false), 3, "저장된 값이 없으면 지금 단계 = 이미 넘은 관문 수");
+  assert.equal(Q.startLevel(undefined, null, false), 0);
+  assert.equal(Q.startLevel(5, { stage: 0 }, false), 5, "새 프로젝트를 시작해도 줄지 않는다");
+  assert.equal(Q.startLevel(2, { stage: 6 }, false), 2, "저장된 값이 있으면 그대로 — 판정으로 단계가 뛰어도 관문 없이 오르지 않는다(리뷰 막힘 2026-10-23)");
+  for (const bad of [-1, 1.5, "3", NaN, {}]) assert.equal(Q.startLevel(bad, { stage: 1 }, false), 1, `이상한 값 ${String(bad)}은 버린다`);
+  assert.equal(Q.levelUp(0), 1); assert.equal(Q.levelUp(7), 8); assert.equal(Q.levelUp(12), 13, "끝없이 오른다");
+  assert.equal(Q.levelUp(-3), 1); assert.equal(Q.levelUp("x"), 1);
+  assert.equal(Q.rankOf(Q.levelUp(20)), Q.RANKS[7], "칭호는 여덟을 넘으면 마지막 칭호 그대로(정할 것 ①의 기본)");
+  assert.equal(Q.bandOf(15), 2, "묶음도 누적 레벨로");
+});
+
 test("창 자리: 설정 창이 왼쪽이면 퀘스트 창은 오른쪽, 반대도 — 모르는 값은 왼쪽. 크기는 S · M · L(모르면 M)", () => {
   assert.equal(Q.sideOf("right"), "right"); assert.equal(Q.sideOf("x"), "left"); assert.equal(Q.sideOf(undefined), "left");
   assert.equal(Q.otherSide("left"), "right"); assert.equal(Q.otherSide("right"), "left"); assert.equal(Q.otherSide("x"), "right");

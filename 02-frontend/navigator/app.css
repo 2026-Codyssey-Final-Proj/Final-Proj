@@ -912,3 +912,44 @@ html.in-win .wh{background:rgba(0,0,0,.22)}
 html.in-win .gacha{background:#16225E}
 html.in-win .tt{background:#0E1745;color:#FFFFFF;border:1px solid rgba(255,255,255,.25)}
 html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
+
+/* claude-drafted: 2026-10-23 — 명령 네 칸(C-29: 맡기기 · 살피기 · 책 · 배우기, 숫자 1~4) · 책 탭의 README(C-26) · 배우기 탭(C-30). 색은 위 토큰 그대로 */
+.cmd4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
+.cmd4 .cm{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 8px;border:1.5px solid var(--line);border-radius:14px;background:var(--soft);color:var(--ink);font-size:calc(14px * var(--ui-scale,1));cursor:pointer;min-width:0}
+.cmd4 .cm:hover{border-color:var(--acc)}
+.cmd4 .cm:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.cmd4 .cm svg{flex:none;width:calc(18px * var(--ui-scale,1));height:calc(18px * var(--ui-scale,1))}
+.cmd4 .cm b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:800}
+.cmd4 .cm kbd{flex:none;font:600 calc(11px * var(--ui-scale,1)) inherit;border:1px solid var(--line);border-radius:5px;padding:0 5px;color:var(--mute)}
+.rbook{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 12px;display:grid;gap:8px;background:var(--card)}
+.rb-head{display:flex;align-items:flex-start;gap:8px}
+.rb-head b{display:block;font-size:calc(16px * var(--ui-scale,1))}
+.rb-head small{display:block;color:var(--mute);font-size:calc(12px * var(--ui-scale,1))}
+.rb-intro{margin:0;color:var(--sub)}
+.rb-vers{list-style:none;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
+.rb-vers li{display:flex;gap:6px;align-items:baseline;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.rb-vers li b{color:var(--acc)}
+.rb-vers li span{color:var(--mute);font-variant-numeric:tabular-nums}
+.rb-body{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:10px}
+.rb-toc{display:grid;gap:4px;align-content:start}
+.rb-toc button{border:0;background:transparent;color:var(--sub);text-align:left;border-radius:8px;padding:5px 8px;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
+.rb-toc button[aria-current=true]{background:var(--acc-soft);color:var(--acc);font-weight:700}
+.rb-ch h4{margin:0 0 6px;font-size:calc(14px * var(--ui-scale,1))}
+.rb-text{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2);font-size:calc(13px * var(--ui-scale,1));line-height:1.6}
+.learn{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr);gap:12px;padding:4px 2px}
+.tu-list{display:grid;gap:4px;align-content:start}
+.tu-list button{border:0;background:transparent;color:var(--sub);text-align:left;border-radius:8px;padding:6px 8px;font-size:calc(13px * var(--ui-scale,1));cursor:pointer;display:flex;justify-content:space-between;gap:6px}
+.tu-list button small{flex:none;white-space:nowrap;color:var(--mute);font-size:calc(11px * var(--ui-scale,1))}
+.tu-list button[aria-current=true]{background:var(--acc-soft);color:var(--acc);font-weight:700}
+.tu{display:grid;gap:6px;align-content:start;font-size:calc(13.5px * var(--ui-scale,1));line-height:1.55;color:var(--ink2)}
+.tu p{margin:0}
+.tu h5{margin:6px 0 0;font-size:calc(11.5px * var(--ui-scale,1));color:var(--mute);letter-spacing:.04em}
+.tu ol{margin:0;padding-left:20px;display:grid;gap:3px}
+.tu-h{display:flex;align-items:center;gap:8px}
+.tu-h b{font-size:calc(16px * var(--ui-scale,1));color:var(--ink)}
+.tu-st{font-size:calc(11px * var(--ui-scale,1));font-weight:700;border-radius:999px;padding:1px 8px}
+.tu-st.ready{background:var(--okbg);color:var(--ok)}
+.tu-st.soon{background:var(--warnbg);color:var(--warn)}
+.tu-ex{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px dashed var(--line);border-radius:12px;padding:8px 10px}
+.tu-ex i{font-style:normal;color:var(--mute)}
+@media (max-width:600px){.cmd4 .cm kbd{display:none}.rb-body,.learn{grid-template-columns:1fr}}

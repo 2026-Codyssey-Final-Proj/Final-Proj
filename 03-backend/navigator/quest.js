@@ -23,6 +23,11 @@
   const bandOf = (lv) => BANDS.filter((b) => (Number(lv) || 0) >= b[1]).length - 1;
   // 레벨 = 지금 단계(코드가 정한다 — FR-4). 모두 마쳤으면 8
   const lvOf = (j, finished) => (finished ? RANKS.length : j && Number.isInteger(j.stage) ? j.stage : 0);
+  // 레벨은 사람에게(C-28, 이재엽 2026-10-23 버튼 "누적 — 관문마다 +1") — 관문을 넘을 때마다 +1, 프로젝트를 바꿔도 줄지 않는다. 화면이 기록(KEEP)과 따로 이 컴퓨터에 둔다.
+  // 처음(저장된 값이 없을 때) 한 번만 지금 단계 = 이미 넘은 관문 수로 시작한다 [정할 것 ③의 제안]. 그 뒤로는 관문을 넘을 때만 오른다 — 판정으로 단계가 뛰어도 따라 오르지 않는다
+  const okLv = (v) => Number.isInteger(v) && v >= 0;
+  const startLevel = (saved, j, finished) => (okLv(saved) ? saved : lvOf(j, finished));
+  const levelUp = (lv) => (okLv(lv) ? lv : 0) + 1;
   // 창 자리 — 설정 창이 왼쪽이면 퀘스트 창은 오른쪽, 반대도(이재엽 2026-10-21). 모르는 값은 왼쪽
   const SIDES = ["left", "right"];
   const sideOf = (v) => (SIDES.includes(v) ? v : "left");
@@ -118,7 +123,7 @@
   // 위 줄의 진행 — "M개 중 k번째 할 일"(다 했으면 M)
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
-  const api = { LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
+  const api = { LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
     itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;

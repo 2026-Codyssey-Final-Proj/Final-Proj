@@ -455,6 +455,14 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 성공 `{ ok, quest: { desc, why, qa }, tokens }`. 거절: 400 `만들고 싶은 것이 비어 있음` · 400 `만들고 싶은 것이 너무 김 — 400자까지` · 400 `모르는 등급` · 400 `지금 단계가 없음` · 502 `퀘스트 형식이 맞지 않음`(qa 개수가 할 일과 다르거나 칸이 빔).
 - 화면: 퀘스트를 만들 때(처음 시작 · 장을 넘어갈 때) 진짜 AI 모드에서만 부르고, 못 받으면 [quest.js](quest.js)의 기본 글(할 일 이름 그대로 묻기)로 둔다. 연습 모드 · 서버 없이는 부르지 않는다(FR-10). `idea`에 비밀번호 같은 것이 보이면 보내지 않는다.
 
+### 3-18. `GET /api/readme` — 내 작업 책: 연결한 폴더의 README를 책으로 (C-26, 2026-10-23)
+
+<!-- claude-drafted: 2026-10-23 -->
+- 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. 본문 없음 — **경로를 받지 않는다.** 폴더는 훅 알림이 알려 준 세션의 cwd에서만 고른다(3-16 일 넘기기와 같다).
+- 그 폴더의 `README.md`를 **읽기만** 한다 — 바로가기(심볼릭 링크)는 따라가지 않고, 앞의 256KB만 읽고, 나누기 전에 비밀값을 가린다([sensitive.js](sensitive.js)). 나누기는 [readme-book.js](readme-book.js) `parse` — `#` 제목 · 그 아래 한 줄 · `## 버전` 줄(`- V.n · YYYY-MM-DD · 제목`) · `##`마다 한 장(코드 칸 안의 `##`는 제목이 아님).
+- 답(늘 200) `{ ok: true, project, book, why }` — `project`는 폴더 **이름**만(경로는 주지 않는다). 책이 있으면 `book = { title, intro, versions[{v, date, title}], chapters[{id, title, body}], cut }`, `why = ""`. 폴더를 모르면 `book: null, why: "folder"`, README가 없으면 `book: null, why: "none"`.
+- 화면: 명령 칸의 **책**(C-29)이 퀘스트 창의 책 탭을 열 때 부른다. 서버 없이 · 연습 모드 · `book: null`이면 연습 예시 책(`readme-book.js` `EXAMPLE`)을 보이고 까닭을 한 줄로 적는다. 시험: `04-tests/navigator/readme-api.test.js` · `readme-book.test.js`.
+
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 
 `02-frontend/navigator/app.js`가 보내는 칸·읽는 칸을 서버와 맞대었다. 화면 코드는 고치지 않았다.

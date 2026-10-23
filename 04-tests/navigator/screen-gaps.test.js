@@ -313,7 +313,7 @@ test("오버레이 탭(F-05 · C-16): PC는 이번 단계 · 단계 지도 · �
     [["today", "이번 단계"], ["map", "단계 지도"], ["lib", "도서관"]]);
   assert.match(code, /const PHONE_TABS = TABS\.slice\(0, 2\);/);
   assert.doesNotMatch(code.replace(/^\s*\/\/.*$/gm, ""), /tab: "learn"/, "탭을 learn으로 바꾸는 곳이 없다");
-  // 옛 주소 #tab=learn은 서고(#lib)로 보낸다 — 서재의 '내 배움'도 2026-10-19에 지웠다
-  assert.match(code, /q\.tab === "learn"\) \{ save\(\); location\.replace\(`\$\{LIB_URL\}#lib`\)/);
+  // 옛 주소 #tab=learn은 서고(#lib)로 보낸다 — 서재의 '내 배움'도 2026-10-19에 지웠다. 서재를 잠시 뺀 동안(2026-10-23)은 배우기 탭(teach)으로
+  assert.match(code, /q\.tab === "learn"\) \{ if \(SHELF_ON\) \{ save\(\); location\.replace\(`\$\{LIB_URL\}#lib`\); return; \} st\.qwin = true; st\.qtab = "teach"; \}/);
   assert.doesNotMatch(code, /lib-learn/, "'내 배움'으로 가는 길이 남지 않는다");
 });

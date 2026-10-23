@@ -33,6 +33,9 @@ const puppeteer = findPuppeteer(), chrome = findChrome();
 const skip = !puppeteer || !chrome ? `건너뜀 — ${!puppeteer ? "puppeteer" : "Chrome"}를 찾지 못했어요(PUPPETEER_PATH · CHROME_PATH로 알려 줄 수 있어요)` : false;
 if (skip) console.log(`⚠️ e2e/modes-flow: ${skip}`);
 
+// 서재 잠시 뺌(이재엽 2026-10-23, C-29 · FR-8) — app.js의 SHELF_ON이 false인 동안 서재로 들어가는 길(F-36 · 책 보기 '전체 화면')은 시험하지 않는다. true로 돌리면 다시 돈다
+const shelfOff = /const SHELF_ON = false;/.test(fs.readFileSync(path.join(FRONT, "navigator/app.js"), "utf8"));
+const noShelf = skip || (shelfOff && "서재 잠시 뺌(2026-10-23) — SHELF_ON이 true가 되면 다시 돈다");
 const launch = () => puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
 // 처음 설정을 끝낸 상태로(인사 · 처음 설정 창이 끼어들지 않게)
 async function fresh(browser, reduced = false) {
@@ -59,7 +62,7 @@ async function toLibraryAndBack(page) {
   await wait(300);
 }
 
-test("F-36: 채팅(기본) → 설정 창의 서재로 가기 → '← 작업 화면으로' → 채팅으로 돌아온다(집 눌림 · 창 닫힘 · 기록 base), 새로 고침해도 채팅", { skip }, async () => {
+test("F-36: 채팅(기본) → 설정 창의 서재로 가기 → '← 작업 화면으로' → 채팅으로 돌아온다(집 눌림 · 창 닫힘 · 기록 base), 새로 고침해도 채팅", { skip: noShelf }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser);
@@ -76,7 +79,7 @@ test("F-36: 채팅(기본) → 설정 창의 서재로 가기 → '← 작업 �
   } finally { await browser.close(); }
 });
 
-test("F-36: 움직임 줄이기에서도 같다(&back 없이 가던 길)", { skip }, async () => {
+test("F-36: 움직임 줄이기에서도 같다(&back 없이 가던 길)", { skip: noShelf }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser, true);
@@ -87,7 +90,7 @@ test("F-36: 움직임 줄이기에서도 같다(&back 없이 가던 길)", { ski
   } finally { await browser.close(); }
 });
 
-test("F-36: 장면(바이브 코딩)의 퀘스트 창 서고 탭에서 갔으면 돌아와도 기록은 바이브 코딩 그대로, 주소로 연 #tab=lib는 퀘스트 창의 서고 탭(녹화 · e2e 장면)", { skip }, async () => {
+test("F-36: 장면(바이브 코딩)의 퀘스트 창 서고 탭에서 갔으면 돌아와도 기록은 바이브 코딩 그대로, 주소로 연 #tab=lib는 퀘스트 창의 서고 탭(녹화 · e2e 장면)", { skip: noShelf }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser);
@@ -227,13 +230,13 @@ test("C-15: 글 파일을 섬에 놓으면 주소가 그대로인 채 먹이 주
   } finally { await browser.close(); }
 });
 
-test("C-16: 퀘스트 창의 탭은 셋(퀘스트 · 도전과제 · 서고), #ex=1&tab=doc은 서고 탭의 책 안 2단계(코드 1) 문서를 열고 초안 → 다시 봐 주세요 → 확정이 그 자리에서 된다, 책 목록에 '확정', 화면 글에 '설계도'가 없다", { skip }, async () => {
+test("C-16: 퀘스트 창의 탭은 넷(퀘스트 · 도전과제 · 책 · 배우기 — 2026-10-23 C-26 · C-30), #ex=1&tab=doc은 서고 탭의 책 안 2단계(코드 1) 문서를 열고 초안 → 다시 봐 주세요 → 확정이 그 자리에서 된다, 책 목록에 '확정', 화면 글에 '설계도'가 없다", { skip }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser);
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tab=doc"), { waitUntil: "load" }); await wait(400);
     const s = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".qwin .wtabs [role=tab]")].map((t) => t.dataset.tab), head: document.querySelector(".bdoc-head b")?.textContent || "", draft: !!document.querySelector("[data-act=draft]") }));
-    assert.deepEqual(s.tabs, ["quest", "tree", "lib"]);
+    assert.deepEqual(s.tabs, ["quest", "tree", "lib", "teach"]);
     assert.ok(s.head.includes("2단계") && s.draft, `단계 번호는 1~8로(코드 1 = 2단계): ${JSON.stringify(s)}`);
     await page.click("[data-act=draft]"); await wait(400);
     await page.evaluate(() => { const t = document.querySelector("textarea[data-act=doc]"); t.value = t.value.replace(/\[채워 주세요: [^\]]*\]/g, "채움"); t.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -276,6 +279,7 @@ test("C-9 · C-3: 책 보기 설정 — 칸 끄기(내용은 그대로) · 탭 �
     assert.ok(await page.evaluate(() => !document.querySelector(".bv-panel") && !!document.querySelector(".bv-note")));
     // '전체 화면' → 서고의 펼친 책(표지 없이), 서고의 보기 설정은 같은 저장을 읽는다
     await page.click("[data-act=bv-open]"); await wait(200);
+    if (shelfOff) { assert.ok(!(await page.$('.bv-opt[data-bv="size"]')), "서재를 잠시 뺀 동안은 '전체 화면'(서고로 가는 길)이 없다"); return; }
     await page.click('.bv-opt[data-bv="size"][data-v="full"]');
     await page.waitForFunction(() => location.href.includes("library/index.html"), { timeout: 6000 });
     await page.waitForFunction(() => !document.documentElement.classList.contains("dive-in") && document.getElementById("reader").classList.contains("on"), { timeout: 8000 }); await wait(200);   // 펼친 책이 열릴 때까지(고정 300ms는 가끔 모자랐다, 2026-10-21)
@@ -387,9 +391,9 @@ test("C-19: 먹이를 검사하는 동안 '어디쯤인지 보기'를 누르면 
   try {
     const page = await fresh(browser);
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#feed"), { waitUntil: "load" }); await wait(400);
-    // 2026-10-21 C-22: 명령 네 칸 대신 채팅의 칩 '어디쯤인지 보기'(먹이를 검사하는 중에도 보이고, 누르면 막는다)
-    assert.ok(await page.$(".opts [data-act=judge]"), "어디쯤인지 보기 칩");
-    await page.click(".opts [data-act=judge]"); await wait(400);
+    // 2026-10-23 C-29: 어디쯤인지 보기는 명령 네 칸의 살피기(먹이를 검사하는 중에도 보이고, 누르면 막는다)
+    assert.ok(await page.$(".cmd4 [data-act=cmd-look]"), "살피기");
+    await page.click(".cmd4 [data-act=cmd-look]"); await wait(400);
     const s = await page.evaluate(() => { const svg = document.querySelector("[data-live] svg.cat"), sign = svg && svg.querySelector(".s-sign"), eyes = svg && svg.querySelector(".e-angry");
       return { angry: !!svg && /\bm-angry\b/.test(svg.getAttribute("class")), sign: sign && getComputedStyle(sign).display, eyes: eyes && getComputedStyle(eyes).display, say: document.querySelector(".pop-say")?.textContent || "", meal: !!document.querySelector(".feedlist"), judged: !!document.querySelector(".mc-notice") };
     });
@@ -499,6 +503,7 @@ test("C-22: 처음 실행 — 무엇을 만들지 말하면 '퀘스트를 시작
     if (await page.$("[data-act=check-pick]")) { await page.click("[data-act=check-pick]"); await wait(400); if (await page.$("[data-act=check-go]")) { await page.click("[data-act=check-go]"); await wait(400); } }
     const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".tb .shells span")?.textContent, ev: !!document.querySelector(".qwin .ev"), rank: document.querySelector(".mc.chat .rank")?.textContent }));
     assert.ok(after.band.startsWith("2단계 ·") && after.shells === "1" && after.ev && after.rank === "적어 두는 사람", JSON.stringify(after));
+    assert.equal(await page.evaluate(() => localStorage.getItem("floe:level")), null, "연습 모드의 관문은 영구 레벨에 남기지 않는다(C-28 — 이 켜짐 동안만 오른다, 칭호는 위처럼 바뀐다)");
     // 설정 창 — 왼쪽(기본)이면 [설정][섬][퀘스트], 오른쪽을 고르면 [퀘스트][섬][설정]. 이 컴퓨터에 남는다
     await page.click("[data-act=settings]"); await wait(300);
     const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > *")].filter((x) => !x.classList.contains("shell")).map((x) => (x.classList.contains("setwin") ? "set" : x.classList.contains("qwin") ? "quest" : "isl")));
@@ -510,6 +515,47 @@ test("C-22: 처음 실행 — 무엇을 만들지 말하면 '퀘스트를 시작
     assert.ok(!(await page.$(".setwin")) && await page.$(".qwin"), "Esc는 설정 창부터 닫는다");
     await page.keyboard.press("Escape"); await wait(200);
     assert.ok(!(await page.$(".qwin")), "한 번 더 Esc — 퀘스트 창");
+  } finally { await browser.close(); }
+});
+
+// 2026-10-23 이재엽 결정(C-26 · C-28 · C-29 · C-30) — 명령 네 칸 · 책 탭의 README · 배우기 탭 · 레벨 누적 · 서재 단추 없음
+test("C-29 · C-26 · C-30 · C-28: 명령 네 칸(맡기기 · 살피기 · 책 · 배우기, 1~4) — 책은 퀘스트 창의 책 탭에 README(연습 예시) 목차 · 버전 줄, 배우기는 기능 열 개와 튜토리얼, 레벨은 기록을 지워도 그대로, 서재 단추는 없다", { skip }, async () => {
+  const browser = await launch();
+  try {
+    const page = await fresh(browser);
+    await page.evaluate(() => { localStorage.removeItem("navigator-prototype:v1"); localStorage.setItem("floe:level", "3"); });
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#start"), { waitUntil: "load" }); await wait(400);
+    const cmd = await page.evaluate(() => [...document.querySelectorAll(".mc.chat .cmd4 .cm")].map((b) => ({ act: b.dataset.act, name: b.querySelector("b").textContent, key: b.querySelector("kbd")?.textContent || "" })));
+    assert.deepEqual(cmd.map((c) => `${c.act}:${c.name}`), ["cmd-hand:맡기기", "cmd-look:살피기", "cmd-book:책", "cmd-learn:배우기"], "채팅 아래 명령 네 칸");
+    assert.deepEqual(cmd.map((c) => c.key), ["", "", "3", "4"], "답 칩이 1 · 2를 쓰면 명령 칸은 그 숫자를 표시하지 않고, 남은 3 · 4를 쓴다");
+    // 3 — 책: 퀘스트 창의 책 탭, 서버 없이 열었으니 연습 예시 README
+    await page.evaluate(() => document.activeElement && document.activeElement.blur());
+    await page.keyboard.press("3"); await wait(500);
+    const book = await page.evaluate(() => ({ tab: document.querySelector('.qwin .wtabs [aria-selected="true"]')?.dataset.tab, tabs: [...document.querySelectorAll(".qwin .wtabs [role=tab]")].map((t) => t.textContent),
+      toc: [...document.querySelectorAll(".rb-toc button")].map((b) => b.textContent), vers: document.querySelectorAll(".rb-vers li").length, from: document.querySelector(".rb-head small")?.textContent || "" }));
+    assert.equal(book.tab, "lib"); assert.deepEqual(book.tabs, ["퀘스트", "도전과제", "책", "배우기"]);
+    assert.ok(book.toc.length >= 3 && book.vers >= 2 && book.from.includes("연습 예시"), JSON.stringify(book));
+    await page.click('.rb-toc button[data-i="1"]'); await wait(200);
+    assert.equal(await page.evaluate(() => document.querySelector(".rb-ch h4")?.textContent), book.toc[1], "목차를 누르면 그 장");
+    // 배우기: 기능 열 개, 고르면 그 튜토리얼과 '해 보기'
+    await page.click(".mc.chat .cmd4 [data-act=cmd-learn]"); await wait(300);
+    assert.equal(await page.evaluate(() => document.querySelectorAll(".tu-list button").length), 10);
+    await page.click('[data-act=tu-sel][data-v="book"]'); await wait(200);
+    assert.deepEqual(await page.evaluate(() => ({ h: document.querySelector(".tu-h b")?.textContent, st: document.querySelector(".tu-st")?.textContent, tryAct: document.querySelector(".tu [data-act=cmd-book]") ? "cmd-book" : "" })), { h: "책", st: "있음", tryAct: "cmd-book" });
+    // 판(AI 진행)이 열려도 명령 네 칸은 남는다 — 맡기기를 누르면 그 판의 할 일 칸이 열린다
+    await page.click(".cmd4 [data-act=cmd-hand]"); await wait(400);
+    assert.ok(await page.$(".mc.base .cmd4 [data-act=cmd-learn]") && await page.$("#task-text"), "판에도 명령 네 칸 · 할 일 칸");
+    await page.click("[data-act=base-back]"); await wait(300);
+    // 레벨 — 저장된 3이 설정 창에, 서재로 가는 단추는 없다. 기록을 지우고(새 프로젝트) 다시 열어도 그대로
+    await page.click("[data-act=settings]"); await wait(300);
+    assert.ok((await page.evaluate(() => document.querySelector(".setwin .pcard")?.textContent || "")).includes("LV 3"), "설정 창에 레벨 3");
+    assert.ok(!(await page.$("[data-act=lib-enter]")), "서재 잠시 뺌 — 서재로 가는 단추가 없다");
+    await page.evaluate(() => localStorage.removeItem("navigator-prototype:v1"));
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#start&set=1"), { waitUntil: "load" }); await wait(400);
+    assert.ok((await page.evaluate(() => document.querySelector(".setwin .pcard")?.textContent || "")).includes("LV 3"), "새 프로젝트여도 레벨은 그대로");
+    // 모아 보기 창의 서재 칸도 숨었다
+    await page.goto(url("hub/index.html"), { waitUntil: "load" }); await wait(300);
+    assert.equal(await page.evaluate(() => document.querySelector("[data-act=library]")?.offsetParent ?? null), null, "모아 보기 창의 서재 칸이 보이지 않는다");
   } finally { await browser.close(); }
 });
 
@@ -535,6 +581,9 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(300);
     assert.ok((await page.evaluate(() => document.querySelectorAll(".sidebn").length)) >= 1, "도전과제 옆 가지");
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(300);
-    assert.ok((await page.evaluate(() => document.querySelector(".cover .s")?.textContent || "")).includes("2단계"), "서고 탭의 책도 1~8(코드 1 = 2단계)");
+    if (shelfOff) {   // 서재를 잠시 뺀 동안(2026-10-23)은 책 표지 목록 대신 이 프로젝트의 책 하나 — 펼치면 단계가 1~8
+      await page.click("[data-act=lib-book]"); await wait(300);
+      assert.ok((await page.evaluate(() => document.querySelector(".bv-head .stg")?.textContent || "")).includes("2단계"), "책 탭의 책도 1~8(코드 1 = 2단계)");
+    } else assert.ok((await page.evaluate(() => document.querySelector(".cover .s")?.textContent || "")).includes("2단계"), "서고 탭의 책도 1~8(코드 1 = 2단계)");
   } finally { await browser.close(); }
 });
