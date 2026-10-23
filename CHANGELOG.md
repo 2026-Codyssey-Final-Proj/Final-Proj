@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v19.0 | 2026-10-23 | 이재엽 | 무지개 조개 그림을 만들어 위 줄 · 보상 · 뽑기 · 설정에 씀(위 줄에 숫자만 보이던 문제 고침), 알림은 작업을 마쳤을 때만(FR-7), 메뉴 '브라우저로 열기' 되살림 (#175) | `02-frontend/navigator/` · `02-frontend/electron/main.js` · `03-backend/navigator/alerts.js` · `04-tests/` · `01-docs/`(화면 담당 — 이 줄이 알림) |
 | v18.0 | 2026-10-23 | 이재엽 | 섬 위 줄의 퀘스트 창 단추 · 모아 보기 단추를 뺌, 모아 보기 창(C-11)을 기능째 뺌 — 앱의 창 · 메뉴 '모아 보기 열기' · '브라우저로 열기' · 판의 '크게 보기' · 브라우저 새 탭, 트레이 · Dock 클릭은 섬 창을 앞으로 (#174) | `02-frontend/navigator/` · `02-frontend/hub/`(index.html · hub.css 지움, hub.js는 순수 함수만) · `02-frontend/electron/` · `03-backend/navigator/` · `04-tests/` · `01-docs/`(화면 담당 — 이 줄이 알림) |
 | v17.0 | 2026-10-23 | 이재엽 | 섬의 명령 네 칸 맡기기 · 살피기 · 책 · 배우기(C-29), 책 탭은 연결한 폴더의 README를 받아 와 보여 주기만(C-26, GET /api/readme), 배우기 — 기능마다 튜토리얼(C-30), 레벨은 관문마다 +1 누적(C-28), 서재 단추 잠시 뺌 (#173) | `01-docs/00-overview/requirements.md` · `02-frontend/navigator/` · `02-frontend/hub/` · `02-frontend/library/book-view.js`(화면 담당 — 이 줄이 알림) · `03-backend/navigator/` · `04-tests/` |
 | v16.7 | 2026-10-23 | 이재엽 | 요구 후보 C-28 레벨 누적 · C-29 명령 네 칸(맡기기 · 살피기 · 책 · 배우기) · C-30 배우기(기능마다 튜토리얼), C-25 저장소 만들어 주기 · README에 기록, C-26 README를 받아 와 책으로, 서재 잠시 뺌 (#172) | `01-docs/00-overview/` |
