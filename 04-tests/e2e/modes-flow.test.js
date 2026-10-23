@@ -487,6 +487,7 @@ test("C-22: 처음 실행 — 무엇을 만들지 말하면 '퀘스트를 시작
     assert.ok(await page.$(".qwin .ev .join"), "퀘스트 창이 바로 떠서 받기 화면(큰 받기 단추)");
     assert.ok((await band()).startsWith("1단계 ·"), `위 줄은 1단계부터: ${await band()}`);
     assert.ok((await page.evaluate(() => document.querySelector(".ev .slots i.has")?.dataset.tt || "")).includes("무지개 조개"), "REWARD 칸에 마우스 설명");
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".ev .slots .coin")).backgroundColor), "rgba(0, 0, 0, 0)", "보상 칸의 조개 그림에 상자가 겹치지 않는다(2026-10-23)");
     await page.click("[data-act=quest-fix]"); await wait(300);
     await page.evaluate(() => { const i = document.querySelector("[data-act=quest-title]"); i.value = "첫 장 — 정하기"; i.dispatchEvent(new Event("input", { bubbles: true })); });
     await page.click("[data-act=quest-save]"); await wait(500);
@@ -562,7 +563,11 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     const page = await fresh(browser);
     await page.evaluate(() => localStorage.removeItem("navigator-prototype:v1"));
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&shells=3"), { waitUntil: "load" }); await wait(400);
+    // 위 줄의 조개 그림이 단추 앞에 보인다 — 2026-10-23 전에는 class 'shell'이 바탕 껍데기(.nav .shell, z-index -1)와 겹쳐 숨고 수만 보였다
+    const coinSeen = await page.evaluate(() => { const c = document.querySelector(".tb .shells .coin"); if (!c) return "none"; const r = c.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return r.width >= 16 && c.contains(hit) ? "ok" : `hidden ${r.width} ${hit && hit.tagName}`; });
+    assert.equal(coinSeen, "ok", "위 줄의 무지개 조개 그림이 보인다");
     await page.click(".tb .shells"); await wait(300);
+    assert.ok(await page.evaluate(() => { const b = document.querySelector(".gacha .bigshell"); const r = b && b.getBoundingClientRect(); return !!r && r.width >= 100 && b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); }), "뽑기 창의 큰 조개 그림이 보인다");
     assert.ok(await page.$(".gacha-layer") && !(await page.evaluate(() => document.querySelector("[data-act=gacha-roll]").disabled)), "뽑기 창 · 열 수 있다");
     assert.equal(await page.evaluate(() => document.querySelectorAll(".odds span").length), 4, "확률표 넷");
     await page.click("[data-act=gacha-roll]"); await wait(1800);

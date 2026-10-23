@@ -231,6 +231,7 @@
     if (st.quest && !(QU && N.STAGES[st.quest.chap] && Array.isArray(st.quest.objs) && Array.isArray(st.quest.lines) && st.quest.objs.length === st.quest.lines.length)) st.quest = null;
     if (st.quest) st.quest = { ...st.quest, edit: false };
     st.shells = Math.max(0, Number(st.shells) || 0);
+    if (Array.isArray(st.alerts)) st.alerts = st.alerts.filter(A.notifies);   // 2026-10-23 전에 남은 '새 작업을 시작했어요'는 버린다 — 알림은 마칠 때만
     st.owned = QU ? QU.cleanOwned(st.owned) : []; st.wear = QU ? QU.cleanWear(st.wear) : {};
     if (typeof st.idea !== "string") st.idea = "";
     st.back = N.welcome(s, Date.now());
@@ -287,6 +288,10 @@
     // 퀘스트 창(C-22, 2026-10-21) — 두루마리. 설정 창의 '창 · 퀘스트' 머리에 쓴다(위쪽 줄의 단추는 2026-10-23에 뺐다)
     scroll: icon('<path d="M6 3h11a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2-3-2V5a2 2 0 0 1 2-2z"></path><path d="M8 8h8M8 12h6"></path>', 18),
   };
+  // 무지개 조개 — 우리 재화의 그림(2026-10-23, 이재엽 "무지개 조개를 이미지를 만들어서 우리만의 재화를 보여줘"). 무지개 여섯 빛의 부채꼴 조개.
+  //   class는 'coin' — 'shell'은 섬의 바탕 껍데기(.nav .shell, 단추 뒤로 숨는다)라 겹치면 위 줄에 수만 보였다
+  const SHELL_ICO = '<svg viewBox="0 0 24 24" stroke="#33406E" stroke-width=".85" stroke-linejoin="round"><path fill="#FF9AA2" d="M12 19.9L23.6 14.7Q24.2 11.4 20.8 10.8Z"/><path fill="#FFC48A" d="M12 19.9L20.8 10.8Q20.1 7.4 16.8 8.1Z"/><path fill="#FFE38A" d="M12 19.9L16.8 8.1Q14.8 5.3 12.0 7.2Z"/><path fill="#B8EFA0" d="M12 19.9L12.0 7.2Q9.2 5.3 7.2 8.1Z"/><path fill="#9ADFFF" d="M12 19.9L7.2 8.1Q3.9 7.4 3.2 10.8Z"/><path fill="#C9B2FF" d="M12 19.9L3.2 10.8Q-0.2 11.4 0.4 14.7Z"/><path fill="#C9B2FF" d="M8.6 18.3h6.8l1.5 3.4a.8.8 0 0 1-.7 1.1H7.8a.8.8 0 0 1-.7-1.1z"/></svg>';
+  const coin = () => `<i class="coin" aria-hidden="true">${SHELL_ICO}</i>`;
   // 하트 — 설정 맨 위 '플로로와 나'가 쓴다(위쪽 줄의 하트는 2026-10-18에 뺐다)
   const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
   const hearts = (level) => `<span class="hearts">${[0, 1, 2, 3].map((i) => `<i class="${i <= level ? "on" : ""}">${HEART}</i>`).join("")}</span>`;
@@ -904,7 +909,7 @@
   }
   // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 고한결 [정할 것 2 · 5]
   const PIC = `<svg viewBox="0 0 320 140" aria-hidden="true"><defs><linearGradient id="q-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1550"></stop><stop offset="1" stop-color="#2A4AC8"></stop></linearGradient><linearGradient id="q-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3BA6"></stop><stop offset="1" stop-color="#0E1A4F"></stop></linearGradient></defs><rect width="320" height="140" fill="url(#q-sky)"></rect><g fill="#fff"><circle cx="30" cy="22" r="1.4"></circle><circle cx="80" cy="40" r="1"></circle><circle cx="140" cy="18" r="1.6"></circle><circle cx="200" cy="34" r="1"></circle><circle cx="260" cy="16" r="1.3"></circle><circle cx="300" cy="46" r="1"></circle></g><circle cx="262" cy="36" r="16" fill="#FFF3C4"></circle><circle cx="268" cy="31" r="14" fill="url(#q-sky)"></circle><path d="M0 95 Q 80 80 160 95 T 320 95 V140 H0z" fill="url(#q-sea)"></path><path d="M70 100 L 110 78 L 200 76 L 250 100 Z" fill="#E6F6FF"></path><path d="M70 100 L 250 100 L 240 112 L 85 112 Z" fill="#A9DDFF"></path><rect x="130" y="52" width="60" height="30" rx="4" fill="#F3EBD8" stroke="#6B5B3E" stroke-width="2"></rect><path d="M138 60h44M138 67h36M138 74h40" stroke="#B99A4F" stroke-width="2" stroke-linecap="round"></path></svg>`;
-  const rewardSlots = (q) => `<i class="has" tabindex="0" data-tt="무지개 조개 ×1|장을 지나면 하나. 셋이면 열어요(뽑기는 다음 판)"><span class="shell"></span></i><i class="has" tabindex="0" data-tt="책갈피|직접 쓴 말은 책에 남아요">▮</i><i class="has" tabindex="0" data-tt="칭호 '${esc(QU.rankOf(Math.min(7, q.chap + 1)))}'|이 장을 지나면 칭호가 바뀌어요">🏅</i><i></i><i></i><i></i><i></i>`;
+  const rewardSlots = (q) => `<i class="has" tabindex="0" aria-label="무지개 조개 ×1" data-tt="무지개 조개 ×1|장을 지나면 하나. 셋이면 열어요(뽑기는 다음 판)">${coin()}</i><i class="has" tabindex="0" data-tt="책갈피|직접 쓴 말은 책에 남아요">▮</i><i class="has" tabindex="0" data-tt="칭호 '${esc(QU.rankOf(Math.min(7, q.chap + 1)))}'|이 장을 지나면 칭호가 바뀌어요">🏅</i><i></i><i></i><i></i><i></i>`;
   // 퀘스트 판 — 없음 · 받기 화면(이벤트 창 짜임: 제목 띠 + ? · 그림 · 참여 조건 · 할 일 · 기간 · REWARD · 큰 받기 단추) · 공책(왼쪽 목차 · 오른쪽 줄 — 여기서 고친다)
   function questPane() {
     const q = st.quest;
@@ -929,7 +934,7 @@
     return `<div class="book"><div class="page l"><h4>목차 · ${LB(q.chap)}</h4><div class="toc">${toc}</div></div>
       <div class="page r"><h3>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</h3><div class="meta">${LB(q.chap)} · 플로로가 만들었어요 · ${done ? "다 적음" : "하는 중"}</div>
         <div class="lines">${lines}</div><p>${esc(q.desc)}</p><p><b>왜 하나요</b> — ${esc(q.why)}</p>
-        <div class="rw"><span>보상</span><span class="piece"><i class="shell"></i>무지개 조개 ×1</span><span class="piece">🏅 ${esc(QU.rankOf(Math.min(7, q.chap + 1)))}</span></div>
+        <div class="rw"><span>보상</span><span class="piece">${coin()}무지개 조개 ×1</span><span class="piece">🏅 ${esc(QU.rankOf(Math.min(7, q.chap + 1)))}</span></div>
         <div class="pacts">${ed ? `<button type="button" class="pri" data-act="quest-save">저장</button><button type="button" data-act="quest-cancel">취소</button><span></span>` : `<button type="button" class="pri" data-act="quest-report" ${done ? "" : "disabled"}>완료 보고</button><button type="button" data-act="quest-hint">힌트</button><button type="button" data-act="quest-edit">고치기</button>`}</div></div></div>`;
   }
   // 도전과제 판(C-22) — 세로 탭 = 장(여덟), 그림만 크게, 마우스를 올리면 설명(data-tt). 상태는 지금 단계(st.j)와 퀘스트(적은 줄)에서 — 단계 · 할 일 · 판정 규칙은 그대로
@@ -965,11 +970,11 @@
   function gachaHTML() {
     const g = st.gacha; if (!g || !QU) return "";
     const can = st.shells >= QU.SHELL_COST && g.phase === "ready";
-    const stage = g.phase === "got" ? `<span class="big" aria-hidden="true">${g.item.emoji}</span>` : `<i class="bigshell" aria-hidden="true"></i>`;
+    const stage = g.phase === "got" ? `<span class="big" aria-hidden="true">${g.item.emoji}</span>` : `<i class="coin bigshell" aria-hidden="true">${SHELL_ICO}</i>`;   // 열기 전의 큰 조개 — 위 줄과 같은 무지개 조개 그림(2026-10-23)
     const got = g.phase === "got" ? `<b>${esc(g.item.name)}</b>(${esc(g.item.rar)})이 나왔어요! 플로로가 바로 써 봤어요` : g.phase === "rolling" ? "조개를 여는 중…" : st.shells >= QU.SHELL_COST ? "조개를 열면 플로로를 꾸밀 것이 하나 나와요" : `조개가 ${QU.SHELL_COST - st.shells}개 더 있어야 열 수 있어요 — 장을 지나면 받아요`;
     return `<div class="gacha-layer"><section class="gacha${g.phase === "rolling" ? " rolling" : ""}" role="dialog" aria-label="무지개 조개 뽑기"><h3>무지개 조개 뽑기</h3>
       <button type="button" class="ti gx" data-act="gacha-close" aria-label="뽑기 창 닫기" title="닫기 (Esc)">${X_ICON}</button>
-      <div class="have">가진 조개 <span class="shells"><i class="shell"></i>${st.shells}</span> · 한 번에 ${QU.SHELL_COST}개</div>
+      <div class="have">가진 조개 <span class="shells">${coin()}${st.shells}</span> · 한 번에 ${QU.SHELL_COST}개</div>
       <div class="stage">${stage}</div><p class="got" role="status">${got}</p>
       <div class="acts"><button type="button" class="b pri" data-act="gacha-roll" ${can ? "" : "disabled"}>조개 열기</button></div>
       <div class="odds" aria-label="나올 확률">${QU.ITEMS.map((it) => `<span><b>${it.emoji} ${esc(it.name)}</b>${esc(it.rar)} ${it.p}%</span>`).join("")}</div>
@@ -1009,7 +1014,7 @@
           ${pick("설정 창 자리", [["left", "왼쪽"], ["right", "오른쪽"]], side, "side", "퀘스트 창은 반대쪽에 떠요")}
           ${pick("퀘스트 창 처음 크기", [["s", "S"], ["m", "M"], ["l", "L"]], qsize, "qsize")}
           <label class="chk"><input type="checkbox" data-act="qauto" ${qauto ? "checked" : ""}>퀘스트를 받으면 퀘스트 창이 바로 뜨기</label>
-          <div class="srow"><span>꾸미기<small>뽑기로 얻은 것 · 조개 ${st.shells}개</small></span><span class="closet">${st.owned.map(QU.itemOf).filter(Boolean).map((it) => `<button type="button" data-act="wear" data-v="${it.id}" aria-pressed="${st.wear[it.slot] === it.id}">${it.emoji} ${esc(it.name)}</button>`).join("")}<button type="button" data-act="gacha">조개 열기 <span class="shells"><i class="shell"></i>${st.shells}</span></button></span></div></section>
+          <div class="srow"><span>꾸미기<small>뽑기로 얻은 것 · 조개 ${st.shells}개</small></span><span class="closet">${st.owned.map(QU.itemOf).filter(Boolean).map((it) => `<button type="button" data-act="wear" data-v="${it.id}" aria-pressed="${st.wear[it.slot] === it.id}">${it.emoji} ${esc(it.name)}</button>`).join("")}<button type="button" data-act="gacha">조개 열기 <span class="shells">${coin()}${st.shells}</span></button></span></div></section>
         ${settingsBody()}</div></div>`;
   }
 
@@ -1222,9 +1227,9 @@
   const homeBtn = (on) => `<button class="ti home" data-act="base" aria-pressed="${on}" aria-label="처음으로" title="처음으로 — 플로로와 대화">${I.home}</button>`;
   // 오른쪽 — 연결 표시 · 프로젝트 · 조개 · 설정 창 · 열어 두기 · 접기. 퀘스트 창 단추 · 모아 보기 단추는 2026-10-23에 뺐다(이재엽) — 퀘스트 창은 명령 칸의 책 · 배우기와 '공책 보기'로 연다
   const tbRight = () => `${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
-        : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
+        : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 소식 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
-      ${QU ? `<button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개"><i class="shell"></i><span>${st.shells}</span></button>` : ""}
+      ${QU ? `<button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개">${coin()}<span>${st.shells}</span></button>` : ""}
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 창 켜기 · 끄기 — 작업실 · 창 자리 · 보기 방식 · 연결 · 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
@@ -2366,7 +2371,7 @@
     const first = lastSeq < 0, ev = r.events[r.events.length - 1];
     lastSeq = r.latest;   // 연결을 끊은 동안에도 기준은 앞으로 — 다시 연결했을 때 지난 알림을 한꺼번에 받지 않는다
     if (!ev) return;
-    if (!first) return onEvent(ev);
+    if (!first) return onEvent(r.events.findLast(A.notifies) || ev);   // 2초 사이에 마침 · 시작이 같이 오면 마침을 알린다(2026-10-23 — 알림은 마칠 때만)
     if (!st.unplug) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project) st.project = ev.project; }
     render();
   }
@@ -2376,20 +2381,21 @@
   async function onEvent(ev) {
     if (!A.accept(ev, st.unplug)) return;   // 연결을 끊은 동안 들어온 알림 — 글 칸 채우기·살펴보기·기록 모두 하지 않는다
     if (!ev.sim) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project) st.project = ev.project; }
+    if (!A.notifies(ev)) return render();   // 새 작업을 시작했을 때는 알리지 않는다 — 연결 표시(마지막 소식 때)만(2026-10-23)
     st.alerts = A.add(st.alerts, ev, (t) => sensitive(t).length > 0);
     if (st.busy) return render();
     if (ev.work) st.text = ev.work;
     activity();
     const tool = toolName(ev.tool);
     lastPing = { tool, kind: ev.kind };
-    logMsg("sys", `${esc(tool)}${ev.kind === "stop" ? "가 일을 마쳤어요" : "에서 새 작업을 시작했어요"}${ev.sim ? " · 연습 알림" : ""}`);   // 채팅에 한 줄(C-22)
-    const auto = ev.kind === "stop" && !st.finished && st.screen !== "gate" && (ev.sim ? st.mode === "fixture" : st.auto && st.mode === "live");
+    logMsg("sys", `${esc(tool)}가 일을 마쳤어요${ev.sim ? " · 연습 알림" : ""}`);   // 채팅에 한 줄(C-22)
+    const auto = !st.finished && st.screen !== "gate" && (ev.sim ? st.mode === "fixture" : st.auto && st.mode === "live");
     if (auto) {
       await lookAfterWork(lastPing);
       if (ev.sim || st.warn) view("alert");
       return;
     }
-    st.ping = ev.kind === "stop" ? `${tool}가 방금 작업을 마쳤어요 — 눌러서 어디쯤인지 볼까요?` : `${tool}에서 새 작업을 시작했어요`;
+    st.ping = `${tool}가 방금 작업을 마쳤어요 — 눌러서 어디쯤인지 볼까요?`;
     peek();
   }
   // 작업 알림 뒤 살펴보기 — 보통의 살펴보기(judge)를 그대로 쓰고, 새로 끝낸 할 일을 알림 기록과 카드에 붙인다(FR-7 '끝났다고 표시')

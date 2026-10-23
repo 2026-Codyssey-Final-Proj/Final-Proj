@@ -183,6 +183,21 @@ test("알림 기록: 새것이 위에, 20개까지만, 원본은 안 바뀐다",
   assert.deepEqual(one, before);
 });
 
+// claude-drafted: 2026-10-23 — 이재엽 "알람은 플로로가 작업을 다 끝나면 알람이 오도록". 새 작업을 시작했을 때(prompt)는 알리지 않는다 — 기록 · 채팅 줄 · 한 줄 알림 모두
+test("알림은 작업을 마쳤을 때만(stop) — 시작(prompt)은 알리지 않는다. 화면은 기록하기 전에 이 규칙을 묻는다", () => {
+  assert.equal(A.notifies({ kind: "stop", tool: "claude" }), true);
+  assert.equal(A.notifies({ kind: "prompt", tool: "claude" }), false);
+  assert.equal(A.notifies({ kind: "stop", sim: true }), true, "연습 알림도 마친 것이면");
+  assert.equal(A.notifies(null), false);
+  const app = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  const at = app.indexOf("async function onEvent(ev)");
+  const body = app.slice(at, app.indexOf("async function lookAfterWork", at));
+  assert.ok(body.indexOf("if (!A.notifies(ev)) return render();") > 0 && body.indexOf("if (!A.notifies(ev))") < body.indexOf("A.add("), "기록(A.add) 전에 거른다");
+  assert.ok(!body.includes("새 작업을 시작했어요"), "시작 알림 글이 없다");
+  assert.match(app, /return onEvent\(r\.events\.findLast\(A\.notifies\) \|\| ev\);/, "2초 사이에 마침 · 시작이 같이 오면 마침을 알린다");
+  assert.match(app, /if \(Array\.isArray\(st\.alerts\)\) st\.alerts = st\.alerts\.filter\(A\.notifies\);/, "전에 남은 시작 알림은 불러올 때 버린다");
+});
+
 test("알림 기록: 한 줄 요약은 서버가 준 글 그대로 — summary가 있으면 그것, 없으면 작업 글의 마지막 줄을 줄여서", () => {
   assert.equal(A.summary({ summary: "기능 6개를 정리했어요", work: "다른 글" }), "기능 6개를 정리했어요");
   assert.equal(A.summary({ work: "[사용자] 정리해 줘\n[Claude]  기능 6개를\n  정리했어요\n\n" }), "정리했어요");

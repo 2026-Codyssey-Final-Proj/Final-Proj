@@ -18,11 +18,10 @@ test("main.js — 모아 보기 창이 없다: openHub · floe:open-hub · floe:
   assert.equal(L.hubBounds, undefined, "lib.js의 창 크기 함수도 뺐다");
 });
 
-test("main.js — 브라우저를 여는 메뉴가 없다('모아 보기 열기' · '브라우저로 열기'). 새 버전 확인(Releases)은 남는다", () => {
+test("main.js — 메뉴 '모아 보기 열기'가 없다. '브라우저로 열기' · '새 버전 확인(Releases)'은 남는다(이재엽 2026-10-23 \"이 기능만 지우고 싶었어\")", () => {
   const main = read("electron/main.js");
   assert.doesNotMatch(main, /label: "모아 보기 열기"/);
-  assert.doesNotMatch(main, /label: "브라우저로 열기"/);
-  assert.doesNotMatch(main, /openExternal\(`http:\/\/127\.0\.0\.1/, "섬을 브라우저로 여는 길이 없다");
+  assert.match(main, /\{ label: "브라우저로 열기", click: \(\) => shell\.openExternal\(`http:\/\/127\.0\.0\.1:\$\{PORT\}\/`\) \},/);
   assert.match(main, /새 버전 확인 \(Releases\)/);
 });
 
