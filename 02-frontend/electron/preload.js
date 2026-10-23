@@ -2,6 +2,7 @@
 // saveKey · clearKey(처음 설정, 2026-10-19): 키는 앱이 설정 폴더의 .env(나만 읽기)에만 쓴다. 화면 · 브라우저 저장소 · 서버 주소에는 남지 않는다
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("floeApp", {
+  platform: process.platform,                                 // "win32" · "darwin" · "linux" — 운영체제마다 다른 모양(app.css html.plat-win32, 2026-10-22)
   connect: () => ipcRenderer.invoke("floe:connect"),          // 프로젝트 폴더 고르기 → 훅 더하기
   disconnect: () => ipcRenderer.invoke("floe:disconnect"),    // 프로젝트 폴더 고르기 → 훅 빼기
   openSettings: () => ipcRenderer.invoke("floe:open-settings"), // .env를 두는 앱 설정 폴더 열기
@@ -12,6 +13,7 @@ contextBridge.exposeInMainWorld("floeApp", {
   // Mac 노치(다이내믹 아일랜드, 2026-10-19) — 앱이 노치 크기 {width, height}(pt)를 보내면 화면이 띠를 노치에 맞춘다. 노치가 없으면 오지 않는다
   onNotch: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:notch", h); return () => ipcRenderer.removeListener("floe:notch", h); },
   resize: (w, h, anchor) => ipcRenderer.send("floe:resize", w, h, anchor),   // 창을 지금 보이는 섬(띠 · 한 줄 · 펼침 · 옆의 설정 창) 크기에 맞춘다. anchor "left"면 왼쪽을 고정
+  thru: (on) => ipcRenderer.send("floe:thru", !!on),           // 창의 투명한 자리 클릭을 뒤 창으로 통과(Windows · Mac — 2026-10-22). 섬 위면 false
   expand: () => ipcRenderer.send("floe:expand"),                // 서고로 들어갈 때 — 창을 화면만큼 넓힌다(6.2.0). 넓히면 floe:expanded가 온다
   // 창을 넓힌 뒤(2026-10-20) — 앱이 {dx, dy}(섬 창이 있던 자리에서 넓힌 창까지 옮긴 거리)를 보내면 화면이 섬을 제자리에 붙들고 잠수한다
   onExpanded: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:expanded", h); return () => ipcRenderer.removeListener("floe:expanded", h); },

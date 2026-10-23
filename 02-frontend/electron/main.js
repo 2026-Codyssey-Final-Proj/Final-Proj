@@ -69,6 +69,7 @@ async function startServer() {
 // 크기는 화면(app.js)이 지금 보이는 섬의 크기를 보내 주면 그때그때 맞춘다(floe:resize) — 첫 알파(3.0.0)에서 1040×760 투명 창의 빈 영역이
 // 뒤 창(VS Code · 터미널)의 클릭을 전부 가로채고 그리기도 무거웠다(이재엽 보고 2026-10-19 "클릭이 안 된다" · "랙")
 const PAD = 6, MIN_W = 240, MIN_H = 60;
+const ISLAND_W = 940 + PAD * 2;   // 펼친 섬(app.css .in-app .nav 940px)이 가운데 놓이는 창 폭 — Windows · Mac은 이보다 좁히지 않는다(lib.js islandWidth)
 // Mac 노치(다이내믹 아일랜드) — 이재엽 결정 2026-10-19 "Mac에서는 노치 자리에 붙인다 · 노치 크기는 Swift 도우미로 정확히".
 // Electron은 노치 크기를 안 알려 줘 작은 Swift 도우미(notch/notch-probe.swift → prebuild.js가 build/notch-probe로 묶음, 묶은 앱은 Resources/notch-probe)를
 // 앱이 켜질 때 한 번 돌려 JSON 한 줄을 읽는다(lib.js parseNotchProbe). 도우미가 없거나 · 실패하거나 · 노치가 없으면 null — 전처럼 위쪽 가운데(floating).
@@ -95,6 +96,8 @@ function createWindow() {
   else win.setAlwaysOnTop(true, "floating");
   win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서. 노치 모양에서도 켜지 않는다(사람이 켜 본 뒤 정한다)
   // 노치 크기를 화면에 — 띠를 노치와 같은 검정 · 노치 폭으로(app.css .notch). 서고에 갔다 돌아와도(다시 load) 매번 보낸다
+  // 페이지가 바뀌면(서고 · 다시 읽기) 클릭 통과를 끈다 — 새 페이지는 통과를 켠 줄 모른다(floe:thru)
+  win.webContents.on("did-start-navigation", (_e, _url, inPlace, isMain) => { if (isMain && !inPlace && win) win.setIgnoreMouseEvents(false); });
   win.webContents.on("did-finish-load", () => { if (NOTCH && win) win.webContents.send("floe:notch", { width: PROBE.notch.width, height: PROBE.notch.height }); });
   // 창 밖 커서를 화면에 알린다 — 플로로의 눈이 바탕 화면 어디든 따라오게(2026-10-19). 1초에 30번까지(F-22는 20번 — F-27에서 올림, 화면은 받은 점 사이를 미끄러져 간다),
   // 창 안이거나 그대로면 보내지 않는다
@@ -127,7 +130,7 @@ ipcMain.on("floe:resize", (e, w, h, anchor) => {
   // 서고에 있는 동안(넓힌 창)은 섬 크기를 따르지 않는다. 서고가 아닌데 넓혀져 있으면(처음 설정이 떠 있는 동안 넓혔다가 닫힘 — KAN-57 F-39-1, 병합 2026-10-20)
   // 조절 · 서고 크기 기억 없이 섬 창으로 돌아와 아래에서 섬 크기를 맞춘다
   if (expanded) { if (/\/library\//.test(win.webContents.getURL())) return; expanded = null; win.setResizable(false); win.setMinimumSize(MIN_W, MIN_H); }
-  const W = Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
+  const W = L.islandWidth(Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), process.platform, ISLAND_W), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
   const b = win.getContentBounds();
   if (Math.abs(b.width - W) < 2 && Math.abs(b.height - H) < 2) return;
   const wa = screen.getDisplayMatching(b).workArea;
@@ -163,6 +166,12 @@ function restoreWindow() {
   win.setMinimumSize(MIN_W, MIN_H);
   win.setContentBounds(from, process.platform === "darwin");
 }
+// 창의 투명한 자리는 클릭을 뒤 창으로(Windows · Mac — 창 폭을 줄이지 않아 접힌 한 줄 양옆이 비어 있다). forward: 통과시키는 동안에도 마우스 움직임은 화면에 와서
+// 섬 위로 오면 화면이 다시 끈다(app.js). Linux는 창이 섬 크기라 통과시킬 자리가 없다
+ipcMain.on("floe:thru", (e, on) => {
+  if (!L.keepsWidth(process.platform) || !win || e.sender !== win.webContents) return;
+  win.setIgnoreMouseEvents(!!on, { forward: true });
+});
 ipcMain.on("floe:expand", (e) => { if (win && e.sender === win.webContents) expandWindow(); });
 async function pickAndConnect(add) {
   const r = await dialog.showOpenDialog(win, { title: add ? "Claude Code로 작업하는 프로젝트 폴더" : "연결을 뺄 프로젝트 폴더", properties: ["openDirectory"] });
