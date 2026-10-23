@@ -6,7 +6,7 @@
 
 | 파일 | 무엇 |
 |---|---|
-| `main.js` | 앱 — 서버 띄우기 · 창 · 메뉴(프로젝트 폴더 연결 / 빼기 · 설정 폴더 · 끄기 — '브라우저로 열기' · '모아 보기 열기'는 2026-10-23에 뺐다). Mac은 위 메뉴 줄, **Windows · Linux는 창 우클릭과 트레이 아이콘**에 같은 메뉴(테두리 없는 창엔 메뉴 줄이 없다, 6.0.0) |
+| `main.js` | 앱 — 서버 띄우기 · 창 · 메뉴(프로젝트 폴더 연결 / 빼기 · 설정 폴더 · 브라우저로 열기 · 끄기 — '모아 보기 열기'는 2026-10-23에 뺐다). Mac은 위 메뉴 줄, **Windows · Linux는 창 우클릭과 트레이 아이콘**에 같은 메뉴(테두리 없는 창엔 메뉴 줄이 없다, 6.0.0) |
 | `preload.js` | 화면이 앱에게 부탁할 수 있는 것(`window.floeApp`: connect · disconnect · openSettings · **saveKey · clearKey** — 처음 설정, 2026-10-19 · resize(anchor) · **expand** — 서고로 들어갈 때 창을 화면만큼, 6.2.0). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
 | `lib.js` | 순수 함수 — `.env` 읽기 · PATH 합치기(Mac · Linux, 셸 고르기) · 훅 명령(app.asar → app.asar.unpacked) · 폴더 연결(connect.js 규칙 그대로). 시험 [`electron-lib.test.js`](../../04-tests/navigator/electron-lib.test.js) |
 | `prebuild.js` | 묶기 전에 화면 · 서버를 `payload/`로 복사(node_modules · `.env*` · 문서 제외). git에 올리지 않는다 |

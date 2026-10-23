@@ -96,3 +96,20 @@ test("C-22: 퀘스트 글은 진짜 AI 모드에서만 /api/quest로 받고(연�
   assert.match(app, /working\(\) \? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요/, "일하고 있어요 띠");
   assert.match(css, /\.msg\.sys \.bar i\{[^}]*animation:barrun/);
 });
+
+// claude-drafted: 2026-10-23 — 이재엽 "무지개 조개를 이미지를 만들어서 우리만의 재화를 보여줘 … 이렇게만 보이는 문제 해결"(위 줄에 동그라미 안 '0'만 보였다).
+//   까닭: 재화 아이콘의 class 'shell'이 섬의 바탕 껍데기(.nav .shell — position:absolute · z-index:-1)와 겹쳐 단추 뒤로 숨었다. 재화는 class 'coin'에 무지개 조개 그림(SVG)
+test("무지개 조개 — 재화 그림(SVG)은 class 'coin'으로 위 줄 · 보상 · 뽑기 · 설정에 같이 쓰고, 바탕 껍데기(.shell)와 이름이 겹치지 않는다", () => {
+  assert.match(app, /const SHELL_ICO = '<svg viewBox="0 0 24 24"/, "그림 하나");
+  assert.match(app, /const coin = \(\) => `<i class="coin" aria-hidden="true">\$\{SHELL_ICO\}<\/i>`;/);
+  assert.match(css, /\.slots>i\{aspect-ratio:1;/, "보상 칸의 상자 모양은 바로 아래 i만 — 안쪽 조개 그림에 겹치지 않게");
+  assert.ok(!/class="shell"/.test(app), "재화에 class 'shell'을 쓰지 않는다(바탕 껍데기 전용)");
+  const tb = app.slice(app.indexOf("const tbRight = () =>"), app.indexOf("function stageBand()"));
+  assert.match(tb, /data-act="shells"[^>]*>\$\{coin\(\)\}<span>\$\{st\.shells\}<\/span><\/button>/, "위 줄 — 조개 그림과 수");
+  assert.ok((app.match(/\$\{coin\(\)\}/g) || []).length >= 5, "위 줄 · 보상 칸 · 보상 줄 · 뽑기 · 설정");
+  assert.match(app, /<i class="coin bigshell" aria-hidden="true">\$\{SHELL_ICO\}<\/i>/, "뽑기 창의 큰 조개도 같은 그림");
+  assert.ok(!/conic-gradient\(from 200deg,#FF9AA2/.test(css), "옛 동그라미 무지개(원뿔 그라데이션)는 없다");
+  assert.match(css, /\.coin\{[^}]*width:calc\(20px \* var\(--ui-scale,1\)\)/, "글자 크기 설정을 따른다");
+  assert.match(css, /\.coin svg\{[^}]*width:100%;height:100%/);
+  assert.ok(!/(^|\})\.shell\{/m.test(css), "재화용 .shell 규칙은 없다 — .nav .shell(바탕 껍데기)만");
+});

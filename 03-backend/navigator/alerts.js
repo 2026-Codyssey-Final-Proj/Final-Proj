@@ -31,6 +31,8 @@
   // 시연 안전장치(2026-10-18) — 설정에서 '연결 끊기'를 누르면 서버에서 들어온 알림을 받지 않는다(글 칸을 채우지도, 살펴보지도 않는다).
   // '작업 장면 보기'의 연습 알림(sim)은 이 화면이 스스로 만든 것이라 받는다
   const accept = (ev, unplugged) => !!ev && (!unplugged || !!ev.sim);
+  // 알리는 것은 작업을 마쳤을 때(stop)만 — 새 작업을 시작했을 때(prompt)는 기록 · 채팅 줄 · 한 줄 알림 모두 하지 않는다(이재엽 2026-10-23 "플로로가 작업을 다 끝나면 알람이 오도록")
+  const notifies = (ev) => !!ev && ev.kind === "stop";
   // 알림 기록 비우기 — 이 화면의 기록은 늘 비우고, 서버(POST /api/events/clear)의 답을 쉬운 말로. status: 서버 답 번호, 0 = 연결 못 함, null = 서버 없이 연 화면
   function clearNote(status) {
     if (status === null || status === undefined) return "이 화면의 알림 기록을 비웠어요.";
@@ -40,7 +42,7 @@
     return `이 화면의 기록은 비웠어요. ${why} 서버 쪽 기록은 그대로예요.`;
   }
 
-  const api = { MAX, LINE_MAX, KIND, summary, add, markDone, newlyDone, accept, clearNote };
+  const api = { MAX, LINE_MAX, KIND, summary, add, markDone, newlyDone, accept, notifies, clearNote };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavAlerts = api;
 })(typeof window !== "undefined" ? window : globalThis);

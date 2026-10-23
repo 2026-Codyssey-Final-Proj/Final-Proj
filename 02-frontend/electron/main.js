@@ -191,6 +191,7 @@ function floeItems() {
     { label: "연결 빼기…", click: () => say(false) },
     { type: "separator" },
     { label: "설정 폴더 열기 (.env를 두는 곳)", click: () => shell.openPath(app.getPath("userData")) },
+    { label: "브라우저로 열기", click: () => shell.openExternal(`http://127.0.0.1:${PORT}/`) },
     { type: "separator" },
     { label: "창 다시 열기", click: showIsland },
     { role: "reload", label: "새로 고침" }, { role: "toggleDevTools", label: "개발자 도구" },

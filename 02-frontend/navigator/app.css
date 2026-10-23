@@ -690,7 +690,8 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .tb-stage b{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .tb-stage span{white-space:nowrap}
 .shells{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 5px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:800;font-size:calc(13px * var(--ui-scale,1));font-variant-numeric:tabular-nums;flex:none}
-.shell{width:18px;height:18px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:conic-gradient(from 200deg,#FF9AA2,#FFD38A,#C3F584,#8AE0FF,#C9A8FF,#FF9AA2);box-shadow:inset 0 -3px 0 rgba(0,0,0,.18),0 0 8px rgba(255,255,255,.25);display:inline-block;flex:none}
+/* 무지개 조개 — 재화 그림(app.js SHELL_ICO, 2026-10-23). class 'shell'은 섬의 바탕 껍데기라 'coin' */
+.coin{display:inline-flex;width:calc(20px * var(--ui-scale,1));height:calc(20px * var(--ui-scale,1));flex:none}.coin svg{display:block;width:100%;height:100%}
 /* 채팅 중심 섬 — 왼쪽 큰 플로로(칭호 · 기분), 가운데 채팅(지난 말 · 지금 결정할 것 · 칩 · 입력 칸) */
 .mc.chat{display:grid;grid-template-columns:clamp(150px,22%,200px) minmax(0,1fr);gap:12px;align-items:stretch;padding:14px 18px 14px 10px}
 .mc.chat .who{display:grid;place-items:center;align-content:center;gap:6px;position:relative}
@@ -781,9 +782,9 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .ev .box.edit{border-color:var(--warn)}.ev .box.edit h4{color:var(--warn)}
 .ev .box input{font:inherit;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:5px 8px;width:64px;text-align:center}
 .slots{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:6px}
-.slots i{aspect-ratio:1;border-radius:8px;background:rgba(0,0,0,.25);border:1.5px solid var(--line);display:grid;place-items:center;font-style:normal;font-size:calc(20px * var(--ui-scale,1))}
-.slots i.has{border-color:var(--warn);background:var(--warnbg);cursor:help}
-.slots i .shell{width:22px;height:22px}
+.slots>i{aspect-ratio:1;border-radius:8px;background:rgba(0,0,0,.25);border:1.5px solid var(--line);display:grid;place-items:center;font-style:normal;font-size:calc(20px * var(--ui-scale,1))}
+.slots>i.has{border-color:var(--warn);background:var(--warnbg);cursor:help}
+.slots i .coin{width:24px;height:24px}   /* 칸(.slots>i)의 상자 모양은 바로 아래 i만 — 안쪽 조개 그림(i.coin)에는 겹치지 않게(2026-10-23) */
 .ev .join{border:0;border-radius:12px;background:linear-gradient(180deg,#8AD6FF,#5FB6EA);color:#0E1A4F;font-size:calc(17px * var(--ui-scale,1));font-weight:900;padding:13px;box-shadow:0 6px 0 rgba(0,0,0,.25)}
 .ev .join:active{translate:0 3px;box-shadow:0 3px 0 rgba(0,0,0,.25)}
 .ev .sub{display:flex;gap:6px}
@@ -818,7 +819,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .page.r .rw{margin-top:10px;font-size:calc(13px * var(--ui-scale,1));display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .page.r .piece{background:#FFF4D6;border:1px solid #B99A4F;color:#7A5B12}
 .piece{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-weight:700;font-size:calc(12.5px * var(--ui-scale,1))}
-.piece .shell{width:14px;height:14px}
+.piece .coin{width:16px;height:16px}
 .pacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}
 .pacts button{border:2px solid #B99A4F;background:#FFF4D6;color:#3A2E1C;border-radius:10px;padding:8px 4px;font-size:calc(12.5px * var(--ui-scale,1));font-weight:800}
 .pacts button.pri{background:#5E7A4B;border-color:#5E7A4B;color:#fff}
@@ -873,7 +874,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .gacha .have{display:flex;justify-content:center;gap:8px;align-items:center;color:var(--ink2);font-size:calc(14px * var(--ui-scale,1))}
 .gacha .stage{height:140px;display:grid;place-items:center;border-radius:18px;background:rgba(0,0,0,.25);position:relative;overflow:hidden}
 .gacha .stage .big{font-size:calc(64px * var(--ui-scale,1));line-height:1;animation:winpop .6s cubic-bezier(.3,1.6,.5,1)}
-.gacha .bigshell{width:90px;height:90px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;background:conic-gradient(from 200deg,#FF9AA2,#FFD38A,#C3F584,#8AE0FF,#C9A8FF,#FF9AA2);box-shadow:inset 0 -8px 0 rgba(0,0,0,.18),0 0 30px rgba(255,255,255,.25);display:block}
+.gacha .bigshell{width:110px;height:110px;filter:drop-shadow(0 0 18px rgba(255,255,255,.22))}
 .gacha.rolling .bigshell{animation:shake .12s linear infinite}
 @keyframes shake{50%{rotate:8deg}100%{rotate:-8deg}}
 .gacha .got{margin:0;font-size:calc(15px * var(--ui-scale,1))}.gacha .got b{color:var(--warn)}
