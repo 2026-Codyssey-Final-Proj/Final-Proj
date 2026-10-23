@@ -19,7 +19,6 @@ const FRONT = path.join(ROOT, "02-frontend");
 const PAGES = ["index.html", "navigator/index.html#ex=1", "navigator/index.html#ex=1&done&gate", "navigator/index.html#tab=lib", "navigator/index.html#ex=1&tab=lib&noex",
   "library/index.html#lib", "library/index.html#lib-f1", "library/index.html#lib-review", "library/index.html#lib-review&noex",
   "navigator/index.html#setup",   // 처음 설정(2026-10-19) — 파일로 열면 "서버 없이 열었어요" 판
-  "hub/index.html", "hub/index.html#alerts", "hub/index.html#ai",   // 모아 보기 창(2026-10-20, C-11 · C-12) — 왼쪽 칸이 휴대폰 폭에서 위로 접힌다
   "navigator/index.html#base", "navigator/index.html#base&pane=alerts", "navigator/index.html#base&pane=ai",   // 기본 화면(2026-10-20, C-13) — 단추 넷 · 알림 판 · AI 진행 판
   "navigator/index.html#feed", "navigator/index.html#ex=1&tab=doc",   // 먹이 주기 정리(C-15) · 책 안의 단계 문서(C-16, 2026-10-20)
   "navigator/index.html#ex=1&tab=lib&book=s1&view=1", "library/index.html#lib-open-s1",   // 책 보기 설정 판(C-9 · C-3, 2026-10-20) · 서고에서 펼친 열어 둔 책
@@ -94,7 +93,6 @@ test(`휴대폰 폭(${WIDTH}px): 서고의 책장 · 배운 말 · 자리 · 플
 const SCENES = ["index.html", "navigator/index.html#start", "navigator/index.html#ex=1", "navigator/index.html#ex=0&crit", "navigator/index.html#ex=1&tab=doc",
   "navigator/index.html#ex=1&done&gate", "navigator/index.html#tab=lib", "navigator/index.html#ex=1&tab=lib&noex", "library/index.html#lib", "library/index.html#lib-f1",
   "library/index.html#lib-review", "library/index.html#lib&noex", "library/index.html#lib-review&noex", "navigator/index.html#setup",
-  "hub/index.html", "hub/index.html#alerts", "hub/index.html#ai",
   "navigator/index.html#base", "navigator/index.html#base&pane=alerts", "navigator/index.html#base&pane=ai",   // 기본 화면(C-13)
   "navigator/index.html#feed", "navigator/index.html#start",   // 먹이 주기 정리 · 먹이 주기 입구(C-15)
   "navigator/index.html#ex=1&tab=lib&book=s1&view=1", "library/index.html#lib-open-s1",   // 책 보기 설정 판 · 서고의 열어 둔 책(C-9 · C-3)

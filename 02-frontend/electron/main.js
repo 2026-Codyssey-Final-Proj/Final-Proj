@@ -179,20 +179,20 @@ async function pickAndConnect(add) {
   try { return L.connectDir(r.filePaths[0], P.backend, add); }
   catch (e) { return { ok: false, message: `바꾸지 못했어요: ${e.message}` }; }
 }
+// 섬 창을 앞으로(없으면 만든다) — 메뉴 '창 다시 열기' · 트레이 클릭 · Mac Dock 클릭이 같이 쓴다. 따로 뜨던 모아 보기 창은 2026-10-23에 뺐다
+function showIsland() { if (!win) createWindow(); else win.show(); }
 // 메뉴 항목 하나 — Mac은 위 메뉴 줄, Windows · Linux는 창 우클릭 · 트레이에서 같은 것을 본다
 function floeItems() {
   const say = async (add) => { const r = await pickAndConnect(add); if (r.message) dialog.showMessageBox(win, { message: r.message }); };
   return [
     { label: `Floe ${app.getVersion()} · 새 버전 확인 (Releases)`, click: () => shell.openExternal(RELEASES) },
-    { label: "모아 보기 열기", click: () => openHub() },   // 바이브 코딩 · 알림 · AI 진행(C-11 · C-12, 2026-10-20)
     { type: "separator" },
     { label: "프로젝트 폴더 연결…", click: () => say(true) },
     { label: "연결 빼기…", click: () => say(false) },
     { type: "separator" },
     { label: "설정 폴더 열기 (.env를 두는 곳)", click: () => shell.openPath(app.getPath("userData")) },
-    { label: "브라우저로 열기", click: () => shell.openExternal(`http://127.0.0.1:${PORT}/`) },
     { type: "separator" },
-    { label: "창 다시 열기", click: () => { if (!win) createWindow(); else win.show(); } },
+    { label: "창 다시 열기", click: showIsland },
     { role: "reload", label: "새로 고침" }, { role: "toggleDevTools", label: "개발자 도구" },
     { type: "separator" }, { role: "quit", label: "Floe 끄기" },
   ];
@@ -206,37 +206,13 @@ function menu() {
     tray = new Tray(icon);
     tray.setToolTip(`Floe ${app.getVersion()}`);
     tray.setContextMenu(Menu.buildFromTemplate(floeItems()));
-    tray.on("click", () => { if (!win) createWindow(); openHub(); });   // 트레이 클릭 → 모아 보기 창(없던 섬 창도 같이)
+    tray.on("click", showIsland);   // 트레이 클릭 → 섬 창
   } catch (e) { console.log(`트레이 아이콘을 못 만들었어요(${e.message}) — 창 우클릭 메뉴로`); }
 }
 
 ipcMain.handle("floe:connect", () => pickAndConnect(true));
 ipcMain.handle("floe:disconnect", () => pickAndConnect(false));
 ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData")));
-// ── 모아 보기 창(2026-10-20, C-11 · C-12 — 이재엽 "따로 창 하나") — 바이브 코딩 고르기 · 알림 · AI 진행. 섬은 그대로 코딩 도구 위에 뜬다 ──
-// 보통 창(테두리 있음 · 항상 위 아님 · Dock에 앉음), 하나만 — 이미 열려 있으면 앞으로. 크기는 900×600 [제안]을 작업 영역 안에(lib.js hubBounds), 닫았다 다시 열면 지난 크기 · 자리.
-// 닫아도 섬 · 서버는 그대로. 화면 파일은 서버 주소로(…/hub/index.html — STATIC에 있어야 한다, static-files.test.js). 켤 때는 열지 않는다(넘김 문서 9절 2번 기본값)
-// 2026-10-20(C-13 기본 화면의 '크게 보기'): space가 "alerts" · "ai"면 그 칸으로 연다 — 이미 열려 있으면 주소 끝만 바꾼다(hub.js가 hashchange로 그 칸을 보인다)
-let hub = null, hubSaved = null;
-const hubSpace = (space) => (space === "alerts" || space === "ai" ? space : "");
-function openHub(space = "") {
-  if (hub) { hub.show(); hub.focus(); if (hubSpace(space)) hub.webContents.executeJavaScript(`location.hash = ${JSON.stringify(`#${hubSpace(space)}`)}`, true).catch(() => {}); return; }
-  const wa = (win && !win.isDestroyed() ? screen.getDisplayMatching(win.getBounds()) : screen.getPrimaryDisplay()).workArea;
-  hub = new BrowserWindow({ ...L.hubBounds(wa, hubSaved), minWidth: 480, minHeight: 420, title: "Floe — 모아 보기", alwaysOnTop: false, show: false,
-    webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
-  hub.once("ready-to-show", () => { if (hub) hub.show(); });
-  hub.on("close", () => { try { hubSaved = hub.getBounds(); } catch {} });
-  hub.on("closed", () => { hub = null; });
-  hub.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
-  hub.loadURL(`${URL_}hub/index.html${hubSpace(space) ? `#${hubSpace(space)}` : ""}`);
-}
-ipcMain.on("floe:open-hub", (_e, space) => openHub(space));
-// 바이브 코딩 '들어가기' — 섬 창을 앞으로 보이고 화면에 "이번 단계로"를 보낸다(app.js onEnter). 섬 창이 없으면 만든다(처음 화면이 '이번 단계'다)
-ipcMain.on("floe:enter", () => {
-  if (!win) return createWindow();
-  win.show(); win.focus();
-  win.webContents.send("floe:enter");
-});
 // ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "설정 창과 퀘스트 창 그리고 채팅을 입력하는 창 이렇게 3개") — 섬 창 옆에 뜨는 창 둘 ──
 // 상태는 섬(app.js) 하나가 갖는다: 섬이 창의 내용(HTML)을 그려 보내고(floe:win-html), 창의 누름 · 바뀜 · 입력은 섬으로 돌아가(floe:win-event) 섬이 처리하고 다시 그려 보낸다.
 // 창은 테두리 없음 · 항상 위(섬처럼) · 불투명 네이비, 머리띠를 잡고 끌고(win.html의 app-region), 퀘스트 창은 모서리로 크기를 바꾼다. 자리는 섬 창 옆(lib.js sideWinBounds — 설정 창은 고른 쪽, 퀘스트 창은 반대쪽).
@@ -266,7 +242,7 @@ ipcMain.on("floe:win-open", (e, kind, opt) => { if (fromIsland(e) && sideKind(ki
 ipcMain.on("floe:win-html", (e, kind, html) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.webContents.send("floe:win-html", String(html || "")); });
 ipcMain.on("floe:win-close", (e, kind) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.close(); });
 ipcMain.on("floe:win-size", (e, kind, size) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed() && Array.isArray(size)) { const b = w.getBounds(); w.setBounds({ ...b, width: Math.max(260, Math.round(size[0]) || b.width), height: Math.max(200, Math.round(size[1]) || b.height) }); } });
-ipcMain.on("floe:win-event", (e, payload) => { if (fromSide(e) && win && !win.isDestroyed()) win.webContents.send("floe:win-event", payload); });   // 창의 누름은 섬으로   // 섬 위쪽 줄의 '모아 보기' 단추 · 기본 화면의 '크게 보기'(그 칸으로)
+ipcMain.on("floe:win-event", (e, payload) => { if (fromSide(e) && win && !win.isDestroyed()) win.webContents.send("floe:win-event", payload); });   // 창의 누름은 섬으로
 // 처음 설정(setup.js) — 키를 설정 폴더의 .env(나만 읽기 600)에 쓰고 이 프로세스의 환경에도 넣는다. 서버가 이 앱 안에 있으니 다시 켜지 않아도
 // 다음 AI 호출부터 그 키로 부른다(provider.js는 부를 때마다 환경을 본다). 값은 어디에도 출력하지 않는다
 function writeEnv(updates) {
@@ -306,6 +282,6 @@ app.whenReady().then(async () => {
   if (serverState.startsWith("error:")) { dialog.showErrorBox("Floe", `서버를 켜지 못했어요 (${serverState.slice(6)}).`); return app.quit(); }
   if (win && !win.isDestroyed()) win.loadURL(URL_);
   console.log(`Floe ${app.getVersion()}: ${URL_}${PORT !== WANT ? ` (${WANT}은 다른 서버가 써서 ${PORT}로)` : ""} · .env ${loaded ? "읽음" : "없음(이 컴퓨터의 Claude Code 구독)"}`);
-  app.on("activate", () => { if (!win) createWindow(); openHub(); });   // Mac Dock 클릭 → 섬 창이 없으면 만들고, 모아 보기 창을 연다(C-11)
+  app.on("activate", showIsland);   // Mac Dock 클릭 → 섬 창
 });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });

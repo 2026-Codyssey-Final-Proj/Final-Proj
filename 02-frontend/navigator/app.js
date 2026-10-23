@@ -17,7 +17,7 @@
 //   연습 모드에서 예시가 보일 때는 전처럼 첫 책이 이 화면을 따른다(시연 장면 · GIF 그대로). 예시 책에는 '예시' 꼬리표, 도서관 탭 아래 '예시 책 지우기 / 다시 보기'.
 //   설정에 '느낀 점'(notes.js) — 쓰다가 느낀 것을 한 줄 남기면 화면 · 단계 · 때가 저절로 붙고, 'Jira용 복사'로 모아 붙인다(이 컴퓨터에만 남는다).
 // claude-drafted: 2026-10-20 — C-13 모드 둘 · C-14 섬의 움직임(이재엽, 넘김 문서 fable-handoff-2026-10-20-modes.md 3 · 4절):
-//   켜면 늘 **기본 화면**(st.place "base" — 플로로와 지금 한 줄, 단추 넷: 바이브 코딩 · 서재 · 알림 · AI 진행. 알림 · AI 진행은 섬 안에서 바로 — 모아 보기 창(hub.js)의 순수 함수를 그대로 쓴다).
+//   켜면 늘 **기본 화면**(st.place "base" — 플로로와 지금 한 줄, 단추 넷: 바이브 코딩 · 서재 · 알림 · AI 진행. 알림 · AI 진행은 섬 안에서 바로 — hub.js의 순수 함수를 쓴다 — 따로 뜨던 모아 보기 창은 2026-10-23에 뺐다).
 //   바이브 코딩 단추를 누르면 "vibe"(이번 단계 · 설계도 · 단계 지도 · 도서관)로, 접혔다 펼쳐지거나 서고에 다녀와도 그대로(sessionStorage — 켤 때마다 새 창이라 늘 기본), 위쪽 줄의 집 단추로 돌아온다.
 //   규칙은 navigator.js nextPlace. 주소로 연 장면(#ex= …)은 바이브 코딩, #base(&pane=alerts|ai)는 기본 화면. 켤 때 인사가 끝나면 인사 카드 대신 기본 화면이 된다.
 //   섬이 접히고 펼쳐질 때 모양을 갈아 끼우는 대신 바탕 껍데기(.shell)가 늘어나고 줄어든다(morph.js — FLIP · transform만, 창은 커질 때 먼저 · 작아질 때 나중에),
@@ -39,7 +39,7 @@
   // 실사용(2026-10-19): 내 책 · 예시 책 지우기(../library/my-books.js), 느낀 점(notes.js). 둘 다 없어도 화면은 돈다(옛 동작)
   const M = window.FloeMine, NT = window.FloeNotes;
   const BV = window.FloeBookView;   // 책 보기 설정(C-9 · C-3, 2026-10-20) — ../library/book-view.js, 서고와 같은 설정을 읽는다
-  // 기본 화면 · 섬의 움직임(2026-10-20): 모아 보기 창의 순수 함수(hub.js) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js). 없어도 화면은 돈다
+  // 기본 화면 · 섬의 움직임(2026-10-20): 알림 · AI 진행 판의 순수 함수(hub.js) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js). 없어도 화면은 돈다
   const HUB = window.FloeHub, STEPS = window.NavSteps, MO = window.FloeMorph;
   const FD = window.NavFeed;
   const QU = window.NavQuest;   // 퀘스트 규칙(C-22, 2026-10-21 — 03-backend/navigator/quest.js). 없으면 퀘스트 없이 전처럼 돈다
@@ -282,11 +282,9 @@
     bag: icon('<path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path>', 22),
     moon: icon('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>', 22),
     learn: icon('<path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"></path>', 22),   // 명령 칸의 배우기(C-29, 2026-10-23)
-    // 모아 보기 창(2026-10-20, C-11) — 위쪽 줄의 단추. 네 칸 격자
-    grid: icon('<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"></rect>', 20),
     // 기본 화면(2026-10-20, C-13) — 위쪽 줄 맨 왼쪽의 집 단추
     home: icon('<path d="M4 11l8-7 8 7"></path><path d="M6 10v10h12V10"></path><path d="M10 20v-6h4v6"></path>', 20),
-    // 퀘스트 창(C-22, 2026-10-21) — 위쪽 줄의 두루마리 단추
+    // 퀘스트 창(C-22, 2026-10-21) — 두루마리. 설정 창의 '창 · 퀘스트' 머리에 쓴다(위쪽 줄의 단추는 2026-10-23에 뺐다)
     scroll: icon('<path d="M6 3h11a2 2 0 0 1 2 2v16l-3-2-3 2-3-2-3 2-3-2V5a2 2 0 0 1 2-2z"></path><path d="M8 8h8M8 12h6"></path>', 18),
   };
   // 하트 — 설정 맨 위 '플로로와 나'가 쓴다(위쪽 줄의 하트는 2026-10-18에 뺐다)
@@ -1216,19 +1214,17 @@
     const finish = () => { st.libGone.push(b.id); render(); say(`‘${b.title}’ 책을 서고에 꽂았어요`); };
     if (el && !STILL) { el.classList.add("leaving"); setTimeout(finish, 480); } else finish();
   }
-  // 위쪽 줄 — 홈과 바이브 코딩이 하나(C-22, 2026-10-21 이재엽 "홈의 하나와 바이브 코딩의 넷을 하나로"): 집 · 단계 띠("N단계 · 제목 · M개 중 k번째 할 일 ●○○") · 조개 · 📜 · 모아 보기 · ⚙ · 핀 · 접기.
+  // 위쪽 줄 — 홈과 바이브 코딩이 하나(C-22, 2026-10-21 이재엽 "홈의 하나와 바이브 코딩의 넷을 하나로"): 집 · 단계 띠("N단계 · 제목 · M개 중 k번째 할 일 ●○○") · 조개 · ⚙ · 핀 · 접기.
   // 탭 넷(이번 단계 · 단계 지도 · 도서관)은 퀘스트 창의 탭(퀘스트 · 도전과제 · 서고)으로 갔다. 휴대폰의 탭 둘(TABS 앞의 둘)은 그대로
   let tabFrom = null, tabMove = null;
   const tabIdx = () => TABS.findIndex((x) => x[0] === st.tab);
   // 집 단추 — 알림 · AI 진행 판을 열었으면 눌리지 않은 모양, 누르면 채팅으로
   const homeBtn = (on) => `<button class="ti home" data-act="base" aria-pressed="${on}" aria-label="처음으로" title="처음으로 — 플로로와 대화">${I.home}</button>`;
-  // 오른쪽 — 연결 표시 · 프로젝트 · 조개 · 퀘스트 창 · 모아 보기 · 설정 창 · 열어 두기 · 접기
+  // 오른쪽 — 연결 표시 · 프로젝트 · 조개 · 설정 창 · 열어 두기 · 접기. 퀘스트 창 단추 · 모아 보기 단추는 2026-10-23에 뺐다(이재엽) — 퀘스트 창은 명령 칸의 책 · 배우기와 '공책 보기'로 연다
   const tbRight = () => `${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
-      ${QU ? `<button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개"><i class="shell"></i><span>${st.shells}</span></button>
-      <button class="ti" data-act="qwin" aria-pressed="${st.qwin}" aria-label="퀘스트 창" title="퀘스트 창 켜기 · 끄기 — 퀘스트 · 도전과제 · 책 · 배우기">${I.scroll}</button>` : ""}
-      <button class="ti" data-act="hub" aria-label="모아 보기" title="모아 보기 — 바이브 코딩 · 알림 · AI 진행">${I.grid}</button>
+      ${QU ? `<button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개"><i class="shell"></i><span>${st.shells}</span></button>` : ""}
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 창 켜기 · 끄기 — 작업실 · 창 자리 · 보기 방식 · 연결 · 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
@@ -1286,7 +1282,7 @@
         <div class="acts"><button class="b pri" data-act="open">${st.back ? "이어서 하기" : "보여 주기"}<kbd aria-hidden="true">Enter</kbd></button>
           <span class="hint">${I.bubble}${st.pets ? `우리는 ${esc(C.bond(st.pets).name)}예요` : "플로로를 눌러 쓰다듬어 보세요"}</span></div></div></section></div>`;
   }
-  // ── 기본 화면(C-13, 2026-10-20 — 이재엽 "버튼식으로 준비가 되어있는 공간이 기본값") — 플로로와 지금 한 줄, 단추 넷. 알림 · AI 진행은 섬 안에서 바로(모아 보기 창의 순수 함수 FloeHub 그대로) ──
+  // ── 기본 화면(C-13, 2026-10-20 — 이재엽 "버튼식으로 준비가 되어있는 공간이 기본값") — 플로로와 지금 한 줄, 단추 넷. 알림 · AI 진행은 섬 안에서 바로(hub.js의 순수 함수 FloeHub) ──
   let aiSessions = [], aiMode = "none", aiLatest = 0;   // AI 진행(C-12)의 세션 · 어디서 왔나(none · example · live) · 마지막 번호
   const aiLast = () => { let best = null; for (const s of aiSessions) for (const x of s.steps || []) if (!best || (x.at || 0) > (best.at || 0)) best = { ...x, project: s.project }; return best; };
   const stepLine = (s) => (STEPS ? STEPS.line(s) : `${s.verb || ""} ${s.what || ""}`.trim());
@@ -1301,7 +1297,7 @@
   const unreadN = () => (HUB ? HUB.unread(st.alerts, seenAlerts) : 0);
   const working = () => (HUB ? HUB.anyWorking(aiSessions) : false);
   // 기본 화면의 단추 넷(C-13 baseBody)은 2026-10-21 C-22로 채팅(chatCard)이 됐다 — 알림 · AI 진행 판은 아래 그대로, 채팅의 칩(알림 · 도전과제)으로 연다
-  // 알림 판 · AI 진행 판 — 왼쪽: 플로로 · 프로젝트 · 도구 이름 · (AI 진행) 상태와 한 일의 종류별 수, 오른쪽: 줄 목록(모아 보기 창과 같은 글 · 같은 기록). 집(또는 '단추로')으로 돌아온다.
+  // 알림 판 · AI 진행 판 — 왼쪽: 플로로 · 프로젝트 · 도구 이름 · (AI 진행) 상태와 한 일의 종류별 수, 오른쪽: 줄 목록(hub.js가 만드는 글 · 섬의 기록). 집(또는 '단추로')으로 돌아온다.
   //   AI 진행은 C-12 규칙 그대로 — 파일 이름 · 첫 줄 · 줄 수뿐, 파일 내용은 받지도 보이지도 않는다
   const PANE = { alerts: ["알림", "AI 코딩 도구가 보낸 알림이에요 — 새것이 위예요"], ai: ["AI 진행", "Claude Code가 한 일을 한 줄씩 — 파일 내용은 받지 않아요"] };
   function basePane(kind) {
@@ -1316,8 +1312,7 @@
     return `<section class="mc base pane tone-gray"><div class="who">${petCat("look", 92)}<b class="pj">${esc(proj || "프로젝트")}</b><span class="tl">${esc(tool)}</span>${
         kind === "ai" && last && HUB && HUB.STATE_WORD[last.state] ? `<span class="st ${esc(last.state)}">${esc(HUB.STATE_WORD[last.state])}</span>` : ""}${
         counts.length ? `<ul class="verbs">${counts.map(([v, n]) => `<li><span>${esc(v)}</span><b>${n}</b></li>`).join("")}</ul>` : ""}</div>
-      <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b>
-        <button type="button" class="btn" data-act="hub-${kind}" title="모아 보기 창에서 크게 봐요">크게 보기</button></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div>${cmd4HTML()}</div></section>`;   // 명령 네 칸은 판이 열려도 남는다(C-29 "늘 둔다")
+      <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div>${cmd4HTML()}</div></section>`;   // 명령 네 칸은 판이 열려도 남는다(C-29 "늘 둔다")
   }
   // ── FR-17 대화로 일 넘기기 · 섬에서 허용 · 거절(C-4, 2026-10-20 — 이재엽 버튼 "섬에서 진짜 승인" · "허락하면 세션이 진행하는 내용을 오버레이에서도") ──
   // 할 일 적기 → 요구 문장으로 정리(진짜 AI면 /api/task/tidy, 연습이면 navigator.js taskLines) → 사람이 고쳐 확정 → 허락하고 넘기기(/api/task/start — 서버가 연결한 폴더에서 claude를 연다).
@@ -2078,14 +2073,12 @@
     "gacha-close": () => set({ gacha: null }),
     "gacha-roll": () => gachaRoll(),
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
-    qwin: () => { st.qwin = !st.qwin; render(); },
+    qwin: () => set({ qwin: false }),   // 퀘스트 창의 ×(닫기만 — 위 줄의 켜고 끄는 단추는 2026-10-23에 뺐다. 옆 창에서 두 번 눌러도 다시 열리지 않게)
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     qsize: (i, el) => { if (!QU || !el) return; qsize = QU.sizeOf(el.dataset.v); writeLS(QSIZE_KEY, qsize); if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", QU.SIZES[qsize]); render(); },
     side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); replaceWins(); render(); say(side === "left" ? "설정 창은 왼쪽, 퀘스트 창은 오른쪽이에요" : "설정 창은 오른쪽, 퀘스트 창은 왼쪽이에요"); },
-    // 모아 보기 창(2026-10-20, C-11) — 앱이면 보통 창 하나(main.js openHub), 브라우저면 새 탭 하나(같은 이름이라 두 번 눌러도 하나)
-    hub: () => (window.floeApp && window.floeApp.openHub ? window.floeApp.openHub() : window.open("../hub/index.html", "floe-hub")),
-    // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기 · 크게 보기(모아 보기 창의 그 칸)
+    // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기
     base: () => { setPlace("home"); set({ settings: false, pane: "" }); },   // 집 — 기본 화면으로, 열어 둔 판도 닫는다
     "go-vibe": () => { setPlace("vibe"); set({ tab: "today", settings: false }); },
     "base-alerts": () => { seenAlerts = HUB ? HUB.latestAt(st.alerts) : Date.now(); try { if (SESS) SESS.setItem(SEEN_KEY, String(seenAlerts)); } catch {} set({ pane: "alerts" }); },
@@ -2112,7 +2105,6 @@
     "ap-allow": (i, el) => decideApproval(el && el.dataset.id, "allow"),
     "ap-deny": (i, el) => decideApproval(el && el.dataset.id, "deny"),
     "ap-unsure": () => set({ apSure: "" }),
-    "hub-alerts": () => openHub("alerts"), "hub-ai": () => openHub("ai"),
     bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
     // 탭(PC): 단계 지도 · 도서관은 퀘스트 창의 도전과제 · 서고 탭으로(C-22). 휴대폰은 전처럼 탭을 바꾼다
     tab: (i) => { const id = TABS[i][0]; if (!isPhone() && id !== "today") { openQwin(id === "map" ? "tree" : "lib"); return set({ settings: false, libSel: null, libConfirm: false, libDoc: null }); }
@@ -2269,8 +2261,6 @@
     if (QU && st.quest && st.quest.phase !== "done") st.quest = QU.makeQuest(N.STAGES[st.quest.chap], crits(st.quest.chap));   // 퀘스트(C-22) — 할 일이 바뀌니 적은 줄은 비운다
     render();
   }
-  // 모아 보기 창을 그 칸(#alerts · #ai)으로 — 앱이면 main.js openHub(space), 브라우저면 같은 이름의 탭(주소 끝만 바뀐다)
-  const openHub = (space) => (window.floeApp && window.floeApp.openHub ? window.floeApp.openHub(space) : window.open(`../hub/index.html#${space}`, "floe-hub"));
   const run = (a, el) => { if (ACT[a.act]) ACT[a.act](a.i, el); };
   // 손잡이 넷 — 섬 · 휴대폰 화면의 요소와, 앱의 옆 창(win.js)이 보낸 {dataset, value, checked}가 같이 쓴다(C-22)
   function clickAct(t) {
@@ -2415,7 +2405,7 @@
     render();
   }
   if (canLive) { poll(); setInterval(poll, 2000); fetchUsage(); }
-  // AI 진행(C-12) — 기본 화면의 '지금 한 줄' · AI 진행 판이 쓴다. 서버로 열렸으면 /api/steps?since=를 2초마다(기본 화면이 펼쳐져 있을 때만), 파일로 열렸거나 거절하면 예시(모아 보기 창과 같은 규칙)
+  // AI 진행(C-12) — 기본 화면의 '지금 한 줄' · AI 진행 판이 쓴다. 서버로 열렸으면 /api/steps?since=를 2초마다(기본 화면이 펼쳐져 있을 때만), 파일로 열렸거나 거절하면 예시
   async function pollSteps() {
     if (!HUB || !STEPS) { aiMode = "none"; return; }
     if (!canLive) { if (aiMode !== "example") { aiMode = "example"; aiSessions = HUB.exampleSessions(STEPS, Date.now()); } return; }
@@ -2555,8 +2545,6 @@
     else if ((d.via === "cli" || d.via === "api") && canLive) set({ mode: "live", error: "", warn: null });
     if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
   });
-  // 모아 보기 창의 바이브 코딩 '들어가기'(2026-10-20, C-11) — 앱이 섬 창을 앞으로 보내고 이 신호를 주면 '이번 단계'로
-  if (window.floeApp && window.floeApp.onEnter) window.floeApp.onEnter(() => { setPlace("enter"); st.tab = "today"; go("home"); });
 
   render();
   if (greetNow) startGreeting();

@@ -100,10 +100,10 @@ const STATIC = {
   // book-view.js · book-view.css — 책 보기 설정(C-9 · C-3, 2026-10-20). 내비게이터(`../library/book-view.js`)와 서고가 같이 쓴다
   // shelves.js — 내가 만드는 책장(C-21, 2026-10-20)
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "my-books.js", "book-view.js", "book-view.css", "shelves.js", "schedule.js", "search.js", "spotlight.js"],
-  // 모아 보기 창(2026-10-20, C-11 · C-12) — 섬과 따로 뜨는 보통 창. 앱은 서버 주소(/hub/index.html)로 연다
-  "02-frontend/hub": ["index.html", "hub.css", "hub.js"],
+  // hub.js — 섬의 알림 · AI 진행 판이 쓰는 순수 함수. 따로 뜨던 모아 보기 창(index.html · hub.css)은 2026-10-23에 뺐다
+  "02-frontend/hub": ["hub.js"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
-  // steps.js — AI 진행(C-12, 2026-10-20): 모아 보기 창이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
+  // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
   "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "tutorial.js"],   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
@@ -308,7 +308,7 @@ function clearEvents() {
   const n = events.length;
   events.length = 0;
   sessions.clear();
-  work.clear();   // C-12: 한 일과 세션 상태도 같이(stepSeq는 되돌리지 않는다 — 열어 둔 모아 보기 창이 since로 묻는다)
+  work.clear();   // C-12: 한 일과 세션 상태도 같이(stepSeq는 되돌리지 않는다 — 섬의 AI 진행 판이 since로 묻는다)
   clearApprovals();   // FR-17: 기다리던 승인 요청에는 none — 훅이 빈 출력으로 끝나 Claude Code가 스스로 묻는다
   return n;
 }
@@ -351,7 +351,7 @@ async function handle(req, res) {
     const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
     return send(res, 200, { ok: true, latest: seq, events: events.filter((e) => e.seq > since) });
   }
-  if (req.method === "GET" && route === "/api/steps") {   // C-12 AI 진행(API.md 3-12) — 모아 보기 창이 쿠키로 묻는다
+  if (req.method === "GET" && route === "/api/steps") {   // C-12 AI 진행(API.md 3-12) — 섬의 AI 진행 판이 쿠키로 묻는다
     const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
     return send(res, 200, { ok: true, ...stepsSince(since) });
   }
