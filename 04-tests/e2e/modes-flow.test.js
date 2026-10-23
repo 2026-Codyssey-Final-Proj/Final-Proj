@@ -100,7 +100,7 @@ test("F-36: 장면(바이브 코딩)의 퀘스트 창 서고 탭에서 갔으면
     await toLibraryAndBack(page);
     s = await placeOf(page);
     assert.ok(s.chat && s.place === "vibe", `돌아와도 기록은 바이브 코딩: ${JSON.stringify(s)}`);
-    await page.click("[data-act=qwin]"); await wait(200);
+    await page.click(".cmd4 [data-act=cmd-book]"); await wait(200);   // 2026-10-23: 위 줄의 퀘스트 창 단추를 뺐다 — 명령 칸의 책으로 연다
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(200);
     s = await placeOf(page);
     assert.ok(s.qwin && s.qtab === "tree" && (await page.evaluate(() => document.querySelectorAll(".qwin .vtabs [role=tab]").length)) === 8, `도전과제 탭 — 장 여덟: ${JSON.stringify(s)}`);
@@ -136,8 +136,8 @@ test("F-38: 앱인 척 — 빠르게 펼쳤다 접으면 접기 움직임(0.24�
     await page.evaluateOnNewDocument(() => {
       window.__resizes = [];
       const noop = () => {}, off = () => () => {};
-      window.floeApp = { resize: (w, h) => window.__resizes.push([performance.now(), Math.round(w), Math.round(h)]), connect: noop, disconnect: noop, expand: noop, openHub: noop, openSettings: noop,
-        saveKey: noop, clearKey: noop, onCursor: off, onEnter: off, onExpanded: off, onNotch: off };
+      window.floeApp = { resize: (w, h) => window.__resizes.push([performance.now(), Math.round(w), Math.round(h)]), connect: noop, disconnect: noop, expand: noop, openSettings: noop,
+        saveKey: noop, clearKey: noop, onCursor: off, onExpanded: off, onNotch: off };
     });
     await page.goto(url("navigator/index.html#ex=1"), { waitUntil: "load" });
     await page.evaluate(() => { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); });
@@ -166,8 +166,8 @@ test("F-38: 앱인 척 — 빠르게 펼쳤다 접으면 접기 움직임(0.24�
 const SHIM = () => {
   window.__resizes = [];
   const noop = () => {}, off = () => () => {};
-  window.floeApp = { resize: (w, h) => window.__resizes.push([performance.now(), Math.round(w), Math.round(h)]), connect: noop, disconnect: noop, expand: noop, openHub: noop, openSettings: noop,
-    saveKey: noop, clearKey: noop, onCursor: off, onEnter: off, onExpanded: off, onNotch: off };
+  window.floeApp = { resize: (w, h) => window.__resizes.push([performance.now(), Math.round(w), Math.round(h)]), connect: noop, disconnect: noop, expand: noop, openSettings: noop,
+    saveKey: noop, clearKey: noop, onCursor: off, onExpanded: off, onNotch: off };
 };
 test("F-40: 한 줄로 접힌 섬에서 말풍선이 뜨면 창이 말풍선 아래까지 늘고(가로는 그대로), 사라지면 한 줄 높이로 돌아온다. 펼친 섬에서는 창이 그대로", { skip }, async () => {
   const browser = await launch();
@@ -430,7 +430,7 @@ test("FR-15 더함: 먹이 정리에서 먹는 구간마다 종류를 고르고,
     assert.deepEqual(sel, [{ i: "0", v: "req", n: 5 }], "먹는 구간 하나에만 종류 고르기(다섯 중 하나)");
     await page.select('.feedlist select.kind[data-i="0"]', "todo"); await wait(100);
     await page.click("[data-act=feed-confirm]"); await wait(600);
-    await page.click("[data-act=qwin]"); await wait(200); await page.click("[data-act=qtab][data-tab=lib]"); await wait(300);   // 2026-10-21 C-22: 도서관 탭 → 퀘스트 창의 서고 탭
+    await page.click(".cmd4 [data-act=cmd-book]"); await wait(300);   // 2026-10-21 C-22: 도서관 탭 → 퀘스트 창의 서고 탭. 2026-10-23: 위 줄의 단추 대신 명령 칸의 책
     const box = await page.evaluate(() => ({ n: document.querySelectorAll(".inboxlist li").length, title: document.querySelector(".inbox .stg")?.textContent || "", kind: document.querySelector(".inboxlist select.kind")?.value, text: document.getElementById("nav").innerText }));
     assert.equal(box.n, 1); assert.ok(box.title.includes("확인할 먹이 1개")); assert.equal(box.kind, "todo");
     assert.ok(!box.text.includes("분류함"));
@@ -553,9 +553,6 @@ test("C-29 · C-26 · C-30 · C-28: 명령 네 칸(맡기기 · 살피기 · 책
     await page.evaluate(() => localStorage.removeItem("navigator-prototype:v1"));
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#start&set=1"), { waitUntil: "load" }); await wait(400);
     assert.ok((await page.evaluate(() => document.querySelector(".setwin .pcard")?.textContent || "")).includes("LV 3"), "새 프로젝트여도 레벨은 그대로");
-    // 모아 보기 창의 서재 칸도 숨었다
-    await page.goto(url("hub/index.html"), { waitUntil: "load" }); await wait(300);
-    assert.equal(await page.evaluate(() => document.querySelector("[data-act=library]")?.offsetParent ?? null), null, "모아 보기 창의 서재 칸이 보이지 않는다");
   } finally { await browser.close(); }
 });
 

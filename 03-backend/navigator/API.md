@@ -20,7 +20,7 @@
 | `GET` 화면 파일 (`/`, `/index.html` …) | 브라우저 | 출처 | 파일 + html이면 확인 값 쿠키 | 403 · 404 |
 | `POST /api/event` | 훅(`hook.js`) | 출처 · 확인 값(머리글) | `{ok, seq}` | 403 · 413 · 400 |
 | `GET /api/events?since=N` | 화면(2초마다) | 출처 · 확인 값(쿠키) | `{ok, latest, events[]}` | 403 · 404 |
-| `GET /api/steps?since=N` | 모아 보기 창 AI 진행(2026-10-20 C-12) | 출처 · 확인 값(쿠키) | `{ok, latest, sessions[]}` | 403 · 404 |
+| `GET /api/steps?since=N` | 섬의 AI 진행 판(2026-10-20 C-12) | 출처 · 확인 값(쿠키) | `{ok, latest, sessions[]}` | 403 · 404 |
 | `POST /api/events/clear` | 사람(curl) · 화면 '알림 기록 비우기' | 출처 · 확인 값(머리글 · 쿠키) | `{ok, cleared}` — 한 일(3-12)도 비운다 | 403 |
 | `GET /api/usage` | 사람(주소창·curl) | 출처 | `{ok, provider, model, host, compat, used, budget, state, …}` | 403 |
 | `GET /api/setup` | 화면 처음 설정, 앱(옛 서버 알아보기) | 출처 | `{ok, provider, apiKey, relay, claude:{found, version, signedIn}, replay, build}` | 403 |
@@ -376,9 +376,9 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 2026-10-19 이재엽의 Mac에서 `claude -p`로 한 번 불러 200(`tokens` 6,374 — CLI가 세는 값)을 봤다.
 
 <!-- claude-drafted: 2026-10-20 — AI 진행(C-12, 이재엽 "이건 바이브 코딩이 아니야"): 단계 · 판정 · 토큰과 섞지 않는 지켜보기 전용 -->
-### 3-12. `GET /api/steps?since=N` — 모아 보기 창이 AI가 한 일을 묻는다
+### 3-12. `GET /api/steps?since=N` — 섬이 AI가 한 일을 묻는다
 
-- **누가:** 모아 보기 창(`02-frontend/hub/`)의 AI 진행 공간 — 쿠키로. 서버 없이 열면 부르지 않고 [steps.js](steps.js)의 `EXAMPLE`(예시 세션)을 보인다(FR-10).
+- **누가:** 섬(`02-frontend/navigator/app.js`)의 AI 진행 판 — 쿠키로. 따로 뜨던 모아 보기 창은 2026-10-23에 뺐다. 서버 없이 열면 부르지 않고 [steps.js](steps.js)의 `EXAMPLE`(예시 세션)을 보인다(FR-10).
 - **확인:** 출처 + 확인 값(쿠키 `nav_event_token` 또는 머리글 `X-Nav-Token`).
 - **요청:** `since` — 이 번호보다 뒤의 한 일만. 없거나 숫자가 아니면 0(남아 있는 것 전부). 번호는 3-2-1의 `seq`(알림 번호 3-3과 다른 줄).
 - **성공:**

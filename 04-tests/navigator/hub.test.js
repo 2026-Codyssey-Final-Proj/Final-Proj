@@ -1,7 +1,7 @@
 // claude-drafted: 2026-10-20 — 이재엽 요청(C-11 모아 보기 창 — 바이브 코딩 고르기 · 알림, C-12 AI 진행의 화면 쪽). 페이블 넘김 문서 6절의 "모아 보기 창" 줄.
-// 모아 보기 창(02-frontend/hub)이 ① 세 공간(바이브 코딩 · 알림 · AI 진행)과 할 일 카드 둘을 두고 ② 섬(app.js)과 같은 저장 열쇠를 읽기만 하며
-// ③ 알림 한 줄을 alerts.js가 만드는 모양 {at, kind, tool, line, hidden, done} 그대로 글로 만들고 ④ 판정 주소를 부르지 않고 ⑤ AI 진행 모듈(NavSteps)이
-// 아직 없어도(merge 전) 멈추지 않는지 본다. 브라우저 없이 — hub.js는 window.FloeHub로도, Node에서는 require로도 열린다(alerts.js와 같은 방식).
+// 2026-10-23 모아 보기 창(화면)을 뺐다 — 남은 hub.js는 섬의 알림 · AI 진행 판이 쓰는 순수 함수다. 여기서는 ① 알림 한 줄을 alerts.js가 만드는 모양
+// {at, kind, tool, line, hidden, done} 그대로 글로 만들고 ② 판정 주소를 부르지 않고 ③ AI 진행 모듈(NavSteps)이 없어도 멈추지 않는지 본다.
+// 브라우저 없이 — hub.js는 window.FloeHub로도, Node에서는 require로도 열린다(alerts.js와 같은 방식).
 // 실행: node --test 04-tests/navigator/hub.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -10,39 +10,10 @@ const path = require("node:path");
 const H = require("../../02-frontend/hub/hub.js");
 const FRONT = path.join(__dirname, "../../02-frontend");
 const read = (f) => fs.readFileSync(path.join(FRONT, f), "utf8");
-const html = read("hub/index.html"), js = read("hub/hub.js");
+const js = read("hub/hub.js");
 
-test("세 공간 — 바이브 코딩 · 알림 · AI 진행 — 이 왼쪽 칸에 있고, 바이브 코딩에는 할 일 카드 둘(바이브 코딩 · 서재)뿐이다(지식 은하 없음)", () => {
-  for (const id of ["vibe", "alerts", "ai"]) assert.match(html, new RegExp(`data-space="${id}"`), `공간 ${id}`);
-  for (const word of ["바이브 코딩", "알림", "AI 진행", "무엇을 할까요?"]) assert.ok(html.includes(word), word);
-  assert.match(html, /data-act="enter"/, "바이브 코딩 카드의 '들어가기'");
-  assert.match(html, /data-act="library"/, "서재 카드의 '열기'");
-  assert.doesNotMatch(html, /지식 은하|sky\.html/, "지식 은하는 2026-10-19에 길을 막았다 — 넣지 않는다");
-  assert.equal((html.match(/class="card"/g) || []).length, 2, "카드는 둘");
-});
-
-test("쉬운 말(FR-13) — '허브' 대신 '모아 보기'. 섬의 플로로(seal.js)를 같이 부른다", () => {
-  assert.doesNotMatch(html.replace(/<!--[\s\S]*?-->/g, ""), /허브/, "화면 글에 '허브'가 없다(주석은 뺀다)");
-  assert.ok(html.includes("모아 보기"));
-  assert.match(html, /<title>[^<]*모아 보기/);
-  assert.match(html, /navigator\/seal\.js/);
-  assert.match(html, /navigator\/seal\.css/);
-});
-
-test("AI 진행 모듈(steps.js)은 없어도 화면이 멈추지 않게 부른다(onerror로 뗀다) — 다른 에이전트의 파일, merge 전에는 자리표시", () => {
-  assert.match(html, /<script src="\.\.\/\.\.\/03-backend\/navigator\/steps\.js" onerror="this\.remove\(\)">/);
-});
-
-test("저장 열쇠는 섬(app.js)의 KEY와 같다 — 읽기만 한다(setItem으로 그 열쇠에 쓰지 않는다)", () => {
-  const app = read("navigator/app.js");
-  assert.equal(H.KEY, /const KEY = "([^"]+)"/.exec(app)[1]);
-  assert.equal(H.KEY, /const KEY = "([^"]+)"/.exec(js)[1]);
-  assert.doesNotMatch(js, /localStorage\.setItem\(KEY/, "섬의 기록에 쓰지 않는다");
-});
-
-test("판정 · 단계 넘어가기 · 토큰을 부르지 않는다 — 이 창은 지켜보기만(C-12 '바이브 코딩이 아니야')", () => {
+test("판정 · 단계 넘어가기 · 토큰을 부르지 않는다 — 지켜보기만(C-12 '바이브 코딩이 아니야')", () => {
   for (const bad of ["api/judge", "api/answer", "api/usage", "api/doc"]) assert.ok(!js.includes(bad), `hub.js에 ${bad}가 없어야`);
-  assert.ok(js.includes("/api/steps?since="), "AI 진행만 묻는다");
 });
 
 const NOW = Date.UTC(2026, 9, 20, 3, 0, 0);
@@ -90,18 +61,6 @@ test("읽지 않은 수 — 마지막으로 본 때보다 새로 온 알림만 �
   assert.equal(H.unread([{ at: "x" }], 0), 0);
   assert.equal(H.latestAt(list), NOW - 1000);
   assert.equal(H.latestAt([]), 0);
-});
-
-test("섬의 기록 읽기 — 지금 단계 · 연결한 프로젝트 한 줄. 없으면 '아직 시작 전이에요', 깨진 글이면 조용히 같은 말", () => {
-  assert.equal(H.nowLine(null), "아직 시작 전이에요");
-  assert.equal(H.nowLine("{not json"), "아직 시작 전이에요");
-  assert.equal(H.nowLine(JSON.stringify({ j: { stage: 2, criteria: [] } })), "지금 3단계")   // 번호는 화면에 1~8(C-22, 2026-10-21);
-  assert.equal(H.nowLine(JSON.stringify({ j: { stage: 2, criteria: [] }, project: "my-app" })), "지금 3단계 · my-app");
-  assert.equal(H.nowLine(JSON.stringify({ j: { stage: 7, criteria: [] }, finished: true, project: "my-app" })), "모든 단계를 마쳤어요 · my-app");
-  assert.equal(H.nowLine(JSON.stringify({ alerts: [] })), "아직 시작 전이에요");
-  assert.deepEqual(H.readAlerts(JSON.stringify({ alerts: [base] })), [base]);
-  assert.deepEqual(H.readAlerts("{bad"), []);
-  assert.deepEqual(H.readAlerts(JSON.stringify({ alerts: "x" })), []);
 });
 
 test("AI 진행 — NavSteps가 없으면 '아직 준비 중이에요', 예시면 '예시 데이터예요 · 시연용', 서버면 머리말 없음. 상태 말은 쉬운 말", () => {

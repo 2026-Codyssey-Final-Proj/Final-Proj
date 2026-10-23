@@ -136,7 +136,7 @@ node 03-backend/navigator/floe.js ~/내-프로젝트 --off   # 다 써 본 뒤 �
 - 직접 묶으려면: `cd 02-frontend/electron && npm install && npm run dist`(Mac) · `dist:win` · `dist:linux` — [electron/README.md](../../02-frontend/electron/README.md).
 - 앱은 늘 자기 서버를 켠다(4317이 막혀 있으면 옆 포트). 터미널의 서버와 섞이지 않는다.
 - **새 버전을 깔기 전에 켜진 Floe를 끈다** — 옛 버전이 켜져 있으면 새 것을 열어도 옛 것이 앞에 나온다(F-42). 직접 `npm run dist`로 묶은 앱은 인터넷 표시가 없어 ③이 필요 없다. <!-- claude-drafted: 2026-10-20 -->
-- **8.0.0으로 올렸으면 프로젝트 폴더를 한 번 다시 연결한다** — 모아 보기 창의 AI 진행(C-12)이 쓰는 훅이 그때 새로 걸린다.
+- **8.0.0으로 올렸으면 프로젝트 폴더를 한 번 다시 연결한다** — AI 진행(C-12 — 지금은 섬의 판)이 쓰는 훅이 그때 새로 걸린다.
 - **새 버전:** 메뉴 **Floe → 새 버전 확인**이 Releases를 연다. 앱 버전(`02-frontend/electron/package.json`)이 main에서 바뀌면 CI가 Mac · Windows · Linux를 묶어 올린다 — 앱 버전은 **팀이 버전업을 정할 때만** 올린다(2026-10-19) — [electron/README.md](../../02-frontend/electron/README.md) "받기 · 업데이트".
 - 느낀 점 · 내 책은 앱 안에 남고, 브라우저로 연 것과는 따로다.
 

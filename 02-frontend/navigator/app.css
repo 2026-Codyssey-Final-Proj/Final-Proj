@@ -104,7 +104,7 @@ html.notch .pill{border-radius:0 0 25px 25px}
 @media (prefers-reduced-motion:reduce){.pill,.pill:hover{transform:none;transition:none}}
 
 /* 기본 화면(C-13, 2026-10-20 — app.js baseBody · basePane): 플로로와 지금 한 줄, 단추 넷(2×2). 알림 · AI 진행 판은 왼쪽 플로로 · 프로젝트 · 도구, 오른쪽 목록
-   (목록의 class — alist · al · steps — 는 모아 보기 창(hub.js alertsHTML · aiHTML)의 것 그대로라 여기서 같은 이름으로 꾸민다) */
+   (목록의 class — alist · al · steps — 는 hub.js(alertsHTML · aiHTML)가 만드는 그대로라 여기서 같은 이름으로 꾸민다) */
 .mc.base{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start;padding:16px 20px 18px 14px}
 .mc.base .who{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:124px;max-width:150px}
 .mc.base .main{display:grid;gap:10px;min-width:0}

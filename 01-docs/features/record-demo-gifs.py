@@ -14,7 +14,6 @@ OUT = ROOT / "01-docs" / "features"
 NAV = f"file://{FE}/navigator/index.html"
 LIB = f"file://{FE}/library/index.html"
 ENTRY = f"file://{FE}/index.html"
-HUB = f"file://{FE}/hub/index.html"
 W, H = 1280, 800
 GIF_W = 880                       # 저장 폭 — 파일 크기와 가독성 사이
 FPS_MS = 220                      # 프레임 간격(ms), 약 4.5fps
@@ -158,8 +157,7 @@ def feed(page, r):                   # 12 C-15 · C-16(2026-10-20): 예시 먹�
     r.click("[data-act=feed-example]", hold=1600)
     r.click("[data-act=feed-mark][data-i='1']", hold=1000)
     r.click("[data-act=feed-confirm]", hold=1600)
-    r.click("[data-act=qwin]", hold=900)                        # 2026-10-21 C-22: 명령 네 칸 대신 퀘스트 창의 서고 탭에서 책 안 단계 문서
-    r.click("[data-act=qtab][data-tab=lib]", hold=1600)
+    r.click(".cmd4 [data-act=cmd-book]", hold=1600)             # 2026-10-21 C-22: 퀘스트 창의 서고 탭에서 책 안 단계 문서. 2026-10-23: 위 줄의 단추 대신 명령 칸의 책
     r.still(1200)
 
 
@@ -194,13 +192,6 @@ def block(page, r):                  # 08 C-20 · C-19(2026-10-20): 접히기까
     page.evaluate("localStorage.removeItem('floe:fold-delay')")
 
 
-def hub(page, r):                    # 11 C-11 · C-12: 모아 보기 창 — 바이브 코딩(카드 둘) → 알림 → AI 진행. 파일로 열어 예시(2026-10-20)
-    page.goto(f"{HUB}#vibe"); page.wait_for_timeout(900); r.still(1400)
-    r.click("[data-space=alerts]", hold=1400)
-    r.click("[data-space=ai]", hold=1600)
-    r.still(1200)
-
-
 def quest(page, r):                  # 14 C-22(2026-10-21): 처음 실행 → '퀘스트를 시작하시겠습니까?' → 1단계 받기 화면(퀘스트 창) → 받기 → 공책 → 한 줄씩(예시) → 완료 보고 → 넘어가기 전 확인 → 2단계 · 조개 → 설정 창 자리
     open_nav(page, "start"); page.evaluate("localStorage.removeItem('navigator-prototype:v1')"); open_nav(page, "start"); r.still(1000)
     r.click("[data-act=idea-example]", hold=1500)
@@ -221,7 +212,7 @@ SCENES = {
     "01-stage-guide": (stage_guide, NAV_CROP), "02-blueprint": (blueprint, NAV_CROP), "03-gate": (gate, NAV_CROP),
     "04-overview": (overview, NAV_CROP), "05-library": (library, None),
     "07-plain-words": (plain_words, NAV_CROP), "08-floro": (floro, NAV_CROP), "greeting": (greeting, NAV_CROP), "entry": (entry, None),
-    "11-hub": (hub, None), "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP), "book-view": (book_view, None), "13-task-approval": (approve, NAV_CROP), "shelves": (shelves, None), "block": (block, NAV_CROP),
+    "base": (base, NAV_CROP), "12-feed": (feed, NAV_CROP), "book-view": (book_view, None), "13-task-approval": (approve, NAV_CROP), "shelves": (shelves, None), "block": (block, NAV_CROP),
     "14-quest": (quest, None),
 }
 

@@ -1,14 +1,10 @@
 // claude-drafted: 2026-10-20 — 이재엽 요청(C-11 모아 보기 창 — 바이브 코딩 고르기 · 알림, C-12 AI 진행의 화면 쪽). 넘김 문서 4 · 5절 [제안]대로.
-// 모아 보기 창 — 섬과 따로 뜨는 보통 창 하나. 왼쪽에 세 공간(바이브 코딩 · 알림 · AI 진행), 오른쪽에 고른 공간.
-//   바이브 코딩: 할 일 종류 카드 둘(바이브 코딩 → 섬의 '이번 단계', 서재 → 서고). 아래 한 줄은 섬의 기록(KEY)에서 지금 단계 · 프로젝트를 **읽기만**.
-//   알림: 같은 기록의 alerts(새것부터)를 때 · 도구 · 한 줄 · 끝낸 할 일로. storage 이벤트로 바로 다시 그린다. 읽지 않은 수는 이 창의 sessionStorage.
-//   AI 진행: 서버로 열렸으면 GET /api/steps?since=를 2초마다(다른 에이전트의 서버 · steps.js — window.NavSteps). 파일로 열렸거나 서버가 거절하면 예시,
-//            NavSteps가 아직 없으면 "아직 준비 중이에요". 판정 · 단계 · 토큰은 부르지도 보이지도 않는다(이재엽 "이건 바이브 코딩이 아니야").
-// 순수 함수는 window.FloeHub로도, Node에서는 require로도 열린다(alerts.js와 같은 방식 — 04-tests/navigator/hub.test.js).
+// claude-drafted: 2026-10-23 — 이재엽 "브라우저 나오는건 기능자체를 빼줘": 따로 뜨던 모아 보기 창(index.html · hub.css · 이 파일의 화면 코드)을 뺐다.
+// 남은 것은 섬(navigator/app.js)의 알림 · AI 진행 판이 쓰는 순수 함수뿐이다 — 알림 줄 · 읽지 않은 수 · AI 진행 세션 합치기 · 그 HTML.
+//   AI 진행은 C-12 규칙 그대로 — 판정 · 단계 · 토큰을 부르지도 보이지도 않는다(이재엽 "이건 바이브 코딩이 아니야"). 묻는 일(GET /api/steps)은 app.js가 한다.
+// window.FloeHub로도, Node에서는 require로도 열린다(alerts.js와 같은 방식 — 04-tests/navigator/hub.test.js).
 (function (root) {
-  const KEY = "navigator-prototype:v1";   // 섬(app.js)의 KEY와 같아야 한다 — hub.test.js가 맞대어 본다. 바꾸면 섬 · 서고 · 이 창이 함께 깨진다(넘김 문서 10절)
-  const SEEN_KEY = "floe-hub:alerts-seen";   // 이 창에서 마지막으로 본 알림의 때 — 이 창의 sessionStorage에만
-  const MAX_STEPS = 50, POLL_MS = 2000;
+  const MAX_STEPS = 50;
   const TOOL = { claude: "Claude Code", codex: "Codex" };
   const KIND = { stop: "작업을 마쳤어요", prompt: "새 작업을 시작했어요" };   // alerts.js의 KIND와 같은 말
   const STATE_WORD = { working: "일하는 중", done: "마쳤어요", "": "" };
@@ -41,16 +37,6 @@
   const latestAt = (list) => (Array.isArray(list) ? list.reduce((m, a) => (a && Number.isFinite(a.at) && a.at > m ? a.at : m), 0) : 0);
   const unread = (list, seenAt) => (Array.isArray(list) ? list.filter((a) => a && Number.isFinite(a.at) && a.at > (Number(seenAt) || 0)).length : 0);
 
-  // ── 섬의 기록(KEY) 읽기 — 깨진 글이면 조용히 "없음"으로 ──
-  function parse(text) { try { const s = JSON.parse(text || "null"); return s && typeof s === "object" ? s : null; } catch { return null; } }
-  const readAlerts = (text) => { const s = parse(text); return s && Array.isArray(s.alerts) ? s.alerts : []; };
-  function nowLine(text) {
-    const s = parse(text);
-    if (!s || !s.j || !Number.isFinite(s.j.stage)) return "아직 시작 전이에요";
-    const proj = s.project ? ` · ${s.project}` : "";
-    return s.finished ? `모든 단계를 마쳤어요${proj}` : `지금 ${s.j.stage + 1}단계${proj}`;   // 번호는 화면에 1~8(C-22, 2026-10-21)
-  }
-
   // ── AI 진행 — 서버 답 {sessions:[{id, project, tool, state, at, steps:[{seq, at, verb, what, add, del}]}]}을 세션별로 합친다 ──
   const aiNote = (mode) => (Object.prototype.hasOwnProperty.call(NOTE, mode) ? NOTE[mode] : "");
   function mergeSteps(old, add, max = MAX_STEPS) {
@@ -82,71 +68,8 @@
     return `${note}${sess}`;
   }
 
-  const api = { KEY, SEEN_KEY, MAX_STEPS, POLL_MS, STATE_WORD, EMPTY_ALERTS, EMPTY_AI, esc, ago, toolName, alertLine, alertHTML, alertsHTML, latestAt, unread,
-    readAlerts, nowLine, aiNote, mergeSteps, mergeSessions, anyWorking, exampleSessions, stepLine, aiHTML };
+  const api = { MAX_STEPS, STATE_WORD, EMPTY_ALERTS, EMPTY_AI, esc, ago, toolName, alertLine, alertHTML, alertsHTML, latestAt, unread,
+    aiNote, mergeSteps, mergeSessions, anyWorking, exampleSessions, stepLine, aiHTML };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloeHub = api;
-
-  // ── 화면 — 모아 보기 창에서만(왼쪽 칸 [data-space]가 있는 페이지). 섬(navigator/app.js, C-13 기본 화면)은 이 파일을 순수 함수(window.FloeHub)로만 쓴다 —
-  //    여기서 돌면 섬의 주소 끝(#ex= …)을 #vibe로 덮고 2초마다 묻는다(넘김 문서 10절 함정, hub.test.js가 이 경계를 본다) ──
-  if (typeof document === "undefined" || !document.querySelector("[data-space]")) return;
-  const SPACES = ["vibe", "alerts", "ai"];
-  const live = location.protocol.startsWith("http");   // 서버로 열렸나(앱 · node server.js). 파일로 열면 예시(FR-10)
-  const $ = (s) => document.querySelector(s);
-  const spaceFromHash = () => { const h = location.hash.replace(/^#/, ""); return SPACES.includes(h) ? h : "vibe"; };
-  const saved = () => { try { return localStorage.getItem(KEY); } catch { return null; } };
-  const alerts = () => readAlerts(saved());
-  let space = spaceFromHash(), sessions = [], mode = "none", latest = 0, seen = null;
-  try { seen = Number(sessionStorage.getItem(SEEN_KEY)); } catch { seen = null; }
-  if (!Number.isFinite(seen) || seen === 0) { seen = latestAt(alerts()); try { sessionStorage.setItem(SEEN_KEY, String(seen)); } catch {} }   // 이 창이 열린 뒤 새로 온 것만 센다
-  function markSeen() { seen = Math.max(seen, latestAt(alerts())); try { sessionStorage.setItem(SEEN_KEY, String(seen)); } catch {} }
-
-  function render() {
-    const now = Date.now(), list = alerts();
-    if (space === "alerts") markSeen();
-    for (const b of document.querySelectorAll("[data-space]")) b.setAttribute("aria-selected", String(b.dataset.space === space));
-    for (const p of document.querySelectorAll("[data-panel]")) p.hidden = p.dataset.panel !== space;
-    const n = unread(list, seen), badge = $("#unread");
-    if (badge) { badge.hidden = n === 0; badge.textContent = String(n); badge.setAttribute("aria-label", `읽지 않은 알림 ${n}개`); }
-    const dot = $("#working"); if (dot) dot.hidden = !anyWorking(sessions);
-    const nowEl = $("#now"); if (nowEl) nowEl.textContent = nowLine(saved());
-    const al = $("#alerts-body"); if (al) al.innerHTML = alertsHTML(list, now);
-    const ai = $("#ai-body"); if (ai) ai.innerHTML = aiHTML(sessions, mode, root.NavSteps, now);
-    const side = $("#side-note"); if (side) side.textContent = mode === "example" ? aiNote("example") : "";
-  }
-  function show(id) {
-    space = SPACES.includes(id) ? id : "vibe";
-    if (location.hash !== `#${space}`) history.replaceState(null, "", `#${space}`);   // 시험 · 녹화가 주소 끝으로 바로 연다
-    render();
-    if (space === "ai") poll().then(render);   // AI 진행을 열면 바로 한 번 묻는다 — 2초를 기다리지 않게
-  }
-  // 바이브 코딩 '들어가기' — 앱이면 섬 창을 앞으로 보내고 '이번 단계'로(main.js floe:enter), 브라우저면 내비게이터로. 서재는 어디서나 이 창에서 서고를 연다
-  const enter = () => { if (root.floeApp && root.floeApp.enter) root.floeApp.enter(); else location.href = "../navigator/index.html#tab=today"; };
-  const ACT = { enter, library: () => { location.href = "../library/index.html#lib"; } };
-  document.addEventListener("click", (e) => {
-    const sp = e.target.closest("[data-space]"); if (sp) return show(sp.dataset.space);
-    const b = e.target.closest("[data-act]"); if (b && ACT[b.dataset.act]) ACT[b.dataset.act]();
-  });
-  addEventListener("hashchange", () => show(spaceFromHash()));
-  addEventListener("storage", (e) => { if (!e.key || e.key === KEY) render(); });   // 섬이 기록을 바꾸면 바로
-
-  // AI 진행 — NavSteps가 있어야 한다(다른 에이전트의 steps.js, merge 전에는 자리표시 null). 서버로 열렸으면 2초마다 묻고, 거절하거나 파일이면 예시
-  async function poll() {
-    const S = root.NavSteps;
-    if (!S) { mode = "none"; return; }
-    if (!live) { mode = "example"; sessions = exampleSessions(S, Date.now()); return; }
-    try {
-      const r = await fetch(`${location.origin}/api/steps?since=${latest}`, { credentials: "same-origin" });
-      const j = await r.json();
-      if (!j || !j.ok) throw new Error(j && j.reason ? j.reason : "refused");
-      mode = "live"; latest = Number(j.latest) || latest; sessions = mergeSessions(sessions, j.sessions);
-    } catch { if (mode !== "live") { mode = "example"; sessions = exampleSessions(S, Date.now()); } }   // 한 번 살아 있던 서버가 잠깐 끊기면 있는 줄은 그대로
-  }
-  const seal = $("#seal"); if (seal && root.NavSeal) seal.innerHTML = root.NavSeal.svg("idle", 64);
-  const sky = $("#sky");
-  if (sky) { let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-    sky.innerHTML = Array.from({ length: 90 }, () => `<i style="left:${rnd() * 100}%;top:${rnd() * 100}%;opacity:${(rnd() * .6 + .15).toFixed(2)};transform:scale(${(rnd() * 1.2 + .3).toFixed(2)})"></i>`).join(""); }
-  show(space);
-  poll().then(render);
-  if (live) setInterval(() => poll().then(render), POLL_MS);
 })(typeof window !== "undefined" ? window : globalThis);

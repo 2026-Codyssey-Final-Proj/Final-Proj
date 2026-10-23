@@ -6,7 +6,7 @@
 
 | 파일 | 무엇 |
 |---|---|
-| `main.js` | 앱 — 서버 띄우기 · 창 · 메뉴(프로젝트 폴더 연결 / 빼기 · 설정 폴더 · 브라우저로 열기 · 끄기). Mac은 위 메뉴 줄, **Windows · Linux는 창 우클릭과 트레이 아이콘**에 같은 메뉴(테두리 없는 창엔 메뉴 줄이 없다, 6.0.0) |
+| `main.js` | 앱 — 서버 띄우기 · 창 · 메뉴(프로젝트 폴더 연결 / 빼기 · 설정 폴더 · 끄기 — '브라우저로 열기' · '모아 보기 열기'는 2026-10-23에 뺐다). Mac은 위 메뉴 줄, **Windows · Linux는 창 우클릭과 트레이 아이콘**에 같은 메뉴(테두리 없는 창엔 메뉴 줄이 없다, 6.0.0) |
 | `preload.js` | 화면이 앱에게 부탁할 수 있는 것(`window.floeApp`: connect · disconnect · openSettings · **saveKey · clearKey** — 처음 설정, 2026-10-19 · resize(anchor) · **expand** — 서고로 들어갈 때 창을 화면만큼, 6.2.0). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
 | `lib.js` | 순수 함수 — `.env` 읽기 · PATH 합치기(Mac · Linux, 셸 고르기) · 훅 명령(app.asar → app.asar.unpacked) · 폴더 연결(connect.js 규칙 그대로). 시험 [`electron-lib.test.js`](../../04-tests/navigator/electron-lib.test.js) |
 | `prebuild.js` | 묶기 전에 화면 · 서버를 `payload/`로 복사(node_modules · `.env*` · 문서 제외). git에 올리지 않는다 |
@@ -73,7 +73,7 @@ npm run dist:linux          # 우분투용(Mac · Linux에서 됨): dist/Floe-<�
 - **3.0.0의 문제(이재엽 2026-10-19 "아직도 랙 · 기능들이 클릭이 안 됨"):** 창이 1040×760인데 보이는 건 위쪽 섬뿐이라, 투명한 빈 영역이 뒤 창(VS Code · 터미널)의 클릭을 전부 가로챘고 큰 투명 창을 매 프레임 그려 무거웠다. 렌더러 자체는 121fps · 클릭 정상(CDP로 확인). → **3.0.1: 창이 지금 보이는 섬 크기를 따라간다**(`floe:resize` — 인사 946×186, 작업 카드 946×316, 설정 열면 946×1066, 접으면 540×60). 화면 높이에 기댄 CSS 제한(`100vh`)은 앱 안에서 푼다.
 - 자동 시험에는 Electron을 넣지 않는다(묶음이 무겁다). `lib.js`만 Node 시험. 사람이 써 본 기록은 이재엽 1회(0.3.0, 위 문제 보고).
 
-> **모아 보기 창(2026-10-20, C-11 · C-12 — 아직 앱 버전 안 올림):** 섬과 따로 뜨는 **보통 창**(테두리 있음 · 항상 위 아님 · Dock에 앉음, 900×600 · 최소 480×420, 하나만) — 메뉴 "모아 보기 열기" · 트레이 클릭 · Mac Dock 클릭 · 섬 위쪽 줄의 격자 단추로 연다(`main.js` `openHub`, `preload.js` `openHub` · `enter` · `onEnter`, `lib.js` `hubBounds`). 바이브 코딩 '들어가기'는 섬 창을 앞으로 보내고 '이번 단계'로(IPC `floe:enter`). 닫아도 섬 · 서버는 그대로. **사람이 아직 켜 보지 않았다** — 시험은 `04-tests/navigator/electron-hub.test.js`(글로 맞대기 · `hubBounds`)뿐이다. 기능 설명: [`01-docs/features/11-hub/`](../../01-docs/features/11-hub/README.md).
+> **모아 보기 창 — 2026-10-23 뺐다**(이재엽 "브라우저 나오는건 기능자체를 빼줘"). 트레이 클릭 · Mac Dock 클릭은 이제 섬 창을 앞으로 보인다. 옛 설명 — **모아 보기 창(2026-10-20, C-11 · C-12):** 섬과 따로 뜨는 **보통 창**(테두리 있음 · 항상 위 아님 · Dock에 앉음, 900×600 · 최소 480×420, 하나만) — 메뉴 "모아 보기 열기" · 트레이 클릭 · Mac Dock 클릭 · 섬 위쪽 줄의 격자 단추로 연다(`main.js` `openHub`, `preload.js` `openHub` · `enter` · `onEnter`, `lib.js` `hubBounds`). 바이브 코딩 '들어가기'는 섬 창을 앞으로 보내고 '이번 단계'로(IPC `floe:enter`). 닫아도 섬 · 서버는 그대로. **사람이 아직 켜 보지 않았다** — 시험은 `04-tests/navigator/electron-hub.test.js`(글로 맞대기 · `hubBounds`)뿐이다. 기능 설명: [`01-docs/features/11-hub/`](../../01-docs/features/11-hub/README.md).
 
 ## 아직 아닌 것
 

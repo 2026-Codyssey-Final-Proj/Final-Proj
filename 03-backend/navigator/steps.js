@@ -1,5 +1,5 @@
 // claude-drafted: 2026-10-20 — 이재엽 요청(C-12 AI 진행 — Claude Code가 하는 일 보기). 이재엽: "이건 바이브 코딩이 아니야" — 단계 · 판정 · 토큰과 섞지 않는 지켜보기 전용.
-// Claude Code의 PostToolUse 훅 입력을 "무엇을 했나" 한 줄로 줄이는 순수 함수. 훅(hook.js)과 화면(모아 보기 창)이 같이 쓴다 — 브라우저 · Node 둘 다.
+// Claude Code의 PostToolUse 훅 입력을 "무엇을 했나" 한 줄로 줄이는 순수 함수. 훅(hook.js)과 화면(섬의 AI 진행 판)이 같이 쓴다 — 브라우저 · Node 둘 다.
 // 넘기는 것은 이름 · 첫 줄 · 줄 수뿐이다. 파일 내용(content) · 고친 글(old_string · new_string) · 도구 결과(tool_response)는 어떤 칸에도 넣지 않는다.
 (function (root) {
   // 훅의 도구 이름 → 화면의 말. 표에 없는 도구는 OTHER
