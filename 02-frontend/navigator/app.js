@@ -43,6 +43,10 @@
   const HUB = window.FloeHub, STEPS = window.NavSteps, MO = window.FloeMorph;
   const FD = window.NavFeed;
   const QU = window.NavQuest;   // 퀘스트 규칙(C-22, 2026-10-21 — 03-backend/navigator/quest.js). 없으면 퀘스트 없이 전처럼 돈다
+  // claude-drafted: 2026-10-23 — 이재엽 결정(C-26 · C-28 · C-29 · C-30): 책은 README를 받아 와 보여 주기만 · 레벨은 관문마다 +1 누적 · 명령 네 칸 맡기기 · 살피기 · 책 · 배우기 · 서재 잠시 뺌
+  const RB = window.NavReadme;     // 내 작업 책(readme-book.js) — 없으면 책 탭에 README 칸이 없다
+  const TU = window.NavTutorial;   // 배우기 — 기능마다 튜토리얼(tutorial.js)
+  const SHELF_ON = false;          // 서재(서고 · 책장) 잠시 뺌 — 이재엽 2026-10-23 "서재는 지금은 못들어가고 버튼을 지우고 나중에 이 대회가 끝나면 열어서 작업". 대회 뒤 true로 다시 연다
   // 앱(Electron)이 옆 창 둘(설정 창 · 퀘스트 창)을 열 수 있으면(preload.js openWin, 2026-10-21 이재엽 "창 셋") 그 창으로, 아니면(브라우저 · 옛 앱) 섬 옆의 판으로
   const WINS = !!(window.floeApp && window.floeApp.openWin);
   const AP = window.NavApprove;   // FR-17 승인 카드(2026-10-20) — 서버 없이 보일 예시 카드   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
@@ -72,7 +76,7 @@
   let foldSec = readFold();
   const foldDelay = () => foldSec * 1000;
   // 창 자리 · 퀘스트 창 크기 · 받으면 바로 뜨기 · 이름(설정 창의 '○○ 님의 작업실') — 이 컴퓨터에만(C-22, 2026-10-21). 기록(KEY)에는 넣지 않는다
-  const SIDE_KEY = "floe:win-side", QSIZE_KEY = "floe:qwin-size", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name";
+  const SIDE_KEY = "floe:win-side", QSIZE_KEY = "floe:qwin-size", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level";
   const readLS = (k, d = "") => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
   const writeLS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch {} };
   let side = QU ? QU.sideOf(readLS(SIDE_KEY, "left")) : "left", qsize = QU ? QU.sizeOf(readLS(QSIZE_KEY, "m")) : "m", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
@@ -117,7 +121,7 @@
     quest: null, idea: "", qask: false, shells: 0,
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
-    qwin: false, qtab: "quest", chat: [], say: "",
+    qwin: false, qtab: "quest", chat: [], say: "", rb: null, rbSel: 0, tuSel: "quest",   // rb · tuSel — 책 탭의 README · 배우기 탭의 고른 기능(이 켜짐 동안만)
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
   let exHidden = M ? M.readHidden(STORE) : false;
@@ -195,7 +199,8 @@
   };
   // 7단계까지 마쳤을 때 — last: 마지막 확인에서 "예" 뒤, title·sub: 마무리 카드
   const END = { last: "좋아요! 이걸로 모든 단계를 마쳐요", title: "여덟 단계를 끝까지 왔어요!",
-    sub: "다 만든 책은 서재의 서고에 꽂아 두고 언제든 다시 펼쳐 볼 수 있어요.", more: "서재로 가기" };
+    sub: SHELF_ON ? "다 만든 책은 서재의 서고에 꽂아 두고 언제든 다시 펼쳐 볼 수 있어요." : "다 만든 책은 명령 칸의 책에서 언제든 다시 펼쳐 볼 수 있어요.", more: SHELF_ON ? "서재로 가기" : "책 보기" };
+  const END_ACT = SHELF_ON ? "lib-enter" : "cmd-book";
 
   // ── 기록 — 이 브라우저에만. 못 쓰는 환경(사생활 보호 창 등)이면 조용히 기록 없이 동작한다 ──
   const KEY = "navigator-prototype:v1";
@@ -237,6 +242,9 @@
     try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
   }
   load();
+  // 레벨은 사람에게(C-28, 이재엽 2026-10-23 버튼 "누적 — 관문마다 +1") — 기록(KEY)과 따로 이 컴퓨터에. 기록을 비워도 · 프로젝트를 바꿔도 줄지 않는다
+  let level = QU ? QU.startLevel(Number.parseInt(readLS(LEVEL_KEY, ""), 10), st.j, st.finished) : 0;
+  if (QU && st.mode !== "fixture") writeLS(LEVEL_KEY, level);   // 연습 모드(예시 기록)는 영구 레벨을 쓰지 않는다 — 이 켜짐 동안만
   // 모드는 이 창에만(sessionStorage) — 서고에 다녀와도 남고, 앱을 다시 켜면 기본 화면(C-13). 읽지 않은 알림의 기준(마지막으로 알림 판을 본 때)도 같은 곳
   st.place = N.nextPlace(SESS && SESS.getItem(PLACE_KEY) === "vibe" ? "vibe" : "base", "");
   let seenAlerts = Number(SESS && SESS.getItem(SEEN_KEY)) || 0;
@@ -273,6 +281,7 @@
     look: icon('<circle cx="11" cy="11" r="6.5"></circle><path d="M20 20l-4.2-4.2"></path>', 22),
     bag: icon('<path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path>', 22),
     moon: icon('<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"></path>', 22),
+    learn: icon('<path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"></path>', 22),   // 명령 칸의 배우기(C-29, 2026-10-23)
     // 모아 보기 창(2026-10-20, C-11) — 위쪽 줄의 단추. 네 칸 격자
     grid: icon('<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"></rect>', 20),
     // 기본 화면(2026-10-20, C-13) — 위쪽 줄 맨 왼쪽의 집 단추
@@ -506,7 +515,7 @@
   // iPhone의 지금 결정할 것 하나 — 다 했으면 "넘어가기", 순서를 정했으면 그 첫 일, 아니면 같이 정하기
   function focusCard() {
     const n = st.j.next, now = esc(tick().now);
-    if (st.finished) return box("다 했어요", END.title, END.sub, `<button class="btn pri wide" data-act="lib-enter">${END.more}</button>${
+    if (st.finished) return box("다 했어요", END.title, END.sub, `<button class="btn pri wide" data-act="${END_ACT}">${END.more}</button>${
       st.mode === "fixture" ? `<button class="btn wide" data-act="${RESTART.act}">${RESTART.label}</button>` : ""}`);
     if (holding()) return box(esc(U.holdLine(st.hold, ymd())), "잠시 멈춰 뒀어요", HOLD.later, `<button class="btn pri wide" data-act="hold-resume">다시 이어 하기</button>`);
     if (allDone()) return box("다 했어요", `${LB(stage().n)} 할 일을 모두 했어요`, "넘어가기 전에 이번 단계를 이해했는지 한 번만 같이 확인해요.",
@@ -608,7 +617,7 @@
     }
     if (st.finished) return { tone: "green", mood: "happy", badge: "✓", meta: `<span class="mm-stage">모든 단계를 마쳤어요</span>`,
       title: END.title, sub: END.sub,
-      acts: [{ label: END.more, act: "lib-enter", key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
+      acts: [{ label: END.more, act: END_ACT, key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
     if (holding()) return { tone: "gray", mood: f[0], badge: "‖", say: f[1], meta: stageMeta(), banner: U.holdLine(st.hold, ymd()),
       title: "잠시 멈춰 뒀어요", sub: HOLD.later,
       acts: [{ label: "다시 이어 하기", act: "hold-resume", key: "Enter", pri: true }] };
@@ -806,9 +815,8 @@
     const out = [];
     if (!st.j && !st.quest && FD && st.mode === "live") out.push({ label: "먹이 주기(파일 · 글)", act: "open-input", kind: "ghost" });
     if (st.j && !st.openInput) out.push({ label: "바뀐 작업 보여 주기", act: "open-input", kind: "ghost" });
-    // 어디쯤인지 보기 — 보낼 글이 있고 퀘스트를 적는 중이 아닐 때(먹이를 검사하는 중에도 보인다 — 누르면 C-19대로 막고 까닭을 말한다)
-    if ((st.text.trim() || st.judged) && (!st.quest || st.quest.phase === "done") && !v.acts.some((a) => a.act === "judge")) out.push({ label: "어디쯤인지 보기", act: "judge", kind: "ghost" });
-    out.push({ label: unreadN() ? `알림 ${unreadN()}` : "알림", act: "base-alerts", kind: "ghost" }, { label: "도전과제", act: "qwin-tree", kind: "ghost" });
+    // 어디쯤인지 보기 · 도전과제는 2026-10-23부터 명령 네 칸의 살피기와 퀘스트 창의 탭이 맡는다(C-29)
+    out.push({ label: unreadN() ? `알림 ${unreadN()}` : "알림", act: "base-alerts", kind: "ghost" });
     return out;
   }
   const sayHint = () => (!st.j && !st.quest ? "예) 동아리 행사 등록 앱을 만들고 싶어요" : st.quest && st.quest.phase === "quest" && !QU.isDone(st.quest) ? "한 줄로 적어 주세요" : st.screen === "gate" && st.step === "question" ? "궁금한 걸 적어 주세요" : "플로로에게 말하기");
@@ -827,14 +835,24 @@
     const answers = v.acts.filter((a) => !FIXED_ACTS.includes(a.act));
     const more = [...v.acts.filter((a) => FIXED_ACTS.includes(a.act)), ...(st.screen === "gate" || st.busy || st.warn || st.error || st.ping ? [] : moreActs(v))];
     const chip = (a) => btn({ ...a, chip: true });
-    const lv = QU ? QU.lvOf(st.j, st.finished) : 0;
+    const lv = level;
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}
-        <span class="rank" title="칭호 — 장을 지나면 바뀌어요">${esc(QU ? QU.rankOf(Math.min(lv, 7)) : "")}</span><span class="mood">${esc(MOOD_WORD[v.mood] || "")}</span></div>
+        <span class="rank" title="칭호 — 관문을 넘을 때마다 레벨이 올라요(프로젝트를 바꿔도 그대로)">${esc(QU ? QU.rankOf(Math.min(lv, 7)) : "")}</span><span class="mood">${esc(MOOD_WORD[v.mood] || "")}</span></div>
       <div class="main"><div class="log" data-log>${st.chat.map((m) => `<div class="msg ${m.who}"><div class="b">${m.html}</div></div>`).join("")}${
         working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast() ? ` — ${esc(stepLine(aiLast()))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
         <div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
         ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts fixed">${more.map(chip).join("")}</div>` : ""}
-        <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`;
+        <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div>${cmd4HTML()}</div></section>`;
+  }
+  // 명령 네 칸(C-29, 이재엽 2026-10-23 버튼 "안 A") — 9.0.0의 맡기기 · 살피기 · 꺼내기 · 쉬어 가기를 맡기기 · 살피기 · 책 · 배우기로. 쉬어 가기는 위 줄 접기 · 관문의 보류가 맡는다.
+  //   숫자 1~4 — 답 칩이 같은 숫자를 쓰고 있으면 답이 먼저다(그때는 숫자 표시를 숨긴다)
+  const CMD4 = [["hand", "맡기기", "cmd-hand"], ["look", "살피기", "cmd-look"], ["lib", "책", "cmd-book"], ["learn", "배우기", "cmd-learn"]];
+  function cmd4HTML() {
+    return `<div class="cmd4" role="group" aria-label="명령 네 칸">${CMD4.map(([ic, label, act], i) => {
+      const k = String(i + 1), mine = !deskKeys[k] || deskKeys[k].act === act;
+      if (mine) deskKeys[k] = { act };
+      return `<button type="button" class="cm" data-act="${act}">${I[ic] || ""}<b>${label}</b>${mine ? `<kbd>${k}</kbd>` : ""}</button>`;
+    }).join("")}</div>`;
   }
   // 채팅 입력(C-22) — 상황에 따라: 처음(무엇을 만들까) → "퀘스트를 시작하시겠습니까?" / 시작 대답 / 퀘스트 한 줄 적기 / 궁금한 것 / 직접 쓴 답 / 바뀐 작업(진짜 AI)
   function send() {
@@ -875,11 +893,11 @@
   // 퀘스트 창(C-22) — 머리띠(제목 · 프로젝트 · 크기 S/M/L · 닫기) · 탭(퀘스트 · 도전과제 · 서고) · 판. 끌어 옮기기는 Electron 창으로 만들 때(다음 판, 정할 것 10)
   let qpop = false;
   const openQwin = (tab) => { if (!st.qwin) qpop = true; st.qwin = true; st.qtab = tab || st.qtab; };
-  const QTABS = [["quest", "퀘스트"], ["tree", "도전과제"], ["lib", "서고"]];
+  const QTABS = [["quest", "퀘스트"], ["tree", "도전과제"], ["lib", SHELF_ON ? "서고" : "책"], ["teach", "배우기"]];   // 책 · 배우기 — C-26 · C-30(2026-10-23)
   function qwinHTML() {
     if (!st.qwin || !QU) return "";
     const [w, h] = QU.SIZES[qsize], pop = qpop ? " pop" : ""; qpop = false;
-    const pane = st.qtab === "tree" ? treePane() : st.qtab === "lib" ? deskLib() : questPane();
+    const pane = st.qtab === "tree" ? treePane() : st.qtab === "lib" ? bookPane() : st.qtab === "teach" ? learnPane() : questPane();
     return `<div class="win qwin ${qsize}${pop}" role="dialog" aria-label="퀘스트 창" style="width:${w}px;height:${h}px"><div class="wh"><span class="ttl">퀘스트</span><span class="meta">${esc(project() || "")}</span><span class="grow"></span>
         <span class="sz" role="group" aria-label="크기">${["s", "m", "l"].map((k) => `<button type="button" data-act="qsize" data-v="${k}" aria-pressed="${qsize === k}" title="${{ s: "작게", m: "보통", l: "크게" }[k]}">${k.toUpperCase()}</button>`).join("")}</span>
         <button type="button" class="ti" data-act="qwin" aria-label="퀘스트 창 닫기" title="닫기">${X_ICON}</button></div>
@@ -893,7 +911,7 @@
   function questPane() {
     const q = st.quest;
     if (!q || q.phase === "done") return `<div class="qempty"><b>${st.finished ? "모든 장을 끝냈어요" : q ? `${LB(q.chap)} 퀘스트를 보고했어요` : st.j ? "다음 퀘스트는 넘어가기 전 확인을 지나면 받아요" : "아직 퀘스트가 없어요"}</b>${
-      !q && !st.j ? "플로로에게 무엇을 만들고 싶은지 말하면 '퀘스트를 시작하시겠습니까?'를 물어요.<br>시작하면 이 창에 1단계 퀘스트가 떠요." : st.finished ? "책은 서재의 서고에 꽂아 두고 언제든 다시 펼쳐요." : "할 일을 다 하면 플로로가 '이해되셨나요?'를 묻고, 지나면 다음 장 퀘스트를 받아요."}</div>`;
+      !q && !st.j ? "플로로에게 무엇을 만들고 싶은지 말하면 '퀘스트를 시작하시겠습니까?'를 물어요.<br>시작하면 이 창에 1단계 퀘스트가 떠요." : st.finished ? (SHELF_ON ? "책은 서재의 서고에 꽂아 두고 언제든 다시 펼쳐요." : "책은 명령 칸의 책에서 언제든 다시 펼쳐요.") : "할 일을 다 하면 플로로가 '이해되셨나요?'를 묻고, 지나면 다음 장 퀘스트를 받아요."}</div>`;
     const ed = q.edit, done = QU.isDone(q), ci = QU.curIdx(q), metOf = (i) => !!(st.j && st.j.stage === q.chap && st.j.criteria[i] && st.j.criteria[i].met);
     if (q.phase === "draft") return `<div class="ev">
         <div class="ttl"><span></span><span>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</span><button type="button" class="q" data-tt="이 퀘스트가 왜 있나요|${esc(q.why)}" aria-label="왜 하나요">?</button></div>
@@ -981,13 +999,13 @@
   // 설정 창(C-22, 넷째 레프런스) — '○○ 님의 작업실' + 플로로 · 초기 개발자 → 중급자 → 상급자 · 서재로 가기 · 창 줄(이름 · 자리 · 퀘스트 창) + 전부터 있던 설정 묶음(settingsBody)
   function setwinHTML() {
     if (!st.settings || !QU) return "";
-    const lv = QU.lvOf(st.j, st.finished), bi = QU.bandOf(lv), nx = QU.BANDS[bi + 1];
+    const lv = level, bi = QU.bandOf(lv), nx = QU.BANDS[bi + 1];
     const pick = (label, items, cur, act, small) => `<div class="srow"><span>${label}${small ? `<small>${small}</small>` : ""}</span><span class="pick" role="group" aria-label="${label}">${items.map(([v, name]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${v === cur}">${name}</button>`).join("")}</span></div>`;
     return `<div class="win setwin" role="dialog" aria-label="설정 창"><div class="wh"><span class="ttl">설정</span><span class="grow"></span><button type="button" class="ti" data-act="settings" aria-label="설정 창 닫기" title="닫기 (Esc)">${X_ICON}</button></div>
       <div class="wbody">
         <div class="pcard"><div><div class="name">${esc(userName || "나")} 님의 작업실</div><small>${esc(project() || "아직 프로젝트가 없어요")}</small><small>칭호 · ${esc(QU.rankOf(Math.min(lv, 7)))} (LV ${lv})</small></div><div class="ring">${petCat(st.finished ? "happy" : "look", 88)}</div></div>
-        <div class="bands">${QU.BANDS.map((b, i) => `<span class="t${i === bi ? " on" : i < bi ? " done" : ""}">${b[0]}</span>${i < QU.BANDS.length - 1 ? "<i>→</i>" : ""}`).join("")}<small>${nx ? `${LB(nx[1])} 관문을 지나면 ${nx[0]}` : "끝까지 왔어요"}</small></div>
-        <button type="button" class="golib" data-act="lib-enter"><span class="bk">${I.lib}</span><span>서재로 가기<small>끝낸 책 · 서고 — 지금 책은 퀘스트 창의 서고 탭에</small></span></button>
+        <div class="bands">${QU.BANDS.map((b, i) => `<span class="t${i === bi ? " on" : i < bi ? " done" : ""}">${b[0]}</span>${i < QU.BANDS.length - 1 ? "<i>→</i>" : ""}`).join("")}<small>${nx ? `레벨 ${nx[1]}이 되면 ${nx[0]} — 관문마다 +1, 프로젝트를 바꿔도 그대로` : "상급자예요 — 레벨은 계속 올라요"}</small></div>
+        ${SHELF_ON ? `<button type="button" class="golib" data-act="lib-enter"><span class="bk">${I.lib}</span><span>서재로 가기<small>끝낸 책 · 서고 — 지금 책은 퀘스트 창의 서고 탭에</small></span></button>` : ""}
         <section class="sgrp"><h3 class="sg-h">${I.scroll}창 · 퀘스트</h3>
           <div class="srow"><span>이름<small>작업실 이름에 보여요 · 이 컴퓨터에만</small></span><input class="name-in" data-act="name" value="${esc(userName)}" maxlength="20" placeholder="이름" aria-label="이름"></div>
           ${pick("설정 창 자리", [["left", "왼쪽"], ["right", "오른쪽"]], side, "side", "퀘스트 창은 반대쪽에 떠요")}
@@ -1052,15 +1070,62 @@
     <span class="m"><span>▮ ${b.bookmarks.length}장</span>${isEx(b) ? '<span class="extag">예시</span>' : ""}${bookDone(b) ? '<span class="due ok">완주 · 엮기 대기</span>' : dueChip(b.dues && b.dues[b.stage])}</span></button>`;
   // 예시 책 지우기 / 다시 보기 — 지울 예시가 있을 때만, 다시 보기는 지운 뒤에만
   const exToggle = () => (!M ? "" : exHidden ? `<button class="b ghost" data-act="ex-show">예시 책 다시 보기</button>` : hasExamples() ? `<button class="b ghost" data-act="ex-hide" title="예시(더미) 책 · 레퍼런스를 숨기고 내 기록만 봐요">예시 책 지우기</button>` : "");
+  // 책 탭(C-26, 2026-10-23) — 내 저장소 README를 받아 와 보여 주기만(고치는 곳은 README). 아래는 전부터 있던 이 화면의 책(단계 문서 · 확인할 먹이 — FR-3 · FR-15)
+  // README 칸은 책을 고르지 않았을 때(책 탭의 첫 화면)만 — 단계 문서를 펼치면 그 책에 집중한다.
+  //   서재를 잠시 뺀 동안은 열어 둔 책 목록(작은 서재)을 보이지 않고, 확인할 먹이와 이 프로젝트의 책 하나만 — "서재 없이 지금 프로젝트의 책 한 권"(C-26)
+  function bookPane() {
+    if (libSelected()) return deskLib();
+    if (SHELF_ON) return `${readmeBox()}${deskLib()}`;
+    const mine = L() && SCH() ? openBooks().find((b) => b.mine) : null;
+    return `${readmeBox()}<div class="libtab">${inboxBox()}${mine ? `<div class="ob-foot"><button type="button" class="b" data-act="lib-book" data-id="${esc(mine.id)}">이 프로젝트의 단계 문서 · 정한 것 펼치기</button></div>` : ""}</div>`;
+  }
+  function readmeBox() {
+    if (!RB) return "";
+    const r = st.rb || { book: RB.parse(RB.EXAMPLE), src: "example", why: "" };
+    const b = r.book, sel = Math.min(Math.max(0, st.rbSel | 0), Math.max(0, b.chapters.length - 1)), ch = b.chapters[sel];
+    const from = r.src === "mine" ? `내 저장소 README · ${esc(r.project || "")}` : `연습 예시 책${r.why ? ` — ${esc(r.why)}` : ""}`;
+    return `<section class="rbook" aria-label="내 작업 책"><div class="rb-head"><div class="grow"><b>${esc(b.title || "제목 없는 책")}</b><small>${from}</small></div>${
+        canLive ? `<button type="button" class="b ghost" data-act="rb-reload" title="README를 다시 읽어요">다시 읽기</button>` : ""}</div>
+      ${b.intro ? `<p class="rb-intro">${esc(b.intro)}</p>` : ""}
+      ${b.versions.length ? `<ol class="rb-vers" aria-label="버전">${[...b.versions].sort((x, y) => parseInt(x.v.slice(2), 10) - parseInt(y.v.slice(2), 10)).map((v) => `<li><b>${esc(v.v)}</b><span>${esc(v.date)}</span>${esc(v.title)}</li>`).join("")}</ol>` : ""}
+      ${ch ? `<div class="rb-body"><nav class="rb-toc" aria-label="목차">${b.chapters.map((c, i) => `<button type="button" data-act="rb-sel" data-i="${i}" aria-current="${i === sel}">${esc(c.title)}</button>`).join("")}</nav>
+        <article class="rb-ch" id="${esc(ch.id)}"><h4>${esc(ch.title)}</h4><div class="rb-text">${esc(ch.body)}</div></article></div>`
+      : `<p class="meta">README에 ## 제목이 아직 없어요 — 퀘스트를 마치면 한 장씩 생겨요.</p>`}
+      <p class="meta">${b.cut ? "README가 길어 앞부분만 보여요. " : ""}고치는 곳은 README예요 — 책은 받아 와 보여 주기만 해요.</p></section>`;
+  }
+  // README 읽기(API.md 3-18) — 서버로 연 화면에서만. 서버 없이 · 폴더를 모름 · README 없음이면 연습 예시 책과 까닭 한 줄
+  async function loadReadme() {
+    if (!RB) return;
+    const example = (why) => ({ book: RB.parse(RB.EXAMPLE), src: "example", why });
+    if (!canLive || st.mode === "fixture") { st.rb = example(canLive ? "연습 모드예요" : "서버 없이 열었어요"); return render(); }   // 연습 모드는 진짜 README를 섞지 않는다(API.md 3-18)
+    try {
+      const r = await (await fetch("/api/readme", { cache: "no-store" })).json();
+      st.rb = r && r.ok && r.book ? { book: r.book, src: "mine", project: r.project, why: "" }
+        : example(r && r.why === "none" ? "이 폴더에 README.md가 없어요" : "연결한 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열어요");
+    } catch { st.rb = example("서버에 닿지 않았어요"); }
+    render();
+  }
+  // 배우기 탭(C-30, 2026-10-23) — 기능마다 튜토리얼: 어떻게 움직이나 · 예시 · 막히면. 있는 기능은 '해 보기'로 바로. 사용 테스트에서 기능 하나씩
+  function learnPane() {
+    if (!TU) return `<div class="qempty"><b>배우기를 불러오지 못했어요</b>tutorial.js가 없어요.</div>`;
+    const t = TU.byId(st.tuSel) || TU.LIST[0];
+    return `<div class="learn"><nav class="tu-list" aria-label="기능">${TU.LIST.map((x) => `<button type="button" data-act="tu-sel" data-v="${x.id}" aria-current="${x.id === t.id}">${esc(x.name)}${x.state === "soon" ? "<small>만드는 중</small>" : ""}</button>`).join("")}</nav>
+      <article class="tu"><div class="tu-h"><b>${esc(t.name)}</b><span class="tu-st ${t.state}">${t.state === "ready" ? "있음" : "만드는 중"}</span></div><p>${esc(t.what)}</p>
+        <h5>어떻게 움직이나</h5><ol>${t.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
+        <h5>예시</h5><div class="tu-ex"><span>${esc(t.example.in)}</span><i aria-hidden="true">→</i><span>${esc(t.example.out)}</span></div>
+        <h5>막히면</h5><p>${esc(t.stuck)}</p>
+        ${!t.try ? "" : t.try.ai && st.mode !== "fixture" ? `<div class="row"><button type="button" class="b" disabled>${esc(t.try.label)}</button><span class="meta">진짜 AI 모드에서는 토큰이 들어요 — 연습 모드에서 해 봐요</span></div>`
+          : `<div class="row"><button type="button" class="b pri" data-act="${esc(t.try.act)}">${esc(t.try.label)}</button></div>`}</article></div>`;
+  }
   function deskLib() {
     if (!L() || !SCH()) return libMissing();
     const books = openBooks(), b = libSelected();
     if (!b) return `<div class="libtab">${inboxBox()}<div class="ob-body"><div class="who">${petCat(books.length ? "idle" : "sleep", 100)}</div><div>
         <div class="ob-say">열어 둔 책 ${books.length}권${exHidden ? " · 내 기록만" : ""}</div>
         <p class="ob-title">${books.length ? "어떤 책을 볼까요?" : exHidden && !st.j ? "아직 책이 없어요" : "열어 둔 책을 모두 서고에 꽂았어요"}</p>
-        ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">${exHidden && !st.j ? "'이번 단계'에서 지금 만드는 걸 보여 주면 내 책이 생겨요." : "새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요."}</p>`}</div></div>
+        ${books.length ? `<div class="shelf4">${books.map(coverBtn).join("")}</div>` : `<p class="mc-sub">${exHidden && !st.j ? "'이번 단계'에서 지금 만드는 걸 보여 주면 내 책이 생겨요." : (SHELF_ON ? "새로 시작하면 여기에 책이 생겨요. 지난 책은 서고에서 다시 펼칠 수 있어요." : "새로 시작하면 여기에 책이 생겨요.")}</p>`}</div></div>
       <div class="ob-foot">${exToggle()}<span class="grow"></span>
-        <button class="enter-lib" data-act="lib-enter"><span class="mb"></span>내 서고 들어가기</button></div></div>`;
+        ${SHELF_ON ? `<button class="enter-lib" data-act="lib-enter"><span class="mb"></span>내 서고 들어가기</button>` : ""}</div></div>`;
     const fin = bookDone(b);
     // 책 안의 단계 문서(C-16) — 하나를 열면 그 자리에서 초안 · 고치기 · 다시 봐 줌 · 확정
     if (b.mine && Number.isInteger(st.libDoc) && N.STAGES[st.libDoc]) {
@@ -1070,19 +1135,19 @@
         st.j && s.n > st.j.stage ? `<span class="meta">아직 안 온 단계예요 — 지금은 ${LB(st.j.stage)}</span>` : ""}</div>${deskDoc(s)}</div>`;
     }
     deskKeys.Escape = { act: "lib-close" };
-    deskKeys.Enter = { act: st.libConfirm ? "lib-shelve" : fin ? "lib-bind" : "lib-shelve-ask" };
+    if (SHELF_ON) deskKeys.Enter = { act: st.libConfirm ? "lib-shelve" : fin ? "lib-bind" : "lib-shelve-ask" };
     // 책의 칸 · 구조 · 보기는 보기 설정(book-view.js)대로 — 왼쪽은 책의 머리(단계 · 이름 · 연 때 · 보기 설정 단추), 오른쪽은 켜 둔 칸들(C-9 · C-3, 2026-10-20)
     return `<div class="libtab"><div class="minispread" data-spread>
         <section class="bv-head"><div class="stg">${fin ? "돌아보기까지 끝" : `지금 ${LB(b.stage)} · ${esc(L().STAGES[b.stage])}`}${b.mine ? " · 이 화면의 프로젝트" : isEx(b) ? " · 예시 책" : ""}</div><h3>${esc(b.title)}</h3>
           <div class="stg soft">꽂은 책갈피 ${b.bookmarks.length}장 · 마지막으로 연 때 ${esc(b.updated)}</div>
           ${BV ? `<button type="button" class="bv-btn" data-act="bv-open" aria-expanded="${st.bvOpen}" title="구조 · 칸 · 보기 · 크기 — 이 컴퓨터에 저장돼요">보기 설정</button>` : ""}</section>
-        <section class="bv">${BV ? `${st.bvOpen ? BV.panelHTML(bv) : ""}${BV.bodyHTML(b, bv, { tab: st.bvTab })}`
+        <section class="bv">${BV ? `${st.bvOpen ? BV.panelHTML(bv, { noSize: !SHELF_ON }) : ""}${BV.bodyHTML(b, bv, { tab: st.bvTab })}`
           : `<div class="stg soft">정한 것</div><ul>${b.decided.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>`}</section></div>
       ${b.mine ? bookDocs() : ""}
       ${st.libConfirm ? `<div class="confirm" role="alertdialog" aria-label="서고에 보관 확인">${cat("think", 34)}<span><b>‘${esc(b.title)}’</b>을 서고에 보관할까요? 언제든 다시 꺼내 펼칠 수 있어요.</span><span class="grow"></span>
           <button class="b pri" data-act="lib-shelve">보관하기${kbd("Enter")}</button><button class="b" data-act="lib-shelve-no">그대로 두기</button></div>`
         : `<div class="ob-foot"><button class="b" data-act="lib-close">‹ 목록으로${kbd("Escape")}</button>
-          ${fin ? `<button class="b pri" data-act="lib-bind">📖 한 권으로 엮어 서고에 꽂기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">서고에 보관하기${kbd("Enter")}</button>`}</div>`}</div>`;
+          ${!SHELF_ON ? "" : fin ? `<button class="b pri" data-act="lib-bind">📖 한 권으로 엮어 서고에 꽂기${kbd("Enter")}</button>` : `<button class="b pri" data-act="lib-shelve-ask">서고에 보관하기${kbd("Enter")}</button>`}</div>`}</div>`;
   }
   // 확인할 먹이(FR-15 더함 2026-10-20 — 이재엽 버튼 "먹이 주기에 더하기"): 종류를 붙였지만 아직 확인하지 않은 구간. 도서관 탭 맨 위 [제안 ⑦]. 맞아요 → 그 종류로 내 책의 칸(my-books.js), 빼기 → 버림.
   //   이름은 '확인할 먹이' [제안 ⑧] — C-21의 '분류 안 함' 책장(책을 꽂는 곳)과 헷갈리지 않게. 예시 먹이의 것은 '예시'라고 표시
@@ -1162,7 +1227,7 @@
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 알림 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
       ${QU ? `<button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개"><i class="shell"></i><span>${st.shells}</span></button>
-      <button class="ti" data-act="qwin" aria-pressed="${st.qwin}" aria-label="퀘스트 창" title="퀘스트 창 켜기 · 끄기 — 퀘스트 · 도전과제 · 서고">${I.scroll}</button>` : ""}
+      <button class="ti" data-act="qwin" aria-pressed="${st.qwin}" aria-label="퀘스트 창" title="퀘스트 창 켜기 · 끄기 — 퀘스트 · 도전과제 · 책 · 배우기">${I.scroll}</button>` : ""}
       <button class="ti" data-act="hub" aria-label="모아 보기" title="모아 보기 — 바이브 코딩 · 알림 · AI 진행">${I.grid}</button>
       <button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 창 켜기 · 끄기 — 작업실 · 창 자리 · 보기 방식 · 연결 · 기록">${I.gear}</button>
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
@@ -1252,7 +1317,7 @@
         kind === "ai" && last && HUB && HUB.STATE_WORD[last.state] ? `<span class="st ${esc(last.state)}">${esc(HUB.STATE_WORD[last.state])}</span>` : ""}${
         counts.length ? `<ul class="verbs">${counts.map(([v, n]) => `<li><span>${esc(v)}</span><b>${n}</b></li>`).join("")}</ul>` : ""}</div>
       <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b>
-        <button type="button" class="btn" data-act="hub-${kind}" title="모아 보기 창에서 크게 봐요">크게 보기</button></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div></div></section>`;
+        <button type="button" class="btn" data-act="hub-${kind}" title="모아 보기 창에서 크게 봐요">크게 보기</button></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div>${cmd4HTML()}</div></section>`;   // 명령 네 칸은 판이 열려도 남는다(C-29 "늘 둔다")
   }
   // ── FR-17 대화로 일 넘기기 · 섬에서 허용 · 거절(C-4, 2026-10-20 — 이재엽 버튼 "섬에서 진짜 승인" · "허락하면 세션이 진행하는 내용을 오버레이에서도") ──
   // 할 일 적기 → 요구 문장으로 정리(진짜 AI면 /api/task/tidy, 연습이면 navigator.js taskLines) → 사람이 고쳐 확정 → 허락하고 넘기기(/api/task/start — 서버가 연결한 폴더에서 claude를 연다).
@@ -1908,7 +1973,7 @@
   }
 
   function advance() {
-    if (!N.canAdvance(met(), "yes")) return;
+    if (st.finished || !N.canAdvance(met(), "yes")) return;   // 다 마친 뒤 두 번 들어와도 레벨 · 조개가 두 번 오르지 않게
     const s = stage(), nx = nextStage(), last = [...st.checks].reverse().find((c) => c.stage === s.n);
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`, at: ymd(),   // at — 세션별 보기(C-3, my-books.js dated)가 읽는다(2026-10-20). 옛 기록은 글 끝의 날짜로
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
@@ -1918,7 +1983,7 @@
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;
     // 퀘스트(C-22): 장을 지나면 무지개 조개 하나, 다음 장 퀘스트(받기 화면)를 만들고 퀘스트 창이 바로 뜬다(설정 '바로 뜨기'). 마지막이면 퀘스트 없이 마무리
-    if (QU) { st.shells += 1; st.quest = nx ? QU.makeQuest(nx, crits(nx.n)) : null; if (nx && qauto) openQwin("quest"); }
+    if (QU) { st.shells += 1; level = QU.levelUp(level); if (st.mode !== "fixture") writeLS(LEVEL_KEY, level); st.quest = nx ? QU.makeQuest(nx, crits(nx.n)) : null; if (nx && qauto) openQwin("quest"); }
     render();
     if (nx) questText();   // 다음 장의 퀘스트 글(진짜 AI)
     celebrate(nx ? "stage" : "finish");
@@ -1982,6 +2047,26 @@
     "quest-later": () => { set({ qwin: false }); say("그럼 쉬어요. 다시 오면 여기서 이어서 해요"); },
     "quest-example": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.example(q, i) : null; if (ex === null) return; st.say = ex; send(); },
     "quest-report": () => questReport(),
+    // 명령 네 칸(C-29, 2026-10-23) — 맡기기: AI 진행 판의 '할 일 적기' · 살피기: 다 적은 퀘스트는 완료 보고, 보여 준 글이 있으면 어디쯤인지 보기, 아니면 남은 할 일 · 책: 퀘스트 창의 책 탭 · 배우기: 퀘스트 창의 배우기 탭
+    "cmd-hand": () => {
+      // 적은 생각(공책의 줄 · 처음 말한 것)을 할 일 칸에 넣어 연다 — 정리 → 고치기 → 허락은 그 판에서(FR-17)
+      if (!st.task.text.trim() && !st.task.lines && !st.task.sent) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.task.text = t.slice(0, 4000); }
+      ACT["base-ai"](); requestAnimationFrame(() => { const t = document.getElementById("task-text"); if (t) t.focus(); });
+    },
+    "cmd-look": () => {
+      const q = st.quest;
+      if (q && q.phase === "quest" && QU && QU.isDone(q)) return questReport();
+      if ((st.text.trim() || st.judged) && (!q || q.phase === "done")) return ACT.judge();
+      openQwin("quest"); render();
+      if (!q) return say(st.j ? "다음 퀘스트는 넘어가기 전 확인을 지나면 받아요" : "먼저 무엇을 만들고 싶은지 말해 주세요");
+      if (q.phase === "draft") return say("퀘스트 창에서 퀘스트를 먼저 받아 주세요");
+      const i = QU.curIdx(q); say(i >= 0 ? `남은 할 일 — ${q.objs[i].name}` : "다 적었어요! 완료 보고를 눌러요");
+    },
+    "cmd-book": () => { openQwin("lib"); set({ settings: false, libSel: null, libConfirm: false, libDoc: null }); loadReadme(); },
+    "cmd-learn": () => { openQwin("teach"); render(); },
+    "tu-sel": (i, el) => set({ tuSel: (el && el.dataset.v) || "quest" }),
+    "rb-sel": (i) => set({ rbSel: i | 0 }),
+    "rb-reload": () => loadReadme(),
     "quest-edit": () => { if (st.quest) set({ quest: { ...st.quest, edit: true } }); },
     "quest-cancel": () => { if (st.quest) set({ quest: { ...st.quest, edit: false } }); },
     "quest-save": () => { if (!st.quest) return; const was = st.quest.phase; st.quest = { ...st.quest, edit: false }; if (was === "draft") return ACT["quest-ok"](); render(); say("퀘스트를 고쳐 적었어요 — 보상은 그대로예요"); },
@@ -1995,7 +2080,7 @@
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
     qwin: () => { st.qwin = !st.qwin; render(); },
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
-    qtab: (i, el) => set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }),
+    qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     qsize: (i, el) => { if (!QU || !el) return; qsize = QU.sizeOf(el.dataset.v); writeLS(QSIZE_KEY, qsize); if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", QU.SIZES[qsize]); render(); },
     side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); replaceWins(); render(); say(side === "left" ? "설정 창은 왼쪽, 퀘스트 창은 오른쪽이에요" : "설정 창은 오른쪽, 퀘스트 창은 왼쪽이에요"); },
     // 모아 보기 창(2026-10-20, C-11) — 앱이면 보통 창 하나(main.js openHub), 브라우저면 새 탭 하나(같은 이름이라 두 번 눌러도 하나)
@@ -2046,10 +2131,10 @@
     "lib-doc-close": () => set({ libDoc: null, askConfirm: 0 }),
     "lib-doc-now": () => openBookDoc(st.j ? st.j.stage : 1),
     // 도서관 탭 — 책 고르기 · 목록으로 · 서고에 보관(확인 뒤) · 한 권으로 엮기
-    "lib-enter": () => { if (refuse(mealWhy())) return; enterLibrary(); },
+    "lib-enter": () => { if (refuse(mealWhy())) return; if (!SHELF_ON) return ACT["cmd-book"](); enterLibrary(); },   // 서재를 잠시 뺀 동안(2026-10-23)은 책 탭으로
     "lib-book": (i, el) => {
       const id = (el && el.dataset.id) || openBooks()[i].id;
-      if (BV && bv.size === "full") return enterLibrary(`open-${id}`);   // 보기 설정 '전체 화면' — 서고의 펼친 책으로(C-3)
+      if (SHELF_ON && BV && bv.size === "full") return enterLibrary(`open-${id}`);   // 보기 설정 '전체 화면' — 서고의 펼친 책으로(C-3). 서재를 잠시 뺀 동안은 섬 안에서
       set({ libSel: id, libConfirm: false, libDoc: null });
     },
     "bv-open": () => set({ bvOpen: !st.bvOpen }),
@@ -2199,7 +2284,7 @@
     if (t.dataset.bv === "tab") return set({ bvTab: t.dataset.v });
     bv = BV.choose(bv, t.dataset.bv, t.dataset.v); BV.write(STORE, bv);
     const b = libSelected();
-    if (t.dataset.bv === "size" && bv.size === "full" && b) return enterLibrary(`open-${b.id}`);
+    if (SHELF_ON && t.dataset.bv === "size" && bv.size === "full" && b) return enterLibrary(`open-${b.id}`);
     render();
   }
   function onChange(t) {
@@ -2405,7 +2490,7 @@
       }
     }
     // 옛 주소 #tab=learn('내 배움' 탭 2026-10-18, 서재의 '내 배움' 2026-10-19에 지움) — 서고로 보낸다. 앞의 장면(ex= 등)을 먼저 기록해 두고 넘어간다
-    if (q.tab === "learn") { save(); location.replace(`${LIB_URL}#lib`); return; }
+    if (q.tab === "learn") { if (SHELF_ON) { save(); location.replace(`${LIB_URL}#lib`); return; } st.qwin = true; st.qtab = "teach"; }   // 서재를 잠시 뺀 동안(2026-10-23)은 서고 대신 배우기 탭
     if (q.tab && TABS.some((t) => t[0] === q.tab)) st.tab = q.tab;
     // 퀘스트 창(C-22, 2026-10-21): &tab=map · lib는 PC에서 퀘스트 창의 도전과제 · 서고 탭, &q=draft|quest|done은 퀘스트 장면(시험 · 녹화용), &ask는 "시작하시겠습니까?", &set=1 설정 창, &side=right
     if ((q.tab === "map" || q.tab === "lib") && !q.back) { st.qwin = true; st.qtab = q.tab === "map" ? "tree" : "lib"; }   // 서고에서 돌아올 때(&back)는 창을 열지 않는다 — 떠난 모습 그대로(F-36)

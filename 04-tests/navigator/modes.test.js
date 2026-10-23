@@ -46,7 +46,10 @@ test("app.js — 채팅 중심 섬(C-22): 위 줄 하나(집 · 단계 띠 · �
   assert.ok(!app.includes("BASE_BTNS") && !app.includes("function baseBody") && !app.includes('<div class="tabs"'), "단추 넷 · 탭 넷이 없다");
   assert.match(app, /return `<div class="tb">\$\{homeBtn\(!st\.pane\)\}<span class="tb-stage" aria-live="polite">\$\{stageBand\(\)\}<\/span>/, "위 줄 하나 — 집은 판을 열었을 때만 눌리지 않은 모양");
   assert.match(app, /<button class="ti" data-act="qwin" aria-pressed="\$\{st\.qwin\}" aria-label="퀘스트 창"/, "퀘스트 창 단추");
-  assert.match(app, /out\.push\(\{ label: unreadN\(\) \? `알림 \$\{unreadN\(\)\}` : "알림", act: "base-alerts", kind: "ghost" \}, \{ label: "도전과제", act: "qwin-tree", kind: "ghost" \}\);/, "알림 · 도전과제 칩");
+  // 2026-10-23 C-29: 어디쯤인지 보기 · 도전과제 칩은 명령 네 칸(살피기)과 퀘스트 창의 탭으로 — 늘 있는 칩은 알림 하나
+  assert.match(app, /out\.push\(\{ label: unreadN\(\) \? `알림 \$\{unreadN\(\)\}` : "알림", act: "base-alerts", kind: "ghost" \}\);/, "알림 칩");
+  assert.match(app, /const CMD4 = \[\["hand", "맡기기", "cmd-hand"\], \["look", "살피기", "cmd-look"\], \["lib", "책", "cmd-book"\], \["learn", "배우기", "cmd-learn"\]\];/, "명령 네 칸(C-29) — 맡기기 · 살피기 · 책 · 배우기");
+  assert.match(app, /\$\{cmd4HTML\(\)\}<\/div><\/section>`;/, "명령 네 칸은 채팅 입력 아래");
   assert.match(app, /return st\.back \|\| C\.greeting\(new Date\(\)\.getHours\(\)\);/, "지금 한 줄 — 알림 · AI가 한 일이 없으면 인사");
   assert.match(app, /foot: esc\(nowLine\(\)\)/, "지금 한 줄은 첫 카드의 작은 줄");
   assert.match(app, /go\("home"\);   \/\/ 인사가 끝나면 인사 카드 대신 기본 화면/);

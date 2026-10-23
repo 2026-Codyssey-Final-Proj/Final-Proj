@@ -20,6 +20,7 @@ h1 small{display:block;font-size:14px;font-weight:400;color:var(--ink-2);margin-
 .story{margin:0 0 30px;font-size:13.5px;color:var(--ink-2)}
 .story b{color:var(--gold)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+[hidden]{display:none!important}
 .card{display:flex;flex-direction:column;gap:8px;padding:18px 20px;border-radius:18px;border:1px solid var(--edge);background:rgba(40,62,150,.28);color:inherit;text-decoration:none;
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);transition:transform .2s ease,border-color .2s ease}
 .card:hover{transform:translateY(-3px);border-color:var(--gold)}
@@ -48,7 +49,8 @@ h1 small{display:block;font-size:14px;font-weight:400;color:var(--ink-2);margin-
       <span class="k">코딩 도구 위 오버레이</span><h2>내비게이터</h2>
       <p>지금 단계 · 다음 할 일 · 완료 기준, 단계 문서 초안 → 확정, 넘어가기 전 확인, 한곳에서 보기, 도서관. 서버를 켜면 진짜 AI가 봐 줘요.</p>
       <span class="fr">FR-1 · 2 · 3 · 4 · 5 · 6 · 7 · 12 · 13</span></a>
-    <a class="card" href="library/index.html#lib">
+    <!-- 서재 잠시 뺌(이재엽 2026-10-23) — hidden을 지우면 다시 열린다 -->
+    <a class="card" href="library/index.html#lib" hidden>
       <span class="k">끝낸 책이 꽂히는 곳</span><h2>플로로의 얼음 서고</h2>
       <p>끝낸 프로젝트가 책장에 꽂혀요. 책을 펼치면 단계마다 정한 것 · 배운 것, 전체 돌아보기에는 지나온 길.</p>
       <span class="fr">FR-8</span></a>
