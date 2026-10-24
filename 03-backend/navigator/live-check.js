@@ -137,7 +137,7 @@ async function main() {
   const args = process.argv.slice(2);
   const opt = { all: args.includes("--all"), max: intAfter(args, "--max") ?? 3, stage: intAfter(args, "--stage") };
   const u0 = usage();
-  console.log(`공급자: ${u0.provider === "api" ? `내 API 키 (${u0.model}) · 보내는 곳 ${u0.host}${u0.compat ? " · 호환 모드" : ""}` : "이 컴퓨터에 로그인된 Claude Code (한 번에 3천 토큰 넘게 듦)"}`);
+  console.log(`공급자: ${u0.provider === "api" ? `내 API 키 (${u0.model}) · 보내는 곳 ${u0.host}${u0.compat ? " · 호환 모드" : ""}` : "이 컴퓨터에 로그인된 Claude Code (한 번에 약 4~5천 토큰 — 2026-10-24 실측)"}`);
   const cases = pick(casesFromExamples(), opt);
   if (!cases.length) { console.error("점검할 예시가 없어요"); process.exit(1); }
   console.log(`${cases.length}개 점검 — 판정을 실제 AI에 묻고, 연습 예시의 정답과 비교해요\n`);
