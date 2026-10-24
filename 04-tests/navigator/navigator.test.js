@@ -492,8 +492,10 @@ test("외부 AI(claude·API) 호출은 provider.js 한 곳에서만 한다", () 
   const callers = [BACK, FRONT].flatMap((dir) => fs.readdirSync(dir).filter((f) => f.endsWith(".js") || f.endsWith(".html"))
     .filter((f) => /child_process|spawn\(|https?:\/\/api\.anthropic\.com|@anthropic-ai\/sdk/.test(fs.readFileSync(path.join(dir, f), "utf8"))));
   // floe.js(2026-10-19, 한 줄로 켜기)도 child_process를 쓰지만 server.js · connect.js · 브라우저를 켤 뿐이다 — AI를 부르는 말이 없는지 따로 본다
-  assert.deepEqual(callers, ["floe.js", "provider.js"]);
+  // github.js(2026-10-24, 설정의 GitHub 칸)도 child_process를 쓰지만 git · gh에게 읽기만 묻는다 — 저장소 만들기는 server.js가 일 넘기기(provider.js startTask)로 맡긴다
+  assert.deepEqual(callers, ["floe.js", "github.js", "provider.js"]);
   assert.doesNotMatch(fs.readFileSync(path.join(BACK, "floe.js"), "utf8"), /claude -p|callClaude|anthropic|ANTHROPIC_API_KEY=/i, "floe.js는 AI를 부르지 않는다(server.js · connect.js · 브라우저만 켠다)");
+  assert.doesNotMatch(fs.readFileSync(path.join(BACK, "github.js"), "utf8"), /spawnSync\(\s*["']claude|callClaude|api\.anthropic|ANTHROPIC_API_KEY/i, "github.js는 AI를 부르지 않는다(git · gh만)");
 });
 
 // ── 설계도(FR-3) · 기록 · Codex — 2026-10-14 "아직 안 된 것도 모두 만들어" ──

@@ -954,3 +954,7 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 .tu-ex{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px dashed var(--line);border-radius:12px;padding:8px 10px}
 .tu-ex i{font-style:normal;color:var(--mute)}
 @media (max-width:600px){.cmd4 .cm kbd{display:none}.rb-body,.learn{grid-template-columns:1fr}}
+
+/* 설정의 GitHub 칸(C-25, 2026-10-24) — 링크(a)로 된 단추는 밑줄 없이 단추처럼, 명령 글은 고정폭 */
+a.btn{text-decoration:none;display:inline-flex;align-items:center}
+.sgrp code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.08)}

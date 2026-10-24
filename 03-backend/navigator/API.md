@@ -463,6 +463,17 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 답(늘 200) `{ ok: true, project, book, why }` — `project`는 폴더 **이름**만(경로는 주지 않는다). 책이 있으면 `book = { title, intro, versions[{v, date, title}], chapters[{id, title, body}], cut }`, `why = ""`. 폴더를 모르면 `book: null, why: "folder"`, README가 없으면 `book: null, why: "none"`.
 - 화면: 명령 칸의 **책**(C-29)이 퀘스트 창의 책 탭을 열 때 부른다. 서버 없이 · 연습 모드 · `book: null`이면 연습 예시 책(`readme-book.js` `EXAMPLE`)을 보이고 까닭을 한 줄로 적는다. 시험: `04-tests/navigator/readme-api.test.js` · `readme-book.test.js`.
 
+### 3-19. `GET /api/github` · `POST /api/github/create` — 설정의 GitHub 칸 (C-25, 2026-10-24)
+
+<!-- claude-drafted: 2026-10-24 — 이재엽 "지금 깃허브을 연동하는 곳을 설정창에 만들어줘" -->
+- 둘 다 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. **Floe는 GitHub 토큰 · 비밀번호를 받지도 두지도 않는다** — 이 컴퓨터의 `git` · `gh`(GitHub CLI)에게 묻는다([github.js](github.js)). 폴더는 3-18과 같이 훅 알림이 알려 준 세션의 cwd에서만 고르고, 경로는 받지도 주지도 않는다.
+- **`GET /api/github`** — 읽기만. `gh --version` · `gh auth status --hostname github.com`(끝 코드 0이면 로그인) · `git rev-parse --is-inside-work-tree` · `git remote get-url origin`을 셸 없이 · 4초 제한 · 비밀번호를 묻지 않게(`GIT_TERMINAL_PROMPT=0`) 부른다.
+  답(늘 200) `{ ok: true, project, gh: { found, signedIn }, git, remote, why }` — `remote`는 `{ kind: "github" | "other", owner, repo, web }` 또는 `null`. 원격 주소 안의 토큰 · 비밀번호는 버리고, `owner` · `repo` · `web`은 github.com일 때만 채운다(그 밖은 빈 글). GitHub 계정 이름은 주지 않는다.
+  `why`: `""`(원격 있음) · `"folder"`(폴더를 모름) · `"no-git"`(git 명령 없음) · `"not-repo"`(git 저장소가 아님) · `"no-remote"`(origin 없음). `gh`가 없으면 `signedIn: null`.
+- **`POST /api/github/create`** — 본문 `{ visibility? }`(`private` 기본 · `public`). 저장소를 **Floe가 만들지 않고** 3-16 일 넘기기(`startTask`)로 사용자의 Claude Code에 맡긴다. 맡길 글은 서버가 정한다(`github.js` `createRequest` — 화면이 글을 보내지 않는다): git init · README 첫 장(`## 버전` 줄) · 비밀값 파일은 `.gitignore`로 빼기 · 첫 커밋 · `gh repo create <폴더 이름> --private|--public --source . --remote origin --push` · 같은 이름이면 멈추고 묻기 · 강제 푸시 · 지우기 금지. 그 세션이 허락을 구하면 3-13 훅이 섬에 묻는다.
+  성공은 3-16과 같다. 거절: 400 `공개 범위는 private · public 중 하나` · 400 `연결한 프로젝트 폴더를 아직 몰라요 — …` · 409 `이 폴더는 이미 원격 저장소와 이어져 있어요` · 409 · 502는 3-16과 같다.
+- 화면: 설정의 **GitHub** 묶음(연결 아래). 열 때마다 다시 묻고, 서버 없이 열면 안내 한 줄만. 맡기기 단추는 gh 로그인 + 진짜 AI 모드일 때만 눌린다(Claude Code가 움직이니까). 시험: `04-tests/navigator/github-api.test.js`.
+
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 
 `02-frontend/navigator/app.js`가 보내는 칸·읽는 칸을 서버와 맞대었다. 화면 코드는 고치지 않았다.
