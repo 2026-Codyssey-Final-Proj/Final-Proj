@@ -45,6 +45,29 @@ html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투�
 .su-key details summary{cursor:pointer;font-size:calc(13px * var(--ui-scale,1));color:var(--sub)}
 .su-key details[open] summary{margin-bottom:6px}
 .su-key .b.pri{align-self:flex-start}
+/* 프로젝트 칸(C-31, 2026-10-24) — 카드 셋(가져오기 · 새로 만들기 · 있는 폴더)을 위아래로 — 한 장은 왼쪽에 말, 오른쪽에 입력 · 단추, 아래에 내 저장소 단추.
+   앱 창(952px)에서 세 칸을 옆으로 두면 제목이 꺾이고 입력의 예시 글이 잘렸다. 카드 안에 입력이 있어 눌러도 떠오르지 않는다 */
+.su-proj{grid-template-columns:minmax(0,1fr);gap:8px}
+.su-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,1.15fr);grid-template-areas:"t row" "l row" "repos repos";align-items:center;gap:2px 14px;padding:12px 16px;cursor:default}
+.su-card:hover{transform:none;border-color:var(--line)}
+.su-card .su-pick-t{grid-area:t}
+.su-card .su-pick-l{grid-area:l}
+.su-card .su-row{grid-area:row;justify-content:flex-end;min-width:0}
+.su-card input{flex:1;min-width:0;height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:calc(13px * var(--ui-scale,1))}
+.su-card input:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.su-repos{grid-area:repos;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.su-repos .b{min-height:30px!important;padding:0 10px;font-size:calc(12px * var(--ui-scale,1));border:1px solid var(--line)}
+.su-ok{color:var(--ok)}
+/* 준비 끝 — 요약 세 줄과 저장소 만들기 */
+.su-sum{display:grid;gap:6px;margin:0}
+.su-sum div{display:grid;grid-template-columns:84px minmax(0,1fr);gap:10px;font-size:calc(14px * var(--ui-scale,1))}
+.su-sum dt{color:var(--sub);font-weight:700}
+.su-sum dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.su-repo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;border-radius:16px;border:1px solid var(--line)}
+.su-repo .su-line{flex-basis:100%}
+.su-vis{display:flex;gap:4px}
+.su-vis .b{min-height:30px!important;padding:0 10px}
+.su-vis .b[aria-pressed="true"]{border-color:var(--acc);color:var(--ink);font-weight:700}
 .su-dots{grid-column:1/-1;list-style:none;margin:6px 0 0;padding:0;display:flex;justify-content:center;gap:6px}
 .su-dots li{width:7px;height:7px;border-radius:50%;background:var(--seg)}
 .su-dots li.on{width:20px;border-radius:4px;background:var(--acc)}
@@ -53,12 +76,14 @@ html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투�
   #floe-setup .su{width:100%;max-height:none;min-height:100%;border-radius:0;grid-template-columns:minmax(0,1fr);padding:max(20px,env(safe-area-inset-top,0px)) 20px 24px;background:var(--phone)}
   .su-cat{justify-content:flex-start}
   .su-picks{grid-template-columns:minmax(0,1fr)}
+  .su-card{grid-template-columns:minmax(0,1fr);grid-template-areas:"t" "l" "row" "repos"}
+  .su-card .su-row{justify-content:flex-start;margin-top:6px}
   #floe-setup kbd{display:none}   /* 휴대폰에는 단축키가 없다 — 진한 단추 위의 옅은 글씨(대비 부족, axe)도 같이 사라진다 */
 }
 @media (min-width:601px){
   #floe-setup .su{background:rgba(22,34,94,.86);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%)}
   .su-pick{background:rgba(255,255,255,.06)}
-  .su-key input{background:rgba(255,255,255,.08)}
+  .su-key input,.su-card input{background:rgba(255,255,255,.08)}
 }
 @media (min-width:601px) and (prefers-reduced-transparency:reduce){#floe-setup .su{background:#1A2766;-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (prefers-reduced-motion:reduce){#floe-setup .su{animation:none}.su-pick{transition:none}}

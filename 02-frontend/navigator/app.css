@@ -958,3 +958,5 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 /* 설정의 GitHub 칸(C-25, 2026-10-24) — 링크(a)로 된 단추는 밑줄 없이 단추처럼, 명령 글은 고정폭 */
 a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .sgrp code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.08)}
+/* 설정의 토큰 칸(2026-10-24) — 최근 기록 다섯 줄 */
+.tok-runs{list-style:none;margin:0;padding:0;display:grid;gap:2px}

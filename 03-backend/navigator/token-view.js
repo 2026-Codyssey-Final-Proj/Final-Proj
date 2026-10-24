@@ -22,7 +22,19 @@
       : usage.state === "warn" ? "한도의 80%를 넘었어요" : "";
     return { source: usage.replay ? "replay" : "live", label: "이 컴퓨터에서 잰 값", note, rows, used: num(usage.used), limit: lim(usage.budget) };
   }
-  const api = { view };
+  // 토큰 장부(2026-10-24, tokens.js snapshot) → 설정의 토큰 칸 — 합계 · 종류 두 줄 · 최근 다섯 줄. 비용은 Claude Code가 알려 준 값만(모르면 비움)
+  const fmt = (n) => Number(n || 0).toLocaleString("en-US");
+  const usd = (c) => (c > 0 ? ` · 약 $${c < 0.001 ? "0.001 미만" : c.toFixed(3)}` : "");
+  const KIND_NAME = { floe: "Floe의 AI (판정 · 퀘스트 · 정리)", task: "Claude Code에 맡긴 일" };
+  const clock = (t) => { try { return new Date(t).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }); } catch { return ""; } };
+  function ledgerView(l) {
+    if (!l || !l.total || !l.kinds) return null;
+    const rows = ["floe", "task"].map((k) => ({ name: KIND_NAME[k], value: `${fmt(l.kinds[k].tokens)}토큰 · ${fmt(l.kinds[k].count)}번${usd(l.kinds[k].cost)}` }));
+    const recent = (l.runs || []).slice(0, 5).map((r) => `${clock(r.at)} · ${r.label} · ${fmt(r.total)}토큰${r.cost != null ? usd(r.cost) : ""}`);
+    return { empty: !l.total.count, since: clock(l.since), total: `${fmt(l.total.tokens)}토큰${usd(l.total.cost)}`, rows, recent,
+      note: "터미널에서 직접 연 Claude Code는 Floe가 보지 못해 세지 않아요. 비용은 Claude Code가 알려 준 값이에요(API 키로 부른 Floe의 AI는 토큰만)." };
+  }
+  const api = { view, ledgerView };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavTokenView = api;
 })(typeof window !== "undefined" ? window : globalThis);

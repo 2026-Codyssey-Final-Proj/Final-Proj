@@ -10,6 +10,7 @@ const { app, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, shell, scr
 const fs = require("node:fs");
 const http = require("node:http");
 const net = require("node:net");
+const os = require("node:os");
 const path = require("node:path");
 const { spawnSync, execFile } = require("node:child_process");
 const L = require("./lib.js");
@@ -24,7 +25,7 @@ app.on("second-instance", () => { if (win && !win.isDestroyed()) { if (win.isMin
 const P = L.paths(app.isPackaged, __dirname);
 const WANT = Number(process.env.NAV_PORT) || 4317;
 const RELEASES = "https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases";
-let PORT = WANT, URL_ = "", win = null, tray = null, serverState = "";
+let PORT = WANT, URL_ = "", win = null, tray = null, serverState = "", Server = null;   // Server — server.js(startServer가 한 번 읽는다 — 그 전에 읽으면 포트 값이 굳는다)
 const LINUX = process.platform === "linux";
 // Linux: 투명 창은 ARGB 비주얼을 켜 달라고 미리 말해야 한다(아니면 뒤가 검게 나올 수 있다). 창은 ready 뒤 잠깐 기다려 만든다(아래)
 if (LINUX) app.commandLine.appendSwitch("enable-transparent-visuals");
@@ -58,7 +59,7 @@ async function startServer() {
   PORT = await freePort(WANT);
   URL_ = `http://127.0.0.1:${PORT}/`;   // 화면 파일은 정확한 경로만(API 약속) — 앱 안임은 preload.js가 둔 window.floeApp으로 안다
   process.env.NAV_PORT = String(PORT);
-  const Server = require(path.join(P.backend, "server.js"));
+  Server = require(path.join(P.backend, "server.js"));
   return new Promise((resolve) => {
     const s = http.createServer(Server.handle);
     s.on("error", (e) => resolve(`error:${e.code || e.message}`));
@@ -137,6 +138,7 @@ ipcMain.on("floe:resize", (e, w, h, anchor) => {
   // 노치가 있으면 가로는 늘 노치 가운데, 세로는 화면 맨 위(서고에서 돌아와도 노치로) — 없으면 지금 창의 가운데 · 지금 y
   const x = L.islandX(anchor, b, W, NOTCH ? NOTCH.cx : null, wa);
   win.setContentBounds({ x, y: NOTCH ? NOTCH.y : b.y, width: W, height: H }, false);
+  placeSideWins();
 });
 // 서고로 들어갈 때(…/library/) 창을 화면만큼 넓힌다 — 섬 크기에 묶인 창에서는 서고가 커질 수 없었다(이재엽 2026-10-19 "서재도 오버레이가 커져야 하는데 커지지 못하는 상태").
 // 내비게이터로 돌아오면 화면이 다시 섬 크기를 보내 창이 줄어든다(floe:resize)
@@ -176,9 +178,36 @@ ipcMain.on("floe:expand", (e) => { if (win && e.sender === win.webContents) expa
 async function pickAndConnect(add) {
   const r = await dialog.showOpenDialog(win, { title: add ? "Claude Code로 작업하는 프로젝트 폴더" : "연결을 뺄 프로젝트 폴더", properties: ["openDirectory"] });
   if (r.canceled || !r.filePaths[0]) return { ok: false, message: "" };
-  try { return L.connectDir(r.filePaths[0], P.backend, add); }
+  try { return add ? useFolder(r.filePaths[0]) : dropFolder(r.filePaths[0]); }
   catch (e) { return { ok: false, message: `바꾸지 못했어요: ${e.message}` }; }
 }
+// ── C-31 시작하는 자리(2026-10-24, 이재엽 "C-31부터 만들어줘") — 처음 설정의 '프로젝트' 칸: 새로 만들기 · 내 GitHub 저장소 가져오기 · 이 컴퓨터에 있는 폴더 ──
+// 자리는 홈/Floe/이름(버튼 "홈/Floe/이름"), 가져오기는 앱이 바로(버튼 "Floe 앱이 바로" — gh · git, 토큰 0). 저장소 만들기 · 커밋은 여전히 사용자의 Claude Code(C-25).
+// 화면은 이름 · 주소 글만 보낸다 — 경로는 project.js가 만든다. 고른 폴더는 한 길(useFolder)로: 훅을 더하고(connectDir) · 훅 경로가 든 설정 파일을 올리지 않게(.git/info/exclude)
+// · 서버에 같은 프로세스로 알리고(server.js useProject — HTTP 주소는 없다) · 다음 켤 때도(설정 폴더의 project.json, 나만 읽기)
+const Project = require(path.join(P.backend, "project.js"));
+const projectFile = () => path.join(app.getPath("userData"), "project.json");
+const tilde = (dir) => { const h = os.homedir(); return dir === h || dir.startsWith(h + path.sep) ? `~${dir.slice(h.length)}` : dir; };
+const savedProject = () => { try { return JSON.parse(fs.readFileSync(projectFile(), "utf8")).dir || ""; } catch { return ""; } };
+function useFolder(dir) {
+  const c = L.connectDir(dir, P.backend, true);
+  if (!c.ok) return c;
+  Project.excludeLocal(dir);
+  if (Server) Server.useProject(dir);   // 서버를 켜기 전(켜지는 몇 초)이면 아래 파일에만 — 켠 뒤 restoreProject가 알린다
+  try { fs.writeFileSync(projectFile(), JSON.stringify({ dir }), { mode: 0o600 }); } catch {}
+  // config — 그 폴더에 Claude Code 설정(.claude/settings.json · .mcp.json)이 있나. 맡긴 일(Claude Code의 비대화 실행)은 폴더를 믿는지 묻지 않으므로 화면이 알린다(2차 리뷰 — 있는 폴더를 골라도)
+  return { ...c, name: path.basename(dir), where: tilde(dir), config: Project.hasClaudeConfig(dir) };
+}
+// '연결 빼기' — 훅을 빼고, 그 폴더가 앱이 고른 작업 폴더면 서버와 project.json에서도 잊는다(훅 없는 폴더에서 맡긴 일이 허락 카드 없이 멈추지 않게)
+function dropFolder(dir) {
+  const c = L.connectDir(dir, P.backend, false);
+  if (c.ok && Server) Server.dropProject(dir);
+  if (c.ok && savedProject() && path.resolve(savedProject()) === path.resolve(dir)) { try { fs.rmSync(projectFile(), { force: true }); } catch {} }
+  return c;
+}
+// 다시 켜면(서버를 켠 뒤) 지난번 폴더를 서버에 다시 알린다 — 폴더가 없어졌으면 조용히 넘어간다(useProject가 false)
+function restoreProject() { const dir = savedProject(); if (dir && Server) Server.useProject(dir); }
+const afterPick = (r) => (r.ok ? { ...useFolder(r.dir), made: r.made, repo: r.repo || "", config: !!r.config || Project.hasClaudeConfig(r.dir) } : r);   // 가져온 직후에 본 config(커밋돼 온 settings.local.json 포함)를 버리지 않는다   // 만들거나 가져왔으면 같은 길로
 // 섬 창을 앞으로(없으면 만든다) — 메뉴 '창 다시 열기' · 트레이 클릭 · Mac Dock 클릭이 같이 쓴다. 따로 뜨던 모아 보기 창은 2026-10-23에 뺐다
 function showIsland() { if (!win) createWindow(); else win.show(); }
 // 메뉴 항목 하나 — Mac은 위 메뉴 줄, Windows · Linux는 창 우클릭 · 트레이에서 같은 것을 본다
@@ -212,6 +241,9 @@ function menu() {
 }
 
 ipcMain.handle("floe:connect", () => pickAndConnect(true));
+ipcMain.handle("floe:project-new", async (e, name) => { if (!fromIsland(e)) return { ok: false, message: "" }; return afterPick(await Project.newFolder(os.homedir(), name)); });
+ipcMain.handle("floe:project-clone", async (e, text) => { if (!fromIsland(e)) return { ok: false, message: "" }; return afterPick(await Project.cloneRepo(os.homedir(), text, { ghReady: await Project.ghReady() })); });
+ipcMain.handle("floe:project-repos", async (e) => (fromIsland(e) ? Project.myRepos({ ghReady: await Project.ghReady() }) : []));
 ipcMain.handle("floe:disconnect", () => pickAndConnect(false));
 ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData")));
 // ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "설정 창과 퀘스트 창 그리고 채팅을 입력하는 창 이렇게 3개") — 섬 창 옆에 뜨는 창 둘 ──
@@ -225,16 +257,29 @@ function openSideWin(kind, opt = {}) {
   const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
   const b = L.sideWinBounds(kind, opt.side, isl, wa, opt.size);
   let w = wins[kind];
-  if (w && !w.isDestroyed()) { if (opt.place) w.setBounds(b); w.show(); if (typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); return; }
+  if (w && !w.isDestroyed()) { if (opt.place) { w.setBounds(b); Object.assign(w, { floeSide: opt.side, floeSize: opt.size, floeMoved: false }); } w.show(); if (typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); return; }
   w = wins[kind] = new BrowserWindow({ ...b, frame: false, transparent: false, backgroundColor: "#16225E", alwaysOnTop: true, resizable: kind === "quest", minimizable: false, hasShadow: true, show: false,
     minWidth: 260, minHeight: 200, title: kind === "quest" ? "Floe — 퀘스트" : "Floe — 설정",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   w.setAlwaysOnTop(true, "floating");
+  Object.assign(w, { floeSide: opt.side, floeSize: opt.size, floeMoved: false });   // 다시 둘 때(placeSideWins · floe:win-size) 같은 규칙으로
+  w.on("will-move", () => { w.floeMoved = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
   w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
   w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
   w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (win && !win.isDestroyed()) win.webContents.send("floe:win-closed", kind); });
   w.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
   w.loadURL(`${URL_}navigator/win.html#${kind}`);
+}
+// 2026-10-24(이재엽 "지금 오버레이가 겹치지 않도록") — 섬 창의 크기가 바뀌어 옆 창과 겹치면 같은 규칙(lib.js sideWinBounds — 옆자리가 좁으면 줄이고, 없으면 섬 아래)으로 다시 둔다.
+// 겹치지 않으면 그대로 둔다(섬이 펼쳐지고 접힐 때마다 옆 창이 흔들리지 않게). 사람이 끌어 옮긴 창도 그대로
+function placeSideWins() {
+  if (!win || win.isDestroyed()) return;
+  const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
+  for (const kind of Object.keys(wins)) {
+    const w = wins[kind];
+    if (!w || w.isDestroyed() || w.floeMoved || !L.overlaps(w.getBounds(), isl)) continue;
+    w.setBounds(L.sideWinBounds(kind, w.floeSide, isl, wa, w.floeSize));
+  }
 }
 const closeSideWins = () => { for (const k of Object.keys(wins)) { const w = wins[k]; if (w && !w.isDestroyed()) w.close(); } };
 const fromIsland = (e) => !!win && !win.isDestroyed() && e.sender === win.webContents;
@@ -242,7 +287,13 @@ const fromSide = (e) => Object.values(wins).some((w) => w && !w.isDestroyed() &&
 ipcMain.on("floe:win-open", (e, kind, opt) => { if (fromIsland(e) && sideKind(kind)) openSideWin(kind, opt || {}); });
 ipcMain.on("floe:win-html", (e, kind, html) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.webContents.send("floe:win-html", String(html || "")); });
 ipcMain.on("floe:win-close", (e, kind) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.close(); });
-ipcMain.on("floe:win-size", (e, kind, size) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed() && Array.isArray(size)) { const b = w.getBounds(); w.setBounds({ ...b, width: Math.max(260, Math.round(size[0]) || b.width), height: Math.max(200, Math.round(size[1]) || b.height) }); } });
+ipcMain.on("floe:win-size", (e, kind, size) => {
+  const w = sideKind(kind) && wins[kind];
+  if (!fromIsland(e) || !w || w.isDestroyed() || !Array.isArray(size)) return;
+  // 사람이 옮기지 않았으면 같은 자리 규칙으로(커진 창이 섬을 덮지 않게, 2026-10-24) — 옮겼으면 그 자리에서 크기만
+  if (!w.floeMoved) { const isl = win.getContentBounds(); w.floeSize = size; return w.setBounds(L.sideWinBounds(kind, w.floeSide, isl, screen.getDisplayMatching(isl).workArea, size)); }
+  const b = w.getBounds(); w.setBounds({ ...b, width: Math.max(260, Math.round(size[0]) || b.width), height: Math.max(200, Math.round(size[1]) || b.height) });
+});
 ipcMain.on("floe:win-event", (e, payload) => { if (fromSide(e) && win && !win.isDestroyed()) win.webContents.send("floe:win-event", payload); });   // 창의 누름은 섬으로
 // 처음 설정(setup.js) — 키를 설정 폴더의 .env(나만 읽기 600)에 쓰고 이 프로세스의 환경에도 넣는다. 서버가 이 앱 안에 있으니 다시 켜지 않아도
 // 다음 AI 호출부터 그 키로 부른다(provider.js는 부를 때마다 환경을 본다). 값은 어디에도 출력하지 않는다
@@ -281,6 +332,7 @@ app.whenReady().then(async () => {
   await fixPath();
   serverState = await startServer();
   if (serverState.startsWith("error:")) { dialog.showErrorBox("Floe", `서버를 켜지 못했어요 (${serverState.slice(6)}).`); return app.quit(); }
+  restoreProject();   // C-31 — 지난번에 고른 작업 폴더를 서버에 다시(2026-10-24)
   if (win && !win.isDestroyed()) win.loadURL(URL_);
   console.log(`Floe ${app.getVersion()}: ${URL_}${PORT !== WANT ? ` (${WANT}은 다른 서버가 써서 ${PORT}로)` : ""} · .env ${loaded ? "읽음" : "없음(이 컴퓨터의 Claude Code 구독)"}`);
   app.on("activate", showIsland);   // Mac Dock 클릭 → 섬 창

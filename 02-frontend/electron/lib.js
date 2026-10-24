@@ -173,15 +173,26 @@ const bootUrl = (notch) => `data:text/html;charset=utf-8,${encodeURIComponent(bo
 
 // ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "창 셋") — 섬 창 옆에 뜨는 창 둘의 자리 ──
 // kind: "settings" | "quest". side: 설정 창의 자리("left" | "right") — 퀘스트 창은 반대쪽. isl: 섬 창의 상자, wa: 작업 영역, size: [가로, 세로].
-// 섬과 8px 띄워 같은 높이(위를 맞춤)에. 작업 영역 밖이면 안으로 당기고, 세로는 작업 영역만큼만
-const SIDE_GAP = 8;
+// 섬과 8px 띄워 같은 높이(위를 맞춤)에. 작업 영역 밖이면 안으로 당기고, 세로는 작업 영역만큼만.
+// 2026-10-24(이재엽 "지금 오버레이가 겹치지 않도록") — 섬 창을 덮지 않는다: 옆자리가 좁으면 그만큼 줄이고(SIDE_MIN_W까지), 그보다 좁으면 섬 **아래**
+// (설정 창은 왼쪽 끝 · 퀘스트 창은 오른쪽 끝, 높이는 화면 끝까지). 아래 자리도 SIDE_MIN_H보다 작을 때만 전처럼 옆에 두고 화면 안으로 당긴다(마지막 수단)
+const SIDE_GAP = 8, SIDE_MIN_W = 300, SIDE_MIN_H = 200;
 function sideWinBounds(kind, side, isl, wa, size) {
-  const width = Math.max(200, Math.min(Math.round(size && size[0]) || 460, wa.width)), height = Math.max(160, Math.min(Math.round(size && size[1]) || 640, wa.height));
+  const want = Math.max(200, Math.min(Math.round(size && size[0]) || 460, wa.width)), height = Math.max(160, Math.min(Math.round(size && size[1]) || 640, wa.height));
   const onLeft = kind === "settings" ? side !== "right" : side === "right";
-  let x = onLeft ? isl.x - width - SIDE_GAP : isl.x + isl.width + SIDE_GAP;
-  x = Math.max(wa.x, Math.min(Math.round(x), wa.x + wa.width - width));
+  const room = onLeft ? isl.x - wa.x - SIDE_GAP : wa.x + wa.width - (isl.x + isl.width) - SIDE_GAP;
   const y = Math.max(wa.y, Math.min(Math.round(isl.y), wa.y + wa.height - height));
-  return { x, y, width, height };
+  if (room >= Math.min(want, SIDE_MIN_W)) {
+    const width = Math.min(want, Math.floor(room));
+    return { x: Math.round(onLeft ? isl.x - width - SIDE_GAP : isl.x + isl.width + SIDE_GAP), y, width, height };
+  }
+  const below = Math.round(isl.y + isl.height + SIDE_GAP), roomH = wa.y + wa.height - below;
+  if (roomH >= SIDE_MIN_H) return { x: onLeft ? wa.x : wa.x + wa.width - want, y: below, width: want, height: Math.min(height, roomH) };
+  let x = onLeft ? isl.x - want - SIDE_GAP : isl.x + isl.width + SIDE_GAP;
+  x = Math.max(wa.x, Math.min(Math.round(x), wa.x + wa.width - want));
+  return { x, y, width: want, height };
 }
+// 두 상자가 겹치나 — 맞닿기만 하면 겹침이 아니다. 섬 크기가 바뀔 때 옆 창을 다시 둘지 앱(main.js placeSideWins)이 묻는다
+const overlaps = (a, b) => !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-module.exports = { SIDE_GAP, sideWinBounds, paths, devIcon, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };
+module.exports = { SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, overlaps, paths, devIcon, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };
