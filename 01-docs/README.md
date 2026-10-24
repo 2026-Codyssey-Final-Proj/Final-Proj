@@ -12,6 +12,7 @@
 | [캔버스](00-overview/canvas.md) · [비즈니스 모델 캔버스](00-overview/business-model-canvas-2026-10-17.html) | 기획을 한 장으로 |
 | [기획 확정 한 장](00-overview/plan-confirm-2026-10-18.md) | 2→3 게이트(10/18) 전에 정할 것 |
 | [3분 시연 스토리](04-pattern-implementation/demo-story-3min.md) | 장면마다 평가 항목을 붙인 시연 순서 |
+| [10분 발표 스토리](04-pattern-implementation/presentation-story.md) · [예상 질문 세트](00-overview/expected-questions.md) · [답변 카드](00-overview/qa-cards.md) | 발표 시간표·슬라이드 구성안(초안), 질의응답 질문 27개, 문서 근거로 만든 PREP 카드 19장(발표자가 확인하기 전) — 2026-10-24 |
 | [구조 결정 기록(ADR) 목록](03-pattern-analysis/adr/README.md) | 시연 구조, AI 호출 위치, 기억 저장 등 정한 것과 이유 |
 | [구조 초안](03-pattern-analysis/navigator-architecture-draft.md) · [층 그림](03-pattern-analysis/navigator-archimate.md) | 전체가 어떻게 돌아가나 |
 | [유스케이스(사용 장면)](04-pattern-implementation/uc/README.md) | 사용자가 어떤 순서로 쓰나 — 시연 시나리오 |
