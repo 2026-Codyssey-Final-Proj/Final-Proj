@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v20.1 | 2026-10-24 | 이재엽 | 요구 후보 C-31~C-33(11/1 전에 만든다) — 시작하는 자리(GitHub · 새 저장소 · 작업 폴더를 앱 안에서) · 플로로가 프로젝트를 알고 해낸 것을 Claude Code와 확인 · Claude Code와 나눈 대화를 초등학생 말로, 고칠 목록 F-49(플로로가 문제를 못 알아봄) (#180) | `01-docs/00-overview/requirements.md` · `01-docs/00-overview/team-priorities.md` · `01-docs/07-maintenance/fix-map.md` |
 | v20.0 | 2026-10-24 | 이재엽 | 설정 창에 GitHub 칸 — gh 로그인 · 연결한 폴더의 저장소 보기, 없으면 저장소 만들기를 Claude Code에 맡기기(C-25 첫 조각, 토큰은 받지 않음) (#179) | `02-frontend/navigator/` · `03-backend/navigator/` · `04-tests/navigator/` · `01-docs/00-overview/requirements.md` |
 | v19.3 | 2026-10-24 | 고한결 | 발표 10분 스토리 초안 · 예상 질문 27개 · 문서 근거 답변 카드 19장 (KAN-14 · KAN-47) (#178) | `01-docs/00-overview/`, `01-docs/04-pattern-implementation/`, `01-docs/README.md` |
 | v19.2 | 2026-10-24 | 고한결 | #12 화면 흐름 · 와이어 2판 — 퀘스트 섬(C-22에서 C-30까지)에 맞춰 다시 그림, C-23 · C-25 · C-27 제안 와이어, 인터뷰 칸은 보류 (#176) | `01-docs/04-pattern-implementation/` |
