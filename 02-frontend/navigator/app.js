@@ -8,7 +8,7 @@
 // 600px 이하 = iPhone: 오늘 / 설계도 / 단계 지도 탭과 넘어가기 전 확인 화면 — 이번에 바꾸지 않았다(PC 먼저). 두 화면은 같은 상태(st)를 쓴다.
 // 기록(작업 글·진행·배운 말·설계도·플로로와 친해진 정도)은 이 브라우저(localStorage)에만 남는다.
 // claude-drafted: 2026-10-18 — F-05(PRD 2-7, 이재엽 결정 "내배움 지우기 / 플로로와 처음 만난거 보여주는건 설정 처음에 / 내용들은 서재에서 /
-//   오버레이에서는 간단하고 필요한 내용만, 자세한건 서재로"): '내 배움' 탭을 없앴다. 플로로와 나는 설정 맨 위(bondCard).
+//   오버레이에서는 간단하고 필요한 내용만, 자세한건 서재로"): '내 배움' 탭을 없앴다. '플로로와 나'(설정 맨 위)는 2026-10-24에 뺐다.
 // 2026-10-19(이재엽): 서재의 '내 배움'(learn.js)도 지웠다 — "서재에서 자세히 보기"는 서고로 가고, 옛 주소 #tab=learn도 서고로 보낸다(fromHash).
 // claude-drafted: 2026-10-18 — 화면 빈칸(이재엽 요청): 용어 풀이(FR-13, glossary.js) · '예' 뒤 확인 질문 1개와 '아니요' 3번 뒤 잠시 멈추기(FR-5, understand.js)
 //   · 다음 할 일 꼭/나중에(FR-12, priority.js) · 작업 알림 기록과 연습 알림으로 할 일 끝 표시(FR-7, alerts.js) · 만드는 크기(tier)를 서버에 보내기.
@@ -298,9 +298,6 @@
   //   class는 'coin' — 'shell'은 섬의 바탕 껍데기(.nav .shell, 단추 뒤로 숨는다)라 겹치면 위 줄에 수만 보였다
   const SHELL_ICO = '<svg viewBox="0 0 24 24" stroke="#33406E" stroke-width=".85" stroke-linejoin="round"><path fill="#FF9AA2" d="M12 19.9L23.6 14.7Q24.2 11.4 20.8 10.8Z"/><path fill="#FFC48A" d="M12 19.9L20.8 10.8Q20.1 7.4 16.8 8.1Z"/><path fill="#FFE38A" d="M12 19.9L16.8 8.1Q14.8 5.3 12.0 7.2Z"/><path fill="#B8EFA0" d="M12 19.9L12.0 7.2Q9.2 5.3 7.2 8.1Z"/><path fill="#9ADFFF" d="M12 19.9L7.2 8.1Q3.9 7.4 3.2 10.8Z"/><path fill="#C9B2FF" d="M12 19.9L3.2 10.8Q-0.2 11.4 0.4 14.7Z"/><path fill="#C9B2FF" d="M8.6 18.3h6.8l1.5 3.4a.8.8 0 0 1-.7 1.1H7.8a.8.8 0 0 1-.7-1.1z"/></svg>';
   const coin = () => `<i class="coin" aria-hidden="true">${SHELL_ICO}</i>`;
-  // 하트 — 설정 맨 위 '플로로와 나'가 쓴다(위쪽 줄의 하트는 2026-10-18에 뺐다)
-  const HEART = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M12 21C5 15.5 2 12 2 8.2 2 5.3 4.3 3 7.1 3c1.9 0 3.6 1 4.9 2.7C13.3 4 15 3 16.9 3 19.7 3 22 5.3 22 8.2 22 12 19 15.5 12 21z"></path></svg>';
-  const hearts = (level) => `<span class="hearts">${[0, 1, 2, 3].map((i) => `<i class="${i <= level ? "on" : ""}">${HEART}</i>`).join("")}</span>`;
 
   // ── 접힘·펼침 (PC 화면만) ──
   let hovering = false, timer = null, idleAt = 0, lastUi = null;
@@ -387,15 +384,9 @@
   const modeBadge = () => (st.mode === "live"
     ? `<span class="badge live">진짜 AI(Claude)가 봐요${st.tokens ? ` · 지난번 읽고 쓴 양 약 ${st.tokens.toLocaleString()}토큰` : ""}</span>`
     : `<span class="badge fix">연습용 예시예요 — 진짜 AI가 아니에요</span>`);
-  // 플로로와 나 — 친해진 정도 · 쓰다듬은 횟수 · 처음 만난 날 · 마친 단계 수. 설정 맨 위에 둔다(F-05, PRD 2-7 "플로로와 처음 만난거 보여주는건 설정 처음에").
-  function bondCard() {
-    const b = C.bond(st.pets);
-    return `<div class="bondcard"><div class="bond-row">${petCat("love", 56)}<div class="stack"><span class="kicker">플로로와 나</span><b>${esc(b.name)} ${hearts(b.level)}</b>
-        <span class="sub">쓰다듬은 횟수 ${st.pets}번${b.need ? ` · 더 친해지기까지 ${b.need}번` : ""}</span>
-        <span class="sub">${esc(st.since)}부터 함께해요 · 마친 단계 ${st.history.length}개</span></div></div></div>`;
-  }
-  // 설정 — 플로로와 나, 보기 방식, Claude Code·Codex 연결 상태, 자동으로 살펴보기, 소리, 기록. PC·iPhone 모두 톱니 뒤에
-  // 설정 — 묶음별로 나눠 한눈에(6.2.0, 이재엽 2026-10-19 "설정창도 직관적으로"): 플로로와 나 · 연결 · 보기 · 알림 기록 · 느낀 점 · 기록. PC에서는 섬 옆(오른쪽)에 열린다(settingsPop · .nav.side)
+  // 설정 — 보기 방식, Claude Code·Codex 연결 상태, 자동으로 살펴보기, 소리, 기록. PC·iPhone 모두 톱니 뒤에
+  // 설정 — 묶음별로 나눠 한눈에(6.2.0, 이재엽 2026-10-19 "설정창도 직관적으로"): 연결 · 보기 · 알림 기록 · 느낀 점 · 기록. PC에서는 섬 옆(오른쪽)에 열린다(settingsPop · .nav.side)
+  // '플로로와 나' 카드는 뺐다(2026-10-24 두승현 — 설정 창 머리의 플로로 · 작업실 · 칭호와 겹침). 처음 만난 날(st.since)은 저장만 남긴다
   const SG = {
     link: icon('<path d="M10 14a5 5 0 0 1 0-7l2-2a5 5 0 0 1 7 7l-1 1"></path><path d="M14 10a5 5 0 0 1 0 7l-2 2a5 5 0 0 1-7-7l1-1"></path>', 14),
     eye: icon('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>', 14),
@@ -496,7 +487,7 @@
       <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>
       <div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>`);
     const log = sgrp(SG.bell, "알림 · 느낀 점", `${alertLog()}${notesCard()}`);
-    return `${bondCard()}${link}${githubGroup()}${tokenGroup()}${view}${log}${keep}`;
+    return `${link}${githubGroup()}${tokenGroup()}${view}${log}${keep}`;
   }
   // 알림 기록(FR-7) — [때 · 도구 · 무슨 알림 · 서버가 준 한 줄 · 이 알림으로 끝낸 할 일]. 비밀번호처럼 보이는 글은 숨긴 채로 남는다(alerts.js)
   const clock = (t) => (Number.isFinite(t) ? new Date(t).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) : "");
@@ -526,7 +517,7 @@
       <span class="dot ${stepClass(x.n)}"></span><span style="flex:1;padding:8px 0"><b>${LB(x.n)} · ${esc(x.title)}</b><span class="sub">${esc(x.does)}</span></span>
       ${stepClass(x.n) === "cur" ? `<span class="meta">${metCount()}/${met().length}</span>` : ""}</div>`).join("")}</div>`;
   // [id, PC 이름, iPhone 이름, 아이콘]. 마지막(도서관)은 PC에만 있다 — iPhone은 앞의 셋. 탭 순서가 바뀌면 고른 동그라미(.ti-ind)는 순서(tabIdx)를 따라간다
-  // '내 배움' 탭은 2026-10-18에 뺐다(F-05, PRD 2-7) — 플로로와 나는 설정 맨 위. 서재의 '내 배움'도 2026-10-19에 지움.
+  // '내 배움' 탭은 2026-10-18에 뺐다(F-05, PRD 2-7) — '플로로와 나'(설정 맨 위)도 2026-10-24에 뺐다. 서재의 '내 배움'도 2026-10-19에 지움.
   // 2026-10-18 임유정 요청: 첫 탭 이름 '지금' → '이번 단계', '한곳에서 보기' 탭(FR-6)도 뺐다 — FR-6 등급은 팀이 정한다(PR #105)
   // 2026-10-20(C-16, 이재엽 "우리 도서관이 있잖아 책들로 정리를 해서 거기에 저장을 하고 책에 들어가서 내용 확인 후 작업"): 단계 문서 탭을 뺐다 — 문서는 도서관의 책 안에서(bookDocs · deskDoc)
   const TABS = [["today", "이번 단계", "오늘", "today"], ["map", "단계 지도", "단계 지도", "map"], ["lib", "도서관", "도서관", "lib"]];
@@ -1939,7 +1930,6 @@
     } else {
       say(kind === "stroke" ? "흥얼흥얼… 기분 좋아요" : C.petLine(st.pets));
       if (st.sound) C.chime("pet");
-      if (st.settings) setTimeout(render, 1800);   // 설정 맨 위 '플로로와 나'의 쓰다듬은 횟수를 새로
     }
   }
   // 축하 — 할 일을 다 했을 때, 단계를 넘어갔을 때, 설계도를 확정했을 때
@@ -2338,7 +2328,6 @@
     "ap-allow": (i, el) => decideApproval(el && el.dataset.id, "allow"),
     "ap-deny": (i, el) => decideApproval(el && el.dataset.id, "deny"),
     "ap-unsure": () => set({ apSure: "" }),
-    bond: () => set({ settings: !st.settings }),   // 하트 — 설정 맨 위의 '플로로와 나'(F-05). 위쪽 줄의 하트는 뺐지만 설정에서 같은 자리로 간다
     // 탭(PC): 단계 지도 · 도서관은 퀘스트 창의 도전과제 · 서고 탭으로(C-22). 휴대폰은 전처럼 탭을 바꾼다
     tab: (i) => { const id = TABS[i][0]; if (!isPhone() && id !== "today") { openQwin(id === "map" ? "tree" : "lib"); return set({ settings: false, libSel: null, libConfirm: false, libDoc: null }); }
       set({ tab: id, error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false, libDoc: null }); },
