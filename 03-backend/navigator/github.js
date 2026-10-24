@@ -61,7 +61,7 @@ function createRequest(project, visibility = "private") {
     `이 폴더를 내 GitHub의 ${vis === "private" ? "비공개" : "공개"} 저장소로 만들어 주세요.`,
     "1. git 저장소가 아니면 git init 하고, 기본 가지 이름은 main으로 해요.",
     "2. README.md가 없으면 첫 장을 만들어요 — 맨 위 `# 프로젝트 이름`, 그 아래 한 줄 소개, 그리고 `## 버전` 절에 `- V.1 · 오늘 날짜 · 저장소를 만듦` 한 줄.",
-    "3. .env · *.pem · 키나 비밀번호가 든 파일은 .gitignore에 넣고 올리지 않아요. 그런 파일이 보이면 무엇을 뺐는지 알려 줘요.",
+    "3. .env · *.pem · 키나 비밀번호가 든 파일과 .claude/settings.local.json*(이 컴퓨터의 설정과 그 백업)은 .gitignore에 넣고 올리지 않아요. 그런 파일이 보이면 무엇을 뺐는지 알려 줘요.",
     "4. README.md · .gitignore와 지금 파일을 첫 커밋으로 묶어요(커밋이 이미 있으면 건너뛰어요).",
     `5. gh repo create ${name} --${vis} --source . --remote origin --push 로 만들고 올려요. 같은 이름이 있으면 멈추고 물어봐요.`,
     "6. 강제 푸시 · 파일 지우기는 하지 않아요. 끝나면 저장소 주소를 한 줄로 알려 줘요.",

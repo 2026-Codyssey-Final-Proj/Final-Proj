@@ -40,11 +40,11 @@ test("추천: 키가 이미 있으면 API 키, Claude Code를 찾았으면 Claud
   assert.equal(U.recommend(null), "");
 });
 
-test("Claude Code로 연결할 때의 할 일: 찾기 · 로그인 · (키가 있으면 빼기) · 폴더 · 확인 — 끝난 것만 체크", () => {
-  const ctx = { app: true, live: true, folder: "", checked: null };
-  assert.deepEqual(U.cliSteps(st(), ctx).map((x) => [x.k, x.done]), [["find", true], ["login", true], ["folder", false], ["check", false]]);
-  assert.deepEqual(U.cliSteps(st({ apiKey: true }), ctx).map((x) => x.k), ["find", "login", "unkey", "folder", "check"]);
-  const done = U.cliSteps(st(), { ...ctx, folder: "연결했어요: /p", checked: true });
+test("Claude Code로 연결할 때의 할 일: 찾기 · 로그인 · (키가 있으면 빼기) · 확인 — 끝난 것만 체크. 폴더는 '프로젝트' 칸으로 옮겼다(C-31)", () => {
+  const ctx = { app: true, live: true, checked: null };
+  assert.deepEqual(U.cliSteps(st(), ctx).map((x) => [x.k, x.done]), [["find", true], ["login", true], ["check", false]]);
+  assert.deepEqual(U.cliSteps(st({ apiKey: true }), ctx).map((x) => x.k), ["find", "login", "unkey", "check"]);
+  const done = U.cliSteps(st(), { ...ctx, checked: true });
   assert.ok(done.every((x) => x.done));
   const failed = U.cliSteps(st(), { ...ctx, checked: { error: "시간 초과" } }).find((x) => x.k === "check");
   assert.equal(failed.done, false); assert.match(failed.line, /안 됐어요 — 시간 초과/);
@@ -55,7 +55,76 @@ test("API 키로 연결할 때의 할 일: 앱이면 키를 앱 설정 폴더에
   assert.match(U.apiSteps(st(), { app: true, live: true }).find((x) => x.k === "key").line, /앱 설정 폴더/);
   assert.match(U.apiSteps(st(), { app: false, live: true }).find((x) => x.k === "key").line, /키를 받지 않아요/);
   assert.equal(U.apiSteps(st({ apiKey: true }), { app: true }).find((x) => x.k === "key").done, true);
-  assert.deepEqual(U.apiSteps(st(), {}).map((x) => x.k), ["key", "folder", "check"]);
+  assert.deepEqual(U.apiSteps(st(), {}).map((x) => x.k), ["key", "check"]);
+});
+
+// ── C-31 시작하는 자리(2026-10-24, 이재엽 "5분짜리 온보딩 시스템을 바탕으로 깃허브를 연동하고 클로드 코드나 api키를 받는거도 이어져서") ──
+test("칸의 순서: 인사 → AI 연결 → GitHub → 프로젝트 → 준비 끝. 고르기 · Claude Code · API 키는 AI 연결 칸 안의 걸음", () => {
+  assert.deepEqual(U.FLOW, ["hello", "ai", "github", "project", "done"]);
+  for (const s of ["choose", "cli", "api"]) assert.equal(U.stageOf(s), "ai", s);
+  assert.equal(U.stageOf("github"), "github");
+  assert.equal(U.nextStage(U.FLOW, "cli"), "github"); assert.equal(U.nextStage(U.FLOW, "github"), "project"); assert.equal(U.nextStage(U.FLOW, "project"), "done");
+  assert.equal(U.nextStage(U.FLOW, "done"), "done"); assert.equal(U.nextStage(U.FLOW, "모름"), "done");
+  assert.equal(U.prevStage(U.FLOW, "github"), "ai"); assert.equal(U.prevStage(U.FLOW, "hello"), "hello");
+  assert.equal(U.firstStep("ai"), "choose", "AI 칸에 들어가면 고르기부터"); assert.equal(U.firstStep("github"), "github");
+});
+
+test("칸 더하기(insertStage): 나중에 튜토리얼 같은 칸을 원하는 칸 뒤에 끼운다 — '준비 끝' 뒤로는 가지 않고, 이미 있으면 그대로, 원래 줄은 바꾸지 않는다(이재엽 '확장성 기반으로')", () => {
+  const f = U.insertStage(U.FLOW, "tutorial", "project");
+  assert.deepEqual(f, ["hello", "ai", "github", "project", "tutorial", "done"]);
+  assert.deepEqual(U.FLOW, ["hello", "ai", "github", "project", "done"], "원래 줄은 그대로");
+  assert.deepEqual(U.insertStage(f, "tutorial", "hello"), f, "이미 있으면 그대로");
+  assert.deepEqual(U.insertStage(U.FLOW, "x", "done"), ["hello", "ai", "github", "project", "x", "done"], "'준비 끝' 뒤는 안 된다 — 그 앞에");
+  assert.deepEqual(U.insertStage(U.FLOW, "x", "없는칸"), ["hello", "ai", "github", "project", "x", "done"]);
+  assert.equal(U.nextStage(f, "project"), "tutorial");
+});
+
+test("GitHub 칸의 할 일: gh 찾기 · 로그인 — 서버가 본 상태(/api/github)로 체크, 서버 없이 연 화면이면 그렇다고. Floe는 비밀번호 · 토큰을 받지 않는다", () => {
+  const gh = (found, signedIn) => ({ ok: true, gh: { found, signedIn } });
+  assert.deepEqual(U.githubSteps(gh(true, true)).map((x) => [x.k, x.done]), [["gh", true], ["login", true]]);
+  assert.equal(U.githubReady(gh(true, true)), true);
+  const nogh = U.githubSteps(gh(false, null));
+  assert.equal(nogh[0].done, false); assert.match(nogh[0].line, /설치/);
+  assert.equal(U.githubReady(gh(false, null)), false);
+  const nologin = U.githubSteps(gh(true, false));
+  assert.equal(nologin[1].done, false); assert.match(nologin[1].line, /gh auth login/);
+  assert.match(U.githubSteps(null)[0].line, /앱이나 서버로 켜면/);
+  assert.equal(U.githubReady(null), false);
+});
+
+test("준비 끝의 요약 세 줄: AI · GitHub · 프로젝트 — 고른 그대로, 건너뛴 것은 건너뛰었다고", () => {
+  const gh = { ok: true, gh: { found: true, signedIn: true } };
+  assert.deepEqual(U.summary({ via: "cli", gh, ghSkip: false, project: { name: "test-1", where: "~/Floe/test-1" } }),
+    [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"]]);
+  assert.deepEqual(U.summary({ via: "api", gh: null, ghSkip: true, project: null }), [["AI", "API 키로 연결"], ["GitHub", "건너뜀 — 나중에 설정에서"], ["프로젝트", "아직 안 골랐어요 — 설정에서 언제든"]]);
+  assert.equal(U.summary({ via: "", gh: { ok: true, gh: { found: true, signedIn: false } }, ghSkip: false, project: null })[1][1], "아직 로그인 전");
+});
+
+test("새로 만든 폴더면 GitHub 저장소도 만들지 묻는다 — GitHub가 준비됐고 · Claude Code가 있고 · 새 폴더이고 · 가져온 저장소가 아닐 때만(만들기는 Claude Code가, 허락은 섬에서)", () => {
+  const ready = { ok: true, gh: { found: true, signedIn: true } }, cc = st();
+  const base = { st: cc, gh: ready, project: { name: "club-app", made: true, repo: "" } };
+  assert.equal(U.offerRepo(base), true);
+  assert.equal(U.offerRepo({ ...base, project: { name: "test-1", made: true, repo: "gamercross/test-1" } }), false, "가져온 저장소");
+  assert.equal(U.offerRepo({ ...base, project: { name: "old", made: false, repo: "" } }), false, "있던 폴더");
+  assert.equal(U.offerRepo({ ...base, gh: { ok: true, gh: { found: true, signedIn: false } } }), false);
+  assert.equal(U.offerRepo({ ...base, project: null }), false);
+  assert.equal(U.offerRepo({ ...base, st: st({ claude: { found: false, version: "", signedIn: null } }) }), false, "Claude Code가 없으면 맡길 곳이 없다(2026-10-24 리뷰)");
+  assert.equal(U.offerRepo({ ...base, st: null }), false);
+});
+
+test("화면(setup.js): 프로젝트 칸은 앱이면 가져오기 · 새로 만들기 · 있는 폴더 셋을 앱(floeApp)에게 부탁하고 경로를 만들지 않는다. 끝나면 저장소 만들기를 바라는지 섬에 알린다", () => {
+  const src = fs.readFileSync(path.join(NAV, "setup.js"), "utf8");
+  for (const f of ["floeApp.cloneProject(", "floeApp.newProject(", "floeApp.connect(", "floeApp.myRepos("]) assert.ok(src.includes(f), f);
+  assert.ok(!/\/Floe\//.test(src.replace(/~\/Floe/g, "")), "홈/Floe 경로는 앱(project.js)이 만든다");
+  assert.match(src, /makeRepo/);
+  assert.match(src, /function render\(\) \{\n    if \(!host\) return;/, "가져오는 중에 닫혀도 빈 화면에 그리지 않는다(2026-10-24 리뷰)");
+  assert.match(src, /r\.config/, "가져온 저장소에 Claude Code 설정이 있으면 알린다");
+  assert.match(src, /function open\(\{ step \} = \{\}\)/, "설정의 '프로젝트 바꾸기'는 프로젝트 칸부터");
+  assert.match(src, /if \(at\) \{ s\.step = at; s\.resumed = true;/, "인사 화면을 먼저 그리지 않고 바로 그 칸(2차 리뷰)");
+  assert.match(src, /floe:project-picked/, "가져오는 중에 닫혔어도 끝나면 섬에 알린다");
+  assert.match(src, /if \(a === "folder" && app && !s\.busy\)/, "바쁠 때 폴더 고르기를 또 하지 않는다");
+  assert.match(src, /fetch\("\/api\/github"/);
+  assert.match(src, /https:\/\/cli\.github\.com/);
 });
 
 test("화면은 키를 저장하지 않는다 — 브라우저 저장소에는 '끝냈다' 기록만, 키는 앱(floeApp.saveKey)으로만 넘긴다", () => {

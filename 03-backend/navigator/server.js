@@ -28,7 +28,7 @@ const Nav = require("./navigator.js");
 const Sensitive = require("./sensitive.js");
 const Steps = require("./steps.js");   // AI 진행(C-12) — 한 일의 말 · 80자 — claude-drafted: 2026-10-20
 const AP = require("./approve.js");    // FR-17 승인 카드의 모양(2026-10-20)
-const { callClaude, usage, claudeVersion, startTask: openClaude } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번)
+const { callClaude, usage, claudeVersion, startTask: openClaude, ledger } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
 const RB = require("./readme-book.js");   // C-26 내 작업 책 — README를 책으로 나눈다(읽기만) — claude-drafted: 2026-10-23
 const GH = require("./github.js");   // 설정의 GitHub 칸(C-25, 2026-10-24) — git · gh에게 읽기만 묻는다 — claude-drafted: 2026-10-24
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
@@ -58,7 +58,8 @@ const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/a
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
 const BOOK_ROUTES = ["/api/readme", "/api/github", "/api/github/create"];   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
-const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES];
+const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
+const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES];
 const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
@@ -147,8 +148,10 @@ const as = (key, read) => (d) => { const v = read(d); return v && { [key]: v }; 
 const stageOf = (v) => (Number.isInteger(v) ? Nav.STAGES[v] : undefined);   // 단계는 정수 0~7만 — "2"·"length" 같은 글자는 단계가 아니다
 
 // Claude에게 묻고, 답의 모양을 확인한 것만 돌려준다. read: 확인해서 화면에 줄 칸들을 만든다(모양이 틀리면 null)
+// 장부(tokens.js)에 남길 이름 — 실패 문구의 what을 짧은 말로
+const LEDGER_LABEL = { "다시 봐 준 결과의": "다시 봐 주기" };
 async function ask(res, prompt, schema, read, what) {
-  const r = await callClaude(prompt, schema);
+  const r = await callClaude(prompt, schema, { label: LEDGER_LABEL[what] || what });
   const out = r.data && read(r.data);
   return out ? send(res, 200, { ok: true, ...out, tokens: r.tokens }) : refuse(res, r.error || `${what} 형식이 맞지 않음`, 502);
 }
@@ -237,31 +240,62 @@ function decideApproval(body) {
 }
 function clearApprovals() { for (const p of [...pending.values()]) p.finish("none"); }
 
+// ── 작업 폴더 — C-31 시작하는 자리(2026-10-24, 이재엽 "C-31부터") · F-49(플로로가 프로젝트를 몰랐다) ──
+// 전에는 훅 알림의 cwd로만 알았다 — 클론한 폴더를 연결만 하고 Claude Code를 그 폴더에서 열지 않으면 Floe는 그 프로젝트를 몰랐다.
+// 이제 앱(Electron main.js)이 처음 설정 · 메뉴에서 고른 폴더를 **같은 프로세스에서** 알려 준다(useProject — HTTP 주소는 없다: 화면 · 다른 프로그램이 경로를 넣지 못하게).
+// 앱이 정한 폴더가 있으면 그것이 먼저(사용자가 앱에서 고른 '플로로가 움직이는 자리'), 없으면 전처럼 가장 최근 훅 알림의 폴더. 경로는 서버 메모리에만 — 답에는 이름만
+let appProject = null;   // { dir, project, at }
+function useProject(dir) {
+  const d = typeof dir === "string" ? dir : "";
+  if (!d || !path.isAbsolute(d)) return false;
+  try { if (!fs.statSync(d).isDirectory()) return false; } catch { return false; }
+  appProject = { dir: d, project: Sensitive.redact(path.basename(d)), at: Date.now() };
+  return true;
+}
+// 연결을 뺀 폴더는 잊는다(앱 main.js의 '연결 빼기') — 앱이 고른 폴더든, 훅 알림으로 안 폴더든(맡긴 일이 그 폴더에서 돌면 훅 알림이 쌓인다).
+// AI 진행의 세션 줄은 남기고 그 폴더(dir)만 비운다 — 훅이 빠진 폴더에서 맡긴 일이 허락 카드 없이 멈추지 않게
+function dropProject(dir) {
+  const d = path.resolve(String(dir || ""));
+  let hit = false;
+  if (appProject && path.resolve(appProject.dir) === d) { appProject = null; hit = true; }
+  for (const s of work.values()) if (s.dir && path.isAbsolute(s.dir) && path.resolve(s.dir) === d) { s.dir = ""; hit = true; }
+  return hit;
+}
+const projectNow = () => appProject || [...work.values()].reverse().find((x) => x.dir && path.isAbsolute(x.dir)) || null;
+
 // ── FR-17 대화로 일 넘기기 — 허락하면 연결한 폴더에서 claude를 연다(셸 없이, -p, 글은 표준 입력으로). 권한 건너뛰기 옵션은 쓰지 않는다 — 허락은 섬의 승인 카드(위)로 ──
-// 폴더는 훅 알림이 알려 준 세션의 cwd에서만 고른다(화면이 보낸 경로는 받지 않는다). 한 번에 하나. 여는 법은 provider.js startTask(셸 없음 · -p · 표준 입력 · 권한 건너뛰기 없음)
+// 폴더는 projectNow(앱이 고른 작업 폴더, 없으면 훅 알림의 cwd)에서만 고른다(화면이 보낸 경로는 받지 않는다). 한 번에 하나. 여는 법은 provider.js startTask(셸 없음 · -p · 표준 입력 · 권한 건너뛰기 없음)
 const TASK_MAX = 4000;
-let task = null;   // {state: running|done|failed, project, at, code, child}
-const publicTask = () => (task ? { state: task.state, project: task.project, at: task.at, code: task.code } : null);
-function startTask(text) {
+let task = null;   // {state: running|done|failed, project, at, code, child, tokens, cost}
+// tokens · cost — 끝났을 때 Claude Code가 알려 준 이번 일의 토큰 · 비용(토큰 장부, 2026-10-24). 모르면 null
+const publicTask = () => (task ? { state: task.state, project: task.project, at: task.at, code: task.code, tokens: task.tokens ?? null, cost: task.cost ?? null } : null);
+const NO_FOLDER = "연결한 프로젝트 폴더를 아직 몰라요 — 처음 설정의 '프로젝트'에서 고르거나, 그 폴더에서 Claude Code를 한 번 열면 알게 돼요";
+function startTask(text, label = "맡긴 일") {
   if (String(text).length > TASK_MAX) return [400, { ok: false, reason: `넘긴 글이 너무 김 — ${TASK_MAX.toLocaleString()}자까지` }];
-  const s = [...work.values()].reverse().find((x) => x.dir);
-  if (!s) return [400, { ok: false, reason: "연결한 프로젝트 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열면(훅 알림) 알게 돼요" }];
+  const s = projectNow();
+  if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 넘겨요" }];
   let child;
-  try { child = openClaude({ dir: s.dir, text }); }
+  // 끝나면(close 전에 provider가 부른다) 장부에 task로 — 토큰 · 비용만, 답 글은 받지 않는다
+  const onResult = (r) => {
+    if (!r) return;
+    ledger.add("task", label, r.usage, r.cost);
+    if (task && task.child === child) { task.tokens = r.usage.total; task.cost = r.cost; }
+  };
+  try { child = openClaude({ dir: s.dir, text, onResult }); }
   catch { return [502, { ok: false, reason: "claude를 열지 못함 — Claude Code가 설치됐는지 확인하세요" }]; }
-  task = { state: "running", project: s.project, at: Date.now(), code: null, child };
+  task = { state: "running", project: s.project, at: Date.now(), code: null, child, tokens: null, cost: null };
   child.on("error", () => { if (task && task.child === child) task.state = "failed"; });
   child.on("close", (code) => { if (task && task.child === child) { task.state = code === 0 ? "done" : "failed"; task.code = code; } });
   return [200, { ok: true, project: s.project, task: publicTask() }];
 }
 
 // ── C-26 내 작업 책 — 연결한 폴더의 README.md를 읽어 책으로 나눠 준다(읽기만) — claude-drafted: 2026-10-23 (이재엽 "책의 작업들은 readme 에서 … 책에서 보여주는 역할만") ──
-// 폴더는 훅 알림이 알려 준 세션의 cwd에서만 고른다(일 넘기기와 같다 — 화면이 보낸 경로는 받지 않는다). 바로가기(심볼릭 링크)는 따라가지 않는다.
+// 폴더는 일 넘기기와 같이 projectNow에서만 고른다(화면이 보낸 경로는 받지 않는다). 바로가기(심볼릭 링크)는 따라가지 않는다.
 // 앞의 256KB만 읽고, 나누기 전에 비밀값을 가린다. 폴더 경로는 주지 않는다 — 이름만. 책이 없으면 why로 까닭만(folder: 폴더를 모름 · none: README 없음)
 const README_MAX_BYTES = 256 * 1024;
 function readmeBook() {
-  const s = [...work.values()].reverse().find((x) => x.dir);
+  const s = projectNow();
   if (!s) return { ok: true, project: "", book: null, why: "folder" };
   const none = { ok: true, project: s.project, book: null, why: "none" };
   if (!path.isAbsolute(s.dir)) return none;   // 훅이 보낸 cwd가 절대 경로가 아니면 읽지 않는다(서버의 작업 폴더를 읽지 않게)
@@ -285,17 +319,16 @@ function readmeBook() {
 }
 
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──
-// 폴더는 README와 같이 훅 알림이 알려 준 세션의 cwd에서만 고른다. 저장소 만들기는 Floe가 하지 않고 일 넘기기(3-16)로 사용자의 Claude Code에 맡긴다 — 글은 github.js createRequest가 정한다(화면이 글을 보내지 않는다)
-const lastDir = () => [...work.values()].reverse().find((x) => x.dir && path.isAbsolute(x.dir));
-function githubNow() { const s = lastDir(); return GH.status(s ? s.dir : "", s ? s.project : ""); }
+// 폴더는 README와 같이 projectNow에서만 고른다. 저장소 만들기는 Floe가 하지 않고 일 넘기기(3-16)로 사용자의 Claude Code에 맡긴다 — 글은 github.js createRequest가 정한다(화면이 글을 보내지 않는다)
+function githubNow() { const s = projectNow(); return GH.status(s ? s.dir : "", s ? s.project : ""); }
 function githubCreate(body) {
   const vis = body && body.visibility != null ? body.visibility : "private";
   if (!GH.VIS.includes(vis)) return [400, { ok: false, reason: "공개 범위는 private · public 중 하나" }];
-  const s = lastDir();
-  if (!s) return [400, { ok: false, reason: "연결한 프로젝트 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열면(훅 알림) 알게 돼요" }];
+  const s = projectNow();
+  if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   const now = GH.status(s.dir, s.project);
   if (now.remote) return [409, { ok: false, reason: "이 폴더는 이미 원격 저장소와 이어져 있어요" }];
-  return startTask(GH.createRequest(s.project, vis));
+  return startTask(GH.createRequest(s.project, vis), "저장소 만들기");
 }
 
 function addEvent(body) {
@@ -343,7 +376,7 @@ function setupNow() {
 async function checkAi(res) {
   const provider = Setup.providerOf(process.env);
   if (process.env.NAV_REPLAY) return send(res, 200, { ok: true, provider, replay: true, tokens: 0 });
-  const r = await callClaude(Setup.CHECK_PROMPT, Setup.CHECK_SCHEMA);
+  const r = await callClaude(Setup.CHECK_PROMPT, Setup.CHECK_SCHEMA, { label: "연결 확인" });
   if (r.data && r.data.ok === true) return send(res, 200, { ok: true, provider, tokens: r.tokens || 0 });
   return refuse(res, r.error || "답의 모양이 맞지 않음", 502);
 }
@@ -375,7 +408,8 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/task") return send(res, 200, { ok: true, task: publicTask() });   // FR-17 넘긴 일의 상태(API.md 3-16)
   if (req.method === "GET" && route === "/api/readme") return send(res, 200, readmeBook());   // C-26 내 작업 책(API.md 3-18) — 읽기만
   if (req.method === "GET" && route === "/api/github") return send(res, 200, githubNow());   // 설정의 GitHub 칸(API.md 3-19) — 읽기만
-  if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다
+  if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage(), ledger: ledger.snapshot() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다. ledger: 토큰 장부(숫자 · 이름만, 2026-10-24)
+  if (req.method === "POST" && route === "/api/usage/reset") { ledger.reset(); return send(res, 200, { ok: true, ledger: ledger.snapshot() }); }   // 토큰 장부 새로 재기 — 본문 없음, 확인 값
   if (req.method === "GET" && route === "/api/setup") return send(res, 200, { ok: true, ...setupNow() });   // 처음 설정 — 있다 · 없다만(API.md 3-10)
   if (req.method === "POST" && route === "/api/setup/check") return checkAi(res);   // 연결 확인(API.md 3-11) — 본문 없음
   if (req.method !== "POST" || !POST_ROUTES.includes(route)) return refuse(res, "없는 주소", 404);   // 본문을 읽기 전에(전에는 빈 본문이면 400이었다)
@@ -434,4 +468,4 @@ if (require.main === module) {
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
   });
 }
-module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, build, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };
+module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다
