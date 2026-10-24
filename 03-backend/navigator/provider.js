@@ -160,11 +160,13 @@ function claudeVersion(run = spawnSync) {
 }
 
 // ── 이 컴퓨터에 로그인된 Claude Code(`claude -p`) — 도구·MCP·설정·대화 기록 없이 글만 판정한다 ──
+// 시스템 안내문은 Claude Code 기본(코딩 도구용) 대신 한 줄 — 바닥값 3,781 → 1,120토큰(2026-10-24 실측, live-check로 일치율 확인)
+const CLI_SYSTEM = "Floe가 보낸 요청에만 답한다. 정해진 JSON 형식을 지킨다.";
+const cliArgs = (schema) => ["-p", "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence",
+  "--system-prompt", CLI_SYSTEM, "--output-format", "json", "--json-schema", JSON.stringify(schema)];
 function callCli(prompt, schema) {
   return new Promise((resolve) => {
-    const args = ["-p", "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence",
-      "--output-format", "json", "--json-schema", JSON.stringify(schema)];
-    const child = spawn("claude", args, { env: { ...process.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
+    const child = spawn("claude", cliArgs(schema), { env: { ...process.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
     let out = "";
     const timer = setTimeout(() => { child.kill(); resolve({ error: "시간 초과" }); }, TIMEOUT_MS);
     child.stdout.on("data", (d) => (out += d));
@@ -242,4 +244,4 @@ const meter = createMeter(settings(process.env).budget, fileStore(usageFile), { 
 const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); return new Anthropic(); };   // 키는 ANTHROPIC_API_KEY에서 SDK가 읽는다
 const callClaude = createCaller({ makeClient, meter });
 
-module.exports = { RELAY_MODELS, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, startTask };
+module.exports = { RELAY_MODELS, CLI_SYSTEM, cliArgs, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, startTask };

@@ -41,6 +41,15 @@ test("키가 없으면 지금처럼 claude -p(callCli)로 부른다 — 한도�
   assert.equal(t.meter.used, 0);
 });
 
+// 2026-10-24: Claude Code의 기본 시스템 안내문 대신 짧은 한 줄 — 바닥값 3,781 → 1,120토큰(실측). 빠지면 판정마다 약 2,700토큰이 다시 든다
+test("claude -p 판정은 짧은 시스템 안내문으로 부른다 — 도구 · MCP · 설정도 끈 채로", () => {
+  const a = P.cliArgs(SCHEMA);
+  const i = a.indexOf("--system-prompt");
+  assert.ok(i >= 0 && a[i + 1] === P.CLI_SYSTEM && P.CLI_SYSTEM.length <= 100);
+  for (const f of ["--tools", "--strict-mcp-config", "--setting-sources", "--no-session-persistence"]) assert.ok(a.includes(f), f);
+  assert.equal(a[a.indexOf("--json-schema") + 1], JSON.stringify(SCHEMA));
+});
+
 test("API 요청 모양: 기본 모델, 구조화 출력, 낮은 effort, 폴백", async () => {
   const t = make({ ANTHROPIC_API_KEY: KEY }, ok());
   await t.callClaude("작업 글", SCHEMA);
