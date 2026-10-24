@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v22.0 | 2026-10-24 | 이재엽 | 준비 계획판(C-34) — 한 번에 넣은 글 · README로 계획과 기준을 세우고 줄마다 맞아요 / 고칠래요 · 의견으로 다시 세우거나 확정, 확정한 줄을 기준과 함께 맡기면 Claude Code가 기준마다 보고(C-32 · C-33, F-49 ② ③). 처음 설정에 계획 칸 (#183) | `02-frontend/navigator/` · `03-backend/navigator/` · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/00-overview/requirements.md` · `01-docs/07-maintenance/fix-map.md` |
 | v21.1 | 2026-10-24 | 두승현 | 판정용 claude -p의 시스템 안내문을 한 줄로 — 판정 한 번 평균 6,675 → 4,729토큰, 일치율 100% 그대로 (#182) | `03-backend/navigator/`(담당 이재엽 — 이 줄이 알림) · `04-tests/navigator/` · `01-docs/verification/` · `01-docs/00-overview/` |
 | v21.0 | 2026-10-24 | 이재엽 | C-31 시작하는 자리 — 처음 설정이 AI 연결 → GitHub → 프로젝트(내 저장소 가져오기 · 홈/Floe에 새로 만들기 · 있는 폴더) → 준비 끝으로 이어지고, 고른 폴더를 서버가 바로 안다(F-49 ①). 옆 창이 섬을 덮지 않게(F-50), 설정의 토큰 칸(Floe의 AI · Claude Code에 맡긴 일) (#181) | `02-frontend/navigator/` · `02-frontend/electron/` · `03-backend/navigator/` · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/00-overview/requirements.md` · `01-docs/07-maintenance/fix-map.md` |
 | v20.1 | 2026-10-24 | 이재엽 | 요구 후보 C-31~C-33(11/1 전에 만든다) — 시작하는 자리(GitHub · 새 저장소 · 작업 폴더를 앱 안에서) · 플로로가 프로젝트를 알고 해낸 것을 Claude Code와 확인 · Claude Code와 나눈 대화를 초등학생 말로, 고칠 목록 F-49(플로로가 문제를 못 알아봄) (#180) | `01-docs/00-overview/requirements.md` · `01-docs/00-overview/team-priorities.md` · `01-docs/07-maintenance/fix-map.md` |
