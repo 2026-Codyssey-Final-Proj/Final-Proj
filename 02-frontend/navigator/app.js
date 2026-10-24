@@ -122,6 +122,7 @@
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
     qwin: false, qtab: "quest", chat: [], say: "", rb: null, rbSel: 0, tuSel: "quest",   // rb · tuSel — 책 탭의 README · 배우기 탭의 고른 기능(이 켜짐 동안만)
+    gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
   let exHidden = M ? M.readHidden(STORE) : false;
@@ -395,7 +396,52 @@
     eye: icon('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>', 14),
     box: icon('<path d="M4 7h16v13H4z"></path><path d="M4 7l2-3h12l2 3"></path><path d="M10 11h4"></path>', 14),
     bell: icon('<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"></path><path d="M10 20a2 2 0 0 0 4 0"></path>', 14),
+    git: icon('<circle cx="6" cy="6" r="2"></circle><circle cx="6" cy="18" r="2"></circle><circle cx="18" cy="8" r="2"></circle><path d="M6 8v8"></path><path d="M18 10a6 6 0 0 1-6 6H8"></path>', 14),
   };
+  // GitHub 칸(C-25, claude-drafted: 2026-10-24 — 이재엽 "깃허브을 연동하는 곳을 설정창에") — Floe는 토큰을 받지 않는다. 서버가 이 컴퓨터의 git · gh에게 읽기만 묻고(/api/github, API.md 3-19),
+  // 저장소 만들기는 사람이 누를 때만 사용자의 Claude Code에 맡긴다(/api/github/create → 일 넘기기 3-16). 서버 없이 열면 안내만
+  let ghLoading = false;
+  async function loadGithub() {
+    if (!canLive) return;
+    ghLoading = true;
+    try { st.gh = await (await fetch("/api/github", { cache: "no-store" })).json(); } catch { st.gh = { ok: false }; }
+    ghLoading = false; render();
+  }
+  async function createRepo() {
+    st.ghNote = "Claude Code에 맡기는 중…"; render();
+    let r;
+    try { r = await (await fetch("/api/github/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visibility: st.ghVis }) })).json(); }
+    catch { r = { ok: false, reason: "서버에 닿지 않았어요" }; }
+    st.ghNote = r && r.ok ? "Claude Code에 맡겼어요 — 허락을 구하면 섬에 떠요. 끝나면 '다시 확인'을 눌러요." : `맡기지 못했어요 — ${(r && r.reason) || "까닭을 모름"}`;
+    render();
+  }
+  const GH_CLI = "https://cli.github.com";
+  function githubGroup() {
+    if (!canLive) return sgrp(SG.git, "GitHub", `<span>서버로 열면(앱 · floe.js) 연결한 프로젝트 폴더가 GitHub 저장소와 이어졌는지 보여요. Floe는 GitHub 비밀번호 · 토큰을 받지 않아요.</span>`);
+    if (!st.gh && !ghLoading) setTimeout(loadGithub, 0);
+    const g = st.gh;
+    const again = `<button type="button" class="btn" data-act="gh-reload">다시 확인</button>`;
+    if (!g) return sgrp(SG.git, "GitHub", `<div class="row"><span class="led"></span><span class="grow">확인하는 중…</span></div>`);
+    if (!g.ok) return sgrp(SG.git, "GitHub", `<div class="row"><span class="led off"></span><span class="grow">서버에 닿지 않았어요</span>${again}</div>`);
+    const cli = !g.gh.found ? `<div class="row"><span class="led off"></span><span class="grow">GitHub CLI(gh)가 없어요 — 설치하면 저장소 만들기를 Claude Code에 맡길 수 있어요</span><a class="btn" href="${GH_CLI}" target="_blank" rel="noopener">설치 안내</a></div>`
+      : !g.gh.signedIn ? `<div class="row"><span class="led off"></span><span class="grow">GitHub에 로그인이 필요해 보여요 — 터미널에서 <code>gh auth login</code> 한 번</span></div>`
+      : `<div class="row"><span class="led on"></span><span class="grow">GitHub CLI에 로그인됨</span></div>`;
+    const where = g.project ? `${esc(g.project)} 폴더` : "프로젝트 폴더";
+    let repo;
+    if (g.why === "folder") repo = `<span>연결한 프로젝트 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열면 알게 돼요.</span>`;
+    else if (g.why === "no-git") repo = `<span>이 컴퓨터에 git이 없어요 — Claude Code에 "git 설치를 도와줘"라고 물어봐요.</span>`;
+    else if (g.remote && g.remote.kind === "github") repo = `<div class="row"><span class="led on"></span><span class="grow">${where} → <b>${esc(g.remote.owner)}/${esc(g.remote.repo)}</b></span><a class="btn" href="${esc(g.remote.web)}" target="_blank" rel="noopener">GitHub에서 열기</a></div>
+      <span class="meta">기록 · 저장은 이 저장소의 README와 커밋으로 남아요. 올리는 일은 Claude Code가 하고, Floe는 읽기만 해요.</span>`;
+    else if (g.remote) repo = `<div class="row"><span class="led"></span><span class="grow">${where}는 GitHub가 아닌 곳과 이어져 있어요 — 그대로 써도 되고, 책(README)은 똑같이 읽혀요.</span></div>`;
+    else {
+      const can = g.gh.found && g.gh.signedIn, live = st.mode === "live";
+      repo = `<div class="row"><span class="led off"></span><span class="grow">${where}는 ${g.why === "not-repo" ? "아직 git 저장소가 아니에요" : "아직 GitHub 저장소와 이어지지 않았어요"}</span></div>
+      ${srow("공개 범위", `<span class="pick" role="group" aria-label="새 저장소의 공개 범위">${[["private", "비공개"], ["public", "공개"]].map(([v, n]) => `<button type="button" data-act="gh-vis" data-v="${v}" aria-pressed="${st.ghVis === v}">${n}</button>`).join("")}</span>`)}
+      <div class="row"><button type="button" class="btn pri" data-act="gh-create" ${can && live ? "" : "disabled"}>저장소 만들어 달라고 Claude Code에 맡기기</button></div>
+      <span class="meta">${!can ? "위의 GitHub CLI 준비가 먼저예요. " : !live ? "보기 방식을 '진짜 AI'로 바꾸면 맡길 수 있어요(Claude Code가 움직여요). " : ""}README 첫 장을 만들고 .env 같은 비밀값 파일은 빼고 올려요. 강제 푸시 · 지우기는 하지 않아요.</span>`;
+    }
+    return sgrp(SG.git, "GitHub", `${cli}${repo}${st.ghNote ? `<span class="meta" role="status">${esc(st.ghNote)}</span>` : ""}<div class="row"><span class="grow"></span>${again}</div>`);
+  }
   const sgrp = (ic, title, body) => `<section class="sgrp"><h3 class="sg-h">${ic}${title}</h3>${body}</section>`;
   const srow = (label, control) => `<div class="srow"><span>${label}</span>${control}</div>`;
   function settingsBody() {
@@ -425,7 +471,7 @@
       <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>
       <div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>`);
     const log = sgrp(SG.bell, "알림 · 느낀 점", `${alertLog()}${notesCard()}`);
-    return `${bondCard()}${link}${view}${log}${keep}`;
+    return `${bondCard()}${link}${githubGroup()}${view}${log}${keep}`;
   }
   // 알림 기록(FR-7) — [때 · 도구 · 무슨 알림 · 서버가 준 한 줄 · 이 알림으로 끝낸 할 일]. 비밀번호처럼 보이는 글은 숨긴 채로 남는다(alerts.js)
   const clock = (t) => (Number.isFinite(t) ? new Date(t).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) : "");
@@ -2036,7 +2082,7 @@
     },
     again: () => set({ later: false, picking: true }),
     pick: () => set({ picking: true }),
-    settings: () => set({ settings: !st.settings }),
+    settings: () => { if (!st.settings) st.gh = null; set({ settings: !st.settings }); },   // 열 때마다 GitHub 칸을 다시 확인한다(C-25)
     // ── 퀘스트(C-22, 2026-10-21) — 시작 · 받기 · 고치기 · 한 줄 · 완료 보고 · 창 ──
     send: () => send(),
     "idea-example": () => { st.say = S.first.text.split("\n")[0]; send(); },   // 연습 — 연습 첫 글의 첫 줄을 말한 것으로
@@ -2230,6 +2276,9 @@
     "app-connect": async () => { const r = await window.floeApp.connect(); if (r && r.message) say(r.message.split("\n")[0]); },
     "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.message) say(r.message.split("\n")[0]); },
     "app-settings": () => window.floeApp.openSettings(),
+    "gh-reload": () => { st.ghNote = ""; st.gh = null; loadGithub(); render(); },   // 설정의 GitHub 칸(C-25, 2026-10-24)
+    "gh-vis": (i, el) => set({ ghVis: el && el.dataset.v === "public" ? "public" : "private" }),
+    "gh-create": () => createRepo(),
     alog: () => set({ alogOpen: !st.alogOpen, alogNote: "" }),
     // 연결 끊기 — 끊은 동안 들어온 알림은 받지 않는다(alerts.js accept). 다시 연결하면 그 뒤의 알림부터 받는다
     unplug: () => { set({ unplug: !st.unplug, ping: st.unplug ? st.ping : "" }); say(st.unplug ? "연결을 끊었어요. 작업 알림을 받지 않아요" : "다시 연결했어요"); },
