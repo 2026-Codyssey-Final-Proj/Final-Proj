@@ -72,6 +72,7 @@ test("맡길 글: 기본 비공개, 이름은 안전한 글자만, 비밀값 파
   assert.match(t, /비공개 저장소/);
   assert.match(t, /gh repo create club-rm-rf --private --source \. --remote origin --push/);
   assert.match(t, /\.env/); assert.match(t, /강제 푸시/); assert.match(t, /## 버전/);
+  assert.match(t, /\.claude\/settings\.local\.json/, "이 컴퓨터의 설정(훅 경로)도 올리지 않는다(2026-10-24)");
   assert.match(GH.createRequest("x", "public"), /--public/);
   assert.match(GH.createRequest("x", "weird"), /--private/);
   assert.match(GH.createRequest(""), /my-floe-project/);

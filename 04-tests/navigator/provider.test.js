@@ -435,3 +435,33 @@ test("중계 서버에서 400·404가 나면 받는 모델 이름을 알려 준�
     assert.doesNotMatch(official.error, /claude-opus-4-8/);
   }
 });
+
+// ── 토큰 장부(2026-10-24, 이재엽 "테스트를 진행하면서 토큰값도 계산을 할거야") — 한도(meter)와 따로, 구독(cli)이어도 Claude Code가 알려 준 값을 숫자로 ──
+const T = require("../../03-backend/navigator/tokens.js");
+const memLedger = () => { let v = null; return T.createLedger({ load: () => v, save: (s) => { v = s; } }, () => 1); };
+test("장부: Floe의 AI 호출을 floe로 쌓는다 — cli는 Claude Code가 알려 준 토큰 · 비용, api는 토큰(비용은 모름), 이름은 부른 쪽이 준 것", async () => {
+  const ledger = memLedger();
+  const cli = P.createCaller({ env: {}, callCli: async () => ({ data: { ok: true }, tokens: 1234, usage: T.usageOf({ input_tokens: 1000, output_tokens: 234 }), cost: 0.004 }), makeClient: () => null, meter: P.createMeter(null, memStore()), ledger });
+  await cli("질문", SCHEMA, { label: "판정" });
+  const f = fake(ok());
+  const api = P.createCaller({ env: { ANTHROPIC_API_KEY: KEY }, callCli: async () => ({}), makeClient: () => f.client, meter: P.createMeter(null, memStore()), ledger });
+  await api("질문", SCHEMA);
+  const s = ledger.snapshot();
+  assert.deepEqual(s.kinds.floe, { count: 2, tokens: 1234 + 155, cost: 0.004 });
+  assert.equal(s.runs[1].label, "판정"); assert.equal(s.runs[1].cost, 0.004);
+  assert.equal(s.runs[0].label, "AI", "이름을 안 주면 AI"); assert.equal(s.runs[0].cost, null);
+  assert.deepEqual([s.runs[0].input, s.runs[0].output, s.runs[0].cacheWrite, s.runs[0].cacheRead], [100, 40, 10, 5]);
+});
+test("장부: Claude Code가 형식이 틀린 답을 줘도 토큰은 나갔으니 쌓는다(callCli의 실패 쪽도 usage · 비용을 돌려준다)", async () => {
+  const ledger = memLedger();
+  await P.createCaller({ env: {}, callCli: async () => ({ error: "Claude가 정해진 형식으로 답하지 않음", tokens: 50, usage: T.usageOf({ output_tokens: 50 }), cost: 0.001 }), makeClient: () => null, meter: P.createMeter(null, memStore()), ledger })("질문", SCHEMA, { label: "판정" });
+  assert.deepEqual(ledger.snapshot().kinds.floe, { count: 1, tokens: 50, cost: 0.001 });
+  assert.match(require("node:fs").readFileSync(require.resolve("../../03-backend/navigator/provider.js"), "utf8"), /error: "Claude가 정해진 형식으로 답하지 않음", \.\.\.paid/);
+});
+test("장부: 재생 · 토큰 없는 실패는 쌓지 않는다", async () => {
+  const ledger = memLedger();
+  const items = { [REC.keyOf("질문", SCHEMA)]: { ok: true } };
+  await P.createCaller({ env: {}, callCli: async () => { throw new Error("x"); }, makeClient: () => null, meter: P.createMeter(null, memStore()), replay: items, ledger })("질문", SCHEMA);
+  await P.createCaller({ env: {}, callCli: async () => ({ error: "시간 초과" }), makeClient: () => null, meter: P.createMeter(null, memStore()), ledger })("질문", SCHEMA);
+  assert.equal(ledger.snapshot().total.count, 0);
+});

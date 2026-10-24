@@ -15,6 +15,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const REC = require("./recording.js");
+const Tokens = require("./tokens.js");   // 토큰 장부(2026-10-24) — 한도(meter)와 따로, 구독이어도 Claude Code가 알려 준 값을 센다
 
 const TIMEOUT_MS = 90_000;
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
@@ -143,10 +144,11 @@ async function callApi(client, cfg, prompt, schema) {
   } catch (e) { return { error: apiError(e, cfg) }; }
   const u = res.usage || {};
   const tokens = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.output_tokens || 0);
-  if (res.stop_reason === "refusal") return { error: "Claude가 이 글에는 답하지 않았어요", tokens };
-  if (res.stop_reason === "max_tokens") return { error: "답이 길어서 잘렸어요 — NAV_MAX_TOKENS를 늘려 보세요", tokens };
+  const usage = Tokens.usageOf(u);
+  if (res.stop_reason === "refusal") return { error: "Claude가 이 글에는 답하지 않았어요", tokens, usage };
+  if (res.stop_reason === "max_tokens") return { error: "답이 길어서 잘렸어요 — NAV_MAX_TOKENS를 늘려 보세요", tokens, usage };
   const text = (res.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
-  try { return { data: extractJson(text), tokens }; } catch { return { error: "Claude가 정해진 형식으로 답하지 않음", tokens }; }
+  try { return { data: extractJson(text), tokens, usage }; } catch { return { error: "Claude가 정해진 형식으로 답하지 않음", tokens, usage }; }
 }
 
 // 처음 설정(2026-10-19, setup-status.js · GET /api/setup)이 묻는 claude 명령의 판 — --version이라 AI를 부르지 않고 토큰도 쓰지 않는다. run: 시험에서 바꿔 끼운다
@@ -175,10 +177,11 @@ function callCli(prompt, schema) {
       clearTimeout(timer);
       try {
         const r = JSON.parse(out);
-        if (r.is_error || !r.structured_output) return resolve({ error: "Claude가 정해진 형식으로 답하지 않음" });
         const u = r.usage || {};
         const tokens = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.output_tokens || 0);
-        resolve({ data: r.structured_output, tokens });
+        const paid = { tokens, usage: Tokens.usageOf(u), cost: Number.isFinite(r.total_cost_usd) ? r.total_cost_usd : null };   // 형식이 틀린 답도 토큰은 나갔다 — 장부에 남긴다
+        if (r.is_error || !r.structured_output) return resolve({ error: "Claude가 정해진 형식으로 답하지 않음", ...paid });
+        resolve({ data: r.structured_output, ...paid });
       } catch { resolve({ error: "Claude 응답을 읽지 못함" }); }
     });
     child.stdin.end(prompt);
@@ -188,9 +191,14 @@ function callCli(prompt, schema) {
 // ── FR-17 대화로 일 넘기기(2026-10-20): 허락한 일을 사용자의 Claude Code로 넘긴다 — 연결한 폴더(dir)에서 `claude -p`를 셸 없이 열고 글은 표준 입력으로 ──
 // 판정(callCli)과 다르다: 도구 · 설정(훅 포함)을 그대로 쓰고, 권한 건너뛰기 옵션은 쓰지 않는다 — 파일을 고치거나 명령을 쓰기 전의 허락은 PermissionRequest 훅(approve-hook.js)이 섬에 묻는다.
 // 대화 기록은 잇지 않는다(--resume · --continue 없음 — 열어 둔 창과 한 세션을 두 곳에서 쓰지 않게) [제안]. NAV_CLAUDE_BIN은 시험용 가짜 claude(.js면 node로 연다)
-function startTask({ dir, text, bin = process.env.NAV_CLAUDE_BIN || "claude" }) {
-  const args = ["-p"], js = bin.endsWith(".js");
-  const child = spawn(js ? process.execPath : bin, js ? [bin, ...args] : args, { cwd: dir, stdio: ["pipe", "ignore", "ignore"], windowsHide: true });
+// 2026-10-24(토큰 장부): 끝에 결과 한 덩이(--output-format json)를 받아 onResult로 넘긴다 — 토큰 · 비용만 쓰고 답 글은 담지 않는다(tokens.js parseResult). 앞 4MB까지만 모은다
+const TASK_OUT_MAX = 4 * 1024 * 1024;
+function startTask({ dir, text, bin = process.env.NAV_CLAUDE_BIN || "claude", onResult = null }) {
+  const args = ["-p", "--output-format", "json"], js = bin.endsWith(".js");
+  const child = spawn(js ? process.execPath : bin, js ? [bin, ...args] : args, { cwd: dir, stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
+  let out = "";
+  child.stdout.on("data", (d) => { if (out.length < TASK_OUT_MAX) out += d; });
+  child.on("close", () => { if (onResult) onResult(Tokens.parseResult(out)); });
   child.stdin.on("error", () => {});
   child.stdin.end(`Floe(섬)에서 넘긴 일이에요. 아래 요구 문장대로 해 주세요. 파일을 고치거나 명령을 쓰기 전에 허락을 구하면 Floe 섬에서 허용 · 거절을 받아요.\n\n${String(text).trim()}\n`);
   return child;
@@ -201,10 +209,11 @@ const replayFrom = (env) => (env.NAV_REPLAY ? REC.load(env.NAV_REPLAY) : null);
 const recorderFrom = (env) => (env.NAV_RECORD ? (key, data) => { const items = REC.load(env.NAV_RECORD); items[key] = data; REC.save(env.NAV_RECORD, items); } : null);
 
 // 호출 함수를 만든다. makeClient는 키가 있을 때만, 처음 부를 때 한 번 SDK를 읽는다(SDK가 없는 사람도 다른 방식은 쓴다)
-function createCaller({ env = process.env, callCli: cli = callCli, makeClient, meter, replay = replayFrom(env), record = recorderFrom(env) }) {
+function createCaller({ env = process.env, callCli: cli = callCli, makeClient, meter, replay = replayFrom(env), record = recorderFrom(env), ledger = null }) {
   // 설정과 클라이언트는 부를 때마다 환경을 다시 본다 — 처음 설정(앱)에서 키 · 중계 서버를 넣거나 빼면 다시 켜지 않아도 다음 호출부터 바뀐다(2026-10-19)
   let client = null, clientFor = "";
-  return async function callClaude(prompt, schema) {
+  // meta.label — 장부에 남길 이름(판정 · 퀘스트 같은 정해진 말, tokens.js). 토큰이 쓰였으면 실패한 호출도 쌓는다(잘림 · 거절도 토큰은 나갔다)
+  return async function callClaude(prompt, schema, meta = {}) {
     const cfg = settings(env);
     const key = REC.keyOf(prompt, schema);
     if (replay) {   // 재생 중에는 AI를 부르지 않는다 — 키도 한도도 필요 없다
@@ -222,6 +231,7 @@ function createCaller({ env = process.env, callCli: cli = callCli, makeClient, m
       if (r.tokens) meter.add(r.tokens, { bucket: gate.bucket, tester: cfg.tester });
     }
     if (record && r.data !== undefined) record(key, r.data);
+    if (ledger && r.tokens > 0) ledger.add("floe", meta && meta.label, r.usage || Tokens.usageOf({ input_tokens: r.tokens }), r.cost ?? null);
     return r;
   };
 }
@@ -242,6 +252,7 @@ const describe = (env, meter) => {
 const usageFile = process.env.NAV_USAGE_FILE || path.join(os.homedir(), ".navigator-usage.json");
 const meter = createMeter(settings(process.env).budget, fileStore(usageFile), { plan: settings(process.env).plan, testerBudget: testerBudgetOf(process.env) });
 const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); return new Anthropic(); };   // 키는 ANTHROPIC_API_KEY에서 SDK가 읽는다
-const callClaude = createCaller({ makeClient, meter });
+const ledger = Tokens.createLedger(Tokens.fileStore(Tokens.fileOf(process.env)));   // 토큰 장부(2026-10-24) — 설정의 토큰 칸 · /api/usage의 ledger
+const callClaude = createCaller({ makeClient, meter, ledger });
 
-module.exports = { RELAY_MODELS, cliArgs, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, startTask };
+module.exports = { RELAY_MODELS, cliArgs, callClaude, ledger, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, startTask };

@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| 판 | **v1.2 · 2026-10-20** — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
+| 판 | **v1.3 · 2026-10-24** — 작업 폴더를 앱이 알려 준다(3-16 · 3-18 · 3-19 "폴더 고르기", C-31) · 토큰 장부(3-5 `ledger` · `POST /api/usage/reset`, 3-16 `tokens` · `cost`). v1.2(2026-10-20) — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
 | 기준 코드 | `server.js` — 시연 안전장치(#94: 확인 값·받은 글 가림·기록 비우기)와 판정 규칙(#96: 등급별 할 일)을 합친 상태. **2026-10-18 F-04: AI 네 주소도 확인 값**, 6단계 할 일 넷(F-03). 2026-10-20 AI 진행(`steps.js` · `hook.js` PostToolUse) |
 | 시험 | [`04-tests/navigator/api-contract.test.js`](../../04-tests/navigator/api-contract.test.js) — 실제 AI를 부르지 않는다(5절). FR-17 주소는 [`task-api.test.js`](../../04-tests/navigator/task-api.test.js)(가짜 claude · 재생) |
 | 바꾸는 법 | 이 문서·시험·`server.js`를 한 PR에서 같이 고친다. 화면이 읽는 칸이 바뀌면 화면 담당에게 알린다 |
@@ -215,11 +215,19 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 | `buckets` | `{통: {used, limit}}` | `NAV_PLAN`이 있을 때만 |
 | `testers` | `{이름: 토큰}` | 테스터별 기록이 있을 때만 |
 | `replay` · `record` | `true` | 재생·녹화 중일 때만 |
+| `ledger` | 객체 | **토큰 장부**(2026-10-24, [tokens.js](tokens.js)) — 아래 |
 
 ```jsonc
 { "ok": true, "provider": "cli", "model": "claude-opus-5-5", "host": "api.anthropic.com", "compat": false,
-  "used": 0, "budget": null, "state": "ok", "replay": true }
+  "used": 0, "budget": null, "state": "ok", "replay": true,
+  "ledger": { "since": 1761300000000, "total": { "count": 2, "tokens": 3000, "cost": 0.0234 },
+    "kinds": { "floe": { "count": 1, "tokens": 1800, "cost": 0 }, "task": { "count": 1, "tokens": 1200, "cost": 0.0234 } },
+    "runs": [{ "at": 1761300100000, "kind": "task", "label": "저장소 만들기", "input": 0, "output": 1200, "cacheWrite": 0, "cacheRead": 0, "total": 1200, "cost": 0.0234 }] } }
 ```
+
+<!-- claude-drafted: 2026-10-24 — 이재엽 "테스트를 진행하면서 토큰값도 계산을 할거야" · 버튼 "이번 PR에 같이" -->
+- **토큰 장부(`ledger`)** — 한도(`used` · `budget` — 내 API 키의 예산)와 **따로** 센다. `floe` = Floe의 AI 호출(판정 · 퀘스트 · 정리 · 연결 확인 — 구독(`cli`)이어도 Claude Code가 알려 준 usage), `task` = Claude Code에 맡긴 일(3-16 · 3-19 — `claude -p --output-format json`의 결과에서). `cost`는 Claude Code가 알려 준 `total_cost_usd`의 합 — API 키로 부른 Floe의 AI는 비용을 모르므로 0(지어내지 않는다), 줄마다는 `null`. `runs`는 새것부터 30줄, `label`은 정해진 한국어 이름만(그 밖은 `AI`). 보낸 글 · 답 · 폴더 이름은 담지 않는다. 사용자가 터미널에서 직접 연 Claude Code는 세지 않는다(Floe가 보지 못한다). 파일은 `NAV_TOKENS_FILE`, 없으면 `NAV_USAGE_FILE` 옆 `-tokens.json`, 없으면 `~/.navigator-tokens.json`(나만 읽기 600). 재생 중에는 쌓이지 않는다.
+- **`POST /api/usage/reset`** — 장부를 0부터(`since`가 지금). 본문 없음, **확인 값**이 있어야 한다(지우는 일이라). 답 `{ ok: true, ledger }`. 화면: 설정의 **토큰** 칸 '새로 재기' — 테스트를 시작할 때.
 
 ### 3-6. `POST /api/judge` — 지금 단계에서 어디쯤인지
 
@@ -442,9 +450,10 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 ### 3-16. 일 넘기기 — `POST /api/task/tidy` · `POST /api/task/start` · `GET /api/task`
 
 - **`/api/task/tidy`** — 섬에 적은 할 일(`text`, 4,000자까지)을 요구 문장으로 정리한다. AI 한 번(`provider.js`, [navigator.js](navigator.js) `taskPrompt` · `TASK_SCHEMA`). 성공 `{ ok, lines, say, tokens }` — `lines`는 1~12줄 · 한 줄 200자. 거절: 400 `작업 내용이 비어 있음` · 400 `넘긴 글이 너무 김 — 4,000자까지` · 502 `정리 형식이 맞지 않음`. 연습 모드 · 서버 없이는 섬이 부르지 않고 `taskLines`(줄 · 문장 나누기)만 쓴다.
-- **`/api/task/start`** — 사람이 고쳐 확정한 요구 문장(`text`)을 **사용자의 Claude Code**에 넘긴다. 서버는 훅 알림(3-2)이 알려 준 **가장 최근 세션의 폴더**에서 `claude -p`를 **셸 없이** 열고 글은 표준 입력으로 준다([provider.js](provider.js) `startTask` — 외부 AI 호출은 그 파일 한 곳). 권한 건너뛰기 · 설정 끄기 · 세션 잇기 옵션은 쓰지 않는다 — 그 세션이 허락을 구하면 3-13의 훅이 섬에 묻는다. 화면이 보낸 폴더 경로는 받지 않는다. 한 번에 하나.
-  성공 `{ ok, project, task: { state: "running", project, at, code: null } }`. 거절: 400 `연결한 프로젝트 폴더를 아직 몰라요 — …`(훅 알림이 온 적 없음) · 400 비어 있음 · 400 4,000자 · 409 `넘긴 일이 아직 진행 중이에요` · 502 `claude를 열지 못함`.
-- **`/api/task`** — `{ ok, task }`: 넘긴 일의 상태 `running` · `done` · `failed`와 끝 코드. 없으면 `null`. 진행(한 일)은 3-12에, 허락은 3-14에 따로 온다.
+- **폴더 고르기(2026-10-24, C-31 · F-49):** 앱이 처음 설정 · 메뉴에서 고른 **작업 폴더**가 있으면 그 폴더, 없으면 훅 알림(3-2)이 알려 준 **가장 최근 세션의 폴더**. 앱은 같은 프로세스에서 `server.js` `useProject(dir)`로 알려 준다(절대 경로의 있는 폴더만) — **HTTP 주소는 없다**(화면 · 다른 프로그램이 경로를 넣지 못하게). 3-18 · 3-19도 같은 규칙.
+- **`/api/task/start`** — 사람이 고쳐 확정한 요구 문장(`text`)을 **사용자의 Claude Code**에 넘긴다. 서버는 위의 폴더에서 `claude -p --output-format json`을 **셸 없이** 열고 글은 표준 입력으로 준다([provider.js](provider.js) `startTask` — 외부 AI 호출은 그 파일 한 곳). 권한 건너뛰기 · 설정 끄기 · 세션 잇기 옵션은 쓰지 않는다 — 그 세션이 허락을 구하면 3-13의 훅이 섬에 묻는다. 화면이 보낸 폴더 경로는 받지 않는다. 한 번에 하나.
+  성공 `{ ok, project, task: { state: "running", project, at, code: null, tokens: null, cost: null } }`. 끝나면 결과 한 덩이에서 **토큰 · 비용만** 읽어 3-5 장부(`task`, 이름 `맡긴 일`)에 쌓는다 — 답 글은 받지 않는다(4MB까지만 모은다). 거절: 400 `연결한 프로젝트 폴더를 아직 몰라요 — …`(앱이 고른 폴더도 훅 알림도 없음) · 400 비어 있음 · 400 4,000자 · 409 `넘긴 일이 아직 진행 중이에요` · 502 `claude를 열지 못함`.
+- **`/api/task`** — `{ ok, task }`: 넘긴 일의 상태 `running` · `done` · `failed`와 끝 코드, 끝났으면 이번 일의 `tokens` · `cost`(Claude Code가 알려 준 값, 모르면 `null`). 없으면 `null`. 진행(한 일)은 3-12에, 허락은 3-14에 따로 온다.
 - **남지 않는 것:** 폴더 경로는 서버 메모리에만 — 3-12 `sessions[]`에 내지 않는다(`project` 이름만).
 
 ### 3-17. `POST /api/quest` — 플로로가 퀘스트 글을 만든다 (C-22, 2026-10-21)
@@ -458,7 +467,7 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 ### 3-18. `GET /api/readme` — 내 작업 책: 연결한 폴더의 README를 책으로 (C-26, 2026-10-23)
 
 <!-- claude-drafted: 2026-10-23 -->
-- 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. 본문 없음 — **경로를 받지 않는다.** 폴더는 훅 알림이 알려 준 세션의 cwd에서만 고른다(3-16 일 넘기기와 같다).
+- 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. 본문 없음 — **경로를 받지 않는다.** 폴더는 3-16의 '폴더 고르기'와 같다(앱이 고른 작업 폴더, 없으면 훅 알림의 cwd).
 - 그 폴더의 `README.md`를 **읽기만** 한다 — 바로가기(심볼릭 링크)는 따라가지 않고, 앞의 256KB만 읽고, 나누기 전에 비밀값을 가린다([sensitive.js](sensitive.js)). 나누기는 [readme-book.js](readme-book.js) `parse` — `#` 제목 · 그 아래 한 줄 · `## 버전` 줄(`- V.n · YYYY-MM-DD · 제목`) · `##`마다 한 장(코드 칸 안의 `##`는 제목이 아님).
 - 답(늘 200) `{ ok: true, project, book, why }` — `project`는 폴더 **이름**만(경로는 주지 않는다). 책이 있으면 `book = { title, intro, versions[{v, date, title}], chapters[{id, title, body}], cut }`, `why = ""`. 폴더를 모르면 `book: null, why: "folder"`, README가 없으면 `book: null, why: "none"`.
 - 화면: 명령 칸의 **책**(C-29)이 퀘스트 창의 책 탭을 열 때 부른다. 서버 없이 · 연습 모드 · `book: null`이면 연습 예시 책(`readme-book.js` `EXAMPLE`)을 보이고 까닭을 한 줄로 적는다. 시험: `04-tests/navigator/readme-api.test.js` · `readme-book.test.js`.
@@ -466,13 +475,14 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 ### 3-19. `GET /api/github` · `POST /api/github/create` — 설정의 GitHub 칸 (C-25, 2026-10-24)
 
 <!-- claude-drafted: 2026-10-24 — 이재엽 "지금 깃허브을 연동하는 곳을 설정창에 만들어줘" -->
-- 둘 다 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. **Floe는 GitHub 토큰 · 비밀번호를 받지도 두지도 않는다** — 이 컴퓨터의 `git` · `gh`(GitHub CLI)에게 묻는다([github.js](github.js)). 폴더는 3-18과 같이 훅 알림이 알려 준 세션의 cwd에서만 고르고, 경로는 받지도 주지도 않는다.
+- 둘 다 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. **Floe는 GitHub 토큰 · 비밀번호를 받지도 두지도 않는다** — 이 컴퓨터의 `git` · `gh`(GitHub CLI)에게 묻는다([github.js](github.js)). 폴더는 3-16의 '폴더 고르기'와 같고(앱이 고른 작업 폴더, 없으면 훅 알림의 cwd), 경로는 받지도 주지도 않는다.
 - **`GET /api/github`** — 읽기만. `gh --version` · `gh auth status --hostname github.com`(끝 코드 0이면 로그인) · `git rev-parse --is-inside-work-tree` · `git remote get-url origin`을 셸 없이 · 4초 제한 · 비밀번호를 묻지 않게(`GIT_TERMINAL_PROMPT=0`) 부른다.
   답(늘 200) `{ ok: true, project, gh: { found, signedIn }, git, remote, why }` — `remote`는 `{ kind: "github" | "other", owner, repo, web }` 또는 `null`. 원격 주소 안의 토큰 · 비밀번호는 버리고, `owner` · `repo` · `web`은 github.com일 때만 채운다(그 밖은 빈 글). GitHub 계정 이름은 주지 않는다.
   `why`: `""`(원격 있음) · `"folder"`(폴더를 모름) · `"no-git"`(git 명령 없음) · `"not-repo"`(git 저장소가 아님) · `"no-remote"`(origin 없음). `gh`가 없으면 `signedIn: null`.
-- **`POST /api/github/create`** — 본문 `{ visibility? }`(`private` 기본 · `public`). 저장소를 **Floe가 만들지 않고** 3-16 일 넘기기(`startTask`)로 사용자의 Claude Code에 맡긴다. 맡길 글은 서버가 정한다(`github.js` `createRequest` — 화면이 글을 보내지 않는다): git init · README 첫 장(`## 버전` 줄) · 비밀값 파일은 `.gitignore`로 빼기 · 첫 커밋 · `gh repo create <폴더 이름> --private|--public --source . --remote origin --push` · 같은 이름이면 멈추고 묻기 · 강제 푸시 · 지우기 금지. 그 세션이 허락을 구하면 3-13 훅이 섬에 묻는다.
-  성공은 3-16과 같다. 거절: 400 `공개 범위는 private · public 중 하나` · 400 `연결한 프로젝트 폴더를 아직 몰라요 — …` · 409 `이 폴더는 이미 원격 저장소와 이어져 있어요` · 409 · 502는 3-16과 같다.
-- 화면: 설정의 **GitHub** 묶음(연결 아래). 열 때마다 다시 묻고, 서버 없이 열면 안내 한 줄만. 맡기기 단추는 gh 로그인 + 진짜 AI 모드일 때만 눌린다(Claude Code가 움직이니까). 시험: `04-tests/navigator/github-api.test.js`.
+- **`POST /api/github/create`** — 본문 `{ visibility? }`(`private` 기본 · `public`). 저장소를 **Floe가 만들지 않고** 3-16 일 넘기기(`startTask`)로 사용자의 Claude Code에 맡긴다. 맡길 글은 서버가 정한다(`github.js` `createRequest` — 화면이 글을 보내지 않는다): git init · README 첫 장(`## 버전` 줄) · 비밀값 파일과 `.claude/settings.local.json*`(이 컴퓨터의 훅 설정과 그 백업)은 `.gitignore`로 빼기 · 첫 커밋 · `gh repo create <폴더 이름> --private|--public --source . --remote origin --push` · 같은 이름이면 멈추고 묻기 · 강제 푸시 · 지우기 금지. 그 세션이 허락을 구하면 3-13 훅이 섬에 묻는다.
+  성공은 3-16과 같다(장부 이름은 `저장소 만들기`). 거절: 400 `공개 범위는 private · public 중 하나` · 400 `연결한 프로젝트 폴더를 아직 몰라요 — …` · 409 `이 폴더는 이미 원격 저장소와 이어져 있어요` · 409 · 502는 3-16과 같다.
+- 화면: 설정의 **GitHub** 묶음(연결 아래). 열 때마다 다시 묻고, 서버 없이 열면 안내 한 줄만. 맡기기 단추는 gh 로그인 + 진짜 AI 모드일 때만 눌린다(Claude Code가 움직이니까). 처음 설정의 **GitHub** 칸(gh 찾기 · 로그인)도 `GET /api/github`를 묻고, 처음 설정에서 **새로 만든** 폴더면 '준비 끝'에서 저장소도 만들지 물어 시작할 때 `POST /api/github/create`를 부른다(2026-10-24, C-31). 시험: `04-tests/navigator/github-api.test.js` · `project-api.test.js` · e2e `setup-flow.test.js`.
+- **앱만 하는 일(HTTP 주소 없음, 2026-10-24 C-31):** 홈/Floe/이름에 새 폴더 · 내 GitHub 저장소 가져오기(`gh repo clone` — gh 로그인이 먼저) · 내 저장소 목록(`gh repo list`)은 Electron 앱이 [project.js](project.js)로 한다 — 화면은 이름 · 주소 글만 preload(`newProject` · `cloneProject` · `myRepos`)로 보낸다. **가져오기는 내가 쓸 수 있는(push) 저장소만**(`gh api repos/주인/이름 --jq .permissions.push`) — 3-16이 여는 `claude -p`는 폴더를 믿는지 묻지 않아서(Claude Code 보안 문서 "A `-p` session shows neither prompt") 남의 저장소의 `.claude` 설정 · 훅 · `.mcp.json`이 확인 없이 돌 수 있다. 남의 저장소는 내 계정으로 fork한 뒤 가져온다. 가져온 저장소에 `.claude/settings.json` · `.mcp.json`이 있으면 화면이 알린다(`config: true`). 고른 폴더에는 훅을 더하고(connect.js), git 저장소면 `.git/info/exclude`에 `.claude/settings.local.json*`(그 백업 `.bak-시각`까지)을 더해 훅 경로가 커밋되지 않게 한 뒤 `useProject`로 서버에 알린다. 앱 설정 폴더의 `project.json`(나만 읽기)에 남겨 다시 켜도 그 폴더로. 메뉴의 '연결 빼기'로 그 폴더를 빼면 서버(`dropProject` — 앱이 고른 폴더 · 훅 알림으로 안 같은 폴더 모두)와 `project.json`에서도 잊는다. '이 컴퓨터에 있는 폴더'를 고를 때도 그 폴더의 `.claude/settings.json` · `.mcp.json`을 알린다(같은 까닭 — 고른 폴더가 맡긴 일이 도는 자리가 되므로).
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

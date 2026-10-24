@@ -7,7 +7,7 @@
 | 파일 | 무엇 |
 |---|---|
 | `main.js` | 앱 — 서버 띄우기 · 창 · 메뉴(프로젝트 폴더 연결 / 빼기 · 설정 폴더 · 브라우저로 열기 · 끄기 — '모아 보기 열기'는 2026-10-23에 뺐다). Mac은 위 메뉴 줄, **Windows · Linux는 창 우클릭과 트레이 아이콘**에 같은 메뉴(테두리 없는 창엔 메뉴 줄이 없다, 6.0.0) |
-| `preload.js` | 화면이 앱에게 부탁할 수 있는 것(`window.floeApp`: connect · disconnect · openSettings · **saveKey · clearKey** — 처음 설정, 2026-10-19 · resize(anchor) · **expand** — 서고로 들어갈 때 창을 화면만큼, 6.2.0). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
+| `preload.js` | 화면이 앱에게 부탁할 수 있는 것(`window.floeApp`: connect · disconnect · openSettings · **saveKey · clearKey** — 처음 설정, 2026-10-19 · **newProject · cloneProject · myRepos** — 작업 폴더, 2026-10-24 · resize(anchor) · **expand** — 서고로 들어갈 때 창을 화면만큼, 6.2.0). 화면은 Node를 못 쓴다(contextIsolation · sandbox) |
 | `lib.js` | 순수 함수 — `.env` 읽기 · PATH 합치기(Mac · Linux, 셸 고르기) · 훅 명령(app.asar → app.asar.unpacked) · 폴더 연결(connect.js 규칙 그대로). 시험 [`electron-lib.test.js`](../../04-tests/navigator/electron-lib.test.js) |
 | `prebuild.js` | 묶기 전에 화면 · 서버를 `payload/`로 복사(node_modules · `.env*` · 문서 제외). git에 올리지 않는다 |
 | `package.json` | Electron 44.9.0 · electron-builder 26.15.3(4.0.0에서 33 · 25에서 올림 — 이 Mac은 macOS 26이라 옛 Electron의 입력 · 창 문제를 피하려고) · `@anthropic-ai/sdk`(내 키로 쓸 때) · 묶기 설정(`build`: mac dmg · win nsis · **linux AppImage + deb**, `homepage` · `author`는 deb가 요구하는 칸 — 사람 메일은 없다) |
@@ -26,9 +26,12 @@ npm run dist:linux          # 우분투용(Mac · Linux에서 됨): dist/Floe-<�
 ```
 
 - 포트는 `NAV_PORT`(기본 4317)부터 **빈 포트**를 찾아 앱이 늘 자기 서버를 켠다. 터미널에 다른 Floe 서버가 떠 있어도 거기 붙지 않는다(첫 알파의 "옛 화면" 문제).
-- **처음 켜면 플로로가 반기고 연결을 돕는다**(2026-10-19, 화면 `../navigator/setup.js`): Claude Code로 연결(찾기 · 로그인 · 폴더 연결 · 연결 확인) 또는 API 키 넣기 중 하나를 고른다. 키는 화면이 `floeApp.saveKey`로 앱에 넘기고, **앱이 설정 폴더의 `.env`에 쓴다(나만 읽기 600)** — 화면 · 브라우저 저장소 · 서버 주소에는 남지 않는다. 앱 안의 서버라 다시 켜지 않아도 다음 호출부터 그 키로 부른다. 다시 고르려면 톱니 → **처음 설정 다시 하기**.
+- **처음 켜면 플로로가 반기고 연결을 돕는다**(2026-10-19, 화면 `../navigator/setup.js`): Claude Code로 연결(찾기 · 로그인 · 연결 확인) 또는 API 키 넣기 중 하나를 고른다. **2026-10-24(C-31)부터 이어서** GitHub(gh 찾기 · 로그인) → 프로젝트(내 GitHub 저장소 가져오기 · 새로 만들기 · 이 컴퓨터에 있는 폴더) → 준비 끝(요약 세 줄) — 아래 '작업 폴더'. 키는 화면이 `floeApp.saveKey`로 앱에 넘기고, **앱이 설정 폴더의 `.env`에 쓴다(나만 읽기 600)** — 화면 · 브라우저 저장소 · 서버 주소에는 남지 않는다. 앱 안의 서버라 다시 켜지 않아도 다음 호출부터 그 키로 부른다. 다시 고르려면 톱니 → **처음 설정 다시 하기**.
 - 손으로 넣어도 된다: 메뉴 **Floe → 설정 폴더 열기**에 `.env`(모양은 [`../../03-backend/navigator/.env.example`](../../03-backend/navigator/.env.example)). 없으면 이 컴퓨터의 Claude Code 구독. 키는 앱 묶음 · 저장소에 들어가지 않는다.
-- **프로젝트 폴더 연결**(메뉴 또는 톱니 → 연결 칸의 단추)은 그 폴더의 `.claude/settings.local.json`에 훅을 더한다 — `connect.js --apply`와 같은 규칙 · 백업. 훅은 `node`로 `app.asar.unpacked` 안의 `hook.js`를 부르므로 **그 컴퓨터에 node가 있어야 한다**(팀 알파에서는 모두 있다). node 없는 사람을 위한 길은 미정.
+<!-- claude-drafted: 2026-10-24 -->
+- **작업 폴더(C-31, 2026-10-24 — 이재엽 "C-31부터 만들어줘")** — 처음 설정의 프로젝트 칸. 새로 만들기는 **홈/Floe/이름**에 빈 폴더, 가져오기는 **홈/Floe/저장소이름**으로 앱이 바로 받는다(`gh repo clone` — gh 로그인이 먼저, 토큰 0, GitHub에는 아무것도 바꾸지 않는다). **내가 쓸 수 있는(push) 저장소만** — 맡기는 `claude -p`는 폴더를 믿는지 묻지 않아 남의 저장소의 설정 · 훅이 확인 없이 돌 수 있어서다(남의 것은 fork한 뒤). 가져온 저장소에 `.claude/settings.json` · `.mcp.json`이 있으면 화면이 알린다. 같은 자리에 같은 저장소가 이미 있으면 다시 받지 않는다. 고른 폴더는 한 길(`main.js` `useFolder`)로: 훅을 더하고 · git 저장소면 `.git/info/exclude`에 `.claude/settings.local.json*`(훅 경로가 든다 — 다시 연결할 때 생기는 백업까지)을 더해 커밋되지 않게 하고 · 서버에 같은 프로세스로 알리고(`server.js` `useProject` — Claude Code를 그 폴더에서 열지 않아도 맡기기 · 책 · GitHub 칸이 그 폴더에서 돈다, F-49 ①) · 설정 폴더의 `project.json`(나만 읽기)에 남겨 다시 켜도 그 폴더로('연결 빼기'로 그 폴더를 빼면 잊는다). 설정의 **프로젝트 바꾸기**는 처음 설정을 프로젝트 칸부터 연다. 규칙은 [`../../03-backend/navigator/project.js`](../../03-backend/navigator/project.js), 화면은 이름 · 주소 글만 보낸다(preload `newProject` · `cloneProject` · `myRepos`). 새로 만든 폴더의 GitHub 저장소는 '준비 끝'에서 물어 사용자의 Claude Code에 맡긴다(허락은 섬에서).
+- **옆 창이 섬을 덮지 않게(2026-10-24, 이재엽 "지금 오버레이가 겹치지 않도록")** — 설정 창 · 퀘스트 창은 섬 옆자리가 좁으면 그만큼 줄이고(300px까지), 그보다 좁으면 섬 **아래**에 둔다(`lib.js` `sideWinBounds`). 섬이 커져 겹치면 다시 둔다(`placeSideWins`) — 사람이 끌어 옮긴 창은 그대로. 1728 화면(MacBook Pro 16 기본)에서 퀘스트 창이 섬을 80px 덮던 것, 1440 화면에서 두 창 모두 덮던 것.
+- **프로젝트 폴더 연결**(메뉴 또는 톱니 → 연결 칸의 단추)은 그 폴더의 `.claude/settings.local.json`에 훅을 더한다 — `connect.js --apply`와 같은 규칙 · 백업. 2026-10-24부터 위 '작업 폴더'와 같은 길(그 폴더가 플로로가 움직이는 자리가 된다). 훅은 `node`로 `app.asar.unpacked` 안의 `hook.js`를 부르므로 **그 컴퓨터에 node가 있어야 한다**(팀 알파에서는 모두 있다). node 없는 사람을 위한 길은 미정.
 - 기록(내 책 · 느낀 점)은 앱 안의 브라우저 저장소에 남는다 — 브라우저로 연 화면과는 따로다.
 
 ### 우분투 Linux (6.0.0부터 — 이재엽 2026-10-19 "우분투 리눅스에서도 돌아가는 버전", 발표용)

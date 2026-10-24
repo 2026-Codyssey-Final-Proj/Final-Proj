@@ -414,6 +414,7 @@
     catch { r = { ok: false, reason: "서버에 닿지 않았어요" }; }
     st.ghNote = r && r.ok ? "Claude Code에 맡겼어요 — 허락을 구하면 섬에 떠요. 끝나면 '다시 확인'을 눌러요." : `맡기지 못했어요 — ${(r && r.reason) || "까닭을 모름"}`;
     render();
+    return r;   // 처음 설정에서 부른 쪽(floe:setup-done)이 맡겼는지 보고 말한다
   }
   const GH_CLI = "https://cli.github.com";
   function githubGroup() {
@@ -428,7 +429,7 @@
       : `<div class="row"><span class="led on"></span><span class="grow">GitHub CLI에 로그인됨</span></div>`;
     const where = g.project ? `${esc(g.project)} 폴더` : "프로젝트 폴더";
     let repo;
-    if (g.why === "folder") repo = `<span>연결한 프로젝트 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열면 알게 돼요.</span>`;
+    if (g.why === "folder") repo = `<span>작업 폴더를 아직 몰라요 — 처음 설정의 '프로젝트'나 위의 '프로젝트 폴더 연결…'로 골라요.</span>`;
     else if (g.why === "no-git") repo = `<span>이 컴퓨터에 git이 없어요 — Claude Code에 "git 설치를 도와줘"라고 물어봐요.</span>`;
     else if (g.remote && g.remote.kind === "github") repo = `<div class="row"><span class="led on"></span><span class="grow">${where} → <b>${esc(g.remote.owner)}/${esc(g.remote.repo)}</b></span><a class="btn" href="${esc(g.remote.web)}" target="_blank" rel="noopener">GitHub에서 열기</a></div>
       <span class="meta">기록 · 저장은 이 저장소의 README와 커밋으로 남아요. 올리는 일은 Claude Code가 하고, Floe는 읽기만 해요.</span>`;
@@ -441,6 +442,24 @@
       <span class="meta">${!can ? "위의 GitHub CLI 준비가 먼저예요. " : !live ? "보기 방식을 '진짜 AI'로 바꾸면 맡길 수 있어요(Claude Code가 움직여요). " : ""}README 첫 장을 만들고 .env 같은 비밀값 파일은 빼고 올려요. 강제 푸시 · 지우기는 하지 않아요.</span>`;
     }
     return sgrp(SG.git, "GitHub", `${cli}${repo}${st.ghNote ? `<span class="meta" role="status">${esc(st.ghNote)}</span>` : ""}<div class="row"><span class="grow"></span>${again}</div>`);
+  }
+  // 토큰 칸(2026-10-24, 이재엽 "테스트를 진행하면서 토큰값도 계산을 할거야") — 서버의 토큰 장부(/api/usage의 ledger, tokens.js)를 보이기만 한다.
+  // Floe의 AI와 Claude Code에 맡긴 일을 따로, 비용은 Claude Code가 알려 준 값만. '새로 재기'는 테스트를 시작할 때 0부터(POST /api/usage/reset)
+  let usage = null, usageLoading = false;   // /api/usage의 답 — 설정을 열 때 · AI를 부른 뒤 · Claude Code가 일을 마쳤을 때 다시 묻는다
+  function tokenGroup() {
+    if (!canLive) return "";
+    if (!usage && !usageLoading) setTimeout(fetchUsage, 0);
+    const v = usage && window.NavTokenView && window.NavTokenView.ledgerView ? window.NavTokenView.ledgerView(usage.ledger) : null;
+    if (!v) return sgrp(SG.box, "토큰", `<span>${!usage ? "확인하는 중…" : usage.ok === false ? "서버에 닿지 않았어요 — 설정을 다시 열면 다시 물어요" : "이 서버는 아직 토큰을 세지 않아요"}</span>`);
+    const reset = `<button type="button" class="btn" data-act="tokens-reset">새로 재기</button>`;
+    if (v.empty) return sgrp(SG.box, "토큰", `<div class="row"><span class="grow">${v.since} 뒤로 아직 쓴 토큰이 없어요. Floe의 AI를 부르거나 Claude Code에 일을 맡기면 여기 쌓여요.</span>${reset}</div><span class="meta">${esc(v.note)}</span>`);
+    return sgrp(SG.box, "토큰", `<div class="row"><span class="grow"><b>${esc(v.total)}</b> <span class="meta">${v.since}부터</span></span>${reset}</div>
+      ${v.rows.map((r) => srow(esc(r.name), `<span>${esc(r.value)}</span>`)).join("")}
+      <ul class="tok-runs">${v.recent.map((line) => `<li class="meta">${esc(line)}</li>`).join("")}</ul><span class="meta">${esc(v.note)}</span>`);
+  }
+  async function resetTokens() {
+    try { const j = await (await fetch("/api/usage/reset", { method: "POST" })).json(); if (j && j.ok && usage) usage = { ...usage, ledger: j.ledger }; } catch {}
+    render();
   }
   const sgrp = (ic, title, body) => `<section class="sgrp"><h3 class="sg-h">${ic}${title}</h3>${body}</section>`;
   const srow = (label, control) => `<div class="srow"><span>${label}</span>${control}</div>`;
@@ -456,7 +475,8 @@
       // 앱 안에서는 폴더 고르기로 훅을 더하고 뺀다(터미널의 floe.js · connect.js와 같은 일) — preload.js가 열어 준 셋만
       window.floeApp ? `<div class="row"><button type="button" class="btn" data-act="app-connect">프로젝트 폴더 연결…</button><button type="button" class="btn" data-act="app-disconnect">연결 빼기…</button><button type="button" class="btn" data-act="app-settings">.env 폴더 열기</button></div>` : ""}`) : "";
     // 처음 설정(setup.js) 다시 하기 — Claude Code / API 키를 바꿀 때 (2026-10-19)
-    const keep = sgrp(SG.box, "기록 · 처음 설정", `${window.FloeSetup ? `<div class="row"><span class="grow">AI를 어떻게 부를지(Claude Code / API 키) 다시 고를 수 있어요.</span><button class="btn" data-act="setup">처음 설정 다시 하기</button></div>` : ""}<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`);
+    const keep = sgrp(SG.box, "기록 · 처음 설정", `${window.FloeSetup ? `<div class="row"><span class="grow">AI를 어떻게 부를지(Claude Code / API 키) 다시 고를 수 있어요.</span><button class="btn" data-act="setup">처음 설정 다시 하기</button></div>
+      <div class="row"><span class="grow">다른 프로젝트로 — 내 GitHub 저장소를 가져오거나 새로 만들어요(C-31).</span><button class="btn" data-act="setup-project">프로젝트 바꾸기</button></div>` : ""}<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`);
     // 만드는 크기 — 진짜 AI에게 물을 때 같이 보낸다(tier). 고르는 건 사용자
     const tier = srow("만드는 크기", `<span class="row tiers" role="radiogroup" aria-label="만드는 크기">${TIERS.map(([v, label]) =>
       `<label class="chk"><input type="radio" name="tier" data-act="tier" value="${v}" ${st.tier === v ? "checked" : ""}>${label}</label>`).join("")}${termTag(st.tier)}</span>`);
@@ -471,7 +491,7 @@
       <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>
       <div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>`);
     const log = sgrp(SG.bell, "알림 · 느낀 점", `${alertLog()}${notesCard()}`);
-    return `${bondCard()}${link}${githubGroup()}${view}${log}${keep}`;
+    return `${bondCard()}${link}${githubGroup()}${tokenGroup()}${view}${log}${keep}`;
   }
   // 알림 기록(FR-7) — [때 · 도구 · 무슨 알림 · 서버가 준 한 줄 · 이 알림으로 끝낸 할 일]. 비밀번호처럼 보이는 글은 숨긴 채로 남는다(alerts.js)
   const clock = (t) => (Number.isFinite(t) ? new Date(t).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) : "");
@@ -1927,10 +1947,11 @@
   }
   const stop = (msg) => { st.error = msg; pendingNotice = ""; render(); };   // 보낼 수 없을 때 — 이유를 보여 주고 멈춘다
   // 토큰 사용량(F-12) — 서버로 열었을 때만 /api/usage를 묻는다. 기록(save)에는 넣지 않는다(그때그때 서버에서 받는 값)
-  let usage = null;
   function fetchUsage() {
     if (!canLive) return;
-    fetch("/api/usage").then((r) => r.json()).then((j) => { usage = j && j.ok ? j : null; if (st.tab === "all" && !isPhone()) render(); }).catch(() => { usage = null; });
+    usageLoading = true;
+    fetch("/api/usage", { cache: "no-store" }).then((r) => r.json()).then((j) => { usage = j && j.ok ? j : { ok: false }; usageLoading = false; if (st.settings) render(); })
+      .catch(() => { usage = { ok: false }; usageLoading = false; if (st.settings) render(); });   // 실패도 한 번만 — 다시 그릴 때마다 묻지 않게(설정을 다시 열면 다시 묻는다)
   }
   // 진짜 AI에게 묻는 네 가지(어디쯤·물어보기·초안·다시 봐 주기)가 같이 쓰는 흐름:
   // [check가 있으면 비밀번호 같은 게 보일 때 먼저 멈춤] → 호출 → 성공이면 done(r), 실패면 지어내지 않고 이유만 보여 준다
@@ -2082,7 +2103,7 @@
     },
     again: () => set({ later: false, picking: true }),
     pick: () => set({ picking: true }),
-    settings: () => { if (!st.settings) st.gh = null; set({ settings: !st.settings }); },   // 열 때마다 GitHub 칸을 다시 확인한다(C-25)
+    settings: () => { if (!st.settings) { st.gh = null; usage = null; } set({ settings: !st.settings }); },   // 열 때마다 GitHub 칸 · 토큰 칸을 다시 확인한다(C-25, 2026-10-24)
     // ── 퀘스트(C-22, 2026-10-21) — 시작 · 받기 · 고치기 · 한 줄 · 완료 보고 · 창 ──
     send: () => send(),
     "idea-example": () => { st.say = S.first.text.split("\n")[0]; send(); },   // 연습 — 연습 첫 글의 첫 줄을 말한 것으로
@@ -2203,6 +2224,7 @@
     "reopen-doc": () => { const x = docDone(docStage().n); if (x) set({ doc: newDoc(x.stage, x.text, "") }); },
     forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
     setup: () => { set({ settings: false }); if (window.FloeSetup) window.FloeSetup.open(); },
+    "setup-project": () => { set({ settings: false }); if (window.FloeSetup) window.FloeSetup.open({ step: "project" }); },   // 처음 설정의 프로젝트 칸부터(2026-10-24 리뷰 — 새 프로젝트마다 AI 연결을 다시 거치지 않게)
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false, check: null }),
     "close-gate": () => set({ screen: "main" }),
     no: () => { set({ noCount: st.noCount + 1, step: "which", hard: [], answer: "", question: "" }); say("모르는 게 당연해요. 같이 풀어요"); reveal(".hold-offer"); },
@@ -2273,10 +2295,14 @@
     peek: () => { treeChap = nextStage() ? nextStage().n : null; openQwin("tree"); set({ settings: false }); },
     "notes-open": () => set({ settings: true, notesOpen: true }),
     // Electron 앱(2026-10-19) — 폴더를 골라 훅을 더하거나 빼고, .env를 두는 설정 폴더를 연다. 앱 밖에서는 단추가 없다
-    "app-connect": async () => { const r = await window.floeApp.connect(); if (r && r.message) say(r.message.split("\n")[0]); },
+    "app-connect": async () => {   // 고른 폴더가 곧 플로로가 움직이는 자리(C-31) — 앱이 서버에도 알린다. 경로 대신 폴더 이름만 말한다
+      const r = await window.floeApp.connect();
+      if (r && r.ok && r.name) { st.gh = null; say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); } else if (r && r.message) say(r.message.split("\n")[0]);   // 말은 60자 안(SAY_MAX)
+    },
     "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.message) say(r.message.split("\n")[0]); },
     "app-settings": () => window.floeApp.openSettings(),
     "gh-reload": () => { st.ghNote = ""; st.gh = null; loadGithub(); render(); },   // 설정의 GitHub 칸(C-25, 2026-10-24)
+    "tokens-reset": () => resetTokens(),   // 토큰 칸 — 새로 재기(2026-10-24)
     "gh-vis": (i, el) => set({ ghVis: el && el.dataset.v === "public" ? "public" : "private" }),
     "gh-create": () => createRepo(),
     alog: () => set({ alogOpen: !st.alogOpen, alogNote: "" }),
@@ -2431,6 +2457,7 @@
     if (!A.accept(ev, st.unplug)) return;   // 연결을 끊은 동안 들어온 알림 — 글 칸 채우기·살펴보기·기록 모두 하지 않는다
     if (!ev.sim) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project) st.project = ev.project; }
     if (!A.notifies(ev)) return render();   // 새 작업을 시작했을 때는 알리지 않는다 — 연결 표시(마지막 소식 때)만(2026-10-23)
+    if (st.settings && !ev.sim) fetchUsage();   // 일을 마쳤다 — 열려 있는 토큰 칸을 새 값으로(2026-10-24)
     st.alerts = A.add(st.alerts, ev, (t) => sensitive(t).length > 0);
     if (st.busy) return render();
     if (ev.work) st.text = ev.work;
@@ -2594,11 +2621,23 @@
     window.FloeDive.surface({ cover: document.getElementById("dive-cover"), island: $nav.firstElementChild, done: () => reportSize() });
   }
   // 처음 설정(setup.js)이 끝나면 — 고른 길에 맞춰 보기 방식을 두고, '시작하기'를 눌렀으면 바로 보여 주기 화면으로 (2026-10-19)
+  // 처음 설정을 닫은 뒤에 가져오기 · 새로 만들기가 끝났다(C-31) — 작업 폴더가 바뀌었으니 알린다
+  document.addEventListener("floe:project-picked", (e) => {
+    const d = (e && e.detail) || {}, n = String(d.name || "");
+    st.gh = null;
+    say(d.config ? "가져온 저장소에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${n.length > 20 ? `${n.slice(0, 19)}…` : n} 폴더로 바꿨어요. 이제 여기서 같이 일해요.`);
+  });
   document.addEventListener("floe:setup-done", (e) => {
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });
     else if ((d.via === "cli" || d.via === "api") && canLive) set({ mode: "live", error: "", warn: null });
     if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
+    st.gh = null;   // 처음 설정에서 프로젝트를 골랐으면 GitHub 칸을 다시 묻는다
+    // C-31(2026-10-24): 처음 설정에서 새로 만든 폴더의 GitHub 저장소를 바랐으면 — 만드는 일은 사용자의 Claude Code에(C-25), 허락은 섬의 카드로
+    if (d.makeRepo === "private" || d.makeRepo === "public") {
+      st.ghVis = d.makeRepo;
+      createRepo().then((r) => say(r && r.ok ? "저장소 만들기를 Claude Code에 맡겼어요. 허락을 구하면 여기서 물을게요." : "저장소를 맡기지 못했어요. 설정의 GitHub 칸에서 다시 해요."));
+    }
   });
 
   render();

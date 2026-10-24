@@ -1,10 +1,14 @@
-// claude-drafted: 2026-10-19 — 화면(app.js · setup.js)이 앱에게 부탁할 수 있는 것 — 다섯. 화면은 Node를 직접 쓰지 못한다(contextIsolation)
+// claude-drafted: 2026-10-19 — 화면(app.js · setup.js)이 앱에게 부탁할 수 있는 것. 화면은 Node를 직접 쓰지 못한다(contextIsolation)
 // saveKey · clearKey(처음 설정, 2026-10-19): 키는 앱이 설정 폴더의 .env(나만 읽기)에만 쓴다. 화면 · 브라우저 저장소 · 서버 주소에는 남지 않는다
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("floeApp", {
   platform: process.platform,                                 // "win32" · "darwin" · "linux" — 운영체제마다 다른 모양(app.css html.plat-win32, 2026-10-22)
   connect: () => ipcRenderer.invoke("floe:connect"),          // 프로젝트 폴더 고르기 → 훅 더하기
   disconnect: () => ipcRenderer.invoke("floe:disconnect"),    // 프로젝트 폴더 고르기 → 훅 빼기
+  // C-31 시작하는 자리(2026-10-24) — 홈/Floe/이름에 새 폴더 · 내 GitHub 저장소를 가져오기(clone) · 내 저장소 목록. 화면은 이름 · 주소 글만 보내고 경로는 앱이 만든다
+  newProject: (name) => ipcRenderer.invoke("floe:project-new", String(name || "")),
+  cloneProject: (text) => ipcRenderer.invoke("floe:project-clone", String(text || "")),
+  myRepos: () => ipcRenderer.invoke("floe:project-repos"),
   openSettings: () => ipcRenderer.invoke("floe:open-settings"), // .env를 두는 앱 설정 폴더 열기
   saveKey: (key, baseUrl) => ipcRenderer.invoke("floe:save-key", { key, baseUrl }),   // API 키(와 중계 서버 주소)를 넣는다
   clearKey: () => ipcRenderer.invoke("floe:clear-key"),       // 키를 뺀다 — 그다음부터 이 컴퓨터의 Claude Code로

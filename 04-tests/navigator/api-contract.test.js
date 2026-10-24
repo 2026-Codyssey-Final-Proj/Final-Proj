@@ -196,7 +196,7 @@ test("공통: JSON이 아닌 본문은 400 — AI 주소는 '작업 내용이 �
 });
 
 test("공통: 물음표 뒤 값은 API 주소를 바꾸지 않는다 — 화면 파일은 정확한 경로만", async () => {
-  succeeded(await call("GET", "/api/usage?view=1"), ["provider", "model", "host", "compat", "used", "budget", "state", "replay"]);
+  succeeded(await call("GET", "/api/usage?view=1"), ["provider", "model", "host", "compat", "used", "budget", "state", "replay", "ledger"]);
   assert.equal((await call("POST", "/api/judge?x=1", { body: R.judge.body })).status, 200);
   refused(await call("GET", "/app.js?v=2"), 404, "없는 주소");
 });
@@ -431,7 +431,7 @@ test("POST /api/events/clear: 한 일과 세션 상태도 비운다 — latest�
 
 // ════════ 3-5. 사용량 ════════
 
-const USAGE_KEYS = ["ok", "provider", "model", "host", "compat", "used", "budget", "state", "buckets", "testers", "replay", "record"];
+const USAGE_KEYS = ["ok", "provider", "model", "host", "compat", "used", "budget", "state", "buckets", "testers", "replay", "record", "ledger"];   // ledger — 토큰 장부(2026-10-24, API.md 3-5)
 
 test("GET /api/usage: 공급자·모델·호스트·사용량만 — 키 값과 주소의 경로는 담지 않는다", async () => {
   const r = await call("GET", "/api/usage");
@@ -443,6 +443,11 @@ test("GET /api/usage: 공급자·모델·호스트·사용량만 — 키 값과 
   assert.equal(u.provider, "api", "키가 있으면 api");
   assert.ok(isText(u.model));
   assert.equal(u.host, "127.0.0.1:9", "호스트만");
+  // 토큰 장부(2026-10-24): 숫자 · 정해진 이름만 — since · total · kinds(floe · task) · runs
+  assert.deepEqual(Object.keys(u.ledger).sort(), ["kinds", "runs", "since", "total"]);
+  assert.deepEqual(Object.keys(u.ledger.kinds).sort(), ["floe", "task"]);
+  for (const k of ["count", "tokens", "cost"]) assert.equal(typeof u.ledger.total[k], "number", k);
+  assert.ok(Array.isArray(u.ledger.runs));
   assert.equal(typeof u.compat, "boolean");
   assert.equal(u.used, 0);
   assert.equal(u.budget, null);
