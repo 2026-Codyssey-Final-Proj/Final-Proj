@@ -244,4 +244,4 @@ const meter = createMeter(settings(process.env).budget, fileStore(usageFile), { 
 const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); return new Anthropic(); };   // 키는 ANTHROPIC_API_KEY에서 SDK가 읽는다
 const callClaude = createCaller({ makeClient, meter });
 
-module.exports = { RELAY_MODELS, CLI_SYSTEM, cliArgs, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, startTask };
+module.exports = { RELAY_MODELS, cliArgs, callClaude, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, startTask };

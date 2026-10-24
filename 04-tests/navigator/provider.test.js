@@ -45,7 +45,7 @@ test("키가 없으면 지금처럼 claude -p(callCli)로 부른다 — 한도�
 test("claude -p 판정은 짧은 시스템 안내문으로 부른다 — 도구 · MCP · 설정도 끈 채로", () => {
   const a = P.cliArgs(SCHEMA);
   const i = a.indexOf("--system-prompt");
-  assert.ok(i >= 0 && a[i + 1] === P.CLI_SYSTEM && P.CLI_SYSTEM.length <= 100);
+  assert.ok(i >= 0 && a[i + 1].length > 0 && a[i + 1].length <= 100);
   for (const f of ["--tools", "--strict-mcp-config", "--setting-sources", "--no-session-persistence"]) assert.ok(a.includes(f), f);
   assert.equal(a[a.indexOf("--json-schema") + 1], JSON.stringify(SCHEMA));
 });
