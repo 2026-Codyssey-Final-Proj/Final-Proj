@@ -96,9 +96,9 @@ test("한 번에 이어진다: 인사 → AI 연결(Claude Code) → GitHub(로�
   try {
     const { page, seen } = await open(browser);
     assert.match(await title(page), /반가워요/);
-    assert.deepEqual(await dots(page), ["처음 설정 1 / 5", 0]);
+    assert.deepEqual(await dots(page), ["처음 설정 1 / 6", 0]);
     await throughAiAndGithub(page);
-    assert.deepEqual(await dots(page), ["처음 설정 3 / 5", 2]);
+    assert.deepEqual(await dots(page), ["처음 설정 3 / 6", 2]);
     const steps = await page.$$eval(".su-steps li", (ls) => ls.map((l) => l.className));
     assert.deepEqual(steps, ["ok", "ok"], "gh 찾기 · 로그인 둘 다 체크");
     await click(page, '[data-s="next"]');
@@ -111,15 +111,21 @@ test("한 번에 이어진다: 인사 → AI 연결(Claude Code) → GitHub(로�
     assert.match(await page.$eval(".su-ok", (e) => e.textContent), /test-1 — ~\/Floe\/test-1/);
     assert.deepEqual(await page.evaluate(() => window.__calls.filter((c) => c[0] === "clone")), [["clone", "gamercross/test-1"]]);
     await click(page, '[data-s="next"]');
+    assert.equal(await title(page), "무엇을 만들까요? 한 번에 다 적어 주세요", "계획 칸(C-34)");
+    assert.match(await page.$eval(".su-main", (e) => e.textContent), /test-1\)의 README/);
+    await page.type('textarea[data-s="plantext"]', "동아리 행사 신청 앱 — 회원이 신청하고 운영진이 목록을 봐요");
+    await click(page, '[data-s="next"]');
     assert.equal(await title(page), "준비 끝!");
     assert.deepEqual(await page.$$eval(".su-sum div", (d) => d.map((x) => [x.querySelector("dt").textContent, x.querySelector("dd").textContent])),
-      [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"]]);
+      [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"], ["계획", "적었어요 — 시작하면 계획판이 열려요"]]);
     assert.equal(await page.$(".su-repo"), null, "가져온 저장소는 다시 만들자고 하지 않는다");
     const box = await page.$eval("#floe-setup .su", (e) => { const r = e.getBoundingClientRect(); return { w: r.width, overflow: document.documentElement.scrollWidth > innerWidth }; });
     assert.equal(box.overflow, false, "가로로 넘치지 않는다");
     await click(page, '[data-s="done"]');
     assert.equal(await page.$("#floe-setup"), null);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("floe:setup:v1")).via), "cli");
+    await page.waitForSelector("#plan-text", { timeout: 5000 });
+    assert.match(await page.$eval("#plan-text", (e) => e.value), /동아리 행사 신청 앱/, "시작하면 계획판이 그 글로 열린다 — AI는 아직 부르지 않는다");
     assert.deepEqual(seen.create, [], "저장소 만들기는 부르지 않았다");
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
@@ -134,6 +140,7 @@ test("새로 만들기면 준비 끝에서 GitHub 저장소도 만들지 묻고(
     await page.type('form[data-s="new"] input[name="pname"]', "club-app");
     await page.click('form[data-s="new"] button[type="submit"]'); await wait(300);
     assert.deepEqual(await page.evaluate(() => window.__calls.filter((c) => c[0] === "new")), [["new", "club-app"]]);
+    await click(page, '[data-s="next"]');   // 계획 칸 — 비워 두고
     await click(page, '[data-s="next"]');
     assert.ok(await page.$(".su-repo"), "저장소도 만들지 묻는다");
     assert.equal(await page.$eval('.su-repo input[data-s="makerepo"]', (e) => e.checked), true);
@@ -159,7 +166,8 @@ test("GitHub 없이: gh가 없으면 다음은 잠기고 설치 안내 · '다�
     assert.equal(await title(page), "어디서 만들까요?");
     assert.equal(await page.$('[data-s="pickrepo"]'), null, "gh가 없으면 내 저장소 단추도 없다(앱이 빈 목록)") ;
     await click(page, '[data-s="next"]');
-    assert.deepEqual(await page.$$eval(".su-sum dd", (d) => d.map((x) => x.textContent)), ["Claude Code로 연결", "건너뜀 — 나중에 설정에서", "아직 안 골랐어요 — 설정에서 언제든"]);
+    await click(page, '[data-s="next"]');   // 계획 칸 — 비워 두고
+    assert.deepEqual(await page.$$eval(".su-sum dd", (d) => d.map((x) => x.textContent)), ["Claude Code로 연결", "건너뜀 — 나중에 설정에서", "아직 안 골랐어요 — 설정에서 언제든", "나중에 — 맡기기에서 언제든"]);
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });

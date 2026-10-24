@@ -59,11 +59,11 @@ test("API 키로 연결할 때의 할 일: 앱이면 키를 앱 설정 폴더에
 });
 
 // ── C-31 시작하는 자리(2026-10-24, 이재엽 "5분짜리 온보딩 시스템을 바탕으로 깃허브를 연동하고 클로드 코드나 api키를 받는거도 이어져서") ──
-test("칸의 순서: 인사 → AI 연결 → GitHub → 프로젝트 → 준비 끝. 고르기 · Claude Code · API 키는 AI 연결 칸 안의 걸음", () => {
-  assert.deepEqual(U.FLOW, ["hello", "ai", "github", "project", "done"]);
+test("칸의 순서: 인사 → AI 연결 → GitHub → 프로젝트 → 계획(C-34) → 준비 끝. 고르기 · Claude Code · API 키는 AI 연결 칸 안의 걸음", () => {
+  assert.deepEqual(U.FLOW, ["hello", "ai", "github", "project", "plan", "done"]);
   for (const s of ["choose", "cli", "api"]) assert.equal(U.stageOf(s), "ai", s);
   assert.equal(U.stageOf("github"), "github");
-  assert.equal(U.nextStage(U.FLOW, "cli"), "github"); assert.equal(U.nextStage(U.FLOW, "github"), "project"); assert.equal(U.nextStage(U.FLOW, "project"), "done");
+  assert.equal(U.nextStage(U.FLOW, "cli"), "github"); assert.equal(U.nextStage(U.FLOW, "github"), "project"); assert.equal(U.nextStage(U.FLOW, "project"), "plan"); assert.equal(U.nextStage(U.FLOW, "plan"), "done");
   assert.equal(U.nextStage(U.FLOW, "done"), "done"); assert.equal(U.nextStage(U.FLOW, "모름"), "done");
   assert.equal(U.prevStage(U.FLOW, "github"), "ai"); assert.equal(U.prevStage(U.FLOW, "hello"), "hello");
   assert.equal(U.firstStep("ai"), "choose", "AI 칸에 들어가면 고르기부터"); assert.equal(U.firstStep("github"), "github");
@@ -71,11 +71,11 @@ test("칸의 순서: 인사 → AI 연결 → GitHub → 프로젝트 → 준비
 
 test("칸 더하기(insertStage): 나중에 튜토리얼 같은 칸을 원하는 칸 뒤에 끼운다 — '준비 끝' 뒤로는 가지 않고, 이미 있으면 그대로, 원래 줄은 바꾸지 않는다(이재엽 '확장성 기반으로')", () => {
   const f = U.insertStage(U.FLOW, "tutorial", "project");
-  assert.deepEqual(f, ["hello", "ai", "github", "project", "tutorial", "done"]);
-  assert.deepEqual(U.FLOW, ["hello", "ai", "github", "project", "done"], "원래 줄은 그대로");
+  assert.deepEqual(f, ["hello", "ai", "github", "project", "tutorial", "plan", "done"]);
+  assert.deepEqual(U.FLOW, ["hello", "ai", "github", "project", "plan", "done"], "원래 줄은 그대로");
   assert.deepEqual(U.insertStage(f, "tutorial", "hello"), f, "이미 있으면 그대로");
-  assert.deepEqual(U.insertStage(U.FLOW, "x", "done"), ["hello", "ai", "github", "project", "x", "done"], "'준비 끝' 뒤는 안 된다 — 그 앞에");
-  assert.deepEqual(U.insertStage(U.FLOW, "x", "없는칸"), ["hello", "ai", "github", "project", "x", "done"]);
+  assert.deepEqual(U.insertStage(U.FLOW, "x", "done"), ["hello", "ai", "github", "project", "plan", "x", "done"], "'준비 끝' 뒤는 안 된다 — 그 앞에");
+  assert.deepEqual(U.insertStage(U.FLOW, "x", "없는칸"), ["hello", "ai", "github", "project", "plan", "x", "done"]);
   assert.equal(U.nextStage(f, "project"), "tutorial");
 });
 
@@ -94,9 +94,9 @@ test("GitHub 칸의 할 일: gh 찾기 · 로그인 — 서버가 본 상태(/ap
 
 test("준비 끝의 요약 세 줄: AI · GitHub · 프로젝트 — 고른 그대로, 건너뛴 것은 건너뛰었다고", () => {
   const gh = { ok: true, gh: { found: true, signedIn: true } };
-  assert.deepEqual(U.summary({ via: "cli", gh, ghSkip: false, project: { name: "test-1", where: "~/Floe/test-1" } }),
-    [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"]]);
-  assert.deepEqual(U.summary({ via: "api", gh: null, ghSkip: true, project: null }), [["AI", "API 키로 연결"], ["GitHub", "건너뜀 — 나중에 설정에서"], ["프로젝트", "아직 안 골랐어요 — 설정에서 언제든"]]);
+  assert.deepEqual(U.summary({ via: "cli", gh, ghSkip: false, project: { name: "test-1", where: "~/Floe/test-1" }, planText: "동아리 행사 신청 앱" }),
+    [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"], ["계획", "적었어요 — 시작하면 계획판이 열려요"]]);
+  assert.deepEqual(U.summary({ via: "api", gh: null, ghSkip: true, project: null, planText: "  " }), [["AI", "API 키로 연결"], ["GitHub", "건너뜀 — 나중에 설정에서"], ["프로젝트", "아직 안 골랐어요 — 설정에서 언제든"], ["계획", "나중에 — 맡기기에서 언제든"]]);
   assert.equal(U.summary({ via: "", gh: { ok: true, gh: { found: true, signedIn: false } }, ghSkip: false, project: null })[1][1], "아직 로그인 전");
 });
 
@@ -123,6 +123,8 @@ test("화면(setup.js): 프로젝트 칸은 앱이면 가져오기 · 새로 만
   assert.match(src, /if \(at\) \{ s\.step = at; s\.resumed = true;/, "인사 화면을 먼저 그리지 않고 바로 그 칸(2차 리뷰)");
   assert.match(src, /floe:project-picked/, "가져오는 중에 닫혔어도 끝나면 섬에 알린다");
   assert.match(src, /if \(a === "folder" && app && !s\.busy\)/, "바쁠 때 폴더 고르기를 또 하지 않는다");
+  assert.ok(src.includes('const planText = open ? s.planText.trim() : ""'), "계획 칸에 적은 글은 시작하기를 눌렀을 때만 섬에 넘긴다(C-34)");
+  assert.doesNotMatch(src, /\/api\/plan/, "처음 설정은 AI를 부르지 않는다 — 계획은 계획판에서 사람이 누를 때(첫 5분 0절 4번)");
   assert.match(src, /fetch\("\/api\/github"/);
   assert.match(src, /https:\/\/cli\.github\.com/);
 });

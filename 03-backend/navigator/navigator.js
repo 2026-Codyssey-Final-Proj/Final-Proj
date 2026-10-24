@@ -298,6 +298,56 @@
     return { desc: o.desc.trim().slice(0, 400), why: o.why.trim().slice(0, 200), qa };
   }
 
+  // ── C-34 준비 계획판 · C-32 해낸 것 확인 · C-33 초등학생 말(2026-10-24, 이재엽 "한번에 내용들을 넣으면 어떻게 준비하고 기준들을 사람들이 확인해서 너한테 의견들을 바로바로" ·
+  //    버튼 "Floe의 AI 한 번" · "Claude Code가 기준마다 보고" · "맡길 일 목록으로") ──
+  // 계획: 넣은 글 + 작업 폴더의 README · 파일 이름만 보고(도구 없이) 세운다 — 이해한 것 셋 · 요구와 기준 · 준비할 것 · 물을 것. 사람이 줄마다 맞아요 / 고칠래요 · 의견을 달면 다시 세운다.
+  // 보고: 확정한 요구를 맡길 때 기준을 같이 넘기고(taskBrief), Claude Code가 끝에 기준마다 해냄 · 근거를 정해진 모양(REPORT_SCHEMA)으로 답한다. 사람이 맞아요를 눌러야 끝낸 것으로 친다(화면)
+  const PLAN_MAX = 8000, PLAN_ITEMS = 12, PLAN_LINE = 160, CHECKS_MAX = 12;
+  const PLAN_SCHEMA = obj({ problem: str, have: str, missing: str, items: list(obj({ need: str, check: str }), 1, PLAN_ITEMS), prep: list(str, 0, 6), ask: list(str, 0, 4), say: str });
+  const planLines = (p) => [`풀려는 문제: ${p.problem}`, `이미 있는 것: ${p.have}`, `아직 없는 것: ${p.missing}`,
+    ...p.items.map((x, i) => `(${i + 1}) 요구: ${x.need} / 기준: ${x.check}`), ...(p.prep || []).map((x) => `준비: ${x}`), ...(p.ask || []).map((x) => `물을 것: ${x}`)].join("\n");
+  function planPrompt({ text, readme = "", files = [], prev = null, notes = [], answers = [], general = "" }) {
+    const said = [...notes.map((n) => `요구: ${n.need} / 기준: ${n.check} → 의견: ${n.note}`), ...answers.map((a) => `물은 것: ${a.q} → 답: ${a.a}`), ...(general ? [`전체 의견: ${general}`] : [])];
+    return prompt([prev ? "사용자가 만들고 싶은 것을 한 번에 적었고, 지난번에 세운 준비 계획에 의견을 달았다. 의견대로 계획을 다시 세운다."
+      : "사용자가 만들고 싶은 것 · 요구 · 문제 글을 한 번에 적었다. 그것으로 준비 계획을 세운다 — 사용자는 이 계획을 줄마다 맞는지 확인한다."], [
+      FLORO_VOICE,
+      "넣은 글 · README · 파일 이름에 있는 것만 쓴다. 없는 기능 · 숫자 · 사람 · 날짜는 지어내지 않는다. 모르는 것은 ask에 질문으로 넣는다(4개까지).",
+      "problem은 풀려는 문제, have는 이미 있는 것(README · 파일 이름으로 본 것 — 없으면 '아직 없어요'), missing은 아직 없는 것. 각각 한 문장, 100자 안쪽.",
+      `items는 요구 1~${PLAN_ITEMS}개. need는 '누가 무엇을 하면, 앱은 무엇을 한다' 모양의 한 줄, check는 그 요구가 다 됐는지 눈으로 볼 수 있는 한 줄(예: '신청 단추를 누르면 목록에 한 줄이 생긴다'). 각각 ${PLAN_LINE}자 안쪽.`,
+      "prep은 만들기 전에 준비할 것 6개까지(각 80자 안쪽). 없으면 빈 목록.",
+      `say는 계획을 건네며 하는 말이다. ${SHORT}으로, 줄마다 맞는지 봐 달라고 한다.`,
+      ...(prev ? ["의견이 없는 줄은 그대로 둔다. 의견이 달린 줄만 의견대로 고친다. 답을 받은 질문은 ask에서 빼고 계획에 넣는다."] : []),
+    ], tag("넣은글", String(text || "").trim()), ...(readme ? [tag("README", readme)] : []), ...(files.length ? [tag("파일이름", files.join(", "))] : []),
+      ...(prev ? [tag("지난계획", planLines(prev)), tag("의견", said.join("\n") || "(없음)")] : []));
+  }
+  const strs = (a, max, len) => (Array.isArray(a) && a.every((x) => typeof x === "string") ? a.filter(filled).slice(0, max).map((x) => x.trim().slice(0, len)) : null);
+  // 답의 모양 — 요구 줄의 id(p1…)는 코드가 붙인다(화면의 맞아요 / 고칠래요 · 맡기기가 이 id로 가리킨다). 긴 글은 잘라 쓴다
+  function parsePlan(o) {
+    if (!has(o, ["problem", "have", "missing", "say"]) || !Array.isArray(o.items) || !o.items.length || !o.items.every((x) => has(x, ["need", "check"]))) return null;
+    const prep = strs(o.prep, 6, 100), ask = strs(o.ask, 4, 120);
+    if (!prep || !ask) return null;
+    const cut = (s, n) => s.trim().slice(0, n);
+    return { problem: cut(o.problem, 200), have: cut(o.have, 200), missing: cut(o.missing, 200),
+      items: o.items.slice(0, PLAN_ITEMS).map((x, i) => ({ id: `p${i + 1}`, need: cut(x.need, PLAN_LINE), check: cut(x.check, PLAN_LINE) })), prep, ask, say: cut(o.say, 120) };
+  }
+  const REPORT_SCHEMA = obj({ items: list(obj({ check: str, done: { type: "boolean" }, evidence: { type: "string" } }), 1, CHECKS_MAX), easy: str, ask: { type: "string" } });
+  // Claude Code에 넘길 글 — 요구 문장 + 기준 목록 + 끝나면 기준마다 보고하라는 말(그 실행에 --json-schema REPORT_SCHEMA). 기준이 없으면 요구 문장 그대로(FR-17 전처럼)
+  function taskBrief(text, checks) {
+    const t = String(text || "").trim(), c = (checks || []).filter(filled).slice(0, CHECKS_MAX);
+    if (!c.length) return t;
+    return [t, "", "다 됐는지 보는 기준:", ...c.map((x, i) => `(${i + 1}) ${x.trim()}`), "",
+      "일을 마치면 기준마다 해냈는지(done)와 근거(evidence — 바꾼 파일 이름과 한 일 한 줄)를 정해진 모양으로 알려 주세요. 하지 않은 일은 해냈다고 지어내지 않아요.",
+      "easy는 초등학생도 알아듣는 말로 두 문장, 60자 안쪽 — 무엇을 했고 무엇이 남았는지. 어려운 말은 쉬운 말로 풀고, 파일 이름 · 명령 · 숫자는 바꾸지 않아요.",
+      "사용자에게 물을 것이 있으면 ask에 한 문장(쉬운 말), 없으면 빈 글. 증거에 내 컴퓨터의 전체 경로는 쓰지 말고 폴더 안의 파일 이름만 써요."].join("\n");
+  }
+  // 보고 읽기 — 기준 순서대로 맞춘다(빠진 줄은 안 됨, 남는 줄은 버림). 근거가 빈 '해냄'은 해냄으로 치지 않는다. check 글은 우리 것으로 덮는다
+  function parseReport(o, checks) {
+    const c = (checks || []).filter(filled);
+    if (!c.length || !o || !filled(o.easy) || typeof o.ask !== "string" || !Array.isArray(o.items) || !o.items.length || o.items.some((x) => !x || typeof x.done !== "boolean")) return null;
+    const items = c.map((check, i) => { const x = o.items[i], ev = x && typeof x.evidence === "string" ? x.evidence.trim().slice(0, 200) : ""; return { check, done: !!(x && x.done && ev), evidence: ev }; });
+    return { items, easy: o.easy.trim().slice(0, 240), ask: o.ask.trim().slice(0, 200), done: items.filter((x) => x.done).length, total: items.length };
+  }
+
   // ── Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함") ──
   const filled = (x) => typeof x === "string" && x.trim() !== "";
   const has = (o, keys) => !!o && keys.every((k) => filled(o[k]));        // 글자 칸이 모두 채워졌나
@@ -337,7 +387,8 @@
   const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, TASK_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt, taskPrompt,
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
-    FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest };   // C-22 퀘스트 제작(2026-10-21)
+    FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest,   // C-22 퀘스트 제작(2026-10-21)
+    PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport };   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
 })(typeof window !== "undefined" ? window : globalThis);

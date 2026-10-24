@@ -49,6 +49,7 @@
   const SHELF_ON = false;          // 서재(서고 · 책장) 잠시 뺌 — 이재엽 2026-10-23 "서재는 지금은 못들어가고 버튼을 지우고 나중에 이 대회가 끝나면 열어서 작업". 대회 뒤 true로 다시 연다
   // 앱(Electron)이 옆 창 둘(설정 창 · 퀘스트 창)을 열 수 있으면(preload.js openWin, 2026-10-21 이재엽 "창 셋") 그 창으로, 아니면(브라우저 · 옛 앱) 섬 옆의 판으로
   const WINS = !!(window.floeApp && window.floeApp.openWin);
+  const FP = window.FloePlan;   // 준비 계획판 규칙(C-34 · C-32, 2026-10-24 — 03-backend/navigator/plan.js). 없으면 맡기기는 전처럼 '할 일 적기'
   const AP = window.NavApprove;   // FR-17 승인 카드(2026-10-20) — 서버 없이 보일 예시 카드   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
   const SESS = (() => { try { return window.sessionStorage; } catch { return null; } })();
   const PLACE_KEY = "floe:place", SEEN_KEY = "floe:alerts-seen";   // 이 창(섬)에만 — 기록(KEY)에는 넣지 않는다(다음에 켤 때는 늘 기본 화면)
@@ -123,6 +124,7 @@
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
     qwin: false, qtab: "quest", chat: [], say: "", rb: null, rbSel: 0, tuSel: "quest",   // rb · tuSel — 책 탭의 README · 배우기 탭의 고른 기능(이 켜짐 동안만)
     gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
+    plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {},   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
   let exHidden = M ? M.readHidden(STORE) : false;
@@ -211,7 +213,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear"];
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme"];
   let forgotten = false;
   function load() {
     let s;
@@ -223,6 +225,9 @@
     st.pets = Math.max(0, Number(st.pets) || 0);
     st.libGone = [...new Set([...(Array.isArray(st.libGone) ? st.libGone.map(String) : []), ...readBound()])];
     for (const k of ["checks", "todoLater", "alerts", "fed", "inbox", "sorted"]) if (!Array.isArray(st[k])) st[k] = [];
+    st.plan = FP && st.plan ? FP.revive(st.plan) : null;   // 고장 난 계획판은 버린다
+    if (typeof st.planDraft !== "string") st.planDraft = "";
+    st.planReadme = st.planReadme !== false;
     if (!st.hold || typeof st.hold.when !== "string") st.hold = null;
     if (!TIERS.some(([v]) => v === st.tier)) st.tier = "Full";
     if (st.j) st.j = T.refit(st.j, st.tier);   // 할 일 목록이 바뀌었으면(등급·규칙) 지금 목록에 맞춘다 — 글자가 같은 할 일만 이어 간다
@@ -1372,6 +1377,7 @@
   //   AI 진행은 C-12 규칙 그대로 — 파일 이름 · 첫 줄 · 줄 수뿐, 파일 내용은 받지도 보이지도 않는다
   const PANE = { alerts: ["알림", "AI 코딩 도구가 보낸 알림이에요 — 새것이 위예요"], ai: ["AI 진행", "Claude Code가 한 일을 한 줄씩 — 파일 내용은 받지 않아요"] };
   function basePane(kind) {
+    if (kind === "plan" && FP) return planPane();
     deskKeys.Escape = { act: "base-back" };
     const now = Date.now(), [title, lead] = PANE[kind] || PANE.alerts;
     const last = kind === "ai" ? [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0] : null;
@@ -1384,6 +1390,131 @@
         kind === "ai" && last && HUB && HUB.STATE_WORD[last.state] ? `<span class="st ${esc(last.state)}">${esc(HUB.STATE_WORD[last.state])}</span>` : ""}${
         counts.length ? `<ul class="verbs">${counts.map(([v, n]) => `<li><span>${esc(v)}</span><b>${n}</b></li>`).join("")}</ul>` : ""}</div>
       <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div>${cmd4HTML()}</div></section>`;   // 명령 네 칸은 판이 열려도 남는다(C-29 "늘 둔다")
+  }
+  // ── 준비 계획판(C-34) · 맡길 일 목록과 보고(C-32) — claude-drafted: 2026-10-24 (이재엽 "한번에 내용들을 넣으면 어떻게 준비하고 기준들을 사람들이 확인해서 너한테 의견들을 바로바로" ·
+  //    버튼 "처음 설정 새 칸 + 맡기기" · "Floe의 AI 한 번" · "Claude Code가 기준마다 보고" · "맡길 일 목록으로") ──
+  // 한 번에 넣기(글 + README도 읽나) → 계획 세우기(/api/plan — AI 한 번, 도구 없이) → 줄마다 맞아요 / 고칠래요 · 의견 · 답 → 다시 세우기 또는 확정 →
+  // 줄 하나씩 맡기기(/api/task/start + checks — 그 기준으로 Claude Code가 끝에 보고) → 보고를 보고 맞아요(끝냄) / 다르게 봐요(의견 달고 다시). 규칙은 plan.js, 서버 없이(연습)는 예시 계획 · 예시 보고
+  const PL_STATE = { todo: "남음", running: "맡김 중", report: "보고 왔어요", done: "끝냈어요" };
+  const PL_BUSY = { make: "플로로가 계획을 세우는 중이에요…", hand: "Claude Code에 넘기는 중이에요…", ask: "플로로가 답을 찾는 중이에요…" };
+  const planLive = () => canLive && st.mode === "live";
+  const planPractice = (b) => !planLive() || !!(b && b.example);   // 예시 계획은 모드를 바꿔도 연습으로(진짜 Claude Code로 넘기지 않는다 — FR-10, 2026-10-24 리뷰)
+  function planPane() {
+    deskKeys.Escape = { act: "base-back" };
+    const b = st.plan, prog = b && b.confirmed ? FP.progress(b) : null;
+    const head = `<div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">계획${b ? ` <span class="meta">${b.confirmed ? `확정 · 끝냄 ${prog.done} / ${prog.total}` : `${b.v}판 · 확인하는 중`}</span>` : ""}</b>${b && planPractice(b) ? `<span class="note">예시예요 · 연습</span>` : ""}</div>`;
+    const warn = st.warn && /^plan/.test(st.warn.then) ? warnNote("stop-send", "그만둘게요") : "";
+    const body = st.busy && st.planBusy ? `<p class="note" role="status">${PL_BUSY[st.planBusy] || "기다리는 중이에요…"} <span data-wait></span></p>` : !b ? planInput() : b.confirmed ? planWork(b) : planReview(b);
+    return `<section class="mc base pane plan tone-gray"><div class="who">${petCat(st.busy ? "think" : b && b.confirmed ? "happy" : "look", 92)}<b class="pj">${esc(project() || "프로젝트")}</b><span class="tl">준비 계획</span></div>
+      <div class="main">${head}${approvalsHTML()}${warn}<div class="pane-body pl">${body}</div>${cmd4HTML()}</div></section>`;
+  }
+  function planInput() {
+    const has = st.planDraft.trim() !== "";
+    return `<label class="kicker" for="plan-text">만들고 싶은 것 · 요구 · 문제 글을 한 번에 붙여 넣어요</label>
+      <textarea id="plan-text" class="mc-input pl-in" data-act="plan-text" rows="7" placeholder="예) 동아리 행사 신청 앱 — 회원이 이름을 적어 신청하고, 운영진이 목록을 보고, 마감이 지나면 더 받지 않아요">${esc(st.planDraft)}</textarea>
+      ${canLive ? `<label class="chk"><input type="checkbox" data-act="plan-readme" ${st.planReadme ? "checked" : ""}>작업 폴더의 README와 파일 이름도 같이 읽어요</label>` : ""}
+      <div class="row"><button type="button" class="btn pri" data-act="plan-make" ${has ? "" : "disabled"}>계획 세우기</button><button type="button" class="btn" data-act="plan-direct">한 줄만 적어 맡기기</button></div>
+      <p class="meta">${planLive() ? "AI를 한 번 불러요 — 넣은 글과 README · 파일 이름만 보내고, 파일을 고치지 않아요. 계획은 줄마다 맞는지 보고 확정해요." : "연습이라 예시 계획을 보여 줘요(AI를 부르지 않아요)."}</p>`;
+  }
+  function planReview(b) {
+    const p = b.plan, fb = FP.hasFeedback(b), left = FP.unmarked(b);
+    const sum = `<dl class="pl-sum"><div><dt>풀려는 문제</dt><dd>${esc(p.problem)}</dd></div><div><dt>이미 있는 것</dt><dd>${esc(p.have)}</dd></div><div><dt>아직 없는 것</dt><dd>${esc(p.missing)}</dd></div></dl>`;
+    const items = `<ol class="pl-items">${p.items.map((x) => { const m = b.marks[x.id] || ""; return `<li class="pl-it ${m}"><div class="pl-txt"><b>${esc(x.need)}</b><span class="meta">기준 — ${esc(x.check)}</span></div>
+      <div class="pl-btns" role="group" aria-label="이 줄이 맞나요"><button type="button" class="btn" data-act="plan-ok" data-id="${esc(x.id)}" aria-pressed="${m === "ok"}">맞아요</button><button type="button" class="btn" data-act="plan-fix" data-id="${esc(x.id)}" aria-pressed="${m === "fix"}">고칠래요</button></div>${
+      m === "fix" ? `<textarea class="mc-input" data-act="plan-note" data-id="${esc(x.id)}" rows="2" aria-label="어떻게 고칠까요" placeholder="어떻게 고칠까요? 예) 연락처 칸은 빼요">${esc(b.notes[x.id] || "")}</textarea>` : ""}</li>`; }).join("")}</ol>`;
+    const prep = p.prep.length ? `<p class="kicker">준비할 것</p><ul class="pl-prep">${p.prep.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
+    const ask = p.ask.length ? `<p class="kicker">플로로가 물어요</p>${p.ask.map((q, i) => `<label class="pl-ask"><span>${esc(q)}</span><input class="mc-input" data-act="plan-answer" data-i="${i}" value="${esc(b.answers[i] || "")}" placeholder="답 — 모르면 비워 둬요"></label>`).join("")}` : "";
+    return `${sum}${items}${prep}${ask}<label class="pl-ask"><span>전체 의견(있으면)</span><textarea class="mc-input" data-act="plan-general" rows="2">${esc(b.general)}</textarea></label>
+      <div class="row"><button type="button" class="btn pri" data-act="plan-confirm" ${FP.canConfirm(b) ? "" : "disabled"}>이대로 확정</button><button type="button" class="btn" data-act="plan-again" ${fb && planLive() ? "" : "disabled"}>의견 보내고 다시 세우기</button><button type="button" class="btn" data-act="plan-reset">처음부터 다시 적기</button>${
+      left ? `<span class="meta">아직 안 본 줄 ${left}개</span>` : ""}</div>`;
+  }
+  function planWork(b) {
+    const busy = FP.running(b);
+    return `<p class="meta">줄 하나씩 Claude Code에 맡겨요. 끝나면 기준마다 해냈는지 알려 주고, 맞는지는 내가 정해요.</p><ol class="pl-items">${b.plan.items.map((x) => {
+      const s = FP.stateOf(b, x.id), w = b.work[x.id] || {}, r = w.report;
+      const act = s === "todo" ? `<button type="button" class="btn pri" data-act="plan-hand" data-id="${esc(x.id)}" ${busy ? "disabled" : ""}>${w.note ? "다시 맡기기" : "맡기기"}</button>`
+        : s === "running" ? `<span class="meta">맡김 중 — 허락이 필요하면 위에 카드가 떠요</span><button type="button" class="btn" data-act="plan-unwait" data-id="${esc(x.id)}" title="보고를 기다리지 않고 다시 맡길 수 있게 해요(Claude Code는 멈추지 않아요)">기다리지 않기</button>`
+        : s === "done" ? `<span class="meta">✓ 끝냈어요</span>` : "";
+      // 보고 카드 — 쉬운 말 요약 · 기준마다 해냄 · 근거. Claude Code가 물은 것이 있으면 답 칸(답하면 그 답을 붙여 이어서 맡긴다 — C-33),
+      // 맞아요(끝냄) / 다르게 봐요(의견 달고 다시) / 물어보기(이 보고에 대해 플로로에게 묻기 — Floe의 AI 한 번, C-32)
+      const ans = st.planAns[x.id];
+      const rep = s === "report" && r ? `<div class="pl-rep"><p>${esc(r.easy)}</p><ul>${r.items.map((c) => `<li class="${c.done ? "y" : "n"}">${c.done ? "✓" : "○"} ${esc(c.check)}${c.evidence ? ` <span class="meta">— ${esc(c.evidence)}</span>` : ""}</li>`).join("")}</ul>${
+        r.ask ? `<label class="pl-ask"><span>Claude Code가 물어요: ${esc(r.ask)}</span><input class="mc-input" data-act="plan-reply" data-id="${esc(x.id)}" value="${esc(st.planReply[x.id] || "")}" placeholder="답을 적으면 그 답을 붙여 이어서 맡겨요"></label><div class="row"><button type="button" class="btn" data-act="plan-reply-send" data-id="${esc(x.id)}">답하고 이어서 맡기기</button></div>` : ""}${
+        ans ? `<p class="pl-ans"><b>플로로의 답</b> ${esc(ans)}</p>` : ""}${st.planRej === x.id
+        ? `<textarea class="mc-input" data-act="plan-rej-note" rows="2" aria-label="어디가 다른가요" placeholder="어디가 다른가요? 예) 목록 화면은 아직 없어요">${esc(st.planRejNote)}</textarea><div class="row"><button type="button" class="btn pri" data-act="plan-reject" data-id="${esc(x.id)}">의견 달고 다시 맡기기</button><button type="button" class="btn" data-act="plan-rej-close">그만두기</button></div>`
+        : st.planAsk === x.id
+        ? `<input class="mc-input" data-act="plan-q" value="${esc(st.planQ)}" aria-label="플로로에게 물어볼 것" placeholder="이 보고에서 궁금한 것 — 예) 목록은 어디서 봐요?"><div class="row"><button type="button" class="btn pri" data-act="plan-ask-send" data-id="${esc(x.id)}">물어보기</button><button type="button" class="btn" data-act="plan-ask-close">그만두기</button></div>`
+        : `<div class="row"><button type="button" class="btn pri" data-act="plan-accept" data-id="${esc(x.id)}">맞아요 — 끝냈어요</button><button type="button" class="btn" data-act="plan-rej-open" data-id="${esc(x.id)}">다르게 봐요</button><button type="button" class="btn" data-act="plan-ask-open" data-id="${esc(x.id)}">물어보기</button></div>`}</div>` : "";
+      return `<li class="pl-it st-${s}"><div class="pl-txt"><b>${esc(x.need)}</b><span class="meta">기준 — ${esc(x.check)} · ${PL_STATE[s]}</span></div><div class="pl-btns">${act}</div>${rep}</li>`;
+    }).join("")}</ol><div class="row"><button type="button" class="btn" data-act="plan-reset">새 계획 적기</button></div>`;
+  }
+  // AI에게 묻는 것들 — 무엇을 기다리는지(planBusy)를 같이 보인다
+  const planCall = async (kind, url, body) => { st.planBusy = kind; try { return await callAI(url, body); } finally { st.planBusy = ""; } };
+  async function makePlan(skipCheck) {
+    const text = st.planDraft.trim(); if (!text) return;
+    if (!planLive()) { st.plan = FP.board(FP.EXAMPLE_PLAN, null, { example: true }); save(); render(); return say("연습이라 예시 계획이에요. 줄마다 맞는지 봐 주세요."); }
+    if (!skipCheck && guard(text, "plan")) return;
+    st.warn = null;
+    const r = await planCall("make", "/api/plan", { text, readme: st.planReadme });
+    if (r.ok) { st.plan = FP.board(r.plan); save(); render(); fetchUsage(); return say(r.plan.say); }
+    render(); say(r.reason || "계획을 세우지 못했어요");
+  }
+  // 다시 세우기 — 의견 · 답 · 전체 의견도 보내기 전에 비밀값 모양을 본다(2026-10-24 리뷰)
+  async function revisePlan(skipCheck) {
+    const b = st.plan; if (!b || !planLive() || !FP.hasFeedback(b)) return;
+    const fb = FP.feedback(b);
+    if (!skipCheck && guard([...fb.notes.map((n) => n.note), ...fb.answers.map((x) => x.a), fb.general].join("\n"), "planAgain")) return;
+    st.warn = null;
+    const r = await planCall("make", "/api/plan", { text: st.planDraft.trim() || b.plan.problem, readme: st.planReadme, prev: b.plan, ...fb });
+    if (r.ok) { st.plan = FP.board(r.plan, b); save(); render(); fetchUsage(); return say(r.plan.say); }
+    render(); say(r.reason || "다시 세우지 못했어요");
+  }
+  // 물어보기 — 이 보고에 대해 플로로에게(Floe의 AI 한 번, /api/answer). 맡긴 일 · 기준 · 보고 글만 보낸다
+  async function askPlan(id) {
+    const b = st.plan, q = st.planQ.trim(), w = b && b.work[id], x = b && b.plan.items.find((i) => i.id === id);
+    if (!q || !w || !w.report || !x) return;
+    if (planPractice(b)) { st.planAns = { ...st.planAns, [id]: "연습이라 답하지 않아요 — 진짜 AI로 바꾸면 이 보고를 보고 답해 줘요." }; st.planAsk = ""; return render(); }
+    if (guard(q, "planAsk")) return;
+    st.warn = null;
+    const text = [`맡긴 일: ${x.need}`, `다 됐는지 보는 기준: ${x.check}`, `Claude Code의 보고: ${w.report.easy}`, ...w.report.items.map((c) => `- ${c.check}: ${c.done ? "해냄" : "아직"}${c.evidence ? ` (${c.evidence})` : ""}`)].join("\n");
+    const r = await planCall("ask", "/api/answer", { stage: atStage(), hard: [], question: q, text, tier: st.tier });
+    if (r.ok) { st.planAns = { ...st.planAns, [id]: r.answer }; st.planAsk = ""; st.planQ = ""; fetchUsage(); } else say(r.reason || "답하지 못했어요");
+    render();
+  }
+  // 줄 하나 맡기기 — 진짜면 서버가 기준과 함께 Claude Code에 넘기고(그 실행이 끝에 기준마다 보고), 연습이면 잠시 뒤 예시 보고
+  async function handPlan(id) {
+    const b = st.plan; if (!b || !b.confirmed || FP.running(b)) return;
+    const t = FP.taskFor(b, id);
+    if (planPractice(b)) {
+      st.plan = FP.start(b, id); render();
+      setTimeout(() => { st.plan = FP.report(st.plan, id, FP.exampleReport(t.checks)); save(); render(); say("예시 보고가 왔어요. 맞는지 봐 주세요."); }, 900);
+      return;
+    }
+    const r = await planCall("hand", "/api/task/start", { text: t.text, checks: t.checks });
+    if (!r.ok) { render(); return say(r.reason || "맡기지 못했어요"); }
+    st.plan = FP.start(b, id, r.task && r.task.at); save(); render(); say("맡겼어요 — 허락이 필요하면 카드가 떠요");
+    watchPlanTask();
+  }
+  // 맡긴 일이 끝났나 — 3초마다 /api/task. 끝나면 보고(report)를 판에 붙이고 쉬운 말 요약을 플로로가 말한다. 보고가 없으면 다시 맡길 수 있게
+  let planTimer = null;
+  function watchPlanTask() {
+    if (planTimer || !canLive) return;
+    planTimer = setInterval(checkPlanTask, 3000);
+  }
+  let planChecking = false;   // 3초 타이머와 훅 알림이 겹쳐 두 번 묻지 않게
+  async function checkPlanTask() {
+    const id = st.plan && FP.running(st.plan);
+    if (!id) { clearInterval(planTimer); planTimer = null; return; }
+    if (planChecking) return;
+    planChecking = true;
+    let t = null; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch { return; } finally { planChecking = false; }
+    const at = st.plan.work[id] && st.plan.work[id].at;
+    if (t && at && t.at !== at) t = null;   // 다른 일(저장소 만들기 등)의 결과 — 이 줄의 보고는 잃었으니 다시 맡길 수 있게
+    if (t && t.state === "running") return;
+    clearInterval(planTimer); planTimer = null;
+    if (t && t.report) { st.plan = FP.report(st.plan, id, t.report); say(t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy); }
+    else { st.plan = FP.failed(st.plan, id); say("보고를 받지 못했어요 — 다시 맡길 수 있어요"); }
+    save(); render(); fetchUsage();
   }
   // ── FR-17 대화로 일 넘기기 · 섬에서 허용 · 거절(C-4, 2026-10-20 — 이재엽 버튼 "섬에서 진짜 승인" · "허락하면 세션이 진행하는 내용을 오버레이에서도") ──
   // 할 일 적기 → 요구 문장으로 정리(진짜 AI면 /api/task/tidy, 연습이면 navigator.js taskLines) → 사람이 고쳐 확정 → 허락하고 넘기기(/api/task/start — 서버가 연결한 폴더에서 claude를 연다).
@@ -1431,12 +1562,13 @@
     apMode = "live"; approvals = j.items.filter((a) => st.apSure !== a.id || true);
     for (const a of j.items) apKnown.add(a.id);
     if (fresh.length) {
-      st.place = "base"; st.pane = "ai";   // 허락은 AI 진행 판에서 — 바이브 코딩 중이어도 거기로
+      st.place = "base"; st.pane = st.pane === "plan" ? "plan" : "ai";   // 허락은 AI 진행 판에서 — 바이브 코딩 중이어도 거기로. 계획판을 보고 있으면 계획판 위에(C-32, 2026-10-24)
       if (st.ui === "home") { activity(); say("허락이 필요해요 — 위 카드를 봐 주세요"); } else { st.ping = `${toolName(fresh[0].tool)}가 허락을 기다려요 — 눌러서 볼까요?`; peek(); }
     }
     if (approvals.map((a) => a.id).join() !== before && st.ui === "home") render();
   }
   if (canLive) setInterval(pollApprovals, 2000);
+  if (st.plan && FP && FP.running(st.plan)) setTimeout(() => (planLive() ? watchPlanTask() : (st.plan = FP.failed(st.plan, FP.running(st.plan)))), 0);   // 다시 켰는데 맡김 중인 줄이 있으면 서버에 다시 묻는다(연습이면 다시 맡길 수 있게)
   // 섬(C-22): 위 줄 + [알림 · AI 진행 판 | 채팅]. 창 둘은 섬 앞뒤에(.nav.side — 가로로 나란히): 설정 창은 고른 쪽(side), 퀘스트 창은 반대쪽
   function islandHTML(enter) {
     const body = st.pane ? basePane(st.pane) : chatCard(momentToday());
@@ -1660,14 +1792,15 @@
     document.documentElement.dataset.ui = st.ui;
     save();
     if (!timer) scheduleIdle();
-    const a = document.activeElement, keep = isField(a) && a.dataset.act ? a.dataset.act : "";
+    // 같은 이름의 칸이 여럿이면(계획판의 줄마다 의견 · 물을 것마다 답 — 2026-10-24 리뷰) data-id · data-i까지 맞춰 그 칸으로 돌아간다
+    const a = document.activeElement, keep = isField(a) && a.dataset.act ? `[data-act="${a.dataset.act}"]${a.dataset.id ? `[data-id="${CSS.escape(a.dataset.id)}"]` : ""}${a.dataset.i !== undefined ? `[data-i="${CSS.escape(a.dataset.i)}"]` : ""}` : "";
     const sel = keep ? [a.selectionStart, a.selectionEnd, a.scrollTop] : null;
     // 채팅 칸의 스크롤 — 다시 그리면 칸이 새로 생겨 맨 위로 간다. 1초마다 바뀌는 '살펴보고 있어요 16초' 때문에 올려 둔 스크롤이 계속 아래로 끌려갔다(임유정 2026-10-22)
     const og = $nav.querySelector("[data-log]");
     const logWas = og ? { top: og.scrollTop, end: og.scrollHeight - og.scrollTop - og.clientHeight < 24, n: og.children.length } : null;
     if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); fitGacha(); }
     if (keep) {
-      const b = document.querySelector(`[data-act="${keep}"]`);
+      const b = document.querySelector(keep);
       if (b && b !== a) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; }
     }
     if (point) C.follow(isPhone() ? $phone : $nav, point);
@@ -1926,7 +2059,7 @@
     st.warn = { w, then }; render();
     return true;
   }
-  const RETRY = { judge: () => judge(true), draft: () => draft(true), review: () => review(true) };
+  const RETRY = { judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk); } };   // plan* — 준비 계획판(C-34)
   // 새로 배운 말을 모은다. 돌려주는 것: 이번에 처음 배운 말들
   function learn(j) {
     const fresh = [];
@@ -2115,11 +2248,39 @@
     "quest-example": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.example(q, i) : null; if (ex === null) return; st.say = ex; send(); },
     "quest-report": () => questReport(),
     // 명령 네 칸(C-29, 2026-10-23) — 맡기기: AI 진행 판의 '할 일 적기' · 살피기: 다 적은 퀘스트는 완료 보고, 보여 준 글이 있으면 어디쯤인지 보기, 아니면 남은 할 일 · 책: 퀘스트 창의 책 탭 · 배우기: 퀘스트 창의 배우기 탭
+    // 맡기기(C-29) → 준비 계획판(C-34 · C-32, 2026-10-24): 계획이 없으면 한 번에 넣기, 있으면 확인 · 맡길 일 목록. 처음 말한 것이 있으면 넣는 칸에 미리
     "cmd-hand": () => {
-      // 적은 생각(공책의 줄 · 처음 말한 것)을 할 일 칸에 넣어 연다 — 정리 → 고치기 → 허락은 그 판에서(FR-17)
+      if (!FP) return ACT["plan-direct"]();
+      if (!st.plan && !st.planDraft.trim()) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.planDraft = t.slice(0, N.PLAN_MAX); }
+      st.place = "base"; set({ pane: "plan", settings: false });
+      requestAnimationFrame(() => { const t = document.getElementById("plan-text"); if (t) t.focus(); });
+    },
+    // 한 줄만 적어 맡기기 — 전의 맡기기(FR-17): 적은 생각을 할 일 칸에 넣어 AI 진행 판에서 정리 → 고치기 → 허락
+    "plan-direct": () => {
       if (!st.task.text.trim() && !st.task.lines && !st.task.sent) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.task.text = t.slice(0, 4000); }
       ACT["base-ai"](); requestAnimationFrame(() => { const t = document.getElementById("task-text"); if (t) t.focus(); });
     },
+    "plan-make": () => makePlan(false),
+    "plan-ok": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "ok"); save(); render(); },
+    "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); requestAnimationFrame(() => { const t = $nav.querySelector(`[data-act=plan-note][data-id="${el && el.dataset.id}"]`); if (t) t.focus(); }); },
+    "plan-confirm": () => { if (!FP.canConfirm(st.plan)) return; st.plan = FP.confirm(st.plan); save(); render(); say("확정했어요! 이제 줄마다 맡길 수 있어요."); },
+    "plan-again": () => revisePlan(),
+    "plan-reset": () => { st.plan = null; st.planRej = ""; save(); render(); },
+    "plan-hand": (i, el) => handPlan(el && el.dataset.id),
+    "plan-accept": (i, el) => { st.plan = FP.accept(st.plan, el && el.dataset.id); save(); const p = FP.progress(st.plan); render(); say(p.done === p.total ? "계획을 다 끝냈어요! 정말 멋져요." : `끝냈어요! ${p.done} / ${p.total}`); },
+    "plan-rej-open": (i, el) => { st.planRej = (el && el.dataset.id) || ""; st.planRejNote = ""; render(); },
+    "plan-rej-close": () => { st.planRej = ""; render(); },
+    "plan-reject": (i, el) => { const id = el && el.dataset.id; st.plan = FP.reject(st.plan, id, st.planRejNote); st.planRej = ""; st.planRejNote = ""; save(); handPlan(id); },
+    // Claude Code가 물은 것에 답하고 이어서 맡기기(C-33) — 그 질문과 답을 다음 맡김 글에 붙인다
+    "plan-reply-send": (i, el) => {
+      const id = el && el.dataset.id, w = st.plan && st.plan.work[id], ans = (st.planReply[id] || "").trim();
+      if (!w || !w.report || !ans) return say("답을 먼저 적어 주세요");
+      st.plan = FP.reject(st.plan, id, `Claude Code가 "${w.report.ask}"라고 물었고, 사용자의 답: ${ans}`); st.planReply = { ...st.planReply, [id]: "" }; save(); handPlan(id);
+    },
+    "plan-ask-open": (i, el) => { st.planAsk = (el && el.dataset.id) || ""; st.planQ = ""; render(); requestAnimationFrame(() => { const q = $nav.querySelector("[data-act=plan-q]"); if (q) q.focus(); }); },
+    "plan-ask-close": () => { st.planAsk = ""; render(); },
+    "plan-ask-send": (i, el) => askPlan(el && el.dataset.id),
+    "plan-unwait": (i, el) => { st.plan = FP.failed(st.plan, el && el.dataset.id); save(); render(); say("기다리지 않을게요. 다시 맡길 수 있어요."); },
     "cmd-look": () => {
       const q = st.quest;
       if (q && q.phase === "quest" && QU && QU.isDone(q)) return questReport();
@@ -2368,6 +2529,7 @@
     if (a === "tier") setTier(t.value);
     if (a === "words" && ["work", "game"].includes(t.value)) set({ words: t.value });
     if (a === "qauto") { qauto = t.checked; writeLS(QAUTO_KEY, qauto ? "1" : "0"); }   // 퀘스트를 받으면 퀘스트 창이 바로 뜨기(C-22)
+    if (a === "plan-readme") { st.planReadme = t.checked; save(); }   // 준비 계획판 — 작업 폴더의 README도 읽나(C-34)
     if (a === "feed-kind" && st.meal) st.meal.kinds[Number(t.dataset.i)] = t.value;   // FR-15 더함 — 구간의 종류를 고친다(다시 그리지 않는다)
     if (a === "inbox-kind" && st.inbox[Number(t.dataset.i)]) { st.inbox[Number(t.dataset.i)].kind = t.value; save(); }
   }
@@ -2384,6 +2546,16 @@
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다
     if (a === "task-text") { st.task.text = t.value; const b = $nav.querySelector("[data-act=task-tidy]"); if (b) b.disabled = !st.task.text.trim(); }
     if (a === "task-lines") st.task.lines = t.value.split("\n");
+    // 준비 계획판(C-34) — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) 단추만 켠다
+    if (a === "plan-text") { st.planDraft = t.value.slice(0, N.PLAN_MAX); const b = $nav.querySelector("[data-act=plan-make]"); if (b) b.disabled = !st.planDraft.trim(); }
+    if (st.plan && FP && /^plan-(note|answer|general)$/.test(a || "")) {
+      st.plan = a === "plan-note" ? FP.note(st.plan, t.dataset.id, t.value) : a === "plan-answer" ? FP.answer(st.plan, Number(t.dataset.i), t.value) : { ...st.plan, general: t.value.slice(0, 300) };
+      const b = $nav.querySelector("[data-act=plan-again]"); if (b) b.disabled = !(FP.hasFeedback(st.plan) && planLive());
+      save();
+    }
+    if (a === "plan-rej-note") st.planRejNote = t.value.slice(0, 300);
+    if (a === "plan-q") st.planQ = t.value.slice(0, 300);
+    if (a === "plan-reply") st.planReply = { ...st.planReply, [t.dataset.id]: t.value.slice(0, 300) };
     if (a === "own-text") st.ownText = t.value;
     // 채팅 칸(C-22) — 글자를 칠 때는 다시 그리지 않는다. 이름 · 퀘스트 고치기(이름 · 할 일 · 줄 · 개수)도 같다(quest.js — 원본은 안 바꾼다)
     if (a === "say") st.say = t.value;
@@ -2458,6 +2630,7 @@
     if (!ev.sim) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project) st.project = ev.project; }
     if (!A.notifies(ev)) return render();   // 새 작업을 시작했을 때는 알리지 않는다 — 연결 표시(마지막 소식 때)만(2026-10-23)
     if (st.settings && !ev.sim) fetchUsage();   // 일을 마쳤다 — 열려 있는 토큰 칸을 새 값으로(2026-10-24)
+    if (!ev.sim && st.plan && FP && FP.running(st.plan)) checkPlanTask();   // 맡긴 계획 줄이 끝났을 수 있다 — 3초를 기다리지 않고 바로 묻는다(C-32)
     st.alerts = A.add(st.alerts, ev, (t) => sensitive(t).length > 0);
     if (st.busy) return render();
     if (ev.work) st.text = ev.work;
@@ -2544,7 +2717,7 @@
     lastLive = null;
     // 주소로 연 장면은 바이브 코딩(녹화 · 시험이 그대로), #base(&pane=alerts|ai)만 기본 화면(C-13, 넘김 문서 9절 7번)
     // 서고에서 돌아온 주소(&back)는 장면이 아니다 — 떠난 모드 그대로(F-36, PR #139 리뷰: 기본 화면에서 서재에 다녀오면 바이브 코딩이 됐다)
-    if (q.base) { st.place = "base"; st.pane = q.pane === "alerts" || q.pane === "ai" ? q.pane : ""; } else setPlace(q.back ? "library" : "scene");
+    if (q.base) { st.place = "base"; st.pane = ["alerts", "ai", "plan"].includes(q.pane) ? q.pane : ""; } else setPlace(q.back ? "library" : "scene");
     if (q.approve && AP) { approvals = AP.EXAMPLE.map((a) => ({ ...a, at: Date.now() })); apMode = "example"; st.task = { text: "", lines: null, say: "", sent: "" }; st.apSure = ""; }   // &approve=1 — 예시 승인 카드(FR-17, 녹화 · 시험용)
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
@@ -2634,6 +2807,14 @@
     if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
     st.gh = null;   // 처음 설정에서 프로젝트를 골랐으면 GitHub 칸을 다시 묻는다
     // C-31(2026-10-24): 처음 설정에서 새로 만든 폴더의 GitHub 저장소를 바랐으면 — 만드는 일은 사용자의 Claude Code에(C-25), 허락은 섬의 카드로
+    // 처음 설정의 계획 칸에 한 번에 적었다(C-34) — 계획판을 그 글로 연다. AI는 사람이 '계획 세우기'를 누를 때만(첫 5분 0절 4번)
+    // 이미 확정한 계획이 있으면 지우지 않는다(2026-10-24 리뷰 — 프로젝트 바꾸기에서 적어도 '끝냄 2/3'을 잃지 않게): 새 글은 넣는 칸에 두고 '새 계획 적기'로 쓴다
+    if (FP && typeof d.planText === "string" && d.planText.trim()) {
+      st.planDraft = d.planText.slice(0, N.PLAN_MAX); st.planReadme = d.planReadme !== false; st.place = "base"; st.pane = "plan";
+      if (st.plan && (st.plan.confirmed || FP.running(st.plan))) say("지금 계획은 그대로 뒀어요. 새로 적은 글은 '새 계획 적기'를 누르면 써요.");
+      else st.plan = null;
+      save(); render();
+    }
     if (d.makeRepo === "private" || d.makeRepo === "public") {
       st.ghVis = d.makeRepo;
       createRepo().then((r) => say(r && r.ok ? "저장소 만들기를 Claude Code에 맡겼어요. 허락을 구하면 여기서 물을게요." : "저장소를 맡기지 못했어요. 설정의 GitHub 칸에서 다시 해요."));

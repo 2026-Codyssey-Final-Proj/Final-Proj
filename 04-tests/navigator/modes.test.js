@@ -35,7 +35,7 @@ test("app.js — 모드는 st.place(mode · home이라는 이름은 쓰지 않�
   assert.ok(!keep.includes('"place"') && !keep.includes('"pane"'), "기록(localStorage)에는 넣지 않는다 — 다음에 켤 때는 늘 기본");
   assert.match(app, /base: \(\) => \{ setPlace\("home"\); set\(\{ settings: false, pane: "" \}\); \}/, "집 — 열어 둔 판도 닫는다");
   assert.match(app, /"go-vibe": \(\) => \{ setPlace\("vibe"\); set\(\{ tab: "today"/, "바이브 코딩 단추 → 이번 단계");
-  assert.match(app, /if \(q\.base\) \{ st\.place = "base"; st\.pane = q\.pane === "alerts" \|\| q\.pane === "ai" \? q\.pane : ""; \} else setPlace\(q\.back \? "library" : "scene"\);/, "주소 장면은 바이브 코딩, #base만 기본, 서고에서 돌아온 &back은 떠난 모드 그대로(F-36)");
+  assert.match(app, /if \(q\.base\) \{ st\.place = "base"; st\.pane = \["alerts", "ai", "plan"\]\.includes\(q\.pane\) \? q\.pane : ""; \} else setPlace\(q\.back \? "library" : "scene"\);/, "주소 장면은 바이브 코딩, #base만 기본(&pane=alerts|ai|plan — 계획판 C-34, 2026-10-24), 서고에서 돌아온 &back은 떠난 모드 그대로(F-36)");
   assert.match(app, /const body = st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판(알림 · AI 진행)이 아니면 채팅(C-22, 2026-10-21 — 기본 화면의 단추 넷은 뺐다)");
 });
 

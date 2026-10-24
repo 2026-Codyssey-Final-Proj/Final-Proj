@@ -68,6 +68,9 @@ html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투�
 .su-vis{display:flex;gap:4px}
 .su-vis .b{min-height:30px!important;padding:0 10px}
 .su-vis .b[aria-pressed="true"]{border-color:var(--acc);color:var(--ink);font-weight:700}
+/* 계획 칸(C-34, 2026-10-24) — 한 번에 붙여 넣는 큰 칸 */
+.su-plan{width:100%;min-height:140px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:calc(14px * var(--ui-scale,1));line-height:1.55;resize:vertical}
+.su-plan:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 .su-dots{grid-column:1/-1;list-style:none;margin:6px 0 0;padding:0;display:flex;justify-content:center;gap:6px}
 .su-dots li{width:7px;height:7px;border-radius:50%;background:var(--seg)}
 .su-dots li.on{width:20px;border-radius:4px;background:var(--acc)}
@@ -83,7 +86,7 @@ html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투�
 @media (min-width:601px){
   #floe-setup .su{background:rgba(22,34,94,.86);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%)}
   .su-pick{background:rgba(255,255,255,.06)}
-  .su-key input,.su-card input{background:rgba(255,255,255,.08)}
+  .su-key input,.su-card input,.su-plan{background:rgba(255,255,255,.08)}
 }
 @media (min-width:601px) and (prefers-reduced-transparency:reduce){#floe-setup .su{background:#1A2766;-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (prefers-reduced-motion:reduce){#floe-setup .su{animation:none}.su-pick{transition:none}}

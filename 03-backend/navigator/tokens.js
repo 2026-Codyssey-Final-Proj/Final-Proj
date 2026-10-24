@@ -20,17 +20,19 @@ function usageOf(u) {
   return { ...r, total: r.input + r.output + r.cacheWrite + r.cacheRead };
 }
 
-// claude -p --output-format json의 마지막 결과 한 덩이 → { usage, cost } | null. 답 글(result)은 담지 않는다
-function parseResult(text) {
+// claude -p --output-format json의 마지막 결과 한 덩이(날것) → 객체 | null. 앞에 다른 줄이 있어도 마지막 JSON
+function resultOf(text) {
   const s = String(text || "").trim();
   if (!s) return null;
   for (const c of [s, s.slice(s.lastIndexOf("\n{") + 1)]) {
     let j; try { j = JSON.parse(c); } catch { continue; }
-    if (!j || typeof j !== "object" || Array.isArray(j) || j.type !== "result") return null;
-    return { usage: usageOf(j.usage), cost: money(j.total_cost_usd ?? j.cost_usd) };
+    return j && typeof j === "object" && !Array.isArray(j) && j.type === "result" ? j : null;
   }
   return null;
 }
+// 결과 한 덩이 → { usage, cost } — 장부에 쓰는 숫자만. 답 글(result)은 담지 않는다
+const summarize = (j) => ({ usage: usageOf(j.usage), cost: money(j.total_cost_usd ?? j.cost_usd) });
+const parseResult = (text) => { const j = resultOf(text); return j ? summarize(j) : null; };
 
 const blankKind = () => ({ count: 0, tokens: 0, cost: 0 });
 const blank = (since) => ({ since, kinds: Object.fromEntries(KINDS.map((k) => [k, blankKind()])), runs: [] });
@@ -71,4 +73,4 @@ const fileStore = (file) => ({
 // 자리 — NAV_TOKENS_FILE, 없으면 NAV_USAGE_FILE 옆(시험이 홈 폴더에 쓰지 않게), 없으면 홈의 .navigator-tokens.json
 const fileOf = (env, home = os.homedir()) => env.NAV_TOKENS_FILE || (env.NAV_USAGE_FILE ? env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-tokens.json") : path.join(home, ".navigator-tokens.json"));
 
-module.exports = { KINDS, RUNS_MAX, usageOf, parseResult, createLedger, fileStore, fileOf };
+module.exports = { KINDS, RUNS_MAX, usageOf, resultOf, summarize, parseResult, createLedger, fileStore, fileOf };
