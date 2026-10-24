@@ -192,13 +192,14 @@ function callCli(prompt, schema) {
 // 판정(callCli)과 다르다: 도구 · 설정(훅 포함)을 그대로 쓰고, 권한 건너뛰기 옵션은 쓰지 않는다 — 파일을 고치거나 명령을 쓰기 전의 허락은 PermissionRequest 훅(approve-hook.js)이 섬에 묻는다.
 // 대화 기록은 잇지 않는다(--resume · --continue 없음 — 열어 둔 창과 한 세션을 두 곳에서 쓰지 않게) [제안]. NAV_CLAUDE_BIN은 시험용 가짜 claude(.js면 node로 연다)
 // 2026-10-24(토큰 장부): 끝에 결과 한 덩이(--output-format json)를 받아 onResult로 넘긴다 — 토큰 · 비용만 쓰고 답 글은 담지 않는다(tokens.js parseResult). 앞 4MB까지만 모은다
+// 2026-10-24(C-32): schema를 주면 --json-schema로 연다 — Claude Code가 일을 마친 뒤 그 모양으로 답한다(기준마다 해냄 · 근거, navigator.js REPORT_SCHEMA). 그 답(output)만 넘기고 결과 글은 넘기지 않는다
 const TASK_OUT_MAX = 4 * 1024 * 1024;
-function startTask({ dir, text, bin = process.env.NAV_CLAUDE_BIN || "claude", onResult = null }) {
-  const args = ["-p", "--output-format", "json"], js = bin.endsWith(".js");
+function startTask({ dir, text, bin = process.env.NAV_CLAUDE_BIN || "claude", onResult = null, schema = null }) {
+  const args = ["-p", "--output-format", "json", ...(schema ? ["--json-schema", JSON.stringify(schema)] : [])], js = bin.endsWith(".js");
   const child = spawn(js ? process.execPath : bin, js ? [bin, ...args] : args, { cwd: dir, stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
   let out = "";
   child.stdout.on("data", (d) => { if (out.length < TASK_OUT_MAX) out += d; });
-  child.on("close", () => { if (onResult) onResult(Tokens.parseResult(out)); });
+  child.on("close", () => { if (!onResult) return; const j = Tokens.resultOf(out); onResult(j ? { ...Tokens.summarize(j), output: j.structured_output ?? null } : null); });
   child.stdin.on("error", () => {});
   child.stdin.end(`Floe(섬)에서 넘긴 일이에요. 아래 요구 문장대로 해 주세요. 파일을 고치거나 명령을 쓰기 전에 허락을 구하면 Floe 섬에서 허용 · 거절을 받아요.\n\n${String(text).trim()}\n`);
   return child;

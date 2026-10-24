@@ -22,7 +22,7 @@
     return !(saved && saved.done);
   }
   // 칸(stage)의 순서 — 고르기 · Claude Code · API 키는 'AI 연결' 칸 안의 걸음(step)이다
-  const FLOW = ["hello", "ai", "github", "project", "done"];
+  const FLOW = ["hello", "ai", "github", "project", "plan", "done"];   // plan — 한 번에 적기(C-34, 2026-10-24). 계획은 시작한 뒤 계획판에서 세운다
   const STEP_STAGE = { choose: "ai", cli: "ai", api: "ai" };
   const stageOf = (step) => STEP_STAGE[step] || step;
   const firstStep = (stage) => (stage === "ai" ? "choose" : stage);
@@ -86,7 +86,8 @@
   function summary(s) {
     const gh = githubReady(s.gh) ? "로그인됨" : s.ghSkip ? "건너뜀 — 나중에 설정에서" : "아직 로그인 전";
     const p = s.project ? `${s.project.name}${s.project.where ? ` · ${s.project.where}` : ""}` : "아직 안 골랐어요 — 설정에서 언제든";
-    return [["AI", VIA[s.via] || "나중에"], ["GitHub", gh], ["프로젝트", p]];
+    const plan = String(s.planText || "").trim() ? "적었어요 — 시작하면 계획판이 열려요" : "나중에 — 맡기기에서 언제든";
+    return [["AI", VIA[s.via] || "나중에"], ["GitHub", gh], ["프로젝트", p], ["계획", plan]];
   }
   // 새로 만든 빈 폴더면 GitHub 저장소도 만들지 묻는다 — 만들기는 사용자의 Claude Code가(C-25), 허락은 섬에서. Claude Code가 없으면 맡길 곳이 없어 묻지 않는다
   const offerRepo = (s) => !!(githubReady(s.gh) && s.st && s.st.claude && s.st.claude.found && s.project && s.project.made && !s.project.repo);
@@ -108,7 +109,7 @@
   let host = null, s = null, lastStep = "";
   let flow = FLOW.slice();
   const extra = {};   // addStage로 더한 칸 — { view(s) → HTML }
-  const fresh = () => ({ step: "hello", via: "", st: null, checked: null, busy: "", note: "", gh: null, ghSkip: false, repos: [], project: null, makeRepo: true, repoVis: "private" });
+  const fresh = () => ({ step: "hello", via: "", st: null, checked: null, busy: "", note: "", gh: null, ghSkip: false, repos: [], project: null, makeRepo: true, repoVis: "private", planText: "", planReadme: true });
 
   function save(via) { try { root.localStorage.setItem(KEY, JSON.stringify({ done: true, via, at: new Date().toLocaleDateString("sv-SE") })); } catch {} }
   async function status() {
@@ -128,7 +129,7 @@
   const note = () => (s.note ? `<p class="su-note" role="status">${esc(s.note)}</p>` : "");
   const back = (to, label = "‹ 뒤로") => `<button type="button" class="b ghost" data-s="go" data-to="${to}">${label}</button>`;
 
-  const MOOD = { hello: "happy", choose: "look", cli: "idle", api: "idle", github: "idle", project: "look", done: "done" };
+  const MOOD = { hello: "happy", choose: "look", cli: "idle", api: "idle", github: "idle", project: "look", plan: "look", done: "done" };
   function body() {
     if (s.step === "hello") return `
       <h2 id="su-title" class="mc-title">반가워요! 저는 길잡이 물범 플로로예요.</h2>
@@ -169,6 +170,13 @@
         <button type="button" class="b ${ready ? "pri" : ""}" data-s="next"${ready ? "" : " disabled"}>다음: 프로젝트${ready ? '<kbd aria-hidden="true">Enter</kbd>' : ""}</button></div>`;
     }
     if (s.step === "project") return projectView();
+    if (s.step === "plan") return `
+      <h2 id="su-title" class="mc-title">무엇을 만들까요? 한 번에 다 적어 주세요</h2>
+      <p class="mc-sub">만들고 싶은 것 · 요구 · 문제(과제) 글을 붙여 넣으면, 시작한 뒤 플로로가 준비 계획과 다 됐는지 보는 기준을 세워요. 줄마다 맞는지 보고 의견을 달 수 있어요.</p>
+      <textarea class="su-plan" data-s="plantext" rows="7" aria-label="만들고 싶은 것 · 요구 · 문제 글" placeholder="예) 동아리 행사 신청 앱 — 회원이 이름을 적어 신청하고, 운영진이 목록을 보고, 마감이 지나면 더 받지 않아요">${esc(s.planText)}</textarea>
+      ${s.project ? `<label class="chk"><input type="checkbox" data-s="planreadme" ${s.planReadme ? "checked" : ""}>작업 폴더(${esc(s.project.name)})의 README와 파일 이름도 같이 읽어요</label>` : ""}
+      <p class="su-fine">AI는 계획판에서 '계획 세우기'를 누를 때 한 번만 불러요. 비밀번호나 다른 사람 연락처는 빼 주세요.</p>
+      <div class="su-acts">${back("project")}<button type="button" class="b pri" data-s="next">다음<kbd aria-hidden="true">Enter</kbd></button></div>`;
     if (extra[s.step]) return `${extra[s.step].view(s)}<div class="su-acts">${back(prevStage(flow, s.step))}<button type="button" class="b pri" data-s="next">다음<kbd aria-hidden="true">Enter</kbd></button></div>`;
     const line = s.via === "cli" ? "앞으로 Claude Code로 일하면 제가 옆에서 알아채고, 지금 몇 단계인지와 다음에 할 일을 알려 드릴게요."
       : s.via === "api" ? "보여 주신 글을 내 API 키로 살펴볼게요. 쓴 토큰은 설정에서 볼 수 있어요."
@@ -264,8 +272,9 @@
   function close(via, open) {
     save(via);
     const makeRepo = open && offerRepo(s) && s.makeRepo ? s.repoVis : "";
+    const planText = open ? s.planText.trim() : "", planReadme = s.planReadme;   // 계획 칸에 적은 글 — 시작하기를 눌렀을 때만 섬이 계획판으로 연다(C-34)
     host.remove(); host = null;
-    doc.dispatchEvent(new CustomEvent("floe:setup-done", { detail: { via, open, makeRepo } }));
+    doc.dispatchEvent(new CustomEvent("floe:setup-done", { detail: { via, open, makeRepo, planText, planReadme } }));
   }
   // 앱이 폴더를 정했다(가져오기 · 새로 만들기 · 고르기) — 받은 이름 · 자리를 보이고 플로로가 기뻐한다
   function chose(r, made) {
@@ -291,6 +300,7 @@
     if (a === "ghskip") { s.ghSkip = true; enter("project"); return; }
     if (a === "done") return close(s.via || "later", true);
     if (a === "makerepo") { s.makeRepo = !!el.checked; return; }
+    if (a === "planreadme") { s.planReadme = !!el.checked; return; }
     if (a === "repovis") { s.repoVis = el.dataset.v === "public" ? "public" : "private"; render(); return; }
     if (a === "pickrepo") { const f = host.querySelector('form[data-s="clone"] input[name="repo"]'); if (f) f.value = el.dataset.v; return cloneFrom(el.dataset.v); }
     if (a === "copy") {
@@ -352,6 +362,7 @@
     host = doc.createElement("div"); host.id = "floe-setup";   // 앱 안이면 html.in-app(app.js) — 뒤를 어둡게 깔지 않는다(setup.css)
     doc.body.appendChild(host);
     host.addEventListener("click", (e) => { const el = e.target.closest("[data-s]"); if (el && el.tagName !== "FORM" && !el.disabled) act(el, e); });
+    host.addEventListener("input", (e) => { if (e.target.dataset.s === "plantext") s.planText = e.target.value.slice(0, 8000); });   // 다시 그리지 않는다(커서가 튄다)
     host.addEventListener("submit", (e) => {
       e.preventDefault();
       const f = e.target, k = f.dataset.s;

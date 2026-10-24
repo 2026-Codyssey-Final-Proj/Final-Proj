@@ -543,9 +543,11 @@ test("C-29 · C-26 · C-30 · C-28: 명령 네 칸(맡기기 · 살피기 · 책
     assert.equal(await page.evaluate(() => document.querySelectorAll(".tu-list button").length), 10);
     await page.click('[data-act=tu-sel][data-v="book"]'); await wait(200);
     assert.deepEqual(await page.evaluate(() => ({ h: document.querySelector(".tu-h b")?.textContent, st: document.querySelector(".tu-st")?.textContent, tryAct: document.querySelector(".tu [data-act=cmd-book]") ? "cmd-book" : "" })), { h: "책", st: "있음", tryAct: "cmd-book" });
-    // 판(AI 진행)이 열려도 명령 네 칸은 남는다 — 맡기기를 누르면 그 판의 할 일 칸이 열린다
+    // 판이 열려도 명령 네 칸은 남는다 — 맡기기는 준비 계획판(C-34 · C-32, 2026-10-24), 그 안의 '한 줄만 적어 맡기기'가 전의 할 일 칸(AI 진행 판)
     await page.click(".cmd4 [data-act=cmd-hand]"); await wait(400);
-    assert.ok(await page.$(".mc.base .cmd4 [data-act=cmd-learn]") && await page.$("#task-text"), "판에도 명령 네 칸 · 할 일 칸");
+    assert.ok(await page.$(".mc.base.plan .cmd4 [data-act=cmd-learn]") && await page.$("#plan-text"), "계획판에도 명령 네 칸 · 한 번에 넣는 칸");
+    await page.click("[data-act=plan-direct]"); await wait(400);
+    assert.ok(await page.$(".mc.base .cmd4 [data-act=cmd-learn]") && await page.$("#task-text"), "한 줄만 적어 맡기기 — AI 진행 판의 할 일 칸");
     await page.click("[data-act=base-back]"); await wait(300);
     // 레벨 — 저장된 3이 설정 창에, 서재로 가는 단추는 없다. 기록을 지우고(새 프로젝트) 다시 열어도 그대로
     await page.click("[data-act=settings]"); await wait(300);

@@ -960,3 +960,31 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .sgrp code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.08)}
 /* 설정의 토큰 칸(2026-10-24) — 최근 기록 다섯 줄 */
 .tok-runs{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+/* 준비 계획판(C-34 · C-32, 2026-10-24) — 한 번에 넣기 · 줄마다 맞아요 / 고칠래요 · 맡길 일 목록과 보고. 판 안에서 내려 보며 읽는다(섬이 너무 길어지지 않게) */
+.pane-body.pl{max-height:min(420px,56vh);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.pl .kicker{margin:4px 0 0;font-size:calc(12px * var(--ui-scale,1));font-weight:800;color:var(--tink)}
+.pl .mc-input{min-height:0;width:100%}
+.pl-in{min-height:120px!important}
+.pl .row{align-items:center;gap:8px;flex-wrap:wrap}
+.pl .meta{margin:0;color:var(--sub);font-size:calc(12.5px * var(--ui-scale,1))}
+.pl-sum{display:grid;gap:4px;margin:0;padding:10px 12px;border-radius:12px;background:var(--soft)}
+.pl-sum div{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;font-size:calc(13px * var(--ui-scale,1))}
+.pl-sum dt{color:var(--sub);font-weight:700}.pl-sum dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.pl-items{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.pl-it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;align-items:center;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card)}
+.pl-it.ok,.pl-it.st-done{border-color:var(--ok)}
+.pl-it.fix{border-color:var(--warn)}
+.pl-it.st-running{border-style:dashed}
+.pl-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pl-txt b{font-size:calc(14px * var(--ui-scale,1));color:var(--ink);overflow-wrap:anywhere}
+.pl-btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pl-btns .btn[aria-pressed="true"]{border-color:var(--acc);font-weight:800}
+.pl-it>textarea,.pl-it>.pl-rep{grid-column:1/-1}
+.pl-rep{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:10px;background:var(--soft);font-size:calc(13px * var(--ui-scale,1))}
+.pl-rep p{margin:0}.pl-rep ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.pl-rep li.y{color:var(--ok)}.pl-rep li.n{color:var(--sub)}
+.pl-prep{margin:0;padding-left:18px;font-size:calc(13px * var(--ui-scale,1))}
+.pl-ask{display:flex;flex-direction:column;gap:4px;font-size:calc(13px * var(--ui-scale,1))}
+.pl-ask>span{color:var(--ink);font-weight:600}
+@media (max-width:600px){.pl-it{grid-template-columns:minmax(0,1fr)}.pl-btns{justify-content:flex-start}}
+.pl-ans{margin:0;padding:8px 10px;border-radius:8px;background:var(--card);font-size:calc(13px * var(--ui-scale,1))}.pl-ans b{color:var(--tink);margin-right:6px}

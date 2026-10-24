@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| 판 | **v1.3 · 2026-10-24** — 작업 폴더를 앱이 알려 준다(3-16 · 3-18 · 3-19 "폴더 고르기", C-31) · 토큰 장부(3-5 `ledger` · `POST /api/usage/reset`, 3-16 `tokens` · `cost`). v1.2(2026-10-20) — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
+| 판 | **v1.4 · 2026-10-24** — 준비 계획판 `POST /api/plan`(3-20, C-34) · 맡기기의 기준과 보고(3-16 `checks` → `task.report`, C-32). v1.3(같은 날) — 작업 폴더를 앱이 알려 준다(3-16 · 3-18 · 3-19 "폴더 고르기", C-31) · 토큰 장부(3-5 `ledger` · `POST /api/usage/reset`, 3-16 `tokens` · `cost`). v1.2(2026-10-20) — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
 | 기준 코드 | `server.js` — 시연 안전장치(#94: 확인 값·받은 글 가림·기록 비우기)와 판정 규칙(#96: 등급별 할 일)을 합친 상태. **2026-10-18 F-04: AI 네 주소도 확인 값**, 6단계 할 일 넷(F-03). 2026-10-20 AI 진행(`steps.js` · `hook.js` PostToolUse) |
 | 시험 | [`04-tests/navigator/api-contract.test.js`](../../04-tests/navigator/api-contract.test.js) — 실제 AI를 부르지 않는다(5절). FR-17 주소는 [`task-api.test.js`](../../04-tests/navigator/task-api.test.js)(가짜 claude · 재생) |
 | 바꾸는 법 | 이 문서·시험·`server.js`를 한 PR에서 같이 고친다. 화면이 읽는 칸이 바뀌면 화면 담당에게 알린다 |
@@ -453,7 +453,8 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - **폴더 고르기(2026-10-24, C-31 · F-49):** 앱이 처음 설정 · 메뉴에서 고른 **작업 폴더**가 있으면 그 폴더, 없으면 훅 알림(3-2)이 알려 준 **가장 최근 세션의 폴더**. 앱은 같은 프로세스에서 `server.js` `useProject(dir)`로 알려 준다(절대 경로의 있는 폴더만) — **HTTP 주소는 없다**(화면 · 다른 프로그램이 경로를 넣지 못하게). 3-18 · 3-19도 같은 규칙.
 - **`/api/task/start`** — 사람이 고쳐 확정한 요구 문장(`text`)을 **사용자의 Claude Code**에 넘긴다. 서버는 위의 폴더에서 `claude -p --output-format json`을 **셸 없이** 열고 글은 표준 입력으로 준다([provider.js](provider.js) `startTask` — 외부 AI 호출은 그 파일 한 곳). 권한 건너뛰기 · 설정 끄기 · 세션 잇기 옵션은 쓰지 않는다 — 그 세션이 허락을 구하면 3-13의 훅이 섬에 묻는다. 화면이 보낸 폴더 경로는 받지 않는다. 한 번에 하나.
   성공 `{ ok, project, task: { state: "running", project, at, code: null, tokens: null, cost: null } }`. 끝나면 결과 한 덩이에서 **토큰 · 비용만** 읽어 3-5 장부(`task`, 이름 `맡긴 일`)에 쌓는다 — 답 글은 받지 않는다(4MB까지만 모은다). 거절: 400 `연결한 프로젝트 폴더를 아직 몰라요 — …`(앱이 고른 폴더도 훅 알림도 없음) · 400 비어 있음 · 400 4,000자 · 409 `넘긴 일이 아직 진행 중이에요` · 502 `claude를 열지 못함`.
-- **`/api/task`** — `{ ok, task }`: 넘긴 일의 상태 `running` · `done` · `failed`와 끝 코드, 끝났으면 이번 일의 `tokens` · `cost`(Claude Code가 알려 준 값, 모르면 `null`). 없으면 `null`. 진행(한 일)은 3-12에, 허락은 3-14에 따로 온다.
+- **기준과 보고(2026-10-24, C-32 — 이재엽 버튼 "Claude Code가 기준마다 보고"):** 본문에 `checks`(글 1~12줄, 한 줄 200자)를 같이 주면, 서버가 넘길 글 끝에 기준 목록과 보고하라는 말을 붙이고([navigator.js](navigator.js) `taskBrief`) `--json-schema REPORT_SCHEMA`로 연다 — Claude Code가 일을 마친 뒤 기준마다 `{ check, done, evidence }` · 초등학생도 아는 말 요약 `easy` · 물을 것 `ask`로 답한다. 서버는 그 답을 기준 순서대로 맞추고(빠진 줄은 안 됨, 근거가 빈 '해냄'은 안 됨 — `parseReport`) 비밀값 모양과 **경로**(작업 폴더 앞부분은 `.`, 홈 폴더는 `~`)를 가린 뒤 메모리에만 둔다. 거절: 400 `기준의 모양이 맞지 않음 — …`. `checks`가 없으면 전처럼(`--json-schema` 없음).
+- **`/api/task`** — `{ ok, task }`: 넘긴 일의 상태 `running` · `done` · `failed`와 끝 코드, 끝났으면 이번 일의 `tokens` · `cost`(Claude Code가 알려 준 값, 모르면 `null`)와 `report`(위 — `{ items[{check, done, evidence}], easy, ask, done, total }`, 기준 없이 넘겼거나 모양이 틀리면 `null`). 없으면 `null`. 진행(한 일)은 3-12에, 허락은 3-14에 따로 온다.
 - **남지 않는 것:** 폴더 경로는 서버 메모리에만 — 3-12 `sessions[]`에 내지 않는다(`project` 이름만).
 
 ### 3-17. `POST /api/quest` — 플로로가 퀘스트 글을 만든다 (C-22, 2026-10-21)
@@ -483,6 +484,18 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
   성공은 3-16과 같다(장부 이름은 `저장소 만들기`). 거절: 400 `공개 범위는 private · public 중 하나` · 400 `연결한 프로젝트 폴더를 아직 몰라요 — …` · 409 `이 폴더는 이미 원격 저장소와 이어져 있어요` · 409 · 502는 3-16과 같다.
 - 화면: 설정의 **GitHub** 묶음(연결 아래). 열 때마다 다시 묻고, 서버 없이 열면 안내 한 줄만. 맡기기 단추는 gh 로그인 + 진짜 AI 모드일 때만 눌린다(Claude Code가 움직이니까). 처음 설정의 **GitHub** 칸(gh 찾기 · 로그인)도 `GET /api/github`를 묻고, 처음 설정에서 **새로 만든** 폴더면 '준비 끝'에서 저장소도 만들지 물어 시작할 때 `POST /api/github/create`를 부른다(2026-10-24, C-31). 시험: `04-tests/navigator/github-api.test.js` · `project-api.test.js` · e2e `setup-flow.test.js`.
 - **앱만 하는 일(HTTP 주소 없음, 2026-10-24 C-31):** 홈/Floe/이름에 새 폴더 · 내 GitHub 저장소 가져오기(`gh repo clone` — gh 로그인이 먼저) · 내 저장소 목록(`gh repo list`)은 Electron 앱이 [project.js](project.js)로 한다 — 화면은 이름 · 주소 글만 preload(`newProject` · `cloneProject` · `myRepos`)로 보낸다. **가져오기는 내가 쓸 수 있는(push) 저장소만**(`gh api repos/주인/이름 --jq .permissions.push`) — 3-16이 여는 `claude -p`는 폴더를 믿는지 묻지 않아서(Claude Code 보안 문서 "A `-p` session shows neither prompt") 남의 저장소의 `.claude` 설정 · 훅 · `.mcp.json`이 확인 없이 돌 수 있다. 남의 저장소는 내 계정으로 fork한 뒤 가져온다. 가져온 저장소에 `.claude/settings.json` · `.mcp.json`이 있으면 화면이 알린다(`config: true`). 고른 폴더에는 훅을 더하고(connect.js), git 저장소면 `.git/info/exclude`에 `.claude/settings.local.json*`(그 백업 `.bak-시각`까지)을 더해 훅 경로가 커밋되지 않게 한 뒤 `useProject`로 서버에 알린다. 앱 설정 폴더의 `project.json`(나만 읽기)에 남겨 다시 켜도 그 폴더로. 메뉴의 '연결 빼기'로 그 폴더를 빼면 서버(`dropProject` — 앱이 고른 폴더 · 훅 알림으로 안 같은 폴더 모두)와 `project.json`에서도 잊는다. '이 컴퓨터에 있는 폴더'를 고를 때도 그 폴더의 `.claude/settings.json` · `.mcp.json`을 알린다(같은 까닭 — 고른 폴더가 맡긴 일이 도는 자리가 되므로).
+
+### 3-20. `POST /api/plan` — 준비 계획판: 한 번에 넣은 글로 계획 · 기준 (C-34, 2026-10-24)
+
+<!-- claude-drafted: 2026-10-24 — 이재엽 "한번에 내용들을 넣으면 어떻게 준비하고 기준들을 사람들이 확인해서 너한테 의견들을 바로바로" · 버튼 "Floe의 AI 한 번" -->
+- 확인 값이 있어야 한다(AI를 부른다 — `AI_ROUTES`). AI 한 번([navigator.js](navigator.js) `planPrompt` · `PLAN_SCHEMA` · `parsePlan`) — **도구 없이**(`callClaude`): 저장소의 설정 · 훅은 돌지 않는다.
+- 본문 `{ text, readme?, prev?, notes?, answers?, general? }`
+  - `text` — 사용자가 한 번에 넣은 글(8,000자까지).
+  - `readme` — `false`면 넣은 글만. 아니면 3-16 '폴더 고르기'의 작업 폴더에서 README(가림 · 앞 6,000자)와 맨 위 파일 이름(점으로 시작하는 것 · node_modules 빼고 60개)을 같이 보낸다. 폴더 경로는 보내지 않는다.
+  - 다시 세울 때: `prev`(지난 계획 — 서버가 `parsePlan`으로 모양을 다시 확인) · `notes[{need, check, note}]`(고칠래요 줄의 의견, 12개까지) · `answers[{q, a}]`(물은 것의 답, 4개까지) · `general`(전체 의견). 글은 각 300자까지.
+- 성공 `{ ok, plan, tokens }` — `plan = { problem, have, missing, items[{id, need, check}], prep[], ask[], say }`. 요구 줄의 `id`(p1…)는 코드가 붙인다. 말은 초등학생도 아는 말로(`FLORO_VOICE`, C-33). 넣은 글에 없는 것은 지어내지 않고 `ask`로 묻는다.
+- 거절: 400 `넣은 글이 비어 있음` · 400 `넣은 글이 너무 김 — 8,000자까지` · 400 `지난 계획의 모양이 맞지 않음` · 400 `의견의 모양이 맞지 않음` · 502 `계획 형식이 맞지 않음`.
+- 화면: 명령 칸의 **맡기기**가 여는 계획판(처음 설정의 '계획' 칸에 적은 글이 있으면 그 글로). 줄마다 맞아요 / 고칠래요 · 의견 · 답 → '의견 보내고 다시 세우기' 또는 모두 맞아요면 '이대로 확정'. 확정한 줄은 하나씩 3-16에 `checks`와 함께 맡기고, 보고를 보고 맞아요를 눌러야 끝낸 것으로 친다. 보고 카드에서 **물어보기**는 그 보고(맡긴 일 · 기준 · 보고 글)를 3-7 `/api/answer`로 플로로에게 묻고, Claude Code가 물은 것(`ask`)에 답하면 그 질문과 답을 붙여 다시 맡긴다. 연습의 예시 계획은 판에 `example`로 남아 모드를 바꿔도 진짜 Claude Code로 넘기지 않는다. 판은 이 컴퓨터의 브라우저 저장소에만(규칙 [plan.js](plan.js)). 연습 · 서버 없이는 부르지 않고 예시 계획 · 예시 보고. 시험: `04-tests/navigator/plan-api.test.js` · `plan-rules.test.js` · `plan-board.test.js` · e2e `plan-flow.test.js`.
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

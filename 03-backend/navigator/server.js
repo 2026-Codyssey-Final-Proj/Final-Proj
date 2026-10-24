@@ -53,14 +53,14 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest"];   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan"];   // /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
 const BOOK_ROUTES = ["/api/readme", "/api/github", "/api/github/create"];   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES];
-const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -107,7 +107,7 @@ const STATIC = {
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "tutorial.js"],   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "tutorial.js", "plan.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -266,11 +266,19 @@ const projectNow = () => appProject || [...work.values()].reverse().find((x) => 
 // ── FR-17 대화로 일 넘기기 — 허락하면 연결한 폴더에서 claude를 연다(셸 없이, -p, 글은 표준 입력으로). 권한 건너뛰기 옵션은 쓰지 않는다 — 허락은 섬의 승인 카드(위)로 ──
 // 폴더는 projectNow(앱이 고른 작업 폴더, 없으면 훅 알림의 cwd)에서만 고른다(화면이 보낸 경로는 받지 않는다). 한 번에 하나. 여는 법은 provider.js startTask(셸 없음 · -p · 표준 입력 · 권한 건너뛰기 없음)
 const TASK_MAX = 4000;
-let task = null;   // {state: running|done|failed, project, at, code, child, tokens, cost}
+let task = null;   // {state: running|done|failed, project, at, code, child, tokens, cost, report}
 // tokens · cost — 끝났을 때 Claude Code가 알려 준 이번 일의 토큰 · 비용(토큰 장부, 2026-10-24). 모르면 null
-const publicTask = () => (task ? { state: task.state, project: task.project, at: task.at, code: task.code, tokens: task.tokens ?? null, cost: task.cost ?? null } : null);
+// report — 기준(checks)을 같이 넘겼으면 Claude Code가 끝에 답한 기준마다 해냄 · 근거 · 쉬운 말 요약(C-32, navigator.js parseReport). 비밀값 모양은 가린다. 서버 메모리에만
+const publicTask = () => (task ? { state: task.state, project: task.project, at: task.at, code: task.code, tokens: task.tokens ?? null, cost: task.cost ?? null, report: task.report ?? null } : null);
+// 경로도 가린다(2026-10-24 리뷰) — 작업 폴더 앞부분은 '.'으로, 홈 폴더(/Users/이름 · /home/이름 · C:\Users\이름)는 '~'로. 보고는 화면에 보이고 이 컴퓨터의 브라우저 저장소에도 남는다
+const hidePaths = (t, dir) => (dir ? String(t).split(dir).join(".") : String(t)).replace(/\/(?:Users|home)\/[^/\s]+/g, "~").replace(/[A-Za-z]:\\Users\\[^\\\s]+/gi, "~");
+const hide = (t, dir) => Sensitive.redact(hidePaths(t, dir));
+const hideReport = (r, dir) => (r ? { ...r, easy: hide(r.easy, dir), ask: hide(r.ask, dir), items: r.items.map((x) => ({ ...x, evidence: hide(x.evidence, dir) })) } : null);
+const CHECK_LINE_MAX = 200;
+// 기준 목록이 맞는 모양인가 — 1~12줄 · 글 · 한 줄 200자. 맞으면 다듬은 목록, 아니면 null
+const checksOf = (c) => (Array.isArray(c) && c.length >= 1 && c.length <= Nav.CHECKS_MAX && c.every((x) => Nav.filled(x) && x.length <= CHECK_LINE_MAX) ? c.map((x) => x.trim()) : null);
 const NO_FOLDER = "연결한 프로젝트 폴더를 아직 몰라요 — 처음 설정의 '프로젝트'에서 고르거나, 그 폴더에서 Claude Code를 한 번 열면 알게 돼요";
-function startTask(text, label = "맡긴 일") {
+function startTask(text, label = "맡긴 일", checks = null) {
   if (String(text).length > TASK_MAX) return [400, { ok: false, reason: `넘긴 글이 너무 김 — ${TASK_MAX.toLocaleString()}자까지` }];
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
@@ -280,11 +288,11 @@ function startTask(text, label = "맡긴 일") {
   const onResult = (r) => {
     if (!r) return;
     ledger.add("task", label, r.usage, r.cost);
-    if (task && task.child === child) { task.tokens = r.usage.total; task.cost = r.cost; }
+    if (task && task.child === child) { task.tokens = r.usage.total; task.cost = r.cost; task.report = checks ? hideReport(Nav.parseReport(r.output, checks), s.dir) : null; }
   };
-  try { child = openClaude({ dir: s.dir, text, onResult }); }
+  try { child = openClaude({ dir: s.dir, text: checks ? Nav.taskBrief(text, checks) : text, onResult, schema: checks ? Nav.REPORT_SCHEMA : null }); }
   catch { return [502, { ok: false, reason: "claude를 열지 못함 — Claude Code가 설치됐는지 확인하세요" }]; }
-  task = { state: "running", project: s.project, at: Date.now(), code: null, child, tokens: null, cost: null };
+  task = { state: "running", project: s.project, at: Date.now(), code: null, child, tokens: null, cost: null, report: null };
   child.on("error", () => { if (task && task.child === child) task.state = "failed"; });
   child.on("close", (code) => { if (task && task.child === child) { task.state = code === 0 ? "done" : "failed"; task.code = code; } });
   return [200, { ok: true, project: s.project, task: publicTask() }];
@@ -294,28 +302,53 @@ function startTask(text, label = "맡긴 일") {
 // 폴더는 일 넘기기와 같이 projectNow에서만 고른다(화면이 보낸 경로는 받지 않는다). 바로가기(심볼릭 링크)는 따라가지 않는다.
 // 앞의 256KB만 읽고, 나누기 전에 비밀값을 가린다. 폴더 경로는 주지 않는다 — 이름만. 책이 없으면 why로 까닭만(folder: 폴더를 모름 · none: README 없음)
 const README_MAX_BYTES = 256 * 1024;
-function readmeBook() {
-  const s = projectNow();
-  if (!s) return { ok: true, project: "", book: null, why: "folder" };
-  const none = { ok: true, project: s.project, book: null, why: "none" };
-  if (!path.isAbsolute(s.dir)) return none;   // 훅이 보낸 cwd가 절대 경로가 아니면 읽지 않는다(서버의 작업 폴더를 읽지 않게)
+// 그 폴더의 README.md — { text(가린 것), big } | null. 바로가기는 따라가지 않고 앞의 256KB만, 개인 키 덩어리는 통째로(sensitive.js는 BEGIN 줄만 가린다) · 그 밖은 sensitive.js로
+function readmeText(dir) {
+  if (!path.isAbsolute(dir)) return null;   // 훅이 보낸 cwd가 절대 경로가 아니면 읽지 않는다(서버의 작업 폴더를 읽지 않게)
   let text = "", big = false;
   try {
-    const file = path.join(s.dir, "README.md");
-    if (!fs.lstatSync(file).isFile()) return none;
+    const file = path.join(dir, "README.md");
+    if (!fs.lstatSync(file).isFile()) return null;
     const fd = fs.openSync(file, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0));   // 확인과 열기 사이에 바로가기로 바뀌어도 따라가지 않는다(Windows는 lstat만)
     try {
       const st = fs.fstatSync(fd);
-      if (!st.isFile()) return none;
+      if (!st.isFile()) return null;
       big = st.size > README_MAX_BYTES;
       const buf = Buffer.alloc(Math.min(st.size, README_MAX_BYTES)); fs.readSync(fd, buf, 0, buf.length, 0); text = buf.toString("utf8");
     } finally { fs.closeSync(fd); }
-  } catch { return none; }
-  // 개인 키 덩어리는 통째로 — sensitive.js는 BEGIN 줄만 가린다
+  } catch { return null; }
   text = text.replace(/-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(-----END [A-Z ]*PRIVATE KEY-----|$)/g, "[가림: 개인 키]");
-  const book = RB.parse(Sensitive.redact(text));
-  if (big) book.cut = true;
+  return { text: Sensitive.redact(text), big };
+}
+function readmeBook() {
+  const s = projectNow();
+  if (!s) return { ok: true, project: "", book: null, why: "folder" };
+  const r = readmeText(s.dir);
+  if (!r) return { ok: true, project: s.project, book: null, why: "none" };
+  const book = RB.parse(r.text);
+  if (r.big) book.cut = true;
   return { ok: true, project: s.project, book, why: "" };
+}
+
+// ── C-34 준비 계획판(2026-10-24, 이재엽 버튼 "Floe의 AI 한 번") — 넣은 글 + 작업 폴더의 README(가림) · 맨 위 파일 이름만 AI에게. 도구 없이(callClaude) — 저장소의 설정 · 훅이 돌지 않는다 ──
+// 다시 세울 때는 지난 계획(서버가 모양을 다시 확인) · 줄마다 의견 · 물은 것의 답 · 전체 의견을 같이. 폴더 경로는 보내지 않는다(파일 이름만, 점으로 시작하는 것 · node_modules 빼고 60개까지)
+const PLAN_README_MAX = 6000, PLAN_FILES_MAX = 60, NOTE_MAX = 300;
+function topFiles(dir) {
+  try { return fs.readdirSync(dir).filter((n) => !n.startsWith(".") && n !== "node_modules").sort().slice(0, PLAN_FILES_MAX).map((n) => Sensitive.redact(n)); } catch { return []; }
+}
+const strOk = (v, max) => typeof v === "string" && v.length <= max;
+function planAsk(res, body) {
+  if (!Nav.filled(body.text)) return refuse(res, "넣은 글이 비어 있음");
+  if (body.text.length > Nav.PLAN_MAX) return refuse(res, `넣은 글이 너무 김 — ${Nav.PLAN_MAX.toLocaleString()}자까지`);
+  let prev = null;
+  if (body.prev != null && !(prev = Nav.parsePlan(body.prev))) return refuse(res, "지난 계획의 모양이 맞지 않음");
+  const notes = body.notes == null ? [] : body.notes, answers = body.answers == null ? [] : body.answers, general = body.general == null ? "" : body.general;
+  if (!Array.isArray(notes) || notes.length > Nav.CHECKS_MAX || !notes.every((n) => n && strOk(n.need, NOTE_MAX) && strOk(n.check, NOTE_MAX) && Nav.filled(n.note) && strOk(n.note, NOTE_MAX))
+    || !Array.isArray(answers) || answers.length > Nav.PLAN_SCHEMA.properties.ask.maxItems || !answers.every((a) => a && strOk(a.q, NOTE_MAX) && Nav.filled(a.a) && strOk(a.a, NOTE_MAX)) || !strOk(general, NOTE_MAX)) return refuse(res, "의견의 모양이 맞지 않음");
+  const s = body.readme === false ? null : projectNow(), r = s && readmeText(s.dir);
+  const readme = r ? r.text.slice(0, PLAN_README_MAX) : "", files = s ? topFiles(s.dir) : [];
+  return ask(res, Nav.planPrompt({ text: body.text, readme, files, prev, notes: notes.map((n) => ({ need: n.need, check: n.check, note: n.note })), answers: answers.map((a) => ({ q: a.q, a: a.a })), general }),
+    Nav.PLAN_SCHEMA, as("plan", Nav.parsePlan), "계획");
 }
 
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──
@@ -429,8 +462,13 @@ async function handle(req, res) {
     if (!stageOf(body.stage)) return refuse(res, "지금 단계가 없음");
     return ask(res, Nav.questPrompt(body.stage, body.idea, body.tier), Nav.QUEST_SCHEMA, as("quest", (d) => Nav.parseQuest(d, body.stage, body.tier)), "퀘스트");
   }
+  if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
   if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
-  if (route === "/api/task/start") { const [code, out] = startTask(body.text); return send(res, code, out); }   // FR-17 허락하고 넘기기(3-16)
+  if (route === "/api/task/start") {   // FR-17 허락하고 넘기기(3-16) — checks를 주면 기준과 함께 넘기고 끝에 보고를 받는다(C-32, 2026-10-24)
+    const checks = body.checks == null ? null : checksOf(body.checks);
+    if (body.checks != null && !checks) return refuse(res, `기준의 모양이 맞지 않음 — 1~${Nav.CHECKS_MAX}줄, 한 줄 ${CHECK_LINE_MAX}자까지`);
+    const [code, out] = startTask(body.text, "맡긴 일", checks); return send(res, code, out);
+  }
   if (route === "/api/task/tidy") {   // FR-17 요구 문장으로 정리(3-16) — AI 한 번
     if (body.text.length > TASK_MAX) return refuse(res, `넘긴 글이 너무 김 — ${TASK_MAX.toLocaleString()}자까지`);
     return ask(res, Nav.taskPrompt(body.text), Nav.TASK_SCHEMA, Nav.parseTask, "정리");
