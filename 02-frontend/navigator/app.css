@@ -235,8 +235,6 @@ html[data-greet="settle"] .isl.greet .mc-main{opacity:1;animation:greet-text .5s
 .isl-body{display:flex;flex-direction:column;gap:8px;min-width:0}
 .ti[aria-pressed=true]{background:var(--acc-soft);color:var(--acc)}
 .ti.bond{width:auto;padding:0 10px;border-radius:999px}
-.hearts{display:inline-flex;gap:1px}
-.hearts svg{fill:var(--seg);display:block}.hearts .on svg{fill:#FF6F86}
 .tb-tab{font-size:calc(13px * var(--ui-scale,1));font-weight:700;margin-left:6px;white-space:nowrap}
 .tb-proj{font-size:calc(13px * var(--ui-scale,1));color:var(--mute);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mode{font-size:calc(12px * var(--ui-scale,1));border-radius:999px;padding:3px 10px;white-space:nowrap;margin:0 2px}
@@ -258,7 +256,7 @@ html[data-greet="settle"] .isl.greet .mc-main{opacity:1;animation:greet-text .5s
   html.in-app .nav.side{flex-direction:row;align-items:flex-start;width:auto}
   html.in-app .nav.side>.pop{align-self:flex-start;margin-top:0;width:calc(380px * var(--ui-scale,1))}
 }
-/* 설정 창의 머리줄과 묶음(플로로와 나 · 연결 · 보기 · 알림 기록 · 느낀 점 · 기록) */
+/* 설정 창의 머리줄과 묶음(연결 · 보기 · 알림 기록 · 느낀 점 · 기록) */
 .pop-h{display:flex;align-items:center;gap:8px;padding:0 2px;font-size:calc(15px * var(--ui-scale,1));color:var(--ink)}
 .pop-h .ti{width:32px;height:32px}
 .sgrp{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border-radius:12px;background:var(--soft)}
@@ -422,14 +420,6 @@ ol.track::before{content:"";position:absolute;left:6.25%;right:6.25%;top:52px;he
 .md-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 
 .isl .card{border:1px solid var(--line);box-shadow:none}
-/* 플로로와 나 — 설정 맨 위(2026-10-18 claude-drafted, F-05: '내 배움' 탭을 빼고 옮겨 옴) */
-.bondcard{display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:14px;background:var(--soft);color:var(--ink)}
-.foot.settings .bondcard{background:var(--card)}
-.bond-row{display:flex;gap:12px;align-items:center}
-.bond-row .stack{gap:2px;min-width:0}
-.bond-row .kicker{font-size:calc(12px * var(--ui-scale,1));font-weight:700;color:var(--acc)}
-.bond-row b{display:flex;align-items:center;gap:8px;font-size:calc(15px * var(--ui-scale,1))}
-.bond-row .hearts svg{width:14px;height:14px}
 
 /* ── 함께 쓰는 조각 (iPhone 화면과 PC의 설계도·설정) ── */
 .say{display:flex;gap:12px;align-items:center}
@@ -599,7 +589,6 @@ button.pet:focus-visible{outline-offset:4px}
   .b.pri{box-shadow:0 0 22px rgba(169,221,255,.32)}
   .b.toggle[aria-pressed=true] kbd,ol.steps li.now b{color:var(--acc-ink)}
   .node.done .dot{color:var(--acc-ink)}
-  .hearts .on svg{fill:var(--acc)}
   .crit-grid,.map-detail,.isl .card{background:rgba(255,255,255,.05)}
   .cat .c-fur,.cat .c-paws ellipse{stroke:none}   /* 네이비 위에서는 참고 그림처럼 테두리 없이 */
   .pop-say{background:#0E1745;color:#FFFFFF;border:1px solid rgba(255,255,255,.25)}
