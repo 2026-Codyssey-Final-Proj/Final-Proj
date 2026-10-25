@@ -881,6 +881,7 @@
   //   전에는 다시 그릴 때마다 '지금 맨 아래에서 24px 안인가'로만 봤다 — 섬이 펼쳐지거나 지금 말풍선이 그린 뒤에 커지면 그 틈이 생겨,
   //   새 말 없이 바뀌는 선택지(맞아요 등)를 눌러도 아래로 안 내려갔다(임유정 2026-10-25, F-58-3) — claude-drafted: 2026-10-25
   let chatSeq = 0, shownSeq = 0, logPin = true;
+  const logTop = new WeakMap();   // 채팅 칸마다 지난 스크롤 자리 — 위로 갔는지 보려고(아래 scroll 듣기). render가 새 칸을 그리면 그 자리부터 적는다
   // 따라가는 중이면 그린 뒤에 커져도(섬 펼침 · 말풍선이 자람) 맨 아래에 붙여 둔다 — render가 지금 칸과 마지막 말풍선을 다시 지켜본다
   //   처음 지켜볼 때의 알림은 건너뛴다(그때는 render의 부드러운 내려가기가 하고 있다) — 높이가 바뀐 때만
   const logH = new WeakMap();
@@ -2048,8 +2049,8 @@
     // 채팅은 마지막 말이 보이게(C-22) — 단, 맨 아래를 따라가는 중(logPin)이거나 새 말이 왔을 때만. 위로 올려 읽는 중이면 그 자리 그대로
     const lg = $nav.querySelector("[data-log]");
     if (lg && chatSeq !== shownSeq) logPin = true;
-    if (lg && !logWas) lg.scrollTop = lg.scrollHeight;
-    else if (lg) { lg.scrollTop = logWas.top; if (logPin) lg.scrollTo({ top: lg.scrollHeight, behavior: STILL ? "auto" : "smooth" }); }
+    if (lg && !logWas) { lg.scrollTop = lg.scrollHeight; logTop.set(lg, lg.scrollTop); }
+    else if (lg) { lg.scrollTop = logWas.top; logTop.set(lg, lg.scrollTop); if (logPin) lg.scrollTo({ top: lg.scrollHeight, behavior: STILL ? "auto" : "smooth" }); }
     shownSeq = chatSeq;
     if (logRO) { logRO.disconnect(); if (lg) { logRO.observe(lg); if (lg.lastElementChild) logRO.observe(lg.lastElementChild); } }
     syncWins();
@@ -2182,18 +2183,15 @@
     point = { x: r.left + r.width * 0.35, y: r.top + 20 };
     C.follow($nav, point);
   });
-  // 채팅의 따라가기(logPin, F-58-3) — 맨 아래에 닿으면 다시 따라가고, 사람이 스스로 올리면(휠 · 터치 · 스크롤바 끌기 · 키 바로 뒤의 스크롤) 멈춘다.
-  //   앱이 내리는 스크롤(부드러운 내려가기 · 다시 그린 뒤 자리 되돌리기)에는 멈추지 않는다 — 그래서 사람 손이 닿은 직후(400ms)만 본다
-  let logHandAt = 0;
-  const handOnLog = (e) => { if (e.target instanceof Element && e.target.closest("[data-log]")) logHandAt = Date.now(); };
-  for (const ev of ["wheel", "touchmove"]) $nav.addEventListener(ev, handOnLog, { passive: true, capture: true });
-  $nav.addEventListener("keydown", (e) => { if (["ArrowUp", "PageUp", "Home"].includes(e.key)) handOnLog(e); }, true);   // 위로 가는 키만 — Enter 등은 선택지 누르기
-  $nav.addEventListener("pointerdown", (e) => { if (e.target instanceof Element && e.target.matches("[data-log]")) logHandAt = Date.now(); }, true);   // 스크롤바 — 말풍선 · 단추 누르기는 아니다
+  // 채팅의 따라가기(logPin, F-58-3) — 맨 아래에 닿으면 다시 따라가고, 위로 올라가면 멈춘다.
+  //   앱이 내리는 스크롤(부드러운 내려가기 · 다시 그린 칸의 자리 되돌리기 · 커진 뒤 붙이기)은 늘 아래로만 가므로, 위로 가는 스크롤은 사람이 한 것이다 —
+  //   휠 · 터치 · 스크롤바 · 키보드 무엇으로 올려도 같다. 전에는 휠 · 터치 · 스크롤바만 봐서 키보드로 올리면 다시 끌려 내려갔다(새 맥락 리뷰, 2026-10-25) — claude-drafted: 2026-10-25
   $nav.addEventListener("scroll", (e) => {
     const l = e.target;
     if (!(l instanceof Element) || !l.matches("[data-log]")) return;
+    const was = logTop.get(l); logTop.set(l, l.scrollTop);
     if (l.scrollHeight - l.scrollTop - l.clientHeight < 2) logPin = true;
-    else if (Date.now() - logHandAt < 400) logPin = false;
+    else if (was !== undefined && l.scrollTop < was - 1) logPin = false;
   }, true);
   // 좌우로 문지르면 쓰다듬은 것 (seal.js의 stroke가 센다)
   let strokeState = null;
@@ -2695,7 +2693,9 @@
       const r = await window.floeApp.connect();
       if (r && r.ok && r.name) { st.gh = null; say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); } else if (r && r.message) say(r.message.split("\n")[0]);   // 말은 60자 안(SAY_MAX)
     },
-    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.message) say(r.message.split("\n")[0]); },
+    // 연결을 빼면 이름표의 옛 이름도 잊는다 — GitHub 칸(st.gh)은 다시 묻고(서버가 아는 다른 폴더가 있으면 그 이름), 훅 알림으로 안 이름(st.project)도 비운다.
+    //   전에는 뺀 뒤에도 옛 폴더 · 저장소 이름이 남았다(F-58-5 새 맥락 리뷰, 2026-10-25) — claude-drafted: 2026-10-25
+    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.ok) { st.gh = null; st.project = ""; render(); } if (r && r.message) say(r.message.split("\n")[0]); },
     "app-settings": () => window.floeApp.openSettings(),
     "gh-reload": () => { st.ghNote = ""; st.gh = null; loadGithub(); render(); },   // 설정의 GitHub 칸(C-25, 2026-10-24)
     "tokens-reset": () => resetTokens(),   // 토큰 칸 — 새로 재기(2026-10-24)
