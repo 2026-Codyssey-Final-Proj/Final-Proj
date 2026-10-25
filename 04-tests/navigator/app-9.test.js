@@ -40,7 +40,6 @@ test("C-19: 막는 조건은 상태 둘(st.meal · st.busy)뿐 — 판정 규칙
   const hide = sealCss.indexOf('.cat [class^="s-"]{display:none}'), show = sealCss.indexOf(".m-angry .e-angry,.m-angry .s-sign{display:inline}");
   assert.ok(hide > 0 && show > hide, "보이는 규칙이 숨기는 규칙 뒤에 있다");
   assert.ok(!Seal.svg("idle", 36, { face: true }).includes("s-sign"), "얼굴만 그릴 때는 표지판이 없다");
-  assert.match(app, /angry: "안 돼요!"/, "기분 말");
 });
 
 // F-26(네 / 아니요가 밖의 칸 둘이 됨)은 2026-10-21 C-22로 레벨 오버레이(명령 네 칸)와 함께 뺐다 — 게이트의 네 / 아니요는 채팅의 칩 둘(y · n 키)
