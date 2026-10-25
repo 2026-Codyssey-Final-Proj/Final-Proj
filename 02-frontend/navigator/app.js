@@ -119,7 +119,6 @@
     unplug: false, alogNote: "",                   // 연결 끊기(끊은 동안 들어온 알림은 받지 않는다), 알림 기록 비우기 결과 한 줄
     judged: "",                                    // 마지막으로 살펴본 작업 글 — 글 칸을 비운 뒤 '물어보기'를 눌러도 이 글을 보낸다(F-11, understand.js askText)
     noteText: "", notesOpen: false, noteCopy: "",  // 느낀 점(2026-10-19): 적는 중인 글, 설정에서 펼쳤나, 'Jira용 복사'가 실패했을 때 손으로 복사할 글
-    cmd: null, words: "work",                      // 레벨 오버레이(2026-10-19): 고른 명령 칸(0~3 · null이면 지금 하는 일), 버튼 말(work 일 말 · game 게임 말)
     place: "base", pane: "",                       // 기본 화면(base) · 바이브 코딩(vibe) — 펼친 섬에 어떤 판을 보이나(C-13, 2026-10-20). pane: 기본 화면 안의 알림 · AI 진행 판
     task: { text: "", lines: null, say: "", sent: "" }, apSure: "",   // FR-17(2026-10-20): 적은 할 일 · 정리한 요구 문장 · 한마디 · 넘긴 곳(프로젝트). apSure: 되돌리기 어려운 일에 '정말 허용'을 묻는 중인 카드
     // 퀘스트(C-22 1차 뼈대, 2026-10-21 — 규칙은 quest.js): 지금 퀘스트(장 하나 = 퀘스트 하나) · 처음 말한 것 · 무지개 조개. topic — 받은 글로 정한 주제(퀘스트 제목, C-36 2026-10-25)
@@ -217,7 +216,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "words", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic"];
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic"];
   let forgotten = false;
   function load() {
     let s;
@@ -499,7 +498,7 @@
       ${srow("글자 크기", `<select data-act="text-size" aria-label="글자 크기">${TEXT_SIZES.map(([v, name]) =>
         `<option value="${v}" ${st.textSize === v ? "selected" : ""}>${name}</option>`).join("")}</select>`)}
       ${srow("접히기까지", `<span class="row tiers fold" role="group" aria-label="펼친 섬이 접히기까지">${FOLD_CHOICES.map((v) => `<button type="button" class="b fold-opt" data-act="fold-delay" data-i="${v}" aria-pressed="${foldSec === v}">${v}초</button>`).join("")}<span class="meta">마우스가 나간 뒤 — 테두리 빛이 아래에서 만나면 접혀요</span></span>`)}
-      ${tier}${srow("버튼 말", radios("words", "명령 칸의 말", [["work", "일 말 (맡기기 · 살피기)"], ["game", "게임 말 (공격 · 행동)"]], st.words))}
+      ${tier}
       <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>
       <div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>`);
     return view;
@@ -770,7 +769,7 @@
   // 막을 때 플로로가 까닭을 말하고(말풍선) 화난 눈으로 X 표지판을 든다(seal.js angry). 끝나면 다시 하면 된다 — 이어서 하지 않는다 [제안]
   const mealWhy = () => (st.meal ? "지금은 먹이를 검사하는 중이에요 — 구간을 확인하고 나서 해요" : "");
   const busyWhy = () => (st.busy ? "지금은 살펴보는 중이에요 — 끝나면 먹이를 줄 수 있어요" : "");
-  function refuse(why) { if (!why) return false; activity(); st.cmd = null; render(); flash("angry", 2600); say(why); return true; }   // 명령 칸의 길 목록은 닫고 하던 화면으로
+  function refuse(why) { if (!why) return false; activity(); render(); flash("angry", 2600); say(why); return true; }   // 하던 화면 그대로 — 고른 명령 칸(cmd) · 버튼 말(words)은 명령 네 칸(C-35)이 빠진 뒤 쓰는 곳이 없어 2026-10-25에 뺐다
   // ── C-18 파란 먹이 층(2026-10-20, 이재엽 "파란색 레이어가 나와서 플로로에게 먹이를 주세요라고 중앙에 메세지와 폴더 모양안에 물고기 모양") ──
   // 파일을 섬 위로 끌고 있는 동안만. dragenter · dragleave는 자식을 지날 때마다 번갈아 오므로 횟수를 센다(넘김 문서 7절 함정). 놓거나 벗어나면 거둔다.
   // 띠로 접혀 있으면 한 줄로 살짝 열어 받을 자리를 만든다 [제안 — 요구서 C-18 ①]. 글이 아닌 파일도 같은 층(놓으면 "아직 글 파일만")
@@ -2243,7 +2242,7 @@
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`, at: ymd(),   // at — 세션별 보기(C-3, my-books.js dated)가 읽는다(2026-10-20). 옛 기록은 글 끝의 날짜로
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
         last ? ` · 확인 질문 ${last.ok ? "맞힘" : "정답 보고 넘어감"}` : ""} · ${ymd()}` });
-    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, cmd: null, libDoc: null });
+    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null });
     if (nx) st.j = { stage: nx.n, reason: `${LB(s.n)}를 마쳤어요! 이제 ${LB(nx.n)} "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;
@@ -2606,7 +2605,6 @@
     if (a === "sound") { set({ sound: t.checked }); if (st.sound) C.chime("pop"); }
     if (a === "hard") toggleHard(Number(t.dataset.i), t.checked);
     if (a === "tier") setTier(t.value);
-    if (a === "words" && ["work", "game"].includes(t.value)) set({ words: t.value });
     if (a === "qauto") { qauto = t.checked; writeLS(QAUTO_KEY, qauto ? "1" : "0"); }   // 퀘스트를 받으면 퀘스트 창이 바로 뜨기(C-22)
     if (a === "plan-readme") { st.planReadme = t.checked; save(); }   // 준비 계획 — 작업 폴더의 README도 읽나(C-34)
     if (a === "feed-kind" && st.meal) st.meal.kinds[Number(t.dataset.i)] = t.value;   // FR-15 더함 — 구간의 종류를 고친다(다시 그리지 않는다)
