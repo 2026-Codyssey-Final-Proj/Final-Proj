@@ -17,17 +17,6 @@
   if (Mine) Mine.apply(D, { book: mine.book, hidden: exHidden });
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const seal = (mood, size, opts) => (Seal ? Seal.svg(mood, size, opts) : "");
-  // 배운 말 풀이(F-10, FR-13을 서재에도) — 풀이가 있는 말(EARS · MoSCoW …)은 버튼이 되고, 누르면 그 자리에 쉬운 말 한 줄. 없으면 그냥 글
-  const termHtml = (text, cls = "") => {
-    const f = window.NavGlossary && window.NavGlossary.find(text);
-    if (!f) return `<span${cls ? ` class="${cls}"` : ""}>${esc(text)}</span>`;
-    return `<button type="button" class="${cls ? `${cls} ` : ""}term" data-term aria-expanded="false">${esc(text)}<span class="term-line" role="note">${esc(f.line)}</span></button>`;
-  };
-  document.addEventListener("click", (e) => {
-    const b = e.target.closest("[data-term]");
-    document.querySelectorAll('[data-term][aria-expanded="true"]').forEach((x) => { if (x !== b) x.setAttribute("aria-expanded", "false"); });
-    if (b) { e.stopPropagation(); b.setAttribute("aria-expanded", String(b.getAttribute("aria-expanded") !== "true")); }
-  }, true);
 
   // 화면 안에서만 바뀌는 상태 (새로 고침하면 처음으로)
   const st = { open: D.OPEN.map((b) => ({ ...b })), shelved: [], answer: null, reading: null, renaming: null };
