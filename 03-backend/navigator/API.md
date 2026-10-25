@@ -39,6 +39,10 @@
 | `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/stagedraft` | 섬 — 1단계 관문을 지났을 때(C-37, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, draft:{items[{text} 또는 {pick, why}], say}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/docs` | 섬 — 2단계를 마치고 '올리기'를 눌렀을 때(C-37) | 출처 · 확인 값(쿠키) | `{ok, project, files[], task}` | 403 · 413 · 400 · 409 · 500 |
+| `POST /mcp/<MCP 토큰>` | 웹 GPT · 웹 Claude(원격 MCP, 터널로) — **`NAV_MCP=1`일 때만**(C-38 시험판, 2026-10-25) | 주소 속 MCP 토큰만(출처는 보지 않는다 — 터널이라 Host가 다르다) | JSON-RPC 답 · 알림이면 202 | 404(꺼짐 · 토큰 틀림) · 405 · 413 · 400 |
+| `POST /api/state` | 화면 — 저장할 때마다, 바뀌었을 때만(C-38 시험판) | 출처 · 확인 값(쿠키) | `{ok}` | 403 · 400 |
+| `GET /api/proposals` | 섬(2초마다, C-38 시험판) | 출처 · 확인 값(쿠키) | `{ok, items[]}` 웹 AI가 적자고 한 줄 | 403 |
+| `POST /api/proposals/decide` | 섬 "맞아요, 적어요" · "아니요"(C-38 시험판) | 출처 · 확인 값(쿠키) | `{ok}` | 403 · 404 |
 | 그 밖의 주소·방법 | — | 출처 | — | 404 `없는 주소` |
 
 ## 2. 공통 약속
@@ -532,6 +536,19 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 성공 `{ ok, project, files[], task }` — `files`는 쓴 파일 이름(작업 폴더 기준), `task`는 3-16과 같은 모양.
 - 거절: 400 `1 · 2단계 결과가 다 있어야 해요` · 400 `N단계 결과의 모양이 맞지 않음 — 할 일 8개 · 줄 5개 · 줄 400자까지` · 400 `주제는 60자까지` · 400 폴더를 모름 · 409 넘긴 일이 진행 중(쓰기 전에 본다) · 400 바로가기 · 폴더가 아님 · 500 `문서를 쓰지 못했어요`.
 - 화면: 2단계 관문을 지나면 '1 · 2단계에서 정한 것을 문서로 묶었어요 — 내 GitHub에 올릴까요?'(어느 작업 폴더에 쓰는지 · 파일 목록 · 계획서 미리 보기) → 올리기. 나중에는 도전과제의 한눈에 보기에서 다시. 연습은 올리지 않는다. 시험: [`flow-api.test.js`](../../04-tests/navigator/flow-api.test.js) · [`docs.test.js`](../../04-tests/navigator/docs.test.js) · E2E [`quest-flow.test.js`](../../04-tests/e2e/quest-flow.test.js)
+
+### 3-24. `POST /mcp/<MCP 토큰>` · `POST /api/state` · `GET /api/proposals` · `POST /api/proposals/decide` — 원격 MCP 시험판: 웹 AI가 지금 할 일을 읽고 한 줄을 제안 (C-38, 2026-10-25)
+
+<!-- claude-drafted: 2026-10-25 — 두승현 "클로로랑 gpt 클로드 같이 썼을때 시너지가 나와야함" · "이 브랜치에서 시험용으로 만들자" -->
+- **시험판이고 기본은 꺼짐.** `NAV_MCP=1`로 서버를 켤 때만 `/mcp/<MCP 토큰>`이 열린다. 꺼져 있거나 토큰이 틀리면 404 — 있는지조차 알리지 않는다. C-38은 아직 이재엽 결정 대기다([결정 자료](../../01-docs/00-overview/기록/C-38-다른-AI-도구로-넘기기-2026-10-25.md)의 길 4).
+- **이 주소만 이 컴퓨터 밖에서 받는다.** 웹 GPT(개발자 모드) · 웹 Claude(커넥터)는 각 회사의 서버에서 부르므로 터널(예: `cloudflared tunnel --url http://127.0.0.1:4317`)이 필요하고, 그러면 Host가 이 컴퓨터가 아니다. 그래서 `handle`이 `allowed()`보다 먼저 이 주소를 고른다. **나머지 주소는 지금처럼 터널에서 403**(시험이 판정 · 제안 목록으로 본다).
+- MCP 토큰은 알림 확인 값과 **따로** — `~/.floe-mcp-token`(`NAV_MCP_TOKEN_FILE`), 나만 읽기. 웹 AI의 설정 화면에 주소째 붙여 넣는 값이라 새로 만들려면 파일을 지우고 다시 켠다. 서버는 켤 때 파일 자리만 말하고 값은 보이지 않는다. 비교는 `timingSafeEqual`.
+- 방식: Streamable HTTP의 JSON 답만(SSE 없음 — GET은 405). 방법 넷 `initialize` · `tools/list` · `tools/call` · `ping`, 알림(id 없음)은 202. 묶음(배열)도 받는다. 규칙은 [mcp.js](mcp.js)(SDK 없이 직접 — 자원 · SSE가 필요해지면 `@modelcontextprotocol/sdk`로).
+- **도구는 셋뿐** — `floe_now`(화면 단계 번호 · 퀘스트 · 할 일마다 ✓/○와 적은 줄 · 지금 할 일과 플로로의 질문), `floe_style`(쉬운 말 규칙 · 일하는 순서), `floe_report({todo, text})`(할 일 하나에 적을 한 줄을 **제안**). 일 넘기기(3-16) · 문서 쓰기(3-23) · 허용 · 거절(3-15)은 없다 — 밖에서 이 컴퓨터의 Claude Code를 움직이는 길을 만들지 않는다.
+- `POST /api/state` — 화면이 저장할 때마다 지금 상태 `{project, mode, stage, quest:{chap, title, phase, objs[{name, need}], lines, cur, ask}}`를 보낸다(바뀌었을 때만). 서버는 `Mcp.cleanState`로 칸마다 모양을 보고 `sensitive.js`로 가리고 자른다(할 일 12개 · 줄 5개 · 줄 200자). 모양이 아니면 400 `상태의 모양이 맞지 않음`. **메모리에만** — 서버를 다시 켜면 빈다.
+- `GET /api/proposals` · `POST /api/proposals/decide {id}` — 섬이 2초마다 제안을 보고, 채팅의 허락 카드 위에 "웹 AI가 Ⅰ '…'에 이렇게 적자고 해요"를 띄운다. "맞아요, 적어요"를 눌러야 그 할 일에 적히고(`fillNow`), 판정은 그 뒤 평소대로 Floe의 코드가 한다(ADR-0003). 지금 퀘스트와 장 · 할 일이 맞지 않으면 적지 않는다. 제안은 20개까지, 메모리에만. 없는 id면 404.
+- 써 보는 법: ① `NAV_MCP=1 node server.js` ② 다른 창에서 터널 ③ 웹 AI에 `https://<터널 주소>/mcp/<~/.floe-mcp-token의 값>`을 MCP 서버로 더한다. **이 주소를 아는 사람은 지금 할 일 · 적은 줄을 읽고 제안을 띄울 수 있다** — 시험이 끝나면 터널을 닫는다. 밖으로 나가는 것: [security-records.md](../../.claude/rules/security-records.md) 3절.
+- 시험: [`mcp.test.js`](../../04-tests/navigator/mcp.test.js)(가짜 웹 AI가 JSON-RPC를 직접 보낸다 — 진짜 웹 AI · 터널은 부르지 않는다). 2026-10-25 헤드리스 Chrome으로 상태 → `floe_now` → `floe_report` → 카드 → 맞아요 → Ⅰ에 적힘을 확인했다. 진짜 웹 GPT · 웹 Claude로는 **확인 못 함**.
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

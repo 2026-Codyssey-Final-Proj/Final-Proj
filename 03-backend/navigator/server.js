@@ -32,7 +32,8 @@ const { callClaude, usage, claudeVersion, startTask: openClaude, ledger } = requ
 const RB = require("./readme-book.js");   // C-26 내 작업 책 — README를 책으로 나눈다(읽기만) — claude-drafted: 2026-10-23
 const GH = require("./github.js");   // 설정의 GitHub 칸(C-25, 2026-10-24) — git · gh에게 읽기만 묻는다 — claude-drafted: 2026-10-24
 const Docs = require("./docs.js");   // C-37 단계 문서 — 단계 결과로 사용자 저장소에 둘 파일(순수 함수) — claude-drafted: 2026-10-25
-const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
+const Setup = require("./setup-status.js");
+const Mcp = require("./mcp.js");   // C-38 시험판 — 원격 MCP(웹 GPT · 웹 Claude)의 규칙. NAV_MCP=1일 때만 /mcp/<토큰>을 연다 — claude-drafted: 2026-10-25   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 
 const PORT = Number(process.env.NAV_PORT) || 4317;
 const MAX_BODY = 40_000;   // 작업 글 + 설계도
@@ -59,9 +60,10 @@ const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/a
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
 const BOOK_ROUTES = ["/api/readme", "/api/github", "/api/github/create", "/api/docs"];   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
-const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
-const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES];
-const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/docs"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const USAGE_ROUTES = ["/api/usage/reset"];
+const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다. 밖(터널)에서는 받지 않는다(allowed)   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
+const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
+const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/docs", "/api/state", "/api/proposals/decide"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -76,7 +78,31 @@ function eventToken(file = TOKEN_FILE) {
   return t;
 }
 let token = null;
-const theToken = () => (token ??= eventToken());   // 시험이 server.js를 불러오기만 할 때는 파일을 만들지 않는다
+const theToken = () => (token ??= eventToken());
+
+// ── C-38 시험판 — 원격 MCP(웹 GPT · 웹 Claude가 터널로) — claude-drafted: 2026-10-25 (두승현 "이 브랜치에서 시험용으로 만들자") ──
+// 기본은 꺼짐: NAV_MCP=1일 때만 /mcp/<MCP 토큰>을 연다. 그 주소만 이 컴퓨터 밖(Host가 터널)에서 받고, 나머지 주소는 지금처럼 allowed()가 막는다.
+// MCP 토큰은 알림 확인 값과 따로(~/.floe-mcp-token, 나만 읽기) — 웹 AI의 설정 화면에 주소째 붙여 넣는 값이라, 새로 만들려면 파일을 지우고 다시 켠다.
+// 화면이 보낸 상태(POST /api/state)와 웹 AI의 제안(floe_report)은 메모리에만 — 서버를 다시 켜면 빈다. 제안은 섬에서 사람이 정해야 퀘스트에 적힌다
+const MCP_TOKEN_FILE = process.env.NAV_MCP_TOKEN_FILE || path.join(os.homedir(), ".floe-mcp-token");
+const mcpOn = () => process.env.NAV_MCP === "1";
+let mcpTok = null;
+const mcpToken = () => (mcpTok ??= eventToken(MCP_TOKEN_FILE));
+const sameToken = (a, b) => { const x = Buffer.from(String(a)), y = Buffer.from(String(b)); return x.length === y.length && crypto.timingSafeEqual(x, y); };
+let floeState = null;   // 화면이 보낸 지금 상태(Mcp.cleanState)
+const proposals = [], MAX_PROPOSALS = 20;
+const mcpCtx = { state: () => floeState, propose: (p) => { const item = { id: crypto.randomBytes(8).toString("hex"), at: Date.now(), ...p }; proposals.push(item); while (proposals.length > MAX_PROPOSALS) proposals.shift(); return item; } };
+async function mcpRoute(req, res) {
+  const tok = req.url.split("?")[0].slice("/mcp/".length);
+  if (!mcpOn() || !sameToken(tok, mcpToken())) return refuse(res, "없는 주소", 404);   // 꺼져 있거나 토큰이 틀리면 있는지조차 알리지 않는다
+  if (req.method !== "POST") { res.writeHead(405, { Allow: "POST" }); return res.end(); }   // SSE(GET)는 열지 않는다
+  const body = await readJson(req);
+  if (body === TOO_BIG) return send(res, 413, { jsonrpc: "2.0", id: null, error: { code: -32600, message: "보낸 글이 너무 김" } });
+  if (body === null) return send(res, 400, { jsonrpc: "2.0", id: null, error: { code: -32700, message: "JSON이 아님" } });
+  const out = Array.isArray(body) ? body.map((m) => Mcp.rpc(m, mcpCtx)).filter(Boolean) : Mcp.rpc(body, mcpCtx);
+  if (!out || (Array.isArray(out) && !out.length)) { res.writeHead(202); return res.end(); }   // 알림뿐이면 답 없이 202
+  return send(res, 200, out);
+}   // 시험이 server.js를 불러오기만 할 때는 파일을 만들지 않는다
 
 const cookieOf = (header, name) => String(header || "").split(";").map((c) => c.trim()).find((c) => c.startsWith(`${name}=`))?.slice(name.length + 1);
 // 머리글(훅) 또는 쿠키(화면) — 길이가 같을 때만 비교하고, 비교 시간으로 값을 알아낼 수 없게 timingSafeEqual
@@ -474,6 +500,7 @@ async function checkAi(res) {
 }
 
 async function handle(req, res) {
+  if (req.url.startsWith("/mcp/")) return mcpRoute(req, res);   // C-38 시험판 — 이 주소만 밖(터널)에서 받는다. 꺼져 있으면 404
   if (!allowed(req.headers)) return refuse(res, "이 컴퓨터의 화면에서만 부를 수 있음", 403);
   if (req.method === "GET" && FILES[req.url]) {
     const [file, type] = FILES[req.url];
@@ -497,7 +524,8 @@ async function handle(req, res) {
   }
   if (req.method === "POST" && route === "/api/events/clear") return send(res, 200, { ok: true, cleared: clearEvents() });   // S5
   if (req.method === "GET" && route === "/api/approvals") return send(res, 200, { ok: true, ...listApprovals() });   // FR-17 섬이 기다리는 승인 요청을 본다(API.md 3-14)
-  if (req.method === "GET" && route === "/api/task") return send(res, 200, { ok: true, task: publicTask() });   // FR-17 넘긴 일의 상태(API.md 3-16)
+  if (req.method === "GET" && route === "/api/task") return send(res, 200, { ok: true, task: publicTask() });
+  if (req.method === "GET" && route === "/api/proposals") return send(res, 200, { ok: true, items: proposals });   // C-38 시험판 — 섬이 웹 AI의 제안을 본다   // FR-17 넘긴 일의 상태(API.md 3-16)
   if (req.method === "GET" && route === "/api/readme") return send(res, 200, readmeBook());   // C-26 내 작업 책(API.md 3-18) — 읽기만
   if (req.method === "GET" && route === "/api/github") return send(res, 200, githubNow());   // 설정의 GitHub 칸(API.md 3-19) — 읽기만
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage(), ledger: ledger.snapshot() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다. ledger: 토큰 장부(숫자 · 이름만, 2026-10-24)
@@ -521,6 +549,8 @@ async function handle(req, res) {
     if (!stageOf(body.stage)) return refuse(res, "지금 단계가 없음");
     return ask(res, Nav.questPrompt(body.stage, body.idea, body.tier), Nav.QUEST_SCHEMA, as("quest", (d) => Nav.parseQuest(d, body.stage, body.tier)), "퀘스트");
   }
+  if (route === "/api/state") { const s = Mcp.cleanState(body); if (!s) return refuse(res, "상태의 모양이 맞지 않음"); floeState = s; return send(res, 200, { ok: true }); }   // C-38 시험판 — 메모리에만
+  if (route === "/api/proposals/decide") { const k = proposals.findIndex((x) => body && x.id === body.id); if (k < 0) return refuse(res, "기다리는 제안이 아님", 404); proposals.splice(k, 1); return send(res, 200, { ok: true }); }   // 맞아요 · 아니요 — 적는 일은 화면이
   if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
   if (route === "/api/docs") { const [code, out] = shipDocs(body); return send(res, code, out); }   // C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(API.md 3-23)
   if (route === "/api/stagedraft") {   // C-37 2단계 초안(API.md 3-22, 2026-10-25) — AI 한 번. 받은 글 · 1단계 결과로 그 등급의 할 일마다 글(기획서 칸은 고르기)
@@ -570,6 +600,7 @@ async function handle(req, res) {
 
 if (require.main === module) {
   theToken();   // 켜자마자 만든다 — 화면을 열기 전에 온 훅 알림도 받게. 값은 출력하지 않는다
+  if (mcpOn()) { mcpToken(); console.log(`원격 MCP(C-38 시험판): 켜짐 — 주소는 https://<터널 주소>/mcp/<${MCP_TOKEN_FILE}의 값>. 값은 보여 주지 않아요. 터널 예: cloudflared tunnel --url http://127.0.0.1:${PORT}`); }
   http.createServer(handle).listen(PORT, "127.0.0.1", () => {
     const u = usage();
     console.log(`Floe 시연 화면: http://127.0.0.1:${PORT}`);
@@ -579,4 +610,4 @@ if (require.main === module) {
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
   });
 }
-module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다
+module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, mcpToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다

@@ -33,6 +33,7 @@ PRD의 `Security & Compliance` 칸을 쓸 때 읽는다.
 | GitHub for Jira 앱 | 브랜치 이름 · 커밋 메시지 · PR 제목 · 작성자 GitHub 계정 | Final-Proj 저장소 하나만. [jira.md](../../01-docs/00-overview/jira.md) 1절 |
 | `jira-release` GitHub Action | 버전 이름 · 날짜 · CHANGELOG "무엇" 칸 · 이슈 키. 그 전에 `changes/*.md` 조각을 CHANGELOG에 합쳐 `main`에 커밋한다(저장소 안에서만, 밖으로 나가지 않음) | 토큰은 GitHub 비밀값에만, `*.atlassian.net`이 아니면 보내지 않음. jira.md 3절 |
 | Atlassian MCP (`atlassian`) | Claude가 읽거나 쓴 Jira 이슈 내용, 검색어 · 요청 | 각자 자기 Atlassian 계정 OAuth. 쓰기는 사람 확인 뒤([jira.md](../../01-docs/00-overview/jira.md) 4절) |
+| 원격 MCP 시험판 (`NAV_MCP=1`, C-38 · 2026-10-25) <!-- claude-drafted: 2026-10-25 --> | 웹 AI가 `floe_now`로 읽는 지금 상태(작업 폴더 이름 · 단계 · 할 일 · 적은 줄 — 가리고 200자까지)가 터널 회사와 그 AI 회사(OpenAI · Anthropic)로. 웹 AI가 보낸 제안 한 줄이 들어온다 | 기본은 꺼짐. 켤 때만, 주소 속 비밀 토큰(`~/.floe-mcp-token`)으로. 도구는 읽기 · 제안만 — 일 넘기기 · 문서 쓰기 · 허용 · 거절은 밖에 열지 않는다. 시험이 끝나면 터널을 닫는다. [API.md](../../03-backend/navigator/API.md) 3-24 |
 | 새 MCP·외부 도구 | 도구마다 다름 | 들이기 전에 [external-integration.md](external-integration.md)의 점검표(전송·인증·도구·데이터·비용). 결제·구독·삭제 도구는 `settings.json` deny 제안 |
 | `mcp-builder/scripts/evaluation.py` | Anthropic API 호출 (유료) | 그 자리에서 동의하기 전에는 실행하지 않는다 ([skill-authoring.md](skill-authoring.md)) |
 | 개인 서비스(캘린더·알림 등) | 한 줄 제목만 | **각자 자기 계정으로.** 팀 레포 설정이나 공유 캘린더로 보내지 않는다 |
