@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| 판 | **v1.4 · 2026-10-24** — 준비 계획판 `POST /api/plan`(3-20, C-34) · 맡기기의 기준과 보고(3-16 `checks` → `task.report`, C-32). v1.3(같은 날) — 작업 폴더를 앱이 알려 준다(3-16 · 3-18 · 3-19 "폴더 고르기", C-31) · 토큰 장부(3-5 `ledger` · `POST /api/usage/reset`, 3-16 `tokens` · `cost`). v1.2(2026-10-20) — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
+| 판 | **v1.5 · 2026-10-25** — 처음 한 바퀴의 1단계 초안 `POST /api/start`(3-21, C-36). v1.4(2026-10-24) — 준비 계획판 `POST /api/plan`(3-20, C-34) · 맡기기의 기준과 보고(3-16 `checks` → `task.report`, C-32). v1.3(같은 날) — 작업 폴더를 앱이 알려 준다(3-16 · 3-18 · 3-19 "폴더 고르기", C-31) · 토큰 장부(3-5 `ledger` · `POST /api/usage/reset`, 3-16 `tokens` · `cost`). v1.2(2026-10-20) — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
 | 기준 코드 | `server.js` — 시연 안전장치(#94: 확인 값·받은 글 가림·기록 비우기)와 판정 규칙(#96: 등급별 할 일)을 합친 상태. **2026-10-18 F-04: AI 네 주소도 확인 값**, 6단계 할 일 넷(F-03). 2026-10-20 AI 진행(`steps.js` · `hook.js` PostToolUse) |
 | 시험 | [`04-tests/navigator/api-contract.test.js`](../../04-tests/navigator/api-contract.test.js) — 실제 AI를 부르지 않는다(5절). FR-17 주소는 [`task-api.test.js`](../../04-tests/navigator/task-api.test.js)(가짜 claude · 재생) |
 | 바꾸는 법 | 이 문서·시험·`server.js`를 한 PR에서 같이 고친다. 화면이 읽는 칸이 바뀌면 화면 담당에게 알린다 |
@@ -36,6 +36,7 @@
 | `POST /api/task/start` | 섬 "허락하고 넘기기" | 출처 · 확인 값(쿠키) | `{ok, project, task:{state, project, at, code}}` — 연결한 폴더에서 `claude -p`를 연다 | 403 · 413 · 400 · 409 · 502 |
 | `GET /api/task` | 섬 | 출처 · 확인 값(쿠키) | `{ok, task}` 넘긴 일의 상태(없으면 null) | 403 |
 | `POST /api/quest` | 섬 — 퀘스트를 만들 때(C-22, 2026-10-21) | 출처 · 확인 값(쿠키) | `{ok, quest:{desc, why, qa[]}, tokens}` | 403 · 413 · 400 · 502 |
+| `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | 그 밖의 주소·방법 | — | 출처 | — | 404 `없는 주소` |
 
 ## 2. 공통 약속
@@ -495,7 +496,20 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
   - 다시 세울 때: `prev`(지난 계획 — 서버가 `parsePlan`으로 모양을 다시 확인) · `notes[{need, check, note}]`(고칠래요 줄의 의견, 12개까지) · `answers[{q, a}]`(물은 것의 답, 4개까지) · `general`(전체 의견). 글은 각 300자까지.
 - 성공 `{ ok, plan, tokens }` — `plan = { problem, have, missing, items[{id, need, check}], prep[], ask[], say }`. 요구 줄의 `id`(p1…)는 코드가 붙인다. 말은 초등학생도 아는 말로(`FLORO_VOICE`, C-33). 넣은 글에 없는 것은 지어내지 않고 `ask`로 묻는다.
 - 거절: 400 `넣은 글이 비어 있음` · 400 `넣은 글이 너무 김 — 8,000자까지` · 400 `지난 계획의 모양이 맞지 않음` · 400 `의견의 모양이 맞지 않음` · 502 `계획 형식이 맞지 않음`.
-- 화면: 섬의 채팅에서 연다(C-35, 2026-10-24 — 채팅의 '계획 세우기' 칩, 처음 설정의 '계획' 칸에 적은 글이 있으면 그 글로. 그 전에는 명령 칸의 **맡기기**가 여는 계획판). 줄마다 맞아요 / 고칠래요 · 의견 · 답 → '의견 보내고 다시 세우기' 또는 모두 맞아요면 '이대로 확정'. 확정한 줄은 퀘스트 창의 '맡길 일' 퀘스트가 되어 **순서대로** 하나씩 3-16에 `checks`와 함께 맡기고, 보고를 보고 맞아요를 눌러야 끝낸 것으로 친다. 보고 카드에서 **물어보기**는 그 보고(맡긴 일 · 기준 · 보고 글)를 3-7 `/api/answer`로 플로로에게 묻고, Claude Code가 물은 것(`ask`)에 답하면 그 질문과 답을 붙여 다시 맡긴다. 연습의 예시 계획은 판에 `example`로 남아 모드를 바꿔도 진짜 Claude Code로 넘기지 않는다. 판은 이 컴퓨터의 브라우저 저장소에만(규칙 [plan.js](plan.js)). 연습 · 서버 없이는 부르지 않고 예시 계획 · 예시 보고. 시험: `04-tests/navigator/plan-api.test.js` · `plan-rules.test.js` · `plan-board.test.js` · e2e `plan-flow.test.js`.
+- 화면: 섬의 채팅에서 연다(C-35, 2026-10-24 — 채팅의 '계획 세우기' 칩. 처음 설정의 '계획' 칸은 2026-10-25 C-36으로 뺐다. 그 전에는 명령 칸의 **맡기기**가 여는 계획판). 줄마다 맞아요 / 고칠래요 · 의견 · 답 → '의견 보내고 다시 세우기' 또는 모두 맞아요면 '이대로 확정'. 확정한 줄은 퀘스트 창의 '맡길 일' 퀘스트가 되어 **순서대로** 하나씩 3-16에 `checks`와 함께 맡기고, 보고를 보고 맞아요를 눌러야 끝낸 것으로 친다. 보고 카드에서 **물어보기**는 그 보고(맡긴 일 · 기준 · 보고 글)를 3-7 `/api/answer`로 플로로에게 묻고, Claude Code가 물은 것(`ask`)에 답하면 그 질문과 답을 붙여 다시 맡긴다. 연습의 예시 계획은 판에 `example`로 남아 모드를 바꿔도 진짜 Claude Code로 넘기지 않는다. 판은 이 컴퓨터의 브라우저 저장소에만(규칙 [plan.js](plan.js)). 연습 · 서버 없이는 부르지 않고 예시 계획 · 예시 보고. 시험: `04-tests/navigator/plan-api.test.js` · `plan-rules.test.js` · `plan-board.test.js` · e2e `plan-flow.test.js`.
+
+### 3-21. `POST /api/start` — 처음 한 바퀴: 받은 글 전체로 1단계 초안 (C-36, 2026-10-25)
+
+<!-- claude-drafted: 2026-10-25 — 이재엽 "원하는 내용을 받으면 너가 전체적으로 글들을 확인해서 … 초안을 백엔드로 제작" · 버튼 "1단계는 확인만 → 관문 → 2단계" · "규모 판단표 scope-tiers" -->
+- 확인 값이 있어야 한다(AI를 부른다 — `AI_ROUTES`). AI 한 번([navigator.js](navigator.js) `startPrompt` · `START_SCHEMA` · `parseStart`) — **도구 없이**(`callClaude`), 받은 글만 보낸다.
+- 본문 `{ text }` — 사용자가 처음에 플로로에게 준 글 전체(8,000자까지, 계획 3-20과 같다). 비밀번호처럼 보이는 것은 화면이 보내기 전에 묻는다(`guard`).
+- 성공 `{ ok, start, tokens }` — `start = { topic, pain, change, who, size, sizeWhy }`
+  - `topic` — 무엇을 만드는지 30자 안쪽 이름. 1단계 퀘스트의 제목이 되고 다음 장에도 이어진다.
+  - `pain` · `change` — 1단계 Ⅰ 불편 · Ⅱ 달라지는 것 한 문장씩. 화면이 "플로로가 생각한 내용인데 맞나요?"로 묻는다.
+  - `who` — Ⅲ 누가: 글에 쓰는 사람이 나오면 그 사람, 없으면 `""`(지어내지 않는다 — 화면은 본인 · 소수 · 불특정다수를 고르게 한다).
+  - `size` — Ⅳ 크기: `short` · `medium` · `long`(규모 판단표 [scope-tiers.md](../../01-docs/00-overview/scope-tiers.md) — 짧음 · 보통 · 긺 = Lite · Xpress · Full). `sizeWhy`는 그렇게 본 까닭. 사용자가 고른 것이 만드는 크기(`tier`)가 된다.
+- 거절: 400 `받은 글이 비어 있음` · 400 `받은 글이 너무 김 — 8,000자까지` · 502 `1단계 초안 형식이 맞지 않음`(크기가 셋 밖이거나 칸이 빔).
+- 화면: 처음 채팅(무엇을 만들지 아직 없을 때)에 보낸 말. 받으면 1단계 퀘스트를 받기 화면 없이 바로 열고 칸마다 확인만 한다. 넷 다 확인하면 저절로 완료 보고(3-6 `/api/judge` — 판정 규칙은 그대로) → 넘어가기 전 확인. 못 받으면 전처럼 1단계를 한 줄씩. 연습(서버 없이)은 예시 초안(`quest.js` `EXAMPLE_DRAFT`). 시험: [`start-api.test.js`](../../04-tests/navigator/start-api.test.js) · [`start-draft.test.js`](../../04-tests/navigator/start-draft.test.js) · E2E [`start-flow.test.js`](../../04-tests/e2e/start-flow.test.js)
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

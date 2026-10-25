@@ -111,6 +111,23 @@
     if (ai && ai.length) return ai[Math.min((q.lines[i] || []).length, ai.length - 1)];
     const ex = EXAMPLES[q.chap]; return ex && ex[i] ? ex[i] : null;
   };
+  // ── 처음 한 바퀴(C-36, 2026-10-25 — 이재엽 버튼 "1단계는 확인만 → 관문 → 2단계" · "규모 판단표 scope-tiers") ──
+  // 받은 글로 만든 1단계 초안(navigator.js parseStart — topic · pain · change · who · size · sizeWhy)을 1단계 퀘스트에 얹는다: 제목은 주제, 받기 화면 없이 바로 칸마다 확인.
+  // 확인하면 그 줄이 적힌다(fill) — 맞아요를 누르기 전에는 줄이 비어 있다
+  const SIZE_KEYS = ["short", "medium", "long"];
+  const SIZE_WORD = { short: "짧음", medium: "보통", long: "긺" };
+  const SIZE_TIER = { short: "Lite", medium: "Xpress", long: "Full" };   // 규모 판단표(01-docs/00-overview/scope-tiers.md) — 만드는 크기(tiers.js LABELS)와 같은 순서 · 같은 이름
+  const WHO = [["본인", "나 혼자 써요"], ["소수", "아는 몇 사람이 써요"], ["불특정다수", "누구나 써요"]];   // 글에 쓰는 사람이 없을 때 고르는 칩
+  const WHO_AT = 2, SIZE_AT = 3;   // 1단계 할 일의 자리(navigator.js STAGES[0] 순서) — Ⅲ 누가 · Ⅳ 크기
+  function withDraft(q, d) {
+    if (!q || !d) return q;
+    return { ...retitle(q, d.topic), draft: d, phase: "quest", sel: 0, desc: "플로로가 받은 글로 이 장의 초안을 만들었어요. 칸마다 맞는지만 봐 주세요 — 다르면 고쳐 적으면 돼요." };
+  }
+  // 그 할 일에 플로로가 내민 초안 글 — 1단계의 Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가(글에 있을 때만). Ⅳ 크기는 고르는 칸이라 글이 없다
+  const draftOf = (q, i) => { const d = q && q.chap === 0 && q.draft; return !d ? "" : i === 0 ? d.pain : i === 1 ? d.change : i === WHO_AT ? d.who : ""; };
+  // 연습(서버 없이 FR-10)의 예시 초안 — 화면에 '예시예요'를 같이 적는다. 1단계 연습 글(EXAMPLES[0])과 같은 이야기
+  const EXAMPLE_DRAFT = { topic: "동아리 행사 신청 앱", pain: "동아리 행사 신청을 종이로 받아서 누가 냈는지 매번 헷갈려요", change: "신청이 한곳에 모이고, 마감 전에 알림이 가요",
+    who: "동아리 운영진 3명과 회원 40명", size: "medium", sizeWhy: "신청 받기와 알림 — 흔히 쓰는 방법으로 바로 풀려요" };
   // 적은 글 전부 — 어디쯤인지 보기(judge)에 보내는 작업 글. 처음 말한 것(idea)이 맨 위
   const textOf = (q, idea) => [String(idea || "").trim(), ...(q ? q.objs.flatMap((o, i) => (q.lines[i] || []).map((l) => `${o.name}: ${l}`)) : [])].filter(Boolean).join("\n");
   // 연습(서버 없이)의 완료 보고 — 적은 줄이 있으면 그 할 일을 한 것으로. 진짜 AI는 서버(/api/judge)가 본다. 모양은 서버 답과 같아서 parseJudgement를 그대로 지난다
@@ -124,7 +141,7 @@
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
   const api = { LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
-    itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
+    itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

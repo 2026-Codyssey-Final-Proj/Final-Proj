@@ -4,8 +4,8 @@
 //   등급을 바꾸면 이미 본 결과를 글자로 맞춰 옮긴다(진짜 AI를 다시 부르지 않는다).
 (function (root) {
   const N = typeof module !== "undefined" && module.exports ? require("./navigator.js") : root.NavRules;
-  // [서버에 보내는 값, 화면 이름] — 01-docs/00-overview/scope-tiers.md. 기본은 크게(Full)
-  const LABELS = [["Lite", "작게"], ["Xpress", "보통"], ["Full", "크게"]];
+  // [서버에 보내는 값, 화면 이름] — 01-docs/00-overview/scope-tiers.md. 기본은 긺(Full). 화면 이름은 2026-10-25 C-36으로 작게 · 보통 · 크게 → 짧음 · 보통 · 긺(1단계 Ⅳ 크기 칩과 같다 — quest.js SIZE_WORD)
+  const LABELS = [["Lite", "짧음"], ["Xpress", "보통"], ["Full", "긺"]];
   // 이 등급이 하는 할 일이 Full 목록의 몇 번째인가
   function keep(n, tier) {
     const all = N.STAGES[n] ? N.STAGES[n].criteria : [], mine = N.criteriaFor(n, tier);

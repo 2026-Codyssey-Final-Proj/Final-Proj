@@ -436,7 +436,7 @@ test("C-21: 서고의 책장은 내가 만든다 — 처음엔 '분류 안 함' 
 });
 
 // C-22 게임식 디자인 1차 뼈대(2026-10-21, 이재엽 "지금부터 만들어서 릴리즈" · 창 셋 · 1단계부터) — 처음 실행의 퀘스트 흐름과 창 둘의 자리를 실제 브라우저에서 잇는다(연습 모드)
-test("C-22: 처음 실행 — 무엇을 만들지 말하면 '퀘스트를 시작하시겠습니까?' → 시작하면 퀘스트 창이 바로 떠 1단계 받기 화면 → 고쳐서 받기 → 공책 → 한 줄씩 → 완료 보고 → 넘어가기 전 확인 → 조개 1 · 2단계 받기 화면 · 칭호", { skip }, async () => {
+test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면 1단계 초안(연습은 예시) → 퀘스트 창이 바로 떠 제목이 주제인 1단계 공책 → 칸마다 맞아요 · 크기 고르기 → 저절로 완료 보고 → 넘어가기 전 확인 → 조개 1 · 2단계 받기 화면(제목 = 주제) · 칭호", { skip }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser);
@@ -444,33 +444,32 @@ test("C-22: 처음 실행 — 무엇을 만들지 말하면 '퀘스트를 시작
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#start"), { waitUntil: "load" }); await wait(400);
     const say = () => page.evaluate(() => document.querySelector(".msg.now .say")?.textContent || "");
     const band = () => page.evaluate(() => document.querySelector(".tb-stage")?.textContent || "");
-    assert.ok((await say()).includes("무엇을 만들고 싶은지"), await say());
+    assert.ok((await say()).includes("원하는 것을 플로로에게"), await say());
     assert.ok(!(await page.$(".qwin")), "처음엔 퀘스트 창이 없다");
-    await page.type("[data-act=say]", "독서 모임 알림 앱을 만들고 싶어요"); await page.keyboard.press("Enter"); await wait(400);
-    assert.equal(await say(), "퀘스트를 시작하시겠습니까?");
-    assert.ok((await page.evaluate(() => [...document.querySelectorAll(".msg.me .b")].map((x) => x.textContent))).includes("독서 모임 알림 앱을 만들고 싶어요"), "내 말은 오른쪽에 남는다");
-    await page.click("[data-act=quest-start]"); await wait(600);
-    assert.ok(await page.$(".qwin .ev .join"), "퀘스트 창이 바로 떠서 받기 화면(큰 받기 단추)");
-    assert.ok((await band()).startsWith("1단계 ·"), `위 줄은 1단계부터: ${await band()}`);
-    assert.ok((await page.evaluate(() => document.querySelector(".ev .slots i.has")?.dataset.tt || "")).includes("무지개 조개"), "REWARD 칸에 마우스 설명");
-    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".ev .slots .coin")).backgroundColor), "rgba(0, 0, 0, 0)", "보상 칸의 조개 그림에 상자가 겹치지 않는다(2026-10-23)");
-    await page.click("[data-act=quest-fix]"); await wait(300);
-    await page.evaluate(() => { const i = document.querySelector("[data-act=quest-title]"); i.value = "첫 장 — 정하기"; i.dispatchEvent(new Event("input", { bubbles: true })); });
-    await page.click("[data-act=quest-save]"); await wait(500);
-    assert.ok(await page.$(".qwin .book"), "받으면 공책");
-    assert.equal(await page.evaluate(() => document.querySelector(".page.r h3")?.textContent), "첫 장 — 정하기", "고친 이름 그대로");
-    assert.ok((await say()).startsWith("Ⅰ."), `한 줄씩 묻기: ${await say()}`);
-    const n = await page.evaluate(() => document.querySelectorAll(".toc button").length);
-    for (let k = 0; k < n; k++) { await page.type("[data-act=say]", `줄 ${k + 1}`); await page.keyboard.press("Enter"); await wait(300); }
-    assert.ok((await say()).includes("완료 보고"), await say());
-    assert.equal(await page.evaluate(() => document.querySelectorAll(".toc button.done").length), n, "목차가 모두 '적음'");
-    await page.click("[data-act=quest-report]"); await wait(800);
-    assert.ok((await say()).includes("모두 했어요") && await page.$("[data-act=gate]"), `완료 보고 → 넘어가기 전 확인 칩: ${await say()}`);
+    await page.type("[data-act=say]", "동아리 행사 신청 앱을 만들고 싶어요"); await page.keyboard.press("Enter"); await wait(600);
+    assert.ok((await page.evaluate(() => [...document.querySelectorAll(".msg.me .b")].map((x) => x.textContent))).includes("동아리 행사 신청 앱을 만들고 싶어요"), "내 말은 오른쪽에 남는다");
+    assert.ok(await page.$(".qwin .book") && !(await page.$(".qwin .ev")), "퀘스트 창이 바로 떠서 공책 — 받기 화면 · '시작하시겠습니까'는 없다");
+    assert.equal(await band().then((b) => b.split("·")[0].trim()), "1단계", `위 줄은 1단계부터: ${await band()}`);
+    assert.ok((await band()).includes("동아리 행사 신청 앱"), `제목은 주제: ${await band()}`);
+    assert.ok((await say()).startsWith("Ⅰ."), `칸마다 확인: ${await say()}`);
+    for (let k = 0; k < 3; k++) { await page.click(".mc.chat [data-act=draft-ok]"); await wait(300); }
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".mc.chat [data-act=draft-size]")].map((b) => b.textContent.replace(/\d/g, "").trim())), ["짧음", "보통", "긺"]);
+    await page.click('.mc.chat [data-act=draft-size][data-i="1"]'); await wait(900);
+    assert.ok((await say()).includes("모두 했어요") && await page.$("[data-act=gate]"), `넷 다 확인하면 저절로 완료 보고 → 넘어가기 전 확인 칩: ${await say()}`);
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).quest.lines.map((l) => l.length)), [1, 1, 1, 1], "칸마다 한 줄씩 적혔다");
     await page.click("[data-act=gate]"); await wait(300); await page.click("[data-act=yes]"); await wait(400);
     if (await page.$("[data-act=check-pick]")) { await page.click("[data-act=check-pick]"); await wait(400); if (await page.$("[data-act=check-go]")) { await page.click("[data-act=check-go]"); await wait(400); } }
     const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".tb .shells span")?.textContent, ev: !!document.querySelector(".qwin .ev") }));
-    assert.ok(after.band.startsWith("2단계 ·") && after.shells === "1" && after.ev, JSON.stringify(after));
+    assert.ok(after.band.startsWith("2단계 · 동아리 행사 신청 앱") && after.shells === "1" && after.ev, JSON.stringify(after));
     assert.equal(await page.evaluate(() => localStorage.getItem("floe:level")), null, "연습 모드의 관문은 영구 레벨에 남기지 않는다(C-28 — 이 켜짐 동안만 오른다, 칭호는 위처럼 바뀐다)");
+    // 2단계 받기 화면 — 보상 칸 설명 · 고쳐서 받기 · 공책
+    assert.ok((await page.evaluate(() => document.querySelector(".ev .slots i.has")?.dataset.tt || "")).includes("무지개 조개"), "REWARD 칸에 마우스 설명");
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".ev .slots .coin")).backgroundColor), "rgba(0, 0, 0, 0)", "보상 칸의 조개 그림에 상자가 겹치지 않는다(2026-10-23)");
+    await page.click("[data-act=quest-fix]"); await wait(300);
+    await page.evaluate(() => { const i = document.querySelector("[data-act=quest-title]"); i.value = "둘째 장 — 적어 두기"; i.dispatchEvent(new Event("input", { bubbles: true })); });
+    await page.click("[data-act=quest-save]"); await wait(500);
+    assert.ok(await page.$(".qwin .book"), "받으면 공책");
+    assert.equal(await page.evaluate(() => document.querySelector(".page.r h3")?.textContent), "둘째 장 — 적어 두기", "고친 이름 그대로");
     // 설정 — 2026-10-25(두승현): 옆 창이 아니라 섬 안의 판(채팅 자리를 바꿔 끼움). 퀘스트 창은 섬 옆 — 기본은 오른쪽, '왼쪽'을 고르면 [퀘스트][섬]. 이 컴퓨터에 남는다
     await page.click("[data-act=settings]"); await wait(300);
     assert.ok(await page.$(".isl .setp") && !(await page.$("#nav > .win.setwin")) && !(await page.$(".isl .mc.chat")), "설정은 섬 안 — 채팅 자리에");
