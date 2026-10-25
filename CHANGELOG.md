@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v23.0 | 2026-10-25 | 이재엽 | 오버레이는 일하는 자리(C-35) — 명령 네 칸을 빼고 위 줄에 '퀘스트' 단추, 준비 계획 · 맡기기 · 허락 카드 · 보고를 채팅에서, 확정한 계획은 퀘스트 창의 '맡길 일' 퀘스트(순서대로 하나씩), 배우기는 도전과제의 장마다 '관문 전에 알아 둘 것' (#186) | `02-frontend/navigator/` · `03-backend/navigator/` · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/00-overview/` · `01-docs/07-maintenance/fix-map.md` · `01-docs/features/` · `01-docs/04-pattern-implementation/`(담당 고한결 — 화면 흐름 와이어의 상태 칸 · 온보딩 장면 메모 한 줄) |
 | v22.1 | 2026-10-24 | 두승현 | 기획 정리 — Floe는 왜 있어야 하나, 소크라테스 문답 1~6(진행 중) · 사흘 공백 따라잡기 문제 정의 (#184) | `01-docs/00-overview/기록/` |
 | v22.0 | 2026-10-24 | 이재엽 | 준비 계획판(C-34) — 한 번에 넣은 글 · README로 계획과 기준을 세우고 줄마다 맞아요 / 고칠래요 · 의견으로 다시 세우거나 확정, 확정한 줄을 기준과 함께 맡기면 Claude Code가 기준마다 보고(C-32 · C-33, F-49 ② ③). 처음 설정에 계획 칸 (#183) | `02-frontend/navigator/` · `03-backend/navigator/` · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/00-overview/requirements.md` · `01-docs/07-maintenance/fix-map.md` |
 | v21.1 | 2026-10-24 | 두승현 | 판정용 claude -p의 시스템 안내문을 한 줄로 — 판정 한 번 평균 6,675 → 4,729토큰, 일치율 100% 그대로 (#182) | `03-backend/navigator/`(담당 이재엽 — 이 줄이 알림) · `04-tests/navigator/` · `01-docs/verification/` · `01-docs/00-overview/` |
