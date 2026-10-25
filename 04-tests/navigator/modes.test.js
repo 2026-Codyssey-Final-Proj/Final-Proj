@@ -82,7 +82,7 @@ test("쉬운 말(FR-13) — 알림 · AI 진행 판과 채팅 중심 섬의 화�
   const pane = app.slice(app.indexOf("const PANE = {"), app.indexOf("function islandHTML")), chat = app.slice(app.indexOf("// ── 채팅 중심 섬(C-22"), app.indexOf("// 단계 문서 — 왼쪽 플로로와 버튼"));
   for (const w of Nav.JARGON) assert.ok(!strings(pane).includes(w) && !strings(chat).includes(w), `전문 용어 ${w}`);
   for (const word of ["알림", "AI 진행", "단추로"]) assert.ok(pane.includes(word), word);
-  for (const word of ["퀘스트 받기", "완료 보고", "보내기", "도전과제", "퀘스트를 시작하시겠습니까?"]) assert.ok(chat.includes(word), word);
+  for (const word of ["퀘스트 받기", "완료 보고", "보내기", "도전과제", "플로로가 생각한 내용인데 맞나요?"]) assert.ok(chat.includes(word), word);
 });
 
 test("채팅 — '살펴보고 있어요'(기다리는 동안 경과 초가 바뀌는 말)는 지난 말로 쌓지 않는다(임유정 2026-10-22, 다시 그릴 때마다 같은 말이 쌓였다)", () => {
@@ -112,6 +112,20 @@ test("app.js — C-35: 허락 카드는 채팅에 뜬다(판으로 옮기지 않
   assert.match(app, /const planNow = \(\) => !!FP && st\.qfocus === "plan" && !st\.warn && !st\.error && st\.screen !== "gate" && !st\.meal;/, "경고 · 오류 · 관문 · 먹이 정리가 먼저");
   for (const use of ["if (planNow()) return momentPlan();", "if (planNow()) return planSay(t);", "const sayHint = () => (planNow() ?"]) assert.ok(app.includes(use), `지금 말 · 입력 · 힌트가 같은 판정: ${use}`);
   assert.match(app, /TU \? TU\.forChap\(n\)/, "도전과제 판 — 그 장의 배울 것");
+});
+
+// ── C-36 처음 한 바퀴(2026-10-25, 이재엽 "원하는 내용을 한줄로 작성해달라고 하지말고 원하는 내용을 플로로에게 받는걸로 … 초안을 백엔드로 제작 … 이 주제에 대한 내용을 제목으로") ──
+test("app.js — C-36: 처음 말은 '한 줄로' 대신 원하는 것을 플로로에게, 보내면 AI가 1단계 초안(/api/start) → 제목이 주제인 1단계 퀘스트로 바로(시작하시겠습니까 · 받기 화면 없이). 칸마다 맞나요 · 누가 · 크기", () => {
+  assert.doesNotMatch(app, /한 줄로 적으면 퀘스트로/, "처음 말에 '한 줄로'가 없다");
+  assert.match(app, /원하는 것을 플로로에게 알려 주세요/);
+  assert.match(app, /if \(!st\.j && !q && QU\) return startDraft\(t\);/, "처음 보낸 말은 초안으로");
+  for (const gone of ["st.qask", "\"quest-start\":", "\"quest-notyet\":", 'title: "퀘스트를 시작하시겠습니까']) assert.ok(!app.includes(gone), `${gone}가 없어야`);
+  assert.match(app, /callAI\("\/api\/start", \{ text \}\)/, "받은 글 전체를 한 번에");
+  assert.match(app, /QU\.withDraft\(QU\.makeQuest\(N\.STAGES\[0\], crits\(0\)\)/, "1단계 퀘스트에 초안 — 제목은 주제");
+  assert.match(app, /QU\.retitle\(QU\.makeQuest\(nx, crits\(nx\.n\)\), st\.topic\)/, "다음 장 퀘스트도 주제를 제목으로");
+  const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
+  assert.ok(keep.includes('"topic"'), "주제는 다시 켜도 남는다");
+  for (const act of ["draft-ok", "draft-fix", "draft-who", "draft-size"]) assert.ok(app.includes(`"${act}": `), act);
 });
 
 // 접힌 섬 · 띠의 작업 자리 표시(2026-10-25 두승현 — 옛 "진짜 AI" 표시 대신)

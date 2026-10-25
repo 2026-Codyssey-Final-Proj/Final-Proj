@@ -53,14 +53,14 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan"];   // /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start"];   // /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
 const BOOK_ROUTES = ["/api/readme", "/api/github", "/api/github/create"];   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES];
-const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -463,6 +463,11 @@ async function handle(req, res) {
     return ask(res, Nav.questPrompt(body.stage, body.idea, body.tier), Nav.QUEST_SCHEMA, as("quest", (d) => Nav.parseQuest(d, body.stage, body.tier)), "퀘스트");
   }
   if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
+  if (route === "/api/start") {   // C-36 처음 한 바퀴(API.md 3-21, 2026-10-25) — AI 한 번. 받은 글 전체로 1단계 초안(제목 · 불편 · 달라지는 것 · 누가 · 크기). 도구 없이, 글만
+    if (!body || !Nav.filled(body.text)) return refuse(res, "받은 글이 비어 있음");
+    if (body.text.length > Nav.START_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.START_MAX.toLocaleString()}자까지`);
+    return ask(res, Nav.startPrompt(body.text), Nav.START_SCHEMA, as("start", Nav.parseStart), "1단계 초안");
+  }
   if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
   if (route === "/api/task/start") {   // FR-17 허락하고 넘기기(3-16) — checks를 주면 기준과 함께 넘기고 끝에 보고를 받는다(C-32, 2026-10-24)
     const checks = body.checks == null ? null : checksOf(body.checks);

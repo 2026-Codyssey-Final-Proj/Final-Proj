@@ -193,13 +193,11 @@ def block(page, r):                  # 08 C-20 · C-19(2026-10-20): 접히기까
     page.evaluate("localStorage.removeItem('floe:fold-delay')")
 
 
-def quest(page, r):                  # 14 C-22(2026-10-21): 처음 실행 → '퀘스트를 시작하시겠습니까?' → 1단계 받기 화면(퀘스트 창) → 받기 → 공책 → 한 줄씩(예시) → 완료 보고 → 넘어가기 전 확인 → 2단계 · 조개 → 설정 창 자리
+def quest(page, r):                  # 14 C-22(2026-10-21) → C-36(2026-10-25): 처음 실행 → 원하는 것 → 1단계 초안(연습은 예시) → 제목이 주제인 공책 → 칸마다 맞아요 · 크기 고르기 → 저절로 완료 보고 → 넘어가기 전 확인 → 2단계 · 조개 → 설정 창 자리
     open_nav(page, "start"); page.evaluate("localStorage.removeItem('navigator-prototype:v1')"); open_nav(page, "start"); r.still(1000)
-    r.click("[data-act=idea-example]", hold=1500)
-    r.click("[data-act=quest-start]", hold=2000)
-    r.click("[data-act=quest-ok]", hold=1600)
-    for _ in range(4): r.click("[data-act=quest-example]", hold=900)
-    r.click("[data-act=quest-report]", hold=1600)
+    r.click("[data-act=idea-example]", hold=2000)
+    for _ in range(3): r.click(".mc.chat [data-act=draft-ok]", hold=1000)
+    r.click(".mc.chat [data-act=draft-size][data-i='1']", hold=1800)
     r.click("[data-act=gate]", hold=900); r.click("[data-act=yes]", hold=1200)
     if page.query_selector("[data-act=check-pick]"): r.click("[data-act=check-pick]", hold=1000)
     if page.query_selector("[data-act=check-go]"): r.click("[data-act=check-go]", hold=1400)
