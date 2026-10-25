@@ -7,8 +7,9 @@
 | 이 폴더 | 무엇 |
 |---|---|
 | `01-twelve-factor-app.md` | 배포 방향(설정은 코드 밖에 두기 등) |
+| [`02-verification-plan.md`](02-verification-plan.md) | 검증 계획 — 사용 전후(Claude Code만 / Floe와 같이) 무엇을 어떻게 비교하나 |
 
-**우리 팀(Floe)의 이 단계 결과물:** 아직 없다. 검증 계획(이슈 #18, 두승현)이 이 폴더에 들어올 예정이다
+**우리 팀(Floe)의 이 단계 결과물:** [검증 계획](02-verification-plan.md)(Jira KAN-18 · 이슈 #18, 두승현 — 2026-10-25 초안). 잰 결과는 [검증 기록](../verification/README.md)에 쌓는다
 
 *(위 "한눈에"는 사람용 안내 — Claude 초안 2026-10-17, 두승현 요청. 아래는 원래 본문이다.)*
 
