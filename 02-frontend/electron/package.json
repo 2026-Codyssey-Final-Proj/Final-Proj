@@ -33,6 +33,7 @@
       "lib.js",
       "package.json",
       "build/icon.png",
+      "build/icon.ico",
       "payload/**/*"
     ],
     "asarUnpack": [
@@ -61,7 +62,8 @@
       "hardenedRuntime": false
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "linux": {
       "target": [
@@ -97,7 +99,10 @@
     },
     "nsis": {
       "artifactName": "Floe-Setup-${version}.${ext}",
-      "oneClick": true
+      "oneClick": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
     },
     "deb": {
       "depends": [
