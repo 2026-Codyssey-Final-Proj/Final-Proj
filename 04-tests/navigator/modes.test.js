@@ -87,7 +87,8 @@ test("쉬운 말(FR-13) — 알림 · AI 진행 판과 채팅 중심 섬의 화�
 
 test("채팅 — '살펴보고 있어요'(기다리는 동안 경과 초가 바뀌는 말)는 지난 말로 쌓지 않는다(임유정 2026-10-22, 다시 그릴 때마다 같은 말이 쌓였다)", () => {
   assert.match(app, /title: `\$\{st\.planBusy \? PL_BUSY\[st\.planBusy\] : "살펴보고 있어요"\}\$\{dots\}`,\s*\n\s*sub: `<span data-wait>[^\n]*passing: true/, "기다리는 말에 passing 표시(계획을 기다릴 때는 그 말 — C-35)");
-  assert.match(app, /if \(lastLive && lastLive\.key !== key && !lastLive\.passing\) \{ const at = st\.chat\.length - saidSince;/, "passing인 말은 쌓지 않는다");
+  assert.match(app, /if \(lastLive && lastLive\.key !== key\) settleLive\(\);/, "말이 바뀌면 지난 말로");
+  assert.match(app, /if \(!lastLive \|\| lastLive\.passing \|\| lastLive\.logged\) return;/, "passing인 말은 쌓지 않는다(C-37 settleLive)");
   assert.match(app, /function say\(text\) \{ if \(!text\) return; logMsg\("floro", esc\(text\)\); saidSince \+= 1;/, "안내 · 오류는 대화 기록에 — 지난 말은 그 앞에 끼운다(2026-10-25)");
 });
 
@@ -134,4 +135,23 @@ test("접힌 섬의 표시 — 진짜 AI 모드면 '진짜 AI' 대신 GitHub 저
   assert.match(app, /r && r\.kind === "github" \? `\$\{r\.owner\}\/\$\{r\.repo\}` : project\(\)/, "저장소를 알면 주인/이름, 아니면 폴더 이름");
   assert.doesNotMatch(app, /s\.length > 14/, "글자 수로 자르지 않는다(띠 폭을 넘으면 CSS가 … 로)");
   assert.match(app, /\$\{st\.mode === "live" \? esc\(wsShort\(\)\) : "연습"\}/, "연습이면 그대로");
+});
+
+// ── C-37(2026-10-25, 이재엽 "1단계에서 플로로 채팅이 너무 많이 올라오는 문제 … 한곳에서 보이는 것들 … 도전과제 … 다이어그램 … 2단계에서도 초안 … docs … 깃허브") ──
+test("app.js — C-37: 내 말보다 먼저 지금 보이는 플로로의 말을 기록에(질문 → 답 순서) · 초안 확인은 지나는 말(passing) · 칩은 내 말로 쌓지 않는다(quiet) · 끝나면 한 줄로 정리", () => {
+  assert.match(app, /const logMe = \(text\) => \{ settleLive\(\); logMsg\("me", esc\(text\)\); \};/, "내 말을 남기기 전에 지금 말부터");
+  assert.match(app, /function settleLive\(\) \{/);
+  assert.match(app, /const chip = \(a\) => btn\(\{ \.\.\.a, chip: !a\.quiet \}\);/, "quiet 칩은 내 말로 쌓지 않는다");
+  assert.match(app, /passing: true, \/\/ 초안 확인은 카드 하나/, "초안 확인 말은 지나는 말");
+  assert.match(app, /초안을 확인했어요/, "끝나면 한 줄");
+});
+
+test("app.js — C-37: 단계 결과(results)를 남기고 도전과제의 기본은 한눈에 보기(jmap) · 2단계 초안(/api/stagedraft) · 2단계가 끝나면 문서 올리기(/api/docs, docs.js)", () => {
+  const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
+  assert.ok(keep.includes('"results"'), "단계 결과는 다시 켜도 남는다");
+  assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: QU\.resultOf\(st\.quest\) \};/, "보고가 된 퀘스트의 결과");
+  assert.match(app, /function treeMap\(cur\)/); assert.match(app, /"jmap-fill": /);
+  assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
+  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, results: shipResults\(\) \}\)/, "문서 올리기 — 결과만 보낸다(경로 · 글은 서버가 docs.js로)");
+  assert.match(read("navigator/index.html"), /docs\.js/, "미리 보기도 같은 docs.js");
 });

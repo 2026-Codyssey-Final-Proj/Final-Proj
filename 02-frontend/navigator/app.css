@@ -980,3 +980,40 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .lb-terms .term-say{flex-basis:100%}
 .book .pl-rep{background:rgba(255,255,255,.55);color:#3A2E1C}.book .pl-rep li.y{color:#2F6B2F}.book .pl-rep li.n,.book .pl-rep .meta{color:#6E5F45}   /* 퀘스트 창의 공책(양피지) — 테마 색 대신 공책 색 */
 @media (max-width:600px){.qsel{grid-template-columns:1fr}}
+/* claude-drafted: 2026-10-25 — C-37: 초안 확인 카드 안의 넷(한곳에) · 도전과제의 한눈에 보기(단계가 이어지는 흐름 — 채운 칸 · 빈 칸 · 채우기) · 문서 올리기 목록 */
+.dchk{list-style:none;margin:2px 0 0;padding:0;display:grid;gap:4px;text-align:left}
+.dchk li{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;padding:6px 10px;border-radius:10px;border:1px dashed var(--line);font-size:calc(13px * var(--ui-scale,1));color:var(--sub)}
+.dchk li b{color:var(--mute);font-weight:700}
+.dchk li span{flex-basis:100%;color:var(--ink);overflow-wrap:anywhere}
+.dchk li.y{border-style:solid;border-color:var(--ok)}
+.dchk li.y b::after{content:" ✓";color:var(--ok)}
+.dchk li.now{border-style:solid;border-color:var(--acc);color:var(--ink);font-weight:700}
+.jmap{display:grid;gap:6px;color:#3A2E1C}
+.jm-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;border-radius:12px;background:#FBF6EA;border:2px solid #D9CBA6}
+.jm-top b{font-size:calc(14px * var(--ui-scale,1))}
+.jm-top span{flex:1 1 auto;font-size:calc(12.5px * var(--ui-scale,1));color:#6E5F45}
+.jm-stage{border-radius:12px;border:2px solid #D9CBA6;background:#FBF6EA;padding:8px 10px;display:grid;gap:6px}
+.jm-stage.cur{border-color:#2F7BD6;box-shadow:0 0 0 3px rgba(47,123,214,.15)}
+.jm-stage.lock{background:#E9E0CB;color:#6E5F45}
+.jm-h{display:flex;align-items:center;gap:8px}
+.jm-h b{flex:1 1 auto;font-size:calc(13.5px * var(--ui-scale,1))}
+.jm-count{font-size:calc(12px * var(--ui-scale,1));font-weight:800;padding:1px 8px;border-radius:999px;background:#E9E0CB;color:#5A4A33}
+.jm-stage ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.jm-stage li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:5px 8px;border-radius:8px;font-size:calc(12.5px * var(--ui-scale,1))}
+.jm-stage li b{font-weight:800}
+.jm-stage li span{flex:1 1 60%;min-width:0;overflow-wrap:anywhere}
+.jm-fill{background:#fff;border:1px solid #D9CBA6}
+.jm-fill b::before{content:"✓ ";color:#2F6B2F}
+.jm-miss{border:1.5px dashed #B5532F;background:#FFF1EA}
+.jm-miss span{color:#8A3A1F}
+.jm-miss button{margin-left:auto;border:1.5px solid #B5532F;background:#fff;color:#8A3A1F;border-radius:999px;padding:1px 10px;font-weight:800;cursor:pointer;font-size:calc(12px * var(--ui-scale,1))}
+.jm-miss button:focus-visible{outline:2px solid #2F7BD6;outline-offset:2px}
+.jm-old span,.jm-lock{color:#6E5F45}
+.jm-arrow{text-align:center;font-size:calc(12px * var(--ui-scale,1));color:#5A4A33;font-weight:700}
+.jm-arrow span{font-weight:500}
+.vtabs button.map{font-size:calc(20px * var(--ui-scale,1))}
+.ship-files{list-style:none;margin:0;padding:8px 10px;border-radius:10px;background:var(--soft);display:grid;gap:2px;font:calc(12.5px * var(--ui-scale,1)) ui-monospace,SFMono-Regular,Menlo,monospace;text-align:left}
+.ship-files small{font-family:inherit;color:var(--mute)}
+.ship-peek{text-align:left;font-size:calc(12.5px * var(--ui-scale,1))}
+.ship-peek pre{max-height:200px;overflow:auto;white-space:pre-wrap;margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--soft);font-size:calc(12px * var(--ui-scale,1))}
+
