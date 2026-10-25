@@ -50,7 +50,7 @@ test("C-22: 게이트 장면의 네 / 아니요는 채팅의 칩 둘(y · n 키)
   assert.match(app, /const FIXED_ACTS = \["qwin-quest"\];/, "'공책 보기'는 답이 아니라 아랫줄(2026-10-22)");
   assert.match(app, /<div class="opts fixed">\$\{more\.map\(chip\)/, "늘 있는 칩(바뀐 작업 · 어디쯤 · 알림 · 도전과제)은 아랫줄 한 줄(2026-10-22)");
   for (const gone of ['class="cmds', "XP_EACH", "levelCard(", "pathsFor(", 'class="xp']) assert.ok(!app.includes(gone), `${gone}가 없어야`);
-  assert.match(app, /\(LV \$\{lv\}\)/, "숫자 레벨은 설정 창에만(둘째 레프런스)");
+  assert.match(app, /<b>LV \$\{lv\}<\/b>/, "숫자 레벨은 설정 판에만(둘째 레프런스 — 2026-10-25 설정 창이 섬 안의 판으로)");
   assert.ok(!/\.lvc\b/.test(css), "옛 레벨 오버레이 CSS가 없다");
 });
 

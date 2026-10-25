@@ -173,6 +173,7 @@ test("설정의 '프로젝트 바꾸기'는 처음 설정을 프로젝트 칸부
     await page.keyboard.press("Escape"); await wait(300);   // 처음 설정을 닫고(나중에)
     await page.evaluate(() => { window.floeApp.cloneProject = async (t) => { window.__calls.push(["clone", t]); return { ok: true, name: "test-1", where: "~/Floe/test-1", made: false, repo: "gamercross/test-1", config: true }; }; });
     await click(page, "[data-act=settings]");
+    await click(page, "[data-act=set-tab][data-tab=keep]");   // 설정 판의 기록 탭(2026-10-25)
     await click(page, "[data-act=setup-project]");
     await page.waitForSelector("#floe-setup .su", { timeout: 5000 });
     assert.equal(await title(page), "어디서 만들까요?");

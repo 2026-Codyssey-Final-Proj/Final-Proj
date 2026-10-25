@@ -389,9 +389,15 @@
   const modeBadge = () => (st.mode === "live"
     ? `<span class="badge live">진짜 AI(Claude)가 봐요${st.tokens ? ` · 지난번 읽고 쓴 양 약 ${st.tokens.toLocaleString()}토큰` : ""}</span>`
     : `<span class="badge fix">연습용 예시예요 — 진짜 AI가 아니에요</span>`);
-  // 설정 — 보기 방식, Claude Code·Codex 연결 상태, 자동으로 살펴보기, 소리, 기록. PC·iPhone 모두 톱니 뒤에
-  // 설정 — 묶음별로 나눠 한눈에(6.2.0, 이재엽 2026-10-19 "설정창도 직관적으로"): 연결 · 보기 · 알림 기록 · 느낀 점 · 기록. PC에서는 섬 옆(오른쪽)에 열린다(settingsPop · .nav.side)
-  // '플로로와 나' 카드는 뺐다(2026-10-24 두승현 — 설정 창 머리의 플로로 · 작업실 · 칭호와 겹침). 처음 만난 날(st.since)은 저장만 남긴다
+  // 설정 — 묶음별로 나눠 한눈에(6.2.0, 이재엽 2026-10-19 "설정창도 직관적으로"): 연결 · GitHub · 토큰 · 보기 · 알림 · 느낀 점 · 기록. PC·iPhone 모두 톱니 뒤에
+  // '플로로와 나' 카드는 뺐다(2026-10-24 두승현 — 설정 창 머리와 겹침). 처음 만난 날(st.since)은 저장만 남긴다
+  // 설정 칸 조각 — 묶음 · 한 줄(이름 + 작은 설명) · 단추 고르기 · 동그라미 고르기 · 상태 불 한 줄(2026-10-25 두승현 리팩토링: 같은 HTML을 칸마다 따로 찍던 것을 모음)
+  const sgrp = (ic, title, body) => `<section class="sgrp"><h3 class="sg-h">${ic}${title}</h3>${body}</section>`;
+  const srow = (label, control, small = "") => `<div class="srow"><span>${label}${small ? `<small>${small}</small>` : ""}</span>${control}</div>`;
+  const pick = (label, items, cur, act) => `<span class="pick" role="group" aria-label="${label}">${items.map(([v, name]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${v === cur}">${name}</button>`).join("")}</span>`;
+  const radios = (name, label, items, cur, tail = "") => `<span class="row tiers" role="radiogroup" aria-label="${label}">${items.map(([v, text]) =>
+    `<label class="chk"><input type="radio" name="${name}" data-act="${name}" value="${v}" ${cur === v ? "checked" : ""}>${text}</label>`).join("")}${tail}</span>`;
+  const ledRow = (led, text, tail = "") => `<div class="row"><span class="led${led ? ` ${led}` : ""}"></span><span class="grow">${text}</span>${tail}</div>`;
   const SG = {
     link: icon('<path d="M10 14a5 5 0 0 1 0-7l2-2a5 5 0 0 1 7 7l-1 1"></path><path d="M14 10a5 5 0 0 1 0 7l-2 2a5 5 0 0 1-7-7l1-1"></path>', 14),
     eye: icon('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>', 14),
@@ -419,30 +425,31 @@
   }
   const GH_CLI = "https://cli.github.com";
   function githubGroup() {
-    if (!canLive) return sgrp(SG.git, "GitHub", `<span>서버로 열면(앱 · floe.js) 연결한 프로젝트 폴더가 GitHub 저장소와 이어졌는지 보여요. Floe는 GitHub 비밀번호 · 토큰을 받지 않아요.</span>`);
+    const box = (body) => sgrp(SG.git, "GitHub", body);
+    if (!canLive) return box(`<span>서버로 열면(앱 · floe.js) 연결한 프로젝트 폴더가 GitHub 저장소와 이어졌는지 보여요. Floe는 GitHub 비밀번호 · 토큰을 받지 않아요.</span>`);
     if (!st.gh && !ghLoading) setTimeout(loadGithub, 0);
     const g = st.gh;
     const again = `<button type="button" class="btn" data-act="gh-reload">다시 확인</button>`;
-    if (!g) return sgrp(SG.git, "GitHub", `<div class="row"><span class="led"></span><span class="grow">확인하는 중…</span></div>`);
-    if (!g.ok) return sgrp(SG.git, "GitHub", `<div class="row"><span class="led off"></span><span class="grow">서버에 닿지 않았어요</span>${again}</div>`);
-    const cli = !g.gh.found ? `<div class="row"><span class="led off"></span><span class="grow">GitHub CLI(gh)가 없어요 — 설치하면 저장소 만들기를 Claude Code에 맡길 수 있어요</span><a class="btn" href="${GH_CLI}" target="_blank" rel="noopener">설치 안내</a></div>`
-      : !g.gh.signedIn ? `<div class="row"><span class="led off"></span><span class="grow">GitHub에 로그인이 필요해 보여요 — 터미널에서 <code>gh auth login</code> 한 번</span></div>`
-      : `<div class="row"><span class="led on"></span><span class="grow">GitHub CLI에 로그인됨</span></div>`;
+    if (!g) return box(ledRow("", "확인하는 중…"));
+    if (!g.ok) return box(ledRow("off", "서버에 닿지 않았어요", again));
+    const cli = !g.gh.found ? ledRow("off", "GitHub CLI(gh)가 없어요 — 설치하면 저장소 만들기를 Claude Code에 맡길 수 있어요", `<a class="btn" href="${GH_CLI}" target="_blank" rel="noopener">설치 안내</a>`)
+      : !g.gh.signedIn ? ledRow("off", "GitHub에 로그인이 필요해 보여요 — 터미널에서 <code>gh auth login</code> 한 번")
+      : ledRow("on", "GitHub CLI에 로그인됨");
     const where = g.project ? `${esc(g.project)} 폴더` : "프로젝트 폴더";
     let repo;
     if (g.why === "folder") repo = `<span>작업 폴더를 아직 몰라요 — 처음 설정의 '프로젝트'나 위의 '프로젝트 폴더 연결…'로 골라요.</span>`;
     else if (g.why === "no-git") repo = `<span>이 컴퓨터에 git이 없어요 — Claude Code에 "git 설치를 도와줘"라고 물어봐요.</span>`;
-    else if (g.remote && g.remote.kind === "github") repo = `<div class="row"><span class="led on"></span><span class="grow">${where} → <b>${esc(g.remote.owner)}/${esc(g.remote.repo)}</b></span><a class="btn" href="${esc(g.remote.web)}" target="_blank" rel="noopener">GitHub에서 열기</a></div>
+    else if (g.remote && g.remote.kind === "github") repo = `${ledRow("on", `${where} → <b>${esc(g.remote.owner)}/${esc(g.remote.repo)}</b>`, `<a class="btn" href="${esc(g.remote.web)}" target="_blank" rel="noopener">GitHub에서 열기</a>`)}
       <span class="meta">기록 · 저장은 이 저장소의 README와 커밋으로 남아요. 올리는 일은 Claude Code가 하고, Floe는 읽기만 해요.</span>`;
-    else if (g.remote) repo = `<div class="row"><span class="led"></span><span class="grow">${where}는 GitHub가 아닌 곳과 이어져 있어요 — 그대로 써도 되고, 책(README)은 똑같이 읽혀요.</span></div>`;
+    else if (g.remote) repo = ledRow("", `${where}는 GitHub가 아닌 곳과 이어져 있어요 — 그대로 써도 되고, 책(README)은 똑같이 읽혀요.`);
     else {
       const can = g.gh.found && g.gh.signedIn, live = st.mode === "live";
-      repo = `<div class="row"><span class="led off"></span><span class="grow">${where}는 ${g.why === "not-repo" ? "아직 git 저장소가 아니에요" : "아직 GitHub 저장소와 이어지지 않았어요"}</span></div>
-      ${srow("공개 범위", `<span class="pick" role="group" aria-label="새 저장소의 공개 범위">${[["private", "비공개"], ["public", "공개"]].map(([v, n]) => `<button type="button" data-act="gh-vis" data-v="${v}" aria-pressed="${st.ghVis === v}">${n}</button>`).join("")}</span>`)}
+      repo = `${ledRow("off", `${where}는 ${g.why === "not-repo" ? "아직 git 저장소가 아니에요" : "아직 GitHub 저장소와 이어지지 않았어요"}`)}
+      ${srow("공개 범위", pick("새 저장소의 공개 범위", [["private", "비공개"], ["public", "공개"]], st.ghVis, "gh-vis"))}
       <div class="row"><button type="button" class="btn pri" data-act="gh-create" ${can && live ? "" : "disabled"}>저장소 만들어 달라고 Claude Code에 맡기기</button></div>
       <span class="meta">${!can ? "위의 GitHub CLI 준비가 먼저예요. " : !live ? "보기 방식을 '진짜 AI'로 바꾸면 맡길 수 있어요(Claude Code가 움직여요). " : ""}README 첫 장을 만들고 .env 같은 비밀값 파일은 빼고 올려요. 강제 푸시 · 지우기는 하지 않아요.</span>`;
     }
-    return sgrp(SG.git, "GitHub", `${cli}${repo}${st.ghNote ? `<span class="meta" role="status">${esc(st.ghNote)}</span>` : ""}<div class="row"><span class="grow"></span>${again}</div>`);
+    return box(`${cli}${repo}${st.ghNote ? `<span class="meta" role="status">${esc(st.ghNote)}</span>` : ""}<div class="row"><span class="grow"></span>${again}</div>`);
   }
   // 토큰 칸(2026-10-24, 이재엽 "테스트를 진행하면서 토큰값도 계산을 할거야") — 서버의 토큰 장부(/api/usage의 ledger, tokens.js)를 보이기만 한다.
   // Floe의 AI와 Claude Code에 맡긴 일을 따로, 비용은 Claude Code가 알려 준 값만. '새로 재기'는 테스트를 시작할 때 0부터(POST /api/usage/reset)
@@ -451,10 +458,11 @@
     if (!canLive) return "";
     if (!usage && !usageLoading) setTimeout(fetchUsage, 0);
     const v = usage && window.NavTokenView && window.NavTokenView.ledgerView ? window.NavTokenView.ledgerView(usage.ledger) : null;
-    if (!v) return sgrp(SG.box, "토큰", `<span>${!usage ? "확인하는 중…" : usage.ok === false ? "서버에 닿지 않았어요 — 설정을 다시 열면 다시 물어요" : "이 서버는 아직 토큰을 세지 않아요"}</span>`);
+    const box = (body) => sgrp(SG.box, "토큰", body);
+    if (!v) return box(`<span>${!usage ? "확인하는 중…" : usage.ok === false ? "서버에 닿지 않았어요 — 설정을 다시 열면 다시 물어요" : "이 서버는 아직 토큰을 세지 않아요"}</span>`);
     const reset = `<button type="button" class="btn" data-act="tokens-reset">새로 재기</button>`;
-    if (v.empty) return sgrp(SG.box, "토큰", `<div class="row"><span class="grow">${v.since} 뒤로 아직 쓴 토큰이 없어요. Floe의 AI를 부르거나 Claude Code에 일을 맡기면 여기 쌓여요.</span>${reset}</div><span class="meta">${esc(v.note)}</span>`);
-    return sgrp(SG.box, "토큰", `<div class="row"><span class="grow"><b>${esc(v.total)}</b> <span class="meta">${v.since}부터</span></span>${reset}</div>
+    if (v.empty) return box(`<div class="row"><span class="grow">${v.since} 뒤로 아직 쓴 토큰이 없어요. Floe의 AI를 부르거나 Claude Code에 일을 맡기면 여기 쌓여요.</span>${reset}</div><span class="meta">${esc(v.note)}</span>`);
+    return box(`<div class="row"><span class="grow"><b>${esc(v.total)}</b> <span class="meta">${v.since}부터</span></span>${reset}</div>
       ${v.rows.map((r) => srow(esc(r.name), `<span>${esc(r.value)}</span>`)).join("")}
       <ul class="tok-runs">${v.recent.map((line) => `<li class="meta">${esc(line)}</li>`).join("")}</ul><span class="meta">${esc(v.note)}</span>`);
   }
@@ -462,38 +470,42 @@
     try { const j = await (await fetch("/api/usage/reset", { method: "POST" })).json(); if (j && j.ok && usage) usage = { ...usage, ledger: j.ledger }; } catch {}
     render();
   }
-  const sgrp = (ic, title, body) => `<section class="sgrp"><h3 class="sg-h">${ic}${title}</h3>${body}</section>`;
-  const srow = (label, control) => `<div class="srow"><span>${label}</span>${control}</div>`;
-  function settingsBody() {
+  // 묶음 하나씩 — 휴대폰은 settingsBody로 전부 이어서, PC 설정 판(settingsPane)은 고른 탭의 것만 부른다
+  function linkGroup() {
     // 연결 칸 — 서버로 열었으면 보기 방식과 상관없이 보인다(연습 중에도 알림은 들어오니까). '연결 끊기'를 누르면 들어온 알림을 받지 않는다
-    const link = canLive ? sgrp(SG.link, "연결", `<div class="row"><span class="led ${conn() === "on" ? "on" : conn()}"></span><span class="grow">${st.unplug
+    const link = canLive ? sgrp(SG.link, "연결", `${ledRow(conn(), st.unplug
         ? "연결을 끊었어요 — 작업 알림이 와도 글 칸을 채우거나 살펴보지 않아요"
         : st.feed.at ? `${toolName(st.feed.tool)}와 연결됨 · ${esc(st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}`
-        : "Claude Code·Codex 알림을 기다리는 중 — connect.js로 연결해 주세요"}</span>
-        <button type="button" class="btn" data-act="unplug" aria-pressed="${st.unplug}">${st.unplug ? "다시 연결" : "연결 끊기"}</button></div>
+        : "Claude Code·Codex 알림을 기다리는 중 — connect.js로 연결해 주세요",
+        `<button type="button" class="btn" data-act="unplug" aria-pressed="${st.unplug}">${st.unplug ? "다시 연결" : "연결 끊기"}</button>`)}
       ${st.mode === "live" ? `<label class="chk"><input type="checkbox" data-act="auto" ${st.auto ? "checked" : ""} ${st.unplug ? "disabled" : ""}>AI 코딩 도구가 작업을 마치면 자동으로 살펴보기</label>
       <span>켜면 그때마다 최근 작업 대화가 AI(Claude)로 보내져요. 비밀번호처럼 보이는 게 있으면 보내기 전에 멈춰요.</span>` : ""}${
       // 앱 안에서는 폴더 고르기로 훅을 더하고 뺀다(터미널의 floe.js · connect.js와 같은 일) — preload.js가 열어 준 셋만
       window.floeApp ? `<div class="row"><button type="button" class="btn" data-act="app-connect">프로젝트 폴더 연결…</button><button type="button" class="btn" data-act="app-disconnect">연결 빼기…</button><button type="button" class="btn" data-act="app-settings">.env 폴더 열기</button></div>` : ""}`) : "";
+    return link;
+  }
+  function keepGroup() {
     // 처음 설정(setup.js) 다시 하기 — Claude Code / API 키를 바꿀 때 (2026-10-19)
     const keep = sgrp(SG.box, "기록 · 처음 설정", `${window.FloeSetup ? `<div class="row"><span class="grow">AI를 어떻게 부를지(Claude Code / API 키) 다시 고를 수 있어요.</span><button class="btn" data-act="setup">처음 설정 다시 하기</button></div>
       <div class="row"><span class="grow">다른 프로젝트로 — 내 GitHub 저장소를 가져오거나 새로 만들어요(C-31).</span><button class="btn" data-act="setup-project">프로젝트 바꾸기</button></div>` : ""}<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`);
+    return keep;
+  }
+  function viewGroup() {
     // 만드는 크기 — 진짜 AI에게 물을 때 같이 보낸다(tier). 고르는 건 사용자
-    const tier = srow("만드는 크기", `<span class="row tiers" role="radiogroup" aria-label="만드는 크기">${TIERS.map(([v, label]) =>
-      `<label class="chk"><input type="radio" name="tier" data-act="tier" value="${v}" ${st.tier === v ? "checked" : ""}>${label}</label>`).join("")}${termTag(st.tier)}</span>`);
+    const tier = srow("만드는 크기", radios("tier", "만드는 크기", TIERS, st.tier, termTag(st.tier)));
     const view = sgrp(SG.eye, "보기", `${srow("보기 방식", `<select data-act="mode" aria-label="보기 방식">
         <option value="fixture" ${st.mode === "fixture" ? "selected" : ""}>연습용 예시</option>
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select>`)}
       ${srow("글자 크기", `<select data-act="text-size" aria-label="글자 크기">${TEXT_SIZES.map(([v, name]) =>
         `<option value="${v}" ${st.textSize === v ? "selected" : ""}>${name}</option>`).join("")}</select>`)}
       ${srow("접히기까지", `<span class="row tiers fold" role="group" aria-label="펼친 섬이 접히기까지">${FOLD_CHOICES.map((v) => `<button type="button" class="b fold-opt" data-act="fold-delay" data-i="${v}" aria-pressed="${foldSec === v}">${v}초</button>`).join("")}<span class="meta">마우스가 나간 뒤 — 테두리 빛이 아래에서 만나면 접혀요</span></span>`)}
-      ${tier}${srow("버튼 말", `<span class="row tiers" role="radiogroup" aria-label="명령 칸의 말">${[["work", "일 말 (맡기기 · 살피기)"], ["game", "게임 말 (공격 · 행동)"]].map(([v, label]) =>
-        `<label class="chk"><input type="radio" name="words" data-act="words" value="${v}" ${st.words === v ? "checked" : ""}>${label}</label>`).join("")}</span>`)}
+      ${tier}${srow("버튼 말", radios("words", "명령 칸의 말", [["work", "일 말 (맡기기 · 살피기)"], ["game", "게임 말 (공격 · 행동)"]], st.words))}
       <label class="chk"><input type="checkbox" data-act="sound" ${st.sound ? "checked" : ""}>플로로가 작은 소리 내기 (쓰다듬을 때, 다 했을 때)</label>
       <div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>`);
-    const log = sgrp(SG.bell, "알림 · 느낀 점", `${alertLog()}${notesCard()}`);
-    return `${link}${githubGroup()}${tokenGroup()}${view}${log}${keep}`;
+    return view;
   }
+  const logGroup = () => sgrp(SG.bell, "알림 · 느낀 점", `${alertLog()}${notesCard()}`);
+  const settingsBody = () => `${linkGroup()}${githubGroup()}${tokenGroup()}${viewGroup()}${logGroup()}${keepGroup()}`;
   // 알림 기록(FR-7) — [때 · 도구 · 무슨 알림 · 서버가 준 한 줄 · 이 알림으로 끝낸 할 일]. 비밀번호처럼 보이는 글은 숨긴 채로 남는다(alerts.js)
   const clock = (t) => (Number.isFinite(t) ? new Date(t).toLocaleTimeString("ko-KR", { hour: "numeric", minute: "2-digit" }) : "");
   const alertItem = (a) => `<li><span class="meta">${clock(a.at)}</span> <b>${esc(toolName(a.tool))}${a.sim ? " · 연습 알림" : ""}</b> ${esc(A.KIND[a.kind] || "알림을 보냈어요")}${
@@ -1108,23 +1120,30 @@
       const host = liveCat(); if (host && !STILL) C.burst(...center(host), "star", 14, 300);
     }, STILL ? 50 : 1200);
   }
-  // 설정 창(C-22, 넷째 레프런스) — '○○ 님의 작업실' + 플로로 · 초기 개발자 → 중급자 → 상급자 · 서재로 가기 · 창 줄(이름 · 자리 · 퀘스트 창) + 전부터 있던 설정 묶음(settingsBody)
-  function setwinHTML() {
-    if (!st.settings || !QU) return "";
+  // 설정 판(2026-10-25 두승현 — 옆에 따로 뜨던 설정 창을 섬 안으로: 채팅 자리를 통째로 바꿔 끼운다, 알림 · AI 진행 판과 같은 틀).
+  //   왼쪽 칸 = 플로로 · 작업실 · 칭호 · 등급, 오른쪽 = '← 채팅으로' · 탭(묶음 하나씩) · 그 묶음. Esc · 톱니 · '채팅으로'로 닫는다
+  let setTab = "room";
+  const SET_TABS = () => [["room", "작업실"], ["link", "연결"], ["view", "보기"], ...(canLive ? [["token", "토큰"]] : []), ["log", "알림 · 느낀 점"], ["keep", "기록"]];
+  function roomGroup() {
+    return `${SHELF_ON ? `<button type="button" class="golib" data-act="lib-enter"><span class="bk">${I.lib}</span><span>서재로 가기<small>끝낸 책 · 서고 — 지금 책은 퀘스트 창의 서고 탭에</small></span></button>` : ""}
+      ${sgrp(I.scroll, "작업실 · 퀘스트 창", `${srow("이름", `<input class="name-in" data-act="name" value="${esc(userName)}" maxlength="20" placeholder="이름" aria-label="이름">`, "작업실 이름에 보여요 · 이 컴퓨터에만")}
+        ${srow("퀘스트 창 자리", pick("퀘스트 창 자리", [["right", "왼쪽"], ["left", "오른쪽"]], side, "side"), "섬 옆에 떠요")}
+        ${srow("퀘스트 창 처음 크기", pick("퀘스트 창 처음 크기", [["s", "S"], ["m", "M"], ["l", "L"]], qsize, "qsize"))}
+        <label class="chk"><input type="checkbox" data-act="qauto" ${qauto ? "checked" : ""}>퀘스트를 받으면 퀘스트 창이 바로 뜨기</label>`)}
+      ${sgrp(coin(), "꾸미기", `<span class="closet">${st.owned.map(QU.itemOf).filter(Boolean).map((it) => `<button type="button" data-act="wear" data-v="${it.id}" aria-pressed="${st.wear[it.slot] === it.id}">${it.emoji} ${esc(it.name)}</button>`).join("")}<button type="button" data-act="gacha">조개 열기 <span class="shells">${coin()}${st.shells}</span></button></span>
+        <span class="meta">뽑기로 얻은 것 · 조개 ${st.shells}개</span>`)}`;
+  }
+  const SET_PART = { room: roomGroup, link: () => `${linkGroup()}${githubGroup()}`, view: viewGroup, token: tokenGroup, log: logGroup, keep: keepGroup };
+  function settingsPane() {
+    deskKeys.Escape = { act: "settings" };
+    const tabs = SET_TABS(); if (!tabs.some(([id]) => id === setTab)) setTab = "room";
     const lv = level, bi = QU.bandOf(lv), nx = QU.BANDS[bi + 1];
-    const pick = (label, items, cur, act, small) => `<div class="srow"><span>${label}${small ? `<small>${small}</small>` : ""}</span><span class="pick" role="group" aria-label="${label}">${items.map(([v, name]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${v === cur}">${name}</button>`).join("")}</span></div>`;
-    return `<div class="win setwin" role="dialog" aria-label="설정 창"><div class="wh"><span class="ttl">설정</span><span class="grow"></span><button type="button" class="ti" data-act="settings" aria-label="설정 창 닫기" title="닫기 (Esc)">${X_ICON}</button></div>
-      <div class="wbody">
-        <div class="pcard"><div><div class="name">${esc(userName || "나")} 님의 작업실</div><small>${esc(project() || "아직 프로젝트가 없어요")}</small><small>칭호 · ${esc(QU.rankOf(Math.min(lv, 7)))} (LV ${lv})</small></div><div class="ring">${petCat(st.finished ? "happy" : "look", 88)}</div></div>
-        <div class="bands">${QU.BANDS.map((b, i) => `<span class="t${i === bi ? " on" : i < bi ? " done" : ""}">${b[0]}</span>${i < QU.BANDS.length - 1 ? "<i>→</i>" : ""}`).join("")}<small>${nx ? `레벨 ${nx[1]}이 되면 ${nx[0]} — 관문마다 +1, 프로젝트를 바꿔도 그대로` : "상급자예요 — 레벨은 계속 올라요"}</small></div>
-        ${SHELF_ON ? `<button type="button" class="golib" data-act="lib-enter"><span class="bk">${I.lib}</span><span>서재로 가기<small>끝낸 책 · 서고 — 지금 책은 퀘스트 창의 서고 탭에</small></span></button>` : ""}
-        <section class="sgrp"><h3 class="sg-h">${I.scroll}창 · 퀘스트</h3>
-          <div class="srow"><span>이름<small>작업실 이름에 보여요 · 이 컴퓨터에만</small></span><input class="name-in" data-act="name" value="${esc(userName)}" maxlength="20" placeholder="이름" aria-label="이름"></div>
-          ${pick("설정 창 자리", [["left", "왼쪽"], ["right", "오른쪽"]], side, "side", "퀘스트 창은 반대쪽에 떠요")}
-          ${pick("퀘스트 창 처음 크기", [["s", "S"], ["m", "M"], ["l", "L"]], qsize, "qsize")}
-          <label class="chk"><input type="checkbox" data-act="qauto" ${qauto ? "checked" : ""}>퀘스트를 받으면 퀘스트 창이 바로 뜨기</label>
-          <div class="srow"><span>꾸미기<small>뽑기로 얻은 것 · 조개 ${st.shells}개</small></span><span class="closet">${st.owned.map(QU.itemOf).filter(Boolean).map((it) => `<button type="button" data-act="wear" data-v="${it.id}" aria-pressed="${st.wear[it.slot] === it.id}">${it.emoji} ${esc(it.name)}</button>`).join("")}<button type="button" data-act="gacha">조개 열기 <span class="shells">${coin()}${st.shells}</span></button></span></div></section>
-        ${settingsBody()}</div></div>`;
+    return `<section class="mc base pane setp tone-gray" aria-label="설정"><div class="who">${petCat(st.finished ? "happy" : "look", 92)}<b class="pj">${esc(userName || "나")} 님의 작업실</b><span class="tl">${esc(project() || "아직 프로젝트가 없어요")}</span>
+        <span class="rk">칭호 · ${esc(QU.rankOf(Math.min(lv, 7)))} <b>LV ${lv}</b></span>
+        <div class="bands">${QU.BANDS.map((b, i) => `<span class="t${i === bi ? " on" : i < bi ? " done" : ""}">${b[0]}</span>`).join("")}<small>${nx ? `레벨 ${nx[1]}이 되면 ${nx[0]} — 관문마다 +1, 프로젝트를 바꿔도 그대로` : "상급자예요 — 레벨은 계속 올라요"}</small></div></div>
+      <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="settings" title="채팅으로 돌아가기 (Esc)">${I.back}채팅으로</button><b class="grow">설정</b></div>
+        <div class="wtabs" role="tablist" aria-label="설정 묶음">${tabs.map(([id, label]) => `<button type="button" role="tab" data-act="set-tab" data-tab="${id}" aria-selected="${setTab === id}">${label}</button>`).join("")}</div>
+        <div class="set-body" role="tabpanel" aria-label="${esc((tabs.find(([id]) => id === setTab) || tabs[0])[1])}">${SET_PART[setTab]()}</div></div></section>`;
   }
 
   // 단계 문서 — 왼쪽 플로로와 버튼, 오른쪽 글. 초안은 AI가 먼저, 고치는 건 사용자, 다시 봐 주는 건 AI, 확정은 사용자만. 2026-10-20(C-16): 도서관의 책 안에서 연다(deskLib → bookDocs)
@@ -1672,13 +1691,12 @@
   }
   if (canLive) setInterval(pollApprovals, 2000);
   if (st.plan && FP && FP.running(st.plan)) setTimeout(() => (planLive() ? watchPlanTask() : (st.plan = FP.failed(st.plan, FP.running(st.plan)))), 0);   // 다시 켰는데 맡김 중인 줄이 있으면 서버에 다시 묻는다(연습이면 다시 맡길 수 있게)
-  // 섬(C-22): 위 줄 + [알림 · AI 진행 판 | 채팅]. 창 둘은 섬 앞뒤에(.nav.side — 가로로 나란히): 설정 창은 고른 쪽(side), 퀘스트 창은 반대쪽
+  // 섬(C-22): 위 줄 + [설정 판 | 알림 · AI 진행 판 | 채팅]. 퀘스트 창은 섬 옆에(.nav.side — 가로로 나란히): side의 반대쪽
   function islandHTML(enter) {
-    const body = st.pane ? basePane(st.pane) : chatCard(momentToday());
+    const body = st.settings && QU ? settingsPane() : st.pane ? basePane(st.pane) : chatCard(momentToday());
     const isl = `<div class="isl${enter}">${topbar()}<div class="isl-body">${body}</div>${countdown()}${gachaHTML()}</div>`;
-    if (WINS) return isl;   // 앱: 창 둘은 따로 뜬다(syncWins)
-    const left = side === "left" ? setwinHTML() : qwinHTML(), right = side === "left" ? qwinHTML() : setwinHTML();
-    return `${left}${isl}${right}`;
+    if (WINS) return isl;   // 앱: 퀘스트 창은 따로 뜬다(syncWins)
+    return side === "left" ? `${isl}${qwinHTML()}` : `${qwinHTML()}${isl}`;   // 퀘스트 창은 side의 반대쪽(설정이 섬 안으로 들어온 뒤에도 같은 값)
   }
   // ── 앱의 옆 창 둘(C-22): 섬이 창의 내용을 그려 보내고, 창의 누름은 돌아온다(win.js). 열림 · 닫힘 · 내용이 바뀐 것만 보낸다 ──
   const winOpen = { settings: false, quest: false }, winHtml = { settings: "", quest: "" };
@@ -1686,22 +1704,22 @@
   const winSize = (kind) => (kind === "quest" ? QU.SIZES[qsize] : [Math.round(380 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1)), 760]);
   function syncWins() {
     if (!WINS || !QU) return;
-    for (const [kind, on, html] of [["settings", st.settings, st.settings ? setwinHTML() : ""], ["quest", st.qwin, st.qwin ? qwinHTML() : ""]]) {
+    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() : ""]]) {
       if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
       else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
       else if (on && html !== winHtml[kind]) { winHtml[kind] = html; window.floeApp.sendWin(kind, html); }
     }
   }
-  // 자리를 바꾸면(설정 창 왼쪽 ↔ 오른쪽) 열린 창을 닫았다가 새 자리에 다시 연다
+  // 자리를 바꾸면(퀘스트 창 왼쪽 ↔ 오른쪽) 열린 창을 닫았다가 새 자리에 다시 연다
   function replaceWins() {
     if (!WINS) return;
-    for (const kind of ["settings", "quest"]) if (winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
+    for (const kind of ["quest"]) if (winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
   }
   if (WINS) {
     window.floeApp.onWinClosed((kind) => {
       if (winClosing[kind]) { winClosing[kind] = false; return; }   // 내가 닫은 것
       winOpen[kind] = false; winHtml[kind] = "";
-      if (kind === "settings" && st.settings) set({ settings: false }); else if (kind === "quest" && st.qwin) set({ qwin: false });
+      if (kind === "quest" && st.qwin) set({ qwin: false });
     });
     window.floeApp.onWinEvent((p) => winEvent(p));
   }
@@ -1713,7 +1731,7 @@
     if (p.type === "click") { if (p.bv) return bvClick(el); return clickAct(el); }
     if (p.type === "change") return onChange(el);
     if (p.type === "input") return onInput(el);
-    if (p.type === "key" && p.key === "Escape") { if (p.kind === "settings" && st.settings) return set({ settings: false }); if (deskKeys.Escape && st.ui === "home" && p.kind === "quest") return run(deskKeys.Escape); if (p.kind === "quest" && st.qwin) return set({ qwin: false }); }
+    if (p.type === "key" && p.key === "Escape") { if (deskKeys.Escape && st.ui === "home" && p.kind === "quest") return run(deskKeys.Escape); if (p.kind === "quest" && st.qwin) return set({ qwin: false }); }
   }
   // ── 섬의 움직임(C-14, 2026-10-20 — 규칙 · 숫자는 morph.js) ──
   // 바탕(배경 · 그림자)을 가진 요소 — 섬(.isl) · 한 줄(.pill) · 띠(.strip — 바탕 없음)
@@ -2369,7 +2387,8 @@
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     qsize: (i, el) => { if (!QU || !el) return; qsize = QU.sizeOf(el.dataset.v); writeLS(QSIZE_KEY, qsize); if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", QU.SIZES[qsize]); render(); },
-    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); replaceWins(); render(); say(side === "left" ? "설정 창은 왼쪽, 퀘스트 창은 오른쪽이에요" : "설정 창은 오른쪽, 퀘스트 창은 왼쪽이에요"); },
+    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); replaceWins(); render(); say(side === "left" ? "퀘스트 창은 섬 오른쪽에 떠요" : "퀘스트 창은 섬 왼쪽에 떠요"); },
+    "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
     // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기
     base: () => { setPlace("home"); set({ settings: false, pane: "" }); },   // 집 — 기본 화면으로, 열어 둔 판도 닫는다
     "go-vibe": () => { setPlace("vibe"); set({ tab: "today", settings: false }); },
