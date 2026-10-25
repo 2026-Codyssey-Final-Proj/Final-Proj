@@ -308,6 +308,7 @@ test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본
     await page.evaluate(() => localStorage.removeItem("floe:fold-delay"));
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1"), { waitUntil: "load" }); await wait(400);
     await page.click("[data-act=settings]"); await wait(300);
+    await page.click("[data-act=set-tab][data-tab=view]"); await wait(200);   // 설정 판의 보기 탭(2026-10-25)
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".fold-opt")].map((x) => Number(x.dataset.i))), [5, 10, 15, 30, 60]);
     assert.equal(await page.evaluate(() => document.querySelector('.fold-opt[aria-pressed="true"]')?.dataset.i), "15", "기본 15초(지금 값)");
     await page.click('.fold-opt[data-i="5"]'); await wait(300);
@@ -322,6 +323,7 @@ test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본
     // 새로 고침해도 5초
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1"), { waitUntil: "load" }); await wait(400);
     await page.click("[data-act=settings]"); await wait(200);
+    await page.click("[data-act=set-tab][data-tab=view]"); await wait(200);
     assert.equal(await page.evaluate(() => document.querySelector('.fold-opt[aria-pressed="true"]')?.dataset.i), "5");
   } finally { await browser.close(); }
 });
@@ -469,17 +471,21 @@ test("C-22: 처음 실행 — 무엇을 만들지 말하면 '퀘스트를 시작
     const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".tb .shells span")?.textContent, ev: !!document.querySelector(".qwin .ev") }));
     assert.ok(after.band.startsWith("2단계 ·") && after.shells === "1" && after.ev, JSON.stringify(after));
     assert.equal(await page.evaluate(() => localStorage.getItem("floe:level")), null, "연습 모드의 관문은 영구 레벨에 남기지 않는다(C-28 — 이 켜짐 동안만 오른다, 칭호는 위처럼 바뀐다)");
-    // 설정 창 — 왼쪽(기본)이면 [설정][섬][퀘스트], 오른쪽을 고르면 [퀘스트][섬][설정]. 이 컴퓨터에 남는다
+    // 설정 — 2026-10-25(두승현): 옆 창이 아니라 섬 안의 판(채팅 자리를 바꿔 끼움). 퀘스트 창은 섬 옆 — 기본은 오른쪽, '왼쪽'을 고르면 [퀘스트][섬]. 이 컴퓨터에 남는다
     await page.click("[data-act=settings]"); await wait(300);
-    // 칭호는 섬의 플로로 아래에서 뺐고(2026-10-25) 설정 창 머리에 있다 — 관문을 넘으면 바뀐다
-    assert.ok((await page.evaluate(() => document.querySelector(".setwin .pcard")?.textContent || "")).includes("적어 두는 사람"), "설정 창 머리의 칭호가 바뀐다");
-    const order =() => page.evaluate(() => [...document.querySelectorAll("#nav > *")].filter((x) => !x.classList.contains("shell")).map((x) => (x.classList.contains("setwin") ? "set" : x.classList.contains("qwin") ? "quest" : "isl")));
-    assert.deepEqual(await order(), ["set", "isl", "quest"]);
-    await page.click("[data-act=side][data-v=right]"); await wait(300);
-    assert.deepEqual(await order(), ["quest", "isl", "set"]);
+    assert.ok(await page.$(".isl .setp") && !(await page.$("#nav > .win.setwin")) && !(await page.$(".isl .mc.chat")), "설정은 섬 안 — 채팅 자리에");
+    // 칭호는 섬의 플로로 아래에서 뺐고(2026-10-25) 설정 판 왼쪽 칸에 있다 — 관문을 넘으면 바뀐다
+    assert.ok((await page.evaluate(() => document.querySelector(".setp .who")?.textContent || "")).includes("적어 두는 사람"), "설정 판의 칭호가 바뀐다");
+    const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > *")].filter((x) => !x.classList.contains("shell")).map((x) => (x.classList.contains("qwin") ? "quest" : "isl")));
+    assert.deepEqual(await order(), ["isl", "quest"]);
+    await page.click("[data-act=side][data-v=right]"); await wait(300);   // '왼쪽' 단추 — 값은 그대로 side(퀘스트 창은 그 반대쪽)
+    assert.deepEqual(await order(), ["quest", "isl"]);
     assert.equal(await page.evaluate(() => localStorage.getItem("floe:win-side")), "right");
+    // 탭 — 하나씩 보인다
+    await page.click("[data-act=set-tab][data-tab=view]"); await wait(200);
+    assert.ok(await page.$(".set-body [data-act=mode]") && !(await page.$(".set-body [data-act=name]")), "보기 탭에는 보기 칸만");
     await page.keyboard.press("Escape"); await wait(200);
-    assert.ok(!(await page.$(".setwin")) && await page.$(".qwin"), "Esc는 설정 창부터 닫는다");
+    assert.ok(!(await page.$(".setp")) && await page.$(".isl .mc.chat") && await page.$(".qwin"), "Esc는 설정 판부터 닫고 채팅으로");
     await page.keyboard.press("Escape"); await wait(200);
     assert.ok(!(await page.$(".qwin")), "한 번 더 Esc — 퀘스트 창");
   } finally { await browser.close(); }
@@ -523,11 +529,11 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     await page.click("[data-act=base-back]"); await wait(300);
     // 레벨 — 저장된 3이 설정 창에, 서재로 가는 단추는 없다. 기록을 지우고(새 프로젝트) 다시 열어도 그대로
     await page.click("[data-act=settings]"); await wait(300);
-    assert.ok((await page.evaluate(() => document.querySelector(".setwin .pcard")?.textContent || "")).includes("LV 3"), "설정 창에 레벨 3");
+    assert.ok((await page.evaluate(() => document.querySelector(".setp .who")?.textContent || "")).includes("LV 3"), "설정 판에 레벨 3");
     assert.ok(!(await page.$("[data-act=lib-enter]")), "서재 잠시 뺌 — 서재로 가는 단추가 없다");
     await page.evaluate(() => localStorage.removeItem("navigator-prototype:v1"));
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#start&set=1"), { waitUntil: "load" }); await wait(400);
-    assert.ok((await page.evaluate(() => document.querySelector(".setwin .pcard")?.textContent || "")).includes("LV 3"), "새 프로젝트여도 레벨은 그대로");
+    assert.ok((await page.evaluate(() => document.querySelector(".setp .who")?.textContent || "")).includes("LV 3"), "새 프로젝트여도 레벨은 그대로");
   } finally { await browser.close(); }
 });
 

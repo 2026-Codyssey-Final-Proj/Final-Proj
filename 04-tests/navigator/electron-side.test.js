@@ -109,10 +109,11 @@ test("창 화면(win.html · win.js) — 섬이 보낸 내용을 보이고, 누�
   assert.ok(!/fetch\(|XMLHttpRequest|https?:/.test(js), "창은 밖으로 아무것도 보내지 않는다 — 섬으로만");
 });
 
-test("섬(app.js) — 앱이 창을 열 수 있으면(WINS) 섬 옆의 판 대신 창 둘: 열림 · 닫힘 · 내용이 바뀐 것만 보낸다, 자리를 바꾸면 닫았다 다시 연다, 창의 누름은 섬의 같은 손잡이로, 서고로 가면 닫는다", () => {
+test("섬(app.js) — 앱이 창을 열 수 있으면(WINS) 섬 옆의 판 대신 퀘스트 창(설정은 2026-10-25부터 섬 안의 판): 열림 · 닫힘 · 내용이 바뀐 것만 보낸다, 자리를 바꾸면 닫았다 다시 연다, 창의 누름은 섬의 같은 손잡이로, 서고로 가면 닫는다", () => {
   const app = read("navigator/app.js");
   assert.match(app, /const WINS = !!\(window\.floeApp && window\.floeApp\.openWin\);/);
-  assert.match(app, /if \(WINS\) return isl;   \/\/ 앱: 창 둘은 따로 뜬다\(syncWins\)/);
+  assert.match(app, /if \(WINS\) return isl;   \/\/ 앱: 퀘스트 창은 따로 뜬다\(syncWins\)/);
+  assert.match(app, /for \(const \[kind, on, html\] of \[\["quest", st\.qwin, st\.qwin \? qwinHTML\(\) : ""\]\]\)/, "따로 뜨는 창은 퀘스트 창 하나");
   assert.match(app, /if \(on && !winOpen\[kind\]\) \{ winOpen\[kind\] = true; winHtml\[kind\] = html; window\.floeApp\.openWin\(kind, \{ side, size: winSize\(kind\), html, place: true \}\); \}/);
   assert.match(app, /else if \(on && html !== winHtml\[kind\]\) \{ winHtml\[kind\] = html; window\.floeApp\.sendWin\(kind, html\); \}/, "바뀐 것만");
   assert.match(app, /side = QU\.sideOf\(el\.dataset\.v\); writeLS\(SIDE_KEY, side\); replaceWins\(\); render\(\);/);
