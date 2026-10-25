@@ -792,6 +792,11 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .ln .lt b{font-weight:800}
 .ln .lw{color:#3A2E1C;overflow-wrap:anywhere}
 .ln .lw.empty{color:#6E5F45;font-style:italic}
+/* C-40 퀘스트 창 쉬운 말 — 짧은 이름 아래 쉬운 한 줄, '자세히 보기'를 누르면 원래 할 일 문장 · 용어 */
+.ln .lt .easy{color:#5A4A33;font-size:calc(12.5px * var(--ui-scale,1))}
+.ln .lt .full{color:#6E5F45;font-size:calc(11.5px * var(--ui-scale,1));overflow-wrap:anywhere}
+.qmore{margin:4px 0 2px;color:#5A4A33}
+.qmore:hover{color:#1F5BA8}
 .ln .n{margin-left:auto;color:#6E5F45;font-variant-numeric:tabular-nums;font-size:calc(12.5px * var(--ui-scale,1));display:inline-flex;gap:4px;align-items:center;flex:none}
 .ln input{min-width:0;font:inherit;font-size:calc(13px * var(--ui-scale,1));color:#3A2E1C;background:#fff;border:1.5px solid #B99A4F;border-radius:6px;padding:3px 6px}
 .ln input[type=number]{width:52px}
@@ -1045,4 +1050,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .ship-files small{font-family:inherit;color:var(--mute)}
 .ship-peek{text-align:left;font-size:calc(12.5px * var(--ui-scale,1))}
 .ship-peek pre{max-height:200px;overflow:auto;white-space:pre-wrap;margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--soft);font-size:calc(12px * var(--ui-scale,1))}
-
+/* C-40 예시 셋 — 초안 확인 카드에서 셋 중 하나를 누른다(맨 위가 플로로가 권하는 것) */
+.dalt{list-style:none;margin:6px 0;padding:0;display:grid;gap:6px;text-align:left}
+.dalt button{width:100%;text-align:left;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:calc(13px * var(--ui-scale,1));line-height:1.45;cursor:pointer;overflow-wrap:anywhere}
+.dalt button:hover,.dalt button:focus-visible{border-color:var(--acc);outline:none;box-shadow:0 0 0 3px rgba(47,123,214,.18)}
+.dalt button.rec{border-color:var(--acc)}
+.dalt small{display:block;margin-bottom:2px;font-size:calc(11px * var(--ui-scale,1));font-weight:800;color:var(--acc)}

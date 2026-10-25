@@ -21,6 +21,10 @@ const TIMEOUT_MS = 90_000;
 const FALLBACK_BETA = "server-side-fallback-2026-07-01";
 const OFFICIAL_HOST = "api.anthropic.com";
 const DEFAULTS = { model: "claude-opus-5-5", maxTokens: 2048, effort: "low" };
+// 초안은 빠른 모델로(C-40, 2026-10-26 — 이재엽 "보통길이이고 작업들을 하나씩 하는건데 왜 그냥 넣었을때 보다 너무 느려" · 버튼 "초안은 빠른 모델로"): 단계 초안 · 처음 초안만(meta.fast).
+//   claude -p는 별명(sonnet)과 --effort low, API는 빠른 모델 · 낮은 effort. 바꾸려면 NAV_DRAFT_MODEL. 판정 · 그 밖은 지금 그대로. 중계 서버는 받는 모델만 쓴다(그대로)
+const FAST = { cliModel: "sonnet", model: "claude-sonnet-5-5", effort: "low" };
+const API_ALIAS = { sonnet: "claude-sonnet-5-5", haiku: "claude-haiku-5-5", opus: "claude-opus-5-5" };   // NAV_DRAFT_MODEL에 별명을 넣어도 API에서 쓰이게(2026-10-26 리뷰 — API는 전체 이름만 받는다)
 // 코디세이 중계 서버가 받는 모델(운영팀 목록, 2026-10-17). 중계 서버에서 NAV_MODEL이 없으면 첫 모델을 쓴다 — 공식 기본 모델은 중계 서버에 없다
 const RELAY_MODELS = ["claude-opus-4-8", "claude-opus-4-7"];
 
@@ -164,11 +168,12 @@ function claudeVersion(run = spawnSync) {
 // ── 이 컴퓨터에 로그인된 Claude Code(`claude -p`) — 도구·MCP·설정·대화 기록 없이 글만 판정한다 ──
 // 시스템 안내문은 Claude Code 기본(코딩 도구용) 대신 한 줄 — 바닥값 3,781 → 1,120토큰(2026-10-24 실측, live-check로 일치율 확인)
 const CLI_SYSTEM = "Floe가 보낸 요청에만 답한다. 정해진 JSON 형식을 지킨다.";
-const cliArgs = (schema) => ["-p", "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence",
-  "--system-prompt", CLI_SYSTEM, "--output-format", "json", "--json-schema", JSON.stringify(schema)];
-function callCli(prompt, schema) {
+const cliArgs = (schema, opts = null) => ["-p", "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence",
+  "--system-prompt", CLI_SYSTEM, "--output-format", "json", "--json-schema", JSON.stringify(schema),
+  ...(opts && opts.fast ? ["--model", opts.model || FAST.cliModel, "--effort", FAST.effort] : [])];
+function callCli(prompt, schema, opts = null) {
   return new Promise((resolve) => {
-    const child = spawn("claude", cliArgs(schema), { env: { ...process.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
+    const child = spawn("claude", cliArgs(schema, opts), { env: { ...process.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
     let out = "";
     const timer = setTimeout(() => { child.kill(); resolve({ error: "시간 초과" }); }, TIMEOUT_MS);
     child.stdout.on("data", (d) => (out += d));
@@ -222,13 +227,15 @@ function createCaller({ env = process.env, callCli: cli = callCli, makeClient, m
         : { error: "녹화에 없는 요청이에요 — 같은 글·같은 단계로 node --env-file=.env record-demo.js를 다시 돌려 녹화하세요" };
     }
     let r;
-    if (providerOf(env) === "cli") r = await cli(prompt, schema);
+    if (providerOf(env) === "cli") r = await cli(prompt, schema, meta.fast ? { fast: true, ...(env.NAV_DRAFT_MODEL ? { model: env.NAV_DRAFT_MODEL } : {}) } : undefined);
     else {
       const gate = meter.gate({ purpose: cfg.purpose, tester: cfg.tester, reserve: cfg.useReserve });
       if (!gate.ok) return { error: gate.reason };
       const who = `${env.ANTHROPIC_API_KEY || ""}|${env.ANTHROPIC_BASE_URL || ""}`;
       try { if (!client || clientFor !== who) { client = makeClient(); clientFor = who; } } catch { return { error: "API 호출 도구가 없어요 — 03-backend/navigator에서 npm install을 한 번 해 주세요" }; }
-      r = await callApi(client, cfg, prompt, schema);
+      const draftModel = env.NAV_DRAFT_MODEL ? API_ALIAS[env.NAV_DRAFT_MODEL] || env.NAV_DRAFT_MODEL : FAST.model;
+      const use = meta.fast && !cfg.relay ? { ...cfg, model: draftModel, effort: FAST.effort } : cfg;   // 초안은 빠른 모델 · 낮은 effort(C-40)
+      r = await callApi(client, meta.maxTokens > use.maxTokens ? { ...use, maxTokens: meta.maxTokens } : use, prompt, schema);   // 예시 셋은 글이 길다 — 그 요청만 넉넉히
       if (r.tokens) meter.add(r.tokens, { bucket: gate.bucket, tester: cfg.tester });
     }
     if (record && r.data !== undefined) record(key, r.data);

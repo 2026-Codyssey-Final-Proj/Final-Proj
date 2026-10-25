@@ -61,6 +61,7 @@ async function paste(page, text) {
 async function passGate(page) {
   await click(page, "[data-act=gate]"); await click(page, "[data-act=yes]");
   if (await page.$("[data-act=check-pick]")) { await click(page, "[data-act=check-pick]"); if (await page.$("[data-act=check-go]")) await click(page, "[data-act=check-go]"); }
+  if (await page.$(".mc.chat [data-act=go]")) await click(page, ".mc.chat [data-act=go]");   // 마지막(8단계) 관문의 '마치기'(C-40)
   await wait(600);
 }
 const saved = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")));
@@ -144,6 +145,30 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     for (const f of ["docs/PRD.md", "docs/decisions.md", "docs/03-requirements/requirements.md"]) assert.ok(files3.some((x) => x.includes(f)), f);
     await click(page, '.msg.now [data-act=ship-peek][data-i="1"]');
     assert.match(await page.$eval(".msg.now .ship-peek pre", (e) => e.textContent), /\| 날짜 \| 단계 \| 할 일 \| 플로로 초안 \| 정한 것 \| 어떻게 \|/, "결정 기록 미리 보기");
+    // C-40 — 4 ~ 8단계: 예시 셋 중 고르기 · 남은 칸 모두 맞아요 · 확인한 장은 AI 살펴보기 없이 · 퀘스트 창 쉬운 말 · 마지막 관문까지
+    await click(page, ".mc.chat [data-act=ship-later]");
+    assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /4단계 · /);
+    assert.equal((await page.$$(".msg.now .dalt button")).length, 3, "칸마다 예시 셋");
+    assert.match(await nowSay(page), /골라 주세요/); assert.match(await nowSay(page), /후보 찾기 — /, "제목은 짧은 이름 — 쉬운 한 줄");
+    await click(page, '.msg.now .dalt [data-act=draft-alt][data-i="1"]');
+    assert.equal((await saved(page)).quest.by[0], "pick", "예시를 고르면 고름");
+    await click(page, "[data-act=qtab][data-tab=quest]");
+    const toc = await page.$$eval(".qwin .toc button", (bs) => bs.map((b) => b.textContent));
+    assert.ok(toc[0].includes("후보 찾기") && !toc[0].includes("흔히 쓰는 방법 목록에서"), `목차는 짧은 이름: ${toc[0]}`);
+    assert.ok(await page.$(".qwin .ln .easy"), "쉬운 한 줄"); assert.equal(await page.$(".qwin .ln .full"), null, "원래 문장은 접혀 있다");
+    await click(page, ".qwin [data-act=qmore]");
+    assert.match(await page.$eval(".qwin .ln .full", (e) => e.textContent), /흔히 쓰는 방법 목록에서/, "자세히 보기 — 원래 할 일 문장");
+    for (let n = 4; n <= 8; n++) {
+      if (n > 4) await click(page, ".mc.chat [data-act=ship-later]");
+      assert.match(await page.$eval(".tb-stage", (e) => e.textContent), new RegExp(`${n}단계 · `));
+      await click(page, ".mc.chat [data-act=draft-all]");
+      await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
+      await passGate(page);
+    }
+    assert.match(await nowSay(page), /1 ~ 8단계에서 정한 것을 문서로 묶었어요/, "마지막 관문에서도 올릴지 묻는다");
+    const s8 = await saved(page);
+    assert.equal(s8.results["7"].checkBy, "confirm", "확인한 대로(AI 없이)"); assert.match(s8.results["7"].passed, /^\d{4}-/);
+    assert.equal(s8.results["3"].items[0].by, "pick"); assert.ok(s8.results["3"].items.slice(1).every((x) => x.by === "ok"), "모두 맞아요 = 그대로");
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });
@@ -162,6 +187,28 @@ test("같은 플로로 말은 한 번만 쌓인다 — 같은 장면에서 내�
     const p = await past(page);
     assert.equal(p.filter((m) => m.startsWith(`floro: ${first}`)).length, 1, `처음 플로로 말은 한 번만(고치기 전엔 내 말마다 또 쌓여 세 번): ${JSON.stringify(p)}`);
     assert.deepEqual(p.filter((m) => m.startsWith("me:")), ["me: 가", "me: 나", "me: 다"]);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});
+
+test("1단계 '남은 칸 모두 맞아요' — 줄만이 아니라 만드는 크기도 플로로가 권한 크기(보통)로, 2단계는 그 크기의 할 일 수로(2026-10-26 리뷰)", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const page = await browser.newPage(); const errors = [];
+    page.on("pageerror", (e) => errors.push(String(e)));
+    await page.setViewport({ width: 1440, height: 1000 });
+    await page.evaluateOnNewDocument(() => { try { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); } catch {} });
+    await page.goto(`${pathToFileURL(path.join(__dirname, "../../02-frontend/navigator/index.html")).href}#start`, { waitUntil: "load" });
+    await page.waitForSelector(".mc.chat [data-act=say]", { timeout: 8000 });
+    await paste(page, "동아리 행사 신청 앱을 만들고 싶어요");
+    assert.notEqual((await saved(page)).tier, "Xpress", "처음엔 기본 크기");
+    await click(page, ".mc.chat [data-act=draft-all]");
+    await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
+    const s = await saved(page);
+    assert.equal(s.tier, "Xpress", "권한 크기 '보통'이 만드는 크기가 된다 — 크기 칩을 누른 것과 같게");
+    assert.equal(s.results["0"].items[3].lines[0].startsWith("크기: 보통"), true);
+    await passGate(page);
+    assert.equal((await saved(page)).quest.objs.length, Nav.criteriaFor(1, "Xpress").length, "2단계는 보통의 할 일 수로");
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });
@@ -195,20 +242,23 @@ async function openLive(browser, { stageFail = false } = {}) {
   await page.waitForSelector(".mc.chat [data-act=say]", { timeout: 8000 });
   return { page, seen };
 }
-async function stageOne(page) {
+// 1단계를 확인하고 관문을 지난다 — 돌려주는 것: 관문 전에 미리 부른 단계 초안 수(C-40 '다음 단계 초안 미리')
+async function stageOne(page, seen) {
   await paste(page, "독서 모임 알림 앱을 만들고 싶어요. 모임 날짜를 자꾸 잊어요.");
   for (let k = 0; k < 3; k++) await click(page, ".mc.chat [data-act=draft-ok]");
   await click(page, '.mc.chat [data-act=draft-size][data-i="1"]');
   await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
+  const before = seen ? seen.stagedraft.length : 0;
   await passGate(page);
+  return before;
 }
 
 test("진짜 AI(가로챔): 관문을 지나면 1단계 결과 · 받은 글로 2단계 초안(/api/stagedraft)을 받고 칸마다 동의 → 관문 → 문서를 작업 폴더에 쓰고 커밋 · 푸시는 Claude Code(/api/docs)", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
   try {
     const { page, seen } = await openLive(browser);
-    await stageOne(page);
-    assert.equal(seen.stagedraft.length, 1, "2단계 초안은 한 번");
+    assert.equal(await stageOne(page, seen), 1, "1단계 초안을 받자마자 2단계 초안을 뒤에서 미리 — 관문 전에 이미 불렀다(C-40)");
+    assert.equal(seen.stagedraft.filter((x) => x.stage === 1).length, 1, "2단계 초안은 한 번 — 관문을 지나도 다시 부르지 않는다(모두 맞아요라면 결과가 같다)");
     const sd = seen.stagedraft[0];
     assert.equal(sd.stage, 1); assert.equal(sd.tier, "Xpress");
     assert.match(sd.idea, /독서 모임 알림 앱을 만들고 싶어요/, "받은 글");
@@ -217,7 +267,7 @@ test("진짜 AI(가로챔): 관문을 지나면 1단계 결과 · 받은 글로 
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /2단계 · 독서 모임 알림 앱/);
     for (let k = 0; k < Nav.criteriaFor(1, "Xpress").length; k++) await click(page, ".mc.chat [data-act=draft-ok]");
     await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
-    assert.equal(seen.judge[1].stage, 1, "2단계도 판정은 서버 그대로");
+    assert.equal(seen.judge.length, 0, "초안을 칸마다 확인한 장은 AI가 다시 살펴보지 않는다(C-40, FR-1 · FR-2 바뀜)");
     await passGate(page);
     assert.match(await nowSay(page), /GitHub에 올릴까요/);
     await click(page, ".mc.chat [data-act=ship-go]");
@@ -228,7 +278,7 @@ test("진짜 AI(가로챔): 관문을 지나면 1단계 결과 · 받은 글로 
     assert.match(seen.docs[0].idea, /독서 모임 알림 앱을 만들고 싶어요/, "처음 말한 것도(기획서 · 1단계 재료)");
     assert.equal(d0.items[0].by, "ok"); assert.equal(d0.items[0].draft, DRAFT.pain); assert.match(d0.passed, /^\d{4}-/); assert.equal(d0.check.length, 4);
     assert.deepEqual(seen.docs[0].results["1"].items[0].from, [{ s: 0, i: 0 }], "2단계 칸의 재료");
-    assert.equal(seen.stagedraft.length, 2, "2단계 관문을 지나면 3단계 초안도");
+    assert.deepEqual(seen.stagedraft.map((x) => x.stage), [1, 2, 3], "2단계 초안을 받자마자 3단계를, 3단계가 열리자 4단계를 미리 — 같은 단계를 두 번 부르지 않는다");
     assert.deepEqual(seen.stagedraft[1].prev.map((p) => p.stage), [0, 1], "3단계 초안은 1 · 2단계 결과로");
     assert.match(await nowSay(page), /Claude Code에 맡겼어요/);
     await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("올리기를 마쳤어요"), { timeout: 9000 });

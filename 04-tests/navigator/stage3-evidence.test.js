@@ -12,8 +12,8 @@ const S0 = { stage: 0, items: N.STAGES[0].criteria.map((c, i) => ({ name: c.text
 const S1 = { stage: 1, items: N.criteriaFor(1, "Xpress").map((c, i) => ({ name: c.text, lines: [`2단계 줄 ${i + 1}`] })) };
 const answer3 = (tier, over = {}) => ({ items: N.criteriaFor(2, tier).map((c, i) => ({ text: `${c.text}의 초안`, from: i === 0 ? ["1-1", "2-3"] : [] })), prep: ["기능 개수 세기", "숫자로 정할 말 찾기"], say: "3단계 초안이에요", ...over });
 
-test("초안을 만드는 단계: 2단계와 3단계(코드 1 · 2) — 4단계는 다음 판", () => {
-  assert.deepEqual(N.DRAFT_STAGES, [1, 2]);
+test("초안을 만드는 단계: 2단계와 3단계(코드 1 · 2)도 — 4단계부터는 C-40(stages-all.test.js)", () => {
+  assert.ok(N.DRAFT_STAGES.includes(1) && N.DRAFT_STAGES.includes(2));
 });
 
 test("3단계 초안 요청문: 받은 글과 지난 단계 결과 전부(1 · 2단계)를 번호([1-1] …)를 붙여 싸서 넘긴다 · 3단계 할 일 순서대로 · 준비할 것 · 칸마다 재료(from)를 묻는다", () => {
@@ -25,7 +25,7 @@ test("3단계 초안 요청문: 받은 글과 지난 단계 결과 전부(1 · 2
 
 test("초안 모양: 칸마다 글 · 재료(from), 준비할 것(prep) 0~3줄, 한마디", () => {
   assert.deepEqual([...N.STAGE_DRAFT_SCHEMA.required].sort(), ["items", "prep", "say"]);
-  assert.deepEqual([...N.STAGE_DRAFT_SCHEMA.properties.items.items.required].sort(), ["from", "text"]);
+  assert.ok(["from", "text"].every((k) => N.STAGE_DRAFT_SCHEMA.properties.items.items.required.includes(k)), "칸마다 글 · 재료(C-40에서 예시 alts가 더해짐)");
   assert.equal(N.STAGE_DRAFT_SCHEMA.properties.prep.maxItems, 3);
 });
 
@@ -40,7 +40,7 @@ test("3단계 초안 읽기: 재료는 넘긴 지난 단계의 칸만({s, i} —
   const bare = N.parseStageDraft({ items: N.criteriaFor(2, "Lite").map(() => ({ text: "글" })), say: "한마디" }, 2, "Lite", [S0, S1]);
   assert.deepEqual(bare.prep, []); assert.deepEqual(bare.items[0].from, [], "재료를 안 주면 빈 목록");
   assert.equal(N.parseStageDraft({ ...answer3("Full"), prep: ["가".repeat(500)] }, 2, "Full", [S0, S1]).prep[0].length, 160);
-  assert.equal(N.parseStageDraft(answer3("Full"), 3, "Full", [S0, S1]), null, "4단계는 아직");
+  assert.equal(N.parseStageDraft(answer3("Full"), 8, "Full", [S0, S1]), null, "없는 단계");
 });
 
 test("2단계 초안도 같은 틀: 1단계 결과만 넘기고 재료는 [1-n]", () => {
