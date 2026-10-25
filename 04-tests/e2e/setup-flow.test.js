@@ -46,9 +46,9 @@ test.after(() => { if (srv) srv.close(); fs.rmSync(TMP, { recursive: true, force
 
 const SETUP = { ok: true, provider: "cli", apiKey: false, relay: false, claude: { found: true, version: "2.1.30", signedIn: true }, replay: true, build: "e2e" };
 // 가로채기 — gh 상태 · Claude Code 상태는 정해 둔 답, 저장소 만들기는 받은 본문만 적는다
-async function open(browser, { gh = { found: true, signedIn: true } } = {}) {
+async function open(browser, { gh = { found: true, signedIn: true }, apps = { found: true, linked: false } } = {}) {
   const page = await browser.newPage();
-  const seen = { create: [], errors: [] };
+  const seen = { create: [], link: [], errors: [] };
   page.on("pageerror", (e) => seen.errors.push(String(e)));
   page.on("console", (m) => { if (m.type() === "error" && !/favicon\.ico$/.test((m.location() && m.location().url) || "")) seen.errors.push(m.text()); });   // 서버는 favicon을 내주지 않는다(전부터)
   await page.setViewport({ width: 1440, height: 900 });
@@ -58,6 +58,8 @@ async function open(browser, { gh = { found: true, signedIn: true } } = {}) {
     const json = (o) => req.respond({ status: 200, contentType: "application/json; charset=utf-8", body: JSON.stringify(o) });
     if (p === "/api/github") return json({ ok: true, project: "", gh, git: false, remote: null, why: "folder" });
     if (p === "/api/setup") return json(SETUP);
+    if (p === "/api/apps") return json({ ok: true, claudeDesktop: apps });   // 같이 쓸 앱(C-38 시험판) — 진짜 Claude Desktop 설정 파일은 건드리지 않는다
+    if (p === "/api/apps/link") { seen.link.push(JSON.parse(req.postData() || "{}")); apps = { found: true, linked: true }; return json({ ok: true }); }
     if (p === "/api/github/create") { seen.create.push(JSON.parse(req.postData() || "{}")); return json({ ok: true, project: "club-app", task: { state: "running" } }); }
     return req.continue();
   });
@@ -85,20 +87,24 @@ async function throughAiAndGithub(page) {
   assert.equal(await title(page), "AI를 어떻게 불러 올까요?");
   await click(page, '[data-s="pick"][data-via="cli"]');
   await click(page, '[data-s="check"]');
-  await page.waitForFunction(() => document.querySelector('[data-s="next"]')?.textContent.includes("다음: GitHub"), { timeout: 5000 });
+  await page.waitForFunction(() => document.querySelector('[data-s="next"]')?.textContent.includes("다음: 같이 쓸 앱"), { timeout: 5000 });
+  await click(page, '[data-s="next"]');
+  assert.equal(await title(page), "같이 쓸 앱이 있나요?");
+  await page.waitForSelector('[data-s="applink"]', { timeout: 5000 });
+  assert.match(await page.$eval('[data-s="next"]', (e) => e.textContent), /건너뛰고 다음/, "잇지 않아도 넘어간다");
   await click(page, '[data-s="next"]');
   assert.equal(await title(page), "GitHub와 이어요");
   await page.waitForFunction(() => !document.querySelector('[data-s="next"]')?.disabled, { timeout: 5000 });
 }
 
-test("한 번에 이어진다: 인사 → AI 연결(Claude Code) → GitHub(로그인됨) → 프로젝트(내 저장소 단추로 test-1 가져오기) → 준비 끝 요약 세 줄 — 점은 다섯 칸", { skip }, async () => {
+test("한 번에 이어진다: 인사 → AI 연결(Claude Code) → GitHub(로그인됨) → 프로젝트(내 저장소 단추로 test-1 가져오기) → 준비 끝 요약 세 줄 — 점은 여섯 칸(같이 쓸 앱은 건너뜀)", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
   try {
     const { page, seen } = await open(browser);
     assert.match(await title(page), /반가워요/);
-    assert.deepEqual(await dots(page), ["처음 설정 1 / 5", 0]);
+    assert.deepEqual(await dots(page), ["처음 설정 1 / 6", 0]);
     await throughAiAndGithub(page);
-    assert.deepEqual(await dots(page), ["처음 설정 3 / 5", 2]);
+    assert.deepEqual(await dots(page), ["처음 설정 4 / 6", 3]);
     const steps = await page.$$eval(".su-steps li", (ls) => ls.map((l) => l.className));
     assert.deepEqual(steps, ["ok", "ok"], "gh 찾기 · 로그인 둘 다 체크");
     await click(page, '[data-s="next"]');
@@ -123,6 +129,26 @@ test("한 번에 이어진다: 인사 → AI 연결(Claude Code) → GitHub(로�
     await page.waitForSelector(".msg.now .say", { timeout: 5000 });
     assert.match(await page.$eval(".msg.now .say", (e) => e.textContent), /원하는 것을 플로로에게/, "시작하면 채팅이 원하는 것을 받는다(C-36) — AI는 아직 부르지 않는다");
     assert.deepEqual(seen.create, [], "저장소 만들기는 부르지 않았다");
+    assert.deepEqual(seen.errors, []);
+  } finally { await browser.close(); }
+});
+
+test("같이 쓸 앱: 'Claude Desktop과 잇기'를 누르면 서버에 잇기를 부탁하고(/api/apps/link), 이어지면 '이어져 있어요' · 다시 켜라는 안내 · '다음: GitHub'(C-38 시험판)", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
+  try {
+    const { page, seen } = await open(browser);
+    await click(page, '[data-s="go"][data-to="choose"]');
+    await click(page, '[data-s="pick"][data-via="cli"]');
+    await click(page, '[data-s="next"]');
+    assert.equal(await title(page), "같이 쓸 앱이 있나요?");
+    await click(page, '[data-s="applink"]');
+    await page.waitForFunction(() => /이어져 있어요/.test(document.querySelector(".su-chip.ok")?.textContent || ""), { timeout: 5000 });
+    assert.deepEqual(seen.link, [{ app: "claude-desktop" }]);
+    assert.match(await page.$eval(".su-note", (e) => e.textContent), /다시 켜 주세요/);
+    assert.equal(await page.$('[data-s="applink"]'), null, "이어지면 단추가 사라진다");
+    assert.match(await page.$eval('[data-s="next"]', (e) => e.textContent), /다음: GitHub/);
+    await click(page, '[data-s="next"]');
+    assert.equal(await title(page), "GitHub와 이어요");
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });
@@ -154,6 +180,7 @@ test("GitHub 없이: gh가 없으면 다음은 잠기고 설치 안내 · '다�
     await click(page, '[data-s="go"][data-to="choose"]');
     await click(page, '[data-s="pick"][data-via="cli"]');
     await click(page, '[data-s="next"]');   // 확인 없이 다음으로
+    await click(page, '[data-s="next"]');   // 같이 쓸 앱 — 건너뛰고 다음(C-38 시험판)
     assert.equal(await title(page), "GitHub와 이어요");
     await page.waitForSelector('a.su-link[href="https://cli.github.com"]', { timeout: 5000 });
     assert.equal(await page.$eval('[data-s="next"]', (e) => e.disabled), true);

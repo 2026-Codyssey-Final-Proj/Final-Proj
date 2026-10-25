@@ -32,9 +32,21 @@ test("mcp.js — 알림(id 없음)에는 답하지 않고, 모르는 방법은 -
   assert.equal(Mcp.rpc({ jsonrpc: "2.0", id: 3, method: "resources/list" }, ctx(null)).error.code, -32601);
   assert.deepEqual(Mcp.rpc({ jsonrpc: "2.0", id: 4, method: "ping" }, ctx(null)).result, {});
 });
-test("mcp.js — 도구는 셋(floe_now · floe_style · floe_report)뿐: 일 넘기기 · 문서 쓰기 · 허용 · 거절은 없다", () => {
+test("mcp.js — 도구는 넷(floe_now · floe_style · floe_start · floe_report)뿐: 일 넘기기 · 문서 쓰기 · 허용 · 거절은 없다", () => {
   const names = Mcp.rpc({ jsonrpc: "2.0", id: 5, method: "tools/list" }, ctx(null)).result.tools.map((t) => t.name);
-  assert.deepEqual(names, ["floe_now", "floe_style", "floe_report"]);
+  assert.deepEqual(names, ["floe_now", "floe_style", "floe_start", "floe_report"]);
+});
+test("mcp.js — floe_start: 퀘스트가 없을 때만 시작을 제안(kind start)한다. 앱이 꺼졌거나 · 퀘스트가 있거나 · 글이 비면 isError", () => {
+  const start = (s, a) => { const c = ctx(s); return { c, r: Mcp.rpc({ jsonrpc: "2.0", id: 10, method: "tools/call", params: { name: "floe_start", arguments: a } }, c).result }; };
+  const empty = Mcp.cleanState({ project: "test-1", mode: "live", stage: null, quest: null });
+  const ok = start(empty, { text: "동아리 행사 신청 앱을 만들고 싶어요" });
+  assert.ok(!ok.r.isError, JSON.stringify(ok.r)); assert.match(ok.r.content[0].text, /맞아요/);
+  assert.deepEqual(ok.c.got, [{ kind: "start", text: "동아리 행사 신청 앱을 만들고 싶어요" }]);
+  for (const [s, a] of [[null, { text: "x" }], [Mcp.cleanState(STATE), { text: "x" }], [empty, { text: " " }], [empty, {}]]) {
+    const { c, r } = start(s, a); assert.equal(r.isError, true, JSON.stringify(a)); assert.equal(c.got.length, 0);
+  }
+  const now = (s) => Mcp.rpc({ jsonrpc: "2.0", id: 11, method: "tools/call", params: { name: "floe_now", arguments: {} } }, ctx(s)).result.content[0].text;
+  assert.match(now(empty), /floe_start/, "퀘스트가 없으면 floe_start를 안내"); assert.doesNotMatch(now(null), /floe_start/, "앱이 꺼져 있으면 켜 달라고만");
 });
 test("mcp.js — floe_now: 화면 단계 번호(1부터) · 퀘스트 · 할 일마다 ✓/○ · 지금 할 일과 질문. 상태가 없으면 섬을 열라고", () => {
   const text = (s) => Mcp.rpc({ jsonrpc: "2.0", id: 6, method: "tools/call", params: { name: "floe_now", arguments: {} } }, ctx(s)).result.content[0].text;

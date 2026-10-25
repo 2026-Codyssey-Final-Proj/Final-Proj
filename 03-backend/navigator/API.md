@@ -39,10 +39,12 @@
 | `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/stagedraft` | 섬 — 1단계 관문을 지났을 때(C-37, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, draft:{items[{text} 또는 {pick, why}], say}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/docs` | 섬 — 2단계를 마치고 '올리기'를 눌렀을 때(C-37) | 출처 · 확인 값(쿠키) | `{ok, project, files[], task}` | 403 · 413 · 400 · 409 · 500 |
-| `POST /mcp/<MCP 토큰>` | 웹 GPT · 웹 Claude(원격 MCP, 터널로) — **`NAV_MCP=1`일 때만**(C-38 시험판, 2026-10-25) | 주소 속 MCP 토큰만(출처는 보지 않는다 — 터널이라 Host가 다르다) | JSON-RPC 답 · 알림이면 202 | 404(꺼짐 · 토큰 틀림) · 405 · 413 · 400 |
+| `POST /mcp/<MCP 토큰>` | Claude Desktop의 중계 파일(`mcp-stdio.js`, 이 컴퓨터 안 — 늘) · 웹 GPT · 웹 Claude(터널로 — **`NAV_MCP=1`일 때만**)(C-38 시험판, 2026-10-25) | 주소 속 MCP 토큰(밖에서 올 때는 출처를 보지 않는다 — 터널이라 Host가 다르다) | JSON-RPC 답 · 알림이면 202 | 404(꺼짐 · 토큰 틀림) · 405 · 413 · 400 |
 | `POST /api/state` | 화면 — 저장할 때마다, 바뀌었을 때만(C-38 시험판) | 출처 · 확인 값(쿠키) | `{ok}` | 403 · 400 |
 | `GET /api/proposals` | 섬(2초마다, C-38 시험판) | 출처 · 확인 값(쿠키) | `{ok, items[]}` 웹 AI가 적자고 한 줄 | 403 |
 | `POST /api/proposals/decide` | 섬 "맞아요, 적어요" · "아니요"(C-38 시험판) | 출처 · 확인 값(쿠키) | `{ok}` | 403 · 404 |
+| `GET /api/apps` | 처음 설정 '같이 쓸 앱'(C-38 시험판) | 출처 | `{ok, claudeDesktop:{found, linked}}` — 경로는 보이지 않는다 | 403 |
+| `POST /api/apps/link` | 처음 설정 'Claude Desktop과 잇기'(C-38 시험판) | 출처 · 확인 값(쿠키) | `{ok}` — Claude Desktop 설정 파일에 floe 한 칸 | 403 · 400 · 409 |
 | 그 밖의 주소·방법 | — | 출처 | — | 404 `없는 주소` |
 
 ## 2. 공통 약속
@@ -540,15 +542,16 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 ### 3-24. `POST /mcp/<MCP 토큰>` · `POST /api/state` · `GET /api/proposals` · `POST /api/proposals/decide` — 원격 MCP 시험판: 웹 AI가 지금 할 일을 읽고 한 줄을 제안 (C-38, 2026-10-25)
 
 <!-- claude-drafted: 2026-10-25 — 두승현 "클로로랑 gpt 클로드 같이 썼을때 시너지가 나와야함" · "이 브랜치에서 시험용으로 만들자" -->
-- **시험판이고 기본은 꺼짐.** `NAV_MCP=1`로 서버를 켤 때만 `/mcp/<MCP 토큰>`이 열린다. 꺼져 있거나 토큰이 틀리면 404 — 있는지조차 알리지 않는다. C-38은 아직 이재엽 결정 대기다([결정 자료](../../01-docs/00-overview/기록/C-38-다른-AI-도구로-넘기기-2026-10-25.md)의 길 4).
+- **시험판.** 이 컴퓨터 안(Host가 `127.0.0.1` · `localhost`)에서는 늘 `/mcp/<MCP 토큰>`을 받는다 — Claude Desktop의 중계 파일이 부른다(아래 '같이 쓸 앱'). **밖(터널)에서는 `NAV_MCP=1`로 켤 때만.** 토큰이 틀리거나 밖인데 꺼져 있으면 404 — 있는지조차 알리지 않는다. C-38은 아직 이재엽 결정 대기다([결정 자료](../../01-docs/00-overview/기록/C-38-다른-AI-도구로-넘기기-2026-10-25.md)의 길 4).
 - **이 주소만 이 컴퓨터 밖에서 받는다.** 웹 GPT(개발자 모드) · 웹 Claude(커넥터)는 각 회사의 서버에서 부르므로 터널(예: `cloudflared tunnel --url http://127.0.0.1:4317`)이 필요하고, 그러면 Host가 이 컴퓨터가 아니다. 그래서 `handle`이 `allowed()`보다 먼저 이 주소를 고른다. **나머지 주소는 지금처럼 터널에서 403**(시험이 판정 · 제안 목록으로 본다).
 - MCP 토큰은 알림 확인 값과 **따로** — `~/.floe-mcp-token`(`NAV_MCP_TOKEN_FILE`), 나만 읽기. 웹 AI의 설정 화면에 주소째 붙여 넣는 값이라 새로 만들려면 파일을 지우고 다시 켠다. 서버는 켤 때 파일 자리만 말하고 값은 보이지 않는다. 비교는 `timingSafeEqual`.
 - 방식: Streamable HTTP의 JSON 답만(SSE 없음 — GET은 405). 방법 넷 `initialize` · `tools/list` · `tools/call` · `ping`, 알림(id 없음)은 202. 묶음(배열)도 받는다. 규칙은 [mcp.js](mcp.js)(SDK 없이 직접 — 자원 · SSE가 필요해지면 `@modelcontextprotocol/sdk`로).
-- **도구는 셋뿐** — `floe_now`(화면 단계 번호 · 퀘스트 · 할 일마다 ✓/○와 적은 줄 · 지금 할 일과 플로로의 질문), `floe_style`(쉬운 말 규칙 · 일하는 순서), `floe_report({todo, text})`(할 일 하나에 적을 한 줄을 **제안**). 일 넘기기(3-16) · 문서 쓰기(3-23) · 허용 · 거절(3-15)은 없다 — 밖에서 이 컴퓨터의 Claude Code를 움직이는 길을 만들지 않는다.
+- **도구는 넷뿐** — `floe_now`(화면 단계 번호 · 퀘스트 · 할 일마다 ✓/○와 적은 줄 · 지금 할 일과 플로로의 질문. 앱이 꺼졌는지 · 퀘스트가 아직 없는지도 따로 말한다), `floe_style`(쉬운 말 규칙 · 일하는 순서), `floe_start({text})`(퀘스트가 **없을 때만**, 만들고 싶은 것을 적은 글로 시작을 **제안** — 1,000자까지, 같은 날 두승현 "floe_start 도구도 더해줘"), `floe_report({todo, text})`(할 일 하나에 적을 한 줄을 **제안**). 일 넘기기(3-16) · 문서 쓰기(3-23) · 허용 · 거절(3-15)은 없다 — 밖에서 이 컴퓨터의 Claude Code를 움직이는 길을 만들지 않는다.
 - `POST /api/state` — 화면이 저장할 때마다 지금 상태 `{project, mode, stage, quest:{chap, title, phase, objs[{name, need}], lines, cur, ask}}`를 보낸다(바뀌었을 때만). 서버는 `Mcp.cleanState`로 칸마다 모양을 보고 `sensitive.js`로 가리고 자른다(할 일 12개 · 줄 5개 · 줄 200자). 모양이 아니면 400 `상태의 모양이 맞지 않음`. **메모리에만** — 서버를 다시 켜면 빈다.
-- `GET /api/proposals` · `POST /api/proposals/decide {id}` — 섬이 2초마다 제안을 보고, 채팅의 허락 카드 위에 "웹 AI가 Ⅰ '…'에 이렇게 적자고 해요"를 띄운다. "맞아요, 적어요"를 눌러야 그 할 일에 적히고(`fillNow`), 판정은 그 뒤 평소대로 Floe의 코드가 한다(ADR-0003). 지금 퀘스트와 장 · 할 일이 맞지 않으면 적지 않는다. 제안은 20개까지, 메모리에만. 없는 id면 404.
-- 써 보는 법: ① `NAV_MCP=1 node server.js` ② 다른 창에서 터널 ③ 웹 AI에 `https://<터널 주소>/mcp/<~/.floe-mcp-token의 값>`을 MCP 서버로 더한다. **이 주소를 아는 사람은 지금 할 일 · 적은 줄을 읽고 제안을 띄울 수 있다** — 시험이 끝나면 터널을 닫는다. 밖으로 나가는 것: [security-records.md](../../.claude/rules/security-records.md) 3절.
-- 시험: [`mcp.test.js`](../../04-tests/navigator/mcp.test.js)(가짜 웹 AI가 JSON-RPC를 직접 보낸다 — 진짜 웹 AI · 터널은 부르지 않는다). 2026-10-25 헤드리스 Chrome으로 상태 → `floe_now` → `floe_report` → 카드 → 맞아요 → Ⅰ에 적힘을 확인했다. 진짜 웹 GPT · 웹 Claude로는 **확인 못 함**.
+- `GET /api/proposals` · `POST /api/proposals/decide {id}` — 섬이 2초마다 제안을 보고, 채팅의 허락 카드 위에 "웹 AI가 Ⅰ '…'에 이렇게 적자고 해요"를 띄운다. "맞아요, 적어요"를 눌러야 그 할 일에 적히고(`fillNow`), 판정은 그 뒤 평소대로 Floe의 코드가 한다(ADR-0003). 지금 퀘스트와 장 · 할 일이 맞지 않으면 적지 않는다. 시작 제안(`kind: "start"`)은 "웹 AI가 이 글로 퀘스트를 시작하자고 해요" → "맞아요, 시작해요"를 누르면 섬 채팅에 처음 한 줄을 보낸 것과 같은 길(`startDraft` → 3-21)로 1단계 초안을 만든다. 그사이 퀘스트가 생겼으면 시작하지 않는다. 화면은 2초마다 제안을 볼 때 상태도 보낸다(바뀌었을 때만) — 퀘스트가 없어도 켜자마자 서버가 안다. 제안은 20개까지, 메모리에만. 없는 id면 404.
+- **같이 쓸 앱 — Claude Desktop(터널 없음, 같은 날 두승현 "같이 쓸 앱으로 연결으로 해줘").** 처음 설정의 AI 연결 다음 칸 '같이 쓸 앱이 있나요?'에서 'Claude Desktop과 잇기'를 누르면 서버가 [app-link.js](app-link.js)로 Claude Desktop 설정 파일(`claude_desktop_config.json` — Windows 스토어판 `%LOCALAPPDATA%\Claude-Data\claude_*`, 일반판 `%APPDATA%\Claude`, Mac `~/Library/Application Support/Claude`)의 `mcpServers`에 `floe` 한 칸만 넣는다. 다른 칸은 그대로, 처음 한 번 원본을 `.floe-bak`으로 남기고, 깨진 설정이면 쓰지 않는다(409). 넣는 칸은 지금 실행 파일(Electron이면 `ELECTRON_RUN_AS_NODE`)로 [mcp-stdio.js](mcp-stdio.js)를 켜고, 포트와 **토큰 파일 자리**만 담는다(값은 넣지 않는다). 중계 파일은 줄마다 `/mcp/<토큰>`에 넘기고, Floe가 꺼져 있으면 `mcp.js`가 직접 답한다(도구 목록 · 'Floe 앱이 열려 있지 않아요'). AI 연결을 대신하지 않는다 — Floe의 판정 · 초안은 여전히 Claude Code나 API 키. 잇고 나면 Claude Desktop을 다시 켠다.
+- 웹으로 써 보는 법: ① `NAV_MCP=1 node server.js` ② 다른 창에서 터널 ③ 웹 AI에 `https://<터널 주소>/mcp/<~/.floe-mcp-token의 값>`을 MCP 서버로 더한다. **이 주소를 아는 사람은 지금 할 일 · 적은 줄을 읽고 제안을 띄울 수 있다** — 시험이 끝나면 터널을 닫는다. 밖으로 나가는 것: [security-records.md](../../.claude/rules/security-records.md) 3절.
+- 시험: [`mcp.test.js`](../../04-tests/navigator/mcp.test.js)(가짜 웹 AI가 JSON-RPC를 직접 보낸다 — 진짜 웹 AI · 터널은 부르지 않는다). 2026-10-25 헤드리스 Chrome으로 상태 → `floe_now` → `floe_report` → 카드 → 맞아요 → Ⅰ에 적힘을, 퀘스트 없는 화면에서 `floe_start` → 시작 카드 → 맞아요 → 진짜 AI 초안으로 1단계 퀘스트 → `floe_report`까지 확인했다. 같은 날 Electron 실행 파일을 node로 켠 중계 파일이 켜져 있는 앱의 지금 상태를 읽는 것까지 확인했다. 진짜 웹 GPT · 웹 Claude · Claude Desktop 화면으로는 **확인 못 함**. 시험: [`app-link.test.js`](../../04-tests/navigator/app-link.test.js) · E2E [`setup-flow.test.js`](../../04-tests/e2e/setup-flow.test.js).
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

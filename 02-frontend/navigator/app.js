@@ -1766,9 +1766,10 @@
   }
   // C-38 시험판(2026-10-25) — 웹 AI(원격 MCP의 floe_report)가 퀘스트에 적자고 한 한 줄. 사람이 "맞아요"를 눌러야 적히고, 판정은 그 뒤 평소대로
   let proposals = [];
-  const proposalsHTML = () => (!proposals.length ? "" : `<div class="aplist" role="region" aria-label="웹 AI의 제안">${proposals.map((p) => `<section class="ap" data-pr="${esc(p.id)}"><div class="row ap-h">${I.look}<b class="grow">웹 AI가 ${esc(ROMAN(p.todo))} '${esc(QU.shortOf(p.name))}'에 이렇게 적자고 해요</b></div>
-      <p class="ap-what">${esc(p.text)}</p><div class="row"><button type="button" class="btn pri" data-act="pr-ok" data-id="${esc(p.id)}">맞아요, 적어요</button><button type="button" class="btn" data-act="pr-no" data-id="${esc(p.id)}">아니요</button></div></section>`).join("")}</div>`);
+  const proposalsHTML = () => (!proposals.length ? "" : `<div class="aplist" role="region" aria-label="웹 AI의 제안">${proposals.map((p) => { const go = p.kind === "start"; return `<section class="ap" data-pr="${esc(p.id)}"><div class="row ap-h">${I.look}<b class="grow">${go ? "웹 AI가 이 글로 퀘스트를 시작하자고 해요" : `웹 AI가 ${esc(ROMAN(p.todo))} '${esc(QU.shortOf(p.name))}'에 이렇게 적자고 해요`}</b></div>
+      <p class="ap-what">${esc(p.text)}</p><div class="row"><button type="button" class="btn pri" data-act="pr-ok" data-id="${esc(p.id)}">${go ? "맞아요, 시작해요" : "맞아요, 적어요"}</button><button type="button" class="btn" data-act="pr-no" data-id="${esc(p.id)}">아니요</button></div></section>`; }).join("")}</div>`);
   async function pollProposals() {
+    postState();   // 켜자마자(퀘스트가 없어도) 서버가 알게 — 바뀌었을 때만 보낸다
     let j;
     try { j = await (await fetch("/api/proposals", { credentials: "same-origin" })).json(); } catch { return; }
     if (!j || !j.ok || !Array.isArray(j.items)) return;
@@ -1782,7 +1783,12 @@
     proposals = proposals.filter((x) => x.id !== id);
     try { await fetch("/api/proposals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }), credentials: "same-origin" }); } catch {}
     const q = st.quest;
-    if (!ok) { render(); return say("적지 않았어요"); }
+    if (!ok) { render(); return say(p.kind === "start" ? "시작하지 않았어요" : "적지 않았어요"); }
+    if (p.kind === "start") {   // floe_start — 섬 채팅에 처음 한 줄을 보낸 것과 같은 길(startDraft). 그사이 퀘스트가 생겼으면 하지 않는다
+      if (q || st.j || !QU) { render(); return say("이미 퀘스트가 있어 시작하지 않았어요"); }
+      logMsg("floro", `웹 AI가 건넨 글로 퀘스트를 시작해요 — ${esc(p.text.length > 200 ? `${p.text.slice(0, 200)}…` : p.text)}`);
+      return startDraft(p.text);
+    }
     if (!q || q.phase !== "quest" || q.chap !== p.chap || !q.objs[p.todo]) { render(); return say("지금 퀘스트와 맞지 않아 적지 않았어요"); }
     logMsg("floro", `웹 AI의 제안을 ${esc(ROMAN(p.todo))}에 적었어요 — ${esc(p.text)}`);
     fillNow(p.text, p.todo);

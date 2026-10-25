@@ -59,23 +59,29 @@ test("API 키로 연결할 때의 할 일: 앱이면 키를 앱 설정 폴더에
 });
 
 // ── C-31 시작하는 자리(2026-10-24, 이재엽 "5분짜리 온보딩 시스템을 바탕으로 깃허브를 연동하고 클로드 코드나 api키를 받는거도 이어져서") ──
-test("칸의 순서: 인사 → AI 연결 → GitHub → 프로젝트 → 준비 끝(계획 칸은 2026-10-25 C-36으로 뺐다 — 원하는 것은 채팅에서 플로로에게). 고르기 · Claude Code · API 키는 AI 연결 칸 안의 걸음", () => {
-  assert.deepEqual(U.FLOW, ["hello", "ai", "github", "project", "done"]);
+test("같이 쓸 앱 칸의 한 줄(appsChip, C-38 시험판 2026-10-25): 모름 · 못 찾음 · 아직 · 이어짐", () => {
+  assert.equal(U.appsChip(null).tone, "dim");
+  assert.equal(U.appsChip({ claudeDesktop: { found: false, linked: false } }).tone, "warn");
+  assert.deepEqual(U.appsChip({ claudeDesktop: { found: true, linked: false } }), { tone: "dim", text: "아직 잇지 않았어요" });
+  assert.deepEqual(U.appsChip({ claudeDesktop: { found: true, linked: true } }), { tone: "ok", text: "이어져 있어요" });
+});
+test("칸의 순서: 인사 → AI 연결 → 같이 쓸 앱 → GitHub → 프로젝트 → 준비 끝(계획 칸은 2026-10-25 C-36으로 뺐다 — 원하는 것은 채팅에서 플로로에게). 고르기 · Claude Code · API 키는 AI 연결 칸 안의 걸음", () => {
+  assert.deepEqual(U.FLOW, ["hello", "ai", "apps", "github", "project", "done"]);
   for (const s of ["choose", "cli", "api"]) assert.equal(U.stageOf(s), "ai", s);
   assert.equal(U.stageOf("github"), "github");
-  assert.equal(U.nextStage(U.FLOW, "cli"), "github"); assert.equal(U.nextStage(U.FLOW, "github"), "project"); assert.equal(U.nextStage(U.FLOW, "project"), "done");
+  assert.equal(U.nextStage(U.FLOW, "cli"), "apps", "AI 연결 다음은 같이 쓸 앱(C-38 시험판)"); assert.equal(U.nextStage(U.FLOW, "apps"), "github"); assert.equal(U.nextStage(U.FLOW, "github"), "project"); assert.equal(U.nextStage(U.FLOW, "project"), "done");
   assert.equal(U.nextStage(U.FLOW, "done"), "done"); assert.equal(U.nextStage(U.FLOW, "모름"), "done");
-  assert.equal(U.prevStage(U.FLOW, "github"), "ai"); assert.equal(U.prevStage(U.FLOW, "hello"), "hello");
+  assert.equal(U.prevStage(U.FLOW, "github"), "apps"); assert.equal(U.prevStage(U.FLOW, "apps"), "ai"); assert.equal(U.prevStage(U.FLOW, "hello"), "hello");
   assert.equal(U.firstStep("ai"), "choose", "AI 칸에 들어가면 고르기부터"); assert.equal(U.firstStep("github"), "github");
 });
 
 test("칸 더하기(insertStage): 나중에 튜토리얼 같은 칸을 원하는 칸 뒤에 끼운다 — '준비 끝' 뒤로는 가지 않고, 이미 있으면 그대로, 원래 줄은 바꾸지 않는다(이재엽 '확장성 기반으로')", () => {
   const f = U.insertStage(U.FLOW, "tutorial", "project");
-  assert.deepEqual(f, ["hello", "ai", "github", "project", "tutorial", "done"]);
-  assert.deepEqual(U.FLOW, ["hello", "ai", "github", "project", "done"], "원래 줄은 그대로");
+  assert.deepEqual(f, ["hello", "ai", "apps", "github", "project", "tutorial", "done"]);
+  assert.deepEqual(U.FLOW, ["hello", "ai", "apps", "github", "project", "done"], "원래 줄은 그대로");
   assert.deepEqual(U.insertStage(f, "tutorial", "hello"), f, "이미 있으면 그대로");
-  assert.deepEqual(U.insertStage(U.FLOW, "x", "done"), ["hello", "ai", "github", "project", "x", "done"], "'준비 끝' 뒤는 안 된다 — 그 앞에");
-  assert.deepEqual(U.insertStage(U.FLOW, "x", "없는칸"), ["hello", "ai", "github", "project", "x", "done"]);
+  assert.deepEqual(U.insertStage(U.FLOW, "x", "done"), ["hello", "ai", "apps", "github", "project", "x", "done"], "'준비 끝' 뒤는 안 된다 — 그 앞에");
+  assert.deepEqual(U.insertStage(U.FLOW, "x", "없는칸"), ["hello", "ai", "apps", "github", "project", "x", "done"]);
   assert.equal(U.nextStage(f, "project"), "tutorial");
 });
 

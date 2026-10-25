@@ -5,6 +5,8 @@
 //   칸이 다섯 — 인사 → AI 연결(고르기 → Claude Code: 찾기 · 로그인 · 연결 확인 | API 키: 키 넣기 · 연결 확인) → GitHub(gh 찾기 · 로그인) → 프로젝트(내 GitHub 저장소 가져오기 ·
 //   새로 만들기 · 이 컴퓨터에 있는 폴더) → 준비 끝(요약 세 줄). 전에 AI 칸 안에 있던 '작업 폴더 연결'은 프로젝트 칸으로 옮겼다.
 //   칸의 순서는 FLOW 한 줄 — 튜토리얼 같은 칸은 FloeSetup.addStage(이름, { after, view })로 끼운다(이재엽 "나중에 튜토리얼 내용이 생기면 … 확장성 기반으로").
+// 2026-10-25(C-38 시험판, 두승현 "같이 쓸 앱으로 연결으로 해줘"): AI 연결 뒤에 '같이 쓸 앱' 칸 — Claude Desktop 설정 파일에 Floe를 잇는다(내 컴퓨터 안 MCP, 서버 /api/apps · /api/apps/link).
+//   AI 연결을 대신하지 않는다 — Floe의 판정 · 초안은 여전히 Claude Code나 API 키. 건너뛰어도 된다. — claude-drafted: 2026-10-25
 // 언제 뜨나: 이 브라우저(앱)에 끝낸 기록(floe:setup:v1)이 없고 주소 끝(#…)이 없을 때 — 켜자마자 인사 뒤(버튼 2026-10-24 "1번"). #setup이면 늘. 설정 톱니의 '처음 설정 다시 하기'로도.
 // 키는 이 화면이 저장하지 않는다: 앱(Electron)이면 preload의 floeApp.saveKey로 앱이 설정 폴더의 .env(나만 읽기)에 쓴다. 브라우저로 연 화면은 키를 받지 않고 .env 안내만 한다.
 // 폴더도 이 화면이 만들지 않는다: 이름 · 주소 글만 floeApp.newProject · cloneProject에 넘기고, 경로(홈의 Floe 폴더) · clone · 훅은 앱(project.js · main.js)이 한다.
@@ -22,7 +24,7 @@
     return !(saved && saved.done);
   }
   // 칸(stage)의 순서 — 고르기 · Claude Code · API 키는 'AI 연결' 칸 안의 걸음(step)이다
-  const FLOW = ["hello", "ai", "github", "project", "done"];   // 계획 칸(모든 내용을 한 번에 넣는 칸, C-34)은 2026-10-25 C-36으로 뺐다 — 원하는 것은 시작한 뒤 채팅에서 플로로에게(이재엽 "처음 시작할때 모든 내용을 넣어달라는 페이지 삭제")
+  const FLOW = ["hello", "ai", "apps", "github", "project", "done"];   // 계획 칸(모든 내용을 한 번에 넣는 칸, C-34)은 2026-10-25 C-36으로 뺐다 — 원하는 것은 시작한 뒤 채팅에서 플로로에게(이재엽 "처음 시작할때 모든 내용을 넣어달라는 페이지 삭제")
   const STEP_STAGE = { choose: "ai", cli: "ai", api: "ai" };
   const stageOf = (step) => STEP_STAGE[step] || step;
   const firstStep = (stage) => (stage === "ai" ? "choose" : stage);
@@ -80,6 +82,12 @@
         line: g.signedIn === true ? "로그인되어 있어요" : "터미널에서 한 번만 gh auth login — 브라우저에서 GitHub에 로그인해요. 하고 나서 '다시 확인'" },
     ];
   }
+  // 같이 쓸 앱 칸의 한 줄 — a: GET /api/apps의 답(없으면 null)
+  function appsChip(a) {
+    if (!a || !a.claudeDesktop) return { tone: "dim", text: "앱이나 서버로 켜면 알 수 있어요" };
+    if (!a.claudeDesktop.found) return { tone: "warn", text: "찾지 못했어요 — 설치하고 한 번 켠 뒤 다시 와요" };
+    return a.claudeDesktop.linked ? { tone: "ok", text: "이어져 있어요" } : { tone: "dim", text: "아직 잇지 않았어요" };
+  }
   const githubReady = (gh) => !!(gh && gh.ok && gh.gh && gh.gh.found && gh.gh.signedIn === true);
   // 준비 끝의 요약 세 줄
   const VIA = { cli: "Claude Code로 연결", api: "API 키로 연결", practice: "연습용 예시(AI 없이)" };
@@ -90,7 +98,7 @@
   }
   // 새로 만든 빈 폴더면 GitHub 저장소도 만들지 묻는다 — 만들기는 사용자의 Claude Code가(C-25), 허락은 섬에서. Claude Code가 없으면 맡길 곳이 없어 묻지 않는다
   const offerRepo = (s) => !!(githubReady(s.gh) && s.st && s.st.claude && s.st.claude.found && s.project && s.project.made && !s.project.repo);
-  const api = { KEY, readSaved, shouldOpen, FLOW, stageOf, firstStep, nextStage, prevStage, insertStage, chipCli, chipApi, recommend, cliSteps, apiSteps, githubSteps, githubReady, summary, offerRepo };
+  const api = { KEY, readSaved, shouldOpen, FLOW, stageOf, firstStep, nextStage, prevStage, insertStage, chipCli, chipApi, recommend, cliSteps, apiSteps, githubSteps, githubReady, appsChip, summary, offerRepo };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; return; }
 
   // ── 화면 (브라우저에서만) ──
@@ -108,12 +116,16 @@
   let host = null, s = null, lastStep = "";
   let flow = FLOW.slice();
   const extra = {};   // addStage로 더한 칸 — { view(s) → HTML }
-  const fresh = () => ({ step: "hello", via: "", st: null, checked: null, busy: "", note: "", gh: null, ghSkip: false, repos: [], project: null, makeRepo: true, repoVis: "private" });
+  const fresh = () => ({ step: "hello", via: "", st: null, checked: null, busy: "", note: "", gh: null, ghSkip: false, apps: null, repos: [], project: null, makeRepo: true, repoVis: "private" });
 
   function save(via) { try { root.localStorage.setItem(KEY, JSON.stringify({ done: true, via, at: new Date().toLocaleDateString("sv-SE") })); } catch {} }
   async function status() {
     if (!live) return null;
     try { const j = await (await fetch("/api/setup", { cache: "no-store" })).json(); return j && j.ok ? j : null; } catch { return null; }
+  }
+  async function appsStatus() {
+    if (!live) return null;
+    try { const j = await (await fetch("/api/apps", { cache: "no-store" })).json(); return j && j.ok ? j : null; } catch { return null; }
   }
   async function ghStatus() {
     if (!live) return null;
@@ -128,7 +140,7 @@
   const note = () => (s.note ? `<p class="su-note" role="status">${esc(s.note)}</p>` : "");
   const back = (to, label = "‹ 뒤로") => `<button type="button" class="b ghost" data-s="go" data-to="${to}">${label}</button>`;
 
-  const MOOD = { hello: "happy", choose: "look", cli: "idle", api: "idle", github: "idle", project: "look", done: "done" };
+  const MOOD = { hello: "happy", choose: "look", cli: "idle", api: "idle", apps: "look", github: "idle", project: "look", done: "done" };
   function body() {
     if (s.step === "hello") return `
       <h2 id="su-title" class="mc-title">반가워요! 저는 길잡이 물범 플로로예요.</h2>
@@ -156,7 +168,18 @@
       ${!live ? `<p class="mc-sub su-warn">지금은 서버 없이 파일로 열었어요. Floe 앱(.dmg)이나 터미널의 floe.js로 켜면 여기서 바로 연결할 수 있어요.</p>` : ""}
       ${stepList(steps)}${note()}
       <div class="su-acts">${back("choose", "‹ 다시 고르기")}
-        <button type="button" class="b ${ready ? "pri" : ""}" data-s="next">${ready ? "다음: GitHub" : "확인 없이 다음으로"}${ready ? '<kbd aria-hidden="true">Enter</kbd>' : ""}</button></div>`;
+        <button type="button" class="b ${ready ? "pri" : ""}" data-s="next">${ready ? "다음: 같이 쓸 앱" : "확인 없이 다음으로"}${ready ? '<kbd aria-hidden="true">Enter</kbd>' : ""}</button></div>`;
+    }
+    if (s.step === "apps") {
+      const cd = s.apps && s.apps.claudeDesktop, linked = !!(cd && cd.linked);
+      return `
+      <h2 id="su-title" class="mc-title">같이 쓸 앱이 있나요?</h2>
+      <p class="mc-sub">Claude Desktop에서 대화하면서 Floe의 지금 할 일을 같이 볼 수 있어요. Claude가 적자고 한 한 줄은 섬에서 '맞아요'를 눌러야 적혀요. 건너뛰어도 돼요.</p>
+      <div class="su-picks su-proj"><div class="su-pick su-card"><span class="su-pick-t">Claude Desktop${chip(appsChip(s.apps))}</span>
+        <span class="su-pick-l">이 컴퓨터 안에서만 이어요 — 인터넷에 열지 않아요. 지금 할 일 · 적은 줄이 Claude(Anthropic)로 가요.</span>
+        ${cd && cd.found && !linked ? `<span class="su-row"><button type="button" class="b" data-s="applink"${s.busy === "applink" ? " disabled" : ""}>${s.busy === "applink" ? "잇는 중…" : "Claude Desktop과 잇기"}</button></span>` : ""}</div></div>${note()}
+      <div class="su-acts">${back(s.via === "cli" || s.via === "api" ? s.via : "choose")}
+        <button type="button" class="b ${linked ? "pri" : ""}" data-s="next">${linked ? "다음: GitHub" : "건너뛰고 다음"}${linked ? '<kbd aria-hidden="true">Enter</kbd>' : ""}</button></div>`;
     }
     if (s.step === "github") {
       const ready = githubReady(s.gh);
@@ -164,7 +187,7 @@
       <h2 id="su-title" class="mc-title">GitHub와 이어요</h2>
       <p class="mc-sub">만든 것을 내 GitHub 저장소에 남기고, 있는 저장소를 가져올 때 써요. Floe는 GitHub 비밀번호 · 토큰을 받지 않아요 — 이 컴퓨터의 gh가 해요.</p>
       ${s.busy === "gh" ? `<p class="su-note" role="status">확인하는 중…</p>` : stepList(githubSteps(s.gh))}${note()}
-      <div class="su-acts">${back(s.via === "cli" || s.via === "api" ? s.via : "choose")}
+      <div class="su-acts">${back("apps")}
         <button type="button" class="b ghost" data-s="ghskip">GitHub 없이 할래요</button>
         <button type="button" class="b ${ready ? "pri" : ""}" data-s="next"${ready ? "" : " disabled"}>다음: 프로젝트${ready ? '<kbd aria-hidden="true">Enter</kbd>' : ""}</button></div>`;
     }
@@ -242,6 +265,7 @@
   function enter(step) {
     s.step = step; s.note = ""; render();
     if (step === "github") refreshGh();
+    if (step === "apps") appsStatus().then((a) => { if (!host || s.step !== "apps") return; s.apps = a; render(); });
     if (step === "project" && !s.repos.length) loadRepos();
   }
   function burst(kind, n) {
@@ -288,6 +312,12 @@
     if (a === "refresh") { s.busy = "find"; render(); await refresh(); s.busy = ""; render(); return; }
     if (a === "check") return check();
     if (a === "ghcheck") return refreshGh();
+    if (a === "applink" && live && !s.busy) {   // 같이 쓸 앱 — 서버가 Claude Desktop 설정 파일에 floe 한 칸을 넣는다(app-link.js)
+      s.busy = "applink"; s.note = ""; render();
+      let j = null; try { j = await (await fetch("/api/apps/link", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ app: "claude-desktop" }) })).json(); } catch {}
+      s.busy = ""; s.note = j && j.ok ? "넣었어요! Claude Desktop을 완전히 종료하고 다시 켜 주세요. 그다음 대화에서 'Floe에서 지금 뭐 해?'라고 물어보면 돼요." : (j && j.reason) || "잇지 못했어요 — 앱이 켜져 있는지 봐 주세요";
+      s.apps = await appsStatus(); render(); if (j && j.ok) burst("heart", 6); return;
+    }
     if (a === "ghskip") { s.ghSkip = true; enter("project"); return; }
     if (a === "done") return close(s.via || "later", true);
     if (a === "makerepo") { s.makeRepo = !!el.checked; return; }
