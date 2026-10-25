@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v27.0 | 2026-10-25 | 이재엽 | 3단계 초안 · 누가 정했는지 · 공식 문서 증빙 · 도전과제 흐름(C-39) — 1 · 2단계 결과로 3단계 초안(준비할 것 · 칸마다 재료, POST /api/stagedraft의 prev가 단계마다), 칸마다 그대로 · 고침 · 직접 · 고름과 날짜 · 완료 기준을 남겨 단계 문서의 증빙 칸 · 기획서(docs/PRD.md) · 결정 기록(docs/decisions.md), 2단계부터 관문마다 올리기, 도전과제 한눈에 보기는 네 칸 흐름(넣은 것 → 플로로가 한 것 → 내가 정한 것 → 관문) (#199) | `02-frontend/navigator/` · `03-backend/navigator/` · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/00-overview/` · `01-docs/07-maintenance/fix-map.md` · `01-docs/features/14-quest/` |
 | v26.4 | 2026-10-25 | 임유정 | 앱을 써 보며 찾은 화면 여섯 고침(F-58 묶음) — 먹이 구간 선택창 글씨 · 가로 스크롤, 확인할 먹이 줄 잘림 · 없는 '도서관 탭' 안내를 '퀘스트' 창의 '책' 탭으로, 선택지를 눌러도 채팅이 맨 아래로, 퀘스트 공책 스크롤, 단계 문서를 펼치면 맨 위부터, 로컬 폴더를 고르면 '폴더 없음' 대신 폴더 이름(F-54 이름표 시험 modes.test.js도 새 순서로) (#198) | `02-frontend/navigator/` · `04-tests/navigator/modes.test.js`(F-54 두승현 — 이 줄이 알림) · `04-tests/navigator/electron-side.test.js` · `01-docs/07-maintenance/` |
 | v26.3 | 2026-10-25 | 두승현 | 요구 후보 C-38 — 플로로가 만든 정보를 다른 AI 도구(웹 Claude · 웹 ChatGPT · VS Code)로 넘기기, 길 넷 비교 결정 자료(이재엽 결정 대기) (#197) | `01-docs/00-overview/requirements.md` · `01-docs/00-overview/기록/` |
 | v26.2 | 2026-10-25 | 두승현 | KAN-18 검증 계획 초안 — 가설 셋(H1 멈춤 · H2 설명 · H3 AI 결과 확인)과 A/B 비교 시험 설계(같은 사람 · 네 순서 · 난이도별 과제 짝 + 코디세이 과제 · 검토 과제) (#196) | `01-docs/06-service/` |
