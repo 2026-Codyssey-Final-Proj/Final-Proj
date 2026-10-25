@@ -914,14 +914,7 @@ html.in-win .gacha{background:#16225E}
 html.in-win .tt{background:#0E1745;color:#FFFFFF;border:1px solid rgba(255,255,255,.25)}
 html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 
-/* claude-drafted: 2026-10-23 — 명령 네 칸(C-29: 맡기기 · 살피기 · 책 · 배우기, 숫자 1~4) · 책 탭의 README(C-26) · 배우기 탭(C-30). 색은 위 토큰 그대로 */
-.cmd4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:8px}
-.cmd4 .cm{display:flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 8px;border:1.5px solid var(--line);border-radius:14px;background:var(--soft);color:var(--ink);font-size:calc(14px * var(--ui-scale,1));cursor:pointer;min-width:0}
-.cmd4 .cm:hover{border-color:var(--acc)}
-.cmd4 .cm:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-.cmd4 .cm svg{flex:none;width:calc(18px * var(--ui-scale,1));height:calc(18px * var(--ui-scale,1))}
-.cmd4 .cm b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:800}
-.cmd4 .cm kbd{flex:none;font:600 calc(11px * var(--ui-scale,1)) inherit;border:1px solid var(--line);border-radius:5px;padding:0 5px;color:var(--mute)}
+/* claude-drafted: 2026-10-23 — 책 탭의 README(C-26) · 튜토리얼 한 장(C-30). 색은 위 토큰 그대로. 명령 네 칸(C-29)과 배우기 탭은 2026-10-24 C-35로 뺐다 — 튜토리얼은 도전과제의 '알아 둘 것' 안 */
 .rbook{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 12px;display:grid;gap:8px;background:var(--card)}
 .rb-head{display:flex;align-items:flex-start;gap:8px}
 .rb-head b{display:block;font-size:calc(16px * var(--ui-scale,1))}
@@ -937,11 +930,6 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 .rb-toc button[aria-current=true]{background:var(--acc-soft);color:var(--acc);font-weight:700}
 .rb-ch h4{margin:0 0 6px;font-size:calc(14px * var(--ui-scale,1))}
 .rb-text{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2);font-size:calc(13px * var(--ui-scale,1));line-height:1.6}
-.learn{display:grid;grid-template-columns:minmax(0,170px) minmax(0,1fr);gap:12px;padding:4px 2px}
-.tu-list{display:grid;gap:4px;align-content:start}
-.tu-list button{border:0;background:transparent;color:var(--sub);text-align:left;border-radius:8px;padding:6px 8px;font-size:calc(13px * var(--ui-scale,1));cursor:pointer;display:flex;justify-content:space-between;gap:6px}
-.tu-list button small{flex:none;white-space:nowrap;color:var(--mute);font-size:calc(11px * var(--ui-scale,1))}
-.tu-list button[aria-current=true]{background:var(--acc-soft);color:var(--acc);font-weight:700}
 .tu{display:grid;gap:6px;align-content:start;font-size:calc(13.5px * var(--ui-scale,1));line-height:1.55;color:var(--ink2)}
 .tu p{margin:0}
 .tu h5{margin:6px 0 0;font-size:calc(11.5px * var(--ui-scale,1));color:var(--mute);letter-spacing:.04em}
@@ -953,20 +941,19 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 .tu-st.soon{background:var(--warnbg);color:var(--warn)}
 .tu-ex{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px dashed var(--line);border-radius:12px;padding:8px 10px}
 .tu-ex i{font-style:normal;color:var(--mute)}
-@media (max-width:600px){.cmd4 .cm kbd{display:none}.rb-body,.learn{grid-template-columns:1fr}}
+@media (max-width:600px){.rb-body{grid-template-columns:1fr}}
 
 /* 설정의 GitHub 칸(C-25, 2026-10-24) — 링크(a)로 된 단추는 밑줄 없이 단추처럼, 명령 글은 고정폭 */
 a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .sgrp code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;padding:1px 5px;border-radius:6px;background:rgba(255,255,255,.08)}
 /* 설정의 토큰 칸(2026-10-24) — 최근 기록 다섯 줄 */
 .tok-runs{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-/* 준비 계획판(C-34 · C-32, 2026-10-24) — 한 번에 넣기 · 줄마다 맞아요 / 고칠래요 · 맡길 일 목록과 보고. 판 안에서 내려 보며 읽는다(섬이 너무 길어지지 않게) */
-.pane-body.pl{max-height:min(420px,56vh);padding:12px 14px;display:flex;flex-direction:column;gap:10px}
-.pl .kicker{margin:4px 0 0;font-size:calc(12px * var(--ui-scale,1));font-weight:800;color:var(--tink)}
-.pl .mc-input{min-height:0;width:100%}
-.pl-in{min-height:120px!important}
-.pl .row{align-items:center;gap:8px;flex-wrap:wrap}
-.pl .meta{margin:0;color:var(--sub);font-size:calc(12.5px * var(--ui-scale,1))}
+/* 준비 계획(C-34 · C-32, 2026-10-24) — 한 번에 넣기 · 줄마다 맞아요 / 고칠래요 · 보고. 같은 날 C-35로 판 대신 채팅의 지금 말(.msg.now) 안에 — 채팅이 내려 보며 읽는다 */
+.msg.now .kicker{margin:4px 0 0;font-size:calc(12px * var(--ui-scale,1));font-weight:800;color:var(--tink)}
+.msg.now .pl-items .mc-input,.msg.now .pl-ask .mc-input,.msg.now .pl-rep .mc-input{min-height:0;width:100%}
+.msg.now .row{align-items:center;gap:8px;flex-wrap:wrap}
+.msg.now .pl-it .meta,.msg.now .pl-rep .meta{margin:0;color:var(--sub);font-size:calc(12.5px * var(--ui-scale,1))}
+.pl-draft{margin:0;padding:8px 10px;border-left:3px solid var(--line);color:var(--sub);white-space:pre-wrap;max-height:120px;overflow:auto;font-size:calc(13px * var(--ui-scale,1))}
 .pl-sum{display:grid;gap:4px;margin:0;padding:10px 12px;border-radius:12px;background:var(--soft)}
 .pl-sum div{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px;font-size:calc(13px * var(--ui-scale,1))}
 .pl-sum dt{color:var(--sub);font-weight:700}.pl-sum dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
@@ -988,3 +975,28 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .pl-ask>span{color:var(--ink);font-weight:600}
 @media (max-width:600px){.pl-it{grid-template-columns:minmax(0,1fr)}.pl-btns{justify-content:flex-start}}
 .pl-ans{margin:0;padding:8px 10px;border-radius:8px;background:var(--card);font-size:calc(13px * var(--ui-scale,1))}.pl-ans b{color:var(--tink);margin-right:6px}
+/* claude-drafted: 2026-10-24 — C-35 오버레이는 일하는 자리: 위 줄의 '퀘스트' 단추(이재엽 그림) · 퀘스트 창의 '지금 할 퀘스트'(단계 퀘스트 · 맡길 일) · 도전과제의 '관문 전에 알아 둘 것' */
+.tb-q{flex:none;min-height:30px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-weight:800;font-size:calc(13px * var(--ui-scale,1));cursor:pointer}
+.tb-q:hover{border-color:var(--acc)}
+.tb-q[aria-pressed=true]{background:var(--acc-soft);color:var(--acc);border-color:var(--acc)}
+.tb-q:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.qsel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.qsel button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);text-align:left;cursor:pointer}
+.qsel button b{max-width:100%;font-size:calc(13.5px * var(--ui-scale,1));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qsel button small{font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub)}
+.qsel button[aria-pressed=true]{border-color:var(--acc);background:var(--acc-soft)}
+.qsel button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.learnbox{display:grid;gap:8px;margin:0 0 14px;padding:10px 12px;border-radius:12px;border:2px solid #D9CBA6;background:#FBF6EA;color:#3A2E1C;box-shadow:inset 0 0 0 2px #fff}   /* 도전과제 판(양피지) 위의 카드 — 테마 색 대신 공책 색(어두운 테마의 카드 색은 비쳐서 글이 안 보였다) */
+.learnbox h4{margin:0;font-size:calc(13.5px * var(--ui-scale,1));color:#3A2E1C}
+.learnbox .tu,.learnbox .tu-h b{color:#3A2E1C}.learnbox .tu h5,.learnbox .tu-ex i,.learnbox .meta{color:#6E5F45}.learnbox .tu-ex{border-color:#D9CBA6}
+.learnbox .tu-st.ready{background:#DDEFD5;color:#2F6B2F}.learnbox .tu-st.soon{background:#F6E3B8;color:#7A5200}
+.tu-chips{display:flex;flex-wrap:wrap;gap:6px}
+.tu-chips button{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;border:1.5px solid #D9CBA6;background:#F3EBD8;color:#3A2E1C;font-size:calc(13px * var(--ui-scale,1));cursor:pointer}
+.tu-chips button small{color:#6E5F45;font-size:calc(11px * var(--ui-scale,1))}
+.tu-chips button[aria-pressed=true]{border-color:#B99A4F;background:#FFF4D6;font-weight:800}
+.tu-chips button:focus-visible{outline:2px solid #2F7BD6;outline-offset:2px}
+.learnbox button.tag.term{color:#5A4A33;border-color:#CDBB8E}.learnbox button.tag.term[aria-expanded=true]{background:#FFF4D6;color:#3A2E1C;border-color:#B99A4F}.learnbox .term-say{background:#F3EBD8;color:#3A2E1C}
+.lb-terms{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 0;font-size:calc(12.5px * var(--ui-scale,1))}
+.lb-terms .term-say{flex-basis:100%}
+.book .pl-rep{background:rgba(255,255,255,.55);color:#3A2E1C}.book .pl-rep li.y{color:#2F6B2F}.book .pl-rep li.n,.book .pl-rep .meta{color:#6E5F45}   /* 퀘스트 창의 공책(양피지) — 테마 색 대신 공책 색 */
+@media (max-width:600px){.qsel{grid-template-columns:1fr}}

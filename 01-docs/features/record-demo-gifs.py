@@ -157,7 +157,8 @@ def feed(page, r):                   # 12 C-15 · C-16(2026-10-20): 예시 먹�
     r.click("[data-act=feed-example]", hold=1600)
     r.click("[data-act=feed-mark][data-i='1']", hold=1000)
     r.click("[data-act=feed-confirm]", hold=1600)
-    r.click(".cmd4 [data-act=cmd-book]", hold=1600)             # 2026-10-21 C-22: 퀘스트 창의 서고 탭에서 책 안 단계 문서. 2026-10-23: 위 줄의 단추 대신 명령 칸의 책
+    r.click(".tb [data-act=qwin-toggle]", hold=800)             # 2026-10-21 C-22: 퀘스트 창의 서고 탭에서 책 안 단계 문서. 2026-10-24 C-35: 명령 칸 대신 위 줄의 '퀘스트' 단추 → 책 탭
+    r.click("[data-act=qtab][data-tab=lib]", hold=1600)
     r.still(1200)
 
 

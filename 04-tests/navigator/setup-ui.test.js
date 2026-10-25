@@ -95,8 +95,8 @@ test("GitHub 칸의 할 일: gh 찾기 · 로그인 — 서버가 본 상태(/ap
 test("준비 끝의 요약 세 줄: AI · GitHub · 프로젝트 — 고른 그대로, 건너뛴 것은 건너뛰었다고", () => {
   const gh = { ok: true, gh: { found: true, signedIn: true } };
   assert.deepEqual(U.summary({ via: "cli", gh, ghSkip: false, project: { name: "test-1", where: "~/Floe/test-1" }, planText: "동아리 행사 신청 앱" }),
-    [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"], ["계획", "적었어요 — 시작하면 계획판이 열려요"]]);
-  assert.deepEqual(U.summary({ via: "api", gh: null, ghSkip: true, project: null, planText: "  " }), [["AI", "API 키로 연결"], ["GitHub", "건너뜀 — 나중에 설정에서"], ["프로젝트", "아직 안 골랐어요 — 설정에서 언제든"], ["계획", "나중에 — 맡기기에서 언제든"]]);
+    [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"], ["계획", "적었어요 — 시작하면 채팅에서 계획을 세워요"]]);
+  assert.deepEqual(U.summary({ via: "api", gh: null, ghSkip: true, project: null, planText: "  " }), [["AI", "API 키로 연결"], ["GitHub", "건너뜀 — 나중에 설정에서"], ["프로젝트", "아직 안 골랐어요 — 설정에서 언제든"], ["계획", "나중에 — 채팅의 계획 세우기에서 언제든"]]);
   assert.equal(U.summary({ via: "", gh: { ok: true, gh: { found: true, signedIn: false } }, ghSkip: false, project: null })[1][1], "아직 로그인 전");
 });
 

@@ -107,3 +107,21 @@ test("저장했던 판 읽기: 이해한 것 · 준비할 것 · 물을 것의 �
   const b = B.board(PLAN);
   for (const bad of [{ ...b, plan: { ...b.plan, prep: "x" } }, { ...b, plan: { ...b.plan, ask: [1] } }, { ...b, plan: { ...b.plan, problem: 3 } }]) assert.equal(B.revive(JSON.parse(JSON.stringify(bad))), null);
 });
+
+// ── 오버레이는 일하는 자리(C-35, 2026-10-24 — 이재엽 "이것들을 순차적으로 할려면 퀘스트내용에서 진행" · 버튼 "맡길 일 퀘스트 하나로") ──
+test("맡길 일은 순서대로: 지금 줄(next)은 아직 안 끝낸 첫 줄이고, 그 줄만 맡길 수 있다 — 앞 줄이 끝나야 다음 줄이 열린다", () => {
+  const P3 = N.parsePlan({ ...PLAN, items: [...PLAN.items, { need: "마감이 지나면 막는다", check: "마감 뒤에는 '마감됐어요'가 뜬다" }] });
+  let b = B.confirm(["p1", "p2", "p3"].reduce((x, id) => B.mark(x, id, "ok"), B.board(P3)));
+  assert.equal(B.next(b), "p1");
+  assert.equal(B.stateOf(B.start(b, "p2"), "p2"), "todo", "앞 줄이 안 끝났으면 다음 줄은 맡기지 않는다");
+  b = B.start(b, "p1"); assert.equal(B.next(b), "p1", "맡김 중이어도 지금 줄");
+  b = B.reject(B.report(b, "p1", { items: [], easy: "a", ask: "", done: 0, total: 1 }), "p1", "다시");
+  assert.equal(B.next(b), "p1", "다르게 봐요면 그 줄이 다시 지금 줄");
+  b = B.accept(B.report(B.start(b, "p1"), "p1", { items: [], easy: "a", ask: "", done: 1, total: 1 }), "p1");
+  assert.equal(B.next(b), "p2");
+  assert.equal(B.stateOf(B.start(b, "p2"), "p2"), "running");
+  assert.equal(B.next(B.board(P3)), "", "확정 전에는 지금 줄이 없다");
+  const all = ["p2", "p3"].reduce((x, id) => B.accept(B.report(B.start(x, id), id, { items: [], easy: "a", ask: "", done: 1, total: 1 }), id), b);
+  assert.equal(B.next(all), "", "다 끝냈으면 없다");
+  assert.deepEqual(B.progress(all), { done: 3, total: 3 });
+});

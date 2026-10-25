@@ -471,7 +471,7 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. 본문 없음 — **경로를 받지 않는다.** 폴더는 3-16의 '폴더 고르기'와 같다(앱이 고른 작업 폴더, 없으면 훅 알림의 cwd).
 - 그 폴더의 `README.md`를 **읽기만** 한다 — 바로가기(심볼릭 링크)는 따라가지 않고, 앞의 256KB만 읽고, 나누기 전에 비밀값을 가린다([sensitive.js](sensitive.js)). 나누기는 [readme-book.js](readme-book.js) `parse` — `#` 제목 · 그 아래 한 줄 · `## 버전` 줄(`- V.n · YYYY-MM-DD · 제목`) · `##`마다 한 장(코드 칸 안의 `##`는 제목이 아님).
 - 답(늘 200) `{ ok: true, project, book, why }` — `project`는 폴더 **이름**만(경로는 주지 않는다). 책이 있으면 `book = { title, intro, versions[{v, date, title}], chapters[{id, title, body}], cut }`, `why = ""`. 폴더를 모르면 `book: null, why: "folder"`, README가 없으면 `book: null, why: "none"`.
-- 화면: 명령 칸의 **책**(C-29)이 퀘스트 창의 책 탭을 열 때 부른다. 서버 없이 · 연습 모드 · `book: null`이면 연습 예시 책(`readme-book.js` `EXAMPLE`)을 보이고 까닭을 한 줄로 적는다. 시험: `04-tests/navigator/readme-api.test.js` · `readme-book.test.js`.
+- 화면: 퀘스트 창의 책 탭을 열 때 부른다(위 줄의 '퀘스트' 단추 → 책 탭 — 명령 칸의 **책**(C-29)은 2026-10-24 C-35로 뺐다). 서버 없이 · 연습 모드 · `book: null`이면 연습 예시 책(`readme-book.js` `EXAMPLE`)을 보이고 까닭을 한 줄로 적는다. 시험: `04-tests/navigator/readme-api.test.js` · `readme-book.test.js`.
 
 ### 3-19. `GET /api/github` · `POST /api/github/create` — 설정의 GitHub 칸 (C-25, 2026-10-24)
 
@@ -495,7 +495,7 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
   - 다시 세울 때: `prev`(지난 계획 — 서버가 `parsePlan`으로 모양을 다시 확인) · `notes[{need, check, note}]`(고칠래요 줄의 의견, 12개까지) · `answers[{q, a}]`(물은 것의 답, 4개까지) · `general`(전체 의견). 글은 각 300자까지.
 - 성공 `{ ok, plan, tokens }` — `plan = { problem, have, missing, items[{id, need, check}], prep[], ask[], say }`. 요구 줄의 `id`(p1…)는 코드가 붙인다. 말은 초등학생도 아는 말로(`FLORO_VOICE`, C-33). 넣은 글에 없는 것은 지어내지 않고 `ask`로 묻는다.
 - 거절: 400 `넣은 글이 비어 있음` · 400 `넣은 글이 너무 김 — 8,000자까지` · 400 `지난 계획의 모양이 맞지 않음` · 400 `의견의 모양이 맞지 않음` · 502 `계획 형식이 맞지 않음`.
-- 화면: 명령 칸의 **맡기기**가 여는 계획판(처음 설정의 '계획' 칸에 적은 글이 있으면 그 글로). 줄마다 맞아요 / 고칠래요 · 의견 · 답 → '의견 보내고 다시 세우기' 또는 모두 맞아요면 '이대로 확정'. 확정한 줄은 하나씩 3-16에 `checks`와 함께 맡기고, 보고를 보고 맞아요를 눌러야 끝낸 것으로 친다. 보고 카드에서 **물어보기**는 그 보고(맡긴 일 · 기준 · 보고 글)를 3-7 `/api/answer`로 플로로에게 묻고, Claude Code가 물은 것(`ask`)에 답하면 그 질문과 답을 붙여 다시 맡긴다. 연습의 예시 계획은 판에 `example`로 남아 모드를 바꿔도 진짜 Claude Code로 넘기지 않는다. 판은 이 컴퓨터의 브라우저 저장소에만(규칙 [plan.js](plan.js)). 연습 · 서버 없이는 부르지 않고 예시 계획 · 예시 보고. 시험: `04-tests/navigator/plan-api.test.js` · `plan-rules.test.js` · `plan-board.test.js` · e2e `plan-flow.test.js`.
+- 화면: 섬의 채팅에서 연다(C-35, 2026-10-24 — 채팅의 '계획 세우기' 칩, 처음 설정의 '계획' 칸에 적은 글이 있으면 그 글로. 그 전에는 명령 칸의 **맡기기**가 여는 계획판). 줄마다 맞아요 / 고칠래요 · 의견 · 답 → '의견 보내고 다시 세우기' 또는 모두 맞아요면 '이대로 확정'. 확정한 줄은 퀘스트 창의 '맡길 일' 퀘스트가 되어 **순서대로** 하나씩 3-16에 `checks`와 함께 맡기고, 보고를 보고 맞아요를 눌러야 끝낸 것으로 친다. 보고 카드에서 **물어보기**는 그 보고(맡긴 일 · 기준 · 보고 글)를 3-7 `/api/answer`로 플로로에게 묻고, Claude Code가 물은 것(`ask`)에 답하면 그 질문과 답을 붙여 다시 맡긴다. 연습의 예시 계획은 판에 `example`로 남아 모드를 바꿔도 진짜 Claude Code로 넘기지 않는다. 판은 이 컴퓨터의 브라우저 저장소에만(규칙 [plan.js](plan.js)). 연습 · 서버 없이는 부르지 않고 예시 계획 · 예시 보고. 시험: `04-tests/navigator/plan-api.test.js` · `plan-rules.test.js` · `plan-board.test.js` · e2e `plan-flow.test.js`.
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 
