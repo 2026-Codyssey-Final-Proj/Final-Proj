@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v26.3 | 2026-10-25 | 두승현 | 요구 후보 C-38 — 플로로가 만든 정보를 다른 AI 도구(웹 Claude · 웹 ChatGPT · VS Code)로 넘기기, 길 넷 비교 결정 자료(이재엽 결정 대기) (#197) | `01-docs/00-overview/requirements.md` · `01-docs/00-overview/기록/` |
 | v26.2 | 2026-10-25 | 두승현 | KAN-18 검증 계획 초안 — 가설 셋(H1 멈춤 · H2 설명 · H3 AI 결과 확인)과 A/B 비교 시험 설계(같은 사람 · 네 순서 · 난이도별 과제 짝 + 코디세이 과제 · 검토 과제) (#196) | `01-docs/06-service/` |
 | v26.1 | 2026-10-25 | 두승현 | KAN-22 두승현 역할에 '시연 프로토타입 제작 참여'를 넣음(이재엽 승인, #71) — 수용 테스트는 직접 시험 · 최종 승인 이재엽 (#195) | `TEAM.md` · `CLAUDE.md`(역할별로 돕는 법 한 줄) · `01-docs/00-overview/team-priorities.md` |
 | v26.0 | 2026-10-25 | 이재엽 | 1단계 정리 · 도전과제 지도 · 2단계 초안 · 문서를 GitHub에(C-37) — 초안 확인은 카드 하나 + 한 줄 정리(질문 → 답 순서), 단계 결과를 남겨 도전과제의 한눈에 보기(빈 칸 · 채우기), 1단계 결과로 2단계 초안(POST /api/stagedraft)과 동의, 2단계 뒤 docs 단계 폴더 · 계획서 · CLAUDE.md를 작업 폴더에 쓰고 커밋 · 푸시는 Claude Code(POST /api/docs) (#194) | `02-frontend/navigator/` · `03-backend/navigator/` · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/00-overview/` · `01-docs/07-maintenance/fix-map.md` · `01-docs/features/14-quest/` · `01-docs/catalog/external-tools.md` |
