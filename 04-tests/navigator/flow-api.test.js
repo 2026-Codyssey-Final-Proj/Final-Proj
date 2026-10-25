@@ -28,11 +28,14 @@ Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "event-token")
 for (const k of ["NAV_RECORD", "NAV_TOKENS_FILE", "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"]) delete process.env[k];
 
 const IDEA = "동아리 행사 신청 앱을 만들고 싶어요";
-const PREV = [{ name: "어떤 불편을 풀고 싶은지 한 문장으로 쓰기", lines: ["행사 신청을 종이로 받아서 헷갈려요"] }];
+const PREV = [{ stage: 0, items: [{ name: "어떤 불편을 풀고 싶은지 한 문장으로 쓰기", lines: ["행사 신청을 종이로 받아서 헷갈려요"] }] }];   // 지난 단계 결과들(C-39 — 단계마다 { stage, items })
+const PREV3 = [...PREV, { stage: 1, items: [{ name: "한 문장에 한 가지 일만, 애매한 말 없이 쓰기", lines: ["신청 단추를 누르면, 앱은 신청을 받는다"] }] }];
+const ANSWER3 = { items: Nav.criteriaFor(2, "Xpress").map((c) => ({ text: `${c.text}의 초안`, from: ["2-1"] })), prep: ["기능 개수 세기"], say: "3단계 초안이에요" };
 const ANSWER = { items: Nav.criteriaFor(1, "Xpress").map((c) => ({ text: `${c.text}의 초안` })), say: "2단계 초안이에요" };
 REC.save(process.env.NAV_REPLAY, {
   [REC.keyOf(Nav.stageDraftPrompt(1, "Xpress", { idea: IDEA, prev: PREV }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER,
   [REC.keyOf(Nav.stageDraftPrompt(1, "Full", { idea: IDEA, prev: PREV }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER,   // Full인데 기획서 칸이 없는 답 — 502
+  [REC.keyOf(Nav.stageDraftPrompt(2, "Xpress", { idea: IDEA, prev: PREV3 }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER3,   // 3단계(C-39) — 1 · 2단계 결과로
 });
 const R0 = { chap: 0, title: "동아리 행사 신청 앱", items: Nav.STAGES[0].criteria.map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) };
 const R1 = { chap: 1, title: "동아리 행사 신청 앱", items: Nav.criteriaFor(1, "Xpress").map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) };
@@ -76,9 +79,21 @@ test("POST /api/stagedraft: 받은 글 · 1단계 결과로 2단계 초안 — {
   assert.equal(r.json.draft.items.length, Nav.criteriaFor(1, "Xpress").length);
 });
 
+test("POST /api/stagedraft 3단계(C-39): 1 · 2단계 결과로 — 칸마다 재료({s, i}) · 준비할 것. 지난 단계(2단계)가 빠지면 400", async () => {
+  const r = await call("POST", "/api/stagedraft", { body: { stage: 2, tier: "Xpress", idea: IDEA, prev: PREV3 } });
+  assert.equal(r.status, 200, r.text);
+  assert.equal(r.json.draft.items.length, Nav.criteriaFor(2, "Xpress").length);
+  assert.deepEqual(r.json.draft.items[0].from, [{ s: 1, i: 0 }]); assert.deepEqual(r.json.draft.prep, ["기능 개수 세기"]);
+  const miss = await call("POST", "/api/stagedraft", { body: { stage: 2, tier: "Xpress", idea: IDEA, prev: PREV } });
+  assert.equal(miss.status, 400); assert.match(miss.json.reason, /지난 단계 결과/);
+  const ahead = await call("POST", "/api/stagedraft", { body: { stage: 1, tier: "Xpress", idea: IDEA, prev: PREV3 } });
+  assert.equal(ahead.status, 400, "지금 단계 이후의 결과는 받지 않는다");
+});
+
 test("POST /api/stagedraft 거절: 초안을 만들지 않는 단계 · 빈 글 · 1단계 결과 모양 · 모르는 등급은 400(AI를 부르기 전), 할 일과 맞지 않는 답은 502", async () => {
-  for (const [body, re] of [[{ stage: 2, idea: IDEA, prev: PREV }, /단계/], [{ stage: 1, idea: " ", prev: PREV }, /비어/], [{ stage: 1, idea: IDEA, prev: "x" }, /1단계 결과/],
-    [{ stage: 1, idea: IDEA, prev: [{ name: 1, lines: [] }] }, /1단계 결과/], [{ stage: 1, tier: "Huge", idea: IDEA, prev: PREV }, /등급/]]) {
+  for (const [body, re] of [[{ stage: 3, idea: IDEA, prev: PREV3 }, /단계/], [{ stage: 1, idea: " ", prev: PREV }, /비어/], [{ stage: 1, idea: IDEA, prev: "x" }, /지난 단계 결과/],
+    [{ stage: 1, idea: IDEA, prev: [{ stage: 0, items: [{ name: 1, lines: [] }] }] }, /지난 단계 결과/], [{ stage: 1, idea: IDEA, prev: [{ name: "옛 모양", lines: [] }] }, /지난 단계 결과/],
+    [{ stage: 1, tier: "Huge", idea: IDEA, prev: PREV }, /등급/]]) {
     const r = await call("POST", "/api/stagedraft", { body });
     assert.equal(r.status, 400, JSON.stringify(body).slice(0, 60)); assert.match(r.json.reason, re);
   }
@@ -114,6 +129,26 @@ test("POST /api/docs: 작업 폴더에 단계 문서를 쓰고(README는 내 글
   assert.equal(again.status, 200, again.text);
   assert.equal(fs.readFileSync(path.join(DIR, "README.md"), "utf8").split("<!-- floe:start -->").length, 2, "두 번 올려도 README 절은 하나");
   await untilDone();
+});
+
+test("POST /api/docs(C-39): 누가 정했나 · 플로로 초안 · 재료 · 준비할 것 · 날짜 · 완료 기준을 받아 증빙 칸 · 기획서(docs/PRD.md) · 결정 기록(docs/decisions.md)을 쓴다 — 모양이 틀리면 400", async () => {
+  assert.equal(Srv.useProject(DIR), true);
+  const check = (r) => r.items.map((x) => ({ text: x.name, met: true, evidence: `${x.name}: 적음` }));
+  const E0 = { ...R0, at: "2026-10-25", passed: "2026-10-25", check: check(R0), items: R0.items.map((x, i) => ({ ...x, by: i ? "ok" : "edit", draft: `${x.name} 초안` })) };
+  const E1 = { ...R1, at: "2026-10-25", prep: ["1단계 불편 다시 읽기"], check: check(R1), items: R1.items.map((x) => ({ ...x, by: "ok", draft: x.lines[0], from: [{ s: 0, i: 0 }] })) };
+  const r = await call("POST", "/api/docs", { body: { topic: "동아리 행사 신청 앱", idea: IDEA, results: { 0: E0, 1: E1 } } });
+  assert.equal(r.status, 200, r.text);
+  for (const f of ["docs/PRD.md", "docs/decisions.md"]) assert.ok(r.json.files.includes(f), f);
+  const prd = fs.readFileSync(path.join(DIR, "docs/PRD.md"), "utf8"), dec = fs.readFileSync(path.join(DIR, "docs/decisions.md"), "utf8"), idea = fs.readFileSync(path.join(DIR, "docs/01-idea/idea.md"), "utf8");
+  assert.ok(prd.includes(IDEA), "기획서에 처음 말한 것"); assert.match(dec, /고침/); assert.match(idea, /## 증빙/); assert.match(idea, /2026-10-25/);
+  assert.match(fs.readFileSync(path.join(DIR, "docs/02-plan/plan.md"), "utf8"), /재료: 1단계 Ⅰ 불편/);
+  await untilDone();
+  for (const bad of [{ ...E1, items: E1.items.map((x) => ({ ...x, by: "ai" })) }, { ...E1, items: E1.items.map((x) => ({ ...x, from: [{ s: 9, i: 0 }] })) }, { ...E1, at: "어제" },
+    { ...E1, prep: ["가", "나", "다", "라"] }, { ...E1, check: [{ text: "가", met: "yes", evidence: "" }] }]) {
+    const b = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: bad } } });
+    assert.equal(b.status, 400, JSON.stringify(bad).slice(0, 80)); assert.match(b.json.reason, /2단계 결과의 모양/);
+  }
+  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", idea: "가".repeat(1000), results: { 0: E0, 1: E1 } } })).status, 400, "처음 말한 것은 400자까지");
 });
 
 test("POST /api/docs: 맡긴 일이 진행 중이면 409 — 파일을 하나도 쓰지 않는다(쓰고 나서 못 맡기지 않게)", async () => {

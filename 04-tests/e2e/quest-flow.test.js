@@ -48,7 +48,7 @@ const Nav = require("../../03-backend/navigator/navigator.js");
 const DRAFT = { topic: "독서 모임 알림 앱", pain: "모임 날짜를 자꾸 잊어버려요", change: "모임 전날 알림이 와요", who: "독서 모임 회원 열두 명", size: "medium", sizeWhy: "알림 하나라 흔한 방법이에요" };
 const judged = (stage, tier) => ({ stage, reason: `${stage + 1}단계 할 일을 다 했어요`, criteria: Nav.criteriaFor(stage, tier).map((c) => ({ text: c.text, term: c.term, met: true, evidence: `${c.text}: 적음` })),
   next: { what: "다음", why: "다 했어요", question: "다음은 무엇부터 할까요?", action: "고르면 적어 둬요", options: ["가", "나"] } });
-const stageDraft = (tier) => ({ items: Nav.criteriaFor(1, tier).map((c) => (c.term === "PRD" ? { pick: "light", why: "짧게" } : { text: `${c.text} — 초안` })), say: "2단계 초안이에요" });
+const stageDraft = (stage, tier) => ({ items: Nav.criteriaFor(stage, tier).map((c) => (c.term === "PRD" ? { pick: "light", why: "짧게", from: [] } : { text: `${c.text} — 초안`, from: stage === 2 ? [{ s: 1, i: 0 }] : [{ s: 0, i: 0 }] })), prep: ["준비 하나"], say: `${stage + 1}단계 초안이에요` });
 
 const click = async (page, sel) => { await page.waitForSelector(sel, { timeout: 5000 }); await page.click(sel); await wait(300); };
 const nowSay = (page) => page.evaluate(() => document.querySelector(".msg.now")?.textContent || "");
@@ -114,6 +114,36 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     for (const f of ["docs/01-idea/idea.md", "docs/02-plan/plan.md", "CLAUDE.md", "README.md"]) assert.ok(files.some((x) => x.includes(f)), f);
     await click(page, ".mc.chat [data-act=ship-go]");
     assert.match(await page.evaluate(() => document.querySelector(".mc.chat .log")?.textContent || ""), /연습이라 올리지 않았어요/);
+    // C-39 — 3단계도 1 · 2단계 결과로 만든 초안: 맨 위에 준비할 것, 칸마다 재료
+    assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /3단계 · 동아리 행사 신청 앱/);
+    assert.match(await nowSay(page), /맞나요/);
+    assert.ok((await page.$$(".msg.now .dprep li")).length >= 1, "이 단계 전에 준비할 것");
+    assert.match(await page.$eval(".msg.now .mc-foot", (e) => e.textContent), /재료 — 2단계/, "칸마다 재료(지난 단계 칸)");
+    const s2 = await saved(page);
+    assert.match(s2.results["1"].passed, /^\d{4}-\d{2}-\d{2}$/, "관문을 지난 날"); assert.match(s2.results["0"].at, /^\d{4}-/, "칸을 다 확인한 날");
+    assert.equal(s2.results["0"].items[0].by, "ok", "맞아요 = 플로로 초안 그대로"); assert.equal(s2.results["0"].items[3].by, "pick", "크기는 고름");
+    assert.ok(s2.results["0"].check.length === 4, "완료 기준과 근거");
+    // 도전과제 — 네 칸 흐름 · 누가 정했나 · 재료(올리면 그 칸이 빛남)
+    await click(page, "[data-act=qtab][data-tab=tree]");
+    for (const k of ["in", "ai", "me", "gate"]) assert.ok(await page.$(`.jmap .jm-stage[data-n="0"] .jm-step.${k}`), `1단계 흐름 ${k}`);
+    assert.match(await page.$eval('.jmap .jm-stage[data-n="0"] .jm-step.in', (e) => e.textContent), /처음 말한 것/);
+    assert.match(await page.$eval('.jmap .jm-stage[data-n="1"] .jm-step.gate', (e) => e.textContent), /지났어요/);
+    assert.equal(await page.$eval('.jmap .jm-stage[data-n="0"] .jm-cell[data-cell="0-0"] .jm-by', (e) => e.textContent), "그대로");
+    const ref = await page.$('.jmap .jm-stage[data-n="2"] .jm-ref');
+    assert.ok(ref, "3단계 칸의 재료");
+    const id = await ref.evaluate((e) => e.dataset.ref);
+    await ref.hover(); await wait(200);
+    assert.notEqual(await page.$eval(`.jm-cell[data-cell="${id}"]`, (e) => getComputedStyle(e).outlineStyle), "none", "재료에 올리면 그 칸이 빛난다");
+    const n3 = (await saved(page)).quest.objs.length;
+    for (let k = 0; k < n3; k++) await click(page, ".mc.chat [data-act=draft-ok]");
+    await wait(600);
+    assert.match(await nowSay(page), /모두 했어요/);
+    await passGate(page);
+    assert.match(await nowSay(page), /1 ~ 3단계에서 정한 것을 문서로 묶었어요 — 내 GitHub에 올릴까요/, "3단계 관문에서도 다시 묻는다");
+    const files3 = await page.evaluate(() => [...document.querySelectorAll(".msg.now .ship-files li")].map((li) => li.textContent));
+    for (const f of ["docs/PRD.md", "docs/decisions.md", "docs/03-requirements/requirements.md"]) assert.ok(files3.some((x) => x.includes(f)), f);
+    await click(page, '.msg.now [data-act=ship-peek][data-i="1"]');
+    assert.match(await page.$eval(".msg.now .ship-peek pre", (e) => e.textContent), /\| 날짜 \| 단계 \| 할 일 \| 플로로 초안 \| 정한 것 \| 어떻게 \|/, "결정 기록 미리 보기");
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });
@@ -152,7 +182,7 @@ async function openLive(browser, { stageFail = false } = {}) {
     const b = () => JSON.parse(req.postData() || "{}");
     if (p === "/api/start") return json({ ok: true, start: DRAFT, tokens: 900 });
     if (p === "/api/judge") { const x = b(); seen.judge.push(x); return json({ ok: true, judgement: judged(x.stage, x.tier), tokens: 500 }); }
-    if (p === "/api/stagedraft") { const x = b(); seen.stagedraft.push(x); return json(stageFail ? { ok: false, reason: "AI에 연결하지 못했어요" } : { ok: true, draft: stageDraft(x.tier), tokens: 700 }); }
+    if (p === "/api/stagedraft") { const x = b(); seen.stagedraft.push(x); return json(stageFail ? { ok: false, reason: "AI에 연결하지 못했어요" } : { ok: true, draft: stageDraft(x.stage, x.tier), tokens: 700 }); }
     if (p === "/api/quest") return json({ ok: false, reason: "시험에서는 기본 글" });
     if (p === "/api/docs") { seen.docs.push(b()); taskCalls = 0; return json({ ok: true, project: "test-1", files: ["docs/README.md", "docs/02-plan/plan.md"], task: { state: "running", at: 7 } }); }
     if (p === "/api/task") { taskCalls += 1; return json({ ok: true, task: taskCalls < 2 ? { state: "running", at: 7 } : { state: "done", code: 0, at: 7, report: report(seen.docs.length < 2) } }); }   // 두 번째 올리기는 푸시를 못 한 보고
@@ -182,7 +212,8 @@ test("진짜 AI(가로챔): 관문을 지나면 1단계 결과 · 받은 글로 
     const sd = seen.stagedraft[0];
     assert.equal(sd.stage, 1); assert.equal(sd.tier, "Xpress");
     assert.match(sd.idea, /독서 모임 알림 앱을 만들고 싶어요/, "받은 글");
-    assert.deepEqual(sd.prev.map((x) => x.lines[0]), [DRAFT.pain, DRAFT.change, DRAFT.who, `크기: 보통 — ${DRAFT.sizeWhy}`], "1단계 결과");
+    assert.deepEqual(sd.prev.map((p) => p.stage), [0], "지난 단계 결과 — 단계마다 { stage, items }(C-39)");
+    assert.deepEqual(sd.prev[0].items.map((x) => x.lines[0]), [DRAFT.pain, DRAFT.change, DRAFT.who, `크기: 보통 — ${DRAFT.sizeWhy}`], "1단계 결과");
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /2단계 · 독서 모임 알림 앱/);
     for (let k = 0; k < Nav.criteriaFor(1, "Xpress").length; k++) await click(page, ".mc.chat [data-act=draft-ok]");
     await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
@@ -193,6 +224,12 @@ test("진짜 AI(가로챔): 관문을 지나면 1단계 결과 · 받은 글로 
     assert.equal(seen.docs.length, 1);
     assert.equal(seen.docs[0].topic, "독서 모임 알림 앱");
     assert.deepEqual(Object.keys(seen.docs[0].results).sort(), ["0", "1"], "1 · 2단계 결과");
+    const d0 = seen.docs[0].results["0"];
+    assert.match(seen.docs[0].idea, /독서 모임 알림 앱을 만들고 싶어요/, "처음 말한 것도(기획서 · 1단계 재료)");
+    assert.equal(d0.items[0].by, "ok"); assert.equal(d0.items[0].draft, DRAFT.pain); assert.match(d0.passed, /^\d{4}-/); assert.equal(d0.check.length, 4);
+    assert.deepEqual(seen.docs[0].results["1"].items[0].from, [{ s: 0, i: 0 }], "2단계 칸의 재료");
+    assert.equal(seen.stagedraft.length, 2, "2단계 관문을 지나면 3단계 초안도");
+    assert.deepEqual(seen.stagedraft[1].prev.map((p) => p.stage), [0, 1], "3단계 초안은 1 · 2단계 결과로");
     assert.match(await nowSay(page), /Claude Code에 맡겼어요/);
     await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("올리기를 마쳤어요"), { timeout: 9000 });
     // 도전과제 지도에서 다시 묶기 — 이번엔 Claude Code가 푸시를 못 했다고 보고하면 '마쳤어요'라고 하지 않는다(2026-10-25 리뷰)
