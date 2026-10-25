@@ -85,8 +85,8 @@ html.in-app.plat-win32 .isl,html.in-app.plat-win32 .pill:not(.ping){box-shadow:i
 .in-app .tb button,.in-app .tb select{-webkit-app-region:no-drag}
 /* Mac 노치(다이내믹 아일랜드, 2026-10-19 이재엽 결정) — 앱이 노치 크기를 보내면(app.js → --notch-w · --notch-h) 띠는 노치와 같은 검정으로 노치를 덮고,
    한 줄 · 펼침은 노치 아래로 늘어난다. 위 모서리는 화면 맨 위에 붙으니 각지게, 아래만 둥글게. 노치 없는 컴퓨터 · 브라우저에는 .notch가 안 붙는다 */
-html.notch .strip{width:max(150px,calc(var(--notch-w,200px) + 28px));height:calc(var(--notch-h,38px) + 18px);background:transparent;border-radius:0 0 18px 18px}   /* F-47(2026-10-20 이재엽 "원래대로 배경은 투명으로"): 검게 칠하니 노치가 더 커 보였다. 크기는 그대로 */
-html.notch .strip .head{bottom:6px}
+html.notch .strip{width:max(150px,calc(var(--notch-w,200px) + 28px));height:calc(var(--notch-h,38px) + 34px);background:transparent;border-radius:0 0 18px 18px}   /* F-47(2026-10-20 이재엽 "원래대로 배경은 투명으로"): 검게 칠하니 노치가 더 커 보였다. 높이 +16은 아래 이름표 자리(F-55) */
+html.notch .strip .head{bottom:22px}
 html.notch .pill,html.notch .isl{border-radius:0 0 28px 28px}
 html.notch .pill{border-radius:0 0 25px 25px}
 .glass{background:var(--glass);-webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%)}
@@ -195,12 +195,13 @@ html[data-greet="settle"] .isl.greet .mc-main{opacity:1;animation:greet-text .5s
 @media (prefers-reduced-motion:reduce){html.greeting .isl.greet .mc-cat,html.greeting .isl.greet .mc-main{opacity:1}html[data-greet] .isl.greet{clip-path:none;animation:none}}
 
 /* 띠 — 물결 선 위로 플로로가 얼굴 위쪽만 빼꼼(2026-10-17, 그림은 seal.js의 얼굴만). 마우스를 올리면 한 줄 알약으로 펼쳐진다(navigator.js nextView) */
-.strip{position:relative;width:150px;height:52px;border:0;background:none;padding:0}
-.strip .head{position:absolute;left:50%;bottom:9px;transform:translateX(-50%);width:58px;height:42px;overflow:hidden}   /* 높이 42 = 눈·코·입·수염까지 물 위로, 턱 아래는 물속 */
+/* 띠 — 아래 16px는 작업 자리 이름표(.st-mode) 자리. 이름표가 오른쪽 아래에 있을 때 긴 이름이 플로로 머리를 덮었다(F-55, 2026-10-25 두승현) */
+.strip{position:relative;width:150px;height:68px;border:0;background:none;padding:0}
+.strip .head{position:absolute;left:50%;bottom:25px;transform:translateX(-50%);width:58px;height:42px;overflow:hidden}   /* 높이 42 = 눈·코·입·수염까지 물 위로, 턱 아래는 물속 */
 .strip .head svg{position:absolute;left:0;top:0}
-.strip .wl{position:absolute;left:0;bottom:4px;width:100%;height:12px}
+.strip .wl{position:absolute;left:0;bottom:20px;width:100%;height:12px}
 .dozing .strip .e-dot{display:none}.dozing .strip .e-closed{display:inline}   /* 졸면 눈을 감는다 */
-.strip .zz{display:none;position:absolute;left:calc(50% + 30px);bottom:32px;font:800 12px/1 -apple-system,sans-serif;color:#c9d6f5}
+.strip .zz{display:none;position:absolute;left:calc(50% + 30px);bottom:48px;font:800 12px/1 -apple-system,sans-serif;color:#c9d6f5}
 .strip .zz b{font-size:calc(15px * var(--ui-scale,1));margin-left:1px;vertical-align:4px}
 .dozing .strip .zz{display:block}
 
@@ -657,7 +658,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .pl-mode,.st-mode{flex:none;font-size:11px;font-weight:700;line-height:1;padding:3px 8px;border-radius:999px;white-space:nowrap}
 .pl-mode.fixture,.st-mode.fixture{background:var(--warnbg);color:var(--warn)}
 .pl-mode.live,.st-mode.live{background:var(--okbg);color:var(--ok)}
-.st-mode{position:absolute;right:0;bottom:14px;font-size:10px;padding:2px 6px}
+.st-mode{position:absolute;left:50%;bottom:1px;transform:translateX(-50%);max-width:146px;overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:2px 6px}   /* 물결 아래 가운데 — 플로로와 겹치지 않게(F-55) */
 .st-mode.off{color:var(--bad)}
 @media (max-width:600px){
   ol.todo li:has(.prio){flex-wrap:wrap}
