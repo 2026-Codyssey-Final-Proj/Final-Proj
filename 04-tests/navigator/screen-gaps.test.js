@@ -296,7 +296,7 @@ test("등급 바꾸기: 이미 본 결과는 글자로 맞춰 옮기고, 새로 
 
 test("만드는 크기 이름: 서버가 아는 등급 셋이고, 화면 이름은 쉬운 말이다", () => {
   assert.deepEqual(T.LABELS.map(([v]) => v).sort(), [...Nav.TIERS].sort());
-  assert.deepEqual(T.LABELS.map(([, l]) => l), ["작게", "보통", "크게"]);
+  assert.deepEqual(T.LABELS.map(([, l]) => l), ["짧음", "보통", "긺"], "규모 판단표의 이름(2026-10-25 C-36 — 1단계 Ⅳ 크기 칩과 같다)");
   for (const [v] of T.LABELS) assert.ok(G.explain(v), v);
 });
 

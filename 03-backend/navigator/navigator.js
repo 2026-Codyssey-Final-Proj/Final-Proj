@@ -286,6 +286,29 @@
       "사용자가 말하지 않은 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. examples는 보기일 뿐 정답이 아니다.",
     ], tag("만들고싶은것", String(idea).trim()));
   }
+  // ── C-36 처음 한 바퀴(2026-10-25, 이재엽 "원하는 내용을 플로로에게 받는걸로 … 너가 전체적으로 글들을 확인해서 어떤 내용이고 우리 내용들에 맞춰서 너가 초안을 백엔드로 제작" ·
+  //    버튼 "1단계는 확인만 → 관문 → 2단계" · "규모 판단표 scope-tiers") — 사용자가 플로로에게 준 글 전체로 1단계 할 일 넷의 초안 ──
+  //   topic(제목 — 퀘스트 이름이 된다) · pain(불편) · change(달라지는 것) · who(글에 사람이 있으면, 없으면 "") · size(short · medium · long = 짧음 · 보통 · 긺 = Lite · Xpress · Full) · sizeWhy.
+  //   화면은 칸마다 '맞나요?'로 확인만 한다(quest.js withDraft · draftOf). 판정 · 관문은 그대로
+  const START_MAX = 8000, TOPIC_MAX = 30, START_SIZES = ["short", "medium", "long"];
+  const START_SCHEMA = obj({ topic: str, pain: str, change: str, who: { type: "string" }, size: { type: "string", enum: START_SIZES }, sizeWhy: str });
+  function startPrompt(text) {
+    const s = STAGES[0];
+    return prompt([`사용자가 만들고 싶은 것을 플로로에게 말했다(넣은글). 글 전체를 읽고 무엇을 만들려는지 파악해서, ${s.n + 1}단계 "${s.title}"(${s.does})의 할 일 넷의 초안을 만든다. 사용자는 초안을 보고 맞는지만 고른다.`,
+      `할 일: ${todoOf(s.criteria)}`], [
+      FLORO_VOICE,
+      `topic은 무엇을 만드는지 ${TOPIC_MAX}자 안쪽 이름(예: 동아리 행사 신청 앱). 퀘스트 제목이 된다.`,
+      "pain은 (1) 어떤 불편을 풀고 싶은지 한 문장(80자 안쪽). change는 (2) 다 만들면 무엇이 달라지는지 한 문장(80자 안쪽).",
+      "who는 (3) 누가 쓰는지 — 글에 쓰는 사람이 나오면 그 사람을 한 문장(60자 안쪽)으로, 글에 없으면 빈 문자열 \"\". 사람을 지어내지 않는다.",
+      "size는 (4) 얼마나 크게 만들지 — 규모 판단표(scope-tiers)를 이 순서대로 따른다: ① 흔히 쓰는 방법(표준 패턴) 하나로 바로 풀리는 일이면 medium ② 아니고, 작은 버그 고치기나 한 파일짜리 스크립트 수준이면 short ③ 둘 다 아니면 long. sizeWhy는 그렇게 본 까닭 한 문장(60자 안쪽).",
+      "글에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 글에 있는 말을 그대로 쓴다.",
+    ], tag("넣은글", String(text).trim()));
+  }
+  // 답의 모양 — 글은 잘라 쓰고, size는 셋 중 하나, who는 빈 글자도 된다('없음' · '모름' 같은 답도 빈 글자로). 틀리면 null. START_MAX는 계획(PLAN_MAX)과 같은 8,000자 — 시험이 맞대어 본다
+  function parseStart(o) {
+    if (!o || !has(o, ["topic", "pain", "change", "sizeWhy"]) || typeof o.who !== "string" || !START_SIZES.includes(o.size)) return null;
+    return { topic: o.topic.trim().slice(0, TOPIC_MAX), pain: o.pain.trim().slice(0, 160), change: o.change.trim().slice(0, 160), who: /^(없음|없어요|모름|알 수 없음|-)?\.?$/.test(o.who.trim()) ? "" : o.who.trim().slice(0, 120), size: o.size, sizeWhy: o.sizeWhy.trim().slice(0, 120) };
+  }
   // 답의 모양 — qa는 할 일 개수와 같아야 한다(다르면 null). 긴 글은 잘라 쓴다
   function parseQuest(o, stage, tier) {
     const todo = criteriaFor(stage, tier);
@@ -388,6 +411,7 @@
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, TASK_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt, taskPrompt,
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
     FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest,   // C-22 퀘스트 제작(2026-10-21)
+    START_MAX, START_SCHEMA, startPrompt, parseStart,   // C-36 처음 한 바퀴 — 1단계 초안(2026-10-25)
     PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport };   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
