@@ -360,7 +360,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .hint{display:inline-flex;align-items:center;gap:6px;font-size:calc(13px * var(--ui-scale,1));color:var(--acc);font-weight:600}
 
 /* 먹이 주기(C-15, 2026-10-20 — app.js feedSortMoment): 나눈 구간 목록 — 번호 · 주제 · 표시(먹어요 / 못 먹어요 / 안 먹을게요) · 바꾸는 단추. 빠진 구간은 흐리게 */
-.feedlist{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:260px;overflow:auto}
+.feedlist{align-self:stretch;list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:260px;overflow:auto}
 .feedlist li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:14px;background:var(--card);border:1.5px solid var(--line);min-width:0}
 .feedlist li.skip{border-style:dashed;background:var(--soft)}   /* 흐리게(opacity)는 글자 대비가 4.5에 못 미쳐(axe) 바탕만 다르게 */
 .feedlist li.skip .b.ghost{color:var(--sub)}
@@ -388,8 +388,8 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .inbox{margin-bottom:10px;padding:10px 12px;border-radius:16px;border:1.5px solid var(--line);background:var(--card)}
 .inbox .stg{font-size:calc(12px * var(--ui-scale,1));font-weight:700;color:var(--sub)}
 .inboxlist{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
-.inboxlist li{display:flex;align-items:center;gap:8px;min-width:0}
-.inboxlist .ft{display:flex;flex-direction:column;min-width:0;flex:1}.inboxlist .ft b{font-size:calc(13.5px * var(--ui-scale,1))}.inboxlist .ft small{color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inboxlist li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}   /* 제목은 한 줄 다 쓰고 종류 · 단추는 아래 줄로 — 좁은 퀘스트 창에서 제목이 한 글자씩 세로로 잘렸다(F-58-2) */ /* claude-drafted: 2026-10-25 */
+.inboxlist .ft{display:flex;flex-direction:column;min-width:0;flex:1 1 100%}.inboxlist .ft b{font-size:calc(13.5px * var(--ui-scale,1))}.inboxlist .ft small{color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inbox .meta{margin:6px 0 0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
 select.kind{font:inherit;font-size:calc(12.5px * var(--ui-scale,1));color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:3px 8px}
 .feedlist select.kind{margin-left:auto}
@@ -474,6 +474,7 @@ textarea.doc{min-height:240px;font:calc(13px * var(--ui-scale,1))/1.65 ui-monosp
 .sub.ok{color:var(--ok)}
 textarea{width:100%;min-height:100px;font:inherit;font-size:calc(14px * var(--ui-scale,1));color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;resize:vertical}
 select{font:inherit;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+select option{background:#1B2766;color:#F2F6FF}   /* 펼친 목록은 OS가 흰 바탕으로 그려 밝은 글씨가 안 보였다 — 바탕을 섬 네이비로(F-58-1) */ /* claude-drafted: 2026-10-25 */
 details summary{cursor:pointer;font-size:calc(13px * var(--ui-scale,1));font-weight:600;color:var(--mute);min-height:32px;display:flex;align-items:center}
 details summary::after{content:"▾";margin-left:6px;font-size:calc(11px * var(--ui-scale,1))}details[open]>summary::after{content:"▴"}
 details summary:hover{color:var(--acc)}
@@ -688,16 +689,17 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .mc.chat .main{display:flex;flex-direction:column;gap:8px;min-width:0;border-radius:20px;background:var(--card);border:1px solid var(--line);padding:12px}
 .mc.chat .log{display:flex;flex-direction:column;gap:8px;max-height:min(420px,52vh);min-height:150px;overflow:auto;padding-right:4px}   /* scroll-behavior:smooth는 뺐다 — 다시 그릴 때마다 맨 위에서 미끄러져 내려왔다. 새 말에만 부드럽게(app.js render) */
 .msg{display:flex;max-width:88%}.msg.me{align-self:flex-end}
-.msg .b{display:block;padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--soft);color:var(--ink);font-size:calc(14px * var(--ui-scale,1));line-height:1.5;min-width:0;border:1px solid var(--line);overflow-wrap:anywhere}
-.msg .b:hover{transform:none;box-shadow:none}   /* 말풍선은 단추(.b)와 이름만 같다 — 마우스를 올려도 떠오르지 않게(임유정 2026-10-22) */
-.msg.me .b{background:var(--acc-btn);color:var(--acc-ink);border-radius:16px 16px 4px 16px;font-weight:600;border-color:transparent}
-.msg.sys .b{background:var(--warnbg);color:var(--warn);font-size:calc(13px * var(--ui-scale,1));border-radius:12px}
+/* 말풍선 규칙은 바로 아래 .b(말풍선)에만 — 안쪽 단추(.b)에 width:100% 등이 걸려 먹이 구간이 가로로 넘쳤다(F-58-1, 임유정 2026-10-25) */ /* claude-drafted: 2026-10-25 */
+.msg > .b{display:block;padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--soft);color:var(--ink);font-size:calc(14px * var(--ui-scale,1));line-height:1.5;min-width:0;border:1px solid var(--line);overflow-wrap:anywhere}
+.msg > .b:hover{transform:none;box-shadow:none}   /* 말풍선은 단추(.b)와 이름만 같다 — 마우스를 올려도 떠오르지 않게(임유정 2026-10-22) */
+.msg.me > .b{background:var(--acc-btn);color:var(--acc-ink);border-radius:16px 16px 4px 16px;font-weight:600;border-color:transparent}
+.msg.sys > .b{background:var(--warnbg);color:var(--warn);font-size:calc(13px * var(--ui-scale,1));border-radius:12px}
 .msg.sys .bar{display:block;height:6px;border-radius:3px;background:rgba(127,127,127,.2);overflow:hidden;margin-top:6px}
 .msg.sys .bar i{display:block;height:100%;width:40%;background:var(--warn);border-radius:3px;animation:barrun 1.4s linear infinite}
 @keyframes barrun{from{translate:-100% 0}to{translate:260% 0}}
 @media (prefers-reduced-motion:reduce){.msg.sys .bar i{animation:none;width:100%}}
 .msg.now{max-width:100%}
-.msg.now .b{display:flex;flex-direction:column;gap:8px;border-color:var(--tink);width:100%}
+.msg.now > .b{display:flex;flex-direction:column;gap:8px;border-color:var(--tink);width:100%}
 .msg.now .say{font-size:calc(18px * var(--ui-scale,1));font-weight:800;line-height:1.4;letter-spacing:-.2px;text-wrap:balance}
 .msg.now .mc-sub{color:var(--sub)}
 .msg.now .mc-meta{font-size:calc(12px * var(--ui-scale,1))}
@@ -771,6 +773,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .ev .sub button{flex:1;border:1.5px solid var(--line);background:var(--soft);color:var(--ink);border-radius:10px;padding:7px;font-size:calc(13px * var(--ui-scale,1));font-weight:700}
 /* 공책 — 종이 색은 일부러 고정(밝은 · 어두운 설정과 상관없이 공책은 공책) */
 .book{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);border-radius:16px;overflow:hidden;border:2px solid #6B5B3E;background:#F3EBD8;color:#3A2E1C;min-height:400px}
+.wbody>.book{flex:none}   /* 공책은 내용 높이 그대로 — overflow:hidden인 상자는 창 높이에 맞춰 줄어들어 아래가 잘리고 바깥이 스크롤되지 않았다(F-58-4) */ /* claude-drafted: 2026-10-25 */
 .page{padding:14px 14px 16px;position:relative;min-width:0}
 .page.l{background:#E9DFC6;border-right:2px dashed #CBBB9A;padding-left:26px}
 .page.l::before{content:"";position:absolute;left:6px;top:24px;bottom:24px;width:8px;background:repeating-linear-gradient(180deg,#5A4A33 0 14px,transparent 14px 60px);border-radius:4px}
@@ -870,8 +873,8 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
   .win{background:#16225E}
   .wh{background:rgba(0,0,0,.22)}
   .mc.chat .main{background:rgba(0,0,0,.18)}
-  .msg .b{background:rgba(255,255,255,.09)}
-  .msg.now .b{background:rgba(0,0,0,.14)}
+  .msg > .b{background:rgba(255,255,255,.09)}
+  .msg.now > .b{background:rgba(0,0,0,.14)}
   .msg.now .flowline>span{background:rgba(255,255,255,.07)}
 }
 
