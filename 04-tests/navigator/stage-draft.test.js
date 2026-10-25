@@ -11,27 +11,27 @@ const PREV = [{ name: "어떤 불편을 풀고 싶은지 한 문장으로 쓰기
 const mk = (n, tier) => Q.makeQuest(N.STAGES[n], N.criteriaFor(n, tier));
 const answer = (tier) => ({ items: N.criteriaFor(1, tier).map((c) => ({ text: c.term === "PRD" ? "경량 — 기능이 몇 개뿐이라 짧은 기획서면 돼요" : `${c.text}의 초안` })), say: "2단계 초안을 만들었어요" });
 
-test("초안을 만드는 단계: 지금은 2단계(코드 1)만 — 1단계는 /api/start(C-36)", () => {
-  assert.deepEqual(N.DRAFT_STAGES, [1]);
+test("초안을 만드는 단계: 2단계(코드 1)부터 — 1단계는 /api/start(C-36), 3단계는 C-39(stage3-evidence.test.js)", () => {
+  assert.ok(N.DRAFT_STAGES.includes(1) && !N.DRAFT_STAGES.includes(0));
 });
 
 test("2단계 초안 요청문(stageDraftPrompt): 받은 글 · 1단계 결과를 싸서 넘기고, 그 등급의 할 일을 순서대로 — 초등학생 말 · 지어내지 않기 · 기획서 칸은 경량 / 상세 / 안 함 중 하나로 시작", () => {
-  const p = N.stageDraftPrompt(1, "Full", { idea: "동아리 행사 신청 앱을 만들고 싶어요", prev: PREV });
-  for (const s of ["<받은글>", "동아리 행사 신청 앱을 만들고 싶어요", "<1단계결과>", "행사 신청을 종이로 받아서 헷갈려요", "쓰는 사람: 소수", N.FLORO_VOICE, ...N.criteriaFor(1, "Full").map((c) => c.text)]) assert.ok(p.includes(s), s);
+  const p = N.stageDraftPrompt(1, "Full", { idea: "동아리 행사 신청 앱을 만들고 싶어요", prev: [{ stage: 0, items: PREV }] });
+  for (const s of ["<받은글>", "동아리 행사 신청 앱을 만들고 싶어요", "<지난단계결과>", "행사 신청을 종이로 받아서 헷갈려요", "쓰는 사람: 소수", N.FLORO_VOICE, ...N.criteriaFor(1, "Full").map((c) => c.text)]) assert.ok(p.includes(s), s);
   assert.match(p, /지어내지 않는다/); assert.match(p, /경량/); assert.match(p, /상세/); assert.match(p, /안 함/);
-  const lite = N.stageDraftPrompt(1, "Lite", { idea: "앱", prev: PREV });
+  const lite = N.stageDraftPrompt(1, "Lite", { idea: "앱", prev: [{ stage: 0, items: PREV }] });
   assert.ok(!lite.includes("정해진 빈칸에 아이디어 채우기"), "등급에 없는 할 일은 묻지 않는다");
 });
 
-test("2단계 초안 모양(STAGE_DRAFT_SCHEMA): 할 일마다 글 하나 · 한마디", () => {
-  assert.deepEqual([...N.STAGE_DRAFT_SCHEMA.required].sort(), ["items", "say"]);
-  assert.deepEqual(N.STAGE_DRAFT_SCHEMA.properties.items.items.required, ["text"]);
+test("2단계 초안 모양(STAGE_DRAFT_SCHEMA): 할 일마다 글 하나(+ 재료, C-39) · 준비할 것 · 한마디", () => {
+  assert.deepEqual([...N.STAGE_DRAFT_SCHEMA.required].sort(), ["items", "prep", "say"]);
+  assert.ok(N.STAGE_DRAFT_SCHEMA.properties.items.items.required.includes("text"));
 });
 
 test("2단계 초안 읽기(parseStageDraft): 할 일 개수 · 순서대로, 기획서 칸은 고르기(pick light · full · none + 까닭)로 · 글은 잘라 쓴다 · 개수가 다르거나 기획서 칸이 셋 밖이면 null", () => {
   const r = N.parseStageDraft(answer("Full"), 1, "Full");
   assert.equal(r.items.length, 5);
-  assert.deepEqual(r.items[3], { pick: "light", why: "기능이 몇 개뿐이라 짧은 기획서면 돼요" });
+  assert.deepEqual(r.items[3], { pick: "light", why: "기능이 몇 개뿐이라 짧은 기획서면 돼요", from: [] });
   assert.equal(r.items[0].text, "정해진 빈칸에 아이디어 채우기의 초안"); assert.equal(r.say, "2단계 초안을 만들었어요");
   assert.equal(N.parseStageDraft({ ...answer("Full"), items: answer("Full").items.map((x, i) => (i === 3 ? { text: "상세 기획서로 — 사람이 여럿이에요" } : x)) }, 1, "Full").items[3].pick, "full");
   assert.equal(N.parseStageDraft({ ...answer("Full"), items: answer("Full").items.map((x, i) => (i === 3 ? { text: "안 함" } : x)) }, 1, "Full").items[3].pick, "none");
@@ -40,7 +40,7 @@ test("2단계 초안 읽기(parseStageDraft): 할 일 개수 · 순서대로, �
   assert.equal(long.items[0].text.length, 300);
   const prdAs = (t) => ({ ...answer("Full"), items: answer("Full").items.map((x, i) => (i === 3 ? { text: t } : x)) });
   for (const [bad, stage, tier] of [[null, 1, "Full"], [{}, 1, "Full"], [{ ...answer("Full"), items: answer("Full").items.slice(1) }, 1, "Full"], [prdAs("몰라요"), 1, "Full"],
-    [{ ...answer("Lite"), items: [{ text: " " }, { text: "a" }] }, 1, "Lite"], [answer("Full"), 2, "Full"]]) assert.equal(N.parseStageDraft(bad, stage, tier), null, `${JSON.stringify(bad).slice(0, 50)} · ${stage}`);
+    [{ ...answer("Lite"), items: [{ text: " " }, { text: "a" }] }, 1, "Lite"], [answer("Full"), 3, "Full"]]) assert.equal(N.parseStageDraft(bad, stage, tier), null, `${JSON.stringify(bad).slice(0, 50)} · ${stage}`);
 });
 
 test("withStageDraft: 2단계 퀘스트에 초안을 얹으면 받기 화면 없이 바로 확인(phase quest) · 초안 글(draftOf) · 고르기 칸(pickOf). 개수가 다르면 그대로", () => {
@@ -60,7 +60,7 @@ test("단계 결과(resultOf): 보고한 퀘스트의 할 일 이름과 적은 �
   let q = Q.retitle(mk(0, "Full"), "동아리 행사 신청 앱");
   ["불편 줄", "달라짐 줄", "누가 줄", "크기: 보통"].forEach((t, i) => { q = Q.fill(q, i, t); });
   const r = Q.resultOf(q);
-  assert.deepEqual(r, { chap: 0, title: "동아리 행사 신청 앱", items: q.objs.map((o, i) => ({ name: o.name, lines: q.lines[i] })) });
+  assert.deepEqual(r, { chap: 0, title: "동아리 행사 신청 앱", items: q.objs.map((o, i) => ({ name: o.name, lines: q.lines[i], by: "me" })) }, "초안 없이 적은 줄 = 직접(by me, C-39)");
   r.items[0].lines.push("x"); assert.deepEqual(q.lines[0], ["불편 줄"], "원본과 따로");
   assert.deepEqual(N.STAGES[0].criteria.map((c) => Q.shortOf(c.text)), ["불편", "달라지는 것", "누가", "크기"]);
   assert.deepEqual(N.criteriaFor(1, "Full").map((c) => Q.shortOf(c.text)), ["빈칸 채우기", "왜 · 어디까지 · 언제 성공", "한 문장 한 가지", "기획서로 키울지", "남의 정보 · 밖으로"]);
@@ -73,7 +73,7 @@ test("연습(서버 없이)의 2단계 예시 초안 — 등급마다 그 할 �
     const ex = Q.exampleStageDraft(1, N.criteriaFor(1, tier));
     assert.equal(ex.items.length, N.criteriaFor(1, tier).length, tier); assert.equal(ex.example, true);
   }
-  assert.equal(Q.exampleStageDraft(2, N.criteriaFor(2, "Full")), null, "예시가 없는 단계");
+  assert.equal(Q.exampleStageDraft(3, N.criteriaFor(3, "Full")), null, "예시가 없는 단계(4단계 — 다음 판)");
   const words = JSON.stringify([Q.exampleStageDraft(1, N.criteriaFor(1, "Full")), Q.DOC_PICKS]);
   for (const j of N.JARGON) assert.ok(!words.includes(j), j);
 });

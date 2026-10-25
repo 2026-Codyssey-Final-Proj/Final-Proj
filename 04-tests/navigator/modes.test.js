@@ -149,9 +149,18 @@ test("app.js — C-37: 내 말보다 먼저 지금 보이는 플로로의 말을
 test("app.js — C-37: 단계 결과(results)를 남기고 도전과제의 기본은 한눈에 보기(jmap) · 2단계 초안(/api/stagedraft) · 2단계가 끝나면 문서 올리기(/api/docs, docs.js)", () => {
   const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
   assert.ok(keep.includes('"results"'), "단계 결과는 다시 켜도 남는다");
-  assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: QU\.resultOf\(st\.quest\) \};/, "보고가 된 퀘스트의 결과");
+  assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: \{ \.\.\.QU\.resultOf\(st\.quest\), at: ymd\(\), check: j\.criteria\.map\(/, "보고가 된 퀘스트의 결과 + 확인한 날 · 완료 기준(C-39)");
   assert.match(app, /function treeMap\(cur\)/); assert.match(app, /"jmap-fill": /);
   assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
-  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, results: shipResults\(\) \}\)/, "문서 올리기 — 결과만 보낸다(경로 · 글은 서버가 docs.js로)");
+  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", results: shipResults\(\) \}\)/, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
   assert.match(read("navigator/index.html"), /docs\.js/, "미리 보기도 같은 docs.js");
+});
+
+// ── C-39(2026-10-25, 이재엽 "3단계에서 … 초안들 보여줘 · PRD처럼 공식문서들로 … 증빙 · 도전과제에서 … 어떻게 넣고 어떤 부분을 했는지 이어져서") ──
+test("app.js — C-39: 고르는 칩은 누가 정했나 = 고름(pick) · 관문을 지난 날(passed) · 2단계부터 관문마다 문서 올리기 · 3단계 초안은 지난 단계 전부 · 도전과제는 네 칸 흐름과 재료", () => {
+  for (const a of ["draft-who", "draft-pick", "draft-size"]) assert.match(app.slice(app.indexOf(`"${a}": `), app.indexOf(`"${a}": `) + 400), /"pick"\)/, `${a}는 고름`);
+  assert.match(app, /\[s\.n\]: \{ \.\.\.st\.results\[s\.n\], passed: ymd\(\) \}/, "관문을 지난 날");
+  assert.match(app, /FDOCS && s\.n >= 1 && st\.results\[0\] && st\.results\[1\]\) \{ st\.ship = \{ phase: "offer" \}/, "2단계부터 관문마다 — 마지막(8단계) 관문도(다음 단계가 없어도)");
+  assert.match(app, /filter\(\(k\) => k < n\)\.sort\(\(a, b\) => a - b\)\.map\(\(k\) => \(\{ stage: k, items:/, "초안에는 지난 단계 결과 전부");
+  for (const k of ["넣은 것", "플로로가 한 것", "내가 정한 것", "관문", "jm-ref", "이 단계 전에 준비할 것"]) assert.ok(app.includes(k), k);
 });

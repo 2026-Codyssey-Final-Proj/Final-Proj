@@ -79,19 +79,26 @@
   const isDone = (q) => !!q && curIdx(q) < 0;
   const filled = (q, i) => !!q && (q.lines[i] || []).length >= q.objs[i].need;
   // 한 줄 적기 — 원본은 안 바꾼다. 빈 줄은 적지 않는다. 한 줄은 400자까지(서버가 단계 결과 · 문서에서 받는 길이 — 2026-10-25 리뷰)
+  // by(C-39) — 누가 정했나: 넘겨주면 그것(고르는 칸은 pick), 아니면 플로로가 낸 것과 맞대어 그대로(ok) · 고침(edit) · 직접(me)
   const LINE_MAX = 400;
-  function fill(q, i, text) {
+  const BY = ["ok", "edit", "me", "pick"];
+  const BY_WORD = { ok: "그대로", edit: "고침", me: "직접", pick: "고름" };
+  const byFor = (q, i, t, by) => (BY.includes(by) ? by : proposalOf(q, i) ? (t === proposalOf(q, i) ? "ok" : "edit") : "me");
+  const withBy = (q, i, b) => ({ ...q, by: q.objs.map((_, k) => (k === i ? b : (q.by || [])[k] || null)) });
+  function fill(q, i, text, by) {
     const t = String(text || "").trim().slice(0, LINE_MAX);
     if (!q || !q.objs[i] || !t) return q;
     const lines = q.lines.map((l, k) => (k === i ? [...l, t] : l));
-    return { ...q, lines, sel: i };
+    return withBy({ ...q, lines, sel: i }, i, byFor(q, i, t, by));
   }
-  // 줄 고치기(공책에서) — i번 할 일의 k번 줄. 빈 글이면 그 줄을 지운다
+  // 줄 고치기(공책에서) — i번 할 일의 k번 줄. 빈 글이면 그 줄을 지운다. 고치면 누가 정했나도 다시(C-39) — 단, 고른 칸(pick)은 고른 것을 다듬어도 고름 그대로,
+  //   줄이 다 지워지면 누가 정했나도 지운다(2026-10-25 리뷰 — 고르는 칸의 줄은 플로로가 낸 것과 모양이 달라 늘 '고침'으로 바뀌었다)
   function setLine(q, i, k, text) {
     if (!q || !q.objs[i]) return q;
     const t = String(text || "").trim();
     const lines = q.lines.map((l, idx) => (idx !== i ? l : t ? l.map((x, j) => (j === k ? t : x)) : l.filter((_, j) => j !== k)));
-    return { ...q, lines };
+    const was = (q.by || [])[i];
+    return withBy({ ...q, lines }, i, !lines[i].length ? null : was === "pick" ? "pick" : t ? byFor(q, i, t) : was || null);
   }
   const retitle = (q, title) => { const t = String(title || "").trim(); return t ? { ...q, title: t } : q; };
   const rename = (q, i, name) => { const t = String(name || "").trim(); return q && q.objs[i] && t ? { ...q, objs: q.objs.map((o, k) => (k === i ? { ...o, name: t } : o)) } : q; };
@@ -136,7 +143,7 @@
   // 서버(/api/stagedraft — navigator.js parseStageDraft)가 준 { items[{text} | {pick, why}] }를 그 장 퀘스트에. 할 일 개수와 같을 때만. 받기 화면 없이 바로 칸마다 확인
   function withStageDraft(q, d) {
     if (!q || !d || !Array.isArray(d.items) || d.items.length !== q.objs.length) return q;
-    return { ...q, draft: { stage: q.chap, items: d.items, example: !!d.example }, phase: "quest", sel: 0, desc: "플로로가 지난 장에서 정한 것으로 이 장의 초안을 만들었어요. 칸마다 맞는지만 봐 주세요 — 다르면 고쳐 적으면 돼요." };
+    return { ...q, draft: { stage: q.chap, items: d.items, prep: Array.isArray(d.prep) ? d.prep : [], example: !!d.example }, phase: "quest", sel: 0, desc: "플로로가 지난 장에서 정한 것으로 이 장의 초안을 만들었어요. 칸마다 맞는지만 봐 주세요 — 다르면 고쳐 적으면 돼요." };
   }
   // 기획서로 키울지(PRD) — 고르는 칸의 셋. 고른 것이 그 줄이 된다
   const DOC_PICKS = [["light", "경량 기획서로"], ["full", "상세 기획서로"], ["none", "키우지 않아요"]];
@@ -145,22 +152,51 @@
     "어떤 불편을 풀고 싶은지 한 문장으로 쓰기": "불편", "다 만들면 무엇이 달라지는지 쓰기": "달라지는 것", "누가 쓰는지 쓰기": "누가", "얼마나 크게 만들지 정하기": "크기",
     "정해진 빈칸에 아이디어 채우기": "빈칸 채우기", "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기": "왜 · 어디까지 · 언제 성공", "한 문장에 한 가지 일만, 애매한 말 없이 쓰기": "한 문장 한 가지",
     "자세한 기획서로 키울지 직접 정하기": "기획서로 키울지", "다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기": "남의 정보 · 밖으로",
+    "기능을 '~하면, 앱은 ~한다' 문장으로 쓰기": "기능 문장", "'빠르게' 같은 애매한 말을 숫자로 바꾸기 (모르면 '아직 모름')": "숫자로", "기능마다 꼭 필요한지, 있으면 좋은지 표시하기": "꼭 · 있으면 좋음",
+    "기능마다 어디서 나온 생각인지 표로 잇기 (기능이 5개 이상일 때)": "나온 곳 잇기", "막아야 할 일(예: 남의 정보가 밖으로 나감)도 '~하면, 앱은 ~한다'로 쓰기": "막을 일",
   };
   const shortOf = (name) => SHORT[name] || name;
-  // 단계 결과 — 보고한 퀘스트의 할 일 이름과 적은 줄(원본과 따로). 한곳에서 보기 · 도전과제 지도 · 문서(docs.js)가 쓴다
-  const resultOf = (q) => ({ chap: q.chap, title: q.title, items: q.objs.map((o, i) => ({ name: o.name, lines: [...(q.lines[i] || [])] })) });
+  // 플로로가 이 칸에 낸 것(C-39) — 초안 글 · 권한 크기 · 권한 기획서. 고르는 칸도 무엇을 권했는지 남긴다(문서의 '플로로 초안' · 도전과제 흐름). 없으면 빈 글
+  function proposalOf(q, i) {
+    const d = q && q.draft; if (!d) return "";
+    if (q.chap === 0 && i === SIZE_AT) return d.size ? `${SIZE_WORD[d.size]} — ${d.sizeWhy || ""}`.replace(/ — $/, "") : "";
+    const pk = pickOf(q, i); if (pk) { const x = DOC_PICKS.find(([k]) => k === pk.pick); return x ? `${x[1]}${pk.why ? ` — ${pk.why}` : ""}` : ""; }
+    return draftOf(q, i) || "";
+  }
+  // 이 칸의 재료(C-39) — 플로로가 초안을 쓸 때 본 지난 단계 칸 [{ s, i }]
+  const fromOf = (q, i) => { const it = q && q.chap !== 0 && q.draft && q.draft.items && q.draft.items[i]; return it && Array.isArray(it.from) ? it.from : []; };
+  // 단계 결과 — 보고한 퀘스트의 할 일 이름과 적은 줄(원본과 따로). 한곳에서 보기 · 도전과제 지도 · 다음 장 초안 · 문서(docs.js)가 쓴다.
+  //   C-39: 칸마다 누가 정했나(by) · 플로로가 낸 것(draft) · 재료(from), 이 단계 전에 준비할 것(prep) — 없는 것은 넣지 않는다. 날짜 · 완료 기준은 화면이 더한다(at · passed · check)
+  const resultOf = (q) => {
+    const prep = q.draft && Array.isArray(q.draft.prep) && q.draft.prep.length ? [...q.draft.prep] : null;
+    const items = q.objs.map((o, i) => { const by = (q.by || [])[i], draft = proposalOf(q, i), from = fromOf(q, i);
+      return { name: o.name, lines: [...(q.lines[i] || [])], ...(by ? { by } : {}), ...(draft ? { draft } : {}), ...(from.length ? { from: from.map((r) => ({ ...r })) } : {}) }; });
+    return { chap: q.chap, title: q.title, items, ...(prep ? { prep } : {}) };
+  };
   // 연습(서버 없이 FR-10)의 2단계 예시 초안 — 할 일 글로 찾아 그 등급의 개수 · 순서대로. 1단계 예시(EXAMPLE_DRAFT)와 같은 이야기. 예시가 없는 단계면 null
+  //   재료(from)는 1단계 칸 순서(불편 · 달라지는 것 · 누가 · 크기)와 2단계 칸 순서(Full 기준 — 등급마다 칸 수가 달라 2단계 칸은 이름으로 찾는다)
   const EXAMPLE_STAGE = { 1: {
-    "정해진 빈칸에 아이디어 채우기": { text: "누구: 동아리 운영진과 회원 · 불편: 신청을 종이로 받아 헷갈림 · 해결: 화면으로 신청 받기 · 어디까지: 신청과 마감 알림 · 언제 성공: 신청이 한곳에 모임" },
-    "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기": { text: "왜: 누가 냈는지 헷갈려서 · 어디까지: 신청 받기와 마감 알림(결제는 안 해요) · 언제 성공: 신청 40건이 한곳에 모이면" },
-    "한 문장에 한 가지 일만, 애매한 말 없이 쓰기": { text: "회원이 신청 단추를 누르면, 앱은 신청을 받는다 / 마감 하루 전이 되면, 앱은 알림을 보낸다 / 운영진이 목록을 열면, 앱은 신청한 사람을 보여 준다" },
-    "자세한 기획서로 키울지 직접 정하기": { pick: "light", why: "기능이 셋뿐이라 짧은 기획서면 돼요" },
-    "다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기": { text: "남의 정보: 회원 이름과 연락처 · 밖으로 나가는 것: 알림을 보내는 서비스" },
+    "정해진 빈칸에 아이디어 채우기": { text: "누구: 동아리 운영진과 회원 · 불편: 신청을 종이로 받아 헷갈림 · 해결: 화면으로 신청 받기 · 어디까지: 신청과 마감 알림 · 언제 성공: 신청이 한곳에 모임", from: [{ s: 0, i: 0 }, { s: 0, i: 2 }] },
+    "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기": { text: "왜: 누가 냈는지 헷갈려서 · 어디까지: 신청 받기와 마감 알림(결제는 안 해요) · 언제 성공: 신청 40건이 한곳에 모이면", from: [{ s: 0, i: 0 }, { s: 0, i: 1 }] },
+    "한 문장에 한 가지 일만, 애매한 말 없이 쓰기": { text: "회원이 신청 단추를 누르면, 앱은 신청을 받는다 / 마감 하루 전이 되면, 앱은 알림을 보낸다 / 운영진이 목록을 열면, 앱은 신청한 사람을 보여 준다", from: [{ s: 0, i: 1 }] },
+    "자세한 기획서로 키울지 직접 정하기": { pick: "light", why: "기능이 셋뿐이라 짧은 기획서면 돼요", from: [{ s: 0, i: 3 }] },
+    "다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기": { text: "남의 정보: 회원 이름과 연락처 · 밖으로 나가는 것: 알림을 보내는 서비스", from: [{ s: 0, i: 2 }] },
+  }, 2: {   // 3단계(C-39) — 2단계에서 정한 꼭 할 일 셋 · 남의 정보에서
+    "기능을 '~하면, 앱은 ~한다' 문장으로 쓰기": { text: "회원이 신청 단추를 누르면, 앱은 신청을 받는다 / 마감 하루 전이 되면, 앱은 알림을 보낸다 / 운영진이 목록을 열면, 앱은 신청한 사람을 보여 준다", ref: ["한 문장에 한 가지 일만, 애매한 말 없이 쓰기"] },
+    "'빠르게' 같은 애매한 말을 숫자로 바꾸기 (모르면 '아직 모름')": { text: "마감 전 → 하루 전 / 바로 받는다 → 아직 모름", ref: ["왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기"] },
+    "기능마다 꼭 필요한지, 있으면 좋은지 표시하기": { text: "신청 받기: 꼭 / 마감 알림: 꼭 / 신청한 사람 목록: 있으면 좋음", ref: ["한 문장에 한 가지 일만, 애매한 말 없이 쓰기"], s0: [1] },
+    "기능마다 어디서 나온 생각인지 표로 잇기 (기능이 5개 이상일 때)": { text: "기능이 3개라 아직 안 해도 돼요", ref: ["한 문장에 한 가지 일만, 애매한 말 없이 쓰기"] },
+    "막아야 할 일(예: 남의 정보가 밖으로 나감)도 '~하면, 앱은 ~한다'로 쓰기": { text: "운영진이 아닌 사람이 목록을 열면, 앱은 연락처를 보여 주지 않는다 / 알림을 보낼 때, 앱은 이름 말고 다른 정보를 보내지 않는다", ref: ["다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기"] },
   } };
-  function exampleStageDraft(stage, criteria) {
+  const EXAMPLE_PREP = { 1: ["1단계에서 정한 불편을 다시 읽기", "이번에 안 만들 것 하나 떠올리기"], 2: ["꼭 할 일이 몇 개인지 세기", "'곧' · '빨리' 같은 말 찾아 두기", "남의 정보가 무엇인지 다시 보기"] };
+  //   prev — 지난 단계 결과(서버 /api/stagedraft와 같은 [{ stage, items }]). 3단계 예시의 재료는 2단계 칸을 이름으로 찾는다(등급마다 칸 수가 달라서) — 없으면 1단계 칸만
+  function exampleStageDraft(stage, criteria, prev = []) {
     const ex = EXAMPLE_STAGE[stage]; if (!ex || !Array.isArray(criteria)) return null;
-    const items = criteria.map((c) => ex[c.text]);
-    return items.every(Boolean) ? { items, example: true } : null;
+    const p1 = (Array.isArray(prev) ? prev : []).find((p) => p && p.stage === 1), at = (name) => (p1 && Array.isArray(p1.items) ? p1.items.findIndex((x) => x && x.name === name) : -1);
+    const items = criteria.map((c) => { const x = ex[c.text]; if (!x) return null;
+      const from = x.from ? x.from : [...(x.s0 || []).map((i) => ({ s: 0, i })), ...(x.ref || []).map((name) => ({ s: 1, i: at(name) })).filter((r) => r.i >= 0)];
+      const { ref, s0, ...rest } = x; return { ...rest, from }; });
+    return items.every(Boolean) ? { items, prep: [...EXAMPLE_PREP[stage]], example: true } : null;
   }
   // 연습(서버 없이 FR-10)의 예시 초안 — 화면에 '예시예요'를 같이 적는다. 1단계 연습 글(EXAMPLES[0])과 같은 이야기
   const EXAMPLE_DRAFT = { topic: "동아리 행사 신청 앱", pain: "동아리 행사 신청을 종이로 받아서 누가 냈는지 매번 헷갈려요", change: "신청이 한곳에 모이고, 마감 전에 알림이 가요",
@@ -177,7 +213,7 @@
   // 위 줄의 진행 — "M개 중 k번째 할 일"(다 했으면 M)
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
-  const api = { LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
+  const api = { BY, BY_WORD, proposalOf, fromOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
     itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT,
     pickOf, withStageDraft, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;

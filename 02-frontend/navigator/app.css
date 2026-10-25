@@ -992,23 +992,49 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .jm-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;border-radius:12px;background:#FBF6EA;border:2px solid #D9CBA6}
 .jm-top b{font-size:calc(14px * var(--ui-scale,1))}
 .jm-top span{flex:1 1 auto;font-size:calc(12.5px * var(--ui-scale,1));color:#6E5F45}
+.jm-top .b{min-height:34px;padding:0 14px;background:#fff;color:#3A2E1C;border:1.5px solid #B9A579;font-weight:800;font-size:calc(12.5px * var(--ui-scale,1))}   /* 양피지 위 — 앱의 어두운 글자색(--ink)을 받지 않게(2026-10-25, 글자가 안 보였다) */
+.jm-top .b:focus-visible{outline:2px solid #2F7BD6;outline-offset:2px}
 .jm-stage{border-radius:12px;border:2px solid #D9CBA6;background:#FBF6EA;padding:8px 10px;display:grid;gap:6px}
 .jm-stage.cur{border-color:#2F7BD6;box-shadow:0 0 0 3px rgba(47,123,214,.15)}
 .jm-stage.lock{background:#E9E0CB;color:#6E5F45}
 .jm-h{display:flex;align-items:center;gap:8px}
 .jm-h b{flex:1 1 auto;font-size:calc(13.5px * var(--ui-scale,1))}
 .jm-count{font-size:calc(12px * var(--ui-scale,1));font-weight:800;padding:1px 8px;border-radius:999px;background:#E9E0CB;color:#5A4A33}
-.jm-stage ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
-.jm-stage li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:5px 8px;border-radius:8px;font-size:calc(12.5px * var(--ui-scale,1))}
-.jm-stage li b{font-weight:800}
-.jm-stage li span{flex:1 1 60%;min-width:0;overflow-wrap:anywhere}
-.jm-fill{background:#fff;border:1px solid #D9CBA6}
-.jm-fill b::before{content:"✓ ";color:#2F6B2F}
+/* C-39 도전과제 흐름 — 넣은 것 → 플로로가 한 것 → 내가 정한 것 → 관문, 칸마다 누가 정했나(by) · 재료 */
+.by-ok{--by:#4E8F5E}.by-edit{--by:#B87A1E}.by-me{--by:#5B6CB8}.by-pick{--by:#9A5FAE}
+.jm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:0;padding:2px 4px;font-size:calc(12px * var(--ui-scale,1));color:#5A4A33}
+.jm-legend span{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+.jm-legend i{width:10px;height:10px;border-radius:3px;background:var(--by)}
+.jm-legend small{flex:1 1 100%;color:#6E5F45}
+.jm-date{font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45;white-space:nowrap}
+.jm-flow{list-style:none;margin:0;padding:0 0 0 16px;display:grid;gap:8px;position:relative}
+.jm-flow::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;border-radius:2px;background:#D9CBA6}
+.jm-step{position:relative;display:grid;gap:3px;min-width:0}
+.jm-step::before{content:"";position:absolute;left:-16px;top:3px;width:8px;height:8px;border-radius:50%;background:#FBF6EA;border:2px solid #B9A579}
+.jm-step.ai::before{border-color:#2F7BD6}.jm-step.me::before{border-color:#4E8F5E}.jm-step.gate::before{border-color:#8A6D2F;border-radius:2px}
+.jm-step>i{font-style:normal;font-weight:800;font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45;letter-spacing:.02em}
+.jm-sb{min-width:0;font-size:calc(12.5px * var(--ui-scale,1));overflow-wrap:anywhere}
+.jm-pill{display:inline-block;margin:0 4px 2px 0;padding:1px 8px;border-radius:999px;background:#E9E0CB;font-size:calc(12px * var(--ui-scale,1))}
+.jm-prep{margin:3px 0 0;padding-left:18px;color:#5A4A33}
+.jm-cells{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.jm-cells>li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:5px 8px;border-radius:8px;font-size:calc(12.5px * var(--ui-scale,1))}
+.jm-cells>li b{font-weight:800}
+.jm-line{flex:1 1 60%;min-width:0;overflow-wrap:anywhere}
+.jm-fill{background:#fff;border:1px solid #D9CBA6;border-left:4px solid var(--by,#D9CBA6)}
+.jm-by{font-size:calc(11px * var(--ui-scale,1));font-weight:800;padding:0 7px;border-radius:999px;border:1.5px solid var(--by);color:#3A2E1C;background:#fff}
+.jm-was{flex:1 1 100%;font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45;overflow-wrap:anywhere}
+.jm-refs{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45}
+.jm-ref{padding:0 7px;border-radius:999px;border:1px dashed #2F7BD6;background:#F3F8FF;color:#1F5BA8;cursor:default}
+.jm-ref:hover,.jm-ref:focus-visible{outline:2px solid #2F7BD6;outline-offset:1px;background:#EAF3FF}
 .jm-miss{border:1.5px dashed #B5532F;background:#FFF1EA}
-.jm-miss span{color:#8A3A1F}
+.jm-miss .jm-line{color:#8A3A1F}
 .jm-miss button{margin-left:auto;border:1.5px solid #B5532F;background:#fff;color:#8A3A1F;border-radius:999px;padding:1px 10px;font-weight:800;cursor:pointer;font-size:calc(12px * var(--ui-scale,1))}
 .jm-miss button:focus-visible{outline:2px solid #2F7BD6;outline-offset:2px}
-.jm-old span,.jm-lock{color:#6E5F45}
+.jm-old .jm-line,.jm-lock{color:#6E5F45}
+/* 초안 확인 카드 맨 위 — 이 단계 전에 준비할 것(C-39) */
+.dprep{margin:6px 0 4px;padding:6px 10px;border-radius:10px;background:var(--soft);font-size:calc(12.5px * var(--ui-scale,1));text-align:left}
+.dprep b{display:block;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.dprep ul{margin:2px 0 0;padding-left:18px}
 .jm-arrow{text-align:center;font-size:calc(12px * var(--ui-scale,1));color:#5A4A33;font-weight:700}
 .jm-arrow span{font-weight:500}
 .vtabs button.map{font-size:calc(20px * var(--ui-scale,1))}
