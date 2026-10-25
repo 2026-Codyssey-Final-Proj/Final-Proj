@@ -14,6 +14,11 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawnSync, execFile } = require("node:child_process");
 const L = require("./lib.js");
+// Windows 아이콘(F-59, 2026-10-26 — 이재엽 "윈도우 환경에서 앱이 우리 플로 사진이 아닌 문제"): 앱 ID를 설치 바로 가기와 같은 값(L.APP_ID = package.json appId — electron-builder가 바로 가기에 쓴다)으로 정해
+//   작업 표시줄이 고정한 바로 가기 · 플로로 아이콘과 묶이게 하고, 창마다 아이콘을 준다(개발 실행도 Electron 기본 그림 대신 플로로)
+const ICON = L.appIcon(process.platform, __dirname), ICON_OPT = ICON ? { icon: ICON } : {};
+// 개발 실행은 제 경로를 앱 ID로 — 설치본을 작업 표시줄에 고정한 PC에서 npm start 창이 설치본 단추에 묶이지 않게(2026-10-26 리뷰). package.json을 읽지 않는다 — 묶은 앱에서는 build가 지워진다
+if (process.platform === "win32") app.setAppUserModelId(app.isPackaged ? L.APP_ID : process.execPath);
 
 // F-42(2026-10-20): 한 번에 하나만 — 옛 앱이 켜진 채 새 것을 열면 둘이 다른 포트로 떠 섬이 겹치고 훅은 옛 쪽으로 갔다. 두 번째는 켜진 쪽을 앞으로 부르고 쉬운 말로 알린 뒤 끝난다.
 //   켜진 쪽이 옛 버전이어도 바꿔 켜지 않는다 [제안] — 사람이 옛 것을 끝내고 새 것을 연다(알림 글에 적는다)
@@ -88,7 +93,7 @@ function createWindow() {
   const disp = screen.getPrimaryDisplay(), { width } = disp.workAreaSize, W = 952, H = 140;
   PROBE = probeNotch();
   NOTCH = L.notchLayout(PROBE, disp.bounds, W, H);
-  win = new BrowserWindow({ width: W, height: H, x: NOTCH ? NOTCH.x : Math.max(0, Math.round((width - W) / 2)), y: NOTCH ? NOTCH.y : 0, frame: false, transparent: true, hasShadow: false,
+  win = new BrowserWindow({ ...ICON_OPT, width: W, height: H, x: NOTCH ? NOTCH.x : Math.max(0, Math.round((width - W) / 2)), y: NOTCH ? NOTCH.y : 0, frame: false, transparent: true, hasShadow: false,
     alwaysOnTop: true, resizable: false, minimizable: true, title: "Floe", useContentSize: true,
     // backgroundThrottling 끔(F-27): 사용자는 거의 늘 다른 창(코딩 도구)을 쓰고 있어 이 창은 포커스가 없다 — 그때 화면의 requestAnimationFrame이 느려지면 눈이 미끄러져 가는 것이 끊긴다
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false } });
@@ -230,9 +235,10 @@ function floeItems() {
 function menu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate([{ label: "Floe", submenu: floeItems() }, { role: "editMenu", label: "편집" }]));
   if (process.platform === "darwin") return;
-  // Windows · Linux: 테두리 없는 창에는 메뉴 줄이 안 보인다 → 알림 영역(트레이) 아이콘. 아이콘은 묶음 안의 build/icon.png(package.json files)
+  // Windows · Linux: 테두리 없는 창에는 메뉴 줄이 안 보인다 → 알림 영역(트레이) 아이콘. 아이콘은 묶음 안의 build/icon.ico · icon.png(package.json files)
+  //   Windows는 여러 크기가 든 .ico를 그대로(화면 배율에 맞는 크기를 고른다 — 1024px 그림을 22px로 줄이면 흐려 플로로로 안 보였다, F-59), Linux는 22px로 줄인다
   try {
-    const icon = nativeImage.createFromPath(path.join(__dirname, "build/icon.png")).resize({ width: 22, height: 22 });
+    const img = nativeImage.createFromPath(ICON), icon = process.platform === "win32" ? img : img.resize({ width: 22, height: 22 });
     tray = new Tray(icon);
     tray.setToolTip(`Floe ${app.getVersion()}`);
     tray.setContextMenu(Menu.buildFromTemplate(floeItems()));
@@ -258,7 +264,7 @@ function openSideWin(kind, opt = {}) {
   const b = L.sideWinBounds(kind, opt.side, isl, wa, opt.size);
   let w = wins[kind];
   if (w && !w.isDestroyed()) { if (opt.place) { w.setBounds(b); Object.assign(w, { floeSide: opt.side, floeSize: opt.size, floeMoved: false }); } w.show(); if (typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); return; }
-  w = wins[kind] = new BrowserWindow({ ...b, frame: false, transparent: false, backgroundColor: "#16225E", alwaysOnTop: true, resizable: kind === "quest", minimizable: false, hasShadow: true, show: false,
+  w = wins[kind] = new BrowserWindow({ ...ICON_OPT, ...b, frame: false, transparent: false, backgroundColor: "#16225E", alwaysOnTop: true, resizable: kind === "quest", minimizable: false, hasShadow: true, show: false,
     minWidth: 260, minHeight: 200, title: kind === "quest" ? "Floe — 퀘스트" : "Floe — 설정",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   w.setAlwaysOnTop(true, "floating");
