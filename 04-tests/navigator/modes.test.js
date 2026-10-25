@@ -127,3 +127,11 @@ test("app.js — C-36: 처음 말은 '한 줄로' 대신 원하는 것을 플로
   assert.ok(keep.includes('"topic"'), "주제는 다시 켜도 남는다");
   for (const act of ["draft-ok", "draft-fix", "draft-who", "draft-size"]) assert.ok(app.includes(`"${act}": `), act);
 });
+
+// 접힌 섬 · 띠의 작업 자리 표시(2026-10-25 두승현 — 옛 "진짜 AI" 표시 대신)
+test("접힌 섬의 표시 — 진짜 AI 모드면 '진짜 AI' 대신 GitHub 저장소 · 폴더 이름(글자 수 제한 없음 — F-55). 연습이면 '연습' 그대로", () => {
+  assert.doesNotMatch(app, /\? "진짜 AI" : "연습"/, "옛 표시가 남지 않는다");
+  assert.match(app, /r && r\.kind === "github" \? `\$\{r\.owner\}\/\$\{r\.repo\}` : project\(\)/, "저장소를 알면 주인/이름, 아니면 폴더 이름");
+  assert.doesNotMatch(app, /s\.length > 14/, "글자 수로 자르지 않는다(띠 폭을 넘으면 CSS가 … 로)");
+  assert.match(app, /\$\{st\.mode === "live" \? esc\(wsShort\(\)\) : "연습"\}/, "연습이면 그대로");
+});
