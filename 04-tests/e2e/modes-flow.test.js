@@ -103,7 +103,7 @@ test("F-36: 장면(바이브 코딩)의 퀘스트 창 서고 탭에서 갔으면
     await page.click(".tb [data-act=qwin-toggle]"); await wait(200);   // 2026-10-24 C-35: 명령 네 칸을 빼고 위 줄의 '퀘스트' 단추로 연다
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(200);
     s = await placeOf(page);
-    assert.ok(s.qwin && s.qtab === "tree" && (await page.evaluate(() => document.querySelectorAll(".qwin .vtabs [role=tab]").length)) === 8, `도전과제 탭 — 장 여덟: ${JSON.stringify(s)}`);
+    assert.ok(s.qwin && s.qtab === "tree" && (await page.evaluate(() => document.querySelectorAll(".qwin .vtabs [role=tab]").length)) === 9, `도전과제 탭 — 한눈에 하나 + 장 여덟(C-37): ${JSON.stringify(s)}`);
   } finally { await browser.close(); }
 });
 
@@ -357,6 +357,7 @@ test("C-19: 먹이를 검사하는 동안 '어디쯤인지 보기'를 누르면 
     // 2026-10-24 C-35: 명령 네 칸을 뺐다 — 살피기는 도전과제의 '알아 둘 것'에서 해 보기(먹이를 검사하는 중에도 보이고, 누르면 막는다)
     await page.click(".tb [data-act=qwin-toggle]"); await wait(200);
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(200);
+    await page.click('[data-act=tree-chap][data-i="0"]'); await wait(200);   // 도전과제의 기본은 한눈에 보기(C-37) — 장을 고르면 그 장의 알아 둘 것
     await page.click('.learnbox [data-act=tu-sel][data-v="check"]'); await wait(200);
     assert.ok(await page.$(".learnbox .tu [data-act=cmd-look]"), "살피기 해 보기");
     await page.click(".learnbox .tu [data-act=cmd-look]"); await wait(400);
@@ -459,10 +460,13 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).quest.lines.map((l) => l.length)), [1, 1, 1, 1], "칸마다 한 줄씩 적혔다");
     await page.click("[data-act=gate]"); await wait(300); await page.click("[data-act=yes]"); await wait(400);
     if (await page.$("[data-act=check-pick]")) { await page.click("[data-act=check-pick]"); await wait(400); if (await page.$("[data-act=check-go]")) { await page.click("[data-act=check-go]"); await wait(400); } }
-    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".tb .shells span")?.textContent, ev: !!document.querySelector(".qwin .ev") }));
-    assert.ok(after.band.startsWith("2단계 · 동아리 행사 신청 앱") && after.shells === "1" && after.ev, JSON.stringify(after));
+    // 2단계는 1단계 결과로 만든 초안을 받기 화면 없이 바로 확인(C-37, 2026-10-25 — 연습은 예시 초안)
+    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".tb .shells span")?.textContent, book: !!document.querySelector(".qwin .book"), ev: !!document.querySelector(".qwin .ev") }));
+    assert.ok(after.band.startsWith("2단계 · 동아리 행사 신청 앱") && after.shells === "1" && after.book && !after.ev, JSON.stringify(after));
+    assert.match(await say(), /^Ⅰ\./, "2단계도 칸마다 확인");
     assert.equal(await page.evaluate(() => localStorage.getItem("floe:level")), null, "연습 모드의 관문은 영구 레벨에 남기지 않는다(C-28 — 이 켜짐 동안만 오른다, 칭호는 위처럼 바뀐다)");
-    // 2단계 받기 화면 — 보상 칸 설명 · 고쳐서 받기 · 공책
+    // 받기 화면(3단계부터 — 초안이 없는 장) — 보상 칸 설명 · 고쳐서 받기 · 공책. 장면 주소로 연다(2단계 퀘스트를 받기 화면으로)
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&q=draft"), { waitUntil: "load" }); await wait(400);
     assert.ok((await page.evaluate(() => document.querySelector(".ev .slots i.has")?.dataset.tt || "")).includes("무지개 조개"), "REWARD 칸에 마우스 설명");
     assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".ev .slots .coin")).backgroundColor), "rgba(0, 0, 0, 0)", "보상 칸의 조개 그림에 상자가 겹치지 않는다(2026-10-23)");
     await page.click("[data-act=quest-fix]"); await wait(300);
@@ -511,6 +515,8 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     assert.equal(await page.evaluate(() => document.querySelector(".rb-ch h4")?.textContent), book.toc[1], "목차를 누르면 그 장");
     // 도전과제: 지금 장(1단계)의 알아 둘 것 — 퀘스트 받기 · 맡기기와 허락이 있고, 고르면 그 튜토리얼과 '해 보기'. 다른 장을 고르면 그 장의 것
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(300);
+    assert.ok(await page.$(".qwin .jmap"), "도전과제의 기본은 한눈에 보기(C-37)");
+    await page.click('[data-act=tree-chap][data-i="0"]'); await wait(200);
     const learn0 = await page.evaluate(() => [...document.querySelectorAll(".learnbox [data-act=tu-sel]")].map((b) => b.dataset.v));
     assert.ok(learn0.includes("quest") && learn0.includes("handoff"), JSON.stringify(learn0));
     await page.click('.learnbox [data-act=tu-sel][data-v="quest"]'); await wait(200);
@@ -559,7 +565,7 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     assert.ok(!(await page.$(".pet .deco")) && (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("navigator-prototype:v1")).wear).length)) === 0, "벗으면 기록도");
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tier=Lite&q=quest"), { waitUntil: "load" }); await wait(400);
     assert.ok(await page.$(".toc .side-h") && (await page.evaluate(() => document.querySelectorAll(".toc button.lock[disabled]").length)) >= 1, "곁 퀘스트 — 목차 아래");
-    await page.click("[data-act=qtab][data-tab=tree]"); await wait(300);
+    await page.click("[data-act=qtab][data-tab=tree]"); await wait(300); await page.click('[data-act=tree-chap][data-i="1"]'); await wait(200);
     assert.ok((await page.evaluate(() => document.querySelectorAll(".sidebn").length)) >= 1, "도전과제 옆 가지");
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(300);
     if (shelfOff) {   // 서재를 잠시 뺀 동안(2026-10-23)은 책 표지 목록 대신 이 프로젝트의 책 하나 — 펼치면 단계가 1~8

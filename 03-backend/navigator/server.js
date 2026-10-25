@@ -31,6 +31,7 @@ const AP = require("./approve.js");    // FR-17 승인 카드의 모양(2026-10-
 const { callClaude, usage, claudeVersion, startTask: openClaude, ledger } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
 const RB = require("./readme-book.js");   // C-26 내 작업 책 — README를 책으로 나눈다(읽기만) — claude-drafted: 2026-10-23
 const GH = require("./github.js");   // 설정의 GitHub 칸(C-25, 2026-10-24) — git · gh에게 읽기만 묻는다 — claude-drafted: 2026-10-24
+const Docs = require("./docs.js");   // C-37 단계 문서 — 단계 결과로 사용자 저장소에 둘 파일(순수 함수) — claude-drafted: 2026-10-25
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 
 const PORT = Number(process.env.NAV_PORT) || 4317;
@@ -53,14 +54,14 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start"];   // /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft"];   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
-const BOOK_ROUTES = ["/api/readme", "/api/github", "/api/github/create"];   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
+const BOOK_ROUTES = ["/api/readme", "/api/github", "/api/github/create", "/api/docs"];   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES];
-const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/docs"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -107,7 +108,7 @@ const STATIC = {
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "tutorial.js", "plan.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -351,6 +352,64 @@ function planAsk(res, body) {
     Nav.PLAN_SCHEMA, as("plan", Nav.parsePlan), "계획");
 }
 
+// ── C-37 단계 결과 · 단계 문서(2026-10-25) — claude-drafted: 2026-10-25 (이재엽 "2단계가 끝나면 … docs와 같은 폴더들을 만들고 md들을 정리해서 깃허브에" · 버튼 "Floe가 만들고, 커밋 · 푸시는 Claude Code") ──
+// 단계 결과의 모양 — [{ name, lines[] }] 할 일 8개까지 · 이름 200자 · 줄 5개 · 줄 400자. 맞으면 다듬은 것, 아니면 null
+const ITEM_NAME_MAX = 200, LINE_MAX = 400;
+const itemsOf = (a) => (Array.isArray(a) && a.length >= 1 && a.length <= 8 && a.every((x) => x && strOk(x.name, ITEM_NAME_MAX) && Nav.filled(x.name) && Array.isArray(x.lines) && x.lines.length <= 5 && x.lines.every((l) => strOk(l, LINE_MAX)))
+  ? a.map((x) => ({ name: x.name, lines: [...x.lines] })) : null);
+// 화면이 보낸 단계 결과들 — { "0": {title, items}, "1": … }. 1 · 2단계(0 · 1)가 다 있어야. 단계 번호 0~7만
+// 답: { results } 또는 { why } — 무엇이 틀렸는지 그대로 말한다(2026-10-25 리뷰)
+function resultsOf(r) {
+  if (!r || typeof r !== "object" || Array.isArray(r)) return { why: "단계 결과의 모양이 맞지 않음" };
+  if (!r[0] || !r[1]) return { why: "1 · 2단계 결과가 다 있어야 해요" };
+  const out = {};
+  for (const [k, v] of Object.entries(r)) {
+    const n = Number(k), items = v && itemsOf(v.items);
+    if (!Number.isInteger(n) || !stageOf(n) || !items) return { why: `${n + 1}단계 결과의 모양이 맞지 않음 — 할 일 8개 · 줄 5개 · 줄 ${LINE_MAX}자까지` };
+    out[n] = { items };
+  }
+  return { results: out };
+}
+// 쓸 자리 — 작업 폴더 안의 정해진 이름만. 가는 길에 바로가기가 있거나 파일 자리가 폴더면 쓰지 않는다(폴더 밖으로 새지 않게). 모두 본 뒤에 쓴다
+function docTargets(dir, files) {
+  const root = path.resolve(dir), out = [];
+  for (const f of files) {
+    const parts = f.path.split("/");
+    if (!/^[A-Za-z0-9._/-]+$/.test(f.path) || parts.some((x) => !x || x === "." || x === "..")) return { why: "문서 이름이 맞지 않음" };
+    let cur = root;
+    for (const part of parts) {
+      cur = path.join(cur, part);
+      let st = null; try { st = fs.lstatSync(cur); } catch { break; }
+      if (st.isSymbolicLink()) return { why: `'${path.relative(root, cur)}'가 바로가기예요 — 작업 폴더 밖에 쓸 수 있어 쓰지 않았어요` };
+      if (cur !== path.join(root, ...parts) && !st.isDirectory()) return { why: `'${path.relative(root, cur)}'가 폴더가 아니에요` };
+      if (cur === path.join(root, ...parts) && !st.isFile()) return { why: `'${f.path}' 자리에 파일이 아닌 것이 있어요` };
+    }
+    out.push({ ...f, file: path.join(root, ...parts) });
+  }
+  return { list: out };
+}
+function shipDocs(body) {
+  const got = resultsOf(body && body.results), topic = body && body.topic != null ? body.topic : "";
+  if (got.why) return [400, { ok: false, reason: got.why }];
+  if (!strOk(topic, 60)) return [400, { ok: false, reason: "주제는 60자까지" }];
+  const results = got.results;
+  const s = projectNow();
+  if (!s) return [400, { ok: false, reason: NO_FOLDER }];
+  if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];   // 쓰기 전에(쓰고 나서 못 맡기지 않게)
+  const files = Docs.files({ topic, results, redact: Sensitive.redact });
+  const t = docTargets(s.dir, files);
+  if (t.why) return [400, { ok: false, reason: t.why }];
+  try {
+    for (const f of t.list) {
+      fs.mkdirSync(path.dirname(f.file), { recursive: true });
+      fs.writeFileSync(f.file, f.merge ? Docs.mergeSection(fs.existsSync(f.file) ? fs.readFileSync(f.file, "utf8") : "", f.text) : f.text);
+    }
+  } catch { return [500, { ok: false, reason: "문서를 쓰지 못했어요 — 작업 폴더의 쓰기 권한을 봐 주세요" }]; }
+  // 끝에 기준마다 보고하게 한다(C-32) — 화면이 '올라갔다'를 Claude Code의 답(푸시함)으로만 말하게
+  const paths = files.map((f) => f.path), [code, out] = startTask(Docs.shipRequest(paths), "문서 올리기", Docs.SHIP_CHECKS);
+  return [code, { ...out, files: paths }];
+}
+
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──
 // 폴더는 README와 같이 projectNow에서만 고른다. 저장소 만들기는 Floe가 하지 않고 일 넘기기(3-16)로 사용자의 Claude Code에 맡긴다 — 글은 github.js createRequest가 정한다(화면이 글을 보내지 않는다)
 function githubNow() { const s = projectNow(); return GH.status(s ? s.dir : "", s ? s.project : ""); }
@@ -463,6 +522,15 @@ async function handle(req, res) {
     return ask(res, Nav.questPrompt(body.stage, body.idea, body.tier), Nav.QUEST_SCHEMA, as("quest", (d) => Nav.parseQuest(d, body.stage, body.tier)), "퀘스트");
   }
   if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
+  if (route === "/api/docs") { const [code, out] = shipDocs(body); return send(res, code, out); }   // C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(API.md 3-23)
+  if (route === "/api/stagedraft") {   // C-37 2단계 초안(API.md 3-22, 2026-10-25) — AI 한 번. 받은 글 · 1단계 결과로 그 등급의 할 일마다 글(기획서 칸은 고르기)
+    if (!body || !Nav.DRAFT_STAGES.includes(body.stage)) return refuse(res, "초안을 만드는 단계가 아님 — 지금은 2단계만");
+    if (body.tier != null && !Nav.TIERS.includes(body.tier)) return refuse(res, "모르는 등급");
+    if (!Nav.filled(body.idea)) return refuse(res, "받은 글이 비어 있음");
+    if (body.idea.length > Nav.IDEA_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.IDEA_MAX}자까지`);
+    const prev = itemsOf(body.prev); if (!prev) return refuse(res, `1단계 결과의 모양이 맞지 않음 — 할 일 8개 · 줄 5개 · 줄 ${LINE_MAX}자까지`);
+    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev }), Nav.STAGE_DRAFT_SCHEMA, as("draft", (d) => Nav.parseStageDraft(d, body.stage, body.tier)), "단계 초안");
+  }
   if (route === "/api/start") {   // C-36 처음 한 바퀴(API.md 3-21, 2026-10-25) — AI 한 번. 받은 글 전체로 1단계 초안(제목 · 불편 · 달라지는 것 · 누가 · 크기). 도구 없이, 글만
     if (!body || !Nav.filled(body.text)) return refuse(res, "받은 글이 비어 있음");
     if (body.text.length > Nav.START_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.START_MAX.toLocaleString()}자까지`);

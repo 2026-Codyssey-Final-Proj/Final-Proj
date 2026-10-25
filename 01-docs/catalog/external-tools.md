@@ -40,6 +40,7 @@ Claude가 이 표에서 꺼내 제안하고, 들이기로 하면 [external-integ
 
 | 이름 | 무엇 | 쓸 때 (꺼낼 신호) | 밖으로 나가는 것 | 설치 주의 | Claude 의견 | 상태 · 조사일 |
 |---|---|---|---|---|---|---|
+| vibe-coding-skills ([Frost0313z/vibe-coding-skills](https://github.com/Frost0313z/vibe-coding-skills)) | 두승현이 만든 스킬 셋 — start(앞 PR 병합 확인 · 최신 main · 새 브랜치) · ship(시험 · 고친 파일만 커밋 · 푸시 · PR · 부딪침 풀기) · refactor(겉 동작 그대로, 기준선 비교). MIT | 새 작업을 시작할 때(start) · 커밋 · PR을 올릴 때(ship) · 동작을 바꾸지 않는 정리(refactor) | 없음(git · gh 명령만) | 복사 설치(`~/.claude/skills/` 또는 `.claude/skills/`). 우리 git-workflow · 훅과 같은 방향 — 겹치는 곳은 우리 규칙이 먼저(스킬도 그렇게 적음) | 2026-10-25 이재엽 "vibe-coding-skills 두승현님이 만드신 스킬로" — C-37 작업에서 설치하지 않고 절차(start → 문제 · 원인 · 결과 정리 → 작업 → ship)만 따랐다. 들일지는 사람이 정한다 | 후보 · 2026-10-25 |
 | MarkItDown ([microsoft/markitdown](https://github.com/microsoft/markitdown)) | PDF·pptx·docx·xlsx → 마크다운. MIT | 레프런스 ② 문서화, 학교 자료를 세컨드 브레인에 넣기 | 기본 변환은 로컬. Azure·LLM 이미지 설명·YouTube만 외부 | `pip` — 필요한 형식만(`[pdf,docx,pptx,xlsx]`) | 바로 써 볼 만함 | 후보 · 2026-10-06 |
 | HyperFrames ([heygen-com/hyperframes](https://github.com/heygen-com/hyperframes)) | HTML+CSS+GSAP → MP4 영상. Apache 2.0, 스킬 21개 | 발표·소개용 모션그래픽 영상이 필요할 때 | 기본 로컬. `telemetry` 명령이 있어 **보내는 내용·끄는 법 미확인**. 클라우드 렌더는 선택 | FFmpeg 필요(이 Mac에 없음), Node 22+ | 영상이 필요하면 Remotion보다 이쪽 | 후보 · 2026-10-06 |
 | Remotion ([remotion-dev/remotion](https://github.com/remotion-dev/remotion)) | React → 영상. 자체 라이선스(3명 이하 무료) | 위와 같음 — React 프로젝트일 때 | 라이선스 키를 넣으면 렌더 기록(키·IP) | — | HyperFrames와 둘 중 하나만 | 후보 · 2026-10-06 |

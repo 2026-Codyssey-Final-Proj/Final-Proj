@@ -78,9 +78,10 @@
   const curIdx = (q) => (q ? q.objs.findIndex((o, i) => (q.lines[i] || []).length < o.need) : -1);
   const isDone = (q) => !!q && curIdx(q) < 0;
   const filled = (q, i) => !!q && (q.lines[i] || []).length >= q.objs[i].need;
-  // 한 줄 적기 — 원본은 안 바꾼다. 빈 줄은 적지 않는다
+  // 한 줄 적기 — 원본은 안 바꾼다. 빈 줄은 적지 않는다. 한 줄은 400자까지(서버가 단계 결과 · 문서에서 받는 길이 — 2026-10-25 리뷰)
+  const LINE_MAX = 400;
   function fill(q, i, text) {
-    const t = String(text || "").trim();
+    const t = String(text || "").trim().slice(0, LINE_MAX);
     if (!q || !q.objs[i] || !t) return q;
     const lines = q.lines.map((l, k) => (k === i ? [...l, t] : l));
     return { ...q, lines, sel: i };
@@ -123,8 +124,44 @@
     if (!q || !d) return q;
     return { ...retitle(q, d.topic), draft: d, phase: "quest", sel: 0, desc: "플로로가 받은 글로 이 장의 초안을 만들었어요. 칸마다 맞는지만 봐 주세요 — 다르면 고쳐 적으면 돼요." };
   }
-  // 그 할 일에 플로로가 내민 초안 글 — 1단계의 Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가(글에 있을 때만). Ⅳ 크기는 고르는 칸이라 글이 없다
-  const draftOf = (q, i) => { const d = q && q.chap === 0 && q.draft; return !d ? "" : i === 0 ? d.pain : i === 1 ? d.change : i === WHO_AT ? d.who : ""; };
+  // 그 할 일에 플로로가 내민 초안 글 — 1단계의 Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가(글에 있을 때만). Ⅳ 크기는 고르는 칸이라 글이 없다.
+  //   2단계(C-37)부터는 초안의 칸마다 글(items[i].text) — 고르는 칸(기획서로 키울지)은 글이 없고 pickOf
+  const draftOf = (q, i) => {
+    const d = q && q.draft; if (!d) return "";
+    if (q.chap === 0) return i === 0 ? d.pain : i === 1 ? d.change : i === WHO_AT ? d.who : "";
+    const it = d.items && d.items[i]; return it && !it.pick ? it.text : "";
+  };
+  const pickOf = (q, i) => { const it = q && q.chap !== 0 && q.draft && q.draft.items && q.draft.items[i]; return it && it.pick ? { pick: it.pick, why: it.why } : null; };
+  // ── 2단계 초안(C-37, 2026-10-25 — 이재엽 "1단계에서 받은 내용들을 2단계에서도 초안들을 진행하며 … 2단계 진행하기 전에 먼저 생각하고 동의들을 구한후") ──
+  // 서버(/api/stagedraft — navigator.js parseStageDraft)가 준 { items[{text} | {pick, why}] }를 그 장 퀘스트에. 할 일 개수와 같을 때만. 받기 화면 없이 바로 칸마다 확인
+  function withStageDraft(q, d) {
+    if (!q || !d || !Array.isArray(d.items) || d.items.length !== q.objs.length) return q;
+    return { ...q, draft: { stage: q.chap, items: d.items, example: !!d.example }, phase: "quest", sel: 0, desc: "플로로가 지난 장에서 정한 것으로 이 장의 초안을 만들었어요. 칸마다 맞는지만 봐 주세요 — 다르면 고쳐 적으면 돼요." };
+  }
+  // 기획서로 키울지(PRD) — 고르는 칸의 셋. 고른 것이 그 줄이 된다
+  const DOC_PICKS = [["light", "경량 기획서로"], ["full", "상세 기획서로"], ["none", "키우지 않아요"]];
+  // 할 일의 짧은 이름 — 확인 카드 · 도전과제 지도 · 문서가 쓴다. 모르는 할 일은 그 이름 그대로
+  const SHORT = {
+    "어떤 불편을 풀고 싶은지 한 문장으로 쓰기": "불편", "다 만들면 무엇이 달라지는지 쓰기": "달라지는 것", "누가 쓰는지 쓰기": "누가", "얼마나 크게 만들지 정하기": "크기",
+    "정해진 빈칸에 아이디어 채우기": "빈칸 채우기", "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기": "왜 · 어디까지 · 언제 성공", "한 문장에 한 가지 일만, 애매한 말 없이 쓰기": "한 문장 한 가지",
+    "자세한 기획서로 키울지 직접 정하기": "기획서로 키울지", "다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기": "남의 정보 · 밖으로",
+  };
+  const shortOf = (name) => SHORT[name] || name;
+  // 단계 결과 — 보고한 퀘스트의 할 일 이름과 적은 줄(원본과 따로). 한곳에서 보기 · 도전과제 지도 · 문서(docs.js)가 쓴다
+  const resultOf = (q) => ({ chap: q.chap, title: q.title, items: q.objs.map((o, i) => ({ name: o.name, lines: [...(q.lines[i] || [])] })) });
+  // 연습(서버 없이 FR-10)의 2단계 예시 초안 — 할 일 글로 찾아 그 등급의 개수 · 순서대로. 1단계 예시(EXAMPLE_DRAFT)와 같은 이야기. 예시가 없는 단계면 null
+  const EXAMPLE_STAGE = { 1: {
+    "정해진 빈칸에 아이디어 채우기": { text: "누구: 동아리 운영진과 회원 · 불편: 신청을 종이로 받아 헷갈림 · 해결: 화면으로 신청 받기 · 어디까지: 신청과 마감 알림 · 언제 성공: 신청이 한곳에 모임" },
+    "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기": { text: "왜: 누가 냈는지 헷갈려서 · 어디까지: 신청 받기와 마감 알림(결제는 안 해요) · 언제 성공: 신청 40건이 한곳에 모이면" },
+    "한 문장에 한 가지 일만, 애매한 말 없이 쓰기": { text: "회원이 신청 단추를 누르면, 앱은 신청을 받는다 / 마감 하루 전이 되면, 앱은 알림을 보낸다 / 운영진이 목록을 열면, 앱은 신청한 사람을 보여 준다" },
+    "자세한 기획서로 키울지 직접 정하기": { pick: "light", why: "기능이 셋뿐이라 짧은 기획서면 돼요" },
+    "다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기": { text: "남의 정보: 회원 이름과 연락처 · 밖으로 나가는 것: 알림을 보내는 서비스" },
+  } };
+  function exampleStageDraft(stage, criteria) {
+    const ex = EXAMPLE_STAGE[stage]; if (!ex || !Array.isArray(criteria)) return null;
+    const items = criteria.map((c) => ex[c.text]);
+    return items.every(Boolean) ? { items, example: true } : null;
+  }
   // 연습(서버 없이 FR-10)의 예시 초안 — 화면에 '예시예요'를 같이 적는다. 1단계 연습 글(EXAMPLES[0])과 같은 이야기
   const EXAMPLE_DRAFT = { topic: "동아리 행사 신청 앱", pain: "동아리 행사 신청을 종이로 받아서 누가 냈는지 매번 헷갈려요", change: "신청이 한곳에 모이고, 마감 전에 알림이 가요",
     who: "동아리 운영진 3명과 회원 40명", size: "medium", sizeWhy: "신청 받기와 알림 — 흔히 쓰는 방법으로 바로 풀려요" };
@@ -141,7 +178,8 @@
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
   const api = { LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
-    itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
+    itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT,
+    pickOf, withStageDraft, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

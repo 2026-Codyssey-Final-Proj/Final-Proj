@@ -309,6 +309,41 @@
     if (!o || !has(o, ["topic", "pain", "change", "sizeWhy"]) || typeof o.who !== "string" || !START_SIZES.includes(o.size)) return null;
     return { topic: o.topic.trim().slice(0, TOPIC_MAX), pain: o.pain.trim().slice(0, 160), change: o.change.trim().slice(0, 160), who: /^(없음|없어요|모름|알 수 없음|-)?\.?$/.test(o.who.trim()) ? "" : o.who.trim().slice(0, 120), size: o.size, sizeWhy: o.sizeWhy.trim().slice(0, 120) };
   }
+  // ── C-37 2단계 초안(2026-10-25, 이재엽 "1단계에서 받은 내용들을 2단계에서도 초안들을 진행하며 생각들을 2단계 진행하기 전에 먼저 생각하고 동의들을 구한후") ──
+  //   받은 글(처음 말한 것)과 1단계 결과로 2단계 할 일의 초안 — 할 일 이름 · 순서 · 개수는 그 등급 그대로(criteriaFor), AI는 칸마다 글만. 기획서로 키울지(PRD)는 셋 중 하나를 권하기만 — 고르는 것은 사람
+  const DRAFT_STAGES = [1];
+  const STAGE_DRAFT_SCHEMA = obj({ items: list(obj({ text: str }), 1, 8), say: str });
+  const STAGE_HINT = {
+    "정해진 빈칸에 아이디어 채우기": "누구 · 불편 · 해결 · 어디까지 · 언제 성공 다섯 칸을 '칸: 내용'으로 쓰고 ' · '로 이어 한 줄.",
+    "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기": "'왜: … · 어디까지: …(이번에 안 하는 것도) · 언제 성공: …(숫자로, 모르면 아직 모름)' 한 줄.",
+    "한 문장에 한 가지 일만, 애매한 말 없이 쓰기": "꼭 할 일을 '~하면, 앱은 ~한다' 한 문장에 한 가지씩 3~5개, ' / '로 이어 한 줄.",
+    "다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기": "'남의 정보: …(이름 · 연락처 같은 것, 없으면 없음) · 밖으로 나가는 것: …(다른 서비스 · AI, 없으면 없음)' 한 줄.",
+  };
+  const PRD_PICK = [["경량", "light"], ["상세", "full"], ["안 함", "none"]];
+  function stageDraftPrompt(stage, tier, { idea = "", prev = [] } = {}) {
+    const s = STAGES[stage], todo = criteriaFor(stage, tier);
+    const hint = (c, i) => `(${i + 1}) ${c.text} — ${c.term === "PRD" ? "text는 '경량' · '상세' · '안 함' 중 하나로 시작하고 ' — 까닭'을 붙인다(기능이 적으면 경량, 쓰는 사람 · 기능이 많으면 상세, 아주 작으면 안 함)." : STAGE_HINT[c.text] || "한 줄."}`;
+    return prompt([`사용자가 1단계를 마쳤다(1단계결과). 받은 글과 1단계 결과를 읽고 ${s.n + 1}단계 "${s.title}"(${s.does})의 할 일마다 초안을 만든다. 사용자는 초안을 보고 맞는지만 고른다.`,
+      `할 일(이름 · 개수 · 순서는 정해져 있다 — items도 이 순서로 ${todo.length}개): ${todo.map(hint).join(" ")}`], [
+      FLORO_VOICE,
+      "글은 한 칸에 300자 안쪽. say는 사용자에게 건네는 한마디(60자 안쪽).",
+      "받은 글과 1단계 결과에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 모르면 '아직 모름'이라고 쓴다.",
+    ], tag("받은글", String(idea).trim()), tag("1단계결과", prev.map((x) => `${x.name}: ${(x.lines || []).join(" / ")}`).join("\n")));
+  }
+  // 답의 모양 — 할 일 개수와 같아야 하고, 기획서 칸은 경량 · 상세 · 안 함으로 시작해야(→ {pick, why}). 글은 잘라 쓴다. 초안을 만들지 않는 단계 · 틀리면 null
+  function parseStageDraft(o, stage, tier) {
+    const todo = DRAFT_STAGES.includes(stage) ? criteriaFor(stage, tier) : null;
+    if (!todo || !o || !filled(o.say) || !Array.isArray(o.items) || o.items.length !== todo.length) return null;
+    const items = [];
+    for (let i = 0; i < todo.length; i++) {
+      const x = o.items[i]; if (!x || !filled(x.text)) return null;
+      const t = x.text.trim();
+      if (todo[i].term !== "PRD") { items.push({ text: t.slice(0, 300) }); continue; }
+      const hit = PRD_PICK.find(([w]) => t.startsWith(w)); if (!hit) return null;
+      items.push({ pick: hit[1], why: t.slice(hit[0].length).replace(/^\s*(?:—|-|:)?\s*/, "").slice(0, 120) });
+    }
+    return { items, say: o.say.trim().slice(0, 120) };
+  }
   // 답의 모양 — qa는 할 일 개수와 같아야 한다(다르면 null). 긴 글은 잘라 쓴다
   function parseQuest(o, stage, tier) {
     const todo = criteriaFor(stage, tier);
@@ -412,6 +447,7 @@
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
     FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest,   // C-22 퀘스트 제작(2026-10-21)
     START_MAX, START_SCHEMA, startPrompt, parseStart,   // C-36 처음 한 바퀴 — 1단계 초안(2026-10-25)
+    DRAFT_STAGES, STAGE_DRAFT_SCHEMA, stageDraftPrompt, parseStageDraft,   // C-37 2단계 초안(2026-10-25)
     PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport };   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
