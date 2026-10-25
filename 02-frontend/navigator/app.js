@@ -142,7 +142,6 @@
   // 지금 등급의 할 일 목록 — 단계 n
   const crits = (n) => N.criteriaFor(n, st.tier);
   const $nav = document.getElementById("nav"), $phone = document.getElementById("phone"), $chat = document.getElementById("chat");
-  const $fx = document.getElementById("fx");
 
   // ── 상태에서 바로 계산하는 것 ──
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -603,8 +602,6 @@
   // ── PC 화면 — 가로 카드 ──
   // 지금 보이는 카드의 단축키 { 키: 할 일 } — 카드를 그릴 때 채운다
   let deskKeys = {};
-  // 카드가 플로로에게 맡긴 한마디(2026-10-18 임유정 요청: 카드 위 말풍선과 잠깐 뜨는 말풍선을 하나로) — 그린 뒤 say()로 띄운다
-  let cardSay = "", lastCardSay = "";
   const KEYCAP = { Enter: "Enter", Escape: "Esc", "c-Enter": "Ctrl+Enter" };
   const kbd = (k) => (k ? `<kbd aria-hidden="true">${KEYCAP[k] || k.toUpperCase()}</kbd>` : "");
   // 버튼 하나 {label, act, i, key, pri, kind, pressed, disabled}. kind에 opt가 있으면 선택지(단축키가 앞에)
@@ -839,7 +836,6 @@
   }
   // 가로 카드 하나 — 왼쪽 플로로, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
   function card(v) {
-    cardSay = v.say || "";
     for (const a of v.acts) if (a.key) deskKeys[a.key] = a;
     let opts = v.acts.filter(isOpt), rest = v.acts.filter((a) => !isOpt(a));
     // 선택지 뒤에 '나중에'만 남으면 같은 줄에 — 카드가 낮아진다
@@ -863,6 +859,7 @@
   //    규칙은 안 바뀐다: 지금 결정할 것 하나(momentToday · momentGate)가 플로로의 마지막 말이 되고, 그 단추들이 칩이 된다. 지나간 말은 위로 쌓인다(이 켜짐 동안만 — 기록에는 안 남긴다).
   const ROMAN = (i) => (QU ? QU.roman(i) : String(i + 1));
   let lastLive = null;   // 마지막으로 보인 플로로의 말 — 바뀌면 지난 말로 쌓는다
+  let saidSince = 0;     // 그 말이 보이는 동안 say()가 기록에 남긴 말 수 — 지난 말은 그 앞에 끼운다(먼저 보인 말이 위에, 2026-10-25)
   const logMsg = (who, html) => { st.chat = [...st.chat, { who, html }].slice(-60); };
   const logMe = (text) => logMsg("me", esc(text));
   // 퀘스트의 결정할 것 하나 — 받기 전(draft) · 한 줄씩 묻기 · 다 적음(완료 보고). momentToday가 알림 · 경고 · 오류 · 먹이 다음에 부른다
@@ -896,12 +893,12 @@
   const sayHint = () => (planNow() ? (!st.plan ? "만들고 싶은 것 · 요구 · 문제 글을 붙여 넣어요" : !st.plan.confirmed ? "전체 의견을 적어도 돼요" : "보고에 대해 묻거나 답해요") : !st.j && !st.quest ? "예) 동아리 행사 등록 앱을 만들고 싶어요" : st.quest && st.quest.phase === "quest" && !QU.isDone(st.quest) ? "한 줄로 적어 주세요" : st.screen === "gate" && st.step === "question" ? "궁금한 걸 적어 주세요" : "플로로에게 말하기");
   // 채팅 카드 — v는 momentToday()/momentGate()가 준 것(글은 이미 esc 한 것)
   function chatCard(v) {
-    cardSay = v.say || "";
     for (const a of v.acts) if (a.key && !a.disabled) deskKeys[a.key] = a;
     const live = `${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}<b class="say">${v.title}</b>${v.sub ? `<span class="mc-sub">${v.sub}</span>` : ""}`;
     const key = `${v.title}|${v.sub || ""}`;
     // 지난 말은 위로 — 단, '살펴보고 있어요'처럼 기다리는 동안만 보이는 말(passing)은 쌓지 않는다. 경과 초가 바뀔 때마다 다른 말로 보여 같은 말이 계속 쌓였다(임유정 2026-10-22)
-    if (lastLive && lastLive.key !== key && !lastLive.passing) logMsg("floro", lastLive.html);
+    if (lastLive && lastLive.key !== key && !lastLive.passing) { const at = st.chat.length - saidSince; st.chat = [...st.chat.slice(0, at), { who: "floro", html: lastLive.html }, ...st.chat.slice(at)].slice(-60); }
+    if (!lastLive || lastLive.key !== key) saidSince = 0;
     lastLive = { key, html: live, passing: !!v.passing };
     // 답할 칩(v.acts)과 늘 있는 칩(moreActs)을 두 줄로 — 섞여 있으면 늘 있는 칩이 답 사이에 끼어 줄이 들쭉날쭉했다(임유정 2026-10-22). 늘 있는 칩은 아랫줄 한 줄
     // '공책 보기'(퀘스트 창 열기)는 답이 아니라 늘 있는 칩과 같은 길이라, 나올 때는 아랫줄 맨 앞에 둔다(임유정 2026-10-22). 단축키(deskKeys)는 위에서 v.acts로 그대로
@@ -1349,7 +1346,6 @@
   function greetHTML(enter) {
     deskKeys = { Enter: { act: "open" } };
     const greeting = document.documentElement.classList.contains("greeting");
-    cardSay = greeting ? "" : C.greeting(new Date().getHours());   // 인사 움직임 중에는 hello 단계에서 말한다
     return `<div class="isl greet${enter}">${greeting ? GREET_WAVE() : ""}<section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
       <div class="mc-main">
         <h2 class="mc-title">${st.back ? "다시 오셨네요!" : "안녕하세요! 저는 길잡이 물범 플로로예요."}</h2>
@@ -1722,8 +1718,8 @@
     const prev = moved ? snapShape() : null;   // 움직임(C-14): 갈아 끼우기 전의 상자
     const slid = placeFrom !== null && !moved && (placeFrom !== st.place || paneFrom !== st.pane);   // 모드 · 판이 바뀌면 판만 옆으로 밀려 바뀐다(탭 바뀜과 같은 움직임)
     placeFrom = st.place; paneFrom = st.pane;
-    deskKeys = {}; cardSay = "";
-    if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); hideSay(); }
+    deskKeys = {};
+    if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); }
     else if (st.ui === "greet") $nav.innerHTML = greetHTML(enter);
     else if (st.ui === "petit") $nav.innerHTML = `<div class="${enter.trim()}">${pillHTML()}</div>`;
     else $nav.innerHTML = islandHTML(enter);
@@ -1868,8 +1864,6 @@
     else if (lg) { lg.scrollTop = logWas.top; if (logWas.end || lg.children.length > logWas.n) lg.scrollTo({ top: lg.scrollHeight, behavior: STILL ? "auto" : "smooth" }); }
     syncWins();
     refract();
-    // 카드의 한마디도 다른 한마디처럼 플로로 옆에 잠깐 떴다 사라진다 — 같은 말은 한 번만
-    if (cardSay !== lastCardSay) { lastCardSay = cardSay; if (cardSay) { const t = cardSay; requestAnimationFrame(() => say(t)); } }
     reportSize();
   }
   // Electron 앱(2026-10-19): 지금 보이는 것(띠 · 한 줄 · 펼침 · 옆의 설정 창까지)의 크기를 앱에 알려 창을 딱 맞춘다 — 투명한 빈 영역이 뒤 창의 클릭을 가로채지 않게.
@@ -1887,9 +1881,6 @@
     let r = 0, b = 0;
     for (const el of $nav.children) { if (el.classList.contains("shell")) continue; const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
     if (!r || !b) return;
-    // 떠 있는 말풍선(#fx의 .pop-say)의 아래쪽까지 — 한 줄로 접혀 있을 때 말이 창 밖에서 잘렸다(F-40, 이재엽 버튼 "창을 잠깐 늘림"). 가로는 넓히지 않는다(islandX가 가운데로 다시 놓아 한 줄이 밀린다)
-    const pop = $fx && $fx.querySelector(".pop-say.show");
-    if (pop) b = Math.max(b, pop.getBoundingClientRect().bottom);
     if ($nav.classList.contains("peekroom") && MO) { r += MO.RESERVE.w / 2; b += MO.RESERVE.h; }   // 접힌 창의 여유 — 올리면 커질 자리(왼쪽 여유는 .nav.peekroom의 padding)
     const side = $nav.classList.contains("side"), anchor = side || sideWas ? "left" : "center";
     sideWas = side;
@@ -1921,56 +1912,9 @@
   }
   function flash(mood, ms) { flashMood = { mood, until: Date.now() + ms }; applyMood(); setTimeout(applyMood, ms + 30); }
   const liveCat = () => (isPhone() ? $phone : $nav).querySelector("[data-live]");
-  // 플로로의 한마디 — 잠깐 떴다 사라지는 말풍선. 화면 위쪽에 있으면 아래로 띄운다
-  let sayTimer = 0, sayRaf = 0;
-  // 말풍선 자리 — 플로로 옆. 왼쪽에 빈자리가 있으면 플로로 왼쪽(카드 글을 가리지 않게), 없으면 위, 화면 맨 위면 아래
-  function placeSay(b) {
-    const host = liveCat();
-    if (!host) return;
-    // 레벨 오버레이에서는 플로로가 왼쪽 칸에 있어 위로 띄우면 상자 제목을 덮는다 — 아래(기분 말 자리)로
-    // 채팅 중심 섬(.mc.chat, C-22)에서는 플로로 아래에 칭호 · 기분 말이 있고 오른쪽은 대화 칸이다 — 아래로 띄우면 칭호를 덮었다(임유정 2026-10-22).
-    // 왼쪽 칸 가운데, 플로로 머리 위(그림 위쪽 빈자리)에 띄우고 폭은 그 칸 안으로
-    const col = host.closest(".mc.chat .who");
-    if (col) {
-      const r = host.getBoundingClientRect(), c = col.getBoundingClientRect();
-      b.classList.remove("side", "below"); b.classList.add("over");
-      b.style.left = `${Math.round(c.left + c.width / 2)}px`;
-      b.style.top = `${Math.round(r.top + r.height * 0.22)}px`;
-      b.style.maxWidth = `${Math.max(120, Math.round(c.width - 8))}px`;
-      return;
-    }
-    b.classList.remove("over");
-    const r = host.getBoundingClientRect(), aside = r.left > 250, below = !aside && r.top < 90;
-    b.classList.toggle("side", aside);
-    b.classList.toggle("below", below);
-    b.style.left = `${Math.round(aside ? r.left - 6 : r.left + r.width * 0.66)}px`;
-    b.style.top = `${Math.round(aside ? r.top + r.height * 0.2 : below ? r.bottom + 6 : r.top + 6)}px`;
-    // 한 줄(.pill) 안의 플로로면 말풍선을 한 줄 폭 안에 — 창 가로가 말풍선 때문에 바뀌지 않게(F-40). 아니면 평소대로
-    const pill = host.closest(".pill");
-    b.style.maxWidth = pill ? `${Math.max(120, Math.min(280, Math.round(pill.getBoundingClientRect().right - (r.left + r.width * 0.66) - 4)))}px` : "";
-  }
-  function say(text) {
-    if (!liveCat() || !$fx) return;
-    let b = $fx.querySelector(".pop-say");
-    if (!b) { b = document.createElement("div"); b.className = "pop-say"; b.setAttribute("role", "status"); $fx.appendChild(b); }
-    b.textContent = text;
-    placeSay(b);
-    // 떠 있는 동안 플로로를 따라간다 — 카드 크기가 바뀌어 플로로 자리가 옮겨져도 (2026-10-18 임유정 요청)
-    cancelAnimationFrame(sayRaf);
-    // F-46(2026-10-20 재기): 프레임마다 자리를 다시 재면(getBoundingClientRect) 말풍선이 떠 있는 동안 매 프레임 배치 계산이 났다(3초에 181번). 0.1초에 한 번이면 충분하다
-    let lastFollow = 0;
-    const follow = (now) => { if (!b.classList.contains("show")) return; if (now - lastFollow > 100) { lastFollow = now; placeSay(b); } sayRaf = requestAnimationFrame(follow); };
-    // 긴 말은 더 오래 — 글자당 70ms, 2.9초~7초
-    const ms = Math.min(7000, Math.max(2900, 1500 + text.length * 70));
-    b.style.animationDuration = `${ms}ms`;
-    b.classList.remove("show"); void b.offsetWidth; b.classList.add("show");
-    sayRaf = requestAnimationFrame(follow);
-    clearTimeout(sayTimer);
-    queueSize();   // 접힌 한 줄이면 창을 말풍선 아래까지(F-40) — 크기가 같으면 보내지 않는다
-    sayTimer = setTimeout(() => { b.classList.remove("show"); queueSize(); }, ms);   // 사라지면 한 줄 높이로
-  }
-  // 띠로 접히면 떠 있던 말풍선을 닫는다 — 띠에는 플로로가 없어 말풍선이 제자리에 남은 채 창만 줄어든다(F-40 4번)
-  function hideSay() { const b = $fx && $fx.querySelector(".pop-say.show"); if (b) { b.classList.remove("show"); clearTimeout(sayTimer); } }
+  // 플로로의 한마디 — 2026-10-25(두승현): 머리 위에 떴다 사라지던 말풍선(.pop-say)을 뺐다. 안내 · 오류는 섬의 대화 기록에 플로로의 말로 남긴다
+  //   (실패를 숨기지 않는다 — security-records.md 6-1). 쓰다듬기 · 졸기 · 축하 같은 꾸밈 말은 부르지 않는다. ponytail: 휴대폰 화면은 대화 기록이 없어 보이지 않는다(PC 먼저)
+  function say(text) { if (!text) return; logMsg("floro", esc(text)); saidSince += 1; requestAnimationFrame(render); }
   // 한 번 하는 움직임(seal.css · app.css). 끝나면 떼어 낸다 — 헤엄의 물방울처럼 붙어 있는 동안 계속 보이는 것이 있어서
   const playOn = (host, cls) => {
     if (STILL || !host) return;
@@ -1989,12 +1933,10 @@
     playOn(host, kind === "stroke" ? "purring" : "squish");
     if (host && !STILL) C.burst(...center(host, 0.3), "heart", kind === "stroke" ? 7 : 4);
     if (b.level > before) {
-      say(`플로로와 더 친해졌어요! 이제 '${b.name}'`);
       if (host && !STILL) C.burst(...center(host), "star", 14, 360);
       if (st.sound) C.chime("level");
       setTimeout(render, 1800);   // 위쪽 줄의 하트를 새로
     } else {
-      say(kind === "stroke" ? "흥얼흥얼… 기분 좋아요" : C.petLine(st.pets));
       if (st.sound) C.chime("pet");
     }
   }
@@ -2005,7 +1947,6 @@
       const host = liveCat();
       if (st.sound) C.chime(kind === "stage" || kind === "finish" ? "level" : "done");
       flash("happy", 1800);
-      say(kind === "stage" ? `${LB(stage().n)}로 왔어요! 같이 가요` : CHEER[kind]);
       if (STILL || !host) return;
       const big = kind === "stage" || kind === "finish";
       C.burst(...center(host), "star", big ? 16 : 10, big ? 360 : 160);
@@ -2072,7 +2013,7 @@
     if (sleepState === "awake") return;
     const was = sleepState;
     sleepState = "awake";
-    if (was === "sleep") { flash("wow", 900); say("앗, 깜빡 졸았어요!"); } else applyMood();
+    if (was === "sleep") { flash("wow", 900); } else applyMood();
   }
   setInterval(() => {
     if (isPhone() || st.busy) return;
@@ -2084,7 +2025,6 @@
     if (s === sleepState) return;
     sleepState = s;
     applyMood();
-    if (s === "sleep") say("쿨… 쿨…");
   }, 3000);
 
   // ── AI 호출 — 기다리는 동안 플로로가 "살펴보는 중" ──
@@ -2597,11 +2537,7 @@
     const a = t.dataset.act;
     if (a === "hold-who") st.holdWho = t.value;
     if (a === "hold-when") st.holdWhen = t.value;
-    if (a === "text") {
-      const grew = st.text.length < 200 && t.value.length >= 200;
-      st.text = t.value;
-      if (grew) say("와, 꼼꼼하게 쓰셨네요!");
-    }
+    if (a === "text") st.text = t.value;
     if (a === "question") st.question = t.value;
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다
     if (a === "task-text") { st.task.text = t.value; const b = $nav.querySelector("[data-act=task-tidy]"); if (b) b.disabled = !st.task.text.trim(); }
@@ -2841,7 +2777,7 @@
       h.dataset.greet = p;
       const host = liveCat();
       if (p === "pop" && host) C.burst(...center(host, 0.65), "bubble", 7, 160);
-      if (p === "hello") { say(C.greeting(new Date().getHours())); if (st.sound) C.chime("pop"); }
+      if (p === "hello" && st.sound) C.chime("pop");
       if (p === "settle") { document.body.classList.add("blink"); setTimeout(() => document.body.classList.remove("blink"), 140); }
     };
     const run = GR.play(GR.TIMELINE, { onPhase });

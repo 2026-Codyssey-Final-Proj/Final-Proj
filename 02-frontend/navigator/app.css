@@ -510,13 +510,7 @@ button.pet:focus-visible{outline-offset:4px}
 .fx svg{display:block}
 @keyframes fly{0%{opacity:0;transform:scale(.4)}15%{opacity:1}70%{opacity:1}
   100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r)) scale(1.05)}}
-.pop-say{position:fixed;max-width:280px;padding:8px 13px;border-radius:16px 16px 16px 4px;background:var(--ink);color:var(--win);font-size:calc(13px * var(--ui-scale,1));font-weight:600;line-height:1.45;
   box-shadow:0 8px 24px rgba(0,0,0,.18);translate:0 -100%;opacity:0;pointer-events:none}
-.pop-say.below{translate:0 0;border-radius:4px 16px 16px 16px}
-.pop-say.side{translate:-100% 0;max-width:230px;border-radius:16px 4px 16px 16px}
-.pop-say.over{translate:-50% -100%;border-radius:16px;text-align:center}   /* 채팅 섬의 왼쪽 칸 — 플로로 머리 위 가운데(app.js placeSay) */
-.pop-say.show{animation:sayin 2.9s ease forwards}
-@keyframes sayin{0%{opacity:0;scale:.85}7%{opacity:1;scale:1.03}12%{scale:1}85%{opacity:1}100%{opacity:0}}
 
 /* 움직임 — '움직임 줄이기'를 켠 사람에게는 하지 않는다 */
 /* 플로로 그림 안의 움직임(꼬리·숨·지느러미·헤엄)은 seal.css — 서고와 같이 쓴다 */
@@ -591,7 +585,6 @@ button.pet:focus-visible{outline-offset:4px}
   .node.done .dot{color:var(--acc-ink)}
   .crit-grid,.map-detail,.isl .card{background:rgba(255,255,255,.05)}
   .cat .c-fur,.cat .c-paws ellipse{stroke:none}   /* 네이비 위에서는 참고 그림처럼 테두리 없이 */
-  .pop-say{background:#0E1745;color:#FFFFFF;border:1px solid rgba(255,255,255,.25)}
 }
 
 /* ── iPhone: 600px 이하에서는 오늘의 길잡이 앱 ── */

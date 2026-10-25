@@ -67,8 +67,7 @@ test("app.js — 인사는 greet.js 규칙으로 켤 때 한 번, 단계는 html
   assert.match(app, /\$nav\.addEventListener\("click", \(\) => \{ if \(greetSkip\) greetSkip\(\); \}, \{ capture: true \}\)/, "누름");
   assert.match(app, /new CustomEvent\("floe:greet-done"\)/);
   assert.match(app, /function scheduleIdle\(\) \{\n\s*if \(greetSkip\) return;/, "인사 중에는 접히지 않는다");
-  assert.match(app, /cardSay = greeting \? "" : C\.greeting/, "인사말은 hello 단계에서 한 번");
-  assert.match(app, /if \(p === "hello"\) \{ say\(C\.greeting\(new Date\(\)\.getHours\(\)\)\)/);
+  assert.match(app, /if \(p === "hello" && st\.sound\) C\.chime\("pop"\);/, "hello 단계는 소리만 — 머리 위 말풍선은 2026-10-25에 뺐다");
   assert.match(app, /GREET_WAVE/, "띠의 물결 선이 섬 안에서 그어진다");
   assert.match(read("navigator/index.html"), /<script src="greet\.js"><\/script>\s*<script src="app\.js">/, "greet.js는 app.js보다 먼저");
 });
