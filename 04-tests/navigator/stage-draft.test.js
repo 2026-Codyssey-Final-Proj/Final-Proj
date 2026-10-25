@@ -40,7 +40,7 @@ test("2단계 초안 읽기(parseStageDraft): 할 일 개수 · 순서대로, �
   assert.equal(long.items[0].text.length, 300);
   const prdAs = (t) => ({ ...answer("Full"), items: answer("Full").items.map((x, i) => (i === 3 ? { text: t } : x)) });
   for (const [bad, stage, tier] of [[null, 1, "Full"], [{}, 1, "Full"], [{ ...answer("Full"), items: answer("Full").items.slice(1) }, 1, "Full"], [prdAs("몰라요"), 1, "Full"],
-    [{ ...answer("Lite"), items: [{ text: " " }, { text: "a" }] }, 1, "Lite"], [answer("Full"), 3, "Full"]]) assert.equal(N.parseStageDraft(bad, stage, tier), null, `${JSON.stringify(bad).slice(0, 50)} · ${stage}`);
+    [{ ...answer("Lite"), items: [{ text: " " }, { text: "a" }] }, 1, "Lite"], [answer("Full"), 8, "Full"]]) assert.equal(N.parseStageDraft(bad, stage, tier), null, `${JSON.stringify(bad).slice(0, 50)} · ${stage}`);
 });
 
 test("withStageDraft: 2단계 퀘스트에 초안을 얹으면 받기 화면 없이 바로 확인(phase quest) · 초안 글(draftOf) · 고르기 칸(pickOf). 개수가 다르면 그대로", () => {
@@ -73,7 +73,7 @@ test("연습(서버 없이)의 2단계 예시 초안 — 등급마다 그 할 �
     const ex = Q.exampleStageDraft(1, N.criteriaFor(1, tier));
     assert.equal(ex.items.length, N.criteriaFor(1, tier).length, tier); assert.equal(ex.example, true);
   }
-  assert.equal(Q.exampleStageDraft(3, N.criteriaFor(3, "Full")), null, "예시가 없는 단계(4단계 — 다음 판)");
+  assert.equal(Q.exampleStageDraft(8, N.criteriaFor(8, "Full")), null, "없는 단계(8단계 다음)는 예시가 없다");
   const words = JSON.stringify([Q.exampleStageDraft(1, N.criteriaFor(1, "Full")), Q.DOC_PICKS]);
   for (const j of N.JARGON) assert.ok(!words.includes(j), j);
 });

@@ -314,9 +314,12 @@
   // ── C-39 3단계 초안(2026-10-25, 이재엽 "지금까지 준비한 내용들을 초안들로 해서 정리해서 무엇들을 준비해야하는지 생각해서 초안들 보여줘" · 버튼 "할 일 초안 + 준비할 것" · "흐름 + 칸마다 재료까지") ──
   //   지난 단계 결과를 전부(prev = [{ stage, items }]) 번호([단계-칸], 1부터)를 붙여 넘기고, 칸마다 어느 칸을 보고 썼는지(from)와 이 단계 전에 준비할 것(prep) 두세 줄을 같이 받는다.
   //   4단계도 같은 틀 — DRAFT_STAGES에 넣고 STAGE_HINT에 그 단계 할 일의 꼴만 더하면 된다
-  const DRAFT_STAGES = [1, 2];
-  const PREP_MAX = 3, PREP_LINE = 160, FROM_MAX = 4;
-  const STAGE_DRAFT_SCHEMA = obj({ items: list(obj({ text: str, from: list(str, 0, FROM_MAX) }), 1, 8), prep: list(str, 0, PREP_MAX), say: str });
+  // ── C-40 4 ~ 8단계 초안(2026-10-26, 이재엽 "4번째 5번째 6번째 7번째 8번째 과정들을 한번에 … 계속 예시를 만들어서 확인해서 우리가 선택해서" · 버튼 "예시 셋 중 고르기") ──
+  //   2 ~ 8단계 모두 초안부터. 4 ~ 8단계(ALT_STAGES)는 칸마다 예시 셋 — text가 플로로가 권하는 것, alts가 다른 길 둘. 사람이 셋 중 고른다(다 아니면 적거나 '다른 예시')
+  const DRAFT_STAGES = [1, 2, 3, 4, 5, 6, 7];
+  const ALT_STAGES = [3, 4, 5, 6, 7];
+  const PREP_MAX = 3, PREP_LINE = 160, FROM_MAX = 4, ALT_MAX = 2, ALT_LINE = 150;
+  const STAGE_DRAFT_SCHEMA = obj({ items: list(obj({ text: str, alts: list(str, 0, ALT_MAX), from: list(str, 0, FROM_MAX) }), 1, 8), prep: list(str, 0, PREP_MAX), say: str });
   const STAGE_HINT = {
     "정해진 빈칸에 아이디어 채우기": "누구 · 불편 · 해결 · 어디까지 · 언제 성공 다섯 칸을 '칸: 내용'으로 쓰고 ' · '로 이어 한 줄.",
     "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기": "'왜: … · 어디까지: …(이번에 안 하는 것도) · 언제 성공: …(숫자로, 모르면 아직 모름)' 한 줄.",
@@ -328,10 +331,38 @@
     "기능마다 꼭 필요한지, 있으면 좋은지 표시하기": "위 기능마다 '기능: 꼭 · 있으면 좋음 · 이번엔 안 함' 중 하나, ' / '로 이어 한 줄.",
     "기능마다 어디서 나온 생각인지 표로 잇기 (기능이 5개 이상일 때)": "기능마다 '기능 ← 나온 칸(예: 1단계 불편)', ' / '로 이어 한 줄. 기능이 5개보다 적으면 '기능이 N개라 아직 안 해도 돼요'.",
     "막아야 할 일(예: 남의 정보가 밖으로 나감)도 '~하면, 앱은 ~한다'로 쓰기": "지난 단계의 남의 정보 · 밖으로 나가는 것을 보고 '~하면, 앱은 ~하지 않는다'(막는 일) 1~3개, ' / '로 이어 한 줄. 막을 일이 없으면 '막을 일 없음 — 까닭'.",
+    // 4단계(C-40) — 만드는 방법 고르기. 예시마다 다른 길(다른 후보 · 다른 선택)
+    "흔히 쓰는 방법 목록에서 먼저 후보를 2개 이상 찾기": "흔히 쓰는 만드는 방법(예: 화면 하나짜리 웹 · 서버가 있는 웹 · 휴대폰 앱 · 표 계산 도구) 중 이 프로젝트에 맞는 후보 2~3개를 ' / '로 이어 한 줄. 예시마다 후보 묶음이 달라야 한다.",
+    "후보끼리 좋은 점과 아쉬운 점 비교하기": "위 후보마다 '후보: 좋은 점 · 아쉬운 점'을 ' / '로 이어 한 줄.",
+    "고른 방법과 왜 골랐는지 한 줄을 기록으로 남기기": "'고른 방법: … — 까닭: …' 한 줄. 예시마다 다른 방법을 고른다.",
+    "지키기로 한 원칙(쓸 도구, 하면 안 되는 것, 화면 원칙)과 고른 방법 맞대어 보기": "지키기로 한 것(쓸 도구 · 하면 안 되는 것 · 화면 원칙)마다 '약속: 맞음 또는 안 맞음 — 까닭'을 ' / '로 이어 한 줄.",
+    "누가 무엇을 볼 수 있는지, 정보를 어디에 둘지도 비교에 넣기": "'누가 무엇을 보나: … · 정보를 둘 곳: …(이 컴퓨터 · 서버 · 다른 서비스) · 들어올 때 확인: 필요 또는 불필요' 한 줄.",
+    // 5단계 — 뼈대
+    "가장 단순한 흐름을 처음부터 끝까지 이어 보기": "가장 단순한 흐름 하나를 '① … → ② … → ③ …'로 처음부터 끝까지 한 줄.",
+    "이어진 게 실제로 도는지 확인하기": "그 흐름이 도는지 보는 방법을 '무엇을 해 보면 → 무엇이 보이면 된다' 한 줄.",
+    "남은 일을 작은 할 일로 나누기": "남은 일을 작은 할 일 3~6개(하나는 반나절 안에 끝나는 크기)로 ' / '로 이어 한 줄.",
+    [SECRETS]: "비밀값(키 · 비밀번호 · 토큰)이 코드나 올릴 파일에 남지 않게 하는 방법 한 줄(예: .env에 두고 올리지 않기 · 올리기 전에 검사).",
+    // 6단계 — 하나씩 만들고 확인하기
+    "확인 방법을 먼저 정하고 만들기": "만들 기능마다 '기능 — 확인 방법(무엇을 넣으면 무엇이 나와야)'을 ' / '로 이어 한 줄.",
+    "작은 부분마다 확인 통과하기": "작은 부분마다 통과해야 할 확인 2~4개를 ' / '로 이어 한 줄.",
+    "쓰는 사람 입장의 시나리오대로 돌려 보기": "쓰는 사람의 이야기 하나를 '① … → ② … → 결과: …'로 한 줄.",
+    "막아야 할 일마다 일부러 어겨 보고, 정말 막히는지 확인하기": "지난 단계의 막을 일마다 '일부러 이렇게 해 보면 → 막혀야 한다'를 ' / '로 이어 한 줄.",
+    // 7단계 — 재 보기. 잰 값은 지어내지 않는다
+    "2단계에서 정한 숫자를 실제로 재 보기": "지난 단계에서 정한 숫자마다 '무엇을 · 어떻게 잰다'를 ' / '로 이어 한 줄. 정한 숫자가 없으면 '정한 숫자 없음 — 3단계에서 먼저 정하기'.",
+    "잰 값을 그대로 적어 두기": "잰 값을 적을 틀을 '무엇: (재고 적기) · 잰 날: (재고 적기)' 꼴로 한 줄 — 아직 재지 않았으니 값을 지어내지 않는다.",
+    "재지 못한 것을 '아직 못 함'으로 적어 두기": "재지 못할 것 같은 것과 까닭을 '무엇 — 아직 못 함(까닭)' 한 줄. 없으면 '없음'.",
+    "공개한 앱에 아무나 들어오지 못하게 되어 있는지 확인하기": "공개할 때 아무나 들어오지 못하게 하는 방법 한 줄(들어올 때 확인 · 비밀 주소 · 공개 안 함 중). 공개하지 않으면 '공개하지 않아요 — 이 컴퓨터에서만'.",
+    // 8단계 — 돌아보기
+    "잘된 점과 아쉬운 점 돌아보기": "'잘된 점: … · 아쉬운 점: …' 한 줄 — 지난 단계 결과에 있는 일만.",
+    "'왜?'를 다섯 번 물어 진짜 원인 찾기": "아쉬운 점 하나를 골라 '왜? → … → …'를 다섯 번 이어 진짜 까닭을 한 줄.",
+    "정보가 샐 뻔했던 일이나 아찔했던 일 적기": "정보가 샐 뻔했거나 아찔했던 일 한 줄. 지난 결과에 없으면 '없었어요 — 다음엔 …'.",
+    "배운 것을 다음에 쓸 수 있게 남기기": "다음 프로젝트에 쓸 배움 2~3개를 '다음엔 …'으로 ' / '로 이어 한 줄.",
+    "마친 작업을 저장소에 올려 두기": "올릴 것과 커밋 말 한 줄(예: '문서와 코드 — 커밋: 첫 판 완성'), 비밀값은 올리지 않는다고 덧붙인다.",
   };
   const PRD_PICK = [["경량", "light"], ["상세", "full"], ["안 함", "none"]];
   const refOf = (s, i) => `${s + 1}-${i + 1}`;   // 재료 번호 — 화면 번호(1부터)
-  function stageDraftPrompt(stage, tier, { idea = "", prev = [] } = {}) {
+  //   avoid(C-40 '다른 예시') — { i, texts }: 그 칸은 이미 보인 예시와 다르게
+  function stageDraftPrompt(stage, tier, { idea = "", prev = [], avoid = null } = {}) {
     const s = STAGES[stage], todo = criteriaFor(stage, tier), done = prev.map((p) => `${p.stage + 1}단계`).join(" · ");
     const hint = (c, i) => `(${i + 1}) ${c.text} — ${c.term === "PRD" ? "text는 '경량' · '상세' · '안 함' 중 하나로 시작하고 ' — 까닭'을 붙인다(기능이 적으면 경량, 쓰는 사람 · 기능이 많으면 상세, 아주 작으면 안 함)." : STAGE_HINT[c.text] || "한 줄."}`;
     const mat = prev.flatMap((p) => p.items.map((x, i) => `[${refOf(p.stage, i)}] ${x.name}: ${(x.lines || []).join(" / ")}`)).join("\n");
@@ -341,8 +372,10 @@
       "글은 한 칸에 300자 안쪽. say는 사용자에게 건네는 한마디(60자 안쪽).",
       `items마다 from에 그 칸을 쓸 때 본 지난 단계 칸의 번호를 적는다(예: ["1-1", "2-3"], ${FROM_MAX}개까지, 받은 글만 봤으면 빈 목록).`,
       `prep에는 이 단계를 하기 전에 사용자가 준비할 것을 ${PREP_MAX}줄까지(한 줄 40자 안쪽, 예: 기능 개수 세기).`,
+      ALT_STAGES.includes(stage) ? `items마다 text에는 플로로가 가장 권하는 예시를, alts에는 서로 다른 길의 예시 ${ALT_MAX}개를(한 예시 ${ALT_LINE}자 안쪽) 쓴다 — 사용자가 셋 중 하나를 고른다.` : "alts는 빈 목록 []으로 둔다.",
+      ...(avoid ? [`${avoid.i + 1}번째 칸은 이미본예시와 다른 예시로 쓴다.`] : []),
       "받은 글과 지난 단계 결과에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 모르면 '아직 모름'이라고 쓴다.",
-    ], tag("받은글", String(idea).trim()), tag("지난단계결과", mat));
+    ], tag("받은글", String(idea).trim()), tag("지난단계결과", mat), ...(avoid ? [tag("이미본예시", avoid.texts.join("\n"))] : []));
   }
   // 재료 번호("단계-칸", 1부터) → { s, i }(0부터) — 넘긴 지난 단계의 있는 칸만, 한 번씩, FROM_MAX개까지
   function fromRefs(list, stage, prev) {
@@ -363,7 +396,8 @@
     for (let i = 0; i < todo.length; i++) {
       const x = o.items[i]; if (!x || !filled(x.text)) return null;
       const t = x.text.trim(), from = fromRefs(x.from, stage, prev);
-      if (todo[i].term !== "PRD") { items.push({ text: t.slice(0, 300), from }); continue; }
+      const alts = ALT_STAGES.includes(stage) ? [...new Set((Array.isArray(x.alts) ? x.alts : []).filter(filled).map((a) => a.trim().slice(0, ALT_LINE)))].filter((a) => a !== t.slice(0, ALT_LINE)).slice(0, ALT_MAX) : [];
+      if (todo[i].term !== "PRD") { items.push({ text: t.slice(0, 300), from, ...(alts.length ? { alts } : {}) }); continue; }
       const hit = PRD_PICK.find(([w]) => t.startsWith(w)); if (!hit) return null;
       items.push({ pick: hit[1], why: t.slice(hit[0].length).replace(/^\s*(?:—|-|:)?\s*/, "").slice(0, 120), from });
     }
@@ -473,7 +507,7 @@
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
     FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest,   // C-22 퀘스트 제작(2026-10-21)
     START_MAX, START_SCHEMA, startPrompt, parseStart,   // C-36 처음 한 바퀴 — 1단계 초안(2026-10-25)
-    DRAFT_STAGES, STAGE_DRAFT_SCHEMA, stageDraftPrompt, parseStageDraft, PREP_MAX, PREP_LINE, FROM_MAX,   // C-37 2단계 초안 · C-39 3단계 초안 · 재료 · 준비할 것(2026-10-25)
+    DRAFT_STAGES, ALT_STAGES, STAGE_HINT, STAGE_DRAFT_SCHEMA, stageDraftPrompt, parseStageDraft, PREP_MAX, PREP_LINE, FROM_MAX, ALT_MAX, ALT_LINE,   // C-37 2단계 초안 · C-39 3단계 초안 · 재료 · 준비할 것(2026-10-25)
     PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport };   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;

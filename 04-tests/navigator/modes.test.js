@@ -165,3 +165,11 @@ test("app.js — C-39: 고르는 칩은 누가 정했나 = 고름(pick) · 관�
   assert.match(app, /filter\(\(k\) => k < n\)\.sort\(\(a, b\) => a - b\)\.map\(\(k\) => \(\{ stage: k, items:/, "초안에는 지난 단계 결과 전부");
   for (const k of ["넣은 것", "플로로가 한 것", "내가 정한 것", "관문", "jm-ref", "이 단계 전에 준비할 것"]) assert.ok(app.includes(k), k);
 });
+
+// ── C-40(2026-10-26, 이재엽 "4 ~ 8단계 … 예시 … 선택 · 너무 느려 · 퀘스트에서도 … 어렵게") — 새 맥락 리뷰 뒤 ──
+test("app.js — C-40: 1단계 '남은 칸 모두 맞아요'는 만드는 크기도 권한 크기로 · 미리 부른 초안은 같은 기다림 화면(callAI pending) · 확인한 대로(checkBy)는 그 보고에만", () => {
+  const all = app.slice(app.indexOf('"draft-all": '), app.indexOf('"draft-all": ') + 400);
+  assert.match(all, /setTier\(QU\.SIZE_TIER\[q\.draft\.size\]\)/, "크기 칩과 같게");
+  assert.match(app, /async function callAI\(url, body, pending = null\)/); assert.match(app, /callAI\(null, null, hit\.p\)/);
+  assert.match(app, /function landed\(j, tokens, sent = st\.text, checkBy = ""\)/); assert.ok(!app.includes("checkByNext"), "전역 값 없음");
+});

@@ -151,8 +151,9 @@ const stageOf = (v) => (Number.isInteger(v) ? Nav.STAGES[v] : undefined);   // �
 // Claude에게 묻고, 답의 모양을 확인한 것만 돌려준다. read: 확인해서 화면에 줄 칸들을 만든다(모양이 틀리면 null)
 // 장부(tokens.js)에 남길 이름 — 실패 문구의 what을 짧은 말로
 const LEDGER_LABEL = { "다시 봐 준 결과의": "다시 봐 주기" };
-async function ask(res, prompt, schema, read, what) {
-  const r = await callClaude(prompt, schema, { label: LEDGER_LABEL[what] || what });
+// meta — 초안은 빠른 모델로(C-40, provider.js FAST: fast · 예시 셋이라 글 길이 maxTokens)
+async function ask(res, prompt, schema, read, what, meta = {}) {
+  const r = await callClaude(prompt, schema, { label: LEDGER_LABEL[what] || what, ...meta });
   const out = r.data && read(r.data);
   return out ? send(res, 200, { ok: true, ...out, tokens: r.tokens }) : refuse(res, r.error || `${what} 형식이 맞지 않음`, 502);
 }
@@ -364,7 +365,8 @@ const extraOk = (x) => (x.by == null || BY.includes(x.by)) && (x.draft == null |
 const extraOf = (x) => ({ ...(x.by != null ? { by: x.by } : {}), ...(x.draft != null && x.draft !== "" ? { draft: x.draft } : {}), ...(x.from && x.from.length ? { from: x.from.map((r) => ({ s: r.s, i: r.i })) } : {}) });
 const checkOk = (a) => Array.isArray(a) && a.length <= 8 && a.every((c) => c && strOk(c.text, ITEM_NAME_MAX) && Nav.filled(c.text) && typeof c.met === "boolean" && (c.evidence == null || strOk(c.evidence, 300)));
 const stageExtraOk = (v) => (v.prep == null || (Array.isArray(v.prep) && v.prep.length <= Nav.PREP_MAX && v.prep.every((x) => strOk(x, Nav.PREP_LINE))))
-  && (v.at == null || (typeof v.at === "string" && DATE_RE.test(v.at))) && (v.passed == null || (typeof v.passed === "string" && DATE_RE.test(v.passed))) && (v.check == null || checkOk(v.check));
+  && (v.at == null || (typeof v.at === "string" && DATE_RE.test(v.at))) && (v.passed == null || (typeof v.passed === "string" && DATE_RE.test(v.passed))) && (v.check == null || checkOk(v.check))
+  && (v.checkBy == null || v.checkBy === "confirm");   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
 // 화면이 보낸 단계 결과들 — { "0": {title, items, …}, "1": … }. 1 · 2단계(0 · 1)가 다 있어야. 단계 번호 0~7만. 모르는 칸은 버린다
 // 답: { results } 또는 { why } — 무엇이 틀렸는지 그대로 말한다(2026-10-25 리뷰)
 function resultsOf(r) {
@@ -377,7 +379,7 @@ function resultsOf(r) {
       return { why: `${n + 1}단계 결과의 모양이 맞지 않음 — 할 일 8개 · 줄 5개 · 줄 ${LINE_MAX}자까지, 준비할 것 ${Nav.PREP_MAX}줄, 날짜는 YYYY-MM-DD` };
     out[n] = { items: items.map((x, i) => ({ ...x, ...extraOf(v.items[i]) })),
       ...(v.prep && v.prep.length ? { prep: [...v.prep] } : {}), ...(v.at ? { at: v.at } : {}), ...(v.passed ? { passed: v.passed } : {}),
-      ...(v.check && v.check.length ? { check: v.check.map((c) => ({ text: c.text, met: c.met, evidence: c.evidence || "" })) } : {}) };
+      ...(v.check && v.check.length ? { check: v.check.map((c) => ({ text: c.text, met: c.met, evidence: c.evidence || "" })) } : {}), ...(v.checkBy ? { checkBy: v.checkBy } : {}) };
   }
   return { results: out };
 }
@@ -553,12 +555,17 @@ async function handle(req, res) {
     if (body.idea.length > Nav.IDEA_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.IDEA_MAX}자까지`);
     const prev = prevStagesOf(body.prev, body.stage);
     if (!prev) return refuse(res, `지난 단계 결과의 모양이 맞지 않음 — [{ stage, items }], 바로 앞 단계는 꼭 · 할 일 8개 · 줄 5개 · 줄 ${LINE_MAX}자까지`);
-    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev }), Nav.STAGE_DRAFT_SCHEMA, as("draft", (d) => Nav.parseStageDraft(d, body.stage, body.tier, prev)), "단계 초안");
+    // 다른 예시(C-40) — { i, texts }: 그 칸은 이미 본 예시와 다르게. 칸 자리 0~7 · 예시 1~3개 · 한 예시 300자
+    const avoid = body.avoid;
+    if (avoid && !(typeof avoid === "object" && Number.isInteger(avoid.i) && avoid.i >= 0 && avoid.i < 8 && Array.isArray(avoid.texts) && avoid.texts.length >= 1 && avoid.texts.length <= 3 && avoid.texts.every((t) => strOk(t, 300) && Nav.filled(t))))
+      return refuse(res, "다른 예시 요청의 모양이 맞지 않음 — { i: 칸 자리, texts: 이미 본 예시 1~3개 }");
+    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev, ...(avoid ? { avoid: { i: avoid.i, texts: avoid.texts } } : {}) }), Nav.STAGE_DRAFT_SCHEMA,
+      as("draft", (d) => Nav.parseStageDraft(d, body.stage, body.tier, prev)), "단계 초안", { fast: true, maxTokens: 4096 });
   }
   if (route === "/api/start") {   // C-36 처음 한 바퀴(API.md 3-21, 2026-10-25) — AI 한 번. 받은 글 전체로 1단계 초안(제목 · 불편 · 달라지는 것 · 누가 · 크기). 도구 없이, 글만
     if (!body || !Nav.filled(body.text)) return refuse(res, "받은 글이 비어 있음");
     if (body.text.length > Nav.START_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.START_MAX.toLocaleString()}자까지`);
-    return ask(res, Nav.startPrompt(body.text), Nav.START_SCHEMA, as("start", Nav.parseStart), "1단계 초안");
+    return ask(res, Nav.startPrompt(body.text), Nav.START_SCHEMA, as("start", Nav.parseStart), "1단계 초안", { fast: true });   // 초안은 빠른 모델로(C-40)
   }
   if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
   if (route === "/api/task/start") {   // FR-17 허락하고 넘기기(3-16) — checks를 주면 기준과 함께 넘기고 끝에 보고를 받는다(C-32, 2026-10-24)

@@ -31,11 +31,17 @@ const IDEA = "동아리 행사 신청 앱을 만들고 싶어요";
 const PREV = [{ stage: 0, items: [{ name: "어떤 불편을 풀고 싶은지 한 문장으로 쓰기", lines: ["행사 신청을 종이로 받아서 헷갈려요"] }] }];   // 지난 단계 결과들(C-39 — 단계마다 { stage, items })
 const PREV3 = [...PREV, { stage: 1, items: [{ name: "한 문장에 한 가지 일만, 애매한 말 없이 쓰기", lines: ["신청 단추를 누르면, 앱은 신청을 받는다"] }] }];
 const ANSWER3 = { items: Nav.criteriaFor(2, "Xpress").map((c) => ({ text: `${c.text}의 초안`, from: ["2-1"] })), prep: ["기능 개수 세기"], say: "3단계 초안이에요" };
+// C-40 — 4단계(코드 3): 1 ~ 3단계 결과로, 칸마다 예시 셋
+const PREV4 = [...PREV3, { stage: 2, items: [{ name: "기능을 '~하면, 앱은 ~한다' 문장으로 쓰기", lines: ["신청하면, 앱은 받는다"] }] }];
+const ANSWER4 = { items: Nav.criteriaFor(3, "Xpress").map((c, i) => ({ text: `${c.text} — 권함`, alts: [`${i} 다른 가`, `${i} 다른 나`], from: ["3-1"] })), prep: ["후보 떠올리기"], say: "4단계 초안이에요" };
+const AVOID = { i: 1, texts: ["이미 본 예시"] };
 const ANSWER = { items: Nav.criteriaFor(1, "Xpress").map((c) => ({ text: `${c.text}의 초안` })), say: "2단계 초안이에요" };
 REC.save(process.env.NAV_REPLAY, {
   [REC.keyOf(Nav.stageDraftPrompt(1, "Xpress", { idea: IDEA, prev: PREV }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER,
   [REC.keyOf(Nav.stageDraftPrompt(1, "Full", { idea: IDEA, prev: PREV }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER,   // Full인데 기획서 칸이 없는 답 — 502
   [REC.keyOf(Nav.stageDraftPrompt(2, "Xpress", { idea: IDEA, prev: PREV3 }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER3,   // 3단계(C-39) — 1 · 2단계 결과로
+  [REC.keyOf(Nav.stageDraftPrompt(3, "Xpress", { idea: IDEA, prev: PREV4 }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER4,   // 4단계(C-40) — 예시 셋
+  [REC.keyOf(Nav.stageDraftPrompt(3, "Xpress", { idea: IDEA, prev: PREV4, avoid: AVOID }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER4,   // 다른 예시(그 칸만 다시)
 });
 const R0 = { chap: 0, title: "동아리 행사 신청 앱", items: Nav.STAGES[0].criteria.map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) };
 const R1 = { chap: 1, title: "동아리 행사 신청 앱", items: Nav.criteriaFor(1, "Xpress").map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) };
@@ -88,6 +94,18 @@ test("POST /api/stagedraft 3단계(C-39): 1 · 2단계 결과로 — 칸마다 �
   assert.equal(miss.status, 400); assert.match(miss.json.reason, /지난 단계 결과/);
   const ahead = await call("POST", "/api/stagedraft", { body: { stage: 1, tier: "Xpress", idea: IDEA, prev: PREV3 } });
   assert.equal(ahead.status, 400, "지금 단계 이후의 결과는 받지 않는다");
+});
+
+test("POST /api/stagedraft 4단계(C-40): 칸마다 예시 셋(text · alts) · '다른 예시'(avoid — 이미 본 예시를 피해 다시) · avoid 모양이 틀리면 400", async () => {
+  const r = await call("POST", "/api/stagedraft", { body: { stage: 3, tier: "Xpress", idea: IDEA, prev: PREV4 } });
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual(r.json.draft.items[0].alts, ["0 다른 가", "0 다른 나"]); assert.deepEqual(r.json.draft.items[0].from, [{ s: 2, i: 0 }]);
+  const again = await call("POST", "/api/stagedraft", { body: { stage: 3, tier: "Xpress", idea: IDEA, prev: PREV4, avoid: AVOID } });
+  assert.equal(again.status, 200, again.text);
+  for (const avoid of [{ i: 9, texts: ["가"] }, { i: 1, texts: [] }, { i: 1, texts: ["가".repeat(400)] }, "x"]) {
+    const b = await call("POST", "/api/stagedraft", { body: { stage: 3, tier: "Xpress", idea: IDEA, prev: PREV4, avoid } });
+    assert.equal(b.status, 400, JSON.stringify(avoid)); assert.match(b.json.reason, /다른 예시/);
+  }
 });
 
 test("POST /api/stagedraft 거절: 초안을 만들지 않는 단계 · 빈 글 · 1단계 결과 모양 · 모르는 등급은 400(AI를 부르기 전), 할 일과 맞지 않는 답은 502", async () => {
