@@ -105,6 +105,9 @@ test("창 화면(win.html · win.js) — 섬이 보낸 내용을 보이고, 누�
   for (const t of ['type: "click"', 'type: "change"', 'type: "input"', 'type: "key", key: "Escape"']) assert.ok(js.includes(t), t);
   assert.match(js, /root\.innerHTML = html \|\| "";/);
   assert.ok(js.includes("b.setSelectionRange(sel[0], sel[1])"), "다시 그려도 커서는 그대로");
+  // F-58-6(2026-10-25 임유정): 스크롤은 같은 화면(data-view)일 때만 되돌리고, 탭 · 펼친 책 · 단계 문서가 바뀌면 맨 위부터 — claude-drafted: 2026-10-25
+  assert.ok(js.includes("body.scrollTop = body.dataset.view === view ? scroll : 0"), "화면이 바뀌면 맨 위부터");
+  assert.match(read("navigator/app.js"), /<div class="wbody" data-view="\$\{esc\(`\$\{st\.qtab\}\|/, "퀘스트 창 본문이 지금 화면(탭 · 책 · 문서)을 적어 보낸다");
   assert.ok(FILES["/navigator/win.html"] && FILES["/navigator/win.js"], "서버 목록");
   assert.ok(!/fetch\(|XMLHttpRequest|https?:/.test(js), "창은 밖으로 아무것도 보내지 않는다 — 섬으로만");
 });

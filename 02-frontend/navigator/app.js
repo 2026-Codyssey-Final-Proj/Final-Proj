@@ -761,10 +761,10 @@
     if (!p.kept) { flash("think", 1200); return say("먹을 구간이 하나는 있어야 해요"); }
     const topics = fd.sections.map((_, i) => fd.checks[i].topic).filter((_, i) => !p.left.some((l) => l.i === i));
     st.fed = [{ at: Date.now(), topics, left: p.left.map((l) => ({ topic: l.topic, why: l.why })), kept: p.kept, example: !!fd.example }, ...st.fed].slice(0, 20);
-    // 종류를 붙인 구간은 '확인할 먹이'로(FR-15 더함) — 사람이 확인하기 전에는 책의 칸에 넣지 않는다(C-8 ②). 도서관 탭 맨 위에서 확인한다
+    // 종류를 붙인 구간은 '확인할 먹이'로(FR-15 더함) — 사람이 확인하기 전에는 책의 칸에 넣지 않는다(C-8 ②). 퀘스트 창의 '책' 탭(README 책 아래)에서 확인한다 — 서재가 있으면(SHELF_ON) 도서관 탭 맨 위
     const items = FD.inbox(fd.sections, fd.marks, fd.kinds).map((x) => ({ ...x, at: Date.now(), example: !!fd.example }));
     st.inbox = [...items, ...st.inbox].slice(0, 60);
-    if (items.length) setTimeout(() => say(`확인할 먹이 ${items.length}개는 도서관 탭 맨 위에 두었어요`), 3200);
+    if (items.length) setTimeout(() => say(`확인할 먹이 ${items.length}개는 ${SHELF_ON ? "도서관 탭 맨 위" : "위 줄 '퀘스트' 창의 '책' 탭"}에 두었어요`), 3200);
     // 연습 모드의 예시 먹이는 정해진 장면(연습 첫 글)으로 이어진다 — 연습용 예시는 정해진 글만 알아서(FR-10). 진짜 AI면 먹은 글 그대로
     Object.assign(st, { text: fd.example && st.mode === "fixture" ? S.first.text : p.text, meal: null, undo: [] });
     judge(false);
@@ -876,7 +876,23 @@
   const ROMAN = (i) => (QU ? QU.roman(i) : String(i + 1));
   let lastLive = null;   // 마지막으로 보인 플로로의 말 — 바뀌면 지난 말로 쌓는다
   let saidSince = 0;     // 그 말이 보이는 동안 say()가 기록에 남긴 말 수 — 지난 말은 그 앞에 끼운다(먼저 보인 말이 위에, 2026-10-25)
-  const logMsg = (who, html) => { st.chat = [...st.chat, { who, html }].slice(-60); };
+  // chatSeq — 지금까지 남긴 말 수(60개로 자른 뒤에도 늘어난다: 칸 수로는 새 말을 못 알아봤다). shownSeq — 마지막으로 그린 때의 수
+  // logPin — 채팅이 맨 아래를 따라가는 중인가. 사람이 위로 올리면 false, 다시 맨 아래로 내리면 true(아래 scroll · wheel 듣기).
+  //   전에는 다시 그릴 때마다 '지금 맨 아래에서 24px 안인가'로만 봤다 — 섬이 펼쳐지거나 지금 말풍선이 그린 뒤에 커지면 그 틈이 생겨,
+  //   새 말 없이 바뀌는 선택지(맞아요 등)를 눌러도 아래로 안 내려갔다(임유정 2026-10-25, F-58-3) — claude-drafted: 2026-10-25
+  let chatSeq = 0, shownSeq = 0, logPin = true;
+  const logTop = new WeakMap();   // 채팅 칸마다 지난 스크롤 자리 — 위로 갔는지 보려고(아래 scroll 듣기). render가 새 칸을 그리면 그 자리부터 적는다
+  // 따라가는 중이면 그린 뒤에 커져도(섬 펼침 · 말풍선이 자람) 맨 아래에 붙여 둔다 — render가 지금 칸과 마지막 말풍선을 다시 지켜본다
+  //   처음 지켜볼 때의 알림은 건너뛴다(그때는 render의 부드러운 내려가기가 하고 있다) — 높이가 바뀐 때만
+  const logH = new WeakMap();
+  const logRO = typeof ResizeObserver === "function" ? new ResizeObserver((es) => {
+    for (const e of es) {
+      const h = e.contentRect.height, was = logH.get(e.target); logH.set(e.target, h);
+      const l = e.target.closest("[data-log]");
+      if (was !== undefined && was !== h && logPin && l) l.scrollTop = l.scrollHeight;
+    }
+  }) : null;
+  const logMsg = (who, html) => { st.chat = [...st.chat, { who, html }].slice(-60); chatSeq += 1; };
   const logMe = (text) => { settleLive(); logMsg("me", esc(text)); };
   // 지금 보이는 플로로의 말을 기록에(한 번만) — 내 말을 남기기 전에도 불러 질문 → 답 순서로 쌓인다(C-37, 2026-10-25 — 전에는 '맞아요'가 그 질문 위에 쌓였다).
   //   기다리는 동안만 보이는 말 · 초안 확인 카드(passing)는 남기지 않는다. 그 말이 보이는 동안 say()로 남긴 말(saidSince)보다는 앞에
@@ -1108,7 +1124,7 @@
         <span class="sz" role="group" aria-label="크기">${["s", "m", "l"].map((k) => `<button type="button" data-act="qsize" data-v="${k}" aria-pressed="${qsize === k}" title="${{ s: "작게", m: "보통", l: "크게" }[k]}">${k.toUpperCase()}</button>`).join("")}</span>
         <button type="button" class="ti" data-act="qwin" aria-label="퀘스트 창 닫기" title="닫기">${X_ICON}</button></div>
       <div class="wtabs" role="tablist" aria-label="퀘스트 창">${QTABS.map(([id, label]) => `<button type="button" role="tab" data-act="qtab" data-tab="${id}" aria-selected="${st.qtab === id}">${label}</button>`).join("")}</div>
-      <div class="wbody">${pane}</div></div>`;
+      <div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : ""}`)}">${pane}</div></div>`;
   }
   // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 고한결 [정할 것 2 · 5]
   const PIC = `<svg viewBox="0 0 320 140" aria-hidden="true"><defs><linearGradient id="q-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1550"></stop><stop offset="1" stop-color="#2A4AC8"></stop></linearGradient><linearGradient id="q-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3BA6"></stop><stop offset="1" stop-color="#0E1A4F"></stop></linearGradient></defs><rect width="320" height="140" fill="url(#q-sky)"></rect><g fill="#fff"><circle cx="30" cy="22" r="1.4"></circle><circle cx="80" cy="40" r="1"></circle><circle cx="140" cy="18" r="1.6"></circle><circle cx="200" cy="34" r="1"></circle><circle cx="260" cy="16" r="1.3"></circle><circle cx="300" cy="46" r="1"></circle></g><circle cx="262" cy="36" r="16" fill="#FFF3C4"></circle><circle cx="268" cy="31" r="14" fill="url(#q-sky)"></circle><path d="M0 95 Q 80 80 160 95 T 320 95 V140 H0z" fill="url(#q-sea)"></path><path d="M70 100 L 110 78 L 200 76 L 250 100 Z" fill="#E6F6FF"></path><path d="M70 100 L 250 100 L 240 112 L 85 112 Z" fill="#A9DDFF"></path><rect x="130" y="52" width="60" height="30" rx="4" fill="#F3EBD8" stroke="#6B5B3E" stroke-width="2"></rect><path d="M138 60h44M138 67h36M138 74h40" stroke="#B99A4F" stroke-width="2" stroke-linecap="round"></path></svg>`;
@@ -1533,7 +1549,9 @@
   const CONN_WORD = { on: "연결됨", off: "연결 끊음", wait: "알림 기다리는 중" };
   // 작업 자리 이름(2026-10-25 두승현 — 옛 "진짜 AI" 표시 대신): GitHub 저장소(주인/이름)를 알면 그것, 아니면 연결한 폴더 이름. 연습이면 그대로 "연습"
   //   보이는 이름은 저장소 이름만(주인 빼고) — 전체 이름은 title · aria-label에. 글자 수 제한은 뺐다(F-55로 띠의 이름표가 물결 아래로 가서, 두승현 2026-10-25)
-  const wsFull = () => { const r = st.gh && st.gh.remote; if (canLive && !st.gh && !ghLoading) setTimeout(loadGithub, 0); return r && r.kind === "github" ? `${r.owner}/${r.repo}` : project(); };
+  //   원격이 없으면 앱에서 고른 폴더 이름(/api/github의 project — git이 아니어도 온다)을 먼저. 전에는 훅 알림의 폴더(st.project)만 봐서,
+  //   일반 폴더 · 원격 없는 git 폴더는 Claude Code를 한 번 쓰기 전까지 '폴더 없음'이었다(임유정 2026-10-25, F-58-5) — claude-drafted: 2026-10-25
+  const wsFull = () => { const r = st.gh && st.gh.remote; if (canLive && !st.gh && !ghLoading) setTimeout(loadGithub, 0); return r && r.kind === "github" ? `${r.owner}/${r.repo}` : (st.gh && st.gh.project) || project(); };
   const wsShort = () => { const s = wsFull().split("/").pop() || "폴더 없음"; return s; };
   const stateWords = () => [st.mode === "live" ? `작업 자리 ${wsFull() || "없음"}` : "연습용 예시", CONN_WORD[conn()]].filter(Boolean).join(" · ");
   const modeChip = () => `<span class="pl-mode ${st.mode}" title="${st.mode === "live" ? esc(wsFull() ? `작업 자리 — ${wsFull()}` : "연결한 폴더가 없어요") : "미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요"}">${st.mode === "live" ? esc(wsShort()) : "연습"}</span>`;
@@ -2051,7 +2069,7 @@
     const sel = keep ? [a.selectionStart, a.selectionEnd, a.scrollTop] : null;
     // 채팅 칸의 스크롤 — 다시 그리면 칸이 새로 생겨 맨 위로 간다. 1초마다 바뀌는 '살펴보고 있어요 16초' 때문에 올려 둔 스크롤이 계속 아래로 끌려갔다(임유정 2026-10-22)
     const og = $nav.querySelector("[data-log]");
-    const logWas = og ? { top: og.scrollTop, end: og.scrollHeight - og.scrollTop - og.clientHeight < 24, n: og.children.length } : null;
+    const logWas = og ? { top: og.scrollTop } : null;
     if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); fitGacha(); }
     if (keep) {
       const b = document.querySelector(keep);
@@ -2059,10 +2077,13 @@
     }
     if (point) C.follow(isPhone() ? $phone : $nav, point);
     for (const t of document.querySelectorAll("textarea.doc")) grow(t);
-    // 채팅은 마지막 말이 보이게(C-22) — 단, 맨 아래를 보고 있었거나 새 말이 왔을 때만. 위로 올려 읽는 중이면 그 자리 그대로
+    // 채팅은 마지막 말이 보이게(C-22) — 단, 맨 아래를 따라가는 중(logPin)이거나 새 말이 왔을 때만. 위로 올려 읽는 중이면 그 자리 그대로
     const lg = $nav.querySelector("[data-log]");
-    if (lg && !logWas) lg.scrollTop = lg.scrollHeight;
-    else if (lg) { lg.scrollTop = logWas.top; if (logWas.end || lg.children.length > logWas.n) lg.scrollTo({ top: lg.scrollHeight, behavior: STILL ? "auto" : "smooth" }); }
+    if (lg && chatSeq !== shownSeq) logPin = true;
+    if (lg && !logWas) { lg.scrollTop = lg.scrollHeight; logTop.set(lg, lg.scrollTop); }
+    else if (lg) { lg.scrollTop = logWas.top; logTop.set(lg, lg.scrollTop); if (logPin) lg.scrollTo({ top: lg.scrollHeight, behavior: STILL ? "auto" : "smooth" }); }
+    shownSeq = chatSeq;
+    if (logRO) { logRO.disconnect(); if (lg) { logRO.observe(lg); if (lg.lastElementChild) logRO.observe(lg.lastElementChild); } }
     syncWins();
     refract();
     reportSize();
@@ -2193,6 +2214,16 @@
     point = { x: r.left + r.width * 0.35, y: r.top + 20 };
     C.follow($nav, point);
   });
+  // 채팅의 따라가기(logPin, F-58-3) — 맨 아래에 닿으면 다시 따라가고, 위로 올라가면 멈춘다.
+  //   앱이 내리는 스크롤(부드러운 내려가기 · 다시 그린 칸의 자리 되돌리기 · 커진 뒤 붙이기)은 늘 아래로만 가므로, 위로 가는 스크롤은 사람이 한 것이다 —
+  //   휠 · 터치 · 스크롤바 · 키보드 무엇으로 올려도 같다. 전에는 휠 · 터치 · 스크롤바만 봐서 키보드로 올리면 다시 끌려 내려갔다(새 맥락 리뷰, 2026-10-25) — claude-drafted: 2026-10-25
+  $nav.addEventListener("scroll", (e) => {
+    const l = e.target;
+    if (!(l instanceof Element) || !l.matches("[data-log]")) return;
+    const was = logTop.get(l); logTop.set(l, l.scrollTop);
+    if (l.scrollHeight - l.scrollTop - l.clientHeight < 2) logPin = true;
+    else if (was !== undefined && l.scrollTop < was - 1) logPin = false;
+  }, true);
   // 좌우로 문지르면 쓰다듬은 것 (seal.js의 stroke가 센다)
   let strokeState = null;
   $nav.addEventListener("pointermove", (e) => {
@@ -2695,7 +2726,9 @@
       const r = await window.floeApp.connect();
       if (r && r.ok && r.name) { st.gh = null; say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); } else if (r && r.message) say(r.message.split("\n")[0]);   // 말은 60자 안(SAY_MAX)
     },
-    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.message) say(r.message.split("\n")[0]); },
+    // 연결을 빼면 이름표의 옛 이름도 잊는다 — GitHub 칸(st.gh)은 다시 묻고(서버가 아는 다른 폴더가 있으면 그 이름), 훅 알림으로 안 이름(st.project)도 비운다.
+    //   전에는 뺀 뒤에도 옛 폴더 · 저장소 이름이 남았다(F-58-5 새 맥락 리뷰, 2026-10-25) — claude-drafted: 2026-10-25
+    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.ok) { st.gh = null; st.project = ""; render(); } if (r && r.message) say(r.message.split("\n")[0]); },
     "app-settings": () => window.floeApp.openSettings(),
     "gh-reload": () => { st.ghNote = ""; st.gh = null; loadGithub(); render(); },   // 설정의 GitHub 칸(C-25, 2026-10-24)
     "tokens-reset": () => resetTokens(),   // 토큰 칸 — 새로 재기(2026-10-24)
