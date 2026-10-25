@@ -28,7 +28,7 @@
 //   초안 · 고치기 · 다시 봐 줌 · 확정(FR-3 그대로, draft · review · confirmDoc) ③ 화면 글에서 '설계도'를 뺐다 — 단계 문서(아이디어 정리표 …)로. 코드 이름(doc · /api/draft)은 그대로.
 // claude-drafted: 2026-10-21 — C-22 게임식 디자인 1차 뼈대(이재엽 "지금부터 만들어서 릴리즈", 결정: 창 셋 · 1단계부터 · 제자리에서 고치기. 설계는 game-overlay/quest-storyboard.md 10절):
 //   ① 위 줄 하나(집 · 단계 띠 · 조개 · 📜 · 모아 보기 · ⚙ · 핀 · 접기) — 탭 넷 · 기본 화면의 단추 넷 · 레벨 오버레이(LV · EXP · 명령 네 칸)를 뺐다
-//   ② 섬 = 왼쪽 큰 플로로(칭호 · 기분) + 가운데 채팅(플로로 말 · 내 말 · 칩 · 입력 칸) — 지금 결정할 것 하나(momentToday · momentGate)가 플로로의 마지막 말, 단추가 칩
+//   ② 섬 = 왼쪽 큰 플로로(칭호 · 기분 글은 2026-10-25에 뺌) + 가운데 채팅(플로로 말 · 내 말 · 칩 · 입력 칸) — 지금 결정할 것 하나(momentToday · momentGate)가 플로로의 마지막 말, 단추가 칩
 //   ③ 설정 창(⚙ · 자리 왼쪽 / 오른쪽) · 퀘스트 창(📜 · 반대쪽 · S/M/L · 탭 퀘스트 / 도전과제 / 서고) — 이 판은 섬 옆의 판(.win), Electron 둘째 · 셋째 창은 다음 판
 //   ④ 처음 실행: 무엇을 만들지 말하기 → "퀘스트를 시작하시겠습니까?" → 1단계 퀘스트(받기 화면) → 받으면 공책 → 한 줄씩 묻기 → 완료 보고(판정은 전처럼 judge) → 넘어가기 전 확인 → 조개 +1 · 칭호 · 다음 장
 //   규칙은 quest.js(순수) · navigator.js — 판정 · 넘어가기(FR-4) · 설계도 · 먹이 · 허락 카드 · 서고 · 모아 보기는 그대로 이어진다. 뽑기 · 꾸미기 · AI 퀘스트 제작은 다음 판
@@ -859,9 +859,8 @@
       </div></section>`;
   }
   // ── 채팅 중심 섬(C-22 1차 뼈대, claude-drafted: 2026-10-21 — 이재엽 "메인은 버튼이 아니라 플로로와 소통", 설계는 quest-storyboard.md 10절) ──
-  //    레벨 오버레이(2026-10-19 LV · EXP · 명령 네 칸)는 뺐다 — 왼쪽 큰 플로로(칭호 · 기분), 가운데 채팅(플로로 말 왼쪽 · 내 말 오른쪽 · 고르는 칩 · 입력 칸, 채팅 안에 플로로 그림 없음).
+  //    레벨 오버레이(2026-10-19 LV · EXP · 명령 네 칸)는 뺐다 — 왼쪽 큰 플로로(칭호 · 기분 글은 2026-10-25에 뺌), 가운데 채팅(플로로 말 왼쪽 · 내 말 오른쪽 · 고르는 칩 · 입력 칸, 채팅 안에 플로로 그림 없음).
   //    규칙은 안 바뀐다: 지금 결정할 것 하나(momentToday · momentGate)가 플로로의 마지막 말이 되고, 그 단추들이 칩이 된다. 지나간 말은 위로 쌓인다(이 켜짐 동안만 — 기록에는 안 남긴다).
-  const MOOD_WORD = { idle: "같이 보고 있어요", look: "귀 기울이는 중", think: "살펴보는 중", happy: "신났어요", done: "뿌듯해요", wow: "레벨 업!", sleep: "쉬는 중", love: "기분 좋아요", purr: "기분 좋아요", alert: "잠깐!", dozy: "졸려요", angry: "안 돼요!" };
   const ROMAN = (i) => (QU ? QU.roman(i) : String(i + 1));
   let lastLive = null;   // 마지막으로 보인 플로로의 말 — 바뀌면 지난 말로 쌓는다
   const logMsg = (who, html) => { st.chat = [...st.chat, { who, html }].slice(-60); };
@@ -910,9 +909,8 @@
     const answers = v.acts.filter((a) => !FIXED_ACTS.includes(a.act));
     const more = [...v.acts.filter((a) => FIXED_ACTS.includes(a.act)), ...(st.screen === "gate" || st.busy || st.warn || st.error || st.ping ? [] : moreActs(v))];
     const chip = (a) => btn({ ...a, chip: true });
-    const lv = level;
-    return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}
-        <span class="rank" title="칭호 — 관문을 넘을 때마다 레벨이 올라요(프로젝트를 바꿔도 그대로)">${esc(QU ? QU.rankOf(Math.min(lv, 7)) : "")}</span><span class="mood">${esc(MOOD_WORD[v.mood] || "")}</span></div>
+    // 플로로 아래 칭호 · 기분 글은 뺐다(2026-10-25 두승현) — 칭호는 설정 창 머리에 있다
+    return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}</div>
       <div class="main"><div class="log" data-log>${st.chat.map((m) => `<div class="msg ${m.who}"><div class="b">${m.html}</div></div>`).join("")}${
         working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast() ? ` — ${esc(stepLine(aiLast()))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
         ${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>

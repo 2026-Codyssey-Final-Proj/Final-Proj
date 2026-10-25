@@ -505,12 +505,14 @@ test("C-22: 처음 실행 — 무엇을 만들지 말하면 '퀘스트를 시작
     assert.ok((await say()).includes("모두 했어요") && await page.$("[data-act=gate]"), `완료 보고 → 넘어가기 전 확인 칩: ${await say()}`);
     await page.click("[data-act=gate]"); await wait(300); await page.click("[data-act=yes]"); await wait(400);
     if (await page.$("[data-act=check-pick]")) { await page.click("[data-act=check-pick]"); await wait(400); if (await page.$("[data-act=check-go]")) { await page.click("[data-act=check-go]"); await wait(400); } }
-    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".tb .shells span")?.textContent, ev: !!document.querySelector(".qwin .ev"), rank: document.querySelector(".mc.chat .rank")?.textContent }));
-    assert.ok(after.band.startsWith("2단계 ·") && after.shells === "1" && after.ev && after.rank === "적어 두는 사람", JSON.stringify(after));
+    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".tb .shells span")?.textContent, ev: !!document.querySelector(".qwin .ev") }));
+    assert.ok(after.band.startsWith("2단계 ·") && after.shells === "1" && after.ev, JSON.stringify(after));
     assert.equal(await page.evaluate(() => localStorage.getItem("floe:level")), null, "연습 모드의 관문은 영구 레벨에 남기지 않는다(C-28 — 이 켜짐 동안만 오른다, 칭호는 위처럼 바뀐다)");
     // 설정 창 — 왼쪽(기본)이면 [설정][섬][퀘스트], 오른쪽을 고르면 [퀘스트][섬][설정]. 이 컴퓨터에 남는다
     await page.click("[data-act=settings]"); await wait(300);
-    const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > *")].filter((x) => !x.classList.contains("shell")).map((x) => (x.classList.contains("setwin") ? "set" : x.classList.contains("qwin") ? "quest" : "isl")));
+    // 칭호는 섬의 플로로 아래에서 뺐고(2026-10-25) 설정 창 머리에 있다 — 관문을 넘으면 바뀐다
+    assert.ok((await page.evaluate(() => document.querySelector(".setwin .pcard")?.textContent || "")).includes("적어 두는 사람"), "설정 창 머리의 칭호가 바뀐다");
+    const order =() => page.evaluate(() => [...document.querySelectorAll("#nav > *")].filter((x) => !x.classList.contains("shell")).map((x) => (x.classList.contains("setwin") ? "set" : x.classList.contains("qwin") ? "quest" : "isl")));
     assert.deepEqual(await order(), ["set", "isl", "quest"]);
     await page.click("[data-act=side][data-v=right]"); await wait(300);
     assert.deepEqual(await order(), ["quest", "isl", "set"]);
