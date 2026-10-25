@@ -36,3 +36,22 @@ test("쉬운 말(FR-13) — 튜토리얼 글에 전문 용어가 없다", () => 
     for (const w of Nav.JARGON) assert.ok(!all.includes(w), `${t.id}에 ${w}`);
   }
 });
+
+// ── 배우기는 도전과제에서(C-35, 2026-10-24 — 이재엽 "배우기 내용은 게이트마다 필요한것들은 도전과제에서 확인이 가능하도록") ──
+test("기능마다 처음 쓰는 장(chap 0~7)이 있고, forChap(n)은 그 장의 관문 전에 알아 둘 기능을 목록 순서대로 준다 [제안 — 장 배치는 이재엽이 고친다]", () => {
+  for (const t of T.LIST) assert.ok(Number.isInteger(t.chap) && t.chap >= 0 && t.chap <= 7, `${t.id}의 장`);
+  assert.deepEqual(T.forChap(0).map((t) => t.id), T.LIST.filter((t) => t.chap === 0).map((t) => t.id));
+  assert.ok(T.forChap(0).some((t) => t.id === "quest"), "1단계에 퀘스트 받기");
+  assert.ok(T.forChap(0).some((t) => t.id === "handoff"), "맡기기는 계획을 확정하면 어느 단계에서든 — 처음 장에서 알아 둔다");
+  assert.deepEqual(T.forChap(9), [], "없는 장은 빈 목록");
+  const all = [0, 1, 2, 3, 4, 5, 6, 7].flatMap((n) => T.forChap(n).map((t) => t.id));
+  assert.deepEqual([...all].sort(), [...WANT].sort(), "기능 열 개가 한 번씩 어느 장에든 있다");
+});
+
+test("튜토리얼 글은 옛 명령 칸(맡기기(1) · 살피기(2) · 책(3) · 배우기)을 가리키지 않는다 — 네 칸은 2026-10-24에 오버레이에서 뺐다", () => {
+  for (const t of T.LIST) {
+    const all = [t.what, ...t.steps, t.stuck].join(" ");
+    assert.ok(!/명령 칸|\([1-4]\)를 눌러요|\([1-4]\)을 눌러요|두루마리/.test(all), `${t.id}: ${all.slice(0, 60)}`);
+  }
+  assert.notEqual(T.byId("handoff").try.act, "cmd-hand", "맡기기 해 보기는 채팅의 계획 세우기로");
+});

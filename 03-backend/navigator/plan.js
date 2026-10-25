@@ -3,6 +3,7 @@
 // 계획판 한 장의 규칙 — 순수 함수만(서버 · AI 없음). 화면(app.js)이 쓰고 시험(04-tests/navigator/plan-board.test.js)이 본다. 계획 자체는 서버(/api/plan, navigator.js planPrompt)가 세운다.
 //   확인할 때: 줄(요구 + 기준)마다 맞아요 / 고칠래요 + 의견, 물을 것마다 답, 전체 의견 → 다시 세우기(판 번호 +1) 또는 모든 줄이 맞아요면 확정.
 //   확정한 뒤: 줄 하나가 맡길 일 하나 — 남음(todo) → 맡김 중(running) → 보고 옴(report) → 끝냄(done). 끝냄은 사람이 보고를 보고 '맞아요'를 눌러야. 한 번에 하나만 맡긴다.
+//   맡길 일은 **순서대로**(C-35, 2026-10-24 이재엽 "순차적으로 할려면 퀘스트내용에서 진행" · 버튼 "맡길 일 퀘스트 하나로") — 앞 줄을 끝내야 다음 줄이 열린다(next).
 // 함수는 받은 판을 바꾸지 않고 새 판을 돌려준다.
 (function (root) {
   const MARKS = ["ok", "fix"];
@@ -38,6 +39,8 @@
   // ── 확정한 뒤 — 맡길 일 목록 ──
   const stateOf = (b, id) => (b.work && b.work[id] && b.work[id].state) || "todo";
   const running = (b) => (b.plan.items.find((x) => stateOf(b, x.id) === "running") || {}).id || "";
+  // 지금 줄 — 확정한 판에서 아직 끝내지 않은 첫 줄. 확정 전이거나 다 끝냈으면 ""
+  const next = (b) => (b && b.confirmed ? (b.plan.items.find((x) => stateOf(b, x.id) !== "done") || {}).id || "" : "");
   // 맡길 글 · 기준 — 사용자가 '다르게 봐요'로 단 의견이 있으면 붙인다(서버가 navigator.js taskBrief로 기준과 보고 말을 더한다)
   function taskFor(b, id) {
     const x = item(b, id), w = b.work[id] || {};
@@ -45,7 +48,7 @@
   }
   const setWork = (b, id, w) => { const n = clone(b); n.work[id] = { ...(n.work[id] || {}), ...w }; return n; };
   // at — 서버가 알려 준 그 일의 시작 때(/api/task의 at). 끝났는지 물을 때 다른 일의 결과를 이 줄의 것으로 받지 않게
-  const start = (b, id, at = null) => (!b.confirmed || !has(b, id) || running(b) || stateOf(b, id) === "done" ? b : setWork(b, id, { state: "running", at }));
+  const start = (b, id, at = null) => (!b.confirmed || !has(b, id) || running(b) || id !== next(b) ? b : setWork(b, id, { state: "running", at }));
   const report = (b, id, rep) => (stateOf(b, id) === "running" ? setWork(b, id, { state: "report", report: rep || null }) : b);
   const accept = (b, id) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "done" }) : b);
   const reject = (b, id, why) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "todo", note: String(why || "").trim().slice(0, 300), report: null }) : b);
@@ -80,7 +83,7 @@
     return { items, easy: "예시예요. 신청하는 종이를 화면으로 만들었어요.", ask: "", done: items.filter((x) => x.done).length, total: items.length };
   };
 
-  const api = { board, mark, note, answer, unmarked, canConfirm, feedback, hasFeedback, confirm, stateOf, running, taskFor, start, report, accept, reject, failed, progress, revive, EXAMPLE_PLAN, exampleReport };
+  const api = { board, mark, note, answer, unmarked, canConfirm, feedback, hasFeedback, confirm, stateOf, running, next, taskFor, start, report, accept, reject, failed, progress, revive, EXAMPLE_PLAN, exampleReport };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloePlan = api;
 })(typeof window !== "undefined" ? window : globalThis);

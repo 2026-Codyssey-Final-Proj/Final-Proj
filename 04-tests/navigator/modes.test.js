@@ -35,7 +35,8 @@ test("app.js — 모드는 st.place(mode · home이라는 이름은 쓰지 않�
   assert.ok(!keep.includes('"place"') && !keep.includes('"pane"'), "기록(localStorage)에는 넣지 않는다 — 다음에 켤 때는 늘 기본");
   assert.match(app, /base: \(\) => \{ setPlace\("home"\); set\(\{ settings: false, pane: "" \}\); \}/, "집 — 열어 둔 판도 닫는다");
   assert.match(app, /"go-vibe": \(\) => \{ setPlace\("vibe"\); set\(\{ tab: "today"/, "바이브 코딩 단추 → 이번 단계");
-  assert.match(app, /if \(q\.base\) \{ st\.place = "base"; st\.pane = \["alerts", "ai", "plan"\]\.includes\(q\.pane\) \? q\.pane : ""; \} else setPlace\(q\.back \? "library" : "scene"\);/, "주소 장면은 바이브 코딩, #base만 기본(&pane=alerts|ai|plan — 계획판 C-34, 2026-10-24), 서고에서 돌아온 &back은 떠난 모드 그대로(F-36)");
+  assert.match(app, /if \(q\.base\) \{ st\.place = "base"; st\.pane = \["alerts", "ai"\]\.includes\(q\.pane\) \? q\.pane : ""; \} else setPlace\(q\.back \? "library" : "scene"\);/, "주소 장면은 바이브 코딩, #base만 기본(&pane=alerts|ai), 서고에서 돌아온 &back은 떠난 모드 그대로(F-36)");
+  assert.match(app, /if \(FP && \(q\.pane === "plan" \|\| q\.plan\)\) st\.qfocus = "plan";/, "옛 주소 &pane=plan(계획판, 2026-10-24)은 채팅의 준비 계획으로(C-35)");
   assert.match(app, /const body = st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판(알림 · AI 진행)이 아니면 채팅(C-22, 2026-10-21 — 기본 화면의 단추 넷은 뺐다)");
 });
 
@@ -44,11 +45,9 @@ test("app.js — 모드는 st.place(mode · home이라는 이름은 쓰지 않�
 test("app.js — 채팅 중심 섬(C-22): 위 줄 하나(집 · 단계 띠 · 조개 · 설정 · 핀 · 접기, 탭 없음 — 퀘스트 창 · 모아 보기 단추는 2026-10-23에 뺐다) · 지금 한 줄은 첫 카드의 작은 줄 · 알림은 칩. 인사가 끝나면 채팅", () => {
   assert.ok(!app.includes("BASE_BTNS") && !app.includes("function baseBody") && !app.includes('<div class="tabs"'), "단추 넷 · 탭 넷이 없다");
   assert.match(app, /return `<div class="tb">\$\{homeBtn\(!st\.pane\)\}<span class="tb-stage" aria-live="polite">\$\{stageBand\(\)\}<\/span>/, "위 줄 하나 — 집은 판을 열었을 때만 눌리지 않은 모양");
-  assert.doesNotMatch(app, /<button class="ti" data-act="qwin" aria-pressed=/, "위 줄의 퀘스트 창 단추는 뺐다(2026-10-23) — 퀘스트 창은 명령 칸 · '공책 보기'로");
-  // 2026-10-23 C-29: 어디쯤인지 보기 · 도전과제 칩은 명령 네 칸(살피기)과 퀘스트 창의 탭으로 — 늘 있는 칩은 알림 하나
+  assert.doesNotMatch(app, /<button class="ti" data-act="qwin" aria-pressed=/, "두루마리 아이콘 단추(2026-10-23에 뺌)는 다시 두지 않는다 — 퀘스트 창은 위 줄의 '퀘스트' 글자 단추로(C-35)");
+  // 2026-10-23 C-29: 어디쯤인지 보기 · 도전과제 칩은 명령 네 칸(살피기)과 퀘스트 창의 탭으로 — 늘 있는 칩은 알림 하나. 2026-10-24 C-35: 네 칸은 뺐다(아래 시험)
   assert.match(app, /out\.push\(\{ label: unreadN\(\) \? `알림 \$\{unreadN\(\)\}` : "알림", act: "base-alerts", kind: "ghost" \}\);/, "알림 칩");
-  assert.match(app, /const CMD4 = \[\["hand", "맡기기", "cmd-hand"\], \["look", "살피기", "cmd-look"\], \["lib", "책", "cmd-book"\], \["learn", "배우기", "cmd-learn"\]\];/, "명령 네 칸(C-29) — 맡기기 · 살피기 · 책 · 배우기");
-  assert.match(app, /\$\{cmd4HTML\(\)\}<\/div><\/section>`;/, "명령 네 칸은 채팅 입력 아래");
   assert.match(app, /return st\.back \|\| C\.greeting\(new Date\(\)\.getHours\(\)\);/, "지금 한 줄 — 알림 · AI가 한 일이 없으면 인사");
   assert.match(app, /foot: esc\(nowLine\(\)\)/, "지금 한 줄은 첫 카드의 작은 줄");
   assert.match(app, /go\("home"\);   \/\/ 인사가 끝나면 인사 카드 대신 기본 화면/);
@@ -87,6 +86,29 @@ test("쉬운 말(FR-13) — 알림 · AI 진행 판과 채팅 중심 섬의 화�
 });
 
 test("채팅 — '살펴보고 있어요'(기다리는 동안 경과 초가 바뀌는 말)는 지난 말로 쌓지 않는다(임유정 2026-10-22, 다시 그릴 때마다 같은 말이 쌓였다)", () => {
-  assert.match(app, /title: `살펴보고 있어요\$\{dots\}`,\s*\n\s*sub: `<span data-wait>[^\n]*passing: true/, "기다리는 말에 passing 표시");
+  assert.match(app, /title: `\$\{st\.planBusy \? PL_BUSY\[st\.planBusy\] : "살펴보고 있어요"\}\$\{dots\}`,\s*\n\s*sub: `<span data-wait>[^\n]*passing: true/, "기다리는 말에 passing 표시(계획을 기다릴 때는 그 말 — C-35)");
   assert.match(app, /if \(lastLive && lastLive\.key !== key && !lastLive\.passing\) logMsg\("floro", lastLive\.html\);/, "passing인 말은 쌓지 않는다");
+});
+
+// ── C-35 오버레이는 일하는 자리(2026-10-24, 이재엽 "오버레이는 작업하는 공간이고 다른 곳들은 부가적인 기능" · 버튼 "맡길 일 퀘스트 하나로" · "채팅에서 전부") ──
+test("app.js — C-35: 명령 네 칸은 오버레이에서 뺐다. 퀘스트 창은 위 줄의 '퀘스트' 단추, 배우기 탭은 도전과제로, 계획 · 맡기기 · 보고는 채팅의 지금 말(momentPlan)", () => {
+  for (const gone of ["const CMD4", "cmd4HTML", "function planPane", "function learnPane", '["teach", "배우기"]']) assert.ok(!app.includes(gone), `${gone}가 없어야`);
+  assert.ok(!/\.cmd4\b/.test(read("navigator/app.css")), "명령 네 칸 CSS도 없다");
+  assert.match(app, /<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="\$\{st\.qwin\}"[^>]*>퀘스트<\/button>/, "위 줄의 '퀘스트' 단추 — 이재엽 그림(2026-10-24)");
+  assert.match(app, /"qwin-toggle": \(\) => \{ if \(st\.qwin\) return set\(\{ qwin: false \}\); openQwin\("quest"\); render\(\); \}/, "켜고 끈다");
+  assert.match(app, /const QTABS = \[\["quest", "퀘스트"\], \["tree", "도전과제"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "퀘스트 창의 탭 셋 — 배우기는 도전과제 안으로");
+  assert.match(app, /if \(planNow\(\)\) return momentPlan\(\);/, "맡길 일 퀘스트를 고르면 채팅의 지금 말이 계획 · 맡기기 · 보고");
+  assert.match(app, /const body = st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판은 알림 · AI 진행 둘 — 계획판은 채팅으로 옮겼다");
+  const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
+  assert.ok(keep.includes('"qfocus"'), "지금 할 퀘스트(단계 · 맡길 일)는 다시 켜도 이어진다");
+});
+
+test("app.js — C-35: 허락 카드는 채팅에 뜬다(판으로 옮기지 않는다) · 보고 · 허락이 와도 지금 할 퀘스트는 사람이 고른다(칩으로 알림) · 관문 · 경고가 먼저 · 도전과제의 장마다 관문 전에 알아 둘 것(tutorial.js forChap)", () => {
+  assert.match(app, /\$\{approvalsHTML\(\)\}<div class="msg floro now">/, "허락 카드 — 채팅의 지금 말 바로 위");
+  assert.doesNotMatch(app, /st\.pane = st\.pane === "plan" \? "plan" : "ai";/, "허락 카드가 와도 AI 진행 판으로 옮기지 않는다");
+  assert.doesNotMatch(app, /st\.qfocus = "plan"; st\.plan = FP\.(report|failed)/, "보고가 와도 지금 할 퀘스트를 저절로 바꾸지 않는다(2026-10-24 리뷰)");
+  assert.match(app, /rep \? "맡길 일 — 보고가 왔어요"/, "단계 퀘스트 쪽에서는 칩으로 알린다");
+  assert.match(app, /const planNow = \(\) => !!FP && st\.qfocus === "plan" && !st\.warn && !st\.error && st\.screen !== "gate" && !st\.meal;/, "경고 · 오류 · 관문 · 먹이 정리가 먼저");
+  for (const use of ["if (planNow()) return momentPlan();", "if (planNow()) return planSay(t);", "const sayHint = () => (planNow() ?"]) assert.ok(app.includes(use), `지금 말 · 입력 · 힌트가 같은 판정: ${use}`);
+  assert.match(app, /TU \? TU\.forChap\(n\)/, "도전과제 판 — 그 장의 배울 것");
 });

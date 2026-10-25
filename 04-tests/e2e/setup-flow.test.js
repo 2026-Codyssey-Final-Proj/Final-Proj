@@ -117,15 +117,16 @@ test("한 번에 이어진다: 인사 → AI 연결(Claude Code) → GitHub(로�
     await click(page, '[data-s="next"]');
     assert.equal(await title(page), "준비 끝!");
     assert.deepEqual(await page.$$eval(".su-sum div", (d) => d.map((x) => [x.querySelector("dt").textContent, x.querySelector("dd").textContent])),
-      [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"], ["계획", "적었어요 — 시작하면 계획판이 열려요"]]);
+      [["AI", "Claude Code로 연결"], ["GitHub", "로그인됨"], ["프로젝트", "test-1 · ~/Floe/test-1"], ["계획", "적었어요 — 시작하면 채팅에서 계획을 세워요"]]);
     assert.equal(await page.$(".su-repo"), null, "가져온 저장소는 다시 만들자고 하지 않는다");
     const box = await page.$eval("#floe-setup .su", (e) => { const r = e.getBoundingClientRect(); return { w: r.width, overflow: document.documentElement.scrollWidth > innerWidth }; });
     assert.equal(box.overflow, false, "가로로 넘치지 않는다");
     await click(page, '[data-s="done"]');
     assert.equal(await page.$("#floe-setup"), null);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("floe:setup:v1")).via), "cli");
-    await page.waitForSelector("#plan-text", { timeout: 5000 });
-    assert.match(await page.$eval("#plan-text", (e) => e.value), /동아리 행사 신청 앱/, "시작하면 계획판이 그 글로 열린다 — AI는 아직 부르지 않는다");
+    await page.waitForSelector(".msg.now .pl-draft", { timeout: 5000 });   // 2026-10-24 C-35: 계획판 대신 채팅의 지금 말
+    assert.match(await page.$eval(".msg.now .pl-draft", (e) => e.textContent), /동아리 행사 신청 앱/, "시작하면 채팅의 준비 계획이 그 글로 열린다 — AI는 아직 부르지 않는다");
+    assert.ok(await page.$(".mc.chat [data-act=plan-make]"), "계획 세우기는 사람이 누른다");
     assert.deepEqual(seen.create, [], "저장소 만들기는 부르지 않았다");
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
@@ -167,7 +168,7 @@ test("GitHub 없이: gh가 없으면 다음은 잠기고 설치 안내 · '다�
     assert.equal(await page.$('[data-s="pickrepo"]'), null, "gh가 없으면 내 저장소 단추도 없다(앱이 빈 목록)") ;
     await click(page, '[data-s="next"]');
     await click(page, '[data-s="next"]');   // 계획 칸 — 비워 두고
-    assert.deepEqual(await page.$$eval(".su-sum dd", (d) => d.map((x) => x.textContent)), ["Claude Code로 연결", "건너뜀 — 나중에 설정에서", "아직 안 골랐어요 — 설정에서 언제든", "나중에 — 맡기기에서 언제든"]);
+    assert.deepEqual(await page.$$eval(".su-sum dd", (d) => d.map((x) => x.textContent)), ["Claude Code로 연결", "건너뜀 — 나중에 설정에서", "아직 안 골랐어요 — 설정에서 언제든", "나중에 — 채팅의 계획 세우기에서 언제든"]);
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });
