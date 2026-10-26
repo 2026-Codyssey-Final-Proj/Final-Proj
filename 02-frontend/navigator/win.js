@@ -11,10 +11,12 @@
   F.onWinHtml((html) => {
     const a = document.activeElement, keep = a && a.dataset && a.dataset.act && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) ? a : null;
     const key = keep ? `${keep.dataset.act}|${keep.dataset.i || ""}|${keep.dataset.k || ""}` : "", sel = keep ? [keep.selectionStart, keep.selectionEnd, keep.scrollTop] : null;
-    const scroll = root.querySelector(".wbody") ? root.querySelector(".wbody").scrollTop : 0;
+    // 스크롤은 같은 화면(data-view — 탭 · 펼친 책 · 단계 문서)을 다시 그릴 때만 되돌린다. 화면이 바뀌면 맨 위부터 —
+    //   책 탭 아래의 '단계 문서 · 정한 것 펼치기'를 누르면 문서가 중간부터 보였다(임유정 2026-10-25, F-58-6) — claude-drafted: 2026-10-25
+    const was = root.querySelector(".wbody"), scroll = was ? was.scrollTop : 0, view = was ? was.dataset.view : null;
     root.innerHTML = html || "";
     if (key) { const b = [...root.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.i || ""}|${x.dataset.k || ""}` === key); if (b) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; } }
-    const body = root.querySelector(".wbody"); if (body) body.scrollTop = scroll;
+    const body = root.querySelector(".wbody"); if (body) body.scrollTop = body.dataset.view === view ? scroll : 0;
   });
   const data = (t) => ({ ...t.dataset });
   root.addEventListener("click", (e) => {

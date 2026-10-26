@@ -17,7 +17,7 @@ test("파일: docs/ 안에 단계 폴더 여덟(01-idea … 08-retro) — 끝낸
   for (const p of ["docs/README.md", "docs/01-idea/idea.md", "docs/02-plan/plan.md", "docs/03-requirements/README.md", "docs/08-retro/README.md", "README.md", "CLAUDE.md"]) assert.ok(paths.includes(p), p);
   assert.equal(paths.length, new Set(paths).size, "같은 파일을 두 번 쓰지 않는다");
   assert.ok(paths.every((p) => /^[A-Za-z0-9._/-]+$/.test(p) && !p.includes("..") && !p.startsWith("/")), "정해진 이름만 — 받은 글이 경로가 되지 않는다");
-  assert.deepEqual(f.filter((x) => x.merge).map((x) => x.path).sort(), ["CLAUDE.md", "README.md", "docs/README.md"], "저장소의 README · CLAUDE.md · docs/README.md는 덮어쓰지 않고 Floe 절만(이미 쓴 docs/README.md가 있을 수 있다 — 2026-10-25 리뷰)");
+  assert.deepEqual(f.filter((x) => x.merge).map((x) => x.path).sort(), ["CLAUDE.md", "README.md", "docs/PRD.md", "docs/README.md", "docs/decisions.md"], "저장소의 README · CLAUDE.md · docs/README.md · 기획서 · 결정 기록(C-39)은 덮어쓰지 않고 Floe 절만(이미 쓴 docs/README.md가 있을 수 있다 — 2026-10-25 리뷰)");
 });
 
 test("1단계 · 2단계 문서: 단계 이름 · 주제 · 할 일마다 적은 줄. 아직인 단계는 받는 것 · 하는 일 · 남는 것과 '아직'", () => {

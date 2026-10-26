@@ -13,6 +13,11 @@ function paths(isPackaged, dirname) {
 // 개발 실행(npm start)의 Dock 그림 — 묶은 앱은 icon.icns가 들어 있지만 개발 실행은 Electron 기본 그림이 뜬다(2026-10-20 이재엽 "깃허브에 있는 앱 아이콘이 있잖아 그걸로").
 // build/icon.png는 묶을 때 쓰는 그 그림이다. 묶은 앱이면 null — 건드리지 않는다
 const devIcon = (isPackaged, dirname) => (isPackaged ? null : path.join(dirname, "build/icon.png"));
+// 창 · 트레이 아이콘(F-59, 2026-10-26 — 이재엽 "윈도우 환경에서 앱이 우리 플로 사진이 아닌 문제"): Windows는 여러 크기가 든 build/icon.ico(작업 표시줄 · 트레이가 화면 배율에 맞는 것을 고른다),
+//   Linux는 build/icon.png. 맥은 null — 묶은 앱은 icns, 개발 실행은 Dock(devIcon). 창에 주지 않으면 개발 실행(npm start)의 Windows 작업 표시줄에 Electron 기본 그림이 뜬다
+// Windows 앱 ID — package.json build.appId와 같아야 한다(electron-builder가 설치 바로 가기에 쓰는 값). 묶은 앱의 package.json에는 build가 지워져 있어 여기 둔다(시험이 둘을 맞댄다)
+const APP_ID = "kr.codyssey.floe";
+const appIcon = (platform, dirname) => (platform === "win32" ? path.join(dirname, "build/icon.ico") : platform === "darwin" ? null : path.join(dirname, "build/icon.png"));
 
 // .env 글 → {KEY: VALUE}. 주석(#) · 빈 줄은 건너뛰고, 양끝 따옴표는 뗀다. 값은 돌려주기만 하고 어디에도 출력하지 않는다
 function parseEnv(text) {
@@ -195,4 +200,4 @@ function sideWinBounds(kind, side, isl, wa, size) {
 // 두 상자가 겹치나 — 맞닿기만 하면 겹침이 아니다. 섬 크기가 바뀔 때 옆 창을 다시 둘지 앱(main.js placeSideWins)이 묻는다
 const overlaps = (a, b) => !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-module.exports = { SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, overlaps, paths, devIcon, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };
+module.exports = { SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };

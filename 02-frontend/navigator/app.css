@@ -360,7 +360,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .hint{display:inline-flex;align-items:center;gap:6px;font-size:calc(13px * var(--ui-scale,1));color:var(--acc);font-weight:600}
 
 /* 먹이 주기(C-15, 2026-10-20 — app.js feedSortMoment): 나눈 구간 목록 — 번호 · 주제 · 표시(먹어요 / 못 먹어요 / 안 먹을게요) · 바꾸는 단추. 빠진 구간은 흐리게 */
-.feedlist{list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:260px;overflow:auto}
+.feedlist{align-self:stretch;list-style:none;margin:0;padding:0;display:grid;gap:6px;max-height:260px;overflow:auto}
 .feedlist li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:14px;background:var(--card);border:1.5px solid var(--line);min-width:0}
 .feedlist li.skip{border-style:dashed;background:var(--soft)}   /* 흐리게(opacity)는 글자 대비가 4.5에 못 미쳐(axe) 바탕만 다르게 */
 .feedlist li.skip .b.ghost{color:var(--sub)}
@@ -388,8 +388,8 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .inbox{margin-bottom:10px;padding:10px 12px;border-radius:16px;border:1.5px solid var(--line);background:var(--card)}
 .inbox .stg{font-size:calc(12px * var(--ui-scale,1));font-weight:700;color:var(--sub)}
 .inboxlist{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
-.inboxlist li{display:flex;align-items:center;gap:8px;min-width:0}
-.inboxlist .ft{display:flex;flex-direction:column;min-width:0;flex:1}.inboxlist .ft b{font-size:calc(13.5px * var(--ui-scale,1))}.inboxlist .ft small{color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inboxlist li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0}   /* 제목은 한 줄 다 쓰고 종류 · 단추는 아래 줄로 — 좁은 퀘스트 창에서 제목이 한 글자씩 세로로 잘렸다(F-58-2) */ /* claude-drafted: 2026-10-25 */
+.inboxlist .ft{display:flex;flex-direction:column;min-width:0;flex:1 1 100%}.inboxlist .ft b{font-size:calc(13.5px * var(--ui-scale,1))}.inboxlist .ft small{color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .inbox .meta{margin:6px 0 0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
 select.kind{font:inherit;font-size:calc(12.5px * var(--ui-scale,1));color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:999px;padding:3px 8px}
 .feedlist select.kind{margin-left:auto}
@@ -474,6 +474,7 @@ textarea.doc{min-height:240px;font:calc(13px * var(--ui-scale,1))/1.65 ui-monosp
 .sub.ok{color:var(--ok)}
 textarea{width:100%;min-height:100px;font:inherit;font-size:calc(14px * var(--ui-scale,1));color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;resize:vertical}
 select{font:inherit;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:4px 6px}
+select option{background:#1B2766;color:#F2F6FF}   /* 펼친 목록은 OS가 흰 바탕으로 그려 밝은 글씨가 안 보였다 — 바탕을 섬 네이비로(F-58-1) */ /* claude-drafted: 2026-10-25 */
 details summary{cursor:pointer;font-size:calc(13px * var(--ui-scale,1));font-weight:600;color:var(--mute);min-height:32px;display:flex;align-items:center}
 details summary::after{content:"▾";margin-left:6px;font-size:calc(11px * var(--ui-scale,1))}details[open]>summary::after{content:"▴"}
 details summary:hover{color:var(--acc)}
@@ -688,16 +689,17 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .mc.chat .main{display:flex;flex-direction:column;gap:8px;min-width:0;border-radius:20px;background:var(--card);border:1px solid var(--line);padding:12px}
 .mc.chat .log{display:flex;flex-direction:column;gap:8px;max-height:min(420px,52vh);min-height:150px;overflow:auto;padding-right:4px}   /* scroll-behavior:smooth는 뺐다 — 다시 그릴 때마다 맨 위에서 미끄러져 내려왔다. 새 말에만 부드럽게(app.js render) */
 .msg{display:flex;max-width:88%}.msg.me{align-self:flex-end}
-.msg .b{display:block;padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--soft);color:var(--ink);font-size:calc(14px * var(--ui-scale,1));line-height:1.5;min-width:0;border:1px solid var(--line);overflow-wrap:anywhere}
-.msg .b:hover{transform:none;box-shadow:none}   /* 말풍선은 단추(.b)와 이름만 같다 — 마우스를 올려도 떠오르지 않게(임유정 2026-10-22) */
-.msg.me .b{background:var(--acc-btn);color:var(--acc-ink);border-radius:16px 16px 4px 16px;font-weight:600;border-color:transparent}
-.msg.sys .b{background:var(--warnbg);color:var(--warn);font-size:calc(13px * var(--ui-scale,1));border-radius:12px}
+/* 말풍선 규칙은 바로 아래 .b(말풍선)에만 — 안쪽 단추(.b)에 width:100% 등이 걸려 먹이 구간이 가로로 넘쳤다(F-58-1, 임유정 2026-10-25) */ /* claude-drafted: 2026-10-25 */
+.msg > .b{display:block;padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--soft);color:var(--ink);font-size:calc(14px * var(--ui-scale,1));line-height:1.5;min-width:0;border:1px solid var(--line);overflow-wrap:anywhere}
+.msg > .b:hover{transform:none;box-shadow:none}   /* 말풍선은 단추(.b)와 이름만 같다 — 마우스를 올려도 떠오르지 않게(임유정 2026-10-22) */
+.msg.me > .b{background:var(--acc-btn);color:var(--acc-ink);border-radius:16px 16px 4px 16px;font-weight:600;border-color:transparent}
+.msg.sys > .b{background:var(--warnbg);color:var(--warn);font-size:calc(13px * var(--ui-scale,1));border-radius:12px}
 .msg.sys .bar{display:block;height:6px;border-radius:3px;background:rgba(127,127,127,.2);overflow:hidden;margin-top:6px}
 .msg.sys .bar i{display:block;height:100%;width:40%;background:var(--warn);border-radius:3px;animation:barrun 1.4s linear infinite}
 @keyframes barrun{from{translate:-100% 0}to{translate:260% 0}}
 @media (prefers-reduced-motion:reduce){.msg.sys .bar i{animation:none;width:100%}}
 .msg.now{max-width:100%}
-.msg.now .b{display:flex;flex-direction:column;gap:8px;border-color:var(--tink);width:100%}
+.msg.now > .b{display:flex;flex-direction:column;gap:8px;border-color:var(--tink);width:100%}
 .msg.now .say{font-size:calc(18px * var(--ui-scale,1));font-weight:800;line-height:1.4;letter-spacing:-.2px;text-wrap:balance}
 .msg.now .mc-sub{color:var(--sub)}
 .msg.now .mc-meta{font-size:calc(12px * var(--ui-scale,1))}
@@ -771,6 +773,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .ev .sub button{flex:1;border:1.5px solid var(--line);background:var(--soft);color:var(--ink);border-radius:10px;padding:7px;font-size:calc(13px * var(--ui-scale,1));font-weight:700}
 /* 공책 — 종이 색은 일부러 고정(밝은 · 어두운 설정과 상관없이 공책은 공책) */
 .book{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);border-radius:16px;overflow:hidden;border:2px solid #6B5B3E;background:#F3EBD8;color:#3A2E1C;min-height:400px}
+.wbody>.book{flex:none}   /* 공책은 내용 높이 그대로 — overflow:hidden인 상자는 창 높이에 맞춰 줄어들어 아래가 잘리고 바깥이 스크롤되지 않았다(F-58-4) */ /* claude-drafted: 2026-10-25 */
 .page{padding:14px 14px 16px;position:relative;min-width:0}
 .page.l{background:#E9DFC6;border-right:2px dashed #CBBB9A;padding-left:26px}
 .page.l::before{content:"";position:absolute;left:6px;top:24px;bottom:24px;width:8px;background:repeating-linear-gradient(180deg,#5A4A33 0 14px,transparent 14px 60px);border-radius:4px}
@@ -789,6 +792,11 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .ln .lt b{font-weight:800}
 .ln .lw{color:#3A2E1C;overflow-wrap:anywhere}
 .ln .lw.empty{color:#6E5F45;font-style:italic}
+/* C-40 퀘스트 창 쉬운 말 — 짧은 이름 아래 쉬운 한 줄, '자세히 보기'를 누르면 원래 할 일 문장 · 용어 */
+.ln .lt .easy{color:#5A4A33;font-size:calc(12.5px * var(--ui-scale,1))}
+.ln .lt .full{color:#6E5F45;font-size:calc(11.5px * var(--ui-scale,1));overflow-wrap:anywhere}
+.qmore{margin:4px 0 2px;color:#5A4A33}
+.qmore:hover{color:#1F5BA8}
 .ln .n{margin-left:auto;color:#6E5F45;font-variant-numeric:tabular-nums;font-size:calc(12.5px * var(--ui-scale,1));display:inline-flex;gap:4px;align-items:center;flex:none}
 .ln input{min-width:0;font:inherit;font-size:calc(13px * var(--ui-scale,1));color:#3A2E1C;background:#fff;border:1.5px solid #B99A4F;border-radius:6px;padding:3px 6px}
 .ln input[type=number]{width:52px}
@@ -870,8 +878,8 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
   .win{background:#16225E}
   .wh{background:rgba(0,0,0,.22)}
   .mc.chat .main{background:rgba(0,0,0,.18)}
-  .msg .b{background:rgba(255,255,255,.09)}
-  .msg.now .b{background:rgba(0,0,0,.14)}
+  .msg > .b{background:rgba(255,255,255,.09)}
+  .msg.now > .b{background:rgba(0,0,0,.14)}
   .msg.now .flowline>span{background:rgba(255,255,255,.07)}
 }
 
@@ -992,23 +1000,49 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .jm-top{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 10px;border-radius:12px;background:#FBF6EA;border:2px solid #D9CBA6}
 .jm-top b{font-size:calc(14px * var(--ui-scale,1))}
 .jm-top span{flex:1 1 auto;font-size:calc(12.5px * var(--ui-scale,1));color:#6E5F45}
+.jm-top .b{min-height:34px;padding:0 14px;background:#fff;color:#3A2E1C;border:1.5px solid #B9A579;font-weight:800;font-size:calc(12.5px * var(--ui-scale,1))}   /* 양피지 위 — 앱의 어두운 글자색(--ink)을 받지 않게(2026-10-25, 글자가 안 보였다) */
+.jm-top .b:focus-visible{outline:2px solid #2F7BD6;outline-offset:2px}
 .jm-stage{border-radius:12px;border:2px solid #D9CBA6;background:#FBF6EA;padding:8px 10px;display:grid;gap:6px}
 .jm-stage.cur{border-color:#2F7BD6;box-shadow:0 0 0 3px rgba(47,123,214,.15)}
 .jm-stage.lock{background:#E9E0CB;color:#6E5F45}
 .jm-h{display:flex;align-items:center;gap:8px}
 .jm-h b{flex:1 1 auto;font-size:calc(13.5px * var(--ui-scale,1))}
 .jm-count{font-size:calc(12px * var(--ui-scale,1));font-weight:800;padding:1px 8px;border-radius:999px;background:#E9E0CB;color:#5A4A33}
-.jm-stage ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
-.jm-stage li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:5px 8px;border-radius:8px;font-size:calc(12.5px * var(--ui-scale,1))}
-.jm-stage li b{font-weight:800}
-.jm-stage li span{flex:1 1 60%;min-width:0;overflow-wrap:anywhere}
-.jm-fill{background:#fff;border:1px solid #D9CBA6}
-.jm-fill b::before{content:"✓ ";color:#2F6B2F}
+/* C-39 도전과제 흐름 — 넣은 것 → 플로로가 한 것 → 내가 정한 것 → 관문, 칸마다 누가 정했나(by) · 재료 */
+.by-ok{--by:#4E8F5E}.by-edit{--by:#B87A1E}.by-me{--by:#5B6CB8}.by-pick{--by:#9A5FAE}
+.jm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:0;padding:2px 4px;font-size:calc(12px * var(--ui-scale,1));color:#5A4A33}
+.jm-legend span{display:inline-flex;align-items:center;gap:5px;font-weight:700}
+.jm-legend i{width:10px;height:10px;border-radius:3px;background:var(--by)}
+.jm-legend small{flex:1 1 100%;color:#6E5F45}
+.jm-date{font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45;white-space:nowrap}
+.jm-flow{list-style:none;margin:0;padding:0 0 0 16px;display:grid;gap:8px;position:relative}
+.jm-flow::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:2px;border-radius:2px;background:#D9CBA6}
+.jm-step{position:relative;display:grid;gap:3px;min-width:0}
+.jm-step::before{content:"";position:absolute;left:-16px;top:3px;width:8px;height:8px;border-radius:50%;background:#FBF6EA;border:2px solid #B9A579}
+.jm-step.ai::before{border-color:#2F7BD6}.jm-step.me::before{border-color:#4E8F5E}.jm-step.gate::before{border-color:#8A6D2F;border-radius:2px}
+.jm-step>i{font-style:normal;font-weight:800;font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45;letter-spacing:.02em}
+.jm-sb{min-width:0;font-size:calc(12.5px * var(--ui-scale,1));overflow-wrap:anywhere}
+.jm-pill{display:inline-block;margin:0 4px 2px 0;padding:1px 8px;border-radius:999px;background:#E9E0CB;font-size:calc(12px * var(--ui-scale,1))}
+.jm-prep{margin:3px 0 0;padding-left:18px;color:#5A4A33}
+.jm-cells{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.jm-cells>li{display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:5px 8px;border-radius:8px;font-size:calc(12.5px * var(--ui-scale,1))}
+.jm-cells>li b{font-weight:800}
+.jm-line{flex:1 1 60%;min-width:0;overflow-wrap:anywhere}
+.jm-fill{background:#fff;border:1px solid #D9CBA6;border-left:4px solid var(--by,#D9CBA6)}
+.jm-by{font-size:calc(11px * var(--ui-scale,1));font-weight:800;padding:0 7px;border-radius:999px;border:1.5px solid var(--by);color:#3A2E1C;background:#fff}
+.jm-was{flex:1 1 100%;font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45;overflow-wrap:anywhere}
+.jm-refs{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:calc(11.5px * var(--ui-scale,1));color:#6E5F45}
+.jm-ref{padding:0 7px;border-radius:999px;border:1px dashed #2F7BD6;background:#F3F8FF;color:#1F5BA8;cursor:default}
+.jm-ref:hover,.jm-ref:focus-visible{outline:2px solid #2F7BD6;outline-offset:1px;background:#EAF3FF}
 .jm-miss{border:1.5px dashed #B5532F;background:#FFF1EA}
-.jm-miss span{color:#8A3A1F}
+.jm-miss .jm-line{color:#8A3A1F}
 .jm-miss button{margin-left:auto;border:1.5px solid #B5532F;background:#fff;color:#8A3A1F;border-radius:999px;padding:1px 10px;font-weight:800;cursor:pointer;font-size:calc(12px * var(--ui-scale,1))}
 .jm-miss button:focus-visible{outline:2px solid #2F7BD6;outline-offset:2px}
-.jm-old span,.jm-lock{color:#6E5F45}
+.jm-old .jm-line,.jm-lock{color:#6E5F45}
+/* 초안 확인 카드 맨 위 — 이 단계 전에 준비할 것(C-39) */
+.dprep{margin:6px 0 4px;padding:6px 10px;border-radius:10px;background:var(--soft);font-size:calc(12.5px * var(--ui-scale,1));text-align:left}
+.dprep b{display:block;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.dprep ul{margin:2px 0 0;padding-left:18px}
 .jm-arrow{text-align:center;font-size:calc(12px * var(--ui-scale,1));color:#5A4A33;font-weight:700}
 .jm-arrow span{font-weight:500}
 .vtabs button.map{font-size:calc(20px * var(--ui-scale,1))}
@@ -1016,4 +1050,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .ship-files small{font-family:inherit;color:var(--mute)}
 .ship-peek{text-align:left;font-size:calc(12.5px * var(--ui-scale,1))}
 .ship-peek pre{max-height:200px;overflow:auto;white-space:pre-wrap;margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--soft);font-size:calc(12px * var(--ui-scale,1))}
-
+/* C-40 예시 셋 — 초안 확인 카드에서 셋 중 하나를 누른다(맨 위가 플로로가 권하는 것) */
+.dalt{list-style:none;margin:6px 0;padding:0;display:grid;gap:6px;text-align:left}
+.dalt button{width:100%;text-align:left;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:calc(13px * var(--ui-scale,1));line-height:1.45;cursor:pointer;overflow-wrap:anywhere}
+.dalt button:hover,.dalt button:focus-visible{border-color:var(--acc);outline:none;box-shadow:0 0 0 3px rgba(47,123,214,.18)}
+.dalt button.rec{border-color:var(--acc)}
+.dalt small{display:block;margin-bottom:2px;font-size:calc(11px * var(--ui-scale,1));font-weight:800;color:var(--acc)}

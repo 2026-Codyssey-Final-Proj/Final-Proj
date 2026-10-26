@@ -61,6 +61,7 @@ async function openLive(browser, startReply, { judgeFails = 0 } = {}) {
     const p = new URL(req.url()).pathname;
     const json = (o) => req.respond({ status: 200, contentType: "application/json; charset=utf-8", body: JSON.stringify(o) });
     if (p === "/api/start") { seen.start.push(JSON.parse(req.postData() || "{}")); return json(startReply); }
+    if (p === "/api/stagedraft") return json({ ok: false, reason: "시험에서는 2단계 초안 없음" });   // C-40 — 1단계를 하는 동안 뒤에서 미리 부르는 2단계 초안
     if (p === "/api/judge") { const b = JSON.parse(req.postData() || "{}"); seen.judge.push(b); return json(seen.judge.length <= judgeFails ? { ok: false, reason: "AI에 연결하지 못했어요" } : { ok: true, judgement: judged(b.tier), tokens: 500 }); }
     if (p === "/api/quest") return json({ ok: false, reason: "시험에서는 기본 글" });
     return req.continue();
@@ -101,9 +102,8 @@ test("진짜 AI(가로챔): 긴 글을 통째로 한 번 보내 초안 → 제�
     assert.equal(await page.$eval('.mc.chat [data-act=draft-size][data-i="2"]', (e) => e.classList.contains("pri")), true, "플로로가 본 크기가 눈에 띈다");
     await click(page, '.mc.chat [data-act=draft-size][data-i="1"]');
     await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
-    assert.equal(seen.judge.length, 1, "넷 다 확인하면 저절로 완료 보고(판정은 서버 그대로)");
-    assert.equal(seen.judge[0].tier, "Xpress", "보통 = Xpress — 만드는 크기도 바뀐다");
-    assert.match(seen.judge[0].text, /쓰는 사람: 소수/);
+    assert.equal(seen.judge.length, 0, "넷 다 확인하면 저절로 완료 보고 — 초안을 칸마다 확인한 장은 AI가 다시 살펴보지 않는다(C-40, FR-1 · FR-2 바뀜)");
+    assert.match(await page.evaluate(() => document.querySelector(".mc.chat .log").textContent), /확인한 대로 봤어요/, "그렇다고 말한다");
     assert.deepEqual(await lines(page), [DRAFT.pain, DRAFT.change, "쓰는 사람: 소수 — 아는 몇 사람이 써요", "크기: 보통"]);
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")));
     assert.equal(saved.topic, "독서 모임 알림 앱"); assert.equal(saved.tier, "Xpress");
@@ -161,14 +161,13 @@ test("연습(서버 없이 · 파일로 연 화면): 예시 초안 — '예시�
 });
 
 // ── 새 맥락 리뷰(2026-10-25) 뒤에 더한 것 ──
-test("저절로 한 완료 보고가 실패해도 갇히지 않는다 — 오류를 닫으면 '완료 보고' 칩이 다시 있고, 누르면 이어진다", { skip }, async () => {
+test("완료 보고가 실패해도 갇히지 않는다 — 오류를 닫으면 '완료 보고' 칩이 다시 있고, 누르면 이어진다(초안 없이 한 줄씩 적은 장 — AI가 살펴본다)", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
   try {
-    const { page, seen } = await openLive(browser, { ok: true, start: DRAFT, tokens: 900 }, { judgeFails: 1 });
+    const { page, seen } = await openLive(browser, { ok: false, reason: "AI에 연결하지 못했어요" }, { judgeFails: 1 });
     await paste(page, "독서 모임 알림 앱");
-    await click(page, ".mc.chat [data-act=draft-ok]"); await click(page, ".mc.chat [data-act=draft-ok]");
-    await click(page, '.mc.chat [data-act=draft-who][data-i="0"]');
-    await click(page, '.mc.chat [data-act=draft-size][data-i="2"]');
+    for (const t of ["모임 날짜를 자꾸 잊어요", "전날 알림이 와요", "모임 회원 열두 명", "보통"]) await paste(page, t);
+    await click(page, ".mc.chat [data-act=quest-report]");
     await page.waitForSelector(".mc.chat [data-act=dismiss]", { timeout: 5000 });
     await click(page, ".mc.chat [data-act=dismiss]");
     assert.match(await nowSay(page), /완료 보고할까요/, "처음 화면으로 돌아가지 않는다");
@@ -199,10 +198,10 @@ test("보내기 전 확인: 받은 글에 전화번호처럼 보이는 게 있�
     await click(page, ".mc.chat [data-act=draft-ok]");
     await click(page, '.mc.chat [data-act=draft-who][data-i="2"]');
     await paste(page, "음… 보통으로 할래요");
-    // 완료 보고 글에는 받은 글(처음 말한 것)이 같이 가서 전화번호를 한 번 더 묻는다 — 보낼 때마다 묻는 규칙 그대로
-    await click(page, ".mc.chat [data-act=send-anyway]");
+    // 초안을 칸마다 확인한 장은 AI에 보내지 않으니(C-40) 다시 묻지 않고 바로 관문으로
     await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
-    assert.equal(seen.judge[0].tier, "Xpress", "글로 답한 '보통'도 만드는 크기가 된다");
+    assert.equal(seen.judge.length, 0, "AI에 보내지 않는다");
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).tier), "Xpress", "글로 답한 '보통'도 만드는 크기가 된다");
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });

@@ -9,6 +9,7 @@
 | [questionnaire.md](questionnaire.md) | 확인할 가설, 대상, 질문지 | #10 |
 | `respondent-A.md`, `respondent-B.md` … | 응답자별 요약 (아래 틀) | #11 |
 | `summary.md` | 가설별 종합 판정과 미정 값 후보 | #11 |
+| [synthesis-method.md](synthesis-method.md) | 가설 밖의 말 · 사용 테스트 끝 질문을 묶는 법 <!-- claude-drafted: 2026-10-26 --> | #11 |
 
 ## 레포에 올리지 않는 것
 

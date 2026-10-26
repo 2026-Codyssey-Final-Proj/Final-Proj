@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| 판 | **v1.6 · 2026-10-25** — 2단계 초안 `POST /api/stagedraft`(3-22) · 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에 `POST /api/docs`(3-23, C-37). v1.5(같은 날) — 처음 한 바퀴의 1단계 초안 `POST /api/start`(3-21, C-36). v1.4(2026-10-24) — 준비 계획판 `POST /api/plan`(3-20, C-34) · 맡기기의 기준과 보고(3-16 `checks` → `task.report`, C-32). v1.3(같은 날) — 작업 폴더를 앱이 알려 준다(3-16 · 3-18 · 3-19 "폴더 고르기", C-31) · 토큰 장부(3-5 `ledger` · `POST /api/usage/reset`, 3-16 `tokens` · `cost`). v1.2(2026-10-20) — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
+| 판 | **v1.8 · 2026-10-26** — 4 ~ 8단계 초안 · 칸마다 예시 셋(`alts`) · 다른 예시(`avoid`) · 초안은 빠른 모델(3-21 · 3-22), 초안을 확인한 장은 3-6을 부르지 않는다(C-40). v1.7(2026-10-25) — 3단계 초안 · 칸마다 재료 · 준비할 것(3-22, `prev`가 단계마다 `{ stage, items }`로 바뀜) · 단계 문서의 증빙 칸 · 기획서 `docs/PRD.md` · 결정 기록 `docs/decisions.md`(3-23 — 결과에 `by` · `draft` · `from` · `prep` · `at` · `passed` · `check`, 본문에 `idea`, C-39). v1.6(같은 날) — 2단계 초안 `POST /api/stagedraft`(3-22) · 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에 `POST /api/docs`(3-23, C-37). v1.5(같은 날) — 처음 한 바퀴의 1단계 초안 `POST /api/start`(3-21, C-36). v1.4(2026-10-24) — 준비 계획판 `POST /api/plan`(3-20, C-34) · 맡기기의 기준과 보고(3-16 `checks` → `task.report`, C-32). v1.3(같은 날) — 작업 폴더를 앱이 알려 준다(3-16 · 3-18 · 3-19 "폴더 고르기", C-31) · 토큰 장부(3-5 `ledger` · `POST /api/usage/reset`, 3-16 `tokens` · `cost`). v1.2(2026-10-20) — FR-17 섬에서 허용 · 거절 · 일 넘기기: 승인 셋(3-13 · 3-14 · 3-15)과 일 넘기기 셋(3-16). v1.1(같은 날) AI 진행(C-12): `/api/event`가 PostToolUse를 받고 `GET /api/steps`(3-12). v1은 2026-10-18 |
 | 기준 코드 | `server.js` — 시연 안전장치(#94: 확인 값·받은 글 가림·기록 비우기)와 판정 규칙(#96: 등급별 할 일)을 합친 상태. **2026-10-18 F-04: AI 네 주소도 확인 값**, 6단계 할 일 넷(F-03). 2026-10-20 AI 진행(`steps.js` · `hook.js` PostToolUse) |
 | 시험 | [`04-tests/navigator/api-contract.test.js`](../../04-tests/navigator/api-contract.test.js) — 실제 AI를 부르지 않는다(5절). FR-17 주소는 [`task-api.test.js`](../../04-tests/navigator/task-api.test.js)(가짜 claude · 재생) |
 | 바꾸는 법 | 이 문서·시험·`server.js`를 한 PR에서 같이 고친다. 화면이 읽는 칸이 바뀌면 화면 담당에게 알린다 |
@@ -239,6 +239,8 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - **`POST /api/usage/reset`** — 장부를 0부터(`since`가 지금). 본문 없음, **확인 값**이 있어야 한다(지우는 일이라). 답 `{ ok: true, ledger }`. 화면: 설정의 **토큰** 칸 '새로 재기' — 테스트를 시작할 때.
 
 ### 3-6. `POST /api/judge` — 지금 단계에서 어디쯤인지
+
+> **C-40(2026-10-26):** 초안을 칸마다 확인한 장(1단계 초안 3-21 · 단계 초안 3-22)의 완료 보고는 이 주소를 부르지 않는다 — 화면이 확인한 대로 본다(`quest.js` `localJudgement` + `CONFIRM_REASON`, 단계 결과에 `checkBy: "confirm"`). 초안 없이 한 줄씩 적은 장 · 작업 글을 넣은 경우는 그대로 이 주소. <!-- claude-drafted: 2026-10-26 -->
 
 - **누가:** 화면 — "어디쯤인지 살펴보기"(`judge`), 선택지를 고른 뒤 다시 살펴보기(`decide`), 작업을 마친 알림에 자동 살펴보기(`onEvent`).
 - **확인:** 출처 + 확인 값(화면은 쿠키 `nav_event_token`, 그 밖에는 머리글 `X-Nav-Token`) — 2026-10-18 F-04.
@@ -517,27 +519,34 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
   - `who` — Ⅲ 누가: 글에 쓰는 사람이 나오면 그 사람, 없으면 `""`(지어내지 않는다 — 화면은 본인 · 소수 · 불특정다수를 고르게 한다).
   - `size` — Ⅳ 크기: `short` · `medium` · `long`(규모 판단표 [scope-tiers.md](../../01-docs/00-overview/scope-tiers.md) — 짧음 · 보통 · 긺 = Lite · Xpress · Full). `sizeWhy`는 그렇게 본 까닭. 사용자가 고른 것이 만드는 크기(`tier`)가 된다.
 - 거절: 400 `받은 글이 비어 있음` · 400 `받은 글이 너무 김 — 8,000자까지` · 502 `1단계 초안 형식이 맞지 않음`(크기가 셋 밖이거나 칸이 빔).
+- C-40: 빠른 모델 · 낮은 생각 깊이로 부른다(`provider.js` `FAST` — claude -p `--model sonnet --effort low`, API `claude-sonnet-5-5` · effort low, `NAV_DRAFT_MODEL`로 바꾼다 — 별명(sonnet · haiku · opus)이나 전체 이름, 중계 서버는 받는 모델 그대로).
 - 화면: 처음 채팅(무엇을 만들지 아직 없을 때)에 보낸 말. 받으면 1단계 퀘스트를 받기 화면 없이 바로 열고 칸마다 확인만 한다. 넷 다 확인하면 저절로 완료 보고(3-6 `/api/judge` — 판정 규칙은 그대로) → 넘어가기 전 확인. 못 받으면 전처럼 1단계를 한 줄씩. 연습(서버 없이)은 예시 초안(`quest.js` `EXAMPLE_DRAFT`). 시험: [`start-api.test.js`](../../04-tests/navigator/start-api.test.js) · [`start-draft.test.js`](../../04-tests/navigator/start-draft.test.js) · E2E [`start-flow.test.js`](../../04-tests/e2e/start-flow.test.js)
 
-### 3-22. `POST /api/stagedraft` — 2단계 초안: 받은 글 · 1단계 결과로 (C-37, 2026-10-25)
+### 3-22. `POST /api/stagedraft` — 2 ~ 8단계 초안: 받은 글 · 지난 단계 결과로 (C-37 · C-39 · C-40)
 
 <!-- claude-drafted: 2026-10-25 — 이재엽 "1단계에서 받은 내용들을 2단계에서도 초안들을 진행하며 생각들을 2단계 진행하기 전에 먼저 생각하고 동의들을 구한후" -->
 - 확인 값이 있어야 한다(AI를 부른다 — `AI_ROUTES`). AI 한 번([navigator.js](navigator.js) `stageDraftPrompt` · `STAGE_DRAFT_SCHEMA` · `parseStageDraft`) — 도구 없이, 글만.
-- 본문 `{ stage, tier?, idea, prev }` — `stage`는 초안을 만드는 단계(`DRAFT_STAGES` — 지금은 1 = 2단계만), `idea`는 처음 말한 것(400자까지), `prev`는 1단계 결과 `[{ name, lines[] }]`(할 일 8개 · 줄 5개 · 줄 400자까지).
-- 성공 `{ ok, draft, tokens }` — `draft = { items, say }`. `items`는 그 등급의 할 일 개수 · 순서 그대로, 칸마다 `{ text }`. 기획서로 키울지(PRD) 칸만 `{ pick: light|full|none, why }` — 권하기만 하고 고르는 것은 사람.
-- 거절: 400 `초안을 만드는 단계가 아님` · 400 `모르는 등급` · 400 `받은 글이 비어 있음` · 400 `받은 글이 너무 김` · 400 `1단계 결과의 모양이 맞지 않음 — 할 일 8개 · 줄 5개 · 줄 400자까지` · 502 `단계 초안 형식이 맞지 않음`(개수가 다르거나 기획서 칸이 셋 밖).
-- 화면: 1단계 관문을 지나면 부르고, 받으면 2단계 퀘스트를 받기 화면 없이 칸마다 확인한다(1단계와 같은 카드). `say`는 받았을 때 한 번 말한다. 화면은 한 줄을 400자까지만 적는다(`quest.js` `fill`) — 이 주소와 3-23이 받는 길이. 못 받으면 전처럼 받기 화면 · 한 줄씩. 연습은 예시 초안(`quest.js` `exampleStageDraft`). 시험: [`flow-api.test.js`](../../04-tests/navigator/flow-api.test.js) · [`stage-draft.test.js`](../../04-tests/navigator/stage-draft.test.js) · E2E [`quest-flow.test.js`](../../04-tests/e2e/quest-flow.test.js)
+<!-- claude-drafted: 2026-10-25 — C-39 이재엽 "지금까지 준비한 내용들을 초안들로 해서 정리해서 무엇들을 준비해야하는지 생각해서 초안들 보여줘" · 버튼 "할 일 초안 + 준비할 것" · "흐름 + 칸마다 재료까지" -->
+- 본문 `{ stage, tier?, idea, prev }` — `stage`는 초안을 만드는 단계(`DRAFT_STAGES` — 1 ~ 7 = 2 ~ 8단계, C-40), `idea`는 처음 말한 것(400자까지), `prev`는 지난 단계 결과들 `[{ stage, items: [{ name, lines[] }] }]` — 이 단계보다 앞 단계만 · 한 번씩 · **바로 앞 단계는 꼭**(할 일 8개 · 줄 5개 · 줄 400자까지). AI에는 칸마다 번호 `[단계-칸]`(1부터)을 붙여 넘긴다.
+- 성공 `{ ok, draft, tokens }` — `draft = { items, prep, say }`. `items`는 그 등급의 할 일 개수 · 순서 그대로, 칸마다 `{ text, from }`. 기획서로 키울지(PRD) 칸만 `{ pick: light|full|none, why, from }` — 권하기만 하고 고르는 것은 사람. `from`은 그 칸의 재료 `[{ s, i }]`(0부터, 4개까지) — AI가 말한 번호 중 넘긴 지난 단계에 있는 칸만, 한 번씩(맞는지는 확인하지 않는다). `prep`은 이 단계 전에 준비할 것(3줄까지 · 줄 160자).
+  - C-40: 4 ~ 8단계(`ALT_STAGES` 3 ~ 7)는 칸마다 `alts` — 다른 길의 예시 2개까지(한 예시 150자, `text`와 같은 것은 버린다). `text`가 플로로가 권하는 것. 2 · 3단계는 `alts`를 버린다(칸 모양 `{ text, from }` 그대로).
+  - 본문 `avoid`(다른 예시, C-40) — `{ i, texts }`: `i`번째 칸은 이미 본 예시(1~3개 · 300자)와 다르게. 화면은 그 칸만 바꾼다.
+  - 빠른 모델 · 낮은 생각 깊이 · 글 길이 4,096(예시 셋은 길다)로 부른다 — 3-21과 같다.
+- 거절: 400 `초안을 만드는 단계가 아님 — 지금은 2 · 3 · 4 · 5 · 6 · 7 · 8단계만` · 400 `다른 예시 요청의 모양이 맞지 않음` · 400 `모르는 등급` · 400 `받은 글이 비어 있음` · 400 `받은 글이 너무 김` · 400 `지난 단계 결과의 모양이 맞지 않음 — [{ stage, items }], 바로 앞 단계는 꼭 …` · 502 `단계 초안 형식이 맞지 않음`(개수가 다르거나 기획서 칸이 셋 밖).
+- 화면: 관문을 지나면 부르고, 받으면 다음 장 퀘스트를 받기 화면 없이 칸마다 확인한다(맨 위에 준비할 것, 칸마다 '재료 — 2단계 Ⅲ …'). 4 ~ 8단계는 예시 셋 중 고르기 · 다른 예시, 어느 장이든 '남은 칸 모두 맞아요'. **미리 부르기**(C-40): 지금 장 초안을 받자마자 '모두 맞아요라면' 결과로, 지금 장을 다 적으면 실제 결과로 다음 장을 뒤에서 부르고, 관문 뒤 지난 결과가 같으면(등급 · 처음 말한 것 · prev) 그 답을 쓴다. 비밀값처럼 보이면 미리 보내지 않는다. `say`는 받았을 때 한 번 말한다. 화면은 한 줄을 400자까지만 적는다(`quest.js` `fill`) — 이 주소와 3-23이 받는 길이. 못 받으면 전처럼 받기 화면 · 한 줄씩. 연습은 예시 초안(`quest.js` `exampleStageDraft`). 시험: [`flow-api.test.js`](../../04-tests/navigator/flow-api.test.js) · [`stage-draft.test.js`](../../04-tests/navigator/stage-draft.test.js) · [`stage3-evidence.test.js`](../../04-tests/navigator/stage3-evidence.test.js) · [`stages-all.test.js`](../../04-tests/navigator/stages-all.test.js) · E2E [`quest-flow.test.js`](../../04-tests/e2e/quest-flow.test.js)
 
 ### 3-23. `POST /api/docs` — 단계 문서를 작업 폴더에 쓰고, 커밋 · 푸시는 Claude Code에 (C-37, 2026-10-25)
 
 <!-- claude-drafted: 2026-10-25 — 이재엽 "2단계가 끝나면 … docs와 같은 폴더들을 만들고 md들을 정리해서 깃허브에" · 버튼 "docs 단계 폴더 + CLAUDE.md" · "Floe가 만들고, 커밋 · 푸시는 Claude Code" -->
 - 확인 값이 있어야 한다(파일을 쓰고 Claude Code를 연다 — `BOOK_ROUTES`). AI는 부르지 않는다.
-- 본문 `{ topic, results }` — `results = { "0": {title, items[{name, lines[]}]}, "1": … }`, 1 · 2단계(0 · 1)가 다 있어야. 화면은 **결과만** 보낸다 — 파일 이름 · 글은 서버가 [docs.js](docs.js) `files`로 만든다(받은 글이 경로가 되지 않는다). 글은 할 일 이름까지 `sensitive.js`로 가린다(공개 저장소일 수 있다).
-- 쓰는 것: 3-16 '폴더 고르기'의 작업 폴더에 `docs/<01-idea … 08-retro>/`(끝낸 단계는 결과 md, 아직인 단계는 README 틀) · `docs/README.md`(목차) · `README.md` · `CLAUDE.md`(이 셋은 표시 `<!-- floe:start -->` ~ `<!-- floe:end -->` 사이 한 절만 — 내 글은 그대로). 가는 길에 바로가기가 있거나 파일 자리가 파일이 아니면 **하나도 쓰지 않는다**.
+- 본문 `{ topic, idea?, results }` — `results = { "0": {title, items[{name, lines[]}]}, "1": … }`, 1 · 2단계(0 · 1)가 다 있어야. `idea`는 처음 말한 것(400자까지 — 기획서 · 1단계 재료).
+  - C-40: 단계마다 `checkBy`(`confirm` — 초안을 칸마다 확인한 대로, AI 판정 없이. 없으면 AI가 살펴본 것). 문서의 완료 기준 머리에 그대로 적는다.
+  - C-39 증빙(모두 없어도 된다): 칸마다 `by`(`ok` 그대로 · `edit` 고침 · `me` 직접 · `pick` 고름) · `draft`(플로로가 낸 것, 400자) · `from`(재료 `[{ s, i }]` 6개까지), 단계마다 `prep`(3줄 · 160자) · `at` · `passed`(`YYYY-MM-DD` — 칸을 다 확인한 날 · 관문을 지난 날) · `check`(완료 기준 `[{ text, met, evidence }]` 8개까지). 모르는 칸은 버린다. 화면은 **결과만** 보낸다 — 파일 이름 · 글은 서버가 [docs.js](docs.js) `files`로 만든다(받은 글이 경로가 되지 않는다). 글은 할 일 이름까지 `sensitive.js`로 가린다(공개 저장소일 수 있다).
+- 쓰는 것: 3-16 '폴더 고르기'의 작업 폴더에 `docs/<01-idea … 08-retro>/`(끝낸 단계는 결과 md와 **증빙 칸**, 아직인 단계는 README 틀) · `docs/PRD.md`(**기획서** — 처음 말한 것 · 끝낸 단계마다 한 절 · 단계 상태 표) · `docs/decisions.md`(**결정 기록** — 칸마다 한 줄 · 지난 관문마다 한 줄) · `docs/README.md`(목차) · `README.md` · `CLAUDE.md`(기획서 · 결정 기록과 이 셋은 표시 `<!-- floe:start -->` ~ `<!-- floe:end -->` 사이 한 절만 — 내 글은 그대로). 가는 길에 바로가기가 있거나 파일 자리가 파일이 아니면 **하나도 쓰지 않는다**.
 - 그다음 3-16처럼 사용자의 Claude Code에 맡긴다(`docs.js` `shipRequest` — 그 파일들만 `git add` · 커밋 · 지금 브랜치를 푸시, 강제 푸시 없음, 원격이 없으면 푸시하지 않고 까닭만). 허락 카드는 섬의 채팅에(3-13 ~ 3-15). 기준 둘(`docs.js` `SHIP_CHECKS` — 커밋했다 · 푸시했다)을 같이 넘겨 끝에 `task.report`로 보고받는다(C-32). 화면은 **둘째(푸시)가 해냄일 때만** '올리기를 마쳤어요'라고 말하고, 아니면 보고의 쉬운 말(`easy`)로 까닭을 말한다 — 일이 0으로 끝났다는 것만으로 올라갔다고 하지 않는다(푸시를 건너뛰거나 허락을 거절해도 0으로 끝난다).
 - 성공 `{ ok, project, files[], task }` — `files`는 쓴 파일 이름(작업 폴더 기준), `task`는 3-16과 같은 모양.
 - 거절: 400 `1 · 2단계 결과가 다 있어야 해요` · 400 `N단계 결과의 모양이 맞지 않음 — 할 일 8개 · 줄 5개 · 줄 400자까지` · 400 `주제는 60자까지` · 400 폴더를 모름 · 409 넘긴 일이 진행 중(쓰기 전에 본다) · 400 바로가기 · 폴더가 아님 · 500 `문서를 쓰지 못했어요`.
-- 화면: 2단계 관문을 지나면 '1 · 2단계에서 정한 것을 문서로 묶었어요 — 내 GitHub에 올릴까요?'(어느 작업 폴더에 쓰는지 · 파일 목록 · 계획서 미리 보기) → 올리기. 나중에는 도전과제의 한눈에 보기에서 다시. 연습은 올리지 않는다. 시험: [`flow-api.test.js`](../../04-tests/navigator/flow-api.test.js) · [`docs.test.js`](../../04-tests/navigator/docs.test.js) · E2E [`quest-flow.test.js`](../../04-tests/e2e/quest-flow.test.js)
+- 화면: 2단계부터 관문을 지날 때마다(C-39) '1 ~ N단계에서 정한 것을 문서로 묶었어요 — 내 GitHub에 올릴까요?'(어느 작업 폴더에 쓰는지 · 파일 목록 · 기획서 · 결정 기록 미리 보기) → 올리기. 같은 파일을 고쳐 쓰고 커밋 하나 더. 나중에는 도전과제의 한눈에 보기에서 다시. 연습은 올리지 않는다. 시험: [`flow-api.test.js`](../../04-tests/navigator/flow-api.test.js) · [`docs.test.js`](../../04-tests/navigator/docs.test.js) · [`stage3-evidence.test.js`](../../04-tests/navigator/stage3-evidence.test.js) · E2E [`quest-flow.test.js`](../../04-tests/e2e/quest-flow.test.js)
 
 ### 3-24. `POST /mcp/<MCP 토큰>` · `POST /api/state` · `GET /api/proposals` · `POST /api/proposals/decide` — 원격 MCP 시험판: 웹 AI가 지금 할 일을 읽고 한 줄을 제안 (C-38, 2026-10-25)
 
