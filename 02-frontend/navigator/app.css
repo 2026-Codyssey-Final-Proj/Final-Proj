@@ -1101,16 +1101,17 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 /* claude-drafted: 2026-10-27 두승현 — 섬이 작업실에 붙어 있는 동안(C-41 ②, app.js applyDock — 앱이 보낸 작업실 크기 --dock-w · --dock-h 안에서):
    옆(dock-narrow)은 420 너비 · 작업실 높이까지, 채팅 카드는 플로로가 위 · 대화가 아래(한 열). 위 · 아래(dock-wide)는 작업실 너비까지 · 높이 360(스토리보드 기준 6의 처음 크기).
    넘치는 것은 섬 몸통이 스크롤 — 붙기 전에는 섬이 작업실보다 커서 밖으로 넘쳤다(2026-10-27 잼: 좁은 섬 847 ~ 998px) */
-html.in-app.dock-narrow .nav{width:420px}
+/* C-41 ③(2026-10-27): 크기는 손잡이로 — --dock-w(320 ~ 760, 처음 420) · --dock-h(240 ~ 480, 처음 360)는 고른 섬 크기, --room-w · --room-h는 작업실 크기(app.js applyDock) */
+html.in-app.dock-narrow .nav{width:min(var(--dock-w,420px),var(--room-w,100vw))}
 html.in-app.dock-narrow .mc.chat{grid-template-columns:minmax(0,1fr)}
 html.in-app.dock-narrow .mc{gap:10px;padding:12px 14px}
-html.in-app.dock-narrow .isl{max-height:var(--dock-h,100vh)}
-html.in-app.dock-wide .nav{width:min(940px,var(--dock-w,940px))}
-html.in-app.dock-wide .isl{max-height:360px}
+html.in-app.dock-narrow .isl{max-height:var(--room-h,100vh)}
+html.in-app.dock-wide .nav{width:min(940px,var(--room-w,940px))}
+html.in-app.dock-wide .isl{max-height:min(var(--dock-h,360px),var(--room-h,100vh))}
 html.in-app.dock-narrow .isl-body,html.in-app.dock-wide .isl-body{flex:1 1 auto;min-height:0;overflow:hidden auto}
 html.in-app.dock-narrow .tb{flex-wrap:wrap}   /* 420 안에는 위 줄(집 · 퀘스트 · ▲▼◀▶ · 조개 · 톱니 · 핀)이 한 줄로 안 들어간다(≈410 > 396, 새 맥락 리뷰 2026-10-27) — 두 줄로 */
-html.in-app.dock-narrow .mc.chat .log{max-height:max(120px,calc(var(--dock-h,100vh) - 340px))}   /* 대화 기록만 줄여 입력칸이 스크롤 밖으로 안 가게(위 줄 46 + 플로로 ~150 + 입력칸 ~60 + 여백) */
-html.in-app.dock-wide .mc.chat .log{max-height:110px}
+html.in-app.dock-narrow .mc.chat .log{max-height:max(120px,calc(var(--room-h,100vh) - 340px))}   /* 대화 기록만 줄여 입력칸이 스크롤 밖으로 안 가게(위 줄 46 + 플로로 ~150 + 입력칸 ~60 + 여백) */
+html.in-app.dock-wide .mc.chat .log{max-height:max(110px,calc(var(--dock-h,360px) - 250px))}
 html.in-app.dock-narrow .tb-proj{display:none}   /* 420에서는 위 줄에 프로젝트 이름까지 안 들어간다(2026-10-27 스크린샷) — 작업실 제목 줄에 있다 */
 /* 섬 머리의 자리 네 칸(▲ ▼ ◀ ▶) */
 .dk{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:var(--soft);flex:none}
