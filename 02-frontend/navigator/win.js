@@ -1,6 +1,7 @@
 // claude-drafted: 2026-10-21 — 앱의 설정 창 · 퀘스트 창(C-22, win.html)의 동작. 상태는 섬(app.js) 하나가 갖는다:
 //   섬이 보낸 내용(HTML)을 그대로 보이고, 여기서 누르거나 바꾸거나 적은 것은 섬으로 돌려보낸다(floeApp.winEvent → main.js → 섬 app.js winEvent). 섬이 처리하고 다시 그려 보낸다.
 //   다시 그려도 쓰던 글 칸은 그대로(커서 자리까지) — 섬의 render와 같은 방식. 설명 풍선(data-tt)만 여기서 띄운다(섬과 같은 글).
+// 2026-10-27 C-41 ⑤(두승현): 섬이 보낸 HTML 끝의 .isl-col(플로로 · 채팅 · 판)이 이 창 안의 옆 칸이다 — 작업실이 열려 있는 동안 섬 창은 숨는다(main.js). 칸의 자리는 섬이 class(side-…)로, 크기는 여기서(이 컴퓨터에만)
 // 브라우저로 열면(window.floeApp 없음) 아무것도 하지 않는다 — 섬 옆의 판이 같은 것을 보인다
 (function () {
   const F = window.floeApp, root = document.getElementById("root"), kind = location.hash.slice(1) || "quest";
@@ -15,47 +16,53 @@
     // 스크롤은 같은 화면(data-view — 탭 · 펼친 책 · 단계 문서)을 다시 그릴 때만 되돌린다. 화면이 바뀌면 맨 위부터 —
     //   책 탭 아래의 '단계 문서 · 정한 것 펼치기'를 누르면 문서가 중간부터 보였다(임유정 2026-10-25, F-58-6) — claude-drafted: 2026-10-25
     const was = root.querySelector(".wbody"), scroll = was ? was.scrollTop : 0, view = was ? was.dataset.view : null;
+    // 옆 칸의 대화 기록([data-log]) — 맨 아래를 보고 있었으면 새 말이 와도 맨 아래, 위로 올려 읽는 중이면 그 자리(섬의 render와 같은 뜻, C-41 ⑤)
+    const lg = root.querySelector("[data-log]"), lgTop = lg ? lg.scrollTop : null, lgEnd = !lg || lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 4;
     root.innerHTML = html || "";
     if (key) { const b = [...root.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.i || ""}|${x.dataset.k || ""}` === key); if (b) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; } }
     const body = root.querySelector(".wbody"); if (body) body.scrollTop = body.dataset.view === view ? scroll : 0;
     const now = body && body.dataset.view !== view && root.querySelector(".cv-c.now"); if (now) now.scrollIntoView({ block: "nearest" });   // 캔버스 탭으로 올 때 '지금' 칸이 보이게(C-41 기준 7, 2026-10-26)
+    const lg2 = root.querySelector("[data-log]"); if (lg2) lg2.scrollTop = lgTop === null || lgEnd ? lg2.scrollHeight : lgTop;
+    layoutCol();
   });
-  // 섬이 이 창의 가장자리에 붙으면(C-41 ②, 2026-10-27) 그쪽을 비워 내용이 비켜선다 — {side, size}
-  const DOCK = ["top", "right", "bottom", "left"];
-  let dock = null;   // 지금 붙은 {side, size(섬 창 — 비켜설 폭), inner(섬이 고른 크기 — 손잡이 값 단위, 창은 여백 ~11만큼 더 크다)}
-  if (F.onDock) F.onDock((p) => { const s = p && DOCK.includes(p.side) ? Math.max(0, Math.round(p.size) || 0) : 0; dock = s ? { side: p.side, size: s, inner: Math.round(p.inner) || s, max: Math.round(p.max) || 0 } : null; root.style.padding = DOCK.map((k) => (dock && dock.side === k ? s : 0) + "px").join(" "); placeHandle(); });
-  // 손잡이(C-41 ③, 2026-10-27 — 스토리보드 기준 6): 섬이 붙은 안쪽 가장자리에. 끌거나, 고른 뒤 화살표 20씩 · Home · End, 두 번 누르거나 Enter로 처음(옆 420 · 위아래 360).
-  //   값은 섬(app.js setDockSize)이 범위(quest.js DOCK_RANGE — 옆 320 ~ 760 · 위아래 240 ~ 480)로 맞춰 다시 그리고, 앱이 다시 붙이고, 여기 padding이 따라온다 — 여기서는 보내기만
-  const RANGE = { w: [320, 760], h: [320, 480] };   // quest.js DOCK_RANGE와 같은 값(aria용) — 바꾸면 둘 다(dock.test.js가 맞댄다). 가장 크게는 섬이 보낸 max가 먼저(옆은 작업실 반까지)
-  const maxOf = () => (dock && dock.max) || RANGE[axisOf(dock.side)][1];
-  const hd = document.createElement("div"); hd.id = "hd"; hd.setAttribute("role", "separator"); hd.tabIndex = 0; hd.hidden = true; hd.innerHTML = "<span></span>"; document.body.appendChild(hd);
+  // ── 섬 옆 칸(.isl-col)의 자리와 크기 — 자리는 class side-top · bottom · left · right(섬이 보냄), 크기는 여기서: 옆이면 너비 320 ~ 760(그리고 창 너비의 반까지, 처음 420), 위아래면 높이 320 ~ 480(처음 360).
+  //   손잡이(#hd, role separator): 끌기 · 화살표 20 · Home · End · Enter/두 번 누르기로 처음. 두승현 결정 2026-10-27(스토리보드 열린 질문 6 · 8)
+  const RANGE = { w: [320, 760, 420], h: [320, 480, 360] };
+  const col = { w: +localStorage.getItem("floe:col-w") || 420, h: +localStorage.getItem("floe:col-h") || 360 };
+  const sideOf = () => { const c = root.querySelector(".isl-col"); return c ? (c.className.match(/\bside-(top|bottom|left|right)\b/) || [])[1] || "right" : ""; };
   const axisOf = (side) => (side === "left" || side === "right" ? "w" : "h");
-  function placeHandle() {
-    hd.hidden = !dock; if (!dock) return;
-    const { side, size } = dock, v = axisOf(side) === "w";
-    hd.className = v ? "v" : "h";
-    hd.style.cssText = v ? `left:${side === "left" ? size - 7 : innerWidth - size - 7}px;top:0;width:14px;height:100%` : `top:${side === "top" ? size - 7 : innerHeight - size - 7}px;left:0;height:14px;width:100%`;
-    hd.setAttribute("aria-orientation", v ? "vertical" : "horizontal"); hd.setAttribute("aria-label", v ? "섬 너비 손잡이" : "섬 높이 손잡이");
-    hd.setAttribute("aria-valuemin", RANGE[v ? "w" : "h"][0]); hd.setAttribute("aria-valuemax", maxOf()); hd.setAttribute("aria-valuenow", dock.inner); hd.setAttribute("aria-valuetext", `${v ? "너비" : "높이"} ${dock.inner}px`);
+  const hiOf = (axis) => (axis === "w" ? Math.max(RANGE.w[0], Math.min(RANGE.w[1], Math.floor(innerWidth / 2))) : RANGE.h[1]);   // 옆은 760과 창 너비의 반 중 작은 것
+  const clamp = (axis, v) => Math.max(RANGE[axis][0], Math.min(hiOf(axis), Math.round(v)));
+  const hd = document.createElement("div"); hd.id = "hd"; hd.setAttribute("role", "separator"); hd.tabIndex = 0; hd.hidden = true; hd.innerHTML = "<span></span>"; document.body.appendChild(hd);
+  function layoutCol() {
+    const side = sideOf(), h = document.documentElement;
+    h.dataset.side = side; hd.hidden = !side;
+    if (!side) return;
+    const axis = axisOf(side), v = (col[axis] = clamp(axis, col[axis]));
+    h.style.setProperty("--col-w", `${col.w}px`); h.style.setProperty("--col-h", `${col.h}px`);
+    hd.className = axis === "w" ? "v" : "h";
+    hd.style.cssText = axis === "w" ? `left:${side === "left" ? v - 7 : innerWidth - v - 7}px;top:0;width:14px;height:100%` : `top:${side === "top" ? v - 7 : innerHeight - v - 7}px;left:0;height:14px;width:100%`;
+    hd.setAttribute("aria-orientation", axis === "w" ? "vertical" : "horizontal"); hd.setAttribute("aria-label", axis === "w" ? "플로로 칸 너비 손잡이" : "플로로 칸 높이 손잡이");
+    hd.setAttribute("aria-valuemin", RANGE[axis][0]); hd.setAttribute("aria-valuemax", hiOf(axis)); hd.setAttribute("aria-valuenow", v); hd.setAttribute("aria-valuetext", `${axis === "w" ? "너비" : "높이"} ${v}px`);
   }
-  // 섬으로 보낸다 — value: 섬 크기(px) · delta: 화살표 ±20(섬 자기 크기에 — 창 크기에 더하면 한 번에 31이 늘었다, 2026-10-27 잼) · reset: 처음으로
-  const send = (p) => { if (dock) F.winEvent({ type: "dock-size", axis: axisOf(dock.side), ...p }); };
+  const setCol = (v) => { const side = sideOf(); if (!side) return; const axis = axisOf(side); col[axis] = clamp(axis, v); try { localStorage.setItem(axis === "w" ? "floe:col-w" : "floe:col-h", col[axis]); } catch {} layoutCol(); };
+  const reset = () => setCol(RANGE[axisOf(sideOf())][2]);
   let drag = false, raf = 0;
-  hd.addEventListener("pointerdown", (e) => { if (e.button !== 0 || !dock) return; e.preventDefault(); drag = true; hd.setPointerCapture(e.pointerId); document.documentElement.classList.add("hd-drag"); });
+  hd.addEventListener("pointerdown", (e) => { if (e.button !== 0 || !sideOf()) return; e.preventDefault(); drag = true; hd.setPointerCapture(e.pointerId); document.documentElement.classList.add("hd-drag"); });
   hd.addEventListener("pointermove", (e) => {
     if (!drag || raf) return;
-    raf = requestAnimationFrame(() => { raf = 0; if (!dock) return; const edge = { left: e.clientX, right: innerWidth - e.clientX, top: e.clientY, bottom: innerHeight - e.clientY }[dock.side]; send({ value: edge - (dock.size - dock.inner) }); });   // 끈 자리(창 크기) → 섬 크기(여백을 뺀다)
+    raf = requestAnimationFrame(() => { raf = 0; const side = sideOf(); if (side) setCol({ left: e.clientX, right: innerWidth - e.clientX, top: e.clientY, bottom: innerHeight - e.clientY }[side]); });
   });
   const endDrag = () => { drag = false; document.documentElement.classList.remove("hd-drag"); };
   hd.addEventListener("pointerup", endDrag); hd.addEventListener("pointercancel", endDrag);
-  hd.addEventListener("dblclick", () => send({ reset: true }));
+  hd.addEventListener("dblclick", reset);
   hd.addEventListener("keydown", (e) => {
-    if (!dock) return;
-    const grow = { right: "ArrowLeft", left: "ArrowRight", top: "ArrowDown", bottom: "ArrowUp" }[dock.side], shrink = { right: "ArrowRight", left: "ArrowLeft", top: "ArrowUp", bottom: "ArrowDown" }[dock.side], r = RANGE[axisOf(dock.side)];
-    if (e.key === "Enter") send({ reset: true }); else if (e.key === grow) send({ delta: 20 }); else if (e.key === shrink) send({ delta: -20 }); else if (e.key === "Home") send({ value: r[0] }); else if (e.key === "End") send({ value: maxOf() }); else return;
+    const side = sideOf(); if (!side) return;
+    const axis = axisOf(side), grow = { right: "ArrowLeft", left: "ArrowRight", top: "ArrowDown", bottom: "ArrowUp" }[side], shrink = { right: "ArrowRight", left: "ArrowLeft", top: "ArrowUp", bottom: "ArrowDown" }[side];
+    if (e.key === "Enter") reset(); else if (e.key === grow) setCol(col[axis] + 20); else if (e.key === shrink) setCol(col[axis] - 20); else if (e.key === "Home") setCol(RANGE[axis][0]); else if (e.key === "End") setCol(hiOf(axis)); else return;
     e.preventDefault();
   });
-  window.addEventListener("resize", placeHandle);
+  window.addEventListener("resize", layoutCol);
   const data = (t) => ({ ...t.dataset });
   root.addEventListener("click", (e) => {
     const t = e.target.closest("[data-act], [data-bv]");
@@ -64,7 +71,11 @@
   });
   root.addEventListener("change", (e) => { const t = e.target; if (!t.dataset || (!t.dataset.act && !t.dataset.bv)) return; F.winEvent({ type: "change", act: t.dataset.act || "", bv: t.dataset.bv || "", data: data(t), value: t.value, checked: !!t.checked }); });
   root.addEventListener("input", (e) => { const t = e.target; if (!t.dataset || !t.dataset.act) return; F.winEvent({ type: "input", act: t.dataset.act, data: data(t), value: t.value }); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); F.winEvent({ type: "key", key: "Escape", kind }); } });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { e.preventDefault(); return F.winEvent({ type: "key", key: "Escape", kind }); }
+    // 옆 칸의 채팅 칸(C-41 ⑤): Enter는 보내기, Shift+Enter는 줄 바꿈 — 섬(app.js)의 채팅 칸과 같다
+    if (e.key === "Enter" && !e.shiftKey && e.target && e.target.dataset && e.target.dataset.act === "say") { e.preventDefault(); F.winEvent({ type: "key", key: "Enter", act: "say", kind }); }
+  });
   // 설명 풍선 — 섬(app.js showTT)과 같은 모양 · 같은 글
   const tt = document.createElement("div"); tt.className = "tt"; tt.setAttribute("role", "tooltip"); document.body.appendChild(tt);
   function showTT(el) {

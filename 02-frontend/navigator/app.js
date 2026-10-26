@@ -82,11 +82,10 @@
   let foldSec = readFold();
   const foldDelay = () => foldSec * 1000;
   // 창 자리 · 퀘스트 창 크기 · 받으면 바로 뜨기 · 이름(설정 창의 '○○ 님의 작업실') — 이 컴퓨터에만(C-22, 2026-10-21). 기록(KEY)에는 넣지 않는다
-  const SIDE_KEY = "floe:win-side", QSIZE_KEY = "floe:qwin-size", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level", DOCK_W_KEY = "floe:dock-w", DOCK_H_KEY = "floe:dock-h";
+  const SIDE_KEY = "floe:win-side", QSIZE_KEY = "floe:qwin-size", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level";
   const readLS = (k, d = "") => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
   const writeLS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch {} };
   const SIDE_UI = { top: ["위", "▲"], bottom: ["아래", "▼"], left: ["왼쪽", "◀"], right: ["오른쪽", "▶"] };   // 섬 자리(C-41 ②) — [말, 단추 글자]
-  let dockW = QU ? QU.dockSizeOf("w", readLS(DOCK_W_KEY, "")) : 420, dockH = QU ? QU.dockSizeOf("h", readLS(DOCK_H_KEY, "")) : 360;   // 붙은 섬의 크기(C-41 ③) — 손잡이로 바꾼 값, 이 컴퓨터에만
   let side = QU ? QU.sideOf(readLS(SIDE_KEY, "right")) : "right", qsize = QU ? QU.sizeOf(readLS(QSIZE_KEY, "m")) : "m", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
   const GR = window.FloeGreet;   // 켤 때 인사의 시간표 · 규칙(greet.js, C-10 2026-10-20). 없으면 인사 움직임 없이 카드만
   let greetSkip = null;         // 인사 움직임이 도는 동안만 — 누름 · Esc로 바로 끝낸다
@@ -1982,9 +1981,11 @@
   const winOpen = { settings: false, quest: false }, winHtml = { settings: "", quest: "" };
   let winClosing = { settings: false, quest: false };   // 내가 닫는 중(자리를 바꿀 때) — 창의 '닫힘' 알림으로 상태를 끄지 않게
   const winSize = (kind) => (kind === "quest" ? QU.SIZES[qsize] : [Math.round(380 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1)), 760]);
+  // 작업실에 보내는 것 = 작업실 판(qwinHTML) + 섬의 옆 칸(.isl-col — 플로로 · 채팅 · 판, C-41 ⑤). 자리(side-…) · 좁은지(narrow — 옆 자리)는 class로, 칸의 크기는 작업실(win.js)이 갖는다
+  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}">${islandHTML("")}</div>`;
   function syncWins() {
     if (!WINS || !QU) return;
-    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() : ""]]) {
+    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() : ""]]) {
       if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
       else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
       else if (on && html !== winHtml[kind]) { winHtml[kind] = html; window.floeApp.sendWin(kind, html); }
@@ -1997,34 +1998,6 @@
       if (kind === "quest" && st.qwin) set({ qwin: false });
     });
     window.floeApp.onWinEvent((p) => winEvent(p));
-    window.floeApp.dockSide(side);   // 켤 때 앱에 섬 자리를 알린다(C-41 ②) — 작업실 창이 열리면 그 가장자리에 붙는다
-    if (window.floeApp.onDockRoom) window.floeApp.onDockRoom(applyDock);
-  }
-  // 작업실에 붙어 있는 동안(C-41 ②, 2026-10-27) 섬은 작업실 크기 안에서 — 옆(왼쪽 · 오른쪽)이면 420 너비에 작업실 높이까지(dock-narrow: 플로로 위 · 대화 아래),
-  //   위 · 아래면 작업실 너비까지에 높이 360(dock-wide — 스토리보드 기준 6의 처음 크기). 넘치는 것은 섬 몸통(.isl-body)이 스크롤. 앱이 작업실 크기를 보내고(floe:dock-room), null이면 원래대로
-  //   C-41 ③(2026-10-27): 섬 크기는 손잡이(win.js)로 — 옆이면 너비 dockW(320 ~ 760), 위 · 아래면 높이 dockH(240 ~ 480). --room-w · --room-h는 작업실 크기(넘지 않게), --dock-w · --dock-h는 고른 섬 크기
-  let dockRoom = null, dockWant = dockW, lastInner = "";   // dockWant — 원하는 너비(LS에 남는 값). dockW — 지금 작업실에서의 실제 너비(반까지로 잘린 것, 작업실을 다시 넓히면 되돌아온다). lastInner — 앱에 마지막으로 보낸 값(같으면 안 보낸다 — 되먹임 방지, 새 맥락 리뷰 2026-10-27)
-  function applyDock(room) {
-    dockRoom = room;
-    const h = document.documentElement, side = room && room.side;
-    h.classList.toggle("dock-narrow", side === "left" || side === "right");
-    h.classList.toggle("dock-wide", side === "top" || side === "bottom");
-    h.style.setProperty("--room-w", room ? `${Math.max(240, Math.round(room.width) || 0)}px` : "");
-    h.style.setProperty("--room-h", room ? `${Math.max(240, Math.round(room.height) || 0)}px` : "");
-    if (QU && room) dockW = QU.dockSizeOf("w", dockWant, capW());   // 작업실이 좁아지면 고른 너비도 따라 줄어든다(두승현 결정 2026-10-27 — 가장 크게는 작업실의 반), 넓히면 원하는 값으로 돌아온다
-    h.style.setProperty("--dock-w", `${dockW}px`); h.style.setProperty("--dock-h", `${dockH}px`);
-    const inner = `${dockW}x${dockH}x${capW() || 0}`;
-    if (inner !== lastInner && window.floeApp.dockInner) { lastInner = inner; window.floeApp.dockInner(dockW, dockH, capW()); }   // 손잡이의 값 단위(섬 크기 — 섬 창은 여백만큼 더 크다) · 지금의 가장 큰 너비. 같은 값이면 안 보낸다 — 앱이 floe:dock-room으로 되보내 여기로 돌아온다
-    queueSize();
-  }
-  const capW = () => (QU && dockRoom ? Math.min(QU.DOCK_RANGE.w[1], Math.floor(dockRoom.width / 2)) : undefined);   // 옆 자리 가장 큰 너비 — 760과 작업실 너비의 반 중 작은 것(작업실이 1520을 넘어도 760 — 새 맥락 리뷰 2026-10-27)
-  // 손잡이(win.js)가 보낸 크기 — 축(w · h) · 값(px) 또는 처음으로(reset). 범위는 quest.js DOCK_RANGE. 바꾸면 섬이 다시 재고(queueSize) 앱이 가장자리에 다시 붙이고 작업실이 비켜선다
-  function setDockSize(p) {
-    if (!QU || !p) return;
-    const axis = p.axis === "h" ? "h" : "w", cur = axis === "w" ? dockW : dockH, cap = axis === "w" ? capW() : undefined;
-    const v = p.reset ? QU.dockSizeOf(axis, QU.DOCK_RANGE[axis][2], cap) : Number.isFinite(p.delta) ? QU.dockSizeOf(axis, cur + p.delta, cap) : QU.dockSizeOf(axis, p.value, cap);   // reset — 처음으로 · delta — 화살표 ±20 · value — 끈 자리
-    if (axis === "w") { dockWant = dockW = v; writeLS(DOCK_W_KEY, v); } else { dockH = v; writeLS(DOCK_H_KEY, v); }
-    applyDock(dockRoom);
   }
   // 창에서 온 누름 · 바뀜 · 입력 · Esc — 섬의 같은 손잡이(clickAct · bvClick · onChange · onInput)로. 창의 요소 대신 그 요소의 data · 값만 온다
   function winEvent(p) {
@@ -2034,7 +2007,7 @@
     if (p.type === "click") { if (p.bv) return bvClick(el); return clickAct(el); }
     if (p.type === "change") return onChange(el);
     if (p.type === "input") return onInput(el);
-    if (p.type === "dock-size") return setDockSize(p);   // 작업실의 손잡이(C-41 ③)
+    if (p.type === "key" && p.key === "Enter" && p.act === "say") return send();   // 작업실 옆 칸의 채팅 입력에서 Enter(C-41 ⑤) — 섬의 채팅 칸과 같이 보내기
     if (p.type === "key" && p.key === "Escape") { if (deskKeys.Escape && st.ui === "home" && p.kind === "quest") return run(deskKeys.Escape); if (p.kind === "quest" && st.qwin) return set({ qwin: false }); }
   }
   // ── 섬의 움직임(C-14, 2026-10-20 — 규칙 · 숫자는 morph.js) ──
@@ -2748,7 +2721,7 @@
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     qsize: (i, el) => { if (!QU || !el) return; qsize = QU.sizeOf(el.dataset.v); writeLS(QSIZE_KEY, qsize); if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", QU.SIZES[qsize]); render(); },
-    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); if (WINS) window.floeApp.dockSide(side); render(); say(`섬은 작업실 ${SIDE_UI[side][0]}에 붙어요`); },   // C-41 ②(2026-10-27): 작업실 창의 가장자리 넷 — 앱이 섬 창을 옮긴다
+    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); render(); say(`섬은 작업실 ${SIDE_UI[side][0]}에 붙어요`); },   // C-41 ⑤(2026-10-27): 작업실 안 옆 칸의 자리 넷 — 작업실이 class(side-…)로 받아 배치한다
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
     // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기
     base: () => { setPlace("home"); set({ settings: false, pane: "" }); },   // 집 — 기본 화면으로, 열어 둔 판도 닫는다

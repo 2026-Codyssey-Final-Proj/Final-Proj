@@ -206,16 +206,7 @@ function workBounds(isl, wa, size) {
   const x = Math.max(wa.x, Math.min(Math.round(isl.x + isl.width / 2 - width / 2), wa.x + wa.width - width));
   return { x, y, width, height };
 }
-// 섬을 작업실 창의 가장자리에 붙인다(C-41 ②, 2026-10-27 두승현 — 스토리보드 기준 4 · 5): side(top · bottom · left · right)의 가장자리에 딱 붙이고 그 가장자리를 따라 가운데.
-//   ws = 작업실 창의 콘텐츠 상자, isl = 섬 창의 지금 크기({width, height}). 섬이 작업실보다 크면 작업실의 시작점에 맞춘다(넘치는 쪽은 작업실 밖으로)
-function dockBounds(side, ws, isl) {
-  const cx = Math.round(ws.x + Math.max(0, (ws.width - isl.width) / 2)), cy = Math.round(ws.y + Math.max(0, (ws.height - isl.height) / 2));
-  if (side === "top") return { x: cx, y: ws.y, width: isl.width, height: isl.height };
-  if (side === "bottom") return { x: cx, y: Math.max(ws.y, ws.y + ws.height - isl.height), width: isl.width, height: isl.height };
-  if (side === "left") return { x: ws.x, y: cy, width: isl.width, height: isl.height };
-  return { x: Math.max(ws.x, ws.x + ws.width - isl.width), y: cy, width: isl.width, height: isl.height };
-}
 // 두 상자가 겹치나 — 맞닿기만 하면 겹침이 아니다. 섬 크기가 바뀔 때 옆 창을 다시 둘지 앱(main.js placeSideWins)이 묻는다
 const overlaps = (a, b) => !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-module.exports = { SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, dockBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };
+module.exports = { SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };

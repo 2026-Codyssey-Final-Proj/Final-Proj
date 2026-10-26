@@ -43,7 +43,7 @@ test("app.js — 작업실 창: 탭은 캔버스 → 노트북(옛 퀘스트) �
 
 test("app.css · win.html — 작업실은 파스텔(네이비 면 없음), 보드는 줌 없이 너비 640 · 1000에서 칸 배치를 다시 잡는다. 설정 창의 네이비는 그대로", () => {
   const c = read("navigator/app.css"), w = read("navigator/win.html");
-  assert.match(c, /html\.in-win:not\(\.win-quest\)\{/, "네이비 토큰은 작업실 밖에만");
+  assert.match(c, /html\.in-win:not\(\.win-quest\),html\.win-quest \.isl-col\{/, "네이비 토큰은 작업실 밖과 작업실 안의 섬 옆 칸에만");
   assert.match(c, /html\.in-win:not\(\.win-quest\) \.win\{background:#16225E\}/);
   assert.match(c, /html\.win-quest\{[^}]*--card:#F7F9FC/);
   for (const t of ["--ok:#1E7A47", "--okbg:#E3F4EA", "--acc-ink:#FFFFFF", "--mute:#525F84", "--win:#F7F9FC", "--t-blue-ink:#1E3F7A", "--bad:#A4262C"]) assert.ok(/html\.win-quest\{[^}]*\}/.exec(c)[0].includes(t), `${t} — 601px 이상의 네이비 토큰을 덮어야 ✓ 글씨가 파스텔 위에서 4.5:1(새 맥락 리뷰 2026-10-26: 빠지면 1.38:1)`);

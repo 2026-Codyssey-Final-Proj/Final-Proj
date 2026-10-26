@@ -118,10 +118,10 @@ test("섬(app.js) — 앱이 창을 열 수 있으면(WINS) 섬 옆의 판 대�
   const app = read("navigator/app.js");
   assert.match(app, /const WINS = !!\(window\.floeApp && window\.floeApp\.openWin\);/);
   assert.match(app, /if \(WINS\) return isl;   \/\/ 앱: 퀘스트 창은 따로 뜬다\(syncWins\)/);
-  assert.match(app, /for \(const \[kind, on, html\] of \[\["quest", st\.qwin, st\.qwin \? qwinHTML\(\) : ""\]\]\)/, "따로 뜨는 창은 퀘스트 창 하나");
+  assert.match(app, /for \(const \[kind, on, html\] of \[\["quest", st\.qwin, st\.qwin \? qwinHTML\(\) \+ islCol\(\) : ""\]\]\)/, "따로 뜨는 창은 작업실 하나 — 작업실 판 + 섬의 옆 칸(C-41 ⑤)");
   assert.match(app, /if \(on && !winOpen\[kind\]\) \{ winOpen\[kind\] = true; winHtml\[kind\] = html; window\.floeApp\.openWin\(kind, \{ side, size: winSize\(kind\), html, place: true \}\); \}/);
   assert.match(app, /else if \(on && html !== winHtml\[kind\]\) \{ winHtml\[kind\] = html; window\.floeApp\.sendWin\(kind, html\); \}/, "바뀐 것만");
-  assert.match(app, /side = QU\.sideOf\(el\.dataset\.v\); writeLS\(SIDE_KEY, side\); if \(WINS\) window\.floeApp\.dockSide\(side\); render\(\);/, "자리를 바꾸면 앱이 섬 창을 옮긴다(C-41 ② 2026-10-27 — 창을 닫았다 다시 열지 않는다)");
+  assert.match(app, /side = QU\.sideOf\(el\.dataset\.v\); writeLS\(SIDE_KEY, side\); render\(\);/, "자리를 바꾸면 다시 그릴 뿐 — 작업실 안 옆 칸의 자리는 class로 간다(C-41 ⑤ 2026-10-27)");
   assert.match(app, /if \(winClosing\[kind\]\) \{ winClosing\[kind\] = false; return; \}/, "내가 닫은 것은 상태를 끄지 않는다");
   assert.match(app, /if \(p\.type === "click"\) \{ if \(p\.bv\) return bvClick\(el\); return clickAct\(el\); \}/);
   assert.match(app, /if \(p\.type === "change"\) return onChange\(el\);/); assert.match(app, /if \(p\.type === "input"\) return onInput\(el\);/);

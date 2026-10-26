@@ -27,7 +27,7 @@ test("main.js — 메뉴 '모아 보기 열기'가 없다. '브라우저로 열�
 
 test("main.js — 트레이 클릭 · Dock(activate) · 메뉴 '창 다시 열기'는 섬 창을 앞으로(없으면 만든다)", () => {
   const main = read("electron/main.js");
-  assert.match(main, /function showIsland\(\) \{ if \(!win\) createWindow\(\); else win\.show\(\); \}/);
+  assert.match(main, /function showIsland\(\) \{ if \(workspaceOpen\(\)\) \{ wins\.quest\.show\(\); wins\.quest\.focus\(\); return; \} if \(!win\) createWindow\(\); else win\.show\(\); \}/);
   assert.match(main, /tray\.on\("click", showIsland\)/);
   assert.match(main, /app\.on\("activate", showIsland\)/);
   assert.match(main, /label: "창 다시 열기", click: showIsland/);
