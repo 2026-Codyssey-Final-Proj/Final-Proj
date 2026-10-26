@@ -503,9 +503,9 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#start"), { waitUntil: "load" }); await wait(400);
     assert.ok(!(await page.$(".cmd4")) && !(await page.$("[data-act=cmd-hand]")), "오버레이에 명령 네 칸이 없다");
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]")?.textContent.trim()), "퀘스트", "위 줄의 '퀘스트' 단추(이재엽 그림 2026-10-24)");
-    // 퀘스트 단추 → 퀘스트 창(탭 셋). 한 번 더 누르면 닫힌다
+    // 퀘스트 단추 → 작업실 창(탭 넷 — C-41 ① 2026-10-26: 캔버스 · 노트북(옛 퀘스트) · 도전과제 · 책). 한 번 더 누르면 닫힌다
     await page.click(".tb [data-act=qwin-toggle]"); await wait(300);
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .wtabs [role=tab]")].map((t) => t.textContent)), ["퀘스트", "도전과제", "책"]);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "노트북", "도전과제", "책"]);
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]").getAttribute("aria-pressed")), "true");
     // 책: 서버 없이 열었으니 연습 예시 README
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(400);
