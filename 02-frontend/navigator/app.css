@@ -1095,7 +1095,16 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .cv-c.now .ch em{color:var(--acc)}
 .cv-c.done .ch em{color:var(--ok)}
 @container cvboard (min-width:640px){.cv-g{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@container cvboard (min-width:1000px){.cv-g{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@container cvboard (min-width:900px){.cv-g{grid-template-columns:repeat(6,minmax(0,1fr))}}   /* 1000 → 900(두승현 결정 2026-10-27, 스토리보드 열린 질문 7 — 1000은 기준 화면 셋 어디서도 안 나왔다. L 창(1120)의 보드 904px에서 한 줄) */
+/* 파일 카드(C-41 ④, 2026-10-27) — 이름과 +/− 줄 수만 */
+.cv-file{margin-top:10px;border-radius:12px;background:var(--card);border:1px solid var(--line);padding:8px 12px;font-size:calc(12.5px * var(--ui-scale,1))}
+.cv-file .ch{font-weight:700;display:flex;gap:6px;align-items:center;margin:0 0 4px;flex-wrap:wrap}
+.cv-file .ch em{font-style:normal;font-size:calc(12px * var(--ui-scale,1));color:var(--sub);font-weight:500}
+.cv-file ul{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.cv-file li{display:flex;justify-content:space-between;gap:8px;padding:3px 8px;border-radius:6px;background:var(--okbg);color:var(--ink);min-width:0}
+.cv-file li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Menlo,monospace;font-size:calc(12px * var(--ui-scale,1))}
+.cv-file li small{flex:none;color:var(--ok);font-weight:700}
+.cv-file .ft{margin:0;color:var(--sub);font-size:calc(12px * var(--ui-scale,1))}
 @media (max-width:600px){.cv-main{grid-template-columns:minmax(0,1fr)}.cv-bds{flex-direction:row}}
 
 /* claude-drafted: 2026-10-27 두승현 — 섬이 작업실에 붙어 있는 동안(C-41 ②, app.js applyDock — 앱이 보낸 작업실 크기 --dock-w · --dock-h 안에서):

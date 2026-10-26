@@ -73,7 +73,7 @@ test("app.js · app.css — 섬 머리의 네 칸(▲ ▼ ◀ ▶, 작업실이 
 test("win.js · win.html — 작업실 화면은 섬이 붙은 가장자리만큼 비워 두고(padding), 0.3초로 움직이며 움직임 줄이기면 바로", () => {
   const j = read("navigator/win.js"), h = read("navigator/win.html");
   assert.match(j, /const DOCK = \["top", "right", "bottom", "left"\];/, "CSS padding 축약 순서(위 · 오른쪽 · 아래 · 왼쪽) — main.js DOCK_SIDES 순서로 바꾸면 padding이 다른 변에 간다");
-  assert.match(j, /F\.onDock\(\(p\) => \{ const s = p && DOCK\.includes\(p\.side\) \? Math\.max\(0, Math\.round\(p\.size\) \|\| 0\) : 0; dock = s \? \{ side: p\.side, size: s, inner: Math\.round\(p\.inner\) \|\| s \} : null; root\.style\.padding = DOCK\.map/);
+  assert.match(j, /F\.onDock\(\(p\) => \{ const s = p && DOCK\.includes\(p\.side\) \? Math\.max\(0, Math\.round\(p\.size\) \|\| 0\) : 0; dock = s \? \{ side: p\.side, size: s, inner: Math\.round\(p\.inner\) \|\| s, max: Math\.round\(p\.max\) \|\| 0 \} : null; root\.style\.padding = DOCK\.map/);
   assert.match(h, /#root\{height:100vh;box-sizing:border-box;transition:padding \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/);
   assert.match(h, /@media \(prefers-reduced-motion:reduce\)\{#root\{transition:none\}\}/);
   assert.match(h, /#root>\.win\{width:100%!important;height:100%!important/, "padding 안에서 창 가득");
@@ -81,9 +81,10 @@ test("win.js · win.html — 작업실 화면은 섬이 붙은 가장자리만�
 
 // ── C-41 ③(2026-10-27): 손잡이로 섬 크기 — 옆 320 ~ 760(처음 420) · 위아래 240 ~ 480(처음 360), 화살표 20 · Home · End · 두 번 누르거나 Enter로 처음 (스토리보드 기준 6) ──
 test("quest.js dockSizeOf — 범위로 맞추고, 빈 값 · 이상한 값은 처음 크기", () => {
-  assert.deepEqual(Q.DOCK_RANGE, { w: [320, 760, 420], h: [240, 480, 360] });
+  assert.deepEqual(Q.DOCK_RANGE, { w: [320, 760, 420], h: [320, 480, 360] }, "위아래 가장 작게 240 → 320(두승현 결정 2026-10-27)");
   assert.equal(Q.dockSizeOf("w", 100), 320); assert.equal(Q.dockSizeOf("w", "900"), 760); assert.equal(Q.dockSizeOf("w", 500.4), 500);
-  assert.equal(Q.dockSizeOf("h", 300), 300); assert.equal(Q.dockSizeOf("h", ""), 360, "저장값이 없으면 처음"); assert.equal(Q.dockSizeOf("h", "abc"), 360); assert.equal(Q.dockSizeOf("w", null), 420);
+  assert.equal(Q.dockSizeOf("h", 300), 320, "320 아래는 320");
+  assert.equal(Q.dockSizeOf("w", 700, 460), 460, "cap(작업실 반)이 760보다 작으면 그것이 가장 크게"); assert.equal(Q.dockSizeOf("w", "", 400), 400, "처음 420도 cap 안으로"); assert.equal(Q.dockSizeOf("w", 500, 100), 320, "cap이 가장 작게보다 작아도 320은 지킨다"); assert.equal(Q.dockSizeOf("w", 700, 2000), 700, "cap이 760보다 크면 760까지"); assert.equal(Q.dockSizeOf("h", ""), 360, "저장값이 없으면 처음"); assert.equal(Q.dockSizeOf("h", "abc"), 360); assert.equal(Q.dockSizeOf("w", null), 420);
 });
 
 test("app.js · win.js · win.html — 손잡이는 작업실 화면에(섬이 붙은 안쪽 가장자리), 값은 섬이 범위로 맞춰 기억하고(이 컴퓨터에만) 다시 잰다. 끌기 · 화살표 20 · Home · End · Enter · 두 번 누르기. 범위 숫자는 quest.js와 같다", () => {
@@ -91,19 +92,24 @@ test("app.js · win.js · win.html — 손잡이는 작업실 화면에(섬이 �
   assert.match(a, /DOCK_W_KEY = "floe:dock-w", DOCK_H_KEY = "floe:dock-h"/);
   assert.match(a, /let dockW = QU \? QU\.dockSizeOf\("w", readLS\(DOCK_W_KEY, ""\)\) : 420, dockH = QU \? QU\.dockSizeOf\("h", readLS\(DOCK_H_KEY, ""\)\) : 360;/);
   assert.match(a, /if \(p\.type === "dock-size"\) return setDockSize\(p\);/);
-  const sd = a.slice(a.indexOf("function setDockSize"), a.indexOf("function setDockSize") + 500);
-  assert.match(sd, /const v = p\.reset \? QU\.DOCK_RANGE\[axis\]\[2\] : Number\.isFinite\(p\.delta\) \? QU\.dockSizeOf\(axis, cur \+ p\.delta\) : QU\.dockSizeOf\(axis, p\.value\)/, "처음으로 · 화살표 ±20은 섬 자기 크기에 · 끈 자리는 그대로"); assert.match(sd, /writeLS\(DOCK_W_KEY, v\)/); assert.match(sd, /applyDock\(dockRoom\)/);
+  const sd = a.slice(a.indexOf("function setDockSize"), a.indexOf("function setDockSize") + 900);
+  assert.match(sd, /const v = p\.reset \? QU\.dockSizeOf\(axis, QU\.DOCK_RANGE\[axis\]\[2\], cap\) : Number\.isFinite\(p\.delta\) \? QU\.dockSizeOf\(axis, cur \+ p\.delta, cap\) : QU\.dockSizeOf\(axis, p\.value, cap\)/, "처음으로 · 화살표 ±20은 섬 자기 크기에 · 끈 자리는 그대로 — 셋 다 cap(작업실 반) 안으로"); assert.match(sd, /writeLS\(DOCK_W_KEY, v\)/); assert.match(sd, /applyDock\(dockRoom\)/);
   assert.match(a, /h\.style\.setProperty\("--dock-w", `\$\{dockW\}px`\); h\.style\.setProperty\("--dock-h", `\$\{dockH\}px`\);/);
-  assert.match(j, /const RANGE = \{ w: \[320, 760\], h: \[240, 480\] \};/, "quest.js DOCK_RANGE와 같은 값");
+  assert.match(j, /const RANGE = \{ w: \[320, 760\], h: \[320, 480\] \};/, "quest.js DOCK_RANGE와 같은 값");
+  assert.match(j, /const maxOf = \(\) => \(dock && dock\.max\) \|\| RANGE\[axisOf\(dock\.side\)\]\[1\];/, "가장 크게는 섬이 보낸 max(옆은 작업실 반까지)"); assert.match(j, /e\.key === "End"\) send\(\{ value: maxOf\(\) \}\)/);
+  assert.match(a, /const capW = \(\) => \(dockRoom \? Math\.floor\(dockRoom\.width \/ 2\) : undefined\);/); assert.match(a, /if \(QU && room\) dockW = QU\.dockSizeOf\("w", dockW, capW\(\)\);/, "작업실이 좁아지면 고른 너비도");
+  assert.match(read("electron/main.js"), /max: vert \? dockInner\.maxW : 480/);
+  const fc = a.slice(a.indexOf("function fileCard"), a.indexOf("function fileCard") + 1200);
+  assert.match(fc, /if \(!x\.what \|\| !\(x\.add \|\| x\.del\)\) continue;/, "파일 카드는 이름과 +/− 줄 수만(두승현 결정 2026-10-27) — 줄 내용은 서버가 받지 않는다"); assert.match(fc, /if \(seen\.size >= 5\) break;/, "최근 다섯 파일"); assert.match(a, /\$\{fileCard\(\)\}<\/div>/);
   assert.match(j, /hd\.setAttribute\("role", "separator"\); hd\.tabIndex = 0;/);
   assert.match(j, /const send = \(p\) => \{ if \(dock\) F\.winEvent\(\{ type: "dock-size", axis: axisOf\(dock\.side\), \.\.\.p \}\); \};/);
   assert.match(j, /\{ left: e\.clientX, right: innerWidth - e\.clientX, top: e\.clientY, bottom: innerHeight - e\.clientY \}\[dock\.side\]; send\(\{ value: edge - \(dock\.size - dock\.inner\) \}\)/, "끈 자리(창) → 섬 크기 — 여백을 뺀다(새 맥락 리뷰: 단위 어긋남)");
   assert.match(j, /hd\.setAttribute\("aria-valuenow", dock\.inner\)/, "aria 값도 섬 크기 단위 — 범위 320~760 안");
-  assert.match(read("electron/main.js"), /inner: vert \? dockInner\.w : dockInner\.h/); assert.match(read("electron/main.js"), /ipcMain\.on\("floe:dock-inner", \(e, w, h\) => \{ if \(!fromIsland\(e\)\) return;/);
-  assert.match(a, /window\.floeApp\.dockInner\(dockW, dockH\)/, "섬이 고른 크기를 앱에");
+  assert.match(read("electron/main.js"), /inner: vert \? dockInner\.w : dockInner\.h/); assert.match(read("electron/main.js"), /ipcMain\.on\("floe:dock-inner", \(e, w, h, maxW\) => \{ if \(!fromIsland\(e\)\) return;/);
+  assert.match(a, /window\.floeApp\.dockInner\(dockW, dockH, capW\(\)\)/, "섬이 고른 크기 · 지금의 가장 큰 너비를 앱에");
   assert.match(j, /grow = \{ right: "ArrowLeft", left: "ArrowRight", top: "ArrowDown", bottom: "ArrowUp" \}\[dock\.side\]/);
   assert.match(j, /e\.key === "Enter"\) send\(\{ reset: true \}\); else if \(e\.key === grow\) send\(\{ delta: 20 \}\); else if \(e\.key === shrink\) send\(\{ delta: -20 \}\)/, "화살표는 delta — 창 크기(섬 + 여백)에 20을 더해 보내면 한 번에 31이 늘었다"); assert.match(j, /hd\.addEventListener\("dblclick", \(\) => send\(\{ reset: true \}\)\)/);
-  assert.match(j, /else if \(e\.key === "Home"\) send\(\{ value: r\[0\] \}\); else if \(e\.key === "End"\) send\(\{ value: r\[1\] \}\)/);
+  assert.match(j, /else if \(e\.key === "Home"\) send\(\{ value: r\[0\] \}\); else if \(e\.key === "End"\) send\(\{ value: maxOf\(\) \}\)/);
   assert.match(h, /#hd\{position:fixed;z-index:5;/); assert.match(h, /#hd\[hidden\]\{display:none\}/, "display:grid가 [hidden]을 이기지 않게"); assert.match(h, /html\.hd-drag #root,html\.hd-drag #hd\{transition:none\}/, "끄는 동안은 바로");
   assert.match(read("electron/main.js"), /win\.setContentBounds\(b, animate === true && process\.platform === "darwin"\)/, "자리를 바꿀 때만 0.3초 — Mac만");
 });

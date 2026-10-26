@@ -49,7 +49,7 @@ test("app.css · win.html — 작업실은 파스텔(네이비 면 없음), 보�
   for (const t of ["--ok:#1E7A47", "--okbg:#E3F4EA", "--acc-ink:#FFFFFF", "--mute:#525F84", "--win:#F7F9FC", "--t-blue-ink:#1E3F7A", "--bad:#A4262C"]) assert.ok(/html\.win-quest\{[^}]*\}/.exec(c)[0].includes(t), `${t} — 601px 이상의 네이비 토큰을 덮어야 ✓ 글씨가 파스텔 위에서 4.5:1(새 맥락 리뷰 2026-10-26: 빠지면 1.38:1)`);
   assert.match(c, /html\.win-quest \.win\{background:var\(--card\)\}/);
   assert.match(c, /@container cvboard \(min-width:640px\)/);
-  assert.match(c, /@container cvboard \(min-width:1000px\)/);
+  assert.match(c, /@container cvboard \(min-width:900px\)/, "1000 → 900(두승현 결정 2026-10-27)");
   assert.match(w, /html\.in-win\.win-quest,html\.in-win\.win-quest body\{background:#E9EEF6\}/);
   assert.match(read("electron/main.js"), /backgroundColor: ws \? "#E9EEF6"/, "창 바탕색이 셋 다 같다");
 });

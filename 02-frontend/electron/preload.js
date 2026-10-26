@@ -24,7 +24,7 @@ contextBridge.exposeInMainWorld("floeApp", {
   // 설정 창 · 퀘스트 창(C-22, 2026-10-21) — 섬: 열기(kind, {side, size, html, place}) · 내용 보내기 · 크기 · 닫기 · 창의 누름 받기 · 창이 닫힘 알림. 창(win.html): 내용 받기 · 누름 보내기
   openWin: (kind, opt) => ipcRenderer.send("floe:win-open", kind, opt || {}),
   dockSide: (side) => ipcRenderer.send("floe:dock-side", String(side || "")),
-  dockInner: (w, h) => ipcRenderer.send("floe:dock-inner", Number(w), Number(h)),   // 섬이 고른 크기(C-41 ③) — 작업실 손잡이의 값 단위   // 섬을 작업실 창의 어느 가장자리에 붙일지(C-41 ②, 2026-10-27) — 섬이 보낸다
+  dockInner: (w, h, maxW) => ipcRenderer.send("floe:dock-inner", Number(w), Number(h), Number(maxW) || 760),   // 섬이 고른 크기(C-41 ③) — 작업실 손잡이의 값 단위. maxW — 지금의 가장 큰 너비(작업실 반까지)   // 섬을 작업실 창의 어느 가장자리에 붙일지(C-41 ②, 2026-10-27) — 섬이 보낸다
   onDock: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:dock", h); return () => ipcRenderer.removeListener("floe:dock", h); },   // 작업실 창(win.js)이 받는다 — {side, size}: 그쪽에 섬이 있으니 내용이 비켜선다
   onDockRoom: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:dock-room", h); return () => ipcRenderer.removeListener("floe:dock-room", h); },   // 섬(app.js)이 받는다 — {side, width, height}: 작업실 크기 안에서 스크롤, null이면 원래대로
   sendWin: (kind, html) => ipcRenderer.send("floe:win-html", kind, html),
