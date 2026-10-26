@@ -1201,10 +1201,10 @@
   }
   // 파일 카드(C-41 ④, 두승현 결정 2026-10-27 "이름과 줄 수만"): Claude Code가 고친 · 만든 파일 — 가장 최근 세션에서 이름과 +/− 줄 수만(AI 진행의 훅이 이미 보내는 것, API.md 3-2-1). 줄 내용은 서버가 받지 않는다
   function fileCard() {
-    const s = [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0], seen = new Map();
+    const s = latestSession(), seen = new Map();
     for (const x of ((s && s.steps) || []).slice().reverse()) {
       if (!x.what || !(x.add || x.del)) continue;
-      if (!seen.has(x.what)) { if (seen.size >= 5) break; seen.set(x.what, { add: 0, del: 0 }); }
+      if (!seen.has(x.what)) { if (seen.size >= 5) continue; seen.set(x.what, { add: 0, del: 0 }); }   // 다섯 파일만 — 더 오래된 걸음도 그 다섯의 줄 수에는 더한다(세션은 50걸음까지, API.md 3-12)
       const f = seen.get(x.what); f.add += x.add || 0; f.del += x.del || 0;
     }
     const rows = [...seen].map(([name, f]) => `<li><span>${esc(name)}</span><small>${f.add ? `+${f.add}` : ""}${f.add && f.del ? " " : ""}${f.del ? `−${f.del}` : ""}</small></li>`).join("");
@@ -1673,6 +1673,7 @@
   }
   // ── 기본 화면(C-13, 2026-10-20 — 이재엽 "버튼식으로 준비가 되어있는 공간이 기본값") — 플로로와 지금 한 줄, 단추 넷. 알림 · AI 진행은 섬 안에서 바로(hub.js의 순수 함수 FloeHub) ──
   let aiSessions = [], aiMode = "none", aiLatest = 0;   // AI 진행(C-12)의 세션 · 어디서 왔나(none · example · live) · 마지막 번호
+  const latestSession = () => [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0];   // 가장 최근 세션 — AI 진행 판 · 작업실 파일 카드가 같이 쓴다
   const aiLast = () => { let best = null; for (const s of aiSessions) for (const x of s.steps || []) if (!best || (x.at || 0) > (best.at || 0)) best = { ...x, project: s.project }; return best; };
   const stepLine = (s) => (STEPS ? STEPS.line(s) : `${s.verb || ""} ${s.what || ""}`.trim());
   // 지금 한 줄 — 알림과 AI가 한 일 중 더 최근 것, 없으면 다시 온 인사 또는 시간대 인사(넘김 문서 9절 2번 기본값)
@@ -1692,7 +1693,7 @@
   function basePane(kind) {
     deskKeys.Escape = { act: "base-back" };
     const now = Date.now(), [title, lead] = PANE[kind] || PANE.alerts;
-    const last = kind === "ai" ? [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0] : null;
+    const last = kind === "ai" ? latestSession() : null;
     const tool = toolName(kind === "ai" ? (last && last.tool) || "claude" : st.feed.tool || (st.alerts[0] && st.alerts[0].tool));
     const proj = kind === "ai" && last ? last.project : project();
     const counts = kind === "ai" && last ? Object.entries((last.steps || []).reduce((m, s) => { m[s.verb || ""] = (m[s.verb || ""] || 0) + 1; return m; }, {})) : [];
@@ -2002,7 +2003,7 @@
   // 작업실에 붙어 있는 동안(C-41 ②, 2026-10-27) 섬은 작업실 크기 안에서 — 옆(왼쪽 · 오른쪽)이면 420 너비에 작업실 높이까지(dock-narrow: 플로로 위 · 대화 아래),
   //   위 · 아래면 작업실 너비까지에 높이 360(dock-wide — 스토리보드 기준 6의 처음 크기). 넘치는 것은 섬 몸통(.isl-body)이 스크롤. 앱이 작업실 크기를 보내고(floe:dock-room), null이면 원래대로
   //   C-41 ③(2026-10-27): 섬 크기는 손잡이(win.js)로 — 옆이면 너비 dockW(320 ~ 760), 위 · 아래면 높이 dockH(240 ~ 480). --room-w · --room-h는 작업실 크기(넘지 않게), --dock-w · --dock-h는 고른 섬 크기
-  let dockRoom = null;
+  let dockRoom = null, dockWant = dockW, lastInner = "";   // dockWant — 원하는 너비(LS에 남는 값). dockW — 지금 작업실에서의 실제 너비(반까지로 잘린 것, 작업실을 다시 넓히면 되돌아온다). lastInner — 앱에 마지막으로 보낸 값(같으면 안 보낸다 — 되먹임 방지, 새 맥락 리뷰 2026-10-27)
   function applyDock(room) {
     dockRoom = room;
     const h = document.documentElement, side = room && room.side;
@@ -2010,18 +2011,19 @@
     h.classList.toggle("dock-wide", side === "top" || side === "bottom");
     h.style.setProperty("--room-w", room ? `${Math.max(240, Math.round(room.width) || 0)}px` : "");
     h.style.setProperty("--room-h", room ? `${Math.max(240, Math.round(room.height) || 0)}px` : "");
-    if (QU && room) dockW = QU.dockSizeOf("w", dockW, capW());   // 작업실이 좁아지면 고른 너비도 따라 줄어든다(두승현 결정 2026-10-27 — 가장 크게는 작업실의 반)
+    if (QU && room) dockW = QU.dockSizeOf("w", dockWant, capW());   // 작업실이 좁아지면 고른 너비도 따라 줄어든다(두승현 결정 2026-10-27 — 가장 크게는 작업실의 반), 넓히면 원하는 값으로 돌아온다
     h.style.setProperty("--dock-w", `${dockW}px`); h.style.setProperty("--dock-h", `${dockH}px`);
-    if (window.floeApp.dockInner) window.floeApp.dockInner(dockW, dockH, capW());   // 손잡이의 값 단위(섬 크기 — 섬 창은 여백만큼 더 크다) · 지금의 가장 큰 너비
+    const inner = `${dockW}x${dockH}x${capW() || 0}`;
+    if (inner !== lastInner && window.floeApp.dockInner) { lastInner = inner; window.floeApp.dockInner(dockW, dockH, capW()); }   // 손잡이의 값 단위(섬 크기 — 섬 창은 여백만큼 더 크다) · 지금의 가장 큰 너비. 같은 값이면 안 보낸다 — 앱이 floe:dock-room으로 되보내 여기로 돌아온다
     queueSize();
   }
-  const capW = () => (dockRoom ? Math.floor(dockRoom.width / 2) : undefined);   // 옆 자리 가장 큰 너비 — 760과 작업실 너비의 반 중 작은 것
+  const capW = () => (QU && dockRoom ? Math.min(QU.DOCK_RANGE.w[1], Math.floor(dockRoom.width / 2)) : undefined);   // 옆 자리 가장 큰 너비 — 760과 작업실 너비의 반 중 작은 것(작업실이 1520을 넘어도 760 — 새 맥락 리뷰 2026-10-27)
   // 손잡이(win.js)가 보낸 크기 — 축(w · h) · 값(px) 또는 처음으로(reset). 범위는 quest.js DOCK_RANGE. 바꾸면 섬이 다시 재고(queueSize) 앱이 가장자리에 다시 붙이고 작업실이 비켜선다
   function setDockSize(p) {
     if (!QU || !p) return;
     const axis = p.axis === "h" ? "h" : "w", cur = axis === "w" ? dockW : dockH, cap = axis === "w" ? capW() : undefined;
     const v = p.reset ? QU.dockSizeOf(axis, QU.DOCK_RANGE[axis][2], cap) : Number.isFinite(p.delta) ? QU.dockSizeOf(axis, cur + p.delta, cap) : QU.dockSizeOf(axis, p.value, cap);   // reset — 처음으로 · delta — 화살표 ±20 · value — 끈 자리
-    if (axis === "w") { dockW = v; writeLS(DOCK_W_KEY, v); } else { dockH = v; writeLS(DOCK_H_KEY, v); }
+    if (axis === "w") { dockWant = dockW = v; writeLS(DOCK_W_KEY, v); } else { dockH = v; writeLS(DOCK_H_KEY, v); }
     applyDock(dockRoom);
   }
   // 창에서 온 누름 · 바뀜 · 입력 · Esc — 섬의 같은 손잡이(clickAct · bvClick · onChange · onInput)로. 창의 요소 대신 그 요소의 data · 값만 온다
