@@ -282,7 +282,7 @@ function placeIsland(animate) {   // animate — 자리(side)를 바꿀 때만 t
   if (key === lastDock) return;   // 작업실 move가 초당 수십 번 와도 같은 값은 안 보낸다 — 되먹임(섬 applyDock → queueSize → floe:resize → 여기)도 여기서 멈춘다
   lastDock = key;
   const vert = dockSide === "left" || dockSide === "right";
-  w.webContents.send("floe:dock", { side: dockSide, size: vert ? ib.width : ib.height, inner: vert ? dockInner.w : dockInner.h });   // size — 섬 창(비켜설 폭), inner — 섬이 고른 크기(손잡이의 값 · 범위 단위, 새 맥락 리뷰 2026-10-27)
+  w.webContents.send("floe:dock", { side: dockSide, size: vert ? ib.width : ib.height, inner: vert ? dockInner.w : dockInner.h, max: vert ? dockInner.maxW : 480 });   // max — 손잡이의 가장 크게(옆은 760과 작업실 반 중 작은 것, 두승현 결정 2026-10-27)   // size — 섬 창(비켜설 폭), inner — 섬이 고른 크기(손잡이의 값 · 범위 단위, 새 맥락 리뷰 2026-10-27)
   win.webContents.send("floe:dock-room", { side: dockSide, width: ws.width, height: ws.height });   // 섬 화면은 이 크기 안에서 스크롤한다(app.js applyDock) — 섬이 작업실보다 크면 밖으로 넘쳤다(2026-10-27 잼: 좁은 섬 847 ~ 998px)
 }
 function undockIsland() {
@@ -295,8 +295,8 @@ function undockIsland() {
   const ib = win.getContentBounds(); win.setContentBounds({ ...ib, x: Math.round(undock.cx - ib.width / 2), y: undock.y }, false); undock = null;
 }
 ipcMain.on("floe:dock-side", (e, side) => { if (!fromIsland(e) || !DOCK_SIDES.includes(side)) return; dockSide = side; placeIsland(true); });
-let dockInner = { w: 420, h: 360 };   // 섬이 고른 크기(app.js dockW · dockH, C-41 ③) — 섬 창은 이보다 여백만큼 크다. 손잡이의 값은 이것
-ipcMain.on("floe:dock-inner", (e, w, h) => { if (!fromIsland(e)) return; dockInner = { w: Math.round(Number(w)) || dockInner.w, h: Math.round(Number(h)) || dockInner.h }; lastDock = ""; placeIsland(); });
+let dockInner = { w: 420, h: 360, maxW: 760 };   // 섬이 고른 크기(app.js dockW · dockH, C-41 ③) — 섬 창은 이보다 여백만큼 크다. 손잡이의 값은 이것. maxW — 지금의 가장 큰 너비
+ipcMain.on("floe:dock-inner", (e, w, h, maxW) => { if (!fromIsland(e)) return; dockInner = { w: Math.round(Number(w)) || dockInner.w, h: Math.round(Number(h)) || dockInner.h, maxW: Math.round(Number(maxW)) || 760 }; lastDock = ""; placeIsland(); });
 function openSideWin(kind, opt = {}) {
   if (!win || win.isDestroyed()) return;
   const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;

@@ -23,10 +23,11 @@
   // 섬이 이 창의 가장자리에 붙으면(C-41 ②, 2026-10-27) 그쪽을 비워 내용이 비켜선다 — {side, size}
   const DOCK = ["top", "right", "bottom", "left"];
   let dock = null;   // 지금 붙은 {side, size(섬 창 — 비켜설 폭), inner(섬이 고른 크기 — 손잡이 값 단위, 창은 여백 ~11만큼 더 크다)}
-  if (F.onDock) F.onDock((p) => { const s = p && DOCK.includes(p.side) ? Math.max(0, Math.round(p.size) || 0) : 0; dock = s ? { side: p.side, size: s, inner: Math.round(p.inner) || s } : null; root.style.padding = DOCK.map((k) => (dock && dock.side === k ? s : 0) + "px").join(" "); placeHandle(); });
+  if (F.onDock) F.onDock((p) => { const s = p && DOCK.includes(p.side) ? Math.max(0, Math.round(p.size) || 0) : 0; dock = s ? { side: p.side, size: s, inner: Math.round(p.inner) || s, max: Math.round(p.max) || 0 } : null; root.style.padding = DOCK.map((k) => (dock && dock.side === k ? s : 0) + "px").join(" "); placeHandle(); });
   // 손잡이(C-41 ③, 2026-10-27 — 스토리보드 기준 6): 섬이 붙은 안쪽 가장자리에. 끌거나, 고른 뒤 화살표 20씩 · Home · End, 두 번 누르거나 Enter로 처음(옆 420 · 위아래 360).
   //   값은 섬(app.js setDockSize)이 범위(quest.js DOCK_RANGE — 옆 320 ~ 760 · 위아래 240 ~ 480)로 맞춰 다시 그리고, 앱이 다시 붙이고, 여기 padding이 따라온다 — 여기서는 보내기만
-  const RANGE = { w: [320, 760], h: [240, 480] };   // quest.js DOCK_RANGE와 같은 값(aria용) — 바꾸면 둘 다(dock.test.js가 맞댄다)
+  const RANGE = { w: [320, 760], h: [320, 480] };   // quest.js DOCK_RANGE와 같은 값(aria용) — 바꾸면 둘 다(dock.test.js가 맞댄다). 가장 크게는 섬이 보낸 max가 먼저(옆은 작업실 반까지)
+  const maxOf = () => (dock && dock.max) || RANGE[axisOf(dock.side)][1];
   const hd = document.createElement("div"); hd.id = "hd"; hd.setAttribute("role", "separator"); hd.tabIndex = 0; hd.hidden = true; hd.innerHTML = "<span></span>"; document.body.appendChild(hd);
   const axisOf = (side) => (side === "left" || side === "right" ? "w" : "h");
   function placeHandle() {
@@ -35,7 +36,7 @@
     hd.className = v ? "v" : "h";
     hd.style.cssText = v ? `left:${side === "left" ? size - 7 : innerWidth - size - 7}px;top:0;width:14px;height:100%` : `top:${side === "top" ? size - 7 : innerHeight - size - 7}px;left:0;height:14px;width:100%`;
     hd.setAttribute("aria-orientation", v ? "vertical" : "horizontal"); hd.setAttribute("aria-label", v ? "섬 너비 손잡이" : "섬 높이 손잡이");
-    hd.setAttribute("aria-valuemin", RANGE[v ? "w" : "h"][0]); hd.setAttribute("aria-valuemax", RANGE[v ? "w" : "h"][1]); hd.setAttribute("aria-valuenow", dock.inner); hd.setAttribute("aria-valuetext", `${v ? "너비" : "높이"} ${dock.inner}px`);
+    hd.setAttribute("aria-valuemin", RANGE[v ? "w" : "h"][0]); hd.setAttribute("aria-valuemax", maxOf()); hd.setAttribute("aria-valuenow", dock.inner); hd.setAttribute("aria-valuetext", `${v ? "너비" : "높이"} ${dock.inner}px`);
   }
   // 섬으로 보낸다 — value: 섬 크기(px) · delta: 화살표 ±20(섬 자기 크기에 — 창 크기에 더하면 한 번에 31이 늘었다, 2026-10-27 잼) · reset: 처음으로
   const send = (p) => { if (dock) F.winEvent({ type: "dock-size", axis: axisOf(dock.side), ...p }); };
@@ -51,7 +52,7 @@
   hd.addEventListener("keydown", (e) => {
     if (!dock) return;
     const grow = { right: "ArrowLeft", left: "ArrowRight", top: "ArrowDown", bottom: "ArrowUp" }[dock.side], shrink = { right: "ArrowRight", left: "ArrowLeft", top: "ArrowUp", bottom: "ArrowDown" }[dock.side], r = RANGE[axisOf(dock.side)];
-    if (e.key === "Enter") send({ reset: true }); else if (e.key === grow) send({ delta: 20 }); else if (e.key === shrink) send({ delta: -20 }); else if (e.key === "Home") send({ value: r[0] }); else if (e.key === "End") send({ value: r[1] }); else return;
+    if (e.key === "Enter") send({ reset: true }); else if (e.key === grow) send({ delta: 20 }); else if (e.key === shrink) send({ delta: -20 }); else if (e.key === "Home") send({ value: r[0] }); else if (e.key === "End") send({ value: maxOf() }); else return;
     e.preventDefault();
   });
   window.addEventListener("resize", placeHandle);

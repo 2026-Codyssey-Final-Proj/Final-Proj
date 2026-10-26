@@ -1197,7 +1197,18 @@
     const ver = cell("later", "⑤", "버전", `${LB(n)}를 넘으면 책에 V.${n + 1}`, "대회 뒤 (C-23)");
     const gate = r && r.passed ? cell("done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : holding() ? cell("later", "", "관문", "멈춰 둔 단계 — 섬에서 다시 열어요") : allDone() ? cell("now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("later", "", "관문", st.j ? `남은 할 일 ${left()}` : "할 일을 다 하면 열려요");
     return `<div class="cv"><div class="cv-top"><span class="cv-now">지금 하는 일 <b>${esc(now)}</b></span><div class="cv-stg" aria-label="단계">${chips}</div></div>
-      <div class="cv-main"><div class="cv-bds">${prev}${next}</div><div class="cv-board"><div class="bh"><b>${LB(n)} · ${esc(s.title)}</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div><div class="cv-g">${think}${act}${rec}${save}${ver}${gate}</div></div></div></div>`;
+      <div class="cv-main"><div class="cv-bds">${prev}${next}</div><div class="cv-board"><div class="bh"><b>${LB(n)} · ${esc(s.title)}</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div><div class="cv-g">${think}${act}${rec}${save}${ver}${gate}</div>${fileCard()}</div></div></div>`;
+  }
+  // 파일 카드(C-41 ④, 두승현 결정 2026-10-27 "이름과 줄 수만"): Claude Code가 고친 · 만든 파일 — 가장 최근 세션에서 이름과 +/− 줄 수만(AI 진행의 훅이 이미 보내는 것, API.md 3-2-1). 줄 내용은 서버가 받지 않는다
+  function fileCard() {
+    const s = [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0], seen = new Map();
+    for (const x of ((s && s.steps) || []).slice().reverse()) {
+      if (!x.what || !(x.add || x.del)) continue;
+      if (!seen.has(x.what)) { if (seen.size >= 5) break; seen.set(x.what, { add: 0, del: 0 }); }
+      const f = seen.get(x.what); f.add += x.add || 0; f.del += x.del || 0;
+    }
+    const rows = [...seen].map(([name, f]) => `<li><span>${esc(name)}</span><small>${f.add ? `+${f.add}` : ""}${f.add && f.del ? " " : ""}${f.del ? `−${f.del}` : ""}</small></li>`).join("");
+    return `<div class="cv-file"><p class="ch">파일 · 바뀐 줄 수<em>${s && aiMode === "example" ? "예시" : s ? esc(s.project || "") : ""}</em></p>${rows ? `<ul>${rows}</ul>` : `<p class="ft">아직 — Claude Code가 파일을 고치면 이름과 줄 수가 여기에 와요</p>`}</div>`;
   }
   function qwinHTML() {
     if (!st.qwin || !QU) return "";
@@ -1999,15 +2010,17 @@
     h.classList.toggle("dock-wide", side === "top" || side === "bottom");
     h.style.setProperty("--room-w", room ? `${Math.max(240, Math.round(room.width) || 0)}px` : "");
     h.style.setProperty("--room-h", room ? `${Math.max(240, Math.round(room.height) || 0)}px` : "");
+    if (QU && room) dockW = QU.dockSizeOf("w", dockW, capW());   // 작업실이 좁아지면 고른 너비도 따라 줄어든다(두승현 결정 2026-10-27 — 가장 크게는 작업실의 반)
     h.style.setProperty("--dock-w", `${dockW}px`); h.style.setProperty("--dock-h", `${dockH}px`);
-    if (window.floeApp.dockInner) window.floeApp.dockInner(dockW, dockH);   // 손잡이의 값 단위(섬 크기 — 섬 창은 여백만큼 더 크다)
+    if (window.floeApp.dockInner) window.floeApp.dockInner(dockW, dockH, capW());   // 손잡이의 값 단위(섬 크기 — 섬 창은 여백만큼 더 크다) · 지금의 가장 큰 너비
     queueSize();
   }
+  const capW = () => (dockRoom ? Math.floor(dockRoom.width / 2) : undefined);   // 옆 자리 가장 큰 너비 — 760과 작업실 너비의 반 중 작은 것
   // 손잡이(win.js)가 보낸 크기 — 축(w · h) · 값(px) 또는 처음으로(reset). 범위는 quest.js DOCK_RANGE. 바꾸면 섬이 다시 재고(queueSize) 앱이 가장자리에 다시 붙이고 작업실이 비켜선다
   function setDockSize(p) {
     if (!QU || !p) return;
-    const axis = p.axis === "h" ? "h" : "w", cur = axis === "w" ? dockW : dockH;
-    const v = p.reset ? QU.DOCK_RANGE[axis][2] : Number.isFinite(p.delta) ? QU.dockSizeOf(axis, cur + p.delta) : QU.dockSizeOf(axis, p.value);   // reset — 처음으로 · delta — 화살표 ±20 · value — 끈 자리
+    const axis = p.axis === "h" ? "h" : "w", cur = axis === "w" ? dockW : dockH, cap = axis === "w" ? capW() : undefined;
+    const v = p.reset ? QU.dockSizeOf(axis, QU.DOCK_RANGE[axis][2], cap) : Number.isFinite(p.delta) ? QU.dockSizeOf(axis, cur + p.delta, cap) : QU.dockSizeOf(axis, p.value, cap);   // reset — 처음으로 · delta — 화살표 ±20 · value — 끈 자리
     if (axis === "w") { dockW = v; writeLS(DOCK_W_KEY, v); } else { dockH = v; writeLS(DOCK_H_KEY, v); }
     applyDock(dockRoom);
   }

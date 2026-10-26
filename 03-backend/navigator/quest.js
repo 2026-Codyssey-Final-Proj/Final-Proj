@@ -32,9 +32,10 @@
   //   2026-10-21 ~ 26에는 설정 창 · 퀘스트 창이 섬 옆 어느 쪽에 뜨나(left · right)였다 — 옛 저장값 left · right는 그대로 읽힌다
   const SIDES = ["top", "bottom", "left", "right"];
   const sideOf = (v) => (SIDES.includes(v) ? v : "right");   // otherSide(반대쪽)는 2026-10-27에 뺌 — 쓰는 곳이 없었다
-  // 붙은 섬의 크기(C-41 ③, 2026-10-27 — 스토리보드 기준 6): 옆 자리는 너비 320 ~ 760(처음 420), 위 · 아래 자리는 높이 240 ~ 480(처음 360). [가장 작게, 가장 크게, 처음]. win.js의 손잡이도 같은 값
-  const DOCK_RANGE = { w: [320, 760, 420], h: [240, 480, 360] };
-  const dockSizeOf = (axis, v) => { const [lo, hi, d] = DOCK_RANGE[axis]; const n = v === "" || v == null ? NaN : Math.round(Number(v)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };   // 빈 값(저장값 없음)은 처음 크기
+  // 붙은 섬의 크기(C-41 ③, 2026-10-27 — 스토리보드 기준 6): 옆 자리는 너비 320 ~ 760(처음 420), 위 · 아래 자리는 높이 320 ~ 480(처음 360). [가장 작게, 가장 크게, 처음]. win.js의 손잡이도 같은 값
+  //   두승현 결정 2026-10-27(스토리보드 열린 질문 6 · 8): 위 · 아래 가장 작게는 240 → 320(240이면 대화 칸 104px에 지금 카드가 안 들어간다), 옆 가장 크게는 760과 작업실 너비의 반 중 작은 것(cap — 1024 화면에서 760이면 작업실이 264px)
+  const DOCK_RANGE = { w: [320, 760, 420], h: [320, 480, 360] };
+  const dockSizeOf = (axis, v, cap) => { const [lo, hi0, d] = DOCK_RANGE[axis], hi = Math.max(lo, Math.min(hi0, Math.round(Number(cap)) || hi0)); const n = v === "" || v == null ? NaN : Math.round(Number(v)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : Math.min(d, hi); };   // 빈 값(저장값 없음)은 처음 크기 · cap은 가장 크게를 더 줄일 때만
   // 퀘스트 창 크기 S · M · L — [가로, 세로] px(화면이 작으면 CSS가 줄인다)
   const SIZES = { s: [720, 520], m: [920, 640], l: [1120, 760] };   // 작업실 창(C-41, 2026-10-26) — 캔버스 보드가 640 미만이면 세로 한 줄이라 가장 작은 것도 720. 창 테두리로도 바꿀 수 있다
   const sizeOf = (v) => (SIZES[v] ? v : "m");
