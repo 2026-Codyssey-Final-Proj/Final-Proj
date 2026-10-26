@@ -85,7 +85,7 @@
   const SIDE_KEY = "floe:win-side", QSIZE_KEY = "floe:qwin-size", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level";
   const readLS = (k, d = "") => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
   const writeLS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch {} };
-  const SIDE_WORD = { top: "위", bottom: "아래", left: "왼쪽", right: "오른쪽" };   // 섬 자리(C-41 ②)
+  const SIDE_UI = { top: ["위", "▲"], bottom: ["아래", "▼"], left: ["왼쪽", "◀"], right: ["오른쪽", "▶"] };   // 섬 자리(C-41 ②) — [말, 단추 글자]
   let side = QU ? QU.sideOf(readLS(SIDE_KEY, "right")) : "right", qsize = QU ? QU.sizeOf(readLS(QSIZE_KEY, "m")) : "m", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
   const GR = window.FloeGreet;   // 켤 때 인사의 시간표 · 규칙(greet.js, C-10 2026-10-20). 없으면 인사 움직임 없이 카드만
   let greetSkip = null;         // 인사 움직임이 도는 동안만 — 누름 · Esc로 바로 끝낸다
@@ -1181,7 +1181,7 @@
     const p = q ? QU.progress(q) : null;
     const now = st.busy ? "플로로가 살펴보는 중" : st.finished ? "모든 장을 끝냈어요" : !q && !st.j ? "채팅에서 원하는 것을 말하면 1단계 초안을 만들어요" : q && q.phase === "draft" ? "퀘스트를 받기 전 — 노트북 탭에서 받아요" : q && q.phase === "done" ? "보고했어요 — 넘어가기 전 확인은 섬에서" : q && ci >= 0 ? `${p.n}개 중 ${p.k}번째 칸 — ${QU.shortOf(q.objs[ci].name)}` : q ? "칸을 다 적었어요 — 완료 보고" : progress();
     const chipCls = (x) => (st.finished ? "done" : stepClass(x.n));   // 다 마치면 마지막 장도 ✓(stepClass는 finished를 모른다 — 새 맥락 리뷰 2026-10-26)
-    const chips = N.STAGES.map((x) => `<span class="${chipCls(x)}">${LB(x.n)}${chipCls(x) === "done" ? " ✓" : ""}</span>`).join("");
+    const chips = N.STAGES.map((x) => { const k = chipCls(x); return `<span class="${k}">${LB(x.n)}${k === "done" ? " ✓" : ""}</span>`; }).join("");
     const pr = n > 0 ? st.results[n - 1] : null;
     const prev = n > 0 ? `<div class="cv-bd">보드 · ✓ 지남${pr && pr.passed ? ` · ${esc(pr.passed.slice(5))}` : ""}<b>${LB(n - 1)} · ${esc(N.STAGES[n - 1].title)}</b></div>` : `<div class="cv-bd next">보드 · 처음이에요<b>지난 장 없음</b></div>`;
     const next = n + 1 < N.STAGES.length ? `<div class="cv-bd next">보드 · 관문을 넘으면 열려요<b>${LB(n + 1)} · ${esc(N.STAGES[n + 1].title)}</b></div>` : `<div class="cv-bd next">보드 · 다 마치면<b>다음 프로젝트 — 배운 것을 들고 가요</b></div>`;
@@ -1585,7 +1585,7 @@
   const homeBtn = (on) => `<button class="ti home" data-act="base" aria-pressed="${on}" aria-label="처음으로" title="처음으로 — 플로로와 대화">${I.home}</button>`;
   // 오른쪽 — 연결 표시 · 프로젝트 · 조개 · 설정 창 · 열어 두기 · 접기. 퀘스트 창 단추 · 모아 보기 단추는 2026-10-23에 뺐다(이재엽) — 퀘스트 창은 명령 칸의 책 · 배우기와 '공책 보기'로 연다
   // 섬 자리 네 칸(C-41 ②, 2026-10-27 — 스토리보드 기준 4): 작업실 창이 열려 있을 때만, 앱에서만
-  const dockBtns = () => (WINS && QU && st.qwin ? `<span class="dk" role="group" aria-label="섬 자리">${QU.SIDES.map((s) => `<button type="button" data-act="side" data-v="${s}" aria-pressed="${side === s}" aria-label="섬을 작업실 ${SIDE_WORD[s]}에" title="섬을 작업실 ${SIDE_WORD[s]}에">${{ top: "▲", bottom: "▼", left: "◀", right: "▶" }[s]}</button>`).join("")}</span>` : "");
+  const dockBtns = () => (WINS && QU && st.qwin ? `<span class="dk" role="group" aria-label="섬 자리">${QU.SIDES.map((s) => `<button type="button" data-act="side" data-v="${s}" aria-pressed="${side === s}" aria-label="섬을 작업실 ${SIDE_UI[s][0]}에" title="섬을 작업실 ${SIDE_UI[s][0]}에">${SIDE_UI[s][1]}</button>`).join("")}</span>` : "");
   const tbRight = () => `${QU ? `<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="${st.qwin}" title="퀘스트 창 켜기 · 끄기 — 퀘스트 · 맡길 일 · 도전과제 · 책">퀘스트</button>` : ""}${dockBtns()}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 소식 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
@@ -2718,7 +2718,7 @@
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     qsize: (i, el) => { if (!QU || !el) return; qsize = QU.sizeOf(el.dataset.v); writeLS(QSIZE_KEY, qsize); if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", QU.SIZES[qsize]); render(); },
-    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); if (WINS) window.floeApp.dockSide(side); render(); say(`섬은 작업실 ${SIDE_WORD[side]}에 붙어요`); },   // C-41 ②(2026-10-27): 작업실 창의 가장자리 넷 — 앱이 섬 창을 옮긴다
+    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); if (WINS) window.floeApp.dockSide(side); render(); say(`섬은 작업실 ${SIDE_UI[side][0]}에 붙어요`); },   // C-41 ②(2026-10-27): 작업실 창의 가장자리 넷 — 앱이 섬 창을 옮긴다
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
     // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기
     base: () => { setPlace("home"); set({ settings: false, pane: "" }); },   // 집 — 기본 화면으로, 열어 둔 판도 닫는다
