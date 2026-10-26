@@ -142,6 +142,7 @@ ipcMain.on("floe:resize", (e, w, h, anchor) => {
   const wa = screen.getDisplayMatching(b).workArea;
   // 노치가 있으면 가로는 늘 노치 가운데, 세로는 화면 맨 위(서고에서 돌아와도 노치로) — 없으면 지금 창의 가운데 · 지금 y
   // 작업실에 붙어 있으면(C-41 ②) 그 가장자리에 새 크기로 — 아니면 노치 · 가운데 규칙
+  if (docked()) rememberUndock(b);
   const target = docked() ? L.dockBounds(dockSide, wins.quest.getContentBounds(), { width: W, height: H }) : { x: L.islandX(anchor, b, W, NOTCH ? NOTCH.cx : null, wa), y: NOTCH ? NOTCH.y : b.y, width: W, height: H };
   win.setContentBounds(target, false);
   placeSideWins();
@@ -267,21 +268,28 @@ const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? L.workBound
 // 작업실 화면에는 {side, size}를 보내 그쪽을 비워 둔다(win.js — 내용이 비켜선다). 작업실이 닫히면 섬은 붙기 전 자리로. 서고 · 처음 설정(expanded)에 있는 동안은 붙지 않는다.
 // 손잡이로 섬 크기 바꾸기 · 접힌 띠 · 0.3초 움직임(기준 6 · 8)은 다음 묶음
 const DOCK_SIDES = ["top", "bottom", "left", "right"];
-let dockSide = "right", undock = null;   // undock — 붙기 전 섬 창의 자리 {x, y}
+let dockSide = "right", undock = null, lastDock = "";   // undock — 붙기 전 섬 창의 자리 {cx, y}(가운데를 기억 — 돌아올 때 섬 폭이 달라도 같은 가운데에). lastDock — 마지막으로 보낸 값(같으면 안 보낸다)
 const docked = () => !!(wins.quest && !wins.quest.isDestroyed()) && !expanded;
+const rememberUndock = (ib) => { if (!undock) undock = { cx: ib.x + ib.width / 2, y: ib.y }; };   // 붙이기 전에 — floe:resize가 먼저 붙이는 길(작업실 창이 뜨기 전 섬 크기가 바뀔 때)도 같은 자리를 기억한다
 function placeIsland() {
   if (!win || win.isDestroyed() || !docked()) return;
   const w = wins.quest, ib = win.getContentBounds();
-  if (!undock) undock = { cx: ib.x + ib.width / 2, y: ib.y };   // 가운데를 기억 — 돌아올 때 섬 폭이 달라도(좁힌 420 → 940) 같은 가운데에
+  rememberUndock(ib);
   const ws = w.getContentBounds(), b = L.dockBounds(dockSide, ws, ib);
   if (b.x !== ib.x || b.y !== ib.y) win.setContentBounds(b, false);
+  const key = `${dockSide}|${ib.width}x${ib.height}|${ws.width}x${ws.height}`;
+  if (key === lastDock) return;   // 작업실 move가 초당 수십 번 와도 같은 값은 안 보낸다 — 되먹임(섬 applyDock → queueSize → floe:resize → 여기)도 여기서 멈춘다
+  lastDock = key;
   w.webContents.send("floe:dock", { side: dockSide, size: dockSide === "left" || dockSide === "right" ? ib.width : ib.height });
   win.webContents.send("floe:dock-room", { side: dockSide, width: ws.width, height: ws.height });   // 섬 화면은 이 크기 안에서 스크롤한다(app.js applyDock) — 섬이 작업실보다 크면 밖으로 넘쳤다(2026-10-27 잼: 좁은 섬 847 ~ 998px)
 }
 function undockIsland() {
   if (!win || win.isDestroyed()) return;
+  lastDock = "";
   win.webContents.send("floe:dock-room", null);   // 섬 화면은 원래 크기로
   if (!undock) return;
+  // 서고 · 처음 설정으로 넓힌 창(expanded)이면 지금 창은 건드리지 않고 돌아올 자리만 고친다 — 작업실이 열린 채 서고로 가면 closed가 expandWindow 뒤에 온다(새 맥락 리뷰 2026-10-27)
+  if (expanded) { expanded.from = { ...expanded.from, x: Math.round(undock.cx - expanded.from.width / 2), y: undock.y }; undock = null; return; }
   const ib = win.getContentBounds(); win.setContentBounds({ ...ib, x: Math.round(undock.cx - ib.width / 2), y: undock.y }, false); undock = null;
 }
 ipcMain.on("floe:dock-side", (e, side) => { if (!fromIsland(e) || !DOCK_SIDES.includes(side)) return; dockSide = side; placeIsland(); });
@@ -326,8 +334,8 @@ ipcMain.on("floe:win-close", (e, kind) => { const w = sideKind(kind) && wins[kin
 ipcMain.on("floe:win-size", (e, kind, size) => {
   const w = sideKind(kind) && wins[kind];
   if (!fromIsland(e) || !w || w.isDestroyed() || !Array.isArray(size)) return;
-  // 사람이 옮기지 않았으면 같은 자리 규칙으로(커진 창이 섬을 덮지 않게, 2026-10-24) — 옮겼으면 그 자리에서 크기만
-  if (!w.floeMoved) { const isl = win.getContentBounds(); w.floeSize = size; return w.setBounds(boundsFor(kind, w.floeSide, isl, screen.getDisplayMatching(isl).workArea, size)); }
+  // 사람이 옮기지 않았으면 같은 자리 규칙으로(커진 창이 섬을 덮지 않게, 2026-10-24) — 옮겼으면 그 자리에서 크기만. 섬이 붙어 있는 작업실도 제자리에서 크기만(섬 아래로 튀지 않게, C-41 ②)
+  if (!w.floeMoved && !(kind === "quest" && docked())) { const isl = win.getContentBounds(); w.floeSize = size; return w.setBounds(boundsFor(kind, w.floeSide, isl, screen.getDisplayMatching(isl).workArea, size)); }
   const b = w.getBounds(); w.setBounds({ ...b, width: Math.max(260, Math.round(size[0]) || b.width), height: Math.max(200, Math.round(size[1]) || b.height) });
 });
 ipcMain.on("floe:win-event", (e, payload) => { if (fromSide(e) && win && !win.isDestroyed()) win.webContents.send("floe:win-event", payload); });   // 창의 누름은 섬으로

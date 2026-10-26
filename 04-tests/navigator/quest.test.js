@@ -98,7 +98,7 @@ test("레벨 누적(C-28): 처음은 지금 단계에서 시작하고(이미 넘
 test("섬 자리(C-41 ②): 위 · 아래 · 왼쪽 · 오른쪽, 모르는 값은 오른쪽 — 옛 저장값 left · right도 읽힌다. 크기는 S · M · L(모르면 M)", () => {
   assert.deepEqual(Q.SIDES, ["top", "bottom", "left", "right"]);
   assert.equal(Q.sideOf("right"), "right"); assert.equal(Q.sideOf("top"), "top"); assert.equal(Q.sideOf("left"), "left", "옛 값"); assert.equal(Q.sideOf("x"), "right"); assert.equal(Q.sideOf(undefined), "right");
-  assert.equal(Q.otherSide("left"), "right"); assert.equal(Q.otherSide("top"), "bottom"); assert.equal(Q.otherSide("x"), "left");
+  assert.equal(Q.otherSide, undefined, "반대쪽은 2026-10-27에 뺐다 — 쓰는 곳이 없었다");
   assert.deepEqual(Object.keys(Q.SIZES), ["s", "m", "l"]); assert.equal(Q.sizeOf("l"), "l"); assert.equal(Q.sizeOf("huge"), "m");
   assert.ok(Q.SIZES.s[0] < Q.SIZES.m[0] && Q.SIZES.m[0] < Q.SIZES.l[0]);
 });
