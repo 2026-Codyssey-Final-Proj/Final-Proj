@@ -24,6 +24,7 @@ html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
 #root .wh button,#root .wh select{-webkit-app-region:no-drag}
 /* 섬 크기 손잡이(win.js, C-41 ③) — 섬이 붙은 안쪽 가장자리에 14px 띠, 가운데 작은 막대. 끄는 동안은 padding · 손잡이가 바로 따라온다(transition 없이) */
 #hd{position:fixed;z-index:5;display:grid;place-items:center;touch-action:none;transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1)}
+#hd[hidden]{display:none}   /* display:grid가 [hidden]을 이기지 않게 — 붙기 전에는 tab 순서에도 없어야 한다(새 맥락 리뷰 2026-10-27) */
 #hd span{display:block;border-radius:4px;background:#BCC8DD}
 #hd.v{cursor:ew-resize}#hd.v span{width:6px;height:64px}
 #hd.h{cursor:ns-resize}#hd.h span{width:64px;height:6px}

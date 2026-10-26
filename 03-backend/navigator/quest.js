@@ -34,7 +34,7 @@
   const sideOf = (v) => (SIDES.includes(v) ? v : "right");   // otherSide(반대쪽)는 2026-10-27에 뺌 — 쓰는 곳이 없었다
   // 붙은 섬의 크기(C-41 ③, 2026-10-27 — 스토리보드 기준 6): 옆 자리는 너비 320 ~ 760(처음 420), 위 · 아래 자리는 높이 240 ~ 480(처음 360). [가장 작게, 가장 크게, 처음]. win.js의 손잡이도 같은 값
   const DOCK_RANGE = { w: [320, 760, 420], h: [240, 480, 360] };
-  const dockSizeOf = (axis, v) => { const [lo, hi, d] = DOCK_RANGE[axis] || DOCK_RANGE.w; const n = v === "" || v == null ? NaN : Math.round(Number(v)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };   // 빈 값(저장값 없음)은 처음 크기
+  const dockSizeOf = (axis, v) => { const [lo, hi, d] = DOCK_RANGE[axis]; const n = v === "" || v == null ? NaN : Math.round(Number(v)); return Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : d; };   // 빈 값(저장값 없음)은 처음 크기
   // 퀘스트 창 크기 S · M · L — [가로, 세로] px(화면이 작으면 CSS가 줄인다)
   const SIZES = { s: [720, 520], m: [920, 640], l: [1120, 760] };   // 작업실 창(C-41, 2026-10-26) — 캔버스 보드가 640 미만이면 세로 한 줄이라 가장 작은 것도 720. 창 테두리로도 바꿀 수 있다
   const sizeOf = (v) => (SIZES[v] ? v : "m");
