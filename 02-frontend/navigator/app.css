@@ -750,9 +750,8 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li.now small{color:var(--acc)}.wnav .fn li.new small{color:var(--ok)}.wnav .fn li.fix small{color:#7A3F1F}
 .wnav .fn-ft{margin:auto 0 0;padding:8px 6px 0;border-top:1px solid var(--line);font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);line-height:1.5}
 /* 좁은 작업실(760 아래 — 옆에 섬 칸이 붙은 보통 화면)에서는 파일 칸 · 단계 이름을 숨겨 판에 자리를 준다. 창(.qwin)의 너비로 — 브라우저의 S 판(720)도 같다 */
-.qwin{container-type:inline-size}
+.qwin{min-width:260px;container-type:inline-size}
 @container (max-width:760px){.wnav,.wh .wst{display:none}}
-.qwin{min-width:260px}
 .nav.side{width:min(1800px,calc(100vw - 32px))}
 .nav.side>.win{margin-top:0;align-self:flex-start}
 @media (max-width:1180px){.nav.side>.win{align-self:center;margin-top:8px}html.in-app .nav.side>.win{align-self:flex-start;margin-top:0}}
@@ -1083,17 +1082,17 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 
 /* claude-drafted: 2026-10-26 두승현 — 작업실 창(C-41 PR①, 스토리보드 01-docs/04-pattern-implementation/stage-storyboard): 눈이 편한 파스텔(순백 · 쨍한 파랑 · 검정 면 없이, 글씨 대비 4.5:1) — 값은 스토리보드 :root와 같다.
    캔버스 탭(.cv): 2026-10-27 ⑥부터 목업의 1100×640 판을 줌한다(아래 .cvb) — 그 전(①)의 '보드 너비 640 · 900에서 칸 배치를 다시 잡기'는 뺐다 */
-html.win-quest{--win:#F7F9FC; --winbar:#EBF0F8; --side:#EBF0F8; --ink:#1E2A5A; --ink2:#2E3A6A; --mute:#525F84; --sub:#4A5678; --glass2:rgba(255,255,255,.9); --card:#F7F9FC; --soft:#EBF0F8; --line:#D3DBE9; --seg:#CBD4E3;
+html.win-quest,.nav.side>.qwin{--win:#F7F9FC; --winbar:#EBF0F8; --side:#EBF0F8; --ink:#1E2A5A; --ink2:#2E3A6A; --mute:#525F84; --sub:#4A5678; --glass2:rgba(255,255,255,.9); --card:#F7F9FC; --soft:#EBF0F8; --line:#D3DBE9; --seg:#CBD4E3;
   --acc:#2E4A9A; --acc-btn:#2E4A9A; --acc-ink:#FFFFFF; --acc-soft:#DCE6F7; --acc-mid:#BCC8DD; --ok:#1E7A47; --okbg:#E3F4EA; --ok-btn:#1E7A47; --warn:#8A5A00; --warnbg:#FFF4DE; --bad:#A4262C; --badbg:#FCE8E6; --bad-btn:#A4262C;
   --t-blue:#DCE6F7; --t-blue-ink:#1E3F7A; --t-green:#E3F4EA; --t-green-ink:#1E7A47; --t-amber:#FFF4DE; --t-amber-ink:#8A5A00; --t-gray:#EBF0F8; --t-gray-ink:#4A5678; --t-red:#FCE8E6; --t-red-ink:#A4262C;
   --shadow:0 10px 30px rgba(30,42,90,.10); color-scheme:light}   /* 601px 이상의 네이비 토큰(위 :root @media)을 전부 덮는다 — 빠지면 ✓ 글씨 #A9DDFF가 파스텔 위에 1.38:1(2026-10-26 새 맥락 리뷰) */
-html.win-quest .win{background:var(--card)}
-html.win-quest .wh{background:var(--soft)}
+html.win-quest .win,.nav.side>.qwin{background:var(--card);border-color:var(--acc-mid)}   /* 브라우저 판도 같은 파스텔 — ⑥의 캔버스는 밝은 면이 고정값이라 네이비 토큰 위에서는 흰 글씨가 흰 면에 왔다(새 맥락 리뷰 2026-10-27) */
+html.win-quest .wh,.nav.side>.qwin .wh{background:var(--soft)}
 html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"이 이미 있다 — 머리띠에는 크기 · 닫기만 */
 /* claude-drafted: 2026-10-27 두승현 — C-41 ⑥ 캔버스: 디자인 캔버스(DockPrototype)의 1100×640 판을 칸(.cv)에 맞춰 줌한다. --u = 판의 1px — 컨테이너 단위(cqw · cqh)라 스크립트 없이, 앱의 창이든 브라우저의 판이든.
-   바닥 .75 아래로는 줄이지 않고(글씨 9px 아래) 넘치면 칸이 스크롤. 판 위의 것은 전부 절대 좌표(목업과 같은 숫자). 글자 크기 설정(--ui-scale)은 판 안에서는 쓰지 않는다 — 줌이 대신한다 */
+   바닥 .75(× 글자 크기 설정) 아래로는 줄이지 않고 넘치면 칸이 스크롤. 판 위의 것은 전부 절대 좌표(목업과 같은 숫자). 글자 크기 설정(--ui-scale)은 판 안에서는 쓰지 않는다 — 줌이 대신한다 */
 .cv{flex:1;min-height:0;min-width:0;overflow:auto;container-type:size;border-radius:12px;background-image:radial-gradient(var(--seg) 1px,transparent 1.3px);background-size:18px 18px}
-.cvb{--u:max(.75px,min(calc(100cqw / 1100),calc(100cqh / 640),1px));position:relative;width:calc(1100 * var(--u));height:calc(640 * var(--u));font-size:calc(13 * var(--u));line-height:1.45;color:var(--ink)}
+.cvb{--u:max(calc(.75px * var(--ui-scale,1)),min(calc(100cqw / 1100),calc(100cqh / 640),1px));position:relative;width:calc(1100 * var(--u));height:calc(640 * var(--u));font-size:calc(13 * var(--u));line-height:1.45;color:var(--ink)}
 .cvb>*{position:absolute;box-sizing:border-box;min-width:0;margin:0}
 .cvb p,.cvb ul{margin:0}
 .cv-now{left:calc(16 * var(--u));top:calc(12 * var(--u));width:calc(640 * var(--u));display:flex;align-items:center;gap:calc(10 * var(--u));padding:calc(9 * var(--u)) calc(14 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);font-size:calc(12 * var(--u));color:var(--sub);white-space:nowrap;overflow:hidden}
@@ -1152,9 +1151,8 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .cv-ar.a3{left:calc(640 * var(--u));top:calc(362 * var(--u));width:calc(130 * var(--u));height:calc(60 * var(--u))}
 .cv-ar.a4{left:calc(722 * var(--u));top:calc(466 * var(--u));width:calc(40 * var(--u));height:calc(20 * var(--u))}
 .cv-ar.a5{left:calc(930 * var(--u));top:calc(466 * var(--u));width:calc(30 * var(--u));height:calc(20 * var(--u))}
-.cv-flo{left:calc(var(--fx) * var(--u));top:calc(var(--fy) * var(--u));width:calc(40 * var(--u));height:calc(40 * var(--u));transition:left .4s cubic-bezier(.2,.8,.2,1),top .4s cubic-bezier(.2,.8,.2,1)}
+.cv-flo{left:calc(var(--fx) * var(--u));top:calc(var(--fy) * var(--u));width:calc(40 * var(--u));height:calc(40 * var(--u))}   /* 움직임 없음 — 다시 그릴 때마다 새 요소라 transition은 돌지 않는다 */
 .cv-flo svg{width:100%;height:100%;display:block}
-@media (prefers-reduced-motion:reduce){.cv-flo{transition:none}}
 
 /* claude-drafted: 2026-10-27 두승현 — 작업실 안의 섬 옆 칸(.isl-col, C-41 ⑤ — 두승현 "다른 창도 큰 화면에서 진행, 그 옆에 플로로"). 칸의 자리 · 크기는 win.html · win.js(--col-w · --col-h).
    옆(narrow)이면 플로로 위 · 대화 아래 한 열, 위 줄은 두 줄, 넘치면 몸통이 세로로 스크롤. 위아래(wide)는 940 그대로 */
