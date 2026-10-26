@@ -29,13 +29,13 @@ test("main.js — 작업실이 열려 있으면 섬 창을 그 가장자리에(p
   const m = read("electron/main.js");
   assert.match(m, /const DOCK_SIDES = \["top", "bottom", "left", "right"\];/);
   assert.match(m, /const docked = \(\) => !!\(wins\.quest && !wins\.quest\.isDestroyed\(\)\) && !expanded;/);
-  assert.match(m, /function placeIsland\(\) \{[\s\S]*?const ws = w\.getContentBounds\(\), b = L\.dockBounds\(dockSide, ws, ib\)[\s\S]*?w\.webContents\.send\("floe:dock", \{ side: dockSide, size:/, "자리를 잡고 작업실 화면에 알린다");
+  assert.match(m, /function placeIsland\(animate\) \{[\s\S]*?const ws = w\.getContentBounds\(\), b = L\.dockBounds\(dockSide, ws, ib\)[\s\S]*?w\.webContents\.send\("floe:dock", \{ side: dockSide, size:/, "자리를 잡고 작업실 화면에 알린다");
   assert.match(m, /function undockIsland\(\)/);
   assert.match(m, /if \(expanded\) \{ expanded\.from = \{ \.\.\.expanded\.from, x: Math\.round\(undock\.cx - expanded\.from\.width \/ 2\), y: undock\.y \}; undock = null; return; \}/, "서고로 넓힌 창은 건드리지 않고 돌아올 자리만(새 맥락 리뷰)");
   assert.match(m, /if \(key === lastDock\) return;/, "같은 값은 안 보낸다 — 되먹임이 여기서 멈춘다");
   assert.match(m, /if \(docked\(\)\) rememberUndock\(b\);/, "floe:resize가 먼저 붙여도 붙기 전 자리를 기억");
   assert.match(m, /if \(!w\.floeMoved && !\(kind === "quest" && docked\(\)\)\) \{/, "붙어 있는 작업실은 S · M · L로도 제자리에서 크기만");
-  assert.match(m, /ipcMain\.on\("floe:dock-side", \(e, side\) => \{ if \(!fromIsland\(e\) \|\| !DOCK_SIDES\.includes\(side\)\) return; dockSide = side; placeIsland\(\); \}\)/, "섬에서만 · 아는 값만");
+  assert.match(m, /ipcMain\.on\("floe:dock-side", \(e, side\) => \{ if \(!fromIsland\(e\) \|\| !DOCK_SIDES\.includes\(side\)\) return; dockSide = side; placeIsland\(true\); \}\)/, "섬에서만 · 아는 값만 — 자리를 바꿀 때만 움직임(Mac)");
   assert.match(m, /if \(ws\) \{ w\.once\("ready-to-show", placeIsland\); w\.on\("move", placeIsland\); w\.on\("resize", placeIsland\); \}/);
   assert.match(m, /if \(ws\) undockIsland\(\);/, "닫히면 되돌린다");
   const resize = m.slice(m.indexOf('ipcMain.on("floe:resize"'), m.indexOf('ipcMain.on("floe:resize"') + 2600);
@@ -59,10 +59,10 @@ test("app.js · app.css — 섬 머리의 네 칸(▲ ▼ ◀ ▶, 작업실이 
   assert.match(a, /window\.floeApp\.onDockRoom\(applyDock\)/, "앱이 보낸 작업실 크기 안에서");
   const ad = a.slice(a.indexOf("function applyDock"), a.indexOf("function applyDock") + 900);
   assert.match(ad, /classList\.toggle\("dock-narrow", side === "left" \|\| side === "right"\)/); assert.match(ad, /classList\.toggle\("dock-wide", side === "top" \|\| side === "bottom"\)/);
-  assert.match(ad, /setProperty\("--dock-h", room \? `\$\{Math\.max\(240, Math\.round\(room\.height\) \|\| 0\)\}px` : ""\)/); assert.match(ad, /queueSize\(\);/, "크기가 바뀌었으니 창을 다시 맞춘다");
-  assert.match(c, /html\.in-app\.dock-narrow \.nav\{width:420px\}/);
+  assert.match(ad, /setProperty\("--room-h", room \? `\$\{Math\.max\(240, Math\.round\(room\.height\) \|\| 0\)\}px` : ""\)/); assert.match(ad, /queueSize\(\);/, "크기가 바뀌었으니 창을 다시 맞춘다");
+  assert.match(c, /html\.in-app\.dock-narrow \.nav\{width:min\(var\(--dock-w,420px\),var\(--room-w,100vw\)\)\}/, "옆은 고른 너비(처음 420) · 작업실 너비까지");
   assert.match(c, /html\.in-app\.dock-narrow \.mc\.chat\{grid-template-columns:minmax\(0,1fr\)\}/, "플로로 위 · 대화 아래 한 열");
-  assert.match(c, /html\.in-app\.dock-narrow \.isl\{max-height:var\(--dock-h,100vh\)\}/); assert.match(c, /html\.in-app\.dock-wide \.isl\{max-height:360px\}/);
+  assert.match(c, /html\.in-app\.dock-narrow \.isl\{max-height:var\(--room-h,100vh\)\}/); assert.match(c, /html\.in-app\.dock-wide \.isl\{max-height:min\(var\(--dock-h,360px\),var\(--room-h,100vh\)\)\}/, "위아래는 고른 높이(처음 360) · 작업실 높이까지");
   assert.match(c, /html\.in-app\.dock-narrow \.isl-body,html\.in-app\.dock-wide \.isl-body\{flex:1 1 auto;min-height:0;overflow:hidden auto\}/, "넘치면 몸통이 세로로만 스크롤");
   const m = read("electron/main.js"), p = read("electron/preload.js");
   assert.match(m, /win\.webContents\.send\("floe:dock-room", \{ side: dockSide, width: ws\.width, height: ws\.height \}\)/); assert.match(m, /win\.webContents\.send\("floe:dock-room", null\)/, "떼면 원래대로");
@@ -73,8 +73,36 @@ test("app.js · app.css — 섬 머리의 네 칸(▲ ▼ ◀ ▶, 작업실이 
 test("win.js · win.html — 작업실 화면은 섬이 붙은 가장자리만큼 비워 두고(padding), 0.3초로 움직이며 움직임 줄이기면 바로", () => {
   const j = read("navigator/win.js"), h = read("navigator/win.html");
   assert.match(j, /const DOCK = \["top", "right", "bottom", "left"\];/, "CSS padding 축약 순서(위 · 오른쪽 · 아래 · 왼쪽) — main.js DOCK_SIDES 순서로 바꾸면 padding이 다른 변에 간다");
-  assert.match(j, /F\.onDock\(\(p\) => \{ const s = p && DOCK\.includes\(p\.side\) \? Math\.max\(0, Math\.round\(p\.size\) \|\| 0\) : 0; root\.style\.padding = DOCK\.map/);
+  assert.match(j, /F\.onDock\(\(p\) => \{ const s = p && DOCK\.includes\(p\.side\) \? Math\.max\(0, Math\.round\(p\.size\) \|\| 0\) : 0; dock = s \? \{ side: p\.side, size: s \} : null; root\.style\.padding = DOCK\.map/);
   assert.match(h, /#root\{height:100vh;box-sizing:border-box;transition:padding \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/);
   assert.match(h, /@media \(prefers-reduced-motion:reduce\)\{#root\{transition:none\}\}/);
   assert.match(h, /#root>\.win\{width:100%!important;height:100%!important/, "padding 안에서 창 가득");
+});
+
+// ── C-41 ③(2026-10-27): 손잡이로 섬 크기 — 옆 320 ~ 760(처음 420) · 위아래 240 ~ 480(처음 360), 화살표 20 · Home · End · 두 번 누르거나 Enter로 처음 (스토리보드 기준 6) ──
+test("quest.js dockSizeOf — 범위로 맞추고, 빈 값 · 이상한 값은 처음 크기", () => {
+  assert.deepEqual(Q.DOCK_RANGE, { w: [320, 760, 420], h: [240, 480, 360] });
+  assert.equal(Q.dockSizeOf("w", 100), 320); assert.equal(Q.dockSizeOf("w", "900"), 760); assert.equal(Q.dockSizeOf("w", 500.4), 500);
+  assert.equal(Q.dockSizeOf("h", 300), 300); assert.equal(Q.dockSizeOf("h", ""), 360, "저장값이 없으면 처음"); assert.equal(Q.dockSizeOf("h", "abc"), 360); assert.equal(Q.dockSizeOf("w", null), 420);
+  assert.equal(Q.dockSizeOf("zz", 5), 320, "모르는 축은 너비");
+});
+
+test("app.js · win.js · win.html — 손잡이는 작업실 화면에(섬이 붙은 안쪽 가장자리), 값은 섬이 범위로 맞춰 기억하고(이 컴퓨터에만) 다시 잰다. 끌기 · 화살표 20 · Home · End · Enter · 두 번 누르기. 범위 숫자는 quest.js와 같다", () => {
+  const a = read("navigator/app.js"), j = read("navigator/win.js"), h = read("navigator/win.html");
+  assert.match(a, /DOCK_W_KEY = "floe:dock-w", DOCK_H_KEY = "floe:dock-h"/);
+  assert.match(a, /let dockW = QU \? QU\.dockSizeOf\("w", readLS\(DOCK_W_KEY, ""\)\) : 420, dockH = QU \? QU\.dockSizeOf\("h", readLS\(DOCK_H_KEY, ""\)\) : 360;/);
+  assert.match(a, /if \(p\.type === "dock-size"\) return setDockSize\(p\);/);
+  const sd = a.slice(a.indexOf("function setDockSize"), a.indexOf("function setDockSize") + 500);
+  assert.match(sd, /const v = p\.reset \? QU\.DOCK_RANGE\[axis\]\[2\] : Number\.isFinite\(p\.delta\) \? QU\.dockSizeOf\(axis, cur \+ p\.delta\) : QU\.dockSizeOf\(axis, p\.value\)/, "처음으로 · 화살표 ±20은 섬 자기 크기에 · 끈 자리는 그대로"); assert.match(sd, /writeLS\(DOCK_W_KEY, v\)/); assert.match(sd, /applyDock\(dockRoom\)/);
+  assert.match(a, /h\.style\.setProperty\("--dock-w", `\$\{dockW\}px`\); h\.style\.setProperty\("--dock-h", `\$\{dockH\}px`\);/);
+  assert.match(j, /const RANGE = \{ w: \[320, 760\], h: \[240, 480\] \};/, "quest.js DOCK_RANGE와 같은 값");
+  assert.deepEqual([Q.DOCK_RANGE.w.slice(0, 2), Q.DOCK_RANGE.h.slice(0, 2)], [[320, 760], [240, 480]]);
+  assert.match(j, /hd\.setAttribute\("role", "separator"\); hd\.tabIndex = 0;/);
+  assert.match(j, /F\.winEvent\(\{ type: "dock-size", axis: axisOf\(dock\.side\), value, reset: !!reset \}\)/);
+  assert.match(j, /\{ left: e\.clientX, right: innerWidth - e\.clientX, top: e\.clientY, bottom: innerHeight - e\.clientY \}\[dock\.side\]/, "끈 자리 → 섬 크기");
+  assert.match(j, /grow = \{ right: "ArrowLeft", left: "ArrowRight", top: "ArrowDown", bottom: "ArrowUp" \}\[dock\.side\]/);
+  assert.match(j, /e\.key === "Enter"\) sendSize\(0, true\); else if \(e\.key === grow\) sendDelta\(20\); else if \(e\.key === shrink\) sendDelta\(-20\)/, "화살표는 delta — 창 크기(섬 + 여백)에 20을 더해 보내면 한 번에 31이 늘었다"); assert.match(j, /hd\.addEventListener\("dblclick", \(\) => sendSize\(0, true\)\)/);
+  assert.match(j, /else if \(e\.key === "Home"\) sendSize\(r\[0\]\); else if \(e\.key === "End"\) sendSize\(r\[1\]\)/);
+  assert.match(h, /#hd\{position:fixed;z-index:5;/); assert.match(h, /html\.hd-drag #root,html\.hd-drag #hd\{transition:none\}/, "끄는 동안은 바로");
+  assert.match(read("electron/main.js"), /win\.setContentBounds\(b, animate === true && process\.platform === "darwin"\)/, "자리를 바꿀 때만 0.3초 — Mac만");
 });

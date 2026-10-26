@@ -22,6 +22,15 @@ html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
 #root>.win{width:100%!important;height:100%!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}
 #root .wh{-webkit-app-region:drag;cursor:grab}
 #root .wh button,#root .wh select{-webkit-app-region:no-drag}
+/* 섬 크기 손잡이(win.js, C-41 ③) — 섬이 붙은 안쪽 가장자리에 14px 띠, 가운데 작은 막대. 끄는 동안은 padding · 손잡이가 바로 따라온다(transition 없이) */
+#hd{position:fixed;z-index:5;display:grid;place-items:center;touch-action:none;transition:left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1)}
+#hd span{display:block;border-radius:4px;background:#BCC8DD}
+#hd.v{cursor:ew-resize}#hd.v span{width:6px;height:64px}
+#hd.h{cursor:ns-resize}#hd.h span{width:64px;height:6px}
+#hd:hover span,#hd:focus-visible span{background:#2E4A9A}
+#hd:focus-visible{outline:2px solid #2E4A9A;outline-offset:-2px}
+html.hd-drag #root,html.hd-drag #hd{transition:none}
+@media (prefers-reduced-motion:reduce){#hd{transition:none}}
 .win-empty{padding:24px;color:#B9C7E6;font:14px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
 </style>
 </head>

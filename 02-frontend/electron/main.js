@@ -272,12 +272,12 @@ const DOCK_SIDES = ["top", "bottom", "left", "right"];
 let dockSide = "right", undock = null, lastDock = "";   // undock — 붙기 전 섬 창의 자리 {cx, y}(가운데를 기억 — 돌아올 때 섬 폭이 달라도 같은 가운데에). lastDock — 마지막으로 보낸 값(같으면 안 보낸다)
 const docked = () => !!(wins.quest && !wins.quest.isDestroyed()) && !expanded;
 const rememberUndock = (ib) => { if (!undock) undock = { cx: ib.x + ib.width / 2, y: ib.y }; };   // 붙이기 전에 — floe:resize가 먼저 붙이는 길(작업실 창이 뜨기 전 섬 크기가 바뀔 때)도 같은 자리를 기억한다
-function placeIsland() {
+function placeIsland(animate) {   // animate — 자리(side)를 바꿀 때만 true. 작업실의 move · resize가 부를 때는 이벤트 인자가 오므로 === true로 가린다
   if (!win || win.isDestroyed() || !docked()) return;
   const w = wins.quest, ib = win.getContentBounds();
   rememberUndock(ib);
   const ws = w.getContentBounds(), b = L.dockBounds(dockSide, ws, ib);
-  if (b.x !== ib.x || b.y !== ib.y) win.setContentBounds(b, false);
+  if (b.x !== ib.x || b.y !== ib.y) win.setContentBounds(b, animate === true && process.platform === "darwin");   // 자리를 바꿀 때만 0.3초(기준 8) — Electron은 Mac에서만 창 움직임을 그려 준다
   const key = `${dockSide}|${ib.width}x${ib.height}|${ws.width}x${ws.height}`;
   if (key === lastDock) return;   // 작업실 move가 초당 수십 번 와도 같은 값은 안 보낸다 — 되먹임(섬 applyDock → queueSize → floe:resize → 여기)도 여기서 멈춘다
   lastDock = key;
@@ -293,7 +293,7 @@ function undockIsland() {
   if (expanded) { expanded.from = { ...expanded.from, x: Math.round(undock.cx - expanded.from.width / 2), y: undock.y }; undock = null; return; }
   const ib = win.getContentBounds(); win.setContentBounds({ ...ib, x: Math.round(undock.cx - ib.width / 2), y: undock.y }, false); undock = null;
 }
-ipcMain.on("floe:dock-side", (e, side) => { if (!fromIsland(e) || !DOCK_SIDES.includes(side)) return; dockSide = side; placeIsland(); });
+ipcMain.on("floe:dock-side", (e, side) => { if (!fromIsland(e) || !DOCK_SIDES.includes(side)) return; dockSide = side; placeIsland(true); });
 function openSideWin(kind, opt = {}) {
   if (!win || win.isDestroyed()) return;
   const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
