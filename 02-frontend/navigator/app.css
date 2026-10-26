@@ -1097,3 +1097,20 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 @container cvboard (min-width:640px){.cv-g{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @container cvboard (min-width:1000px){.cv-g{grid-template-columns:repeat(6,minmax(0,1fr))}}
 @media (max-width:600px){.cv-main{grid-template-columns:minmax(0,1fr)}.cv-bds{flex-direction:row}}
+
+/* claude-drafted: 2026-10-27 두승현 — 섬이 작업실에 붙어 있는 동안(C-41 ②, app.js applyDock — 앱이 보낸 작업실 크기 --dock-w · --dock-h 안에서):
+   옆(dock-narrow)은 420 너비 · 작업실 높이까지, 채팅 카드는 플로로가 위 · 대화가 아래(한 열). 위 · 아래(dock-wide)는 작업실 너비까지 · 높이 360(스토리보드 기준 6의 처음 크기).
+   넘치는 것은 섬 몸통이 스크롤 — 붙기 전에는 섬이 작업실보다 커서 밖으로 넘쳤다(2026-10-27 잼: 좁은 섬 847 ~ 998px) */
+html.in-app.dock-narrow .nav{width:420px}
+html.in-app.dock-narrow .mc.chat{grid-template-columns:minmax(0,1fr)}
+html.in-app.dock-narrow .mc{gap:10px;padding:12px 14px}
+html.in-app.dock-narrow .isl{max-height:var(--dock-h,100vh)}
+html.in-app.dock-wide .nav{width:min(940px,var(--dock-w,940px))}
+html.in-app.dock-wide .isl{max-height:360px}
+html.in-app.dock-narrow .isl-body,html.in-app.dock-wide .isl-body{flex:1 1 auto;min-height:0;overflow:hidden auto}
+html.in-app.dock-narrow .tb-proj{display:none}   /* 420에서는 위 줄에 프로젝트 이름까지 안 들어간다(2026-10-27 스크린샷) — 작업실 제목 줄에 있다 */
+/* 섬 머리의 자리 네 칸(▲ ▼ ◀ ▶) */
+.dk{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:var(--soft);flex:none}
+.dk button{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--mute);font-size:calc(11px * var(--ui-scale,1));cursor:pointer}
+.dk button[aria-pressed=true]{background:var(--acc-soft);color:var(--acc)}
+.dk button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}

@@ -85,7 +85,8 @@
   const SIDE_KEY = "floe:win-side", QSIZE_KEY = "floe:qwin-size", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level";
   const readLS = (k, d = "") => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
   const writeLS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch {} };
-  let side = QU ? QU.sideOf(readLS(SIDE_KEY, "left")) : "left", qsize = QU ? QU.sizeOf(readLS(QSIZE_KEY, "m")) : "m", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
+  const SIDE_WORD = { top: "위", bottom: "아래", left: "왼쪽", right: "오른쪽" };   // 섬 자리(C-41 ②)
+  let side = QU ? QU.sideOf(readLS(SIDE_KEY, "right")) : "right", qsize = QU ? QU.sizeOf(readLS(QSIZE_KEY, "m")) : "m", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
   const GR = window.FloeGreet;   // 켤 때 인사의 시간표 · 규칙(greet.js, C-10 2026-10-20). 없으면 인사 움직임 없이 카드만
   let greetSkip = null;         // 인사 움직임이 도는 동안만 — 누름 · Esc로 바로 끝낸다
   const PHONE = matchMedia("(max-width: 600px)");
@@ -1359,7 +1360,7 @@
   function roomGroup() {
     return `${SHELF_ON ? `<button type="button" class="golib" data-act="lib-enter"><span class="bk">${I.lib}</span><span>서재로 가기<small>끝낸 책 · 서고 — 지금 책은 퀘스트 창의 서고 탭에</small></span></button>` : ""}
       ${sgrp(I.scroll, "작업실 · 퀘스트 창", `${srow("이름", `<input class="name-in" data-act="name" value="${esc(userName)}" maxlength="20" placeholder="이름" aria-label="이름">`, "작업실 이름에 보여요 · 이 컴퓨터에만")}
-        ${srow("퀘스트 창 자리", pick("퀘스트 창 자리", [["right", "왼쪽"], ["left", "오른쪽"]], side, "side"), "섬 옆에 떠요")}
+        ${srow("섬 자리", pick("섬 자리", [["top", "위"], ["bottom", "아래"], ["left", "왼쪽"], ["right", "오른쪽"]], side, "side"), "작업실 창의 가장자리에 붙어요 — 섬 머리의 네 칸 단추로도")}
         ${srow("퀘스트 창 처음 크기", pick("퀘스트 창 처음 크기", [["s", "S"], ["m", "M"], ["l", "L"]], qsize, "qsize"))}
         <label class="chk"><input type="checkbox" data-act="qauto" ${qauto ? "checked" : ""}>퀘스트를 받으면 퀘스트 창이 바로 뜨기</label>`)}
       ${sgrp(coin(), "꾸미기", `<span class="closet">${st.owned.map(QU.itemOf).filter(Boolean).map((it) => `<button type="button" data-act="wear" data-v="${it.id}" aria-pressed="${st.wear[it.slot] === it.id}">${it.emoji} ${esc(it.name)}</button>`).join("")}<button type="button" data-act="gacha">조개 열기 <span class="shells">${coin()}${st.shells}</span></button></span>
@@ -1583,7 +1584,9 @@
   // 집 단추 — 알림 · AI 진행 판을 열었으면 눌리지 않은 모양, 누르면 채팅으로
   const homeBtn = (on) => `<button class="ti home" data-act="base" aria-pressed="${on}" aria-label="처음으로" title="처음으로 — 플로로와 대화">${I.home}</button>`;
   // 오른쪽 — 연결 표시 · 프로젝트 · 조개 · 설정 창 · 열어 두기 · 접기. 퀘스트 창 단추 · 모아 보기 단추는 2026-10-23에 뺐다(이재엽) — 퀘스트 창은 명령 칸의 책 · 배우기와 '공책 보기'로 연다
-  const tbRight = () => `${QU ? `<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="${st.qwin}" title="퀘스트 창 켜기 · 끄기 — 퀘스트 · 맡길 일 · 도전과제 · 책">퀘스트</button>` : ""}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
+  // 섬 자리 네 칸(C-41 ②, 2026-10-27 — 스토리보드 기준 4): 작업실 창이 열려 있을 때만, 앱에서만
+  const dockBtns = () => (WINS && QU && st.qwin ? `<span class="dk" role="group" aria-label="섬 자리">${QU.SIDES.map((s) => `<button type="button" data-act="side" data-v="${s}" aria-pressed="${side === s}" aria-label="섬을 작업실 ${SIDE_WORD[s]}에" title="섬을 작업실 ${SIDE_WORD[s]}에">${{ top: "▲", bottom: "▼", left: "◀", right: "▶" }[s]}</button>`).join("")}</span>` : "");
+  const tbRight = () => `${QU ? `<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="${st.qwin}" title="퀘스트 창 켜기 · 끄기 — 퀘스트 · 맡길 일 · 도전과제 · 책">퀘스트</button>` : ""}${dockBtns()}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 소식 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
       ${QU ? `<button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개">${coin()}<span>${st.shells}</span></button>` : ""}
@@ -1974,11 +1977,6 @@
       else if (on && html !== winHtml[kind]) { winHtml[kind] = html; window.floeApp.sendWin(kind, html); }
     }
   }
-  // 자리를 바꾸면(퀘스트 창 왼쪽 ↔ 오른쪽) 열린 창을 닫았다가 새 자리에 다시 연다
-  function replaceWins() {
-    if (!WINS) return;
-    for (const kind of ["quest"]) if (winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
-  }
   if (WINS) {
     window.floeApp.onWinClosed((kind) => {
       if (winClosing[kind]) { winClosing[kind] = false; return; }   // 내가 닫은 것
@@ -1986,6 +1984,18 @@
       if (kind === "quest" && st.qwin) set({ qwin: false });
     });
     window.floeApp.onWinEvent((p) => winEvent(p));
+    window.floeApp.dockSide(side);   // 켤 때 앱에 섬 자리를 알린다(C-41 ②) — 작업실 창이 열리면 그 가장자리에 붙는다
+    if (window.floeApp.onDockRoom) window.floeApp.onDockRoom(applyDock);
+  }
+  // 작업실에 붙어 있는 동안(C-41 ②, 2026-10-27) 섬은 작업실 크기 안에서 — 옆(왼쪽 · 오른쪽)이면 420 너비에 작업실 높이까지(dock-narrow: 플로로 위 · 대화 아래),
+  //   위 · 아래면 작업실 너비까지에 높이 360(dock-wide — 스토리보드 기준 6의 처음 크기). 넘치는 것은 섬 몸통(.isl-body)이 스크롤. 앱이 작업실 크기를 보내고(floe:dock-room), null이면 원래대로
+  function applyDock(room) {
+    const h = document.documentElement, side = room && room.side;
+    h.classList.toggle("dock-narrow", side === "left" || side === "right");
+    h.classList.toggle("dock-wide", side === "top" || side === "bottom");
+    h.style.setProperty("--dock-w", room ? `${Math.max(240, Math.round(room.width) || 0)}px` : "");
+    h.style.setProperty("--dock-h", room ? `${Math.max(240, Math.round(room.height) || 0)}px` : "");
+    queueSize();
   }
   // 창에서 온 누름 · 바뀜 · 입력 · Esc — 섬의 같은 손잡이(clickAct · bvClick · onChange · onInput)로. 창의 요소 대신 그 요소의 data · 값만 온다
   function winEvent(p) {
@@ -2708,7 +2718,7 @@
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     qsize: (i, el) => { if (!QU || !el) return; qsize = QU.sizeOf(el.dataset.v); writeLS(QSIZE_KEY, qsize); if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", QU.SIZES[qsize]); render(); },
-    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); replaceWins(); render(); say(side === "left" ? "퀘스트 창은 섬 오른쪽에 떠요" : "퀘스트 창은 섬 왼쪽에 떠요"); },
+    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); if (WINS) window.floeApp.dockSide(side); render(); say(`섬은 작업실 ${SIDE_WORD[side]}에 붙어요`); },   // C-41 ②(2026-10-27): 작업실 창의 가장자리 넷 — 앱이 섬 창을 옮긴다
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
     // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기
     base: () => { setPlace("home"); set({ settings: false, pane: "" }); },   // 집 — 기본 화면으로, 열어 둔 판도 닫는다

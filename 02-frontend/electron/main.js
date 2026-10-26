@@ -136,14 +136,16 @@ ipcMain.on("floe:resize", (e, w, h, anchor) => {
   // 서고에 있는 동안(넓힌 창)은 섬 크기를 따르지 않는다. 서고가 아닌데 넓혀져 있으면(처음 설정이 떠 있는 동안 넓혔다가 닫힘 — KAN-57 F-39-1, 병합 2026-10-20)
   // 조절 · 서고 크기 기억 없이 섬 창으로 돌아와 아래에서 섬 크기를 맞춘다
   if (expanded) { if (/\/library\//.test(win.webContents.getURL())) return; expanded = null; win.setResizable(false); win.setMinimumSize(MIN_W, MIN_H); }
-  const W = L.islandWidth(Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), process.platform, ISLAND_W), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
+  const W = L.islandWidth(Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), process.platform, docked() ? MIN_W : ISLAND_W), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);   // 붙어 있으면 섬 폭 그대로(작업실 가장자리에 딱 붙게 — 투명한 옆자리가 없다)
   const b = win.getContentBounds();
   if (Math.abs(b.width - W) < 2 && Math.abs(b.height - H) < 2) return;
   const wa = screen.getDisplayMatching(b).workArea;
   // 노치가 있으면 가로는 늘 노치 가운데, 세로는 화면 맨 위(서고에서 돌아와도 노치로) — 없으면 지금 창의 가운데 · 지금 y
-  const x = L.islandX(anchor, b, W, NOTCH ? NOTCH.cx : null, wa);
-  win.setContentBounds({ x, y: NOTCH ? NOTCH.y : b.y, width: W, height: H }, false);
+  // 작업실에 붙어 있으면(C-41 ②) 그 가장자리에 새 크기로 — 아니면 노치 · 가운데 규칙
+  const target = docked() ? L.dockBounds(dockSide, wins.quest.getContentBounds(), { width: W, height: H }) : { x: L.islandX(anchor, b, W, NOTCH ? NOTCH.cx : null, wa), y: NOTCH ? NOTCH.y : b.y, width: W, height: H };
+  win.setContentBounds(target, false);
   placeSideWins();
+  placeIsland();   // 붙어 있으면 작업실 화면에 새 크기를 알린다(비켜설 폭)
 });
 // 서고로 들어갈 때(…/library/) 창을 화면만큼 넓힌다 — 섬 크기에 묶인 창에서는 서고가 커질 수 없었다(이재엽 2026-10-19 "서재도 오버레이가 커져야 하는데 커지지 못하는 상태").
 // 내비게이터로 돌아오면 화면이 다시 섬 크기를 보내 창이 줄어든다(floe:resize)
@@ -260,6 +262,29 @@ ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData"
 const wins = { settings: null, quest: null };
 const sideKind = (k) => (k === "settings" || k === "quest" ? k : null);
 const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? L.workBounds(isl, wa, size) : L.sideWinBounds(kind, side, isl, wa, size));   // 작업실은 섬 아래에 달라는 크기 그대로(C-41), 설정 창은 옆자리
+// ── C-41 ②(2026-10-27 두승현 — 스토리보드 기준 4 · 5): 섬을 작업실 창의 가장자리에 붙인다 ──
+// 작업실 창이 열려 있는 동안 섬 창은 그 창의 고른 가장자리(위 · 아래 · 왼쪽 · 오른쪽, 처음은 오른쪽)에 붙고, 작업실이 옮겨지거나 커지면 따라간다(move · resize).
+// 작업실 화면에는 {side, size}를 보내 그쪽을 비워 둔다(win.js — 내용이 비켜선다). 작업실이 닫히면 섬은 붙기 전 자리로. 서고 · 처음 설정(expanded)에 있는 동안은 붙지 않는다.
+// 손잡이로 섬 크기 바꾸기 · 접힌 띠 · 0.3초 움직임(기준 6 · 8)은 다음 묶음
+const DOCK_SIDES = ["top", "bottom", "left", "right"];
+let dockSide = "right", undock = null;   // undock — 붙기 전 섬 창의 자리 {x, y}
+const docked = () => !!(wins.quest && !wins.quest.isDestroyed()) && !expanded;
+function placeIsland() {
+  if (!win || win.isDestroyed() || !docked()) return;
+  const w = wins.quest, ib = win.getContentBounds();
+  if (!undock) undock = { cx: ib.x + ib.width / 2, y: ib.y };   // 가운데를 기억 — 돌아올 때 섬 폭이 달라도(좁힌 420 → 940) 같은 가운데에
+  const ws = w.getContentBounds(), b = L.dockBounds(dockSide, ws, ib);
+  if (b.x !== ib.x || b.y !== ib.y) win.setContentBounds(b, false);
+  w.webContents.send("floe:dock", { side: dockSide, size: dockSide === "left" || dockSide === "right" ? ib.width : ib.height });
+  win.webContents.send("floe:dock-room", { side: dockSide, width: ws.width, height: ws.height });   // 섬 화면은 이 크기 안에서 스크롤한다(app.js applyDock) — 섬이 작업실보다 크면 밖으로 넘쳤다(2026-10-27 잼: 좁은 섬 847 ~ 998px)
+}
+function undockIsland() {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send("floe:dock-room", null);   // 섬 화면은 원래 크기로
+  if (!undock) return;
+  const ib = win.getContentBounds(); win.setContentBounds({ ...ib, x: Math.round(undock.cx - ib.width / 2), y: undock.y }, false); undock = null;
+}
+ipcMain.on("floe:dock-side", (e, side) => { if (!fromIsland(e) || !DOCK_SIDES.includes(side)) return; dockSide = side; placeIsland(); });
 function openSideWin(kind, opt = {}) {
   if (!win || win.isDestroyed()) return;
   const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
@@ -274,8 +299,9 @@ function openSideWin(kind, opt = {}) {
   Object.assign(w, { floeSide: opt.side, floeSize: opt.size, floeMoved: false });   // 다시 둘 때(placeSideWins · floe:win-size) 같은 규칙으로
   w.on("will-move", () => { w.floeMoved = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
   w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
+  if (ws) { w.once("ready-to-show", placeIsland); w.on("move", placeIsland); w.on("resize", placeIsland); }   // 섬이 작업실 가장자리에 붙고 따라간다(C-41 ②)
   w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
-  w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (win && !win.isDestroyed()) win.webContents.send("floe:win-closed", kind); });
+  w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (ws) undockIsland(); if (win && !win.isDestroyed()) win.webContents.send("floe:win-closed", kind); });   // 작업실이 닫히면 섬은 붙기 전 자리로
   w.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
   w.loadURL(`${URL_}navigator/win.html#${kind}`);
 }
@@ -286,6 +312,7 @@ function placeSideWins() {
   const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
   for (const kind of Object.keys(wins)) {
     const w = wins[kind];
+    if (kind === "quest") continue;   // 작업실은 섬이 그 안(가장자리)에 붙으니 겹침을 풀지 않는다(C-41 ②)
     if (!w || w.isDestroyed() || w.floeMoved || !L.overlaps(w.getBounds(), isl)) continue;
     w.setBounds(boundsFor(kind, w.floeSide, isl, wa, w.floeSize));
   }

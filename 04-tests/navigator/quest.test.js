@@ -95,9 +95,10 @@ test("레벨 누적(C-28): 처음은 지금 단계에서 시작하고(이미 넘
   assert.equal(Q.bandOf(15), 2, "묶음도 누적 레벨로");
 });
 
-test("창 자리: 설정 창이 왼쪽이면 퀘스트 창은 오른쪽, 반대도 — 모르는 값은 왼쪽. 크기는 S · M · L(모르면 M)", () => {
-  assert.equal(Q.sideOf("right"), "right"); assert.equal(Q.sideOf("x"), "left"); assert.equal(Q.sideOf(undefined), "left");
-  assert.equal(Q.otherSide("left"), "right"); assert.equal(Q.otherSide("right"), "left"); assert.equal(Q.otherSide("x"), "right");
+test("섬 자리(C-41 ②): 위 · 아래 · 왼쪽 · 오른쪽, 모르는 값은 오른쪽 — 옛 저장값 left · right도 읽힌다. 크기는 S · M · L(모르면 M)", () => {
+  assert.deepEqual(Q.SIDES, ["top", "bottom", "left", "right"]);
+  assert.equal(Q.sideOf("right"), "right"); assert.equal(Q.sideOf("top"), "top"); assert.equal(Q.sideOf("left"), "left", "옛 값"); assert.equal(Q.sideOf("x"), "right"); assert.equal(Q.sideOf(undefined), "right");
+  assert.equal(Q.otherSide("left"), "right"); assert.equal(Q.otherSide("top"), "bottom"); assert.equal(Q.otherSide("x"), "left");
   assert.deepEqual(Object.keys(Q.SIZES), ["s", "m", "l"]); assert.equal(Q.sizeOf("l"), "l"); assert.equal(Q.sizeOf("huge"), "m");
   assert.ok(Q.SIZES.s[0] < Q.SIZES.m[0] && Q.SIZES.m[0] < Q.SIZES.l[0]);
 });
