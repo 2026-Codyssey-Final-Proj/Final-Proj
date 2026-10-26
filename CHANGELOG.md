@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v29.2 | 2026-10-26 | 이재엽 | 0~8단계 스토리보드 웹페이지 디자인 첫 판(test-1을 예시로 장면마다 디자인 캔버스 모양의 앱 화면 — 작업실 창 + 섬, 다섯 칸, 본 틈 → 이어져야, '언제 성공' 실, 섬 자리 · 크기 · 보드 다시 배치 눌러 보기) · 고칠 목록 F-60(관문이 '안 됨' · 빈칸 · 증거 없음을 막지 못함, 기록만) (#205) | `01-docs/04-pattern-implementation/stage-storyboard/`(새로) · `01-docs/04-pattern-implementation/README.md` · `01-docs/07-maintenance/fix-map.md` · `01-docs/00-overview/기록/opus-handoff-2026-10-26-storyboard.md` |
 | v29.1 | 2026-10-26 | 이재엽 | 오퍼스 넘김 — 0~8단계 스토리보드 웹페이지 기준(화면 기준 10 · test-1로 읽은 단계 뼈대와 틈 · 붙여 넣을 말) (#203) | `01-docs/00-overview/기록/` |
 | v29.0 | 2026-10-26 | 두승현 | C-38 원격 MCP 시험판 — `NAV_MCP=1`로 켜면 웹 GPT · 웹 Claude가 터널로 Floe의 지금 할 일을 읽고(`floe_now`), 퀘스트가 없으면 시작을(`floe_start`), 있으면 한 줄을 제안(`floe_report`)한다. 섬에서 "맞아요"를 눌러야 시작되거나 적힌다. 처음 설정에 '같이 쓸 앱' 칸 — 'Claude Desktop과 잇기'로 내 컴퓨터 안에서 바로(터널 없음). 원격(터널)은 기본은 꺼짐 (#204) | `03-backend/navigator/` · `02-frontend/navigator/app.js` · `02-frontend/navigator/setup.js` · `04-tests/navigator/` · `04-tests/e2e/setup-flow.test.js` · `.claude/rules/security-records.md` |
 | v28.2 | 2026-10-26 | 이재엽 | 외부 도구 둘에서 우리에게 없는 것만 — Hallmark의 점검을 impeccable-review의 참고(extra/hallmark.md)로, knowledge-work-plugins의 조사 정리법을 인터뷰 문서(synthesis-method.md)로. 독립 스킬로 두지 않고 우리 규칙이 우선(skill-authoring.md) (#202) | `.claude/skills/impeccable-review/` · `.claude/rules/skill-authoring.md` · `.claude/skills/VENDORED.md` · `01-docs/catalog/` · `01-docs/interviews/`(담당 고한결 — 이 줄이 알림) |
