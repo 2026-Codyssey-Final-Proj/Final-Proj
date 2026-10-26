@@ -28,7 +28,8 @@
   // ── 섬 옆 칸(.isl-col)의 자리와 크기 — 자리는 class side-top · bottom · left · right(섬이 보냄), 크기는 여기서: 옆이면 너비 320 ~ 760(그리고 창 너비의 반까지, 처음 420), 위아래면 높이 320 ~ 480(처음 360).
   //   손잡이(#hd, role separator): 끌기 · 화살표 20 · Home · End · Enter/두 번 누르기로 처음. 두승현 결정 2026-10-27(스토리보드 열린 질문 6 · 8)
   const RANGE = { w: [320, 760, 420], h: [320, 480, 360] };
-  const col = { w: +localStorage.getItem("floe:col-w") || 420, h: +localStorage.getItem("floe:col-h") || 360 };
+  const ls = (k) => { try { return +localStorage.getItem(k) || 0; } catch { return 0; } };   // 저장소가 막혀도 창은 돌아야 한다
+  const col = { w: ls("floe:col-w") || 420, h: ls("floe:col-h") || 360 };
   const sideOf = () => { const c = root.querySelector(".isl-col"); return c ? (c.className.match(/\bside-(top|bottom|left|right)\b/) || [])[1] || "right" : ""; };
   const axisOf = (side) => (side === "left" || side === "right" ? "w" : "h");
   const hiOf = (axis) => (axis === "w" ? Math.max(RANGE.w[0], Math.min(RANGE.w[1], Math.floor(innerWidth / 2))) : RANGE.h[1]);   // 옆은 760과 창 너비의 반 중 작은 것
@@ -74,7 +75,7 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); return F.winEvent({ type: "key", key: "Escape", kind }); }
     // 옆 칸의 채팅 칸(C-41 ⑤): Enter는 보내기, Shift+Enter는 줄 바꿈 — 섬(app.js)의 채팅 칸과 같다
-    if (e.key === "Enter" && !e.shiftKey && e.target && e.target.dataset && e.target.dataset.act === "say") { e.preventDefault(); F.winEvent({ type: "key", key: "Enter", act: "say", kind }); }
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.target && e.target.dataset && e.target.dataset.act === "say") { e.preventDefault(); F.winEvent({ type: "key", key: "Enter", act: "say", kind }); }   // isComposing — 한글 조합 중의 Enter(IME 확정)는 보내지 않는다(섬 app.js와 같이)
   });
   // 설명 풍선 — 섬(app.js showTT)과 같은 모양 · 같은 글
   const tt = document.createElement("div"); tt.className = "tt"; tt.setAttribute("role", "tooltip"); document.body.appendChild(tt);

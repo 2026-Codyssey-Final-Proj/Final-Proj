@@ -12,7 +12,9 @@ test("main.js — 작업실이 뜨면 섬 창은 숨고(hide), 닫히면 다시 
   assert.match(m, /const workspaceOpen = \(\) => !!\(wins\.quest && !wins\.quest\.isDestroyed\(\)\);/);
   assert.match(m, /if \(ws\) w\.once\("ready-to-show", \(\) => \{ if \(win && !win\.isDestroyed\(\)\) win\.hide\(\); \}\);/, "작업실이 뜨면 섬 창은 숨는다");
   assert.match(m, /if \(win && !win\.isDestroyed\(\)\) \{ if \(ws\) win\.show\(\); win\.webContents\.send\("floe:win-closed", kind\); \}/, "닫히면 섬 창이 다시 뜬다");
-  assert.match(m, /function showIsland\(\) \{ if \(workspaceOpen\(\)\) \{ wins\.quest\.show\(\); wins\.quest\.focus\(\); return; \}/);
+  assert.match(m, /function showIsland\(\) \{\n  const w = workspaceOpen\(\) \? wins\.quest : win;\n  if \(!w \|\| w\.isDestroyed\(\)\) return createWindow\(\);\n  if \(w\.isMinimized\(\)\) w\.restore\(\);/, "작업실이 열려 있으면 작업실을, 내려가 있으면 올려서");
+  assert.match(m, /app\.on\("second-instance", showIsland\);/, "두 번째 실행도 같은 길 — 숨은 섬을 띄우지 않는다(새 맥락 리뷰)");
+  assert.match(read("navigator/app.js"), /setup: \(\) => \{ set\(\{ settings: false, qwin: false \}\); if \(window\.FloeSetup\) window\.FloeSetup\.open\(\); \}/, "처음 설정 다시 하기는 작업실을 먼저 닫는다 — 숨은 섬 창에 뜨지 않게");
   for (const gone of ["function placeIsland", "L.dockBounds(", 'ipcMain.on("floe:dock-side"', 'ipcMain.on("floe:dock-inner"', "parkIsland(", "docked() ?"]) assert.ok(!m.includes(gone), `${gone} — 창 둘을 좌표로 맞추던 길은 뺐다(두승현 PC에서 두 번 다 안 붙었다)`);
   for (const gone of ["dockSide:", "dockInner:", "onDock:", "onDockRoom:"]) assert.ok(!p.includes(gone), gone);
   assert.equal(L.dockBounds, undefined);
@@ -38,7 +40,8 @@ test("win.js · win.html — 옆 칸의 자리는 html[data-side], 크기는 --c
   assert.match(j, /localStorage\.setItem\(axis === "w" \? "floe:col-w" : "floe:col-h", col\[axis\]\)/, "크기는 작업실이 이 컴퓨터에 기억");
   assert.match(j, /if \(e\.key === "Enter"\) reset\(\); else if \(e\.key === grow\) setCol\(col\[axis\] \+ 20\); else if \(e\.key === shrink\) setCol\(col\[axis\] - 20\); else if \(e\.key === "Home"\) setCol\(RANGE\[axis\]\[0\]\); else if \(e\.key === "End"\) setCol\(hiOf\(axis\)\);/);
   assert.match(j, /hd\.addEventListener\("dblclick", reset\)/);
-  assert.match(j, /e\.key === "Enter" && !e\.shiftKey && e\.target && e\.target\.dataset && e\.target\.dataset\.act === "say"\) \{ e\.preventDefault\(\); F\.winEvent\(\{ type: "key", key: "Enter", act: "say", kind \}\); \}/);
+  assert.match(j, /e\.key === "Enter" && !e\.shiftKey && !e\.isComposing && e\.target && e\.target\.dataset && e\.target\.dataset\.act === "say"\) \{ e\.preventDefault\(\); F\.winEvent\(\{ type: "key", key: "Enter", act: "say", kind \}\); \}/, "한글 조합 중의 Enter는 보내지 않는다");
+  assert.match(j, /const ls = \(k\) => \{ try \{ return \+localStorage\.getItem\(k\) \|\| 0; \} catch \{ return 0; \} \};/, "저장소가 막혀도 창은 돈다");
   assert.match(j, /lg2\.scrollTop = lgTop === null \|\| lgEnd \? lg2\.scrollHeight : lgTop;/, "대화 기록 — 맨 아래를 보고 있었으면 새 말도 맨 아래");
   assert.match(j, /layoutCol\(\);\n  \}\);/, "다시 그릴 때마다 칸을 다시 잰다");
   assert.match(h, /#root\{height:100vh;box-sizing:border-box;display:flex;flex-direction:row\}/);

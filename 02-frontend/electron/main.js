@@ -26,7 +26,7 @@ if (!app.requestSingleInstanceLock()) {
   dialog.showErrorBox("Floe", "Floe가 이미 켜져 있어요. 켜진 Floe를 먼저 끝낸 뒤(메뉴 Floe → 끝내기) 새 것을 열어 주세요.");
   app.quit();
 }
-app.on("second-instance", () => { if (win && !win.isDestroyed()) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
+app.on("second-instance", showIsland);   // 작업실이 열려 있으면 숨은 섬 대신 작업실을 앞으로(C-41 ⑤, 새 맥락 리뷰 2026-10-27)
 const P = L.paths(app.isPackaged, __dirname);
 const WANT = Number(process.env.NAV_PORT) || 4317;
 const RELEASES = "https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases";
@@ -214,7 +214,13 @@ function dropFolder(dir) {
 function restoreProject() { const dir = savedProject(); if (dir && Server) Server.useProject(dir); }
 const afterPick = (r) => (r.ok ? { ...useFolder(r.dir), made: r.made, repo: r.repo || "", config: !!r.config || Project.hasClaudeConfig(r.dir) } : r);   // 가져온 직후에 본 config(커밋돼 온 settings.local.json 포함)를 버리지 않는다   // 만들거나 가져왔으면 같은 길로
 // 섬 창을 앞으로(없으면 만든다) — 메뉴 '창 다시 열기' · 트레이 클릭 · Mac Dock 클릭이 같이 쓴다. 따로 뜨던 모아 보기 창은 2026-10-23에 뺐다
-function showIsland() { if (workspaceOpen()) { wins.quest.show(); wins.quest.focus(); return; } if (!win) createWindow(); else win.show(); }   // 작업실이 열려 있으면 섬은 그 안에 — 작업실을 앞으로(C-41 ⑤)
+// 섬 창을 앞으로 — 작업실이 열려 있으면 섬은 그 안에 있으니 작업실을 앞으로(C-41 ⑤). 내려가 있으면 올린다. 트레이 · Dock · 메뉴 '창 다시 열기' · 두 번째 실행이 같이 쓴다
+function showIsland() {
+  const w = workspaceOpen() ? wins.quest : win;
+  if (!w || w.isDestroyed()) return createWindow();
+  if (w.isMinimized()) w.restore();
+  w.show(); w.focus();
+}
 // 메뉴 항목 하나 — Mac은 위 메뉴 줄, Windows · Linux는 창 우클릭 · 트레이에서 같은 것을 본다
 function floeItems() {
   const say = async (add) => { const r = await pickAndConnect(add); if (r.message) dialog.showMessageBox(win, { message: r.message }); };
