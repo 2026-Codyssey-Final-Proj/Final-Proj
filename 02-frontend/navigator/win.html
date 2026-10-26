@@ -14,6 +14,8 @@
 <style>
 /* 창 하나가 곧 판 하나 — 창 가득, 테두리 · 그림자 없이. 머리띠를 잡고 창을 끈다(단추는 빼고) */
 html.in-win,html.in-win body{margin:0;background:#16225E;overflow:hidden;height:100%}
+html.in-win.win-quest,html.in-win.win-quest body{background:#E9EEF6}   /* 작업실(C-41, 2026-10-26) — 파스텔. main.js backgroundColor · app.css html.win-quest와 같은 값 */
+html.in-win.win-quest .win-empty{color:#4A5678}
 html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
 #root{height:100vh}
 #root>.win{width:100%!important;height:100vh!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}

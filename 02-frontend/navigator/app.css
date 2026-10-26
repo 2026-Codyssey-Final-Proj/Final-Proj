@@ -884,7 +884,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 }
 
 /* 앱의 설정 창 · 퀘스트 창(win.html, C-22) — 창 폭이 601px보다 좁아도 섬과 같은 네이비(위 PC 팔레트와 같은 값 — 바꾸면 둘 다). 글자 크기 설정은 섬의 값을 따르지 않는다(창은 1배) */
-html.in-win{
+html.in-win:not(.win-quest){   /* 작업실 창(.win-quest)은 파스텔 — 맨 아래 html.win-quest(C-41, 2026-10-26) */
 --win:#0F1847; --winbar:#121D55; --side:#0D1642; --line:rgba(255,255,255,.14);
     --ink:#F2F6FF; --ink2:#D6E0F5; --mute:#9DAED6; --sub:#B9C7E6;
     --glass2:rgba(34,52,128,.42); --soft:rgba(255,255,255,.05); --card:rgba(255,255,255,.07);
@@ -896,8 +896,8 @@ html.in-win{
     --shadow:0 24px 60px rgba(0,4,30,.55);
   color-scheme:dark;
 }
-html.in-win .win{background:#16225E}
-html.in-win .wh{background:rgba(0,0,0,.22)}
+html.in-win:not(.win-quest) .win{background:#16225E}
+html.in-win:not(.win-quest) .wh{background:rgba(0,0,0,.22)}
 html.in-win .gacha{background:#16225E}
 html.in-win .tt{background:#0E1745;color:#FFFFFF;border:1px solid rgba(255,255,255,.25)}
 html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
@@ -1056,3 +1056,40 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .dalt button:hover,.dalt button:focus-visible{border-color:var(--acc);outline:none;box-shadow:0 0 0 3px rgba(47,123,214,.18)}
 .dalt button.rec{border-color:var(--acc)}
 .dalt small{display:block;margin-bottom:2px;font-size:calc(11px * var(--ui-scale,1));font-weight:800;color:var(--acc)}
+
+/* claude-drafted: 2026-10-26 두승현 — 작업실 창(C-41 PR①, 스토리보드 01-docs/04-pattern-implementation/stage-storyboard): 눈이 편한 파스텔(순백 · 쨍한 파랑 · 검정 면 없이, 글씨 대비 4.5:1) — 값은 스토리보드 :root와 같다.
+   캔버스 탭(.cv): 지금 하는 일 · 단계 칩 · 지난 장 / 다음 장 보드 · 다섯 칸. 배치는 줌 없이 보드 너비로 — 640 미만 세로 한 줄 · 640~999 두 줄 · 1000 이상 한 줄(기준 7. 기준값은 스토리보드 열린 질문 7이 다시 본다) */
+html.win-quest{--ink:#1E2A5A; --ink2:#2E3A6A; --mute:#5F6C90; --sub:#4A5678; --card:#F7F9FC; --soft:#EBF0F8; --line:#D3DBE9; --seg:#CBD4E3; --acc:#2E4A9A; --acc-btn:#2E4A9A; --acc-soft:#DCE6F7; --acc-mid:#BCC8DD; --shadow:0 10px 30px rgba(30,42,90,.10); color-scheme:light}
+html.win-quest .win{background:var(--card)}
+html.win-quest .wh{background:var(--soft)}
+.cv{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;padding:4px;background-image:radial-gradient(var(--seg) 1px,transparent 1.3px);background-size:18px 18px}
+.cv-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.cv-now{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:calc(12.5px * var(--ui-scale,1));color:var(--sub);flex:1 1 300px;min-width:0}
+.cv-now::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--acc);flex:none}
+.cv-now b{color:var(--ink);font-weight:600}
+.cv-stg{display:flex;gap:4px;flex-wrap:wrap}
+.cv-stg span{padding:4px 8px;border-radius:7px;font-size:calc(12px * var(--ui-scale,1));border:1px solid var(--line);background:var(--card);color:var(--sub);white-space:nowrap}
+.cv-stg span.done{background:var(--okbg);color:var(--ok);border-color:transparent}
+.cv-stg span.cur{background:var(--acc-soft);color:var(--acc);font-weight:700;border-color:transparent}
+.cv-main{display:grid;grid-template-columns:124px minmax(0,1fr);gap:12px;align-items:start}
+.cv-bds{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cv-bd{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub);min-width:0}
+.cv-bd b{display:block;color:var(--ink);font-size:calc(12.5px * var(--ui-scale,1));margin-top:2px}
+.cv-bd.next{background:transparent;border-style:dashed}
+.cv-board{container:cvboard / inline-size;background:var(--soft);border:2px solid var(--acc-mid);border-radius:14px;padding:14px;min-width:0}
+.cv-board .bh{display:flex;align-items:baseline;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.cv-board .bh b{font-size:calc(15px * var(--ui-scale,1))}
+.cv-board .bh span{font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.cv-g{display:grid;gap:10px;grid-template-columns:minmax(0,1fr)}
+.cv-c{border-radius:12px;padding:10px 12px;font-size:calc(13px * var(--ui-scale,1));line-height:1.5;min-width:0;background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.cv-c .ch{font-weight:700;display:flex;gap:6px;align-items:center;margin:0 0 6px;flex-wrap:wrap}
+.cv-c .ch em{font-style:normal;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.cv-c p{margin:0;overflow-wrap:anywhere}
+.cv-c .ft{font-size:calc(12px * var(--ui-scale,1));color:var(--sub);margin-top:6px}
+.cv-c.later{border-style:dashed;background:transparent}
+.cv-c.now{border:2px solid var(--acc);background:var(--acc-soft)}
+.cv-c.now .ch em{color:var(--acc)}
+.cv-c.done .ch em{color:var(--ok)}
+@container cvboard (min-width:640px){.cv-g{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@container cvboard (min-width:1000px){.cv-g{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media (max-width:600px){.cv-main{grid-template-columns:minmax(0,1fr)}.cv-bds{flex-direction:row}}

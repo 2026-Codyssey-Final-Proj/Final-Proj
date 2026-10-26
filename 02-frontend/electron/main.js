@@ -255,19 +255,22 @@ ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData"
 // ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "설정 창과 퀘스트 창 그리고 채팅을 입력하는 창 이렇게 3개") — 섬 창 옆에 뜨는 창 둘 ──
 // 상태는 섬(app.js) 하나가 갖는다: 섬이 창의 내용(HTML)을 그려 보내고(floe:win-html), 창의 누름 · 바뀜 · 입력은 섬으로 돌아가(floe:win-event) 섬이 처리하고 다시 그려 보낸다.
 // 창은 테두리 없음 · 항상 위(섬처럼) · 불투명 네이비, 머리띠를 잡고 끌고(win.html의 app-region), 퀘스트 창은 모서리로 크기를 바꾼다. 자리는 섬 창 옆(lib.js sideWinBounds — 설정 창은 고른 쪽, 퀘스트 창은 반대쪽).
+// 2026-10-26 C-41(두승현 — 스토리보드 stage-storyboard, 이재엽 · 두승현 결정): 퀘스트 창은 **작업실**이 됐다 — 테두리 있는 보통 창(늘 위 아님 · 작업 표시줄에 뜸 · 파스텔), 사람이 편집기 옆에 둔다. 섬이 그 가장자리에 붙는 것은 다음 PR. kind 이름은 "quest" 그대로(IPC · 상태 st.qwin)
 // 사람이 창을 닫으면 섬에 알린다(floe:win-closed). 섬 창이 닫히거나 서고로 가면 같이 닫는다. 화면 파일은 서버 주소로(navigator/win.html — STATIC에 있어야 한다)
 const wins = { settings: null, quest: null };
 const sideKind = (k) => (k === "settings" || k === "quest" ? k : null);
+const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? L.workBounds(isl, wa, size) : L.sideWinBounds(kind, side, isl, wa, size));   // 작업실은 섬 아래에 달라는 크기 그대로(C-41), 설정 창은 옆자리
 function openSideWin(kind, opt = {}) {
   if (!win || win.isDestroyed()) return;
   const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
-  const b = L.sideWinBounds(kind, opt.side, isl, wa, opt.size);
+  const b = boundsFor(kind, opt.side, isl, wa, opt.size);
   let w = wins[kind];
   if (w && !w.isDestroyed()) { if (opt.place) { w.setBounds(b); Object.assign(w, { floeSide: opt.side, floeSize: opt.size, floeMoved: false }); } w.show(); if (typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); return; }
-  w = wins[kind] = new BrowserWindow({ ...ICON_OPT, ...b, frame: false, transparent: false, backgroundColor: "#16225E", alwaysOnTop: true, resizable: kind === "quest", minimizable: false, hasShadow: true, show: false,
-    minWidth: 260, minHeight: 200, title: kind === "quest" ? "Floe — 퀘스트" : "Floe — 설정",
+  const ws = kind === "quest";   // 작업실(C-41) — 보통 창. 바탕색은 win.html · app.css(html.win-quest)와 같은 값
+  w = wins[kind] = new BrowserWindow({ ...ICON_OPT, ...b, frame: ws, transparent: false, backgroundColor: ws ? "#E9EEF6" : "#16225E", alwaysOnTop: !ws, resizable: ws, minimizable: ws, hasShadow: true, show: false,
+    minWidth: ws ? 640 : 260, minHeight: ws ? 480 : 200, title: ws ? "Floe — 작업실" : "Floe — 설정",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
-  w.setAlwaysOnTop(true, "floating");
+  if (!ws) w.setAlwaysOnTop(true, "floating");
   Object.assign(w, { floeSide: opt.side, floeSize: opt.size, floeMoved: false });   // 다시 둘 때(placeSideWins · floe:win-size) 같은 규칙으로
   w.on("will-move", () => { w.floeMoved = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
   w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
@@ -284,7 +287,7 @@ function placeSideWins() {
   for (const kind of Object.keys(wins)) {
     const w = wins[kind];
     if (!w || w.isDestroyed() || w.floeMoved || !L.overlaps(w.getBounds(), isl)) continue;
-    w.setBounds(L.sideWinBounds(kind, w.floeSide, isl, wa, w.floeSize));
+    w.setBounds(boundsFor(kind, w.floeSide, isl, wa, w.floeSize));
   }
 }
 const closeSideWins = () => { for (const k of Object.keys(wins)) { const w = wins[k]; if (w && !w.isDestroyed()) w.close(); } };
@@ -297,7 +300,7 @@ ipcMain.on("floe:win-size", (e, kind, size) => {
   const w = sideKind(kind) && wins[kind];
   if (!fromIsland(e) || !w || w.isDestroyed() || !Array.isArray(size)) return;
   // 사람이 옮기지 않았으면 같은 자리 규칙으로(커진 창이 섬을 덮지 않게, 2026-10-24) — 옮겼으면 그 자리에서 크기만
-  if (!w.floeMoved) { const isl = win.getContentBounds(); w.floeSize = size; return w.setBounds(L.sideWinBounds(kind, w.floeSide, isl, screen.getDisplayMatching(isl).workArea, size)); }
+  if (!w.floeMoved) { const isl = win.getContentBounds(); w.floeSize = size; return w.setBounds(boundsFor(kind, w.floeSide, isl, screen.getDisplayMatching(isl).workArea, size)); }
   const b = w.getBounds(); w.setBounds({ ...b, width: Math.max(260, Math.round(size[0]) || b.width), height: Math.max(200, Math.round(size[1]) || b.height) });
 });
 ipcMain.on("floe:win-event", (e, payload) => { if (fromSide(e) && win && !win.isDestroyed()) win.webContents.send("floe:win-event", payload); });   // 창의 누름은 섬으로

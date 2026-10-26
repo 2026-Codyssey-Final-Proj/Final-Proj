@@ -197,7 +197,14 @@ function sideWinBounds(kind, side, isl, wa, size) {
   x = Math.max(wa.x, Math.min(Math.round(x), wa.x + wa.width - want));
   return { x, y, width: want, height };
 }
+// 작업실 창(C-41, 2026-10-26 두승현) — 섬 아래, 섬 가운데에 맞춰 달라는 크기 그대로(옆자리에 끼워 줄이지 않는다 — 보통 창이라 사람이 옮기고 늘린다). 가장 작게 640×480(main.js minWidth · minHeight와 같다), 작업 영역을 넘으면 안으로
+function workBounds(isl, wa, size) {
+  const width = Math.max(640, Math.min(Math.round(size && size[0]) || 920, wa.width)), y = Math.round(isl.y + isl.height + SIDE_GAP);
+  const height = Math.max(480, Math.min(Math.round(size && size[1]) || 640, wa.y + wa.height - y));
+  const x = Math.max(wa.x, Math.min(Math.round(isl.x + isl.width / 2 - width / 2), wa.x + wa.width - width));
+  return { x, y, width, height };
+}
 // 두 상자가 겹치나 — 맞닿기만 하면 겹침이 아니다. 섬 크기가 바뀔 때 옆 창을 다시 둘지 앱(main.js placeSideWins)이 묻는다
 const overlaps = (a, b) => !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-module.exports = { SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };
+module.exports = { SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };

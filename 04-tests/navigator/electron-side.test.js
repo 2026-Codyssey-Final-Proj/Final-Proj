@@ -72,16 +72,18 @@ test("앱(main.js) — 섬 크기가 바뀌어 옆 창과 겹치면 다시 둔�
   const resize = m.slice(m.indexOf('ipcMain.on("floe:resize"'), m.indexOf('ipcMain.on("floe:resize"') + 2200);
   assert.match(resize, /placeSideWins\(\)/, "섬 창 크기를 맞춘 뒤");
   const size = m.slice(m.indexOf('ipcMain.on("floe:win-size"'), m.indexOf('ipcMain.on("floe:win-size"') + 700);
-  assert.match(size, /L\.sideWinBounds\(kind, w\.floeSide/);
+  assert.match(size, /boundsFor\(kind, w\.floeSide/, "같은 자리 규칙(작업실은 workBounds · 설정 창은 sideWinBounds, C-41)");
 });
 
-test("앱(main.js) — 창 둘은 테두리 없음 · 항상 위 · 불투명 네이비, 퀘스트 창만 크기 조절, 섬에서만 열고 · 내용을 보내고 · 닫고, 창의 누름은 섬으로, 사람이 닫으면 섬에 알림, 섬 창이 닫히거나 서고로 가면 같이 닫힘", () => {
+test("앱(main.js) — 설정 창은 테두리 없음 · 항상 위 · 불투명 네이비, 작업실 창(옛 퀘스트 창, C-41 2026-10-26)은 테두리 있는 보통 창 · 크기 조절, 섬에서만 열고 · 내용을 보내고 · 닫고, 창의 누름은 섬으로, 사람이 닫으면 섬에 알림, 섬 창이 닫히거나 서고로 가면 같이 닫힘", () => {
   const m = read("electron/main.js");
   const at = m.indexOf("function openSideWin(kind, opt = {})"); assert.ok(at > 0);
-  const block = m.slice(at, at + 2600);
-  assert.match(block, /L\.sideWinBounds\(kind, opt\.side, isl, wa, opt\.size\)/);
-  assert.match(block, /frame: false, transparent: false, backgroundColor: "#16225E", alwaysOnTop: true, resizable: kind === "quest"/);
-  assert.match(block, /w\.setAlwaysOnTop\(true, "floating"\)/);
+  const block = m.slice(at, at + 2800);
+  assert.match(block, /boundsFor\(kind, opt\.side, isl, wa, opt\.size\)/);
+  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? L\.workBounds\(isl, wa, size\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\)/, "작업실은 섬 아래 달라는 크기 그대로, 설정 창은 옆자리(C-41)");
+  assert.match(block, /const ws = kind === "quest";/);
+  assert.match(block, /frame: ws, transparent: false, backgroundColor: ws \? "#E9EEF6" : "#16225E", alwaysOnTop: !ws, resizable: ws/);
+  assert.match(block, /if \(!ws\) w\.setAlwaysOnTop\(true, "floating"\)/);
   assert.match(block, /w\.loadURL\(`\$\{URL_\}navigator\/win\.html#\$\{kind\}`\)/, "화면 파일은 서버 주소로");
   assert.match(block, /win\.webContents\.send\("floe:win-closed", kind\)/, "사람이 닫으면 섬에");
   assert.match(block, /contextIsolation: true, nodeIntegration: false, sandbox: true/);

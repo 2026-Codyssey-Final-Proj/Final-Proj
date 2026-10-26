@@ -189,7 +189,7 @@ test("POST /api/docs 거절: 1 · 2단계 결과가 다 있어야 · 모양이 �
     assert.equal(r.status, 400, JSON.stringify(body).slice(0, 60)); assert.match(r.json.reason, re, "무엇이 틀렸는지 그대로(2026-10-25 리뷰)");
   }
   const link = path.join(TMP, "linked");
-  fs.mkdirSync(path.join(link, ".git"), { recursive: true }); fs.symlinkSync(OUTSIDE, path.join(link, "docs"));
+  fs.mkdirSync(path.join(link, ".git"), { recursive: true }); fs.symlinkSync(OUTSIDE, path.join(link, "docs"), "junction");   // Windows는 폴더 바로가기(junction)만 권한 없이 만든다 — 다른 OS에서는 무시되는 인자(두승현 2026-10-26, EPERM)
   assert.equal(Srv.useProject(link), true);
   const r = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1 } } });
   assert.equal(r.status, 400, r.text); assert.match(r.json.reason, /바로가기/);
