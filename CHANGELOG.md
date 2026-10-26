@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v30.0 | 2026-10-27 | 두승현 | C-41 작업실 ① — 퀘스트 창을 작업실 창으로(테두리 있는 보통 창 · 늘 위 아님 · 파스텔), 첫 탭 캔버스(지금 하는 일 · 단계 칩 · 지난 장 / 다음 장 · 퀘스트 한 바퀴 다섯 칸). 스토리보드 검토(test-1 대조 · 눌러 보기 재기 → 열린 질문 6~10) · 요구서 C-41 등급 칸을 결정으로 · flow-api 시험의 바로가기를 Windows에서도 만들어지게(junction) (#207) | `02-frontend/navigator/`(담당 임유정 — 이 줄이 알림) · `02-frontend/electron/main.js` · `03-backend/navigator/quest.js`(SIZES) · `04-tests/navigator/` · `01-docs/04-pattern-implementation/stage-storyboard/` · `01-docs/00-overview/requirements.md`(C-41) |
 | v29.3 | 2026-10-26 | 이재엽 | 요구 후보 C-41 — 작업실은 그대로, 섬은 가장자리 넷 중 하나에(화면 방향, 결정 대기 — 이재엽 버튼 "Go"는 후보로 적기까지) (#206) | `01-docs/00-overview/requirements.md`(2-2 · 13-1) |
 | v29.2 | 2026-10-26 | 이재엽 | 0~8단계 스토리보드 웹페이지 디자인 첫 판(test-1을 예시로 장면마다 디자인 캔버스 모양의 앱 화면 — 작업실 창 + 섬, 다섯 칸, 본 틈 → 이어져야, '언제 성공' 실, 섬 자리 · 크기 · 보드 다시 배치 눌러 보기) · 고칠 목록 F-60(관문이 '안 됨' · 빈칸 · 증거 없음을 막지 못함, 기록만) (#205) | `01-docs/04-pattern-implementation/stage-storyboard/`(새로) · `01-docs/04-pattern-implementation/README.md` · `01-docs/07-maintenance/fix-map.md` · `01-docs/00-overview/기록/opus-handoff-2026-10-26-storyboard.md` |
 | v29.1 | 2026-10-26 | 이재엽 | 오퍼스 넘김 — 0~8단계 스토리보드 웹페이지 기준(화면 기준 10 · test-1로 읽은 단계 뼈대와 틈 · 붙여 넣을 말) (#203) | `01-docs/00-overview/기록/` |
