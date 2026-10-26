@@ -256,6 +256,18 @@
     const o = { at: Date.now() };
     for (const k of KEEP) o[k] = st[k];
     try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
+    postState();
+  }
+  // C-38 시험판(2026-10-25, 두승현) — 서버에 지금 상태를 알린다: MCP로 이은 AI(Claude Desktop · 터널을 연 웹 GPT · 웹 Claude)가 floe_now로 읽는다. 바뀌었을 때만 보낸다
+  let lastState = "";
+  function postState() {
+    if (!canLive || !QU) return;
+    const q = st.quest, i = q ? QU.curIdx(q) : -1;
+    const k = JSON.stringify({ project: project(), mode: st.mode, stage: q ? q.chap : st.j ? st.j.stage : null,
+      quest: q ? { chap: q.chap, title: q.title, phase: q.phase, objs: q.objs.map((o) => ({ name: o.name, need: o.need })), lines: q.lines, cur: i, ask: i >= 0 ? QU.question(q, i) : "" } : null });
+    if (k === lastState) return;
+    lastState = k;
+    fetch("/api/state", { method: "POST", headers: { "Content-Type": "application/json" }, body: k, credentials: "same-origin" }).catch(() => {});
   }
   load();
   // 레벨은 사람에게(C-28, 이재엽 2026-10-23 버튼 "누적 — 관문마다 +1") — 기록(KEY)과 따로 이 컴퓨터에. 기록을 비워도 · 프로젝트를 바꿔도 줄지 않는다
@@ -985,7 +997,7 @@
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}</div>
       <div class="main"><div class="log" data-log>${st.chat.map((m) => `<div class="msg ${m.who}"><div class="b">${m.html}</div></div>`).join("")}${
         working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast() ? ` — ${esc(stepLine(aiLast()))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
-        ${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
+        ${proposalsHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
         ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts fixed">${more.map(chip).join("")}</div>` : ""}
         <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`;
   }
@@ -1015,8 +1027,9 @@
   }
   // 지금 할 일에 한 줄 — 다 적었으면: 초안을 확인한 1단계는 저절로 완료 보고(C-36 — 넷 다 확인하면 관문으로), 아니면 축하하고 완료 보고 칩
   //   by — 누가 정했나(C-39): 고르는 칩은 "pick", 아니면 quest.js가 플로로 초안과 맞대어 그대로 · 고침 · 직접
-  function fillNow(t, by) {
-    st.quest = QU.fill(st.quest, QU.curIdx(st.quest), t, by);
+  //   at — MCP로 이은 AI의 제안처럼 지금 할 일이 아닌 칸에 적을 때(C-38 시험판)
+  function fillNow(t, by, at = QU.curIdx(st.quest)) {
+    st.quest = QU.fill(st.quest, at, t, by);
     afterFill();
   }
   // 칸을 적은 뒤 — 다 적었으면 다음 장 초안을 실제 결과로 미리 부르고(C-40), 초안을 확인한 장은 한 줄로 정리해 저절로 완료 보고
@@ -1845,6 +1858,36 @@
       <textarea id="task-text" class="mc-input" data-act="task-text" rows="2" placeholder="예) 회원 신청 화면 만들고 마감 알림도 넣어 줘">${esc(t.text)}</textarea>
       <div class="row"><button type="button" class="btn pri" data-act="task-tidy" ${t.text.trim() ? "" : "disabled"}>요구 문장으로 정리</button><span class="meta">정리 → 고치기 → 허락하면 Claude Code가 이어서 해요</span></div></div>`;
   }
+  // C-38 시험판(2026-10-25) — MCP로 이은 AI의 제안: 퀘스트 시작(floe_start, kind "start") · 할 일에 적을 한 줄(floe_report). 사람이 "맞아요"를 눌러야 시작되거나 적히고, 판정은 그 뒤 평소대로
+  let proposals = [];
+  const proposalsHTML = () => (!proposals.length ? "" : `<div class="aplist" role="region" aria-label="웹 AI의 제안">${proposals.map((p) => { const go = p.kind === "start"; return `<section class="ap" data-pr="${esc(p.id)}"><div class="row ap-h">${I.look}<b class="grow">${go ? "웹 AI가 이 글로 퀘스트를 시작하자고 해요" : `웹 AI가 ${esc(ROMAN(p.todo))} '${esc(QU.shortOf(p.name))}'에 이렇게 적자고 해요`}</b></div>
+      <p class="ap-what">${esc(p.text)}</p><div class="row"><button type="button" class="btn pri" data-act="pr-ok" data-id="${esc(p.id)}">${go ? "맞아요, 시작해요" : "맞아요, 적어요"}</button><button type="button" class="btn" data-act="pr-no" data-id="${esc(p.id)}">아니요</button></div></section>`; }).join("")}</div>`);
+  async function pollProposals() {
+    postState();   // 켜자마자(퀘스트가 없어도) 서버가 알게 — 바뀌었을 때만 보낸다
+    let j;
+    try { j = await (await fetch("/api/proposals", { credentials: "same-origin" })).json(); } catch { return; }
+    if (!j || !j.ok || !Array.isArray(j.items)) return;
+    const was = proposals.map((p) => p.id).join();
+    proposals = j.items;
+    if (proposals.map((p) => p.id).join() === was) return;
+    if (proposals.length && st.ui !== "home") { st.ping = "웹 AI가 퀘스트에 적자고 해요 — 눌러서 볼까요?"; peek(); } else render();
+  }
+  async function decideProposal(id, ok) {
+    const p = proposals.find((x) => x.id === id); if (!p) return;
+    proposals = proposals.filter((x) => x.id !== id);
+    try { await fetch("/api/proposals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }), credentials: "same-origin" }); } catch {}
+    const q = st.quest;
+    if (!ok) { render(); return say(p.kind === "start" ? "시작하지 않았어요" : "적지 않았어요"); }
+    if (p.kind === "start") {   // floe_start — 섬 채팅에 처음 한 줄을 보낸 것과 같은 길(startDraft). 그사이 퀘스트가 생겼으면 하지 않는다
+      if (q || st.j || !QU) { render(); return say("이미 퀘스트가 있어 시작하지 않았어요"); }
+      logMsg("floro", `웹 AI가 건넨 글로 퀘스트를 시작해요 — ${esc(p.text.length > 200 ? `${p.text.slice(0, 200)}…` : p.text)}`);
+      return startDraft(p.text);
+    }
+    if (!q || q.phase !== "quest" || q.chap !== p.chap || !q.objs[p.todo]) { render(); return say("지금 퀘스트와 맞지 않아 적지 않았어요"); }
+    logMsg("floro", `웹 AI의 제안을 ${esc(ROMAN(p.todo))}에 적었어요 — ${esc(p.text)}`);
+    fillNow(p.text, undefined, p.todo);
+  }
+  if (canLive) setInterval(pollProposals, 2000);
   // 기다리는 승인 요청(approve.js 카드) — 서버가 2초마다 알려 준다. 연습 · 주소 &approve=1이면 예시 카드
   let approvals = [], apMode = "none", apKnown = new Set();
   const approvalsHTML = () => (!approvals.length ? "" : `<div class="aplist" role="region" aria-label="허락이 필요해요">${apMode === "example" ? `<p class="note" role="status">예시 데이터예요 · 시연용</p>` : ""}${approvals.map(apCard).join("")}</div>`);
@@ -2665,6 +2708,8 @@
       if (r.ok) { set({ task: { ...st.task, sent: r.project || "연결한 프로젝트" } }); say("넘겼어요 — 허락이 필요하면 카드가 떠요"); pollSteps().then(render); } else { render(); say(r.reason || "넘기지 못했어요"); }
     },
     "task-reset": () => set({ task: { text: "", lines: null, say: "", sent: "" } }),
+    "pr-ok": (i, el) => decideProposal(el && el.dataset.id, true),   // C-38 시험판 — 웹 AI의 제안
+    "pr-no": (i, el) => decideProposal(el && el.dataset.id, false),
     "ap-allow": (i, el) => decideApproval(el && el.dataset.id, "allow"),
     "ap-deny": (i, el) => decideApproval(el && el.dataset.id, "deny"),
     "ap-unsure": () => set({ apSure: "" }),
