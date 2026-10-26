@@ -18,6 +18,7 @@
 | `break-ui` | 같은 저장소 `skills/break-ui` | 같음 | MIT (저장소 루트 `LICENSE`를 폴더에 같이 복사) | 2026-10-14 |
 | `animation-vocabulary` | 같은 저장소 `skills/animation-vocabulary` | 같음 | MIT (저장소 루트 `LICENSE`를 폴더에 같이 복사) | 2026-10-14 |
 | `impeccable-review` | [pbakaus/impeccable](https://github.com/pbakaus/impeccable) `plugin/skills/impeccable` — **`reference/` 폴더만** 원본 그대로 (스크립트·훅·에이전트 제외). `SKILL.md`는 우리가 쓴 안내문이고 원본은 `UPSTREAM-SKILL.md`로 보관 | `2f98774f86bc05563876643db37e6c37c322850f` (v4.5.2) | Apache 2.0 (`LICENSE`), 제3자 고지 `NOTICE.md`(ios·android 참고 파일은 ehmo/platform-design-skills MIT에서 가져온 것) | 2026-10-14 |
+| `impeccable-review/extra/hallmark.md` <!-- claude-drafted: 2026-10-26 --> | [Nutlope/hallmark](https://github.com/Nutlope/hallmark) `skills/hallmark/references/gates.md` · `redesign.md`에서 **impeccable · Emil 스킬 · 우리 규칙에 없는 것만 골라 우리 말로 옮긴 것** — 원본 복사가 아니라 우리 파일이다. 스킬 · 실행 파일 · 훅은 들이지 않았다 | `7ec868225c6caa040558c321ee0fefa0e73f83a8` (v2.0.0) | MIT (`extra/LICENSE-hallmark.txt`) | 2026-10-26 |
 | `tdd` | [mattpocock/skills](https://github.com/mattpocock/skills) `skills/engineering/tdd` (`SKILL.md`·`tests.md`·`mocking.md`만 — Codex용 `agents/openai.yaml` 제외) | `49dd158d1076134a641b33efb035946536778336` | MIT (저장소 루트 `LICENSE`를 폴더에 같이 복사) | 2026-10-14 |
 | `owasp-security` | [agamm/claude-code-owasp](https://github.com/agamm/claude-code-owasp) `.claude/skills/owasp-security` (`SKILL.md` + `reference/` 4개) | `8ac7965caa212b4a850aff8d3df0081ab3fa9eed` | MIT (저장소 루트 `LICENSE`를 폴더에 같이 복사) | 2026-10-15 |
 

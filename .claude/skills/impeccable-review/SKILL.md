@@ -45,10 +45,18 @@ metadata:
 | 기획 단계의 UX/UI 정리 | `shape.md` | |
 | 화면 종류별 기준 | `mode-persuade.md`(랜딩·마케팅) · `mode-operate.md`(앱·대시보드) · `mode-read.md`(문서) · `operate.md` | |
 | 수정 전 최소 품질선 | `craft-floor.md` | UI를 고치기 전에 읽는다 |
+| "AI 티" 중 위 파일에 없는 것 · 크게 고친 뒤 잃은 것 확인 | `../extra/hallmark.md` | Hallmark에서 고른 것(우리가 옮김). 우리 규칙이 우선 |
 
 **쓰지 않는 파일(실행 파일·훅·브라우저 연동 전제):** `live.md`, `live-setup.md`, `generate.md`, `hooks.md`, `doctor.md`,
 `component-review.md`, `init.md`, `document.md`, `extract.md`, `new-work.md`, `routing.md`, `region-map.md`,
 `visualize.md`, `craft.md`, `degraded/`. 폴더에는 있지만(파일끼리 링크하고 있어서) 열지 않는다.
+
+## 덧붙인 참고 — `extra/`
+
+<!-- claude-drafted: 2026-10-26 -->`reference/`는 impeccable 원본 그대로이고, `extra/`는 **다른 도구에서 필요한 것만 골라 우리가 옮긴** 참고다.
+지금은 [`extra/hallmark.md`](extra/hallmark.md) 하나 — Hallmark(Nutlope/hallmark, MIT)의 점검 중 impeccable · Emil 스킬 · 우리 규칙에
+없는 것과, 크게 고친 뒤 잃은 것이 없는지 세는 법. **혼자 반응하는 스킬이 아니고 우선순위도 없다** — 위 표에서 필요할 때만 열고,
+우리 규칙(파스텔 · 쉬운 말 · 리뷰 모드)과 다르면 우리 규칙을 따른다(이재엽 2026-10-26).
 
 ## 어떻게 지적하나
 
