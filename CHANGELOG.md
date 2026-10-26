@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v33.0 | 2026-10-27 | 두승현 | C-41 작업실 ④ — 남은 결정 넷(두승현 2026-10-27): 위 · 아래 섬 가장 작게 240 → 320, 옆 가장 크게는 760과 작업실 너비의 반 중 작은 것, 퀘스트 보드 '한 줄' 기준 1000 → 900, 파일 카드는 이름과 +/− 줄 수만(최근 다섯 파일 — 훅이 이미 보내는 것). 접힌 띠는 만들지 않음(작업실이 열린 동안 섬을 접지 않음) (#211) | `02-frontend/navigator/`(담당 임유정 — 이 줄이 알림) · `02-frontend/electron/` · `03-backend/navigator/quest.js` · `01-docs/00-overview/requirements.md`(C-41) · `01-docs/04-pattern-implementation/stage-storyboard/`(결정 표시) · `04-tests/navigator/` |
 | v32.1 | 2026-10-27 | 두승현 | C-41 작업실 ③ 새 맥락 리뷰 반영 — 손잡이 값을 섬 크기 단위로(End 뒤 771 > 760이던 것) · 붙기 전 손잡이 숨김 · 위아래는 고른 높이 그대로 · Windows는 바로 안내 (#210) | `02-frontend/navigator/`(담당 임유정 — 이 줄이 알림) · `02-frontend/electron/` · `03-backend/navigator/quest.js` · `04-tests/navigator/dock.test.js` |
 | v32.0 | 2026-10-27 | 두승현 | C-41 작업실 ③ — 붙은 섬의 크기를 작업실의 손잡이로(옆 너비 320 ~ 760 · 위아래 높이 240 ~ 480, 화살표 20 · Home · End · 두 번 누르거나 Enter로 처음 420 · 360), 자리를 바꿀 때 0.3초(Mac), 설정 · 단추의 옛 "퀘스트 창" 말을 작업실로 (#209) | `02-frontend/navigator/`(담당 임유정 — 이 줄이 알림) · `02-frontend/electron/main.js` · `03-backend/navigator/quest.js`(DOCK_RANGE) · `04-tests/navigator/dock.test.js` |
 | v31.0 | 2026-10-27 | 두승현 | C-41 작업실 ② — 섬을 작업실 창의 가장자리 넷(위 · 아래 · 왼쪽 · 오른쪽, 처음은 오른쪽)에 붙이고 작업실이 옮겨지거나 커지면 따라감, 작업실 내용은 그쪽을 비워 비켜섬(0.3초), 섬 머리의 네 칸 단추 · 설정 '섬 자리', 옆에 붙으면 섬 420으로. 손잡이 · 띠는 다음 (#208) | `02-frontend/navigator/`(담당 임유정 — 이 줄이 알림) · `02-frontend/electron/` · `03-backend/navigator/quest.js`(SIDES) · `04-tests/navigator/` |
