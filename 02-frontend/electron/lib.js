@@ -199,8 +199,10 @@ function sideWinBounds(kind, side, isl, wa, size) {
 }
 // 작업실 창(C-41, 2026-10-26 두승현) — 섬 아래, 섬 가운데에 맞춰 달라는 크기 그대로(옆자리에 끼워 줄이지 않는다 — 보통 창이라 사람이 옮기고 늘린다). 가장 작게 640×480(main.js minWidth · minHeight와 같다), 작업 영역을 넘으면 안으로
 function workBounds(isl, wa, size) {
-  const width = Math.max(640, Math.min(Math.round(size && size[0]) || 920, wa.width)), y = Math.round(isl.y + isl.height + SIDE_GAP);
+  const width = Math.max(640, Math.min(Math.round(size && size[0]) || 920, wa.width));
+  let y = Math.round(isl.y + isl.height + SIDE_GAP);
   const height = Math.max(480, Math.min(Math.round(size && size[1]) || 640, wa.y + wa.height - y));
+  y = Math.max(wa.y, Math.min(y, wa.y + wa.height - height));   // 섬 아래 자리가 480보다 좁으면(1366×768 노트북) 위로 올려 작업 표시줄 밑으로 나가지 않게 — 섬과 겹치는 것이 마지막 수단
   const x = Math.max(wa.x, Math.min(Math.round(isl.x + isl.width / 2 - width / 2), wa.x + wa.width - width));
   return { x, y, width, height };
 }

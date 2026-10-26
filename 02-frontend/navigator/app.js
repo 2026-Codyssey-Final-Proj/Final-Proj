@@ -1178,8 +1178,9 @@
     const n = st.finished ? N.STAGES.length - 1 : atStage(), s = N.STAGES[n], q = st.quest && st.quest.chap === n ? st.quest : null, r = st.results[n], ci = q ? QU.curIdx(q) : -1;
     const cell = (k, no, name, body, ft) => `<div class="cv-c ${k}"><p class="ch">${no ? `${no} ` : ""}${name}<em>${{ now: "● 지금", done: "✓ 끝" }[k] || ""}</em></p><p>${esc(body)}</p>${ft ? `<p class="ft">${esc(ft)}</p>` : ""}</div>`;
     const p = q ? QU.progress(q) : null;
-    const now = st.busy ? "플로로가 살펴보는 중" : !q && !st.j ? "채팅에서 원하는 것을 말하면 1단계 초안을 만들어요" : q && q.phase === "draft" ? "퀘스트를 받기 전 — 노트북 탭에서 받아요" : q && ci >= 0 ? `${p.n}개 중 ${p.k}번째 칸 — ${QU.shortOf(q.objs[ci].name)}` : q ? "칸을 다 적었어요 — 완료 보고" : progress();
-    const chips = N.STAGES.map((x) => `<span class="${stepClass(x.n)}">${LB(x.n)}${stepClass(x.n) === "done" ? " ✓" : ""}</span>`).join("");
+    const now = st.busy ? "플로로가 살펴보는 중" : st.finished ? "모든 장을 끝냈어요" : !q && !st.j ? "채팅에서 원하는 것을 말하면 1단계 초안을 만들어요" : q && q.phase === "draft" ? "퀘스트를 받기 전 — 노트북 탭에서 받아요" : q && q.phase === "done" ? "보고했어요 — 넘어가기 전 확인은 섬에서" : q && ci >= 0 ? `${p.n}개 중 ${p.k}번째 칸 — ${QU.shortOf(q.objs[ci].name)}` : q ? "칸을 다 적었어요 — 완료 보고" : progress();
+    const chipCls = (x) => (st.finished ? "done" : stepClass(x.n));   // 다 마치면 마지막 장도 ✓(stepClass는 finished를 모른다 — 새 맥락 리뷰 2026-10-26)
+    const chips = N.STAGES.map((x) => `<span class="${chipCls(x)}">${LB(x.n)}${chipCls(x) === "done" ? " ✓" : ""}</span>`).join("");
     const pr = n > 0 ? st.results[n - 1] : null;
     const prev = n > 0 ? `<div class="cv-bd">보드 · ✓ 지남${pr && pr.passed ? ` · ${esc(pr.passed.slice(5))}` : ""}<b>${LB(n - 1)} · ${esc(N.STAGES[n - 1].title)}</b></div>` : `<div class="cv-bd next">보드 · 처음이에요<b>지난 장 없음</b></div>`;
     const next = n + 1 < N.STAGES.length ? `<div class="cv-bd next">보드 · 관문을 넘으면 열려요<b>${LB(n + 1)} · ${esc(N.STAGES[n + 1].title)}</b></div>` : `<div class="cv-bd next">보드 · 다 마치면<b>다음 프로젝트 — 배운 것을 들고 가요</b></div>`;
@@ -1192,7 +1193,7 @@
     const rec = r ? cell("done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, "도전과제 탭에서 칸마다 누가 정했는지") : q ? cell(QU.isDone(q) ? "now" : "later", "③", "기록", `적은 칸 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "") : cell("later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
     const save = docDone(n) ? cell("done", "④", "저장", "단계 문서를 확정했어요") : FDOCS && st.results[0] && st.results[1] ? cell("now", "④", "저장", "문서로 묶어 GitHub에", "도전과제 탭의 한눈에 보기에서") : cell("later", "④", "저장", "아직 — 관문 뒤에");
     const ver = cell("later", "⑤", "버전", `${LB(n)}를 넘으면 책에 V.${n + 1}`, "대회 뒤 (C-23)");
-    const gate = r && r.passed ? cell("done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : allDone() && !holding() ? cell("now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("later", "", "관문", st.j ? `남은 할 일 ${left()}` : "할 일을 다 하면 열려요");
+    const gate = r && r.passed ? cell("done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : holding() ? cell("later", "", "관문", "멈춰 둔 단계 — 섬에서 다시 열어요") : allDone() ? cell("now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("later", "", "관문", st.j ? `남은 할 일 ${left()}` : "할 일을 다 하면 열려요");
     return `<div class="cv"><div class="cv-top"><span class="cv-now">지금 하는 일 <b>${esc(now)}</b></span><div class="cv-stg" aria-label="단계">${chips}</div></div>
       <div class="cv-main"><div class="cv-bds">${prev}${next}</div><div class="cv-board"><div class="bh"><b>${LB(n)} · ${esc(s.title)}</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div><div class="cv-g">${think}${act}${rec}${save}${ver}${gate}</div></div></div></div>`;
   }

@@ -23,6 +23,8 @@ test("lib.js workBounds — 작업실은 섬 아래 · 섬 가운데에 달라�
   const wide = L.workBounds({ x: 0, y: 0, width: 1400, height: 60 }, { x: 0, y: 0, width: 1440, height: 900 }, [1600, 1000]);
   assert.deepEqual(wide, { x: 0, y: 68, width: 1440, height: 832 }, "작업 영역보다 크면 작업 영역만큼");
   assert.equal(L.workBounds({ x: 1800, y: 0, width: 300, height: 60 }, { x: 0, y: 0, width: 1920, height: 1080 }, [920, 640]).x, 1000, "오른쪽 끝을 넘으면 안으로");
+  assert.deepEqual(L.workBounds({ x: 207, y: 0, width: 952, height: 325 }, { x: 0, y: 0, width: 1366, height: 728 }, [920, 640]), { x: 223, y: 248, width: 920, height: 480 }, "섬 아래가 480보다 좁으면 위로 올려 작업 표시줄 밑으로 나가지 않게(새 맥락 리뷰 2026-10-26)");
+  assert.equal(L.workBounds({ x: -1800, y: 0, width: 952, height: 60 }, { x: -1920, y: 0, width: 1920, height: 1080 }, [920, 640]).x, -1784, "왼쪽 모니터(wa.x < 0)에서도 섬 가운데");
   assert.match(fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/win.js"), "utf8"), /document\.title = kind === "quest" \? "Floe — 작업실" : "Floe — 설정"/, "OS 제목 줄");
 });
 
@@ -44,6 +46,7 @@ test("app.css · win.html — 작업실은 파스텔(네이비 면 없음), 보�
   assert.match(c, /html\.in-win:not\(\.win-quest\)\{/, "네이비 토큰은 작업실 밖에만");
   assert.match(c, /html\.in-win:not\(\.win-quest\) \.win\{background:#16225E\}/);
   assert.match(c, /html\.win-quest\{[^}]*--card:#F7F9FC/);
+  for (const t of ["--ok:#1E7A47", "--okbg:#E3F4EA", "--acc-ink:#FFFFFF", "--mute:#525F84", "--win:#F7F9FC", "--t-blue-ink:#1E3F7A", "--bad:#A4262C"]) assert.ok(/html\.win-quest\{[^}]*\}/.exec(c)[0].includes(t), `${t} — 601px 이상의 네이비 토큰을 덮어야 ✓ 글씨가 파스텔 위에서 4.5:1(새 맥락 리뷰 2026-10-26: 빠지면 1.38:1)`);
   assert.match(c, /html\.win-quest \.win\{background:var\(--card\)\}/);
   assert.match(c, /@container cvboard \(min-width:640px\)/);
   assert.match(c, /@container cvboard \(min-width:1000px\)/);

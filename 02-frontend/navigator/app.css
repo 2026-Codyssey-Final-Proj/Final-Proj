@@ -1059,9 +1059,13 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 
 /* claude-drafted: 2026-10-26 두승현 — 작업실 창(C-41 PR①, 스토리보드 01-docs/04-pattern-implementation/stage-storyboard): 눈이 편한 파스텔(순백 · 쨍한 파랑 · 검정 면 없이, 글씨 대비 4.5:1) — 값은 스토리보드 :root와 같다.
    캔버스 탭(.cv): 지금 하는 일 · 단계 칩 · 지난 장 / 다음 장 보드 · 다섯 칸. 배치는 줌 없이 보드 너비로 — 640 미만 세로 한 줄 · 640~999 두 줄 · 1000 이상 한 줄(기준 7. 기준값은 스토리보드 열린 질문 7이 다시 본다) */
-html.win-quest{--ink:#1E2A5A; --ink2:#2E3A6A; --mute:#5F6C90; --sub:#4A5678; --card:#F7F9FC; --soft:#EBF0F8; --line:#D3DBE9; --seg:#CBD4E3; --acc:#2E4A9A; --acc-btn:#2E4A9A; --acc-soft:#DCE6F7; --acc-mid:#BCC8DD; --shadow:0 10px 30px rgba(30,42,90,.10); color-scheme:light}
+html.win-quest{--win:#F7F9FC; --winbar:#EBF0F8; --side:#EBF0F8; --ink:#1E2A5A; --ink2:#2E3A6A; --mute:#525F84; --sub:#4A5678; --glass2:rgba(255,255,255,.9); --card:#F7F9FC; --soft:#EBF0F8; --line:#D3DBE9; --seg:#CBD4E3;
+  --acc:#2E4A9A; --acc-btn:#2E4A9A; --acc-ink:#FFFFFF; --acc-soft:#DCE6F7; --acc-mid:#BCC8DD; --ok:#1E7A47; --okbg:#E3F4EA; --ok-btn:#1E7A47; --warn:#8A5A00; --warnbg:#FFF4DE; --bad:#A4262C; --badbg:#FCE8E6; --bad-btn:#A4262C;
+  --t-blue:#DCE6F7; --t-blue-ink:#1E3F7A; --t-green:#E3F4EA; --t-green-ink:#1E7A47; --t-amber:#FFF4DE; --t-amber-ink:#8A5A00; --t-gray:#EBF0F8; --t-gray-ink:#4A5678; --t-red:#FCE8E6; --t-red-ink:#A4262C;
+  --shadow:0 10px 30px rgba(30,42,90,.10); color-scheme:light}   /* 601px 이상의 네이비 토큰(위 :root @media)을 전부 덮는다 — 빠지면 ✓ 글씨 #A9DDFF가 파스텔 위에 1.38:1(2026-10-26 새 맥락 리뷰) */
 html.win-quest .win{background:var(--card)}
 html.win-quest .wh{background:var(--soft)}
+html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"이 이미 있다 — 머리띠에는 크기 · 닫기만 */
 .cv{display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;padding:4px;background-image:radial-gradient(var(--seg) 1px,transparent 1.3px);background-size:18px 18px}
 .cv-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .cv-now{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:calc(12.5px * var(--ui-scale,1));color:var(--sub);flex:1 1 300px;min-width:0}
