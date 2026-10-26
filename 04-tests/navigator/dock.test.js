@@ -28,7 +28,7 @@ test("quest.js — 섬 자리는 위 · 아래 · 왼쪽 · 오른쪽, 처음은
 test("main.js — 작업실이 열려 있으면 섬 창을 그 가장자리에(placeIsland), 작업실이 옮겨지거나 커지면 따라가고(move · resize), 닫히면 붙기 전 자리로(undockIsland). 섬 크기가 바뀌어도 붙은 채. 서고 · 처음 설정(expanded)이면 안 붙는다", () => {
   const m = read("electron/main.js");
   assert.match(m, /const DOCK_SIDES = \["top", "bottom", "left", "right"\];/);
-  assert.match(m, /const docked = \(\) => !!\(wins\.quest && !wins\.quest\.isDestroyed\(\)\) && !expanded;/);
+  assert.match(m, /const docked = \(\) => !!\(wins\.quest && !wins\.quest\.isDestroyed\(\) && !wins\.quest\.isMinimized\(\)\) && !expanded;/);
   assert.match(m, /function placeIsland\(animate\) \{[\s\S]*?const ws = w\.getContentBounds\(\), b = L\.dockBounds\(dockSide, ws, ib\)[\s\S]*?w\.webContents\.send\("floe:dock", \{ side: dockSide, size:/, "자리를 잡고 작업실 화면에 알린다");
   assert.match(m, /function undockIsland\(\)/);
   assert.match(m, /if \(expanded\) \{ expanded\.from = \{ \.\.\.expanded\.from, x: Math\.round\(undock\.cx - expanded\.from\.width \/ 2\), y: undock\.y \}; undock = null; return; \}/, "서고로 넓힌 창은 건드리지 않고 돌아올 자리만(새 맥락 리뷰)");
@@ -36,7 +36,7 @@ test("main.js — 작업실이 열려 있으면 섬 창을 그 가장자리에(p
   assert.match(m, /if \(docked\(\)\) rememberUndock\(b\);/, "floe:resize가 먼저 붙여도 붙기 전 자리를 기억");
   assert.match(m, /if \(!w\.floeMoved && !\(kind === "quest" && docked\(\)\)\) \{/, "붙어 있는 작업실은 S · M · L로도 제자리에서 크기만");
   assert.match(m, /ipcMain\.on\("floe:dock-side", \(e, side\) => \{ if \(!fromIsland\(e\) \|\| !DOCK_SIDES\.includes\(side\)\) return; dockSide = side; placeIsland\(true\); \}\)/, "섬에서만 · 아는 값만 — 자리를 바꿀 때만 움직임(Mac)");
-  assert.match(m, /if \(ws\) \{ w\.once\("ready-to-show", placeIsland\); w\.on\("move", placeIsland\); w\.on\("resize", placeIsland\); \}/);
+  assert.match(m, /w\.once\("ready-to-show", placeIsland\); w\.on\("move", placeIsland\); w\.on\("resize", placeIsland\);/);
   assert.match(m, /if \(ws\) undockIsland\(\);/, "닫히면 되돌린다");
   const resize = m.slice(m.indexOf('ipcMain.on("floe:resize"'), m.indexOf('ipcMain.on("floe:resize"') + 2600);
   assert.match(resize, /docked\(\) \? MIN_W : ISLAND_W/, "붙어 있으면 섬 폭 그대로");
@@ -114,4 +114,11 @@ test("app.js · win.js · win.html — 손잡이는 작업실 화면에(섬이 �
   assert.match(j, /else if \(e\.key === "Home"\) send\(\{ value: r\[0\] \}\); else if \(e\.key === "End"\) send\(\{ value: maxOf\(\) \}\)/);
   assert.match(h, /#hd\{position:fixed;z-index:5;/); assert.match(h, /#hd\[hidden\]\{display:none\}/, "display:grid가 [hidden]을 이기지 않게"); assert.match(h, /html\.hd-drag #root,html\.hd-drag #hd\{transition:none\}/, "끄는 동안은 바로");
   assert.match(read("electron/main.js"), /win\.setContentBounds\(b, animate === true && process\.platform === "darwin"\)/, "자리를 바꿀 때만 0.3초 — Mac만");
+});
+
+test("main.js — 작업실이 작업 표시줄로 내려가면(minimize) 섬은 붙기 전 자리로 비켜 두고(parkIsland), 다시 올라오거나 최대화 · 되돌리면 다시 붙는다. 내려간 작업실(상자가 -32000)은 따라가지 않는다", () => {
+  const m = read("electron/main.js");
+  assert.match(m, /const docked = \(\) => !!\(wins\.quest && !wins\.quest\.isDestroyed\(\) && !wins\.quest\.isMinimized\(\)\) && !expanded;/, "내려간 작업실에는 붙지 않는다 — placeIsland · floe:resize 둘 다 이 한 곳을 본다(2026-10-27 잼: -32000)");
+  assert.match(m, /function parkIsland\(\) \{[\s\S]*?win\.webContents\.send\("floe:dock-room", null\);[\s\S]*?x: Math\.round\(undock\.cx - ib\.width \/ 2\), y: undock\.y/, "붙기 전 자리로 · 섬 화면은 원래 크기로 · undock은 남긴다");
+  assert.match(m, /w\.on\("minimize", parkIsland\); for \(const ev of \["restore", "maximize", "unmaximize"\]\) w\.on\(ev, \(\) => placeIsland\(\)\);/);
 });

@@ -270,7 +270,7 @@ const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? L.workBound
 // 손잡이로 섬 크기 바꾸기 · 접힌 띠 · 0.3초 움직임(기준 6 · 8)은 다음 묶음
 const DOCK_SIDES = ["top", "bottom", "left", "right"];
 let dockSide = "right", undock = null, lastDock = "";   // undock — 붙기 전 섬 창의 자리 {cx, y}(가운데를 기억 — 돌아올 때 섬 폭이 달라도 같은 가운데에). lastDock — 마지막으로 보낸 값(같으면 안 보낸다)
-const docked = () => !!(wins.quest && !wins.quest.isDestroyed()) && !expanded;
+const docked = () => !!(wins.quest && !wins.quest.isDestroyed() && !wins.quest.isMinimized()) && !expanded;   // 내려간(minimized) 작업실에는 붙지 않는다 — 그 상자는 -32000이라 floe:resize의 붙는 길이 섬을 화면 밖으로 보냈다(2026-10-27 잼)
 const rememberUndock = (ib) => { if (!undock) undock = { cx: ib.x + ib.width / 2, y: ib.y }; };   // 붙이기 전에 — floe:resize가 먼저 붙이는 길(작업실 창이 뜨기 전 섬 크기가 바뀔 때)도 같은 자리를 기억한다
 function placeIsland(animate) {   // animate — 자리(side)를 바꿀 때만 true. 작업실의 move · resize가 부를 때는 이벤트 인자가 오므로 === true로 가린다
   if (!win || win.isDestroyed() || !docked()) return;
@@ -284,6 +284,13 @@ function placeIsland(animate) {   // animate — 자리(side)를 바꿀 때만 t
   const vert = dockSide === "left" || dockSide === "right";
   w.webContents.send("floe:dock", { side: dockSide, size: vert ? ib.width : ib.height, inner: vert ? dockInner.w : dockInner.h, max: vert ? dockInner.maxW : 0 });   // max — 손잡이의 가장 크게(옆은 760과 작업실 반 중 작은 것, 두승현 결정 2026-10-27)   // size — 섬 창(비켜설 폭), inner — 섬이 고른 크기(손잡이의 값 · 범위 단위, 새 맥락 리뷰 2026-10-27)
   win.webContents.send("floe:dock-room", { side: dockSide, width: ws.width, height: ws.height });   // 섬 화면은 이 크기 안에서 스크롤한다(app.js applyDock) — 섬이 작업실보다 크면 밖으로 넘쳤다(2026-10-27 잼: 좁은 섬 847 ~ 998px)
+}
+// 작업실이 작업 표시줄로 내려가면(minimize) 섬은 붙기 전 자리로 잠시 돌아가고(undock은 그대로 — 다시 올라오면 restore가 placeIsland로 다시 붙인다), 섬 화면은 원래 크기로
+function parkIsland() {
+  if (!win || win.isDestroyed() || !undock) return;
+  lastDock = "";
+  win.webContents.send("floe:dock-room", null);
+  const ib = win.getContentBounds(); win.setContentBounds({ ...ib, x: Math.round(undock.cx - ib.width / 2), y: undock.y }, false);
 }
 function undockIsland() {
   if (!win || win.isDestroyed()) return;
@@ -311,7 +318,10 @@ function openSideWin(kind, opt = {}) {
   Object.assign(w, { floeSide: opt.side, floeSize: opt.size, floeMoved: false });   // 다시 둘 때(placeSideWins · floe:win-size) 같은 규칙으로
   w.on("will-move", () => { w.floeMoved = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
   w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
-  if (ws) { w.once("ready-to-show", placeIsland); w.on("move", placeIsland); w.on("resize", placeIsland); }   // 섬이 작업실 가장자리에 붙고 따라간다(C-41 ②)
+  if (ws) {   // 섬이 작업실 가장자리에 붙고 따라간다(C-41 ②). 내려가면 비켜 두고, 다시 올라오거나 최대화 · 되돌리면 다시 붙인다(2026-10-27 — 내려간 작업실을 따라가 섬이 -32000으로 사라졌다)
+    w.once("ready-to-show", placeIsland); w.on("move", placeIsland); w.on("resize", placeIsland);
+    w.on("minimize", parkIsland); for (const ev of ["restore", "maximize", "unmaximize"]) w.on(ev, () => placeIsland());
+  }
   w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
   w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (ws) undockIsland(); if (win && !win.isDestroyed()) win.webContents.send("floe:win-closed", kind); });   // 작업실이 닫히면 섬은 붙기 전 자리로
   w.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
