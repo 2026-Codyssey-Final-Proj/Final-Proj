@@ -33,7 +33,7 @@
   const sideOf = (v) => (SIDES.includes(v) ? v : "left");
   const otherSide = (v) => (sideOf(v) === "left" ? "right" : "left");
   // 퀘스트 창 크기 S · M · L — [가로, 세로] px(화면이 작으면 CSS가 줄인다)
-  const SIZES = { s: [320, 300], m: [460, 640], l: [560, 820] };
+  const SIZES = { s: [720, 520], m: [920, 640], l: [1120, 760] };   // 작업실 창(C-41, 2026-10-26) — 캔버스 보드가 640 미만이면 세로 한 줄이라 가장 작은 것도 720. 창 테두리로도 바꿀 수 있다
   const sizeOf = (v) => (SIZES[v] ? v : "m");
   // 보상 — 조개는 장을 지날 때 하나, 셋이면 뽑기(확률은 늘 화면에 — 다음 판). 돈으로 사는 것은 없다
   const SHELL_COST = 3;

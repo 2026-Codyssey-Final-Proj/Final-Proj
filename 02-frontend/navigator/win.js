@@ -5,6 +5,7 @@
 (function () {
   const F = window.floeApp, root = document.getElementById("root"), kind = location.hash.slice(1) || "quest";
   document.documentElement.classList.add("in-win", `win-${kind}`);
+  document.title = kind === "quest" ? "Floe — 작업실" : "Floe — 설정";   // 테두리 있는 작업실 창(C-41, 2026-10-26)은 OS 제목 줄에 이 글이 보인다 — main.js의 title을 페이지가 덮어쓴다
   if (!F || !F.onWinHtml) return;
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   // 섬이 보낸 내용 — 쓰던 글 칸(data-act)은 커서 · 스크롤까지 되돌린다
@@ -17,6 +18,7 @@
     root.innerHTML = html || "";
     if (key) { const b = [...root.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.i || ""}|${x.dataset.k || ""}` === key); if (b) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; } }
     const body = root.querySelector(".wbody"); if (body) body.scrollTop = body.dataset.view === view ? scroll : 0;
+    const now = body && body.dataset.view !== view && root.querySelector(".cv-c.now"); if (now) now.scrollIntoView({ block: "nearest" });   // 캔버스 탭으로 올 때 '지금' 칸이 보이게(C-41 기준 7, 2026-10-26)
   });
   const data = (t) => ({ ...t.dataset });
   root.addEventListener("click", (e) => {
