@@ -20,6 +20,9 @@
     const body = root.querySelector(".wbody"); if (body) body.scrollTop = body.dataset.view === view ? scroll : 0;
     const now = body && body.dataset.view !== view && root.querySelector(".cv-c.now"); if (now) now.scrollIntoView({ block: "nearest" });   // 캔버스 탭으로 올 때 '지금' 칸이 보이게(C-41 기준 7, 2026-10-26)
   });
+  // 섬이 이 창의 가장자리에 붙으면(C-41 ②, 2026-10-27) 그쪽을 비워 내용이 비켜선다 — {side, size}
+  const DOCK = ["top", "right", "bottom", "left"];
+  if (F.onDock) F.onDock((p) => { const s = p && DOCK.includes(p.side) ? Math.max(0, Math.round(p.size) || 0) : 0; root.style.padding = DOCK.map((k) => (p && p.side === k ? s : 0) + "px").join(" "); });
   const data = (t) => ({ ...t.dataset });
   root.addEventListener("click", (e) => {
     const t = e.target.closest("[data-act], [data-bv]");

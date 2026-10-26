@@ -28,10 +28,10 @@
   const okLv = (v) => Number.isInteger(v) && v >= 0;
   const startLevel = (saved, j, finished) => (okLv(saved) ? saved : lvOf(j, finished));
   const levelUp = (lv) => (okLv(lv) ? lv : 0) + 1;
-  // 창 자리 — 설정 창이 왼쪽이면 퀘스트 창은 오른쪽, 반대도(이재엽 2026-10-21). 모르는 값은 왼쪽
-  const SIDES = ["left", "right"];
-  const sideOf = (v) => (SIDES.includes(v) ? v : "left");
-  const otherSide = (v) => (sideOf(v) === "left" ? "right" : "left");
+  // 섬 자리(C-41 ②, 2026-10-27) — 섬이 작업실 창의 어느 가장자리에 붙나: 위 · 아래 · 왼쪽 · 오른쪽, 처음은 오른쪽(스토리보드 기준 4). 모르는 값은 오른쪽.
+  //   2026-10-21 ~ 26에는 설정 창 · 퀘스트 창이 섬 옆 어느 쪽에 뜨나(left · right)였다 — 옛 저장값 left · right는 그대로 읽힌다
+  const SIDES = ["top", "bottom", "left", "right"];
+  const sideOf = (v) => (SIDES.includes(v) ? v : "right");   // otherSide(반대쪽)는 2026-10-27에 뺌 — 쓰는 곳이 없었다
   // 퀘스트 창 크기 S · M · L — [가로, 세로] px(화면이 작으면 CSS가 줄인다)
   const SIZES = { s: [720, 520], m: [920, 640], l: [1120, 760] };   // 작업실 창(C-41, 2026-10-26) — 캔버스 보드가 640 미만이면 세로 한 줄이라 가장 작은 것도 720. 창 테두리로도 바꿀 수 있다
   const sizeOf = (v) => (SIZES[v] ? v : "m");
@@ -313,7 +313,7 @@
   // 위 줄의 진행 — "M개 중 k번째 할 일"(다 했으면 M)
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
-  const api = { BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, otherSide, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
+  const api = { BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
     itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT,
     pickOf, withStageDraft, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;

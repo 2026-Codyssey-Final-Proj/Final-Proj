@@ -17,8 +17,9 @@ html.in-win,html.in-win body{margin:0;background:#16225E;overflow:hidden;height:
 html.in-win.win-quest,html.in-win.win-quest body{background:#E9EEF6}   /* 작업실(C-41, 2026-10-26) — 파스텔. main.js backgroundColor · app.css html.win-quest와 같은 값 */
 html.in-win.win-quest .win-empty{color:#4A5678}
 html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
-#root{height:100vh}
-#root>.win{width:100%!important;height:100vh!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}
+#root{height:100vh;box-sizing:border-box;transition:padding .3s cubic-bezier(.2,.8,.2,1)}   /* 섬이 붙은 가장자리만큼 padding(win.js onDock, C-41 ②) — 0.3초(기준 8) */
+@media (prefers-reduced-motion:reduce){#root{transition:none}}
+#root>.win{width:100%!important;height:100%!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}
 #root .wh{-webkit-app-region:drag;cursor:grab}
 #root .wh button,#root .wh select{-webkit-app-region:no-drag}
 .win-empty{padding:24px;color:#B9C7E6;font:14px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
