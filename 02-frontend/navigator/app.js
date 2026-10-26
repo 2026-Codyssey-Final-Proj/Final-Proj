@@ -2000,6 +2000,7 @@
     h.style.setProperty("--room-w", room ? `${Math.max(240, Math.round(room.width) || 0)}px` : "");
     h.style.setProperty("--room-h", room ? `${Math.max(240, Math.round(room.height) || 0)}px` : "");
     h.style.setProperty("--dock-w", `${dockW}px`); h.style.setProperty("--dock-h", `${dockH}px`);
+    if (window.floeApp.dockInner) window.floeApp.dockInner(dockW, dockH);   // 손잡이의 값 단위(섬 크기 — 섬 창은 여백만큼 더 크다)
     queueSize();
   }
   // 손잡이(win.js)가 보낸 크기 — 축(w · h) · 값(px) 또는 처음으로(reset). 범위는 quest.js DOCK_RANGE. 바꾸면 섬이 다시 재고(queueSize) 앱이 가장자리에 다시 붙이고 작업실이 비켜선다
