@@ -2,6 +2,8 @@
 
 # 넘김(오퍼스) — 0~8단계 스토리보드 웹페이지 · 디자인 첫 판
 
+> **끝남 (2026-10-26, 오퍼스 세션):** 페이지 [stage-storyboard/](../../04-pattern-implementation/stage-storyboard/README.md) · 아티팩트 https://claude.ai/artifact/SjXczGdWBh3cCDL3tahLYp · 고칠 목록 F-60 — 브랜치 `v2/stage-storyboard`. 5절의 버튼 넷은 모두 [제안]대로(정한 것은 페이지 안내의 "어떻게 정했나"). <!-- claude-drafted: 2026-10-26 -->
+
 > **기록 문서.** 2026-10-26 `main` 36b9e00 기준이다. 예시는 이재엽이 Floe로 만든 공개 저장소 [gamercross/test-1](https://github.com/gamercross/test-1)(나만의 프롬프트 관리 프로그램)이다.
 > 화면 기준은 디자인 캔버스 [Floe IDE 목업](https://claude.ai/artifact/6FABoNXETGrPD9hiT8ungr)의 맨 아래 줄('지금 방향 — 작업실은 그대로, 섬은 고른 가장자리에')이다.
 > `[제안]`은 Claude가 정한 기본값이라 바꿔도 된다. 오퍼스 세션에 붙여 넣을 말은 맨 아래 7절에 있다.

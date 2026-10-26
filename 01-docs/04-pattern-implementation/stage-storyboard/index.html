@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Floe 0~8단계 스토리보드</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!-- claude-drafted: 2026-10-26 — 이재엽의 요청("0단계부터 8단계까지 … test-1 … 하나씩 스토리보드로 만들어서 … 새로운 웹페이지로 저걸 디자인 초기버전으로 해서 다른 팀원들도 확인 가능하도록")으로 Claude가 만든 디자인 첫 판. 구성 · 번호 · 틈 보이기 · 캔버스 기준 · 제안 셋은 이재엽이 버튼으로 골랐고, 장면 그림은 이재엽이 준 디자인 캔버스 스크린샷(DockPrototype, 같은 날 15:49)을 기준으로 다시 그렸다("이거를 기준으로 다시 스토리보드 재작성"). 기준: 넘김 문서 opus-handoff-2026-10-26-storyboard.md, 예시 gamercross/test-1 8e41922. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Gaegu:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* 레이아웃: 위에 붙는 단계 칩 아래로 장면 아홉이 세로로 — 장면마다 앱 화면 한 장(왼쪽 작업실 창 + 오른쪽 섬) 다음에 네 칸 설명 */
+:root{
+  --bg:#E9EEF6; --paper:#F5F8FC; --paper-2:#EBF0F8; --ink:#1E2A5A; --sub:#4A5678; --num:#5F6C90; --line:#D3DBE9; --line-2:#BCC8DD;
+  --link:#2E4A9A; --acc:#CFDDF7; --acc-2:#BDD0F2; --acc-ink:#1E2A5A; --focus:#3D6BD6;
+  --me:#F7E4D4; --me-ink:#7A3F1F; --fl:#DCEBFA; --fl-ink:#1E3F7A; --cc:#E7E2F6; --cc-ink:#4A3F7A; --floe:#DFF0E7; --floe-ink:#24584A;
+  --gap:#F7EDC0; --gap-ink:#5A4710; --gap-line:#E4D18A; --ok:#DFF0E7; --ok-ink:#24584A;
+  --thread:#D0668A; --thread-soft:#F6DDE6; --thread-ink:#9A3558;
+  --k-same:#5A84C9; --k-pick:#C9DAF4; --k-own:#C77A43;
+  --desk:#DCE4EF; --win:#F7F9FC; --side:#EEF2F8; --ws:#F3F6FA; --dot:#CBD4E3; --board:#FAFBFD; --card:#F8FAFD; --note:#F7EDC0; --note-ink:#3B3317;
+  --act:#E3ECFB; --must:#E6F4EC; --later:#FBEADF; --later-ink:#8A4B2A;
+  --isl:#1A2766; --isl-ink:#F2F6FF; --isl-sub:#B9C7E6; --isl-me:#C9DAF8; --isl-me-ink:#16225E; --sky:#A9DDFF; --sky-ink:#0E1A4F;
+  --f-body:'IBM Plex Sans KR','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
+  --f-hand:'Gaegu','IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --floro:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjE4IDUyIDE2NCAxMzQiPjxzdHlsZT48IVtDREFUQVsKOnJvb3R7LS1zZWFsOiNFRUY1RkQ7LS1zZWFsLXNoYWRlOiNFMEVCRjg7LS1zZWFsLWxpbmU6I0M4REFFRTstLXNlYWwtZmluOiNCNUQxRUU7LS1zZWFsLWluazojMUEyMzUwfQouY2F0e2ZsZXg6bm9uZTtvdmVyZmxvdzp2aXNpYmxlO2Rpc3BsYXk6YmxvY2t9Ci5jYXQgLmMtZnVye2ZpbGw6dmFyKC0tc2VhbCk7c3Ryb2tlOnZhcigtLXNlYWwtbGluZSk7c3Ryb2tlLXdpZHRoOjEuNX0KLmNhdCAuYy1zaGFkZXtmaWxsOnZhcigtLXNlYWwtc2hhZGUpfQouY2F0IC5jLWZpbntmaWxsOm5vbmU7c3Ryb2tlOnZhcigtLXNlYWwtZmluKTtzdHJva2Utd2lkdGg6My4yO3N0cm9rZS1saW5lY2FwOnJvdW5kfQouY2F0IC5jLXRhaWwgZWxsaXBzZXtmaWxsOnZhcigtLXNlYWwtZmluKX0KLmNhdCAuYy1wYXdzIGVsbGlwc2V7ZmlsbDp2YXIoLS1zZWFsKTtzdHJva2U6dmFyKC0tc2VhbC1maW4pO3N0cm9rZS13aWR0aDoxLjV9Ci5jYXQgLmMtYmx1c2ggZWxsaXBzZXtmaWxsOiNGN0FGQkE7b3BhY2l0eTowO3RyYW5zaXRpb246b3BhY2l0eSAuMnN9ICAgCi5jYXQgLmMtd2hpc2t7ZmlsbDpub25lO3N0cm9rZTp2YXIoLS1zZWFsLWluayk7c3Ryb2tlLXdpZHRoOjEuMTtzdHJva2UtbGluZWNhcDpyb3VuZH0gICAKLmNhdCAuYy1ub3Nle2ZpbGw6dmFyKC0tc2VhbC1pbmspfQouY2F0IC5jLW1vdXRoe2ZpbGw6bm9uZTtzdHJva2U6dmFyKC0tc2VhbC1pbmspO3N0cm9rZS13aWR0aDoxLjU7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWxpbmVqb2luOnJvdW5kfQouY2F0IC5jLW9wZW57ZmlsbDojQjQ1MDVGO2Rpc3BsYXk6bm9uZX0KLmNhdCAuYy1leWVzIGNpcmNsZXtmaWxsOnZhcigtLXNlYWwtaW5rKX0KLmNhdCAuYy1leWVzIC5lLWdsaW50e2ZpbGw6I0ZGRkZGRn0KLmNhdCAuYy1leWVzIHBhdGh7ZmlsbDpub25lO3N0cm9rZTp2YXIoLS1zZWFsLWluayk7c3Ryb2tlLXdpZHRoOjIuMjtzdHJva2UtbGluZWNhcDpyb3VuZH0KLmNhdCAuYy1leWVzIC5lLWhlYXJ0IHBhdGh7ZmlsbDojRkY1RDczO3N0cm9rZTpub25lfQouY2F0IC5zLWRvdHMgY2lyY2xle2ZpbGw6IzhGQTlENn0uY2F0IC5zLXNwYXJre2ZpbGw6I0Y1QTUyNH0uY2F0IC5zLWhlYXJ0e2ZpbGw6I0ZGNkY4Nn0KLmNhdCAucy1xe2ZvbnQ6ODAwIDIycHggLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmO2ZpbGw6dmFyKC0tc2VhbC1xLCMyRjZCRkYpfQouY2F0IC5zLWJhbmcgY2lyY2xle2ZpbGw6I0Y1QTUyNH0uY2F0IC5zLWJhbmcgcGF0aHtzdHJva2U6I2ZmZjtzdHJva2Utd2lkdGg6MztzdHJva2UtbGluZWNhcDpyb3VuZH0uY2F0IC5zLWJhbmcgY2lyY2xlOmxhc3QtY2hpbGR7ZmlsbDojZmZmfQouY2F0IC5zLXp6eiB0ZXh0e2ZvbnQ6ODAwIDEwcHggLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmO2ZpbGw6dmFyKC0tc2VhbC16eiwjN0M4QkE4KX0KLmNhdCAucy16enogdGV4dDpudGgtY2hpbGQoMil7Zm9udC1zaXplOjEycHh9LmNhdCAucy16enogdGV4dDpudGgtY2hpbGQoMyl7Zm9udC1zaXplOjE1cHh9Ci5jYXQgLnMtc3dlYXR7ZmlsbDojN0ZCM0ZGfQouY2F0IC5jLWV5ZXM+KiwuY2F0IFtjbGFzc149InMtIl17ZGlzcGxheTpub25lfQoubS1pZGxlIC5lLWRvdCwubS1sb29rIC5lLWRvdCwubS1hbGVydCAuZS13aWRlLC5tLXdvdyAuZS13b3csLm0taGFwcHkgLmUtaGFwcHksLm0tZG9uZSAuZS1oYXBweSwubS10aGluayAuZS10aGluaywKLm0tbG92ZSAuZS1oZWFydCwubS1wdXJyIC5lLWNsb3NlZCwubS1zbGVlcCAuZS1jbG9zZWQsLm0teWF3biAuZS1jbG9zZWR7ZGlzcGxheTppbmxpbmV9Ci5tLWxvb2sgLnMtZG90cywubS1kb25lIC5zLXNwYXJrLC5tLXRoaW5rIC5zLXEsLm0tYWxlcnQgLnMtYmFuZywubS1sb3ZlIC5zLWhlYXJ0LC5tLXB1cnIgLnMtaGVhcnQsLm0tc2xlZXAgLnMtenp6e2Rpc3BsYXk6aW5saW5lfQouY2F0Lm9vcHMgLnMtc3dlYXR7ZGlzcGxheTppbmxpbmV9LmNhdC5vb3BzIC5zLXF7ZGlzcGxheTpub25lfQoubS15YXduIC5jLW1vdXRoLC5tLXdvdyAuYy1tb3V0aCwubS1hbGVydCAuYy1tb3V0aHtkaXNwbGF5Om5vbmV9Ci5tLXlhd24gLmMtb3BlbiwubS13b3cgLmMtb3BlbiwubS1hbGVydCAuYy1vcGVue2Rpc3BsYXk6aW5saW5lfQoubS1sb3ZlIC5jLWJsdXNoIGVsbGlwc2UsLm0tcHVyciAuYy1ibHVzaCBlbGxpcHNlLC5tLWhhcHB5IC5jLWJsdXNoIGVsbGlwc2UsLm0tZG9uZSAuYy1ibHVzaCBlbGxpcHNlLC5tLXNsZWVwIC5jLWJsdXNoIGVsbGlwc2V7b3BhY2l0eTouOH0KLm0tbG9vayAuZS1kb3R7dHJhbnNmb3JtOnRyYW5zbGF0ZVkoLTJweCl9Ci5zbWFsbCAuYy1tb3V0aCwuc21hbGwgLmMtb3Blbiwuc21hbGwgLmMtZmluLC5zbWFsbCAuYy13aGlza3tkaXNwbGF5Om5vbmV9Ci5ibGluayAubS1pZGxlIC5lLWRvdCwuYmxpbmsgLm0tbG9vayAuZS1kb3R7ZGlzcGxheTpub25lfQouYmxpbmsgLm0taWRsZSAuZS1ibGluaywuYmxpbmsgLm0tbG9vayAuZS1ibGlua3tkaXNwbGF5OmlubGluZX0KCgouY2F0IC5zLWJ1YiBjaXJjbGUgeyBmaWxsOiByZ2JhKDE2OSwgMjIxLCAyNTUsIC4zNSk7IHN0cm9rZTogI0NERTZGRjsgc3Ryb2tlLXdpZHRoOiAuODsgfQouZmFjZSAuYy1maW4geyBkaXNwbGF5OiBub25lOyB9ICAgCgouY2F0IC5oLXN0YXJzIGNpcmNsZSB7IGZpbGw6ICNGRkZGRkY7IG9wYWNpdHk6IC43OyB9Ci5jYXQgLmgtbGluZSwgLmNhdCAuaC1yaXBwbGUgeyBmaWxsOiBub25lOyBzdHJva2U6ICNFQUY0RkY7IHN0cm9rZS1saW5lY2FwOiByb3VuZDsgfQouY2F0IC5oLWxpbmUgeyBzdHJva2Utd2lkdGg6IDEuNjsgb3BhY2l0eTogLjc7IH0gLmNhdCAuaC1yaXBwbGUgeyBzdHJva2Utd2lkdGg6IDE7IG9wYWNpdHk6IC40OyB9CgoKQG1lZGlhIChwcmVmZXJzLXJlZHVjZWQtbW90aW9uOiBuby1wcmVmZXJlbmNlKSB7CiAgCiAgLmNhdCAuYy10YWlsIHsgdHJhbnNmb3JtLW9yaWdpbjogOTJweCAxMDhweDsgYW5pbWF0aW9uOiBzd2F5IDMuMnMgZWFzZS1pbi1vdXQgaW5maW5pdGU7IH0KICAubS1sb29rIC5jLXRhaWwsIC5tLWFsZXJ0IC5jLXRhaWwgeyBhbmltYXRpb24tZHVyYXRpb246IDEuMXM7IH0KICAubS1oYXBweSAuYy10YWlsLCAubS1kb25lIC5jLXRhaWwsIC5tLWxvdmUgLmMtdGFpbCwgLm0tcHVyciAuYy10YWlsIHsgYW5pbWF0aW9uOiB3YWcgLjMycyBlYXNlLWluLW91dCBpbmZpbml0ZSBhbHRlcm5hdGU7IH0KICAubS1zbGVlcCAuYy10YWlsLCAubS15YXduIC5jLXRhaWwgeyBhbmltYXRpb246IG5vbmU7IH0KCiAgCiAgLmNhdCAuYy1ib2R5IHsgdHJhbnNmb3JtLW9yaWdpbjogNTVweCAxMTJweDsgYW5pbWF0aW9uOiBicmVhdGggNC4ycyBlYXNlLWluLW91dCBpbmZpbml0ZTsgfQogIC5ob2xlIC5jLWJvZHkgeyB0cmFuc2Zvcm0tb3JpZ2luOiA1NXB4IDYwcHg7IGFuaW1hdGlvbjogZmxvYXQgNXMgZWFzZS1pbi1vdXQgaW5maW5pdGU7IH0gICAKICAubS1zbGVlcCAuYy1ib2R5IHsgYW5pbWF0aW9uOiBicmVhdGhlIDMuNHMgZWFzZS1pbi1vdXQgaW5maW5pdGU7IH0KICAubS1zbGVlcCAucy16enogdGV4dCB7IGFuaW1hdGlvbjogenogMi42cyBlYXNlLWluLW91dCBpbmZpbml0ZTsgfQogIC5tLXNsZWVwIC5zLXp6eiB0ZXh0Om50aC1jaGlsZCgyKSB7IGFuaW1hdGlvbi1kZWxheTogLjM1czsgfSAubS1zbGVlcCAucy16enogdGV4dDpudGgtY2hpbGQoMykgeyBhbmltYXRpb24tZGVsYXk6IC43czsgfQoKICAKICAubS1oYXBweSAuYy1maW4sIC5tLWRvbmUgLmMtZmluLCAubS13b3cgLmMtZmluIHsgdHJhbnNmb3JtLW9yaWdpbjogNDlweCA3MnB4OyBhbmltYXRpb246IGZsYXAgLjE2cyBlYXNlLWluLW91dCA2IGFsdGVybmF0ZTsgfQoKICAKICAuaG9sZS5tLXdvdyAuYy1ib2R5LCAuaG9sZS5tLWFsZXJ0IC5jLWJvZHkgeyBhbmltYXRpb246IHBvcHVwIDFzIGVhc2Utb3V0OyB9CiAgLmhvbGUubS10aGluayAuYy1ib2R5LCAuaG9sZS5tLWxvb2sgLmMtYm9keSB7IGFuaW1hdGlvbjogZGlwIDNzIGVhc2UtaW4tb3V0IGluZmluaXRlOyB9CiAgLmhvbGUubS13b3cgLnMtYnViLCAuaG9sZS5tLWFsZXJ0IC5zLWJ1YiwgLmhvbGUubS10aGluayAucy1idWIsIC5ob2xlLm0tbG9vayAucy1idWIsIC5ob2xlLm0tZG9uZSAucy1idWIsIC5zd2ltIC5jYXQgLnMtYnViIHsgZGlzcGxheTogaW5saW5lOyB9CiAgLmNhdCAucy1idWIgY2lyY2xlIHsgYW5pbWF0aW9uOiByaXNlIDEuM3MgZWFzZS1pbiBpbmZpbml0ZTsgfQogIC5jYXQgLnMtYnViIGNpcmNsZTpudGgtY2hpbGQoMikgeyBhbmltYXRpb24tZGVsYXk6IC40NXM7IH0gLmNhdCAucy1idWIgY2lyY2xlOm50aC1jaGlsZCgzKSB7IGFuaW1hdGlvbi1kZWxheTogLjlzOyB9CgogIC5tLWxvb2sgLnMtZG90cyB7IGFuaW1hdGlvbjogYmxpbmtkb3QgMXMgaW5maW5pdGU7IH0KICAuY2F0Lm0td293IHsgYW5pbWF0aW9uOiBqdW1wIC40cyBlYXNlOyB9CgogIAogIC5zd2ltIC5jYXQgLmMtYm9keSB7IHRyYW5zZm9ybS1vcmlnaW46IDU1cHggNjBweDsgYW5pbWF0aW9uOiBzd2ltIDMuNnMgZWFzZS1pbi1vdXQ7IH0gICAKCiAgCiAgLmdhbHVtcGggc3ZnLmNhdCB7IHRyYW5zZm9ybS1vcmlnaW46IDUwJSAxMDAlOyBhbmltYXRpb246IGdhbHVtcGggMS40cyBlYXNlLWluLW91dDsgfQp9CkBrZXlmcmFtZXMgc3dheSB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiByb3RhdGUoMCk7IH0gNTAlIHsgdHJhbnNmb3JtOiByb3RhdGUoLTE0ZGVnKTsgfSB9CkBrZXlmcmFtZXMgd2FnIHsgZnJvbSB7IHRyYW5zZm9ybTogcm90YXRlKDEwZGVnKTsgfSB0byB7IHRyYW5zZm9ybTogcm90YXRlKC0xOGRlZyk7IH0gfQpAa2V5ZnJhbWVzIGJyZWF0aCB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiBzY2FsZSgxKTsgfSA1MCUgeyB0cmFuc2Zvcm06IHNjYWxlKDEuMDEyLCAuOTkyKTsgfSB9CkBrZXlmcmFtZXMgYnJlYXRoZSB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiBzY2FsZSgxKTsgfSA1MCUgeyB0cmFuc2Zvcm06IHNjYWxlKDEuMDI1LCAuOTg1KTsgfSB9CkBrZXlmcmFtZXMgenogeyAwJSwgMTAwJSB7IG9wYWNpdHk6IC4yNTsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKDJweCk7IH0gNTAlIHsgb3BhY2l0eTogMTsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKC0ycHgpOyB9IH0KQGtleWZyYW1lcyBibGlua2RvdCB7IDUwJSB7IG9wYWNpdHk6IC4yNTsgfSB9CkBrZXlmcmFtZXMganVtcCB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiBub25lOyB9IDQwJSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlWSgtOHB4KTsgfSB9CkBrZXlmcmFtZXMgZmxhcCB7IHRvIHsgdHJhbnNmb3JtOiBzY2FsZSgxLjEyLCAuOSkgdHJhbnNsYXRlWSgtMXB4KTsgfSB9CgpAa2V5ZnJhbWVzIGZsb2F0IHsgMCUsIDEwMCUgeyB0cmFuc2Zvcm06IG5vbmU7IH0gMzAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKC0xLjVweCkgcm90YXRlKC0zZGVnKTsgfSA3MCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KSByb3RhdGUoM2RlZyk7IH0gfQpAa2V5ZnJhbWVzIHBvcHVwIHsgMCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMTVweCk7IH0gNTAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKC0xM3B4KSBzY2FsZSguOTcsIDEuMDQpOyB9IDc1JSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlWSgycHgpOyB9IDEwMCUgeyB0cmFuc2Zvcm06IG5vbmU7IH0gfQpAa2V5ZnJhbWVzIGRpcCB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKDNweCk7IH0gNTAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKDEwcHgpOyB9IH0KQGtleWZyYW1lcyBzd2ltIHsKICAwJSB7IHRyYW5zZm9ybTogbm9uZTsgfQogIDE0JSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIDE5cHgpOyB9CiAgMzIlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTE0cHgsIDIxcHgpIHJvdGF0ZSgtOWRlZyk7IH0KICA1MiUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgxM3B4LCAxOXB4KSByb3RhdGUoOWRlZyk7IH0KICA2NCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCAyMXB4KTsgfQogIDc2JSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIDgycHgpOyB9CiAgOTAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgLTZweCkgc2NhbGUoLjk3LCAxLjA1KTsgfQogIDEwMCUgeyB0cmFuc2Zvcm06IG5vbmU7IH0KfQpAa2V5ZnJhbWVzIHJpc2UgeyAwJSB7IG9wYWNpdHk6IDA7IHRyYW5zZm9ybTogdHJhbnNsYXRlWSgwKTsgfSAyMCUgeyBvcGFjaXR5OiAxOyB9IDEwMCUgeyBvcGFjaXR5OiAwOyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoLTM0cHgpOyB9IH0KQGtleWZyYW1lcyBnYWx1bXBoIHsKICAwJSwgMTAwJSB7IHRyYW5zZm9ybTogbm9uZTsgfQogIDEwJSB7IHRyYW5zZm9ybTogc2NhbGUoMS4wOCwgLjkpOyB9CiAgMjIlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKC0xNnB4KSBzY2FsZSguOTQsIDEuMDgpIHJvdGF0ZSgtM2RlZyk7IH0KICAzNCUgeyB0cmFuc2Zvcm06IHNjYWxlKDEuMSwgLjg4KTsgfQogIDQ2JSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlWSgtMTJweCkgc2NhbGUoLjk1LCAxLjA2KSByb3RhdGUoLTJkZWcpOyB9CiAgNTglIHsgdHJhbnNmb3JtOiBzY2FsZSgxLjA4LCAuOSk7IH0KICA3MCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoLTdweCkgc2NhbGUoLjk3LCAxLjA0KTsgfQogIDgyJSB7IHRyYW5zZm9ybTogc2NhbGUoMS4wNCwgLjk2KTsgfQp9Cl1dPjwvc3R5bGU+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBNUZFMCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzE2MjI2QSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxzdmcgeD0iMjAiIHk9IjI0IiBjbGFzcz0iY2F0IG0taGFwcHkgaG9sZSIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxNjAiIHZpZXdCb3g9IjAgMCAxMjAgMTIwIiBhcmlhLWhpZGRlbj0idHJ1ZSI+CiAgICAgIDxkZWZzPjxyYWRpYWxHcmFkaWVudCBpZD0iZmwxcCIgY3k9Ii42MiI+PHN0b3Agb2Zmc2V0PSIuMzUiIHN0b3AtY29sb3I9IiMxNjIyNkEiIHN0b3Atb3BhY2l0eT0iLjkiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxNjIyNkEiIHN0b3Atb3BhY2l0eT0iMCI+PC9zdG9wPjwvcmFkaWFsR3JhZGllbnQ+CiAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZmwxdyIgeDI9IjAiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM1RDg2RTYiIHN0b3Atb3BhY2l0eT0iLjk1Ij48L3N0b3A+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMkEzQjhDIiBzdG9wLW9wYWNpdHk9Ii44Ij48L3N0b3A+PC9saW5lYXJHcmFkaWVudD4KICAgICAgPGNsaXBQYXRoIGlkPSJmbDFjIj48cmVjdCB4PSItMjAiIHk9Ii00MCIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxNTAiPjwvcmVjdD48L2NsaXBQYXRoPjwvZGVmcz4KICAgIAogICAgCiAgICA8ZyBjbGlwLXBhdGg9InVybCgjZmwxYykiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTgpIHNjYWxlKDEuMTIpIj48ZyBjbGFzcz0iYy1ib2R5Ij48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImZsMXYiIGN4PSIuNDIiIGN5PSIuMzYiIHI9Ii42OCI+PHN0b3Agb2Zmc2V0PSIuNiIgc3RvcC1jb2xvcj0iIzFBMjM1MCIgc3RvcC1vcGFjaXR5PSIwIj48L3N0b3A+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMUEyMzUwIiBzdG9wLW9wYWNpdHk9Ii4yIj48L3N0b3A+PC9yYWRpYWxHcmFkaWVudD4KICAgICAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImZsMXMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI0ZGRkZGRiIgc3RvcC1vcGFjaXR5PSIuODUiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGRkZGRkYiIHN0b3Atb3BhY2l0eT0iMCI+PC9zdG9wPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPgogICAgICAKICAgICAgPGcgY2xhc3M9ImMtaGVhZCI+CiAgICAgICAgPHBhdGggY2xhc3M9ImMtZnVyIiBkPSJNNTAgMTAgQzY2IDEwIDc4IDIxIDgwIDM4IEM4MSA1MCA4MyA1OCA5MSA2OCBDMTAwIDc5IDEwMiA5NiA5NCAxMDYgQzg3IDExNCA3MyAxMTUgNTcgMTE1IEMzOSAxMTUgMjcgMTEyIDIyIDEwMyBDMTcgOTQgMTggNzggMTkgNjMgQzIwIDQ3IDIwIDMxIDI2IDIxIEMzMiAxMyA0MCAxMCA1MCAxMCBaIj48L3BhdGg+CiAgICAgICAgPHBhdGggY2xhc3M9ImMtc2hhZGUiIGQ9Ik04MCAzOCBDODEgNTAgODMgNTggOTEgNjggQzEwMCA3OSAxMDIgOTYgOTQgMTA2IEM4NyAxMTQgNzMgMTE1IDYyIDExNSBDODAgMTA4IDkwIDk2IDg3IDgyIEM4NCA3MCA3OSA1OCA4MCAzOCBaIj48L3BhdGg+CiAgICAgICAgPHBhdGggY2xhc3M9ImMtdm9sIiBkPSJNNTAgMTAgQzY2IDEwIDc4IDIxIDgwIDM4IEM4MSA1MCA4MyA1OCA5MSA2OCBDMTAwIDc5IDEwMiA5NiA5NCAxMDYgQzg3IDExNCA3MyAxMTUgNTcgMTE1IEMzOSAxMTUgMjcgMTEyIDIyIDEwMyBDMTcgOTQgMTggNzggMTkgNjMgQzIwIDQ3IDIwIDMxIDI2IDIxIEMzMiAxMyA0MCAxMCA1MCAxMCBaIiBmaWxsPSJ1cmwoI2ZsMXYpIj48L3BhdGg+CiAgICAgICAgPGVsbGlwc2UgY2xhc3M9ImMtc2hpbmUiIGN4PSIzNiIgY3k9IjIyIiByeD0iMTIiIHJ5PSI3IiB0cmFuc2Zvcm09InJvdGF0ZSgtMjUgMzYgMjIpIiBmaWxsPSJ1cmwoI2ZsMXMpIj48L2VsbGlwc2U+CiAgICAgICAgPHBhdGggY2xhc3M9ImMtZmluIiBkPSJNMzcgNjIgUTQ1IDY0IDQ5IDc0IE02MiA1OSBRNTQgNjQgNDkgNzQgTTMxIDcyIFE0OSA4NSA2OSA3MSI+PC9wYXRoPgogICAgICAgIDxnIGNsYXNzPSJjLWJsdXNoIj48ZWxsaXBzZSBjeD0iMzMiIGN5PSI0MiIgcng9IjQuMiIgcnk9IjIuNiI+PC9lbGxpcHNlPjxlbGxpcHNlIGN4PSI2NiIgY3k9IjQyIiByeD0iNC4yIiByeT0iMi42Ij48L2VsbGlwc2U+PC9nPgogICAgICAgIDxwYXRoIGNsYXNzPSJjLXdoaXNrIiBkPSJNMzEgNDEgTDIyIDM5LjUgTTMxIDQzLjUgTDIyIDQ0LjUgTTY4IDQxIEw3NyAzOS41IE02OCA0My41IEw3NyA0NC41Ij48L3BhdGg+CiAgICAgICAgPGcgY2xhc3M9ImMtZXllcyI+CiAgICAgICAgICA8ZyBjbGFzcz0iZS1kb3QiPjxjaXJjbGUgY3g9IjM5IiBjeT0iMzUiIHI9IjMuNCI+PC9jaXJjbGU+IDxjaXJjbGUgY3g9IjYwIiBjeT0iMzUiIHI9IjMuNCI+PC9jaXJjbGU+PC9nPgogICAgICAgICAgPGcgY2xhc3M9ImUtd2lkZSI+PGNpcmNsZSBjeD0iMzkiIGN5PSIzNSIgcj0iNC42Ij48L2NpcmNsZT48Y2lyY2xlIGNsYXNzPSJlLWdsaW50IiBjeD0iNDAuNCIgY3k9IjMzLjQiIHI9IjEuNCI+PC9jaXJjbGU+IDxjaXJjbGUgY3g9IjYwIiBjeT0iMzUiIHI9IjQuNiI+PC9jaXJjbGU+PGNpcmNsZSBjbGFzcz0iZS1nbGludCIgY3g9IjYxLjQiIGN5PSIzMy40IiByPSIxLjQiPjwvY2lyY2xlPjwvZz4KICAgICAgICAgIDxnIGNsYXNzPSJlLXdvdyI+PGNpcmNsZSBjeD0iMzkiIGN5PSIzNSIgcj0iNS4yIj48L2NpcmNsZT48Y2lyY2xlIGNsYXNzPSJlLWdsaW50IiBjeD0iNDAuNiIgY3k9IjMzLjIiIHI9IjEuNyI+PC9jaXJjbGU+PGNpcmNsZSBjbGFzcz0iZS1nbGludCIgY3g9IjM3LjQiIGN5PSIzNyIgcj0iLjgiPjwvY2lyY2xlPiA8Y2lyY2xlIGN4PSI2MCIgY3k9IjM1IiByPSI1LjIiPjwvY2lyY2xlPjxjaXJjbGUgY2xhc3M9ImUtZ2xpbnQiIGN4PSI2MS42IiBjeT0iMzMuMiIgcj0iMS43Ij48L2NpcmNsZT48Y2lyY2xlIGNsYXNzPSJlLWdsaW50IiBjeD0iNTguNCIgY3k9IjM3IiByPSIuOCI+PC9jaXJjbGU+PC9nPgogICAgICAgICAgPHBhdGggY2xhc3M9ImUtaGFwcHkiIGQ9Ik0zNS41IDM2LjUgUTM5IDMxLjUgNDIuNSAzNi41IE01Ni41IDM2LjUgUTYwIDMxLjUgNjMuNSAzNi41Ij48L3BhdGg+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iZS1jbG9zZWQiIGQ9Ik0zNS41IDM0LjUgUTM5IDM4IDQyLjUgMzQuNSBNNTYuNSAzNC41IFE2MCAzOCA2My41IDM0LjUiPjwvcGF0aD4KICAgICAgICAgIDxwYXRoIGNsYXNzPSJlLWJsaW5rIiBkPSJNMzUuNSAzNSBMNDIuNSAzNSBNNTYuNSAzNSBMNjMuNSAzNSI+PC9wYXRoPgogICAgICAgICAgPGcgY2xhc3M9ImUtdGhpbmsiPjxjaXJjbGUgY3g9IjM5IiBjeT0iMzUiIHI9IjMuNCI+PC9jaXJjbGU+PHBhdGggZD0iTTU2IDMzLjUgTDY0IDM2LjUiPjwvcGF0aD48L2c+CiAgICAgICAgICA8ZyBjbGFzcz0iZS1oZWFydCI+PHBhdGggZD0iTTM5IDM4LjYgQzM0LjYgMzUuNiAzNC42IDMxLjYgMzcuNCAzMS42IEMzOC40IDMxLjYgMzkgMzIuNiAzOSAzMy4yIEMzOSAzMi42IDM5LjYgMzEuNiA0MC42IDMxLjYgQzQzLjQgMzEuNiA0My40IDM1LjYgMzkgMzguNiBaIj48L3BhdGg+IDxwYXRoIGQ9Ik02MCAzOC42IEM1NS42IDM1LjYgNTUuNiAzMS42IDU4LjQgMzEuNiBDNTkuNCAzMS42IDYwIDMyLjYgNjAgMzMuMiBDNjAgMzIuNiA2MC42IDMxLjYgNjEuNiAzMS42IEM2NC40IDMxLjYgNjQuNCAzNS42IDYwIDM4LjYgWiI+PC9wYXRoPjwvZz4KICAgICAgICA8L2c+CiAgICAgICAgPGcgY2xhc3M9ImMtc25vdXQiPgogICAgICAgICAgPHBhdGggY2xhc3M9ImMtbm9zZSIgZD0iTTQ3LjMgMzkuMiBRNDkuNSAzOC4yIDUxLjcgMzkuMiBRNTAuOCA0MS42IDQ5LjUgNDEuOCBRNDguMiA0MS42IDQ3LjMgMzkuMiBaIj48L3BhdGg+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iYy1tb3V0aCIgZD0iTTQ5LjUgNDEuOCBMNDkuNSA0My40IE00NiA0MyBRNDcuNyA0NS4zIDQ5LjUgNDMuNCBRNTEuMyA0NS4zIDUzIDQzIj48L3BhdGg+CiAgICAgICAgICA8ZWxsaXBzZSBjbGFzcz0iYy1vcGVuIiBjeD0iNDkuNSIgY3k9IjQ1IiByeD0iMS44IiByeT0iMi40Ij48L2VsbGlwc2U+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICAgIDwvZz48L2c+PC9nPgogICAgPHBhdGggY2xhc3M9Imgtd2F0ZXIiIGQ9Ik00IDEwMCBRNjAgOTIgMTE2IDEwMCBRMTEwIDExNyA2MCAxMTggUTEwIDExNyA0IDEwMCBaIiBmaWxsPSJ1cmwoI2ZsMXcpIj48L3BhdGg+CiAgICA8cGF0aCBjbGFzcz0iaC1saW5lIiBkPSJNMTQgMTAwIFE2MCA5MyAxMDYgMTAwIj48L3BhdGg+PHBhdGggY2xhc3M9ImgtcmlwcGxlIiBkPSJNMzAgMTA2IFE0NCAxMDQgNTIgMTA2IE02NiAxMDggUTc4IDEwNiA5MCAxMDgiPjwvcGF0aD48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMiAxMikiPjxnIGNsYXNzPSJzLWRvdHMiPjxjaXJjbGUgY3g9Ijg0IiBjeT0iMjYiIHI9IjIuMiI+PC9jaXJjbGU+PGNpcmNsZSBjeD0iOTAiIGN5PSIxOCIgcj0iMyI+PC9jaXJjbGU+PGNpcmNsZSBjeD0iOTciIGN5PSI5IiByPSIzLjgiPjwvY2lyY2xlPjwvZz4KICAgICAgPHBhdGggY2xhc3M9InMtc3BhcmsiIGQ9Ik05NyAyIEw5OS41IDEwIEwxMDcgMTIuNSBMOTkuNSAxNSBMOTcgMjMgTDk0LjUgMTUgTDg3IDEyLjUgTDk0LjUgMTAgWiI+PC9wYXRoPgogICAgICA8dGV4dCBjbGFzcz0icy1xIiB4PSI4MiIgeT0iMjciPj88L3RleHQ+CiAgICAgIDxnIGNsYXNzPSJzLWJhbmciPjxjaXJjbGUgY3g9Ijk0IiBjeT0iMTYiIHI9IjgiPjwvY2lyY2xlPjxwYXRoIGQ9Ik05NCAxMSBMOTQgMTcuNSI+PC9wYXRoPjxjaXJjbGUgY3g9Ijk0IiBjeT0iMjEiIHI9IjEuNiI+PC9jaXJjbGU+PC9nPgogICAgICA8cGF0aCBjbGFzcz0icy1oZWFydCIgZD0iTTg0IDE1IEM4NCAxMCA5MSAxMCA5MSAxNSBDOTEgMTAgOTggMTAgOTggMTUgQzk4IDIxIDkxIDI0IDkxIDI3IEM5MSAyNCA4NCAyMSA4NCAxNSBaIj48L3BhdGg+CiAgICAgIDxnIGNsYXNzPSJzLXp6eiI+PHRleHQgeD0iODAiIHk9IjI4Ij56PC90ZXh0Pjx0ZXh0IHg9Ijg3IiB5PSIxOCI+ejwvdGV4dD48dGV4dCB4PSI5NSIgeT0iNyI+ejwvdGV4dD48L2c+CiAgICAgIDxwYXRoIGNsYXNzPSJzLXN3ZWF0IiBkPSJNODAgMjAgUTc2LjUgMjcgODAgMzAgUTgzLjUgMjcgODAgMjAgWiI+PC9wYXRoPgogICAgICA8ZyBjbGFzcz0icy1idWIiPjxjaXJjbGUgY3g9IjUwIiBjeT0iMTAwIiByPSIyIj48L2NpcmNsZT48Y2lyY2xlIGN4PSI2MCIgY3k9IjEwNCIgcj0iMS40Ij48L2NpcmNsZT48Y2lyY2xlIGN4PSI0MyIgY3k9IjEwNSIgcj0iMS42Ij48L2NpcmNsZT48L2c+PC9nPjwvc3ZnPjwvc3ZnPgo=");
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121831; --paper:#1A2242; --paper-2:#20294D; --ink:#E7ECFA; --sub:#AAB5D3; --num:#8F9BC0; --line:#2C3863; --line-2:#3E4B7C;
+  --link:#A9C2FF; --acc:#2E4380; --acc-2:#38508F; --acc-ink:#E7ECFA; --focus:#9DB8F7;
+  --me:#4A3226; --me-ink:#F4D3BC; --fl:#1E3356; --fl-ink:#C2D9F7; --cc:#332D55; --cc-ink:#D7CFF4; --floe:#1C3A31; --floe-ink:#AEDFC9;
+  --gap:#3D3417; --gap-ink:#EFDCA2; --gap-line:#6B5A23; --ok:#1C3A31; --ok-ink:#AEDFC9;
+  --thread:#E07A9C; --thread-soft:#3D2232; --thread-ink:#F2A9C0;
+  --k-same:#7FA6E6; --k-pick:#2F4675; --k-own:#E0A27A;
+  --desk:#0E1328; --win:#18203E; --side:#151C38; --ws:#1A2242; --dot:#2C3863; --board:#1F294C; --card:#232E55; --note:#4A4120; --note-ink:#F3E6B5;
+  --act:#22355E; --must:#1C3A31; --later:#43301F; --later-ink:#F4C9A8;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#121831; --paper:#1A2242; --paper-2:#20294D; --ink:#E7ECFA; --sub:#AAB5D3; --num:#8F9BC0; --line:#2C3863; --line-2:#3E4B7C;
+  --link:#A9C2FF; --acc:#2E4380; --acc-2:#38508F; --acc-ink:#E7ECFA; --focus:#9DB8F7;
+  --me:#4A3226; --me-ink:#F4D3BC; --fl:#1E3356; --fl-ink:#C2D9F7; --cc:#332D55; --cc-ink:#D7CFF4; --floe:#1C3A31; --floe-ink:#AEDFC9;
+  --gap:#3D3417; --gap-ink:#EFDCA2; --gap-line:#6B5A23; --ok:#1C3A31; --ok-ink:#AEDFC9;
+  --thread:#E07A9C; --thread-soft:#3D2232; --thread-ink:#F2A9C0;
+  --k-same:#7FA6E6; --k-pick:#2F4675; --k-own:#E0A27A;
+  --desk:#0E1328; --win:#18203E; --side:#151C38; --ws:#1A2242; --dot:#2C3863; --board:#1F294C; --card:#232E55; --note:#4A4120; --note-ink:#F3E6B5;
+  --act:#22355E; --must:#1C3A31; --later:#43301F; --later-ink:#F4C9A8;
+  color-scheme:dark }
+
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+a{color:var(--link)}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:6px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.25}
+p{margin:0}
+.wrap{max-width:1120px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap.wide{max-width:1532px}
+.mono{font-family:var(--f-mono);font-size:.9em}
+section[id]{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 72px)}
+.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.seal{display:block;background:var(--floro) center/contain no-repeat;flex:none}
+
+/* 머리 */
+.top{padding-block:40px 30px}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--sub);margin-bottom:10px}
+h1{font-size:clamp(30px,4.4vw,46px);font-weight:700;letter-spacing:-.02em}
+.lead{max-width:66ch;font-size:16.5px;margin-top:14px}
+.go{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0;padding:0;list-style:none}
+.go a{display:inline-flex;align-items:center;min-height:44px;padding:0 16px;border-radius:999px;background:var(--acc);color:var(--acc-ink);text-decoration:none;font-weight:600;font-size:14px}
+.go a:hover{background:var(--acc-2)}
+.key{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:12px;margin-top:26px}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px 18px;min-width:0;display:grid;gap:12px;align-content:start}
+.box h2{font-size:14px;font-weight:700;color:var(--sub);letter-spacing:.02em}
+.roles{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
+.r{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;line-height:1.6}
+.r.me{background:var(--me);color:var(--me-ink)} .r.fl{background:var(--fl);color:var(--fl-ink)} .r.cc{background:var(--cc);color:var(--cc-ink)} .r.floe{background:var(--floe);color:var(--floe-ink)}
+.how{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14px}
+.how b{font-weight:700}
+.apps{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;padding:0;list-style:none;font-size:13px;color:var(--sub)}
+.app{font-weight:700}
+.app.y{color:var(--ok-ink)} .app.p{color:var(--gap-ink)} .app.n{color:var(--sub)}
+.extag{display:inline-block;padding:0 7px;border-radius:999px;border:1px dashed var(--sub);color:var(--sub);font-size:12px;font-weight:600;line-height:1.6}
+
+/* 누가 정했나 띠 */
+.w8{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px 6px}
+.w8 .col{display:flex;flex-direction:column;gap:6px;min-width:0}
+.w8 .col b{font-size:13px;font-weight:700}
+.w8 time{font-family:var(--f-mono);font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.sq{display:flex;flex-wrap:wrap;gap:3px}
+.sq i,.tot i{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+.k-same{background:var(--k-same)} .k-pick{background:var(--k-pick);box-shadow:inset 0 0 0 1.5px var(--k-same)} .k-own{background:var(--k-own)} .k-fix{border:1.5px dashed var(--sub)}
+.nine{grid-column:4 / 9;border-top:2px solid var(--line-2);padding-top:4px;font-size:12.5px;color:var(--sub);text-align:center}
+.tot{display:flex;flex-wrap:wrap;gap:6px 14px;list-style:none;margin:0;padding:0;font-size:13px;color:var(--sub)}
+.tot li{display:inline-flex;align-items:center;gap:6px}
+.tot b{color:var(--ink)}
+
+/* 단계 칩 */
+.rail{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-block:1px solid var(--line)}
+.rail .wrap{display:flex;gap:4px;overflow-x:auto;padding-block:6px;scrollbar-width:thin}
+.rail a{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;color:var(--ink);text-decoration:none;font-size:14px;font-weight:600;border:1px solid transparent}
+.rail a b{font-family:var(--f-mono);font-weight:500;color:var(--sub)}
+.rail a:hover{background:var(--paper-2)}
+.rail a[aria-current="true"]{background:var(--paper);border-color:var(--line-2)}
+.rail .sep{flex:none;width:1px;margin:8px 4px;background:var(--line-2)}
+
+/* 장면 */
+.scene{padding-block:46px 10px;border-top:1px solid var(--line)}
+.scene:first-child{border-top:0}
+.sc-h{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start;margin-bottom:18px}
+.sc-num{font-size:clamp(48px,7vw,76px);font-weight:700;line-height:.9;color:var(--num);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.sc-k{font-size:13px;color:var(--sub);font-weight:600;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.scene h2{font-size:clamp(22px,2.8vw,30px);font-weight:700;letter-spacing:-.01em;margin-top:4px}
+.sc-does{margin-top:6px;color:var(--sub)}
+.meta{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:0 16px;font-size:13px;color:var(--sub);align-items:center}
+.meta a{display:inline-flex;align-items:center;min-height:44px}
+.tag{display:inline-flex;align-items:center;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;line-height:1.7}
+.tag.thread{background:var(--thread-soft);color:var(--thread-ink)}
+a.tag{position:relative}
+a.tag::after{content:"";position:absolute;top:-11px;bottom:-11px;left:50%;width:max(100%,44px);transform:translateX(-50%)}
+.tag.should{background:var(--ok);color:var(--ok-ink);margin-right:4px}
+.capn{font-size:13px;color:var(--sub);margin-top:8px;max-width:90ch}
+.capn .tag{margin-right:6px}
+
+/* 장면 그림 — 디자인 캔버스 DockPrototype(이재엽이 준 스크린샷) 그대로: 왼쪽 작업실 창 + 오른쪽 섬.
+   넓으면(1275 이상 — 0.85배 밑으로 줄이지 않는다) 1500px 화면 한 장을 줄여서, 좁으면 줄이지 않고 다시 배치한다(섬은 아래로). */
+.frame{container:frame / inline-size;position:relative;margin:0}
+.frame.fixed{overflow:hidden}
+.screen{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;padding:14px;border-radius:22px;background:var(--desk);border:1px solid var(--line);align-items:stretch}
+.frame.fixed .screen{position:absolute;left:0;top:0;width:1500px;transform-origin:0 0}
+@container frame (max-width:1099px){.screen{grid-template-columns:minmax(0,1fr);padding:10px;gap:10px}}
+
+.win{container:win / inline-size;background:var(--win);border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-width:0;overflow:hidden;box-shadow:0 10px 30px rgba(30,42,90,.10)}
+.win-top{display:flex;align-items:center;gap:6px 14px;padding:12px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.win-top .an{font-weight:700;font-size:15px;white-space:nowrap}
+.win-top .as{color:var(--sub);font-size:14px;white-space:nowrap}
+.tabs{display:flex;gap:4px}
+.tabs span{padding:5px 12px;border-radius:9px;font-size:14px;color:var(--sub)}
+.tabs span.on{background:var(--acc);color:var(--acc-ink);font-weight:600}
+.win-top .lv{margin-left:auto;font-size:13px;color:var(--sub);white-space:nowrap}
+.win-body{display:grid;grid-template-columns:176px minmax(0,1fr);flex:1;min-height:0}
+.tree{background:var(--side);border-right:1px solid var(--line);padding:14px 8px;font-size:13.5px;display:flex;flex-direction:column;gap:1px;min-width:0;overflow:hidden}
+.tree .t{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;white-space:nowrap;min-width:0}
+.tree .t span{overflow:hidden;text-overflow:ellipsis}
+.tree .t.root{font-weight:700;margin-bottom:4px}
+.tree .t.dir{color:var(--sub)}
+.tree .t.in{padding-left:20px}
+.tree .t.cur{font-weight:700;background:var(--paper-2)}
+.tree .t.miss{color:var(--gap-ink);background:var(--gap)}
+.tree .t small{color:var(--sub);font-size:12px;flex:none;font-weight:500}
+.tree .t.miss small{color:var(--gap-ink)}
+.tree .t.in2{padding-left:32px}
+@container win (max-width:720px){.win-body{grid-template-columns:minmax(0,1fr)}.tree{display:none}}
+.canvas{container:canvas / inline-size;padding:12px;min-width:0;background-color:var(--ws);background-image:radial-gradient(var(--dot) 1px,transparent 1.3px);background-size:18px 18px;display:flex;flex-direction:column;gap:12px}
+.cv-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.nowp{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:10px;background:var(--card);border:1px solid var(--line);font-size:12.5px;color:var(--sub);flex:1 1 300px;min-width:0}
+.nowp::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--line-2);flex:none}
+.nowp b{color:var(--ink);font-weight:600;font-size:13px}
+.stg{display:flex;gap:4px;flex-wrap:wrap}
+.stg span{padding:4px 8px;border-radius:7px;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--sub);white-space:nowrap}
+.stg span.ok{background:var(--ok);color:var(--ok-ink);border-color:transparent}
+.stg span.on{background:var(--acc);color:var(--acc-ink);font-weight:700;border-color:transparent}
+.cv-main{display:grid;grid-template-columns:124px minmax(0,1fr);gap:12px;align-items:start}
+.boards{display:flex;flex-direction:column;gap:10px;min-width:0}
+.bd{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--sub);flex:1;min-width:0}
+.bd b{display:block;color:var(--ink);font-size:12.5px;margin-top:2px}
+.bd.next{background:transparent;border-style:dashed;border-color:var(--line-2)}
+.bd .sw{display:flex;gap:4px;margin-top:6px}
+.bd .sw i{width:26px;height:11px;border-radius:3px;background:var(--note)}
+.bd .sw i+i{background:var(--ok)}
+@container canvas (max-width:600px){.cv-main{grid-template-columns:minmax(0,1fr)}.boards{flex-direction:row}}
+
+/* 퀘스트 보드 — 다시 배치(줌 없음): 보드 너비 640 미만 세로 한 줄 · 640~999 두 줄(스크린샷 모양) · 1000 이상 한 줄 */
+.board{container:board / inline-size;background:var(--board);border:2px solid var(--focus);border-radius:14px;padding:14px;min-width:0}
+.board-h{display:flex;align-items:baseline;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.board-h b{font-size:15px}
+.board-h span{font-size:12px;color:var(--sub)}
+.bg{display:grid;gap:10px;grid-template-columns:minmax(0,1fr);grid-template-areas:"think" "act" "rec" "save" "ver" "gate" "file" "learn"}
+.bg .ar{display:none;place-items:center;color:var(--sub);font-size:18px}
+.bg .cur{display:none}
+.c-think{grid-area:think}.c-act{grid-area:act}.c-rec{grid-area:rec}.c-save{grid-area:save}.c-ver{grid-area:ver}.c-gate{grid-area:gate}.c-file{grid-area:file}.c-learn{grid-area:learn}
+.a1{grid-area:a1}.a2{grid-area:a2}.a3{grid-area:a3}.a4{grid-area:a4}.a5{grid-area:a5}.bg .cur{grid-area:cur}
+@container board (min-width:640px){
+  .bg{grid-template-columns:150px 26px minmax(0,1.15fr) 26px minmax(0,.95fr) 22px minmax(0,.62fr);column-gap:6px;row-gap:10px;
+    grid-template-areas:"think a1 act a2 rec rec rec" "file . cur cur cur cur cur" "file . save a3 ver a4 gate" "learn . save . ver . gate";grid-template-rows:auto 30px auto auto}
+  .bg .ar{display:grid}
+  .bg .a5{display:none}
+  .bg .cur{display:block}
+}
+@container board (min-width:1000px){
+  .bg{grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr) 18px minmax(0,1.3fr) 18px minmax(0,1fr) 18px minmax(0,.8fr) 18px minmax(0,.7fr);column-gap:4px;
+    grid-template-areas:"think a1 act a2 rec a5 save a3 ver a4 gate" "file file file . learn learn learn . . . .";grid-template-rows:auto auto}
+  .bg .a5{display:grid}
+  .bg .cur{display:none}
+}
+.c{position:relative;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.5;min-width:0;background:var(--card);border:1px solid var(--line)}
+.c .ch{font-size:13px;font-weight:700;display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.c .ch em{font-style:normal;font-weight:700;font-size:12px;color:var(--sub)}
+.c .ft{font-size:12px;color:var(--sub);margin-top:8px}
+.c p{overflow-wrap:anywhere}
+.c.later{border-style:dashed;border-color:var(--line-2);background:transparent}
+.c.done .ch em{color:var(--ok-ink)}
+.c.now{border:2px solid var(--focus);background:var(--act)}
+.c.now .ch em{color:var(--link)}
+.c.gap{background:var(--gap);border-color:var(--gap-line);color:var(--gap-ink)}
+.c.gap .ch em,.c.gap .ft{color:var(--gap-ink)}
+.c.gap.now{border:2px solid var(--focus)}
+.c-think{background:var(--note);color:var(--note-ink);border:0;font-family:var(--f-hand);font-size:19px;line-height:1.3;transform:rotate(-1deg);box-shadow:0 2px 8px rgba(60,50,10,.12);padding:12px 14px 16px}
+.c-think.now{border:2px solid var(--focus);background:var(--note)}
+.c-think .ch{font-family:var(--f-hand);font-size:17px;margin-bottom:2px}
+.c-think .ch em{font-family:var(--f-body);color:var(--note-ink)}
+.c-learn{background:var(--cc);color:var(--cc-ink);border:0}
+.c-learn b{display:block;font-size:12.5px}
+.c-file{padding:0;overflow:hidden}
+.c-file .fh{padding:7px 12px;font-size:12.5px;font-weight:700;border-bottom:1px solid var(--line)}
+.c-file ul{list-style:none;margin:0;padding:8px;display:grid;gap:4px}
+.c-file li{padding:3px 8px;border-radius:6px;background:var(--must);color:var(--ink);font-size:12.5px;overflow-wrap:anywhere}
+.c-file li::before{content:"+ ";color:var(--floe-ink);font-weight:700}
+.c-file .more{padding:0 12px 8px;font-size:12px;color:var(--sub)}
+.files{display:flex;flex-wrap:wrap;gap:4px}
+.files span{font-family:var(--f-mono);font-size:11px;padding:2px 6px;border-radius:5px;background:var(--paper-2);color:var(--ink)}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.cols div{border-radius:8px;padding:8px;min-height:96px;font-size:12.5px;border:1px dashed var(--line-2)}
+.cols .must{background:var(--must)} .cols .later{background:var(--later)}
+.cols b{display:block;font-size:12px;margin-bottom:4px}
+.cols .later b{color:var(--later-ink)}
+.chk{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.chk li{display:flex;gap:6px;align-items:baseline}
+.mk{flex:none;font-size:11.5px;font-weight:700;padding:0 6px;border-radius:999px;white-space:nowrap}
+.mk.y{background:var(--ok);color:var(--ok-ink)} .mk.n{background:var(--paper);color:var(--gap-ink);border:1px solid var(--gap-line)} .mk.o{border:1px dashed var(--line-2);color:var(--sub)}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.cmp div{border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0;font-size:12px;color:var(--sub)}
+.cmp b{display:block;font-size:12.5px;color:var(--ink)}
+.cmp .one{border:2px solid var(--focus)} .cmp .two{border-style:dashed;border-color:var(--line-2)}
+.why{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.why li{display:flex;gap:6px;align-items:baseline}
+.why li::before{content:"왜?";flex:none;font-size:11px;font-weight:700;color:var(--sub)}
+.why li.end{font-weight:700;color:var(--thread-ink)}
+.why li.end::before{content:"까닭";color:var(--thread-ink)}
+.ms{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;margin:0}
+.ms dt{color:inherit;font-weight:600}
+.ms dd{margin:0;font-family:var(--f-mono);font-size:12px}
+.res b{display:block;font-size:13px}
+.badge{position:absolute;top:-13px;right:-9px;width:30px;height:30px;border-radius:50%;background:var(--card) var(--floro) center 60%/86% no-repeat;border:1px solid var(--line-2);box-shadow:0 2px 6px rgba(30,42,90,.15)}
+.cur svg{width:100%;height:30px;display:block;color:var(--sub)}
+
+/* 섬 — 스크린샷 그대로: 두 줄 머리(집 · 단계 줄 / 퀘스트 · 조개 · 자리 넷 · 설정 · 접기) → 큰 플로로 → 대화(지금 카드) → 먹이 주기 칩 · 입력칸 */
+.isl{background:var(--isl);color:var(--isl-ink);border-radius:36px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0;
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.6),inset -1px -1px 0 rgba(255,255,255,.2),inset 0 0 0 .5px rgba(255,255,255,.14),0 18px 40px rgba(0,4,30,.28)}
+.itop{display:grid;gap:10px}
+.ih{display:flex;gap:8px;align-items:center;min-width:0}
+.ih .hm{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.1);flex:none;color:var(--isl-ink)}
+.ih .pill{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.08);font-size:13px;color:var(--isl-sub);white-space:nowrap;overflow:hidden}
+.ih .pill b{color:var(--isl-ink);font-size:14px}
+.dots{display:inline-flex;gap:4px}
+.dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.3)}
+.dots i.on{background:var(--isl-ink)}
+.ib{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ib .q{padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.4);font-weight:700;font-size:13px}
+.ib .sh{display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.1);font-weight:700;font-size:13px}
+.ib .dk{display:inline-flex;gap:2px;padding:3px;border-radius:10px;background:rgba(255,255,255,.06)}
+.ib .dk span,.ib .dk button{width:30px;height:26px;display:grid;place-items:center;border-radius:7px;color:var(--isl-sub);border:0;background:transparent;padding:0;cursor:pointer}
+.ib .dk .on,.ib .dk [aria-pressed="true"]{background:rgba(255,255,255,.22);color:var(--isl-ink)}
+.ib .grow{flex:1}
+.ib > .i{color:var(--isl-sub)}
+.ibody{flex:1;display:flex;flex-direction:column;gap:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:28px;padding:14px;min-height:0}
+.fhead{display:flex;align-items:center;gap:14px;padding:2px 8px}
+.fhead .seal{width:112px;height:92px}
+.fhead span{font-size:14px}
+.chat2{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0;overflow:auto}
+.bub{align-self:flex-start;max-width:94%;padding:10px 14px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+.bub small{display:block;font-size:11.5px;color:var(--isl-sub);margin-top:4px}
+.bub.me{align-self:flex-end;background:var(--isl-me);color:var(--isl-me-ink);border-color:transparent;font-weight:600}
+.bub.me small{color:var(--isl-me-ink);opacity:.85}
+.nc{border:1.5px solid rgba(255,255,255,.55);border-radius:18px;padding:14px 16px;display:grid;gap:8px}
+.nc .mt{display:flex;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--isl-sub)}
+.nc .tt{font-size:18px;font-weight:700;line-height:1.35;letter-spacing:-.01em}
+.nc .sb{font-size:13.5px;line-height:1.55}
+.nc .bt{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.nc .bt span{padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px}
+.nc .bt .p{background:var(--sky);color:var(--sky-ink)}
+.nc .bt .s{border:1px solid rgba(255,255,255,.4)}
+.ex{display:inline-block;padding:0 7px;border-radius:999px;border:1px dashed var(--isl-sub);color:var(--isl-sub);font-size:11.5px;font-weight:600;line-height:1.6;white-space:nowrap}
+.ifoot{display:grid;gap:10px}
+.ichips{display:flex;gap:6px;flex-wrap:wrap}
+.ichips span{padding:7px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.3);font-size:13px}
+.iin{display:flex;gap:8px}
+.iin span:first-child{flex:1;min-width:0;padding:12px 16px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:var(--isl-sub);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iin .send{padding:12px 18px;border-radius:16px;background:var(--sky);color:var(--sky-ink);font-weight:700;font-size:14px}
+/* 위 · 아래 자리의 넓은 섬 */
+.isl.wide{flex-direction:row}
+.isl.wide .itop{width:300px;flex:none;align-content:start}
+.isl.wide .ibody{display:grid;grid-template-columns:150px minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:10px 14px}
+.isl.wide .fhead{grid-row:1 / 3;flex-direction:column;justify-content:center;text-align:center}
+.isl.wide .ifoot{grid-column:2}
+.isl.wide .ichips{display:none}
+
+/* 장면 아래 네 칸 */
+.parts{display:grid;gap:24px;margin-top:22px}
+.parts > *{min-width:0}
+.part h3{font-size:15px;font-weight:700;display:flex;gap:8px;align-items:baseline;margin-bottom:10px}
+.pn{color:var(--sub);font-weight:600}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--paper);max-width:100%}
+table{width:100%;border-collapse:collapse;font-size:14px}
+table.five{min-width:640px}
+th,td{padding:9px 12px;text-align:left;vertical-align:top;border-top:1px solid var(--line)}
+thead th{border-top:0;font-size:12.5px;color:var(--sub);font-weight:700;background:var(--paper-2)}
+tbody th{white-space:nowrap;font-weight:700}
+.five .app{display:block;font-size:12px;margin-top:2px}
+.five td.lv{color:var(--sub);font-size:13px}
+.five tr.gate>*{background:var(--paper-2)}
+.who-c{white-space:nowrap}
+.links{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.links a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:12px;background:var(--paper);border:1px solid var(--line);text-decoration:none;color:var(--link);font-size:13.5px}
+.links a:hover{background:var(--paper-2)}
+.links small{color:var(--sub);font-size:12px}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:10px}
+.seen,.should,.good{border-radius:14px;padding:12px 14px;font-size:14.5px;min-width:0}
+.seen{background:var(--gap);color:var(--gap-ink)}
+.good{background:var(--paper);border:1px solid var(--line)}
+.should{background:var(--ok);color:var(--ok-ink)}
+.lab{display:block;font-size:12px;font-weight:700;letter-spacing:.02em;margin-bottom:4px}
+.gate-l{margin-bottom:8px;font-size:14px}
+.mats{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.mats li{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:14px;padding:8px 12px;border-radius:12px;background:var(--paper);border:1px solid var(--line)}
+.mats .arr{color:var(--sub)}
+.mats .to{font-weight:600}
+.mats li.th{border-color:var(--thread)}
+
+/* 실 · 눌러 보기 · 기준 · 질문 */
+.sec{padding-block:50px 10px;border-top:1px solid var(--line)}
+.sec h2.sh{font-size:clamp(22px,2.8vw,30px);font-weight:700;letter-spacing:-.01em}
+.sec .sub{color:var(--sub);max-width:70ch;margin-top:8px}
+.thr{list-style:none;margin:26px 0 0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;position:relative}
+.thr::before{content:"";position:absolute;left:8px;right:8px;top:8px;height:3px;border-radius:2px;background:var(--thread)}
+.thr li{position:relative;padding-top:20px;min-width:0}
+.thr li::before{content:"";position:absolute;top:0;left:0;width:19px;height:19px;border-radius:50%;background:var(--bg);border:3px solid var(--thread)}
+.thr li.end::before{background:var(--thread)}
+.thr a{display:inline-flex;align-items:center;min-height:44px;font-size:13px;font-weight:700;color:var(--thread-ink);text-decoration:none}
+.thr a:hover{text-decoration:underline}
+.thr q{display:block;margin:0 0 6px;font-size:15px;font-weight:600;line-height:1.45}
+.thr .cn{display:block;font-size:12.5px;color:var(--sub)}
+.thr li.end q{color:var(--thread-ink)}
+@media (max-width:760px){
+  .thr{grid-template-columns:minmax(0,1fr);gap:16px}
+  .thr::before{left:8px;right:auto;top:8px;bottom:8px;width:3px;height:auto}
+  .thr li{padding-top:0;padding-left:34px}
+  .thr li::before{top:12px}
+}
+.thr-after{margin-top:22px}
+
+.ctl{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-top:20px}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend,.rng label{font-size:12.5px;font-weight:700;color:var(--sub);margin-bottom:6px;padding:0;display:block}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:0}
+.seg input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.seg label{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 12px;border-radius:11px;font-size:13.5px;font-weight:600;cursor:pointer;color:var(--sub)}
+.seg input:checked+label{background:var(--acc);color:var(--acc-ink)}
+.seg input:focus-visible+label{outline:2px solid var(--focus);outline-offset:1px}
+.btn{min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line-2);background:var(--paper);color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.btn:hover{background:var(--paper-2)}
+.rng{display:grid}
+.rng output{font-family:var(--f-mono);font-weight:500;color:var(--ink)}
+input[type=range]{width:min(280px,100%);accent-color:var(--focus);min-height:44px;margin:0}
+.read{margin:16px 0 10px;font-size:14px;padding:10px 14px;border-radius:12px;background:var(--paper);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.read b{font-weight:700}
+.tv{position:relative;overflow:hidden;border-radius:18px;background:var(--desk);border:1px solid var(--line)}
+.vs{position:absolute;left:0;top:0;transform-origin:0 0}
+.pw,.pi{position:absolute;transition:left .3s var(--ease),top .3s var(--ease),width .3s var(--ease),height .3s var(--ease)}
+.pw .win{height:100%}
+.pw .win-body{grid-template-rows:minmax(0,1fr)}
+.pw .canvas{overflow:auto}
+.pi.isl{overflow:hidden}
+.hd{position:absolute;display:grid;place-items:center;z-index:5;touch-action:none;transition:left .3s var(--ease),top .3s var(--ease),width .3s var(--ease),height .3s var(--ease)}
+.hd span{display:block;border-radius:4px;background:var(--line-2)}
+.hd.v{cursor:ew-resize} .hd.v span{width:6px;height:64px}
+.hd.h{cursor:ns-resize} .hd.h span{width:64px;height:6px}
+.hd:hover span,.hd:focus-visible span{background:var(--focus)}
+.vs.drag .pw,.vs.drag .pi,.vs.drag .hd{transition:none}
+.pi.strip{border-radius:22px;padding:0}
+.strip-c{display:flex;align-items:center;gap:10px;height:100%;padding:0 8px 0 12px;font-size:13px;color:var(--isl-sub);white-space:nowrap;overflow:hidden}
+.strip-c b{color:var(--isl-ink)}
+.strip-c .seal{width:34px;height:28px}
+.strip-c .sbtn{margin-left:auto;min-height:30px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.35);background:transparent;color:var(--isl-ink);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+.pi.strip.vert .strip-c{writing-mode:vertical-rl;padding:12px 0 8px}
+.pi.strip.vert .strip-c .sbtn{margin:auto 0 0;padding:12px 0;min-height:0;min-width:30px}
+.hint{font-size:13px;color:var(--sub);margin-top:10px;max-width:70ch}
+
+.rules td:first-child,.rules th:first-child{width:44px;font-variant-numeric:tabular-nums;color:var(--sub)}
+.oq{margin:18px 0 0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:q}
+.oq li{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 48px;position:relative;counter-increment:q}
+.oq li::before{content:counter(q);position:absolute;left:16px;top:11px;font-weight:700;color:var(--num);font-variant-numeric:tabular-nums}
+.oq b{display:block}
+.oq span{color:var(--sub);font-size:14px}
+footer{margin-top:56px;padding-block:28px 56px;border-top:1px solid var(--line);color:var(--sub);font-size:13px}
+footer p+p{margin-top:6px}
+
+@media (max-width:560px){
+  .sc-h{grid-template-columns:minmax(0,1fr);gap:4px}
+  .lead{font-size:15.5px}
+  .w8 time{font-size:11px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .pw,.pi,.hd{transition:none}
+  .c-think{transform:none}
+}
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 4.5l8 7V20h-5.5v-5.5h-5V20H4z"/></symbol>
+  <symbol id="i-shell" viewBox="0 0 24 24"><path d="M12 4c4.7 0 8 3.4 8 7.4L12 20l-8-8.6C4 7.4 7.3 4 12 4zM12 4v16M8.3 5.2 12 20M15.7 5.2 12 20"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.6M12 17.9v2.6M3.5 12h2.6M17.9 12h2.6M6 6l1.8 1.8M16.2 16.2 18 18M6 18l1.8-1.8M16.2 7.8 18 6"/></symbol>
+  <symbol id="i-next" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
+  <symbol id="i-dtop" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17" stroke-width="3"/></symbol>
+  <symbol id="i-dbot" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 14.5h17" stroke-width="3"/></symbol>
+  <symbol id="i-dleft" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M9 5v14" stroke-width="3"/></symbol>
+  <symbol id="i-dright" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M15 5v14" stroke-width="3"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <p class="eyebrow">FLOE · 디자인 첫 판 · 2026-10-26</p>
+    <h1>0~8단계 스토리보드</h1>
+    <p class="lead">Floe로 무언가를 만들 때 시작부터 8단계까지 화면에서 무슨 일이 일어나는지, 이재엽이 Floe로 만든 test-1 저장소(나만의 프롬프트 관리 프로그램)를 따라가며 보여 줘요. 장면마다 test-1에 실제로 남은 문장과, 거기서 본 틈과, 이렇게 이어져야 할 모습을 함께 적었어요.</p>
+    <ul class="go">
+      <li><a href="https://github.com/gamercross/test-1">test-1 저장소 ↗</a></li>
+      <li><a href="https://claude.ai/artifact/6FABoNXETGrPD9hiT8ungr">디자인 캔버스 ↗</a></li>
+      <li><a href="https://github.com/2026-Codyssey-Final-Proj/Final-Proj/blob/main/01-docs/00-overview/%EA%B8%B0%EB%A1%9D/opus-handoff-2026-10-26-storyboard.md">기준 문서 ↗</a></li>
+    </ul>
+
+    <div class="key">
+      <section class="box" aria-labelledby="k1">
+        <h2 id="k1">읽는 법</h2>
+        <ul class="roles" aria-label="누가">
+          <li><span class="r me">사람</span></li>
+          <li><span class="r fl">플로로 (섬)</span></li>
+          <li><span class="r cc">Claude Code</span></li>
+          <li><span class="r floe">Floe (작업실)</span></li>
+        </ul>
+        <ol class="how">
+          <li><b>① 화면 그림</b> — 디자인 캔버스의 지금 방향 그대로예요. 왼쪽 작업실 창(파일 · 지금 하는 일 · 지난 장과 다음 장 · 퀘스트 한 바퀴 보드)에서 확인하고, 오른쪽 섬(대화 · 지금 카드)에서 일해요. 글은 test-1의 것이고, <span class="extag">예시</span>는 test-1에 없는 말, <span class="tag should">이어져야</span>는 test-1과 달리 이렇게 이어져야 할 모습이에요.</li>
+          <li><b>② 다섯 칸</b> — 생각 → 행동 → 기록 → 저장 → 버전, 그리고 관문. 누가 무엇을 하는지(화면에서 어떻게 보이는지는 ① 그림).</li>
+          <li><b>③ test-1에 남은 것</b> — 파일과 커밋 링크.</li>
+          <li><b>④ 본 것 → 이렇게 이어져야</b> — 틈은 사람 탓이 아니라 Floe의 관문 · 판정이 막지 못한 것으로 적었어요.</li>
+          <li><b>⑤ 관문 · 넘기는 재료</b> — 다음 장으로 가는 칸. <span class="tag thread">실</span>은 아래 '언제 성공' 실이에요.</li>
+        </ol>
+        <ul class="apps" aria-label="칸 이름 아래 표시 — 지금 앱에 있나">
+          <li><span class="app y">지금 있음</span> 앱 10.0.0에 있어요</li>
+          <li><span class="app p">일부</span> 관문을 넘으면 단계 문서가 생기고 Claude Code가 허락받아 커밋해요. 퀘스트 칸으로는 대회 뒤</li>
+          <li><span class="app n">대회 뒤</span> 버전 V.n (C-23)</li>
+        </ul>
+      </section>
+
+      <section class="box" aria-labelledby="k2">
+        <h2 id="k2">누가 정했나 — test-1의 35칸</h2>
+        <div class="w8" role="img" aria-label="단계마다 칸을 누가 정했나. 1단계 그대로 3 · 고름 1, 2단계 그대로 4, 3단계 그대로 5, 4단계 직접 5, 5단계 고름 4, 6단계 고름 4, 7단계 고름 4, 8단계 고름 5. 커밋 시각은 1 · 2단계 00:03, 3단계 00:05, 4단계 01:33, 5단계 01:34, 6단계 01:35, 7단계 01:40, 8단계 01:42.">
+          <div class="col"><b>1</b><span class="sq"><i class="k-same"></i><i class="k-same"></i><i class="k-same"></i><i class="k-pick"></i></span><time>00:03</time></div>
+          <div class="col"><b>2</b><span class="sq"><i class="k-same"></i><i class="k-same"></i><i class="k-same"></i><i class="k-same"></i></span><time>00:03</time></div>
+          <div class="col"><b>3</b><span class="sq"><i class="k-same"></i><i class="k-same"></i><i class="k-same"></i><i class="k-same"></i><i class="k-same"></i></span><time>00:05</time></div>
+          <div class="col"><b>4</b><span class="sq"><i class="k-own"></i><i class="k-own"></i><i class="k-own"></i><i class="k-own"></i><i class="k-own"></i></span><time>01:33</time></div>
+          <div class="col"><b>5</b><span class="sq"><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i></span><time>01:34</time></div>
+          <div class="col"><b>6</b><span class="sq"><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i></span><time>01:35</time></div>
+          <div class="col"><b>7</b><span class="sq"><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i></span><time>01:40</time></div>
+          <div class="col"><b>8</b><span class="sq"><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i><i class="k-pick"></i></span><time>01:42</time></div>
+          <div class="nine">4단계 커밋 뒤 9분 만에 8단계까지</div>
+        </div>
+        <ul class="tot">
+          <li><i class="k-same"></i>그대로 <b>12</b></li>
+          <li><i class="k-pick"></i>고름 <b>18</b></li>
+          <li><i class="k-own"></i>직접 <b>5</b></li>
+          <li><i class="k-fix"></i>고침 <b>0</b></li>
+        </ul>
+        <p style="font-size:14px">플로로 초안을 고친 칸은 하나도 없어요. 그대로는 초안을 그대로, 고름은 플로로가 낸 예시 셋 중에서 고른 칸, 직접은 초안 없이 사람이 적은 칸이에요. 시각은 단계 문서가 커밋된 때(10/26, 한국 시간)예요.</p>
+      </section>
+    </div>
+  </div>
+</header>
+
+<nav class="rail" aria-label="단계">
+  <div class="wrap" id="rail"></div>
+</nav>
+
+<main>
+  <div id="scenes"></div>
+
+  <section class="sec" id="thread" aria-labelledby="thread-h">
+    <div class="wrap">
+      <h2 class="sh" id="thread-h">실 하나 따라가기 — 언제 성공이에요?</h2>
+      <p class="sub">2단계에서 '아직 모름'으로 남은 성공 기준이 아래 다섯 자리를 지나는 동안, 그 단계들의 관문이 모두 열렸어요. 8단계는 그 까닭을 정확히 찾았지만, 찾은 때가 마지막이었어요.</p>
+      <ol class="thr">
+        <li><a href="#s2">2단계 · 빈칸 채우기</a><q>언제 성공: 아직 모름</q><span class="cn">관문 기준 1/4 · 지남</span></li>
+        <li><a href="#s3">3단계 · 숫자로</a><q>성공의 기준 → 아직 모름</q><span class="cn">관문 기준 5/5 · 지남</span></li>
+        <li><a href="#s5">5단계 · 작게 나누기</a><q>성공 기준 정하기(아직 모름)</q><span class="cn">관문 기준 4/4 · 확인한 대로</span></li>
+        <li><a href="#s7">7단계 · 숫자 재기</a><q>정한 숫자 없음 — 3단계에서 먼저 정하기</q><span class="cn">관문 기준 4/4 · 확인한 대로</span></li>
+        <li class="end"><a href="#s8">8단계 · 왜 다섯 번</a><q>진짜 까닭: 시작할 때 성공 모습을 숫자로 안 그렸어요</q><span class="cn">관문 기준 5/5 · 확인한 대로</span></li>
+      </ol>
+      <div class="pair thr-after">
+        <div class="should"><span class="lab">이렇게 이어져야</span><p>3단계에서 숫자 하나가 정해지면, 7단계는 그 숫자를 실제로 재고 8단계는 잰 값에서 돌아봐요. 숫자는 사람이 정하고, 플로로는 정할 때까지 한 번 더 물어요. '아직 모름'으로 넘길 때는 그 까닭이 결정 기록에 남아요.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="try" aria-labelledby="try-h">
+    <div class="wrap">
+      <h2 class="sh" id="try-h">눌러 보기 — 섬 자리 · 섬 크기 · 보드 다시 배치</h2>
+      <p class="sub">3단계 장면(이재엽이 준 스크린샷과 같은 순간)으로 해 봐요. 섬을 네 가장자리 중 하나에 붙이고, 펼치거나 접고, 크기를 바꿔 보세요. 작업실은 줄어들지 않고 비켜서 크기만 맞춰요. 퀘스트 보드는 줌 대신 칸 배치를 다시 잡아요.</p>
+      <div class="ctl">
+        <fieldset>
+          <legend>화면 크기</legend>
+          <div class="seg">
+            <input type="radio" name="scr" id="scr-1440" value="1440"><label for="scr-1440">1440 × 900</label>
+            <input type="radio" name="scr" id="scr-1280" value="1280" checked><label for="scr-1280">1280 × 800</label>
+            <input type="radio" name="scr" id="scr-1024" value="1024"><label for="scr-1024">1024 × 768</label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>섬 자리</legend>
+          <div class="seg">
+            <input type="radio" name="dock" id="dock-top" value="top"><label for="dock-top">위</label>
+            <input type="radio" name="dock" id="dock-bottom" value="bottom"><label for="dock-bottom">아래</label>
+            <input type="radio" name="dock" id="dock-left" value="left"><label for="dock-left">왼쪽</label>
+            <input type="radio" name="dock" id="dock-right" value="right" checked><label for="dock-right">오른쪽</label>
+          </div>
+        </fieldset>
+        <button class="btn" type="button" id="tog" aria-controls="pi" aria-expanded="true">섬 접기</button>
+        <div class="rng">
+          <label for="sz">섬 너비 <output id="szo" for="sz">420px</output></label>
+          <input type="range" id="sz" min="320" max="760" step="20" value="420">
+        </div>
+      </div>
+      <p class="read" id="read" aria-live="polite">퀘스트 보드 너비를 재는 중이에요.</p>
+    </div>
+    <div class="wrap wide">
+      <div class="tv" id="tv">
+        <div class="vs" id="vs">
+          <div class="pw" id="pw"></div>
+          <div class="pi isl" id="pi"></div>
+          <div class="hd v" id="hd" role="separator" tabindex="0" aria-label="섬 크기 손잡이" aria-orientation="vertical" aria-valuemin="320" aria-valuemax="760" aria-valuenow="420"><span></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="wrap">
+      <p class="hint">그림은 이 페이지 폭에 맞춰 줄여서 보여 줘요(휴대폰에서는 작게 보여요). 안의 배치는 고른 화면의 실제 px로 계산해요. 섬 머리의 네 칸 단추로도 자리를 바꿀 수 있어요. 손잡이를 끌거나, 손잡이를 고른 뒤 화살표 키로 20px씩 바꿔요. 손잡이를 두 번 누르거나 Enter를 누르면 처음 크기(옆 420 · 위아래 360)로 돌아가요. 섬을 펼치면 작업실 캔버스는 '지금' 칸이 보이게 저절로 옮겨 가요.</p>
+    </div>
+  </section>
+
+  <section class="sec" id="rules" aria-labelledby="rules-h">
+    <div class="wrap">
+      <h2 class="sh" id="rules-h">화면 기준 열</h2>
+      <p class="sub">디자인 캔버스 맨 아래 줄(지금 방향)에서 정한 것이에요. 이 페이지의 화면 그림과 눌러 보기가 이 기준을 따라요.</p>
+      <div class="tw" style="margin-top:18px">
+        <table class="rules">
+          <thead><tr><th scope="col">#</th><th scope="col">기준</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><b>작업실은 줄이지 않아요.</b> 늘 열려 있고, 안에서 내용을 확인하고 지금 무슨 일을 하는지 봐요.</td></tr>
+            <tr><td>2</td><td><b>작업실 안</b> — 뮤즈형 캔버스 + 다섯 칸 카드 + 맨 위 '지금 하는 일' + 파일 카드(바뀐 줄) + 지난 장 · 다음 장 보드 + 지금 칸 위의 작은 플로로. 플로로는 장면이 바뀌면 옮겨 앉고, 마우스는 따라오지 않아요.</td></tr>
+            <tr><td>3</td><td><b>섬은 지금 앱의 섬 그대로</b> — 네이비 바탕, 위 · 왼쪽이 밝은 테두리 빛, 둥근 모서리, 위 줄 · 플로로 칸 · 대화 칸.</td></tr>
+            <tr><td>4</td><td><b>섬 자리는 위 · 아래 · 왼쪽 · 오른쪽</b>(처음은 오른쪽). 섬 머리의 네 칸 단추와 설정에서 골라요. '끌어서 어디든'은 쓰지 않아요.</td></tr>
+            <tr><td>5</td><td><b>섬을 펼치면 작업실이 스스로 비켜요.</b> 접으면 그 가장자리에 띠만 남고 작업실이 다시 넓어져요.</td></tr>
+            <tr><td>6</td><td><b>섬 크기는 안쪽 가장자리 손잡이로</b> — 왼쪽 · 오른쪽은 너비 320~760, 위 · 아래는 높이 240~480. 화살표 키 20씩, 두 번 누르면 처음(420 · 360).</td></tr>
+            <tr><td>7</td><td><b>캔버스도 스스로 크기를 맞춰요 — 줌 대신 다시 배치.</b> 퀘스트 보드 너비 1000 이상은 한 줄, 640~999는 두 줄, 640 미만은 세로 한 줄. 글자 크기는 그대로, 높이가 모자라면 캔버스 안에서 내려 보고 '지금' 칸이 늘 보이게 옮겨 줘요. 장이 늘면(지난 장은 접힌 보드로) 캔버스가 아래로 자라요.</td></tr>
+            <tr><td>8</td><td><b>움직임은 0.3초</b>, 섬과 작업실이 같이 움직여요. 움직임 줄이기를 켰으면 바로 바뀌어요.</td></tr>
+            <tr><td>9</td><td><b>색</b> — 작업실은 눈이 편한 파스텔(순백 · 쨍한 파랑 · 검정 면 없이), 섬은 앱 네이비. 글씨 대비는 4.5:1 이상.</td></tr>
+            <tr><td>10</td><td><b>역할</b> — 섬은 일하기(대화 · 맡기기 · 고르기 · 허락), 작업실은 확인하기(칸 · 바뀐 파일과 줄 · 책).</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="open" aria-labelledby="open-h">
+    <div class="wrap">
+      <h2 class="sh" id="open-h">열린 질문</h2>
+      <p class="sub">이 페이지를 만들며 남은 것이에요. 1 · 2번은 고칠 목록 F-60에 적었어요.</p>
+      <ol class="oq">
+        <li><b>2단계 관문은 왜 기준 1/4로 열렸을까요?</b><span>결정 기록에는 완료 보고 때 AI가 살펴본 결과(기준 1/4)가 남았는데, 관문은 그 뒤에 칸이 모두 '됨'일 때만 열려요. 그 사이에 무엇이 칸을 '됨'으로 바꿨는지 코드로 찾아야 해요.</span></li>
+        <li><b>'확인한 대로'는 어디까지 믿을까요?</b><span>5~8단계는 AI가 다시 살펴보지 않고 사람이 칸마다 확인해서 지났어요(C-40 — 빠르게 가려고 정한 길). 코드 · 시험 결과 · 잰 값처럼 증거가 있어야 하는 칸은 증거가 올 때까지 '됨'이 되지 않게 할까요?</span></li>
+        <li><b>버전 V.n은 언제 올라갈까요?</b><span>퀘스트 한 바퀴마다 하나씩인지, 관문을 넘을 때인지 아직 정하지 않았어요(C-23 ①). 이 페이지는 디자인 캔버스처럼 관문마다 하나(1단계 → V.1)로 그렸고, 버전 칸은 '대회 뒤'예요.</span></li>
+        <li><b>0단계는 어느 장면 목록을 따를까요?</b><span>첫 5분 장면 S0~S8과 '처음 한 바퀴' 장면 열둘이 따로 있어요. 0단계 그림은 둘 중 어느 쪽 번호를 쓸지 정해야 해요.</span></li>
+        <li><b>이 화면 방향을 요구 후보로 옮길까요?</b><span>작업실 + 가장자리 섬은 지금 앱(섬 + 퀘스트 창)과 다른 큰 방향이에요. 요구서 2-2에 후보로 적을지는 이재엽이 정해요.</span></li>
+      </ol>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>디자인 첫 판 · 2026-10-26 · Claude가 이재엽의 요청으로 만들었어요. 구성 · 단계 번호 · 틈 보이기 · 캔버스 기준은 이재엽이 골랐고, 화면 그림은 이재엽이 준 디자인 캔버스 스크린샷을 기준으로 그렸어요.</p>
+    <p>기준: Final-Proj main e6f4724 · 예시: gamercross/test-1 8e41922 · 화면: 디자인 캔버스의 DockPrototype · DockPositions · 플로로 그림: 앱의 floro.svg에서 바탕만 뺀 사본.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var T1 = "https://github.com/gamercross/test-1";
+  var FP = "https://github.com/2026-Codyssey-Final-Proj/Final-Proj/blob/main/";
+  var COLS = ["생각", "행동", "기록", "저장", "버전", "관문"];
+  var CIRC = ["①", "②", "③", "④", "⑤", ""];
+  var APP = [["지금 있음", "y"], ["지금 있음", "y"], ["일부", "p"], ["일부", "p"], ["대회 뒤", "n"], ["지금 있음", "y"]];
+  var ROLE = { me: "사람", fl: "플로로", cc: "Claude Code", floe: "Floe" };
+  var DIRS = ["01-idea", "02-plan", "03-requirements", "04-design", "05-skeleton", "06-build", "07-measure", "08-retro"];
+  var FILES = ["idea.md", "plan.md", "requirements.md", "design.md", "skeleton.md", "build.md", "measure.md", "retro.md"];
+  var TITLES = ["시작하기", "무엇을 만들지 정하기", "아이디어 적어 두기", "꼭 필요한 기능 정리하기", "만드는 방법 고르기", "뼈대 먼저 이어 보기", "하나씩 만들고 확인하기", "실제로 써 보고 재 보기", "돌아보고 배운 것 남기기"];
+  var SHORTS = ["처음 말하기", "정하기", "적어 두기", "기능 정리", "방법 고르기", "뼈대", "만들기", "재 보기", "돌아보기"];
+  var doc = function (p) { return T1 + "/blob/main/docs/" + p; };
+  var cm = function (h) { return T1 + "/commit/" + h; };
+  var esc = function (s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); };
+
+  // 단계 0~8. 글은 test-1 문서에서 그대로 옮겼다. test-1에 없는 말은 ex(예시), test-1과 달리 이어져야 할 모습은 [이어져야] · note로 표시한다.
+  // fr: 화면 그림 — 그 단계의 한 순간. think · act · rec · save · ver · gate는 퀘스트 한 바퀴 다섯 칸과 관문, cur는 플로로가 앉은 칸.
+  var S = [
+    { n: 0, does: "처음 설정을 마치고, 만들고 싶은 것을 섬에 처음 말해요",
+      commits: [["6cd55c0", "10/24 14:42 — 저장소를 GitHub에서 만듦"]], who: "",
+      fr: { now: "처음 말한 것을 받는 중 — 붙여 넣으면 플로로가 1단계 초안을 만들어요", cur: "think",
+        think: ["now", "그때 그 프롬프트 어디 갔지?"],
+        act: ["later", "플로로가 1단계 초안을 만들어요", "아직 — 붙여 넣으면 시작"],
+        rec: ["later", { k: "chips", items: ["불편", "달라지는 것", "누가", "크기"], ft: "① 생각이 끝나면 1단계 네 칸이 생겨요" }],
+        save: ["later", ["README.md"], "저장소는 GitHub에서 먼저 만들었어요"],
+        ver: "1단계를 넘으면 책에 V.1", gate: ["later", "처음 설정을 마치면 1단계로"],
+        file: ["README.md", ["# test-1", "코디세이 AI 활용 학습의 미션 1의 문제를 floe가 작업한 내용들을 기록한 repo이다"], "README 두 줄 — 6cd55c0"],
+        learn: ["저장소 (GitHub)", "내가 만든 것과 기록이 쌓이는 곳"],
+        isl: { task: null, mood: "반가워요",
+          bub: [["fl", "지금 어떤 앱을 만들고 있어요? 알려 주면 길을 잡고 정리해 줄게요.", "첫 5분 장면 S1"], ["me", "…\"그때 그 프롬프트 어디 갔지?\" 하며 메모장과 노션, 메신저 창을 뒤적였던 경험…", "붙여 넣은 미션 글 · test-1"]],
+          nc: ["시작 · ① 생각", "이 글로 1단계 초안을 만들까요?", "붙여 넣은 미션 글로 불편 · 달라지는 것 · 누가 · 크기 네 칸을 채워요. 플로로가 한 번 써요.", ["초안 만들기", "직접 쓰기"]] } },
+      rows: [["me", "미션 글을 섬에 붙여 넣어요", "처음 말한 것"], ["fl", "1단계 네 칸 초안을 만들어요 (AI 한 번)", "섬의 초안"], ["floe", "처음 말한 것을 1단계 문서의 '재료' 칸에 둬요", "docs/01-idea/idea.md"], ["me", "저장소는 사람이 GitHub에서 먼저 만들었어요", "README.md 두 줄 · 6cd55c0"], ["", "아직 없어요", "—"], ["me", "처음 설정(인사 → AI → GitHub → 프로젝트 → 준비 끝)을 마치면 1단계가 열려요", "—"]],
+      links: [["README.md", T1 + "/blob/6cd55c0/README.md", "처음 두 줄"], ["idea.md '재료' 칸", doc("01-idea/idea.md"), "처음 말한 것"], ["6cd55c0", cm("6cd55c0"), "커밋"]],
+      seen: [["plain", "test-1에는 처음 설정 장면이 남지 않아요. 미션 글은 1단계 문서와 기획서의 '처음 말한 것'에 그대로 남았어요."]],
+      should: "새로 지어내지 않고 첫 5분 장면 S0~S8과 '처음 한 바퀴' 장면 열둘을 따라요. 이 장면은 그 끝에서 1단계로 넘어가는 자리예요.",
+      shouldLinks: [["첫 5분 스토리보드", FP + "01-docs/04-pattern-implementation/onboarding-storyboard.md"], ["처음 한 바퀴 — 장면마다 더할 것", FP + "01-docs/04-pattern-implementation/onboarding-scene-additions.md"]],
+      gate: "관문 없음 — 처음 설정을 마치면 1단계가 열려요",
+      mats: [["처음 말한 것", "1단계 Ⅰ 불편"]] },
+
+    { n: 1, does: "어떤 불편을, 누구를 위해 풀지 정해요",
+      commits: [["595a8b6", "10/25 17:46 — 1 · 2단계 앞선 초안"], ["9927a6e", "10/26 00:03 — 지금 글 · 증빙 · 기획서 · 결정 기록"]], who: "그대로 3 · 고름 1",
+      fr: { now: "크기를 고르는 중 — 네 칸 중 마지막이에요", cur: "think",
+        think: ["now", "프롬프트를 한곳에 모아 … 바로 찾을 수 있어요"],
+        act: ["later", "Claude Code에 맡김 — 네 칸을 idea.md에", "아직 — 네 칸을 다 정하면"],
+        rec: ["later", { k: "chk", items: [["불편", "y", "그대로"], ["달라지는 것", "y", "그대로"], ["누가", "y", "그대로"], ["크기", "o", "고르는 중"]] }],
+        save: ["later", ["README.md", "idea.md"], "아직 — 2단계가 끝나면 같이 올려요"],
+        ver: "저장하면 책에 V.1", gate: ["later", "남은 것 하나"],
+        file: ["01-idea/idea.md", ["- 크기: 보통 — 번호로 메뉴를 고르는 목록 프로그램은 흔한 방법 하나로 풀려요.", "- 어떻게: 고름 — 플로로가 권한 것: “보통 — …”"], "… 55줄 더 · ② 행동에서 정리"],
+        learn: ["규모 등급", "얼마나 크게 만들지 정하기"],
+        isl: { task: [4, 4], mood: "같이 고르는 중",
+          bub: [["fl", "\"그때 그 프롬프트 어디 갔지?\" 하며 메모장과 노션, 메신저 창을 뒤적이는 불편을 풀어요.", "플로로 초안 · 불편 · test-1"], ["me", "초안 그대로", "결정 기록의 '그대로' · test-1"]],
+          nc: ["1단계 · ① 생각 · 크기", "얼마나 크게 만들까요?", "셋 중에서 골라요. test-1은 '보통 — 번호로 메뉴를 고르는 목록 프로그램은 흔한 방법 하나로 풀려요.'를 골랐어요.", ["이걸로 고르기", "다른 둘 보기"]] } },
+      rows: [["fl>me", "플로로가 네 칸 초안을 내고, 사람이 그대로 3칸 · 고름 1칸", "불편 · 달라지는 것 · 누가 · 크기"], ["cc", "[이어져야] 정한 네 칸을 idea.md에 써요 (허락은 섬에서)", "docs/01-idea/idea.md"], ["floe", "칸마다 누가 어떻게 정했는지와 완료 기준의 근거를 적어요", "idea.md 증빙 · decisions.md"], ["cc", "2단계가 끝나면 1 · 2단계 문서를 함께 올려요 (사람이 허락)", "595a8b6(앞선 초안) · 9927a6e(지금 글)"], ["floe", "V.n을 하나 올려요", "—"], ["me", "기준 4/4를 보고 '이해했어요(예)'", "decisions.md 1단계 관문 줄"]],
+      links: [["idea.md", doc("01-idea/idea.md"), "1단계 문서"], ["decisions.md", doc("decisions.md"), "결정 기록"], ["595a8b6", cm("595a8b6"), "앞선 초안"], ["9927a6e", cm("9927a6e"), "지금 글 · 증빙"]],
+      seen: [["good", "네 기준이 모두 근거와 함께 '됨'이고, 관문도 기준 4/4로 지났어요. 다른 단계도 이 모양이면 돼요."]],
+      should: "이대로예요. 칸마다 근거 문장이 남고, 크기처럼 고른 칸은 무엇을 골랐는지가 남아요.",
+      gate: "기준 4/4 · 이해했어요(예) · 10/26",
+      mats: [["1단계 Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가 · Ⅳ 크기", "2단계 Ⅰ 빈칸 채우기"], ["1단계 Ⅳ 크기", "2단계 Ⅱ 어디까지"]] },
+
+    { n: 2, does: "빈칸을 질문으로 하나씩 채워요", thread: true,
+      commits: [["595a8b6", "10/25 17:46 — 계획서 앞선 초안"], ["9927a6e", "10/26 00:03 — 지금 글 · 증빙 · 기획서 · 결정 기록"]], who: "그대로 4",
+      fr: { now: "2단계 관문 — '안 됨'이 셋 남아 멈췄어요", cur: "gate", note: "관문에서 멈추는 모습은 이어져야 할 모습이에요 — test-1은 기준 1/4로 지나갔어요.",
+        think: ["done", "언제 성공: 아직 모름"],
+        act: ["done", "Claude Code에 맡김 — 계획서 · 기획서 · 결정 기록", "✓ 끝"],
+        rec: ["done", { k: "chk", title: "완료 기준 — 살펴본 결과", items: [["빈칸 채우기", "n", "안 됨"], ["왜 · 어디까지 · 언제 성공", "n", "안 됨"], ["한 문장 한 가지", "y", "됨"], ["남의 정보 · 밖으로", "n", "안 됨"]] }],
+        save: ["later", ["plan.md", "PRD.md", "decisions.md"], "아직 — 관문 뒤에"],
+        ver: "저장하면 책에 V.2", gate: ["gap now", "AI 확인 1/4 — 여기서 멈춰야"],
+        file: ["decisions.md", ["| 2026-10-26 | 2단계 | 관문 | — | 이해했어요(예) · 기준 1/4 | 관문 |"], "test-1에는 이 줄로 지나갔어요"],
+        learn: ["의도명세 캔버스", "정해진 빈칸에 아이디어 채우기"],
+        isl: { task: "관문", mood: "멈춰서 물어봐요",
+          bub: [["fl", "… · 어디까지: 번호로 메뉴를 고르는 목록 프로그램 · 언제 성공: 아직 모름", "플로로 초안 · 빈칸 채우기 · test-1"], ["me", "초안 그대로", "결정 기록의 '그대로' · test-1"]],
+          nc: ["2단계 · 관문", "아직 '안 됨'이 셋 남았어요", "빈칸 채우기 · 왜 · 어디까지 · 언제 성공 · 남의 정보. 채우고 갈까요, 까닭을 적고 넘길까요?", ["채우러 가기", "까닭 적고 넘기기"]] } },
+      rows: [["fl>me", "네 칸 초안을 모두 그대로", "빈칸 채우기 · 왜 · 어디까지 · 언제 성공 · 한 문장 한 가지 · 남의 정보"], ["cc", "[이어져야] 계획서 · 기획서 · 결정 기록을 써요 (허락은 섬에서)", "plan.md · PRD.md · decisions.md"], ["floe", "계획서와 기획서 한 장, 결정 기록을 시작해요", "plan.md · PRD.md · decisions.md"], ["cc", "1 · 2단계 문서를 함께 올려요 (사람이 허락)", "595a8b6 · 9927a6e"], ["floe", "V.n을 하나 올려요", "—"], ["me", "AI 확인은 1/4였는데 '이해했어요(예)'로 지났어요", "decisions.md '기준 1/4'"]],
+      links: [["plan.md", doc("02-plan/plan.md"), "계획서"], ["PRD.md", doc("PRD.md"), "기획서"], ["decisions.md", doc("decisions.md"), "결정 기록"], ["9927a6e", cm("9927a6e"), "커밋"]],
+      seen: [["gap", "AI가 살펴본 결과는 기준 1/4였어요. 빈칸 채우기 · 왜 · 어디까지 · 언제 성공 · 남의 정보가 '안 됨'인데도 관문이 열렸어요. 그리고 '언제 성공: 아직 모름'이 여기서 시작해 8단계까지 이어져요."]],
+      should: "'안 됨'이 남으면 관문에서 멈춰요. 그래도 넘기려면 사람이 까닭을 한 줄 적고, 그 줄이 결정 기록에 남아요. (고칠 목록 F-60)",
+      gate: "기준 1/4 · 이해했어요(예) · 10/26",
+      mats: [["2단계 Ⅲ 한 문장 한 가지", "3단계 Ⅰ 기능 문장"], ["2단계 Ⅰ 빈칸 채우기 — '언제 성공: 아직 모름'", "3단계 Ⅱ 숫자로", 1]] },
+
+    { n: 3, does: "기능을 문장으로 쓰고, 숫자로 정하고, 순서를 매겨요", thread: true,
+      commits: [["cb7f3ff", "10/26 00:05 — 2단계 2분 뒤"]], who: "그대로 5",
+      fr: { now: "맡길 일을 기다려요 — 섬에서 맡기면 Claude Code가 시작해요", cur: "act",
+        think: ["done", "프롬프트를 새로 넣으면, 앱은 목록에 저장한다"],
+        act: ["now", "Claude Code에 맡김 — 기능을 '~하면, 앱은 ~한다'로", "아직 — 맡기면 시작"],
+        rec: ["later", { k: "cols", ft: "② 행동이 끝나면 카드가 생겨요" }],
+        save: ["later", ["README.md", "requirements.md", "decisions.md"], "아직 — ③ 기록 뒤에"],
+        ver: "저장하면 책에 V.3", gate: ["later", "남은 것 넷"],
+        file: ["03-requirements/requirements.md", ["## 기능 문장", "- 프롬프트를 새로 넣으면, 앱은 목록에 저장한다 / 카테고리를 고르면, 앱은 그 카테고리의 프롬프트만 보여 준다 / 낱말을 검색하면, … / 즐겨찾기를 누르면, …"], "… 75줄 더 · ② 행동에서 고침"],
+        learn: ["EARS", "'~하면, 앱은 ~한다'로 쓰는 틀"],
+        isl: { task: [2, 5], mood: "같이 보고 있어요",
+          bub: [["fl", "다시 왔네요! 2단계에서 정한 걸로 이어서 해요.", "ex"]],
+          nc: ["3단계 · ② 행동 · 맡길 일", "기능을 문장으로 써 달라고 맡길까요?", "2단계에서 정한 아이디어로 '~하면, 앱은 ~한다' 문장을 만들어요. 일은 내 Claude Code가 해요.", ["Claude Code에 맡기기", "고치기"]] } },
+      rows: [["fl>me", "다섯 칸 초안을 모두 그대로 — 기능 문장 넷, 숫자 셋은 '아직 모름'", "기능 문장 · 숫자로 · 꼭/있으면 좋음 · 나온 곳 잇기 · 막을 일"], ["cc", "[이어져야] 기능을 '~하면, 앱은 ~한다' 문장으로 써요 (허락은 섬에서)", "docs/03-requirements/requirements.md"], ["floe", "꼭 / 있으면 좋음과 막을 일 한 줄을 남겨요", "requirements.md · PRD.md 3절"], ["cc", "2단계 2분 뒤에 올렸어요", "cb7f3ff"], ["floe", "V.n을 하나 올려요", "—"], ["me", "기준 5/5 · 이해했어요(예)", "—"]],
+      links: [["requirements.md", doc("03-requirements/requirements.md"), "3단계 문서"], ["cb7f3ff", cm("cb7f3ff"), "커밋"]],
+      seen: [["gap", "숫자 셋이 모두 '아직 모름'인데 '됨'이에요(바로 찾을 수 있어요 · 수십 개 쌓여요 · 성공의 기준). 기준이 '모르면 아직 모름'을 받아 주기 때문이에요. 그래서 7단계에서 잴 숫자가 없어졌어요."]],
+      should: "'아직 모름'을 받아도 숫자 하나는 정하게 한 번 더 물어요. 고르기 어려우면 플로로가 견줄 거리를 보여 주고, 숫자는 사람이 정해요.",
+      gate: "기준 5/5 · 이해했어요(예)",
+      mats: [["3단계 Ⅱ 숫자로", "7단계 Ⅰ 숫자 재기", 1], ["3단계 Ⅲ 꼭 · 있으면 좋음", "5단계 Ⅲ 작게 나누기"], ["3단계 Ⅴ 막을 일", "5단계 Ⅳ 비밀값 검사"]] },
+
+    { n: 4, does: "만드는 방법을 비교해서 하나 골라요",
+      commits: [["b511dba", "10/26 01:33"]], who: "직접 5",
+      fr: { now: "후보를 찾는 중 — 다섯 칸 중 첫째", cur: "think",
+        think: ["now", "파이썬으로 직접 만든 프로그램"],
+        act: ["later", "Claude Code에 맡김 — 고른 방법과 까닭을 design.md에", "아직 — 다섯 칸 뒤에"],
+        rec: ["later", { k: "cmp", items: [["파이썬 프로그램", "후보 칸에 적힘 · 고름", "one"], ["노션", "견주기 칸에만 — \"쉽지만 내 맘대로 바꾸기 어려워요\"", "two"]] }],
+        save: ["later", ["design.md", "PRD.md", "decisions.md"], "아직 — ③ 기록 뒤에"],
+        ver: "저장하면 책에 V.4", gate: ["later", "남은 것 다섯"],
+        file: ["04-design/design.md", ["- 파이썬으로 직접 만든 프로그램", "- 어떻게: 직접 적음(초안 없이)"], "… 65줄 더 · ② 행동에서 정리"],
+        learn: ["트레이드오프", "후보끼리 좋은 점과 아쉬운 점 비교하기"],
+        isl: { task: [1, 5], mood: "같이 견주는 중",
+          bub: [["me", "파이썬으로 직접 만든 프로그램", "후보 찾기 · 직접 적음 · test-1"]],
+          nc: ["4단계 · ① 생각 · 후보 찾기", "노션도 후보 칸에 같이 적어 둘까요?", "견주기에 나온 노션을 후보로 나란히 두면 '후보 2개 이상'이 채워져요.", ["같이 적기", "하나로 두기"]] } },
+      rows: [["me", "다섯 칸을 초안 없이 모두 직접 적었어요", "후보 · 견주기 · 고른 까닭 · 약속 · 둘 곳"], ["cc", "[이어져야] 고른 방법과 까닭을 design.md에 써요 (허락은 섬에서)", "docs/04-design/design.md"], ["floe", "고른 방법과 까닭 한 줄, 쓸 도구 · 둘 곳", "design.md · PRD.md 4절"], ["cc", "01:33에 올렸어요", "b511dba"], ["floe", "V.n을 하나 올려요", "—"], ["me", "기준 5/5 · 이해했어요(예)", "—"]],
+      links: [["design.md", doc("04-design/design.md"), "4단계 문서"], ["b511dba", cm("b511dba"), "커밋"]],
+      seen: [["good", "다섯 칸을 모두 사람이 직접 적은 단계예요. '나만 볼 수 있게 내 컴퓨터 안에 둬요'처럼 둘 곳도 정했어요."], ["gap", "기준은 '후보 2개 이상'인데 후보 칸에는 '파이썬으로 직접 만든 프로그램' 하나만 적혔고, 노션은 견주기 칸에만 나와요. 그런데도 AI가 살펴본 결과가 '됨'으로 봤어요."]],
+      should: "후보 칸에 둘을 나란히 적고(파이썬 프로그램 · 노션) 견주기는 그 둘을 맞대요. 하나뿐이면 플로로가 흔한 방법 목록에서 하나를 더 보여 줘요.",
+      gate: "기준 5/5 · 이해했어요(예)",
+      mats: [["4단계 Ⅲ 고른 까닭", "5단계 Ⅰ 끝까지 잇기"], ["4단계 Ⅴ 보는 사람 · 둘 곳", "5 · 6단계 비밀값 검사 · 7단계 Ⅳ 아무나 못 들어오게"]] },
+
+    { n: 5, does: "가장 단순한 흐름부터 처음부터 끝까지 이어 봐요", thread: true,
+      commits: [["74acb60", "10/26 01:34 — 4단계 1분 뒤"]], who: "고름 4",
+      fr: { now: "Claude Code가 뼈대를 만드는 중 — 돌린 결과를 기다려요", cur: "act", note: "② 행동(뼈대를 맡겨 돌리기)과 실행 결과 자리는 이어져야 할 모습이에요 — test-1에는 코드가 없어요.",
+        think: ["done", "방금 넣은 프롬프트가 목록에 보이면 된다"],
+        act: ["now", "Claude Code에 맡김 — 넣기 → 저장 → 목록 뼈대를 만들고 한 번 돌려 보기", "Claude Code가 하는 중"],
+        rec: ["gap", { k: "res", big: "실행 결과 — 아직 없음", sub: "test-1에는 코드 파일이 하나도 없어요" }],
+        save: ["later", ["src/", "skeleton.md"], "아직 — 결과 카드 뒤에"],
+        ver: "저장하면 책에 V.5", gate: ["later", "도는지 보기 — 결과가 있어야"],
+        file: ["05-skeleton/skeleton.md", ["- 프롬프트를 하나 넣고 목록을 열어 보면 → 방금 넣은 프롬프트가 목록에 보이면 된다"], "… 69줄 더 · ② 행동에서 고침"],
+        learn: ["스모크 테스트", "이어진 게 실제로 도는지 확인하기"],
+        isl: { task: [2, 4], mood: "기다리는 중",
+          bub: [["me", "① 프롬프트 하나를 새로 넣어요 → ② 앱이 목록에 저장해요 → ③ 목록에서 그 프롬프트가 보여요", "고름 · test-1"], ["fl", "Claude Code에 맡겼어요. 다 되면 알려 줄게요.", "ex"]],
+          nc: ["5단계 · ② 행동 · 맡긴 일", "뼈대를 돌려 본 결과를 기다려요", "넣기 → 저장 → 목록을 한 번 돌린 결과가 오면 ③ 기록에 카드가 생겨요. 결과 없이는 '도는지 보기'가 '됨'이 되지 않아요.", ["진행 보기", "다시 맡기기"]] } },
+      rows: [["fl>me", "플로로가 낸 예시 셋 중에서 네 칸을 골랐어요", "끝까지 잇기 · 도는지 보기 · 작게 나누기 · 비밀값 검사"], ["cc", "[이어져야] 넣기 → 저장 → 목록 뼈대를 만들고 돌려 봐요. 허락은 섬에서", "뼈대 코드 · 실행 결과 — test-1에는 없음"], ["floe", "[이어져야] 실행 결과를 작업실 카드로, 남은 일은 작은 할 일로", "skeleton.md"], ["cc", "[이어져야] 코드와 문서를 함께 올려요", "74acb60 (문서만 올라감)"], ["floe", "V.n을 하나 올려요", "—"], ["me", "[이어져야] 사람이 한 번 돌려 본 뒤 '도는지 보기 됨' — test-1은 확인한 대로 지났어요", "—"]],
+      links: [["skeleton.md", doc("05-skeleton/skeleton.md"), "5단계 문서"], ["74acb60", cm("74acb60"), "커밋"], ["저장소 파일 전체", T1, "코드 파일 0개"]],
+      seen: [["gap", "저장소에 코드 파일이 하나도 없는데 '도는지 보기'가 '됨'이에요. 적힌 것은 '…보이면 된다'는 계획이지 돌려 본 결과가 아니에요. 완료 기준 표에는 '확인한 대로(AI가 다시 살펴보지 않고, 칸마다 사람이 확인)'라고 남았어요. 빠르게 가려고 정한 길(C-40)이고, 4단계에서 1분 만에 지났어요."]],
+      should: "행동 칸에서 Claude Code가 뼈대를 만들고 돌린 결과가 작업실에 카드로 와요. 그 카드가 있고 사람이 한 번 돌려 봐야 '도는지 보기'가 '됨'이에요.",
+      gate: "기준 4/4 · 이해했어요(예) — 확인한 대로",
+      mats: [["5단계 Ⅱ 도는지 보기", "6단계 Ⅰ 확인 먼저 · Ⅱ 작은 확인"], ["5단계 Ⅲ 작게 나누기 — '성공 기준 정하기(아직 모름)'", "7단계 Ⅲ 못 잰 것", 1]] },
+
+    { n: 6, does: "확인 방법을 먼저 정하고 하나씩 만들어요",
+      commits: [["505a2eb", "10/26 01:35 — 5단계 1분 뒤"]], who: "고름 4",
+      fr: { now: "맡길 일을 기다려요 — 시험을 먼저 쓰게 맡겨요", cur: "act", note: "② 행동(시험 먼저 맡기기)과 돌려 본 결과 자리는 이어져야 할 모습이에요 — test-1에는 시험이 없어요.",
+        think: ["done", "넣은 글이 목록에 있고 빈 글은 안 들어가요"],
+        act: ["now", "Claude Code에 맡김 — 작은 확인 넷을 시험으로 먼저, 그다음 기능", "아직 — 맡기면 시작"],
+        rec: ["gap", { k: "chk", title: "작은 확인 넷 — 돌려 본 결과", items: [["저장", "o", "아직"], ["카테고리", "o", "아직"], ["검색", "o", "아직"], ["즐겨찾기", "o", "아직"]] }],
+        save: ["later", ["src/", "tests/", "build.md"], "아직 — ③ 기록 뒤에"],
+        ver: "저장하면 책에 V.6", gate: ["later", "남은 것 셋"],
+        file: ["06-build/build.md", ["- 저장: 넣은 글이 목록에 있고 빈 글은 안 들어가요 / 카테고리: 다른 카테고리 글은 안 섞여요 / …"], "… 70줄 더 · ② 행동에서 고침"],
+        learn: ["TDD", "확인 방법을 먼저 정하고 만들기"],
+        isl: { task: [2, 4], mood: "같이 보고 있어요",
+          bub: [["fl", "프롬프트 저장 — 하나 넣고 목록을 열면 방금 넣은 게 보여야 해요 / …", "플로로 초안 · 확인 먼저 · test-1"]],
+          nc: ["6단계 · ② 행동 · 맡길 일", "시험을 먼저 써 달라고 맡길까요?", "작은 확인 넷을 시험으로 먼저 쓰고, 시험이 통과하게 기능을 만들어요. 일은 내 Claude Code가 해요.", ["Claude Code에 맡기기", "고치기"]] } },
+      rows: [["fl>me", "확인 먼저 · 작은 확인 · 써 보기 · 비밀값 — 예시 셋 중 고름 4", "build.md"], ["cc", "[이어져야] 기능마다 시험을 먼저 쓰고, 그다음 기능을 만들어요", "시험 · 코드 — test-1에는 없음"], ["floe", "[이어져야] 시험 결과를 '통과 n/n' 카드로", "build.md 증빙"], ["cc", "[이어져야] 시험 · 코드 · 문서를 함께 올려요", "505a2eb (문서만 올라감)"], ["floe", "V.n을 하나 올려요", "—"], ["me", "[이어져야] '써 보기' 순서대로 한 번 해 보고 '이해했어요' — test-1은 확인한 대로 지났어요", "—"]],
+      links: [["build.md", doc("06-build/build.md"), "6단계 문서"], ["505a2eb", cm("505a2eb"), "커밋"]],
+      seen: [["gap", "확인 방법은 잘 적었어요(작은 확인 넷). 그런데 시험도 코드도 없이 '작은 부분마다 확인 통과하기'가 '됨'이에요."]],
+      should: "기능마다 Claude Code가 시험을 먼저 쓰고 → 기능을 만들고 → 시험 결과가 '통과 n/n' 카드로 와요. 사람은 '써 보기' 순서대로 한 번 해 봐요.",
+      gate: "기준 4/4 · 이해했어요(예) — 확인한 대로",
+      mats: [["6단계 Ⅰ 확인 먼저", "8단계 Ⅳ 배운 것 남기기"], ["6단계 Ⅱ 작은 확인 · Ⅲ 써 보기", "8단계 Ⅰ 돌아보기"]] },
+
+    { n: 7, does: "정해 둔 숫자를 실제로 재 봐요", thread: true,
+      commits: [["f73b595", "10/26 01:40"]], who: "고름 4",
+      fr: { now: "7단계 관문 — 빈칸 표시가 남아 멈췄어요", cur: "gate", note: "관문에서 멈추는 모습은 이어져야 할 모습이에요 — test-1은 '(재고 적기)'를 남긴 채 지나갔어요.",
+        think: ["done", "정한 숫자 없음 — 3단계에서 먼저 정하기"],
+        act: ["gap", "내가 직접 — 3단계 숫자를 써 보며 재기", "잴 숫자가 없어 못 했어요"],
+        rec: ["gap", { k: "ms", items: [["무엇", "(재고 적기)"], ["잰 날", "(재고 적기)"]] }],
+        save: ["later", ["measure.md", "decisions.md"], "아직 — 관문 뒤에"],
+        ver: "저장하면 책에 V.7", gate: ["gap now", "빈칸 표시 — 여기서 멈춰야"],
+        file: ["07-measure/measure.md", ["- 무엇: (재고 적기) · 잰 날: (재고 적기)"], "test-1에는 이 줄로 지나갔어요"],
+        learn: ["검증 기록", "잰 값을 그대로 적어 두기"],
+        isl: { task: "관문", mood: "멈춰서 물어봐요",
+          bub: [["fl", "정한 숫자 없음 — 3단계에서 먼저 정하기", "플로로 초안 · 숫자 재기 · test-1"]],
+          nc: ["7단계 · 관문", "'(재고 적기)'가 남았어요", "잰 값과 날짜를 적어야 지나요. 잴 숫자가 없으면 3단계로 돌아가 하나를 정해요.", ["3단계 숫자 정하기", "못 잰 것으로 적기"]] } },
+      rows: [["fl>me", "숫자 재기 · 잰 값 · 못 잰 것 · 아무나 못 들어오게 — 고름 4", "measure.md"], ["me", "[이어져야] 3단계에서 정한 숫자를 실제로 써 보며 재요", "잰 값 · 잰 날 — test-1에는 없음"], ["floe", "[이어져야] 잰 값은 그대로, 못 잰 것은 '아직 못 함'으로", "measure.md"], ["cc", "01:40에 올렸어요", "f73b595"], ["floe", "V.n을 하나 올려요", "—"], ["me", "[이어져야] 빈칸 표시가 없어야 지나요 — test-1은 확인한 대로 지났어요", "—"]],
+      links: [["measure.md", doc("07-measure/measure.md"), "7단계 문서"], ["f73b595", cm("f73b595"), "커밋"]],
+      seen: [["gap", "'무엇: (재고 적기) · 잰 날: (재고 적기)' — 빈칸 표시가 그대로 '됨'이에요. 3단계에서 숫자를 정하지 않아 잴 것이 없었어요."]],
+      should: "빈칸 표시가 남은 칸은 '됨'이 될 수 없어요. 3단계 숫자를 실제로 재고 값과 날짜를 적어요. 재지 못했으면 '못 잰 것'에만 적어요.",
+      gate: "기준 4/4 · 이해했어요(예) — 확인한 대로",
+      mats: [["7단계 Ⅰ 숫자 재기 · Ⅲ 못 잰 것", "8단계 Ⅱ 왜 다섯 번", 1], ["7단계 Ⅳ 아무나 못 들어오게", "8단계 Ⅲ 아찔했던 일"]] },
+
+    { n: 8, does: "돌아보고 배운 것을 남겨요", thread: true,
+      commits: [["8e41922", "10/26 01:42 — 4단계 커밋 뒤 9분"]], who: "고름 5",
+      fr: { now: "돌아보는 중 — 기록에서 다시 써요", cur: "rec", note: "섬의 지금 카드는 이어져야 할 모습이에요 — test-1의 돌아보기는 '하나씩 확인하며 통과했어요'로 적혔어요.",
+        think: ["done", "다음엔 성공 기준을 숫자로 먼저 정할게요"],
+        act: ["later", "Claude Code에 맡김 — retro.md와 커밋", "아직 — 다섯 칸 뒤에"],
+        rec: ["now", { k: "why", items: ["성공 기준을 못 정했나", "숫자로 말하는 걸 미뤘어요", "처음에 '아직 모름'으로 넘겼어요", "몇 번 걸리면 성공인지 생각 안 했어요", "시작할 때 성공 모습을 숫자로 안 그렸어요"] }],
+        save: ["later", ["retro.md", "PRD.md", "decisions.md"], "아직 — 관문 뒤에"],
+        ver: "저장하면 책에 V.8", gate: ["later", "남은 것 다섯 · 레벨 +1"],
+        file: ["08-retro/retro.md", ["- 다음엔 성공 기준을 숫자로 먼저 정할게요 / 다음엔 작은 부분마다 확인 방법을 먼저 적을게요 / …"], "… 81줄 더 · ② 행동에서 정리"],
+        learn: ["5 Whys", "'왜?'를 다섯 번 물어 진짜 원인 찾기"],
+        isl: { task: [1, 5], mood: "같이 돌아보는 중",
+          bub: [["fl", "잘된 점: 프롬프트 저장, 카테고리, 검색, 즐겨찾기를 하나씩 확인하며 통과했어요 · …", "플로로 초안 · 돌아보기 · test-1"]],
+          nc: ["8단계 · ① 생각 · 돌아보기", "통과 기록은 저장소에서 못 찾았어요", "커밋 아홉 개는 모두 문서예요. 잘된 점을 실제 기록(커밋 · 시험 결과 · 잰 값)에서 다시 써 볼까요?", ["기록에서 다시 쓰기", "그대로 두기"]] } },
+      rows: [["fl>me", "돌아보기 · 왜 다섯 번 · 아찔했던 일 · 배운 것 · 올리기 — 고름 5", "retro.md"], ["cc", "[이어져야] 돌아본 것을 retro.md에 쓰고 커밋해요 (허락은 섬에서)", "docs/08-retro/retro.md"], ["floe", "배운 것 셋을 다음에 쓸 수 있게 남겨요", "retro.md · PRD.md 8절"], ["cc", "'프롬프트 보관함 첫 판 완성'이라 적었지만 올라간 것은 문서뿐", "8e41922"], ["floe", "V.n을 하나 올려요", "—"], ["me", "기준 5/5 · 이해했어요(예) — 확인한 대로 → 레벨 +1 (사람에게 쌓여요)", "—"]],
+      links: [["retro.md", doc("08-retro/retro.md"), "8단계 문서"], ["8e41922", cm("8e41922"), "커밋"], ["커밋 기록 전체", T1 + "/commits/main", "아홉 개"]],
+      seen: [["good", "'왜 다섯 번'이 2단계의 '언제 성공: 아직 모름'까지 거슬러 올라가 진짜 까닭을 찾았어요. 재료 줄이 끝까지 이어진 증거예요."], ["gap", "'하나씩 확인하며 통과했어요'와 '문서와 코드 — 커밋: 프롬프트 보관함 첫 판 완성'이 적혔지만, 저장소에는 코드도 통과 기록도 없어요."]],
+      should: "돌아보기 초안은 실제 기록(커밋 · 시험 결과 · 잰 값)에서 시작해요. 기록이 없는 일은 '없음'이라고 써요.",
+      gate: "기준 5/5 · 이해했어요(예) — 확인한 대로",
+      mats: [["8단계 Ⅳ 배운 것 남기기", "다음 프로젝트의 1단계 — 먼저 보여 주기 [제안]"]] }
+  ];
+  S.forEach(function (d) { d.title = TITLES[d.n]; d.short = SHORTS[d.n]; });
+
+  var ic = function (n) { return '<svg class="i" aria-hidden="true"><use href="#i-' + n + '"></use></svg>'; };
+  var stageName = function (n) { return n === 0 ? "시작" : n + "단계"; };
+  var who = function (w) { return w ? w.split(">").map(function (k) { return '<span class="r ' + k + '">' + ROLE[k] + "</span>"; }).join(" → ") : "—"; };
+  var what = function (t) { var m = /^\[이어져야\] ?/.exec(t); return m ? '<span class="tag should">이어져야</span>' + esc(t.slice(m[0].length)) : esc(t); };
+  var STATE = { now: "● 지금", done: "✓ 끝", gap: "틈" };
+
+  // 작업실 창 — 파일 목록은 test-1 커밋 기준(그 단계 문서가 올라간 뒤의 모습). 지금 단계 문서는 굵게, 앞 단계 문서는 재료로 '읽음'
+  function tree(n) {
+    var t = ['<div class="t root"><span>test-1</span></div>', '<div class="t"><span>README.md</span></div>'];
+    if (n >= 2) t.push('<div class="t"><span>CLAUDE.md</span></div>');
+    if (n === 0) return t.join("");
+    t.push('<div class="t dir"><span>▾ docs</span>' + (n === 1 ? "<small>2단계 뒤 올림</small>" : "") + "</div>");
+    if (n >= 2) t.push('<div class="t in"><span>README.md</span></div>');
+    for (var i = 0; i < Math.min(n, 8); i++) {
+      if (i === n - 1) t.push('<div class="t in dir"><span>▾ ' + DIRS[i] + '</span></div><div class="t in2 cur"><span>' + FILES[i] + "</span></div>");
+      else t.push('<div class="t in dir"><span>▸ ' + DIRS[i] + "</span><small>읽음</small></div>");
+    }
+    if (n >= 2) t.push('<div class="t in"><span>PRD.md</span></div>', '<div class="t in"><span>decisions.md</span></div>');
+    if (n >= 5) t.push('<div class="t miss"><span>▸ src</span><small>없음</small></div>');
+    return t.join("");
+  }
+  function stg(n) {
+    var c = ['<span class="' + (n === 0 ? "on" : "ok") + '">시작' + (n === 0 ? "" : " ✓") + "</span>"];
+    for (var i = 1; i <= 8; i++) {
+      if (i < n) c.push('<span class="ok">' + i + " ✓ V." + i + "</span>");
+      else if (i === n) c.push('<span class="on">' + i + " " + SHORTS[i] + "</span>");
+    }
+    if (n < 8) c.push("<span>" + (n + 1) + (n + 1 < 8 ? " ~ 8" : "") + "</span>");
+    return '<div class="stg">' + c.join("") + "</div>";
+  }
+  function boards(n) {
+    var prev = n === 0 ? '<div class="bd next">보드 · 처음이에요<b>지난 장 없음</b></div>'
+      : '<div class="bd">보드 · ✓ 지남' + (n > 1 ? " · V." + (n - 1) : "") + "<b>" + stageName(n - 1) + " · " + TITLES[n - 1] + '</b><span class="sw" aria-hidden="true"><i></i><i></i></span></div>';
+    var next = n < 8 ? '<div class="bd next">보드 · 관문을 넘으면 열려요<b>' + (n + 1) + "단계 · " + TITLES[n + 1] + "</b></div>"
+      : '<div class="bd next">보드 · 다 마치면<b>다음 프로젝트 — 배운 것을 들고 가요</b></div>';
+    return '<div class="boards">' + prev + next + "</div>";
+  }
+  function head(no, name, st) { return '<p class="ch">' + (no ? no + " " : "") + name + (STATE[st] ? " <em>" + STATE[st] + "</em>" : "") + "</p>"; }
+  function recBody(r) {
+    if (r.k === "chips") return '<div class="files">' + r.items.map(function (x) { return "<span>" + esc(x) + "</span>"; }).join("") + '</div><p class="ft">' + esc(r.ft) + "</p>";
+    if (r.k === "cols") return '<div class="cols"><div class="must"><b>꼭</b></div><div class="later"><b>나중에</b></div></div><p class="ft">' + esc(r.ft) + "</p>";
+    if (r.k === "chk") return (r.title ? '<p class="ft" style="margin:0 0 6px">' + esc(r.title) + "</p>" : "") + '<ul class="chk">' + r.items.map(function (x) { return '<li><span class="mk ' + x[1] + '">' + esc(x[2]) + "</span><span>" + esc(x[0]) + "</span></li>"; }).join("") + "</ul>";
+    if (r.k === "cmp") return '<div class="cmp">' + r.items.map(function (x) { return '<div class="' + x[2] + '"><b>' + esc(x[0]) + "</b>" + esc(x[1]) + "</div>"; }).join("") + "</div>";
+    if (r.k === "why") return '<ol class="why">' + r.items.map(function (x, i) { return "<li" + (i === r.items.length - 1 ? ' class="end"' : "") + ">" + esc(x) + "</li>"; }).join("") + "</ol>";
+    if (r.k === "res") return '<div class="res"><b>' + esc(r.big) + '</b><p class="ft">' + esc(r.sub) + "</p></div>";
+    if (r.k === "ms") return '<dl class="ms">' + r.items.map(function (x) { return "<dt>" + esc(x[0]) + "</dt><dd>" + esc(x[1]) + "</dd>"; }).join("") + "</dl>";
+    return "";
+  }
+  var badge = function (on) { return on ? '<span class="badge" aria-hidden="true"></span>' : ""; };
+  var CURVE = '<div class="cur" aria-hidden="true"><svg viewBox="0 0 400 30" preserveAspectRatio="none"><path d="M330 2 C 320 26, 120 10, 70 26" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/><path d="M78 20 L68 27 L80 29" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg></div>';
+  function board(d) {
+    var f = d.fr, cur = f.cur, gst = f.gate[0].split(" ")[0];
+    var ar = function (c) { return '<div class="ar ' + c + '" aria-hidden="true">→</div>'; };
+    return '<div class="board"><div class="board-h"><b>' + stageName(d.n) + " · " + esc(d.title) + '</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div><div class="bg">' +
+      '<div class="c c-think ' + f.think[0] + '">' + badge(cur === "think") + head("①", "생각 —", f.think[0]) + "<p>" + esc(f.think[1]) + "</p></div>" + ar("a1") +
+      '<div class="c c-act ' + f.act[0] + '">' + badge(cur === "act") + head("②", "행동", f.act[0]) + "<p>" + esc(f.act[1]) + '</p><p class="ft">' + esc(f.act[2]) + "</p></div>" + ar("a2") +
+      '<div class="c c-rec ' + f.rec[0] + '">' + badge(cur === "rec") + head("③", "기록", f.rec[0]) + recBody(f.rec[1]) + "</div>" + ar("a5") + CURVE +
+      '<div class="c c-save ' + f.save[0] + '">' + head("④", "저장", f.save[0]) + '<div class="files">' + f.save[1].map(function (x) { return "<span>" + esc(x) + "</span>"; }).join("") + '</div><p class="ft">' + esc(f.save[2]) + "</p></div>" + ar("a3") +
+      '<div class="c c-ver later">' + head("⑤", "버전", "") + "<p>" + esc(f.ver) + '</p><p class="ft">대회 뒤 (C-23)</p></div>' + ar("a4") +
+      '<div class="c c-gate ' + f.gate[0] + '">' + badge(cur === "gate") + head("", "관문", gst) + "<p>" + esc(f.gate[1]) + "</p></div>" +
+      '<div class="c c-file"><div class="fh">파일 · ' + esc(f.file[0]) + "</div><ul>" + f.file[1].map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul><p class="more">' + esc(f.file[2]) + "</p></div>" +
+      '<div class="c c-learn"><b>배울 말 · ' + esc(f.learn[0]) + "</b>" + esc(f.learn[1]) + "</div>" +
+      "</div></div>";
+  }
+  function win(d) {
+    return '<div class="win"><div class="win-top"><span class="an">Floe · test-1</span><span class="as">' + stageName(d.n) + " · " + esc(d.short) + "</span>" +
+      '<span class="tabs" aria-hidden="true"><span class="on">캔버스</span><span>노트북</span><span>책</span></span><span class="lv">LV ' + Math.max(0, d.n - 1) + " · 조개 " + Math.max(0, d.n - 1) + "</span></div>" +
+      '<div class="win-body"><div class="tree">' + tree(d.n) + "</div>" +
+      '<div class="canvas"><div class="cv-top"><span class="nowp">지금 하는 일 <b>' + esc(d.fr.now) + "</b></span>" + stg(d.n) + "</div>" +
+      '<div class="cv-main">' + boards(d.n) + board(d) + "</div></div></div></div>";
+  }
+  var DOCK = [["top", "dtop", "위"], ["bottom", "dbot", "아래"], ["left", "dleft", "왼쪽"], ["right", "dright", "오른쪽"]];
+  function islInner(d, dock, live) {
+    var s = d.fr.isl, t = s.task;
+    var task = !t ? "" : (typeof t === "string" ? esc(t) : t[1] + "개 중 " + t[0] + '번째 할 일 <span class="dots" aria-hidden="true">' + Array.apply(null, Array(t[1])).map(function (_, i) { return "<i" + (i < t[0] ? ' class="on"' : "") + "></i>"; }).join("") + "</span>");
+    var bub = s.bub.map(function (b) { return '<div class="bub ' + b[0] + '">' + esc(b[1]) + (b[2] === "ex" ? ' <span class="ex">예시</span>' : b[2] ? "<small>" + esc(b[2]) + "</small>" : "") + "</div>"; }).join("");
+    var nc = s.nc, at = dock || "right";
+    var dk = DOCK.map(function (k) {
+      return live ? '<button type="button" data-dock="' + k[0] + '" aria-label="섬을 ' + k[2] + '에" aria-pressed="' + (k[0] === at) + '">' + ic(k[1]) + "</button>"
+        : "<span" + (k[0] === at ? ' class="on"' : "") + ">" + ic(k[1]) + "</span>";
+    }).join("");
+    return '<div class="itop"><div class="ih"><span class="hm" aria-hidden="true">' + ic("home") + '</span><span class="pill"><b>' + stageName(d.n) + " · " + esc(d.short) + "</b>" + task + "</span></div>" +
+      '<div class="ib"><span class="q" aria-hidden="true">퀘스트</span><span class="sh" aria-hidden="true">' + ic("shell") + Math.max(0, d.n - 1) + '</span><span class="dk"' + (live ? ' role="group" aria-label="섬 자리"' : ' aria-hidden="true"') + ">" + dk + "</span>" + ic("gear") + '<span class="grow"></span>' + ic("next") + "</div></div>" +
+      '<div class="ibody"><div class="fhead"><span class="seal" aria-hidden="true"></span><span>' + esc(s.mood) + "</span></div>" +
+      '<div class="chat2">' + bub + '<div class="nc"><div class="mt"><span>' + esc(nc[0]) + '</span><span class="ex">예시</span></div><div class="tt">' + esc(nc[1]) + '</div><div class="sb">' + esc(nc[2]) + '</div><div class="bt" aria-hidden="true"><span class="p">' + esc(nc[3][0]) + '</span><span class="s">' + esc(nc[3][1]) + "</span></div></div></div>" +
+      '<div class="ifoot" aria-hidden="true"><div class="ichips"><span>먹이 주기 (파일 · 글)</span><span>계획 세우기</span><span>알림</span></div><div class="iin"><span>원하는 것을 적거나 붙여 넣어요</span><span class="send">보내기</span></div></div></div>';
+  }
+  function scene(d) {
+    var seen = d.seen.map(function (s) {
+      var lab = { gap: "test-1에서 본 틈", good: "잘된 점", plain: "test-1에서 본 것" }[s[0]];
+      return '<div class="' + (s[0] === "gap" ? "seen" : "good") + '"><span class="lab">' + lab + "</span><p>" + esc(s[1]) + "</p></div>";
+    }).join("");
+    var sl = d.shouldLinks ? '<ul class="links" style="margin-top:8px">' + d.shouldLinks.map(function (l) { return '<li><a href="' + l[1] + '">' + esc(l[0]) + " ↗</a></li>"; }).join("") + "</ul>" : "";
+    return '<section class="scene" id="s' + d.n + '" aria-labelledby="h' + d.n + '"><div class="wrap">' +
+      '<header class="sc-h"><div class="sc-num" aria-hidden="true">' + d.n + "</div><div>" +
+      '<p class="sc-k">' + (d.n === 0 ? "0 · 시작" : d.n + "단계") + (d.thread ? ' <a class="tag thread" href="#thread">실 · 언제 성공</a>' : "") + "</p>" +
+      '<h2 id="h' + d.n + '">' + esc(d.title) + '</h2><p class="sc-does">' + esc(d.does) + "</p>" +
+      '<ul class="meta">' + d.commits.map(function (c) { return '<li><a class="mono" href="' + cm(c[0]) + '">' + c[0] + "</a>&nbsp;" + esc(c[1]) + "</li>"; }).join("") +
+      (d.who ? "<li>누가 정했나 — " + esc(d.who) + "</li>" : "") + "</ul></div></header></div>" +
+      '<div class="wrap wide"><figure class="frame" aria-label="' + stageName(d.n) + ' 화면 그림"><div class="screen">' + win(d) + '<div class="isl">' + islInner(d) + "</div></div></figure></div>" +
+      '<div class="wrap"><p class="capn">' + (d.fr.note ? '<span class="tag should">이어져야</span>' + esc(d.fr.note) + " " : "") + "① 화면 그림 — 왼쪽 작업실 창에서 확인하고, 오른쪽 섬에서 일해요. 행동 칸에서 Claude Code가 문서를 쓰는 모습은 디자인 캔버스의 방향이에요(test-1에서는 Floe가 문서를 만들고 Claude Code가 커밋했어요).</p>" +
+      '<div class="parts">' +
+      '<section class="part"><h3><span class="pn">②</span>다섯 칸 — 누가 무엇을</h3><div class="tw"><table class="five"><thead><tr><th scope="col">칸</th><th scope="col">누가</th><th scope="col">무엇을</th><th scope="col">남는 것</th></tr></thead><tbody>' +
+      d.rows.map(function (r, i) { return "<tr" + (i === 5 ? ' class="gate"' : "") + '><th scope="row">' + (CIRC[i] ? CIRC[i] + " " : "") + COLS[i] + '<span class="app ' + APP[i][1] + '">' + APP[i][0] + '</span></th><td class="who-c">' + who(r[0]) + "</td><td>" + what(r[1]) + '</td><td class="lv">' + esc(r[2]) + "</td></tr>"; }).join("") +
+      "</tbody></table></div></section>" +
+      '<section class="part"><h3><span class="pn">③</span>test-1에 남은 것</h3><ul class="links">' + d.links.map(function (l) { return '<li><a href="' + l[1] + '">' + esc(l[0]) + " <small>" + esc(l[2]) + "</small></a></li>"; }).join("") + "</ul></section>" +
+      '<section class="part"><h3><span class="pn">④</span>본 것 → 이렇게 이어져야</h3><div class="pair">' + seen + '<div class="should"><span class="lab">이렇게 이어져야</span><p>' + esc(d.should) + "</p>" + sl + "</div></div></section>" +
+      '<section class="part"><h3><span class="pn">⑤</span>관문 · 다음 장으로 넘기는 재료</h3><p class="gate-l"><b>관문</b> — ' + esc(d.gate) + '</p><ul class="mats">' +
+      d.mats.map(function (m) { return "<li" + (m[2] ? ' class="th"' : "") + "><span>" + esc(m[0]) + '</span><span class="arr" aria-hidden="true">→</span><span class="to">' + esc(m[1]) + "</span>" + (m[2] ? '<a class="tag thread" href="#thread">실</a>' : "") + "</li>"; }).join("") +
+      "</ul></section></div></div></section>";
+  }
+
+  // 그리기
+  document.getElementById("scenes").innerHTML = S.map(scene).join("");
+  var RAIL = S.map(function (d) { return ["s" + d.n, "<b>" + d.n + "</b>" + (d.n === 0 ? "시작" : d.short)]; }).concat([["thread", "실"], ["try", "눌러 보기"], ["rules", "기준"], ["open", "질문"]]);
+  var rail = document.getElementById("rail");
+  rail.innerHTML = RAIL.map(function (r, i) { return (i === 9 ? '<span class="sep" aria-hidden="true"></span>' : "") + '<a href="#' + r[0] + '">' + r[1] + "</a>"; }).join("");
+
+  // 장면 그림 — 넓으면 1500px 화면을 줄여서, 좁으면 다시 배치해서
+  var frames = Array.prototype.slice.call(document.querySelectorAll(".frame"));
+  function fitFrame(f) {
+    var sc = f.querySelector(".screen"), w = f.clientWidth;
+    if (w >= 1275) { f.classList.add("fixed"); var s = w / 1500; sc.style.transform = "scale(" + s + ")"; f.style.height = Math.ceil(sc.offsetHeight * s) + "px"; }
+    else { f.classList.remove("fixed"); sc.style.transform = ""; f.style.height = ""; }
+  }
+  var fitAll = function () { frames.forEach(fitFrame); };
+
+  // 지금 보는 곳을 칩에 표시
+  var chips = {};
+  Array.prototype.forEach.call(rail.querySelectorAll("a"), function (a) { chips[a.getAttribute("href").slice(1)] = a; });
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      if (!e.isIntersecting) return;
+      Object.keys(chips).forEach(function (k) { chips[k].removeAttribute("aria-current"); });
+      var c = chips[e.target.id];
+      if (c) { c.setAttribute("aria-current", "true"); rail.scrollLeft = Math.max(0, c.offsetLeft - rail.clientWidth / 2 + c.clientWidth / 2); }
+    });
+  }, { rootMargin: "-40% 0px -55% 0px" });
+  Object.keys(chips).forEach(function (k) { var el = document.getElementById(k); if (el) io.observe(el); });
+
+  // 눌러 보기 — 3단계 장면으로. 고른 화면의 실제 px로 배치를 계산하고, 그림만 페이지 폭에 맞춰 줄인다
+  var D = S[3];
+  var P = { scr: 1280, dock: "right", open: true, side: 420, tb: 360 };
+  var HGT = { 1440: 900, 1280: 800, 1024: 768 };
+  var RANGE = { side: [320, 760], tb: [240, 480] };
+  var STRIP = 60, G = 10;
+  var tv = document.getElementById("tv"), vs = document.getElementById("vs"), pw = document.getElementById("pw"), pi = document.getElementById("pi"), hd = document.getElementById("hd");
+  var tog = document.getElementById("tog"), sz = document.getElementById("sz"), szo = document.getElementById("szo"), read = document.getElementById("read");
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var side = function () { return P.dock === "left" || P.dock === "right"; };
+  var key = function () { return side() ? "side" : "tb"; };
+  var clamp = function (v) { var r = RANGE[key()]; return Math.max(r[0], Math.min(r[1], Math.round(v))); };
+  var scale = 1, settle = 0;
+
+  pw.innerHTML = win(D);
+  function place(el, r) { el.style.left = r[0] + "px"; el.style.top = r[1] + "px"; el.style.width = r[2] + "px"; el.style.height = r[3] + "px"; }
+  function fitScale() {
+    var W = P.scr, H = HGT[W];
+    scale = Math.min(1, tv.clientWidth / W);
+    vs.style.width = W + "px"; vs.style.height = H + "px";
+    vs.style.transform = "scale(" + scale + ")";
+    tv.style.height = Math.round(H * scale) + "px";
+  }
+  function islandHTML() {
+    if (P.open) return islInner(D, P.dock, true);
+    return '<div class="strip-c"><span class="seal" aria-hidden="true"></span><b>3단계 · 기능 정리</b><span>' + esc(D.fr.now.split(" — ")[0]) + '</span><button type="button" class="sbtn" id="sopen">펼치기</button></div>';
+  }
+  function readout() {
+    var b = pw.querySelector(".board"); if (!b) return;
+    var cs = getComputedStyle(b), w = Math.round(b.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight));
+    var how = w >= 1000 ? "한 줄" : w >= 640 ? "두 줄" : "세로 한 줄";
+    read.innerHTML = "화면 " + P.scr + " × " + HGT[P.scr] + " · 섬 " + (P.open ? P[key()] + "px" : "접힘 (띠 " + STRIP + "px)") + " · 퀘스트 보드 너비 <b>" + w + "px</b> → 칸 <b>" + how + "</b>";
+  }
+  function keepNow() {   // 지금 칸이 보이게 작업실 캔버스 안에서만 옮긴다(페이지는 움직이지 않는다)
+    var box = pw.querySelector(".canvas"), b = box && box.querySelector(".badge"), cur = b && b.parentNode;
+    if (!cur) return;
+    var top = (cur.getBoundingClientRect().top - box.getBoundingClientRect().top) / scale + box.scrollTop, h = cur.offsetHeight;
+    if (top - 24 < box.scrollTop || top + h + 12 > box.scrollTop + box.clientHeight) box.scrollTo({ top: Math.max(0, top - 40), behavior: reduce ? "auto" : "smooth" });
+  }
+  function after() { clearTimeout(settle); settle = setTimeout(function () { readout(); keepNow(); }, reduce || drag ? 60 : 340); }   // 움직임이 끝난 뒤 한 번 — 읽기 프로그램이 숫자를 줄줄이 읽지 않게
+  function layout() {
+    var W = P.scr, H = HGT[W], s = P.open ? P[key()] : STRIP, isl, wsr, h;
+    if (P.dock === "right") { isl = [W - s, 0, s, H]; wsr = [0, 0, W - s, H]; h = [W - s - 7, 0, 14, H]; }
+    else if (P.dock === "left") { isl = [0, 0, s, H]; wsr = [s, 0, W - s, H]; h = [s - 7, 0, 14, H]; }
+    else if (P.dock === "top") { isl = [0, 0, W, s]; wsr = [0, s, W, H - s]; h = [0, s - 7, W, 14]; }
+    else { isl = [0, H - s, W, s]; wsr = [0, 0, W, H - s]; h = [0, H - s - 7, W, 14]; }
+    place(pi, [isl[0] + G, isl[1] + G, isl[2] - 2 * G, isl[3] - 2 * G]);
+    place(pw, [wsr[0] + G, wsr[1] + G, wsr[2] - 2 * G, wsr[3] - 2 * G]);
+    place(hd, h);
+    pi.className = "pi isl" + (side() ? "" : " wide") + (P.open ? "" : " strip" + (side() ? " vert" : ""));
+    pi.innerHTML = islandHTML();
+    hd.hidden = !P.open;
+    hd.className = "hd " + (side() ? "v" : "h");
+    hd.setAttribute("aria-orientation", side() ? "vertical" : "horizontal");
+    var r = RANGE[key()];
+    hd.setAttribute("aria-valuemin", r[0]); hd.setAttribute("aria-valuemax", r[1]); hd.setAttribute("aria-valuenow", P[key()]);
+    hd.setAttribute("aria-valuetext", (side() ? "너비 " : "높이 ") + P[key()] + "px");
+    sz.min = r[0]; sz.max = r[1]; sz.value = P[key()]; sz.disabled = !P.open;
+    document.querySelector('label[for="sz"]').firstChild.nodeValue = side() ? "섬 너비 " : "섬 높이 ";
+    szo.textContent = P[key()] + "px";
+    tog.textContent = P.open ? "섬 접기" : "섬 펼치기";
+    tog.setAttribute("aria-expanded", P.open ? "true" : "false");
+    fitScale(); after();
+  }
+  function setDock(v) { P.dock = v; var r = document.getElementById("dock-" + v); if (r) r.checked = true; layout(); }
+  function setOpen(v) { P.open = v; layout(); }
+  function setSize(v) { P[key()] = clamp(v); layout(); }
+
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="scr"]'), function (r) { r.addEventListener("change", function () { P.scr = +r.value; layout(); }); });
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="dock"]'), function (r) { r.addEventListener("change", function () { setDock(r.value); }); });
+  pi.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-dock]"); if (b) { setDock(b.getAttribute("data-dock")); var nb = pi.querySelector('[data-dock="' + P.dock + '"]'); if (nb) nb.focus(); return; }
+    if (e.target.closest("#sopen")) { setOpen(true); tog.focus(); }
+  });
+  tog.addEventListener("click", function () { setOpen(!P.open); });
+  sz.addEventListener("input", function () { setSize(+sz.value); });
+  var reset = function () { P[key()] = side() ? 420 : 360; layout(); };
+  hd.addEventListener("dblclick", reset);
+  hd.addEventListener("keydown", function (e) {
+    var grow = { right: "ArrowLeft", left: "ArrowRight", top: "ArrowDown", bottom: "ArrowUp" }[P.dock];
+    var shrink = { right: "ArrowRight", left: "ArrowLeft", top: "ArrowUp", bottom: "ArrowDown" }[P.dock];
+    var r = RANGE[key()], v = P[key()];
+    if (e.key === "Enter") { e.preventDefault(); reset(); return; }
+    if (e.key === grow) v += 20; else if (e.key === shrink) v -= 20; else if (e.key === "Home") v = r[0]; else if (e.key === "End") v = r[1]; else return;
+    e.preventDefault(); setSize(v);
+  });
+  var drag = null;
+  hd.addEventListener("pointerdown", function (e) { if (e.button !== 0) return; e.preventDefault(); drag = { x: e.clientX, y: e.clientY, v: P[key()] }; hd.setPointerCapture(e.pointerId); vs.classList.add("drag"); });
+  hd.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    var dx = (e.clientX - drag.x) / scale, dy = (e.clientY - drag.y) / scale;
+    setSize(drag.v + { right: -dx, left: dx, top: dy, bottom: -dy }[P.dock]);
+  });
+  var end = function () { if (!drag) return; drag = null; vs.classList.remove("drag"); after(); };
+  hd.addEventListener("pointerup", end); hd.addEventListener("pointercancel", end);
+
+  var ro = new ResizeObserver(function () { fitAll(); fitScale(); });
+  frames.forEach(function (f) { ro.observe(f); ro.observe(f.querySelector(".screen")); });
+  ro.observe(tv);
+  layout(); fitAll();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitAll(); after(); });
+
+  // 주소 끝(#s5 같은)으로 열면 그 장면으로
+  if (location.hash) { var t = document.getElementById(location.hash.slice(1)); if (t) setTimeout(function () { t.scrollIntoView(); }, 0); }
+})();
+</script>
+
+</body>
+</html>

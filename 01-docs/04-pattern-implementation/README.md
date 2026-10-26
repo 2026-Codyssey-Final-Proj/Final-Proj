@@ -13,6 +13,7 @@
 | `api-intake.md` | 외부 API를 받았을 때 분석하는 법 |
 | [`game-overlay/`](game-overlay/README.md) | 게임처럼 일하는 오버레이 목업 세 개 — 지금 고른 방향은 레벨 오버레이(2026-10-19, 제품 코드는 그대로) |
 | [`website/`](website/README.md) | Floe 소개 웹사이트 초안 — 고른 방향은 'C-1 플로로 그림책'을 파스텔로 낮춘 한 페이지, 고르기까지의 캔버스도 (2026-10-21, 제품 코드는 그대로) |
+| [`stage-storyboard/`](stage-storyboard/README.md) | 0~8단계 스토리보드 디자인 첫 판 — test-1(이재엽이 Floe로 만든 저장소)을 따라 장면마다 화면 그림 · 다섯 칸 · 본 틈 → 이어져야, '언제 성공' 실 하나, 섬 자리 · 크기 · 캔버스 다시 배치 눌러 보기 (2026-10-26, 제품 코드는 그대로) |
 | [`presentation-story.md`](presentation-story.md) | 10분 발표 스토리 · 슬라이드 구성안 초안 — 시간표 · 평가 배점 대응 · 비어 있는 칸 (2026-10-24, KAN-14, 슬라이드 파일은 아직 없음) |
 | [`onboarding-scene-additions.md`](onboarding-scene-additions.md) | 처음 한 바퀴 장면 열둘마다 더할 것 [제안] — UI/UX 초안 (2026-10-24, 고한결 몫, 고르는 사람 이재엽) |
 | [`onboarding-storyboard.md`](onboarding-storyboard.md) · [그림판](onboarding-storyboard.html) | 첫 5분 스토리보드 초안 — 한 줄 적기 → AI 없이 LV 0 · 첫 경험치 → 그다음 Claude 연결 (2026-10-20, KAN-55, 제품 코드는 그대로) |
