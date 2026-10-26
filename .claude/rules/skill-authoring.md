@@ -69,6 +69,12 @@
   다른 외부 스킬과 달리 안내문이 우리 것이다. 실행 파일(`scripts/impeccable`)·`npx impeccable`·훅·`live`는 실행하지 않는다.
   디자인 결과물은 사용자의 작업물이라 **지적·제안만 하고 "써줘"라고 할 때만 고친다.** 역할 분담은 `frontend-design`(미적 방향) /
   `impeccable-review`(점검) / Emil 스킬(움직임·마감).
+  `extra/hallmark.md`는 Hallmark(Nutlope/hallmark)의 점검 중 impeccable에 없는 것만 고른 우리 파일이다(2026-10-26).
+- **다른 도구에서 일부만 가져올 때는 독립 스킬로 두지 않는다**(이재엽 결정 2026-10-26 "이런 스킬이 우선순위가 되면 안됌").
+  우리 스킬의 참고 파일(예: `impeccable-review/extra/`)이나 `01-docs/` 문서로 붙여, 혼자 반응하지 않고 우리 스킬이 필요할 때만 연다.
+  **우리 것과 겹치는 내용은 가져오지 않고**, 우리 규칙과 다르면 우리 규칙을 따른다. 파일 머리에 출처 · 커밋 · 라이선스 · 가져오지 않은 것 ·
+  다시 가져오는 법을 적어 원본이 바뀌면 맞대어 고칠 수 있게 한다. 지금: Hallmark → `impeccable-review/extra/hallmark.md`,
+  knowledge-work-plugins의 조사 정리 → [`01-docs/interviews/synthesis-method.md`](../../01-docs/interviews/synthesis-method.md).
 - **`tdd`는 테스트를 먼저 쓰는 코드 작업에서 쓴다**(이재엽 결정 2026-10-14). 코드를 Claude에게 맡긴 프로젝트(세컨드 브레인)에서는
   Claude가 이 스킬의 루프를 따르고, 이재엽이 코드를 쓰는 곳에서는 **변경 리뷰의 렌즈**(경계에서 테스트하는가, 구현에 묶인 테스트·
   같은 값을 되풀이하는 단언이 없는가)로만 쓴다. 원본과 우리 규칙의 차이: ① 원본은 "리팩터링은 루프 밖(리뷰 단계)"인데
