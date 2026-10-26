@@ -1,6 +1,6 @@
 // claude-drafted: 2026-10-25 — C-38 시험판(두승현 "이 브랜치에서 시험용으로 만들자"). 결정 자료: 01-docs/00-overview/기록/C-38-다른-AI-도구로-넘기기-2026-10-25.md
-// 원격 MCP(Streamable HTTP, JSON 답만 — SSE 없음)의 순수 규칙. 서버(server.js)가 /mcp/<토큰>에서 부르고, 시험(04-tests/navigator/mcp.test.js)이 본다.
-// 웹 GPT · 웹 Claude가 Floe의 지금 상태를 읽고(floe_now · floe_style), 퀘스트가 없으면 시작을(floe_start), 있으면 할 일 하나에 적을 한 줄을 **제안**한다(floe_report).
+// MCP(Streamable HTTP, JSON 답만 — SSE 없음)의 순수 규칙. 서버(server.js)가 /mcp/<토큰>에서 부르고 — Claude Desktop은 중계 파일(mcp-stdio.js)을 거쳐,
+// 웹 GPT · 웹 Claude는 터널로 — 시험(04-tests/navigator/mcp.test.js)이 본다. AI가 Floe의 지금 상태를 읽고(floe_now · floe_style), 퀘스트가 없으면 시작을(floe_start), 있으면 할 일 하나에 적을 한 줄을 **제안**한다(floe_report).
 // 제안은 섬에서 사람이 "맞아요"를 눌러야 퀘스트가 시작되거나 적히고, 판정은 그 뒤 Floe의 코드가 한다(ADR-0003) — 웹 AI가 통과를 정하지 않는다.
 // **일 넘기기 · 단계 문서 쓰기 · 허용 · 거절은 여기에 없다** — 밖에서 이 컴퓨터의 Claude Code를 움직이는 길을 만들지 않는다.
 // ponytail: 초기화 · 도구 목록 · 도구 부르기 · ping만 직접 짰다(SDK 없음). 자원(resources) · 프롬프트 · SSE가 필요해지면 @modelcontextprotocol/sdk로.
@@ -33,6 +33,8 @@
   ];
   const str = (v, n) => { const s = Sensitive.redact(String(v == null ? "" : v)).trim(); return s.length > n ? `${s.slice(0, n - 1)}…` : s; };
   const okInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
+  const OFF = "Floe 앱이 열려 있지 않아요. 사용자에게 Floe를 켜 달라고 안내하세요.";
+  const noQuestYet = (s) => !s.quest && s.stage == null;   // 처음 — 퀘스트도, 살펴본 단계도 없다(floe_start를 받는 때)
 
   // 화면이 보낸 상태를 믿지 않는다 — 칸마다 모양을 보고, 가리고(비밀값 · 연락처), 자른다. 모양이 아니면 null
   function cleanState(s) {
@@ -50,8 +52,8 @@
 
   const text = (t, isError) => ({ content: [{ type: "text", text: t }], ...(isError ? { isError: true } : {}) });
   function nowText(s) {
-    if (!s) return text("Floe 앱이 열려 있지 않아요. 사용자에게 Floe를 켜 달라고 안내하세요.");
-    if (!s.quest && s.stage == null) return text(`Floe — 아직 퀘스트가 없어요${s.project ? ` (작업 폴더 ${s.project})` : ""}. 사용자와 만들고 싶은 것을 정해 floe_start(text="…")로 시작을 제안하세요 — 사용자가 Floe 섬에서 '맞아요'를 누르면 시작돼요.`);
+    if (!s) return text(OFF);
+    if (noQuestYet(s)) return text(`Floe — 아직 퀘스트가 없어요${s.project ? ` (작업 폴더 ${s.project})` : ""}. 사용자와 만들고 싶은 것을 정해 floe_start(text="…")로 시작을 제안하세요 — 사용자가 Floe 섬에서 '맞아요'를 누르면 시작돼요.`);
     if (!s.quest) return text("Floe — 지금 받은 퀘스트가 없어요. 사용자에게 Floe 섬(퀘스트 창)에서 다음 퀘스트를 받아 달라고 안내하세요.");
     const q = s.quest;
     const head = `Floe — 지금 상태: 화면 ${q.chap + 1}단계 · ${q.title}${s.project ? ` (작업 폴더 ${s.project})` : ""}`;
@@ -61,19 +63,18 @@
       : "\n할 일을 다 채웠어요. 사용자에게 Floe 섬에서 '완료 보고'를 눌러 달라고 안내하세요 — 판정은 Floe가 합니다.";
     return text(`${head}\n할 일:\n${rows.join("\n")}${cur}`);
   }
-  function start(args, ctx) {
+  function start(a, ctx) {
     const s = ctx.state();
-    if (!s) return text("Floe 앱이 열려 있지 않아요. 사용자에게 Floe를 켜 달라고 안내하세요.", true);
-    if (s.quest || s.stage != null) return text("이미 퀘스트가 있어요 — floe_now로 지금 할 일을 확인하세요.", true);
-    const t = str(args && args.text, START_MAX);
+    if (!s) return text(OFF, true);
+    if (!noQuestYet(s)) return text("이미 퀘스트가 있어요 — floe_now로 지금 할 일을 확인하세요.", true);
+    const t = str(a.text, START_MAX);
     if (!t) return text("text가 비어 있어요 — 사용자가 만들고 싶은 것을 넣으세요.", true);
     ctx.propose({ kind: "start", text: t });
     return text("Floe 섬에 확인 카드를 띄웠어요. 사용자가 '맞아요'를 누르면 Floe가 이 글로 1단계 퀘스트를 만들어요. 그다음 floe_now로 할 일을 확인하세요.");
   }
-  function report(args, ctx) {
+  function report(a, ctx) {
     const s = ctx.state(), q = s && s.quest;
     if (!q || q.phase !== "quest") return text("지금 받은 퀘스트가 없어 적을 곳이 없어요. floe_now로 상태를 먼저 확인하세요.", true);
-    const a = args && typeof args === "object" ? args : {};
     if (!okInt(a.todo, 1, q.objs.length)) return text(`todo는 1부터 ${q.objs.length}까지의 할 일 번호예요.`, true);
     const t = str(a.text, LINE_MAX);
     if (!t) return text("text가 비어 있어요 — 그 할 일에 적을 한 줄을 넣으세요.", true);
@@ -92,10 +93,11 @@
     if (msg.method === "ping") return ok({});
     if (msg.method === "tools/list") return ok({ tools: TOOLS });
     if (msg.method === "tools/call") {
+      const a = p.arguments && typeof p.arguments === "object" ? p.arguments : {};
       if (p.name === "floe_now") return ok(nowText(ctx.state()));
       if (p.name === "floe_style") return ok(text(`${STYLE}\n\n일하는 순서:\n${INSTRUCTIONS}`));
-      if (p.name === "floe_start") return ok(start(p.arguments, ctx));
-      if (p.name === "floe_report") return ok(report(p.arguments, ctx));
+      if (p.name === "floe_start") return ok(start(a, ctx));
+      if (p.name === "floe_report") return ok(report(a, ctx));
       return { jsonrpc: "2.0", id: msg.id, error: { code: -32602, message: `모르는 도구: ${String(p.name).slice(0, 40)}` } };
     }
     return { jsonrpc: "2.0", id: msg.id, error: { code: -32601, message: `없는 방법: ${msg.method.slice(0, 40)}` } };

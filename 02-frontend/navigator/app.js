@@ -258,7 +258,7 @@
     try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
     postState();
   }
-  // C-38 시험판(2026-10-25, 두승현) — 서버에 지금 상태를 알린다: 원격 MCP를 켜면(NAV_MCP=1) 웹 GPT · 웹 Claude가 floe_now로 읽는다. 바뀌었을 때만 보낸다
+  // C-38 시험판(2026-10-25, 두승현) — 서버에 지금 상태를 알린다: MCP로 이은 AI(Claude Desktop · 터널을 연 웹 GPT · 웹 Claude)가 floe_now로 읽는다. 바뀌었을 때만 보낸다
   let lastState = "";
   function postState() {
     if (!canLive || !QU) return;
@@ -1764,7 +1764,7 @@
       <textarea id="task-text" class="mc-input" data-act="task-text" rows="2" placeholder="예) 회원 신청 화면 만들고 마감 알림도 넣어 줘">${esc(t.text)}</textarea>
       <div class="row"><button type="button" class="btn pri" data-act="task-tidy" ${t.text.trim() ? "" : "disabled"}>요구 문장으로 정리</button><span class="meta">정리 → 고치기 → 허락하면 Claude Code가 이어서 해요</span></div></div>`;
   }
-  // C-38 시험판(2026-10-25) — 웹 AI(원격 MCP의 floe_report)가 퀘스트에 적자고 한 한 줄. 사람이 "맞아요"를 눌러야 적히고, 판정은 그 뒤 평소대로
+  // C-38 시험판(2026-10-25) — MCP로 이은 AI의 제안: 퀘스트 시작(floe_start, kind "start") · 할 일에 적을 한 줄(floe_report). 사람이 "맞아요"를 눌러야 시작되거나 적히고, 판정은 그 뒤 평소대로
   let proposals = [];
   const proposalsHTML = () => (!proposals.length ? "" : `<div class="aplist" role="region" aria-label="웹 AI의 제안">${proposals.map((p) => { const go = p.kind === "start"; return `<section class="ap" data-pr="${esc(p.id)}"><div class="row ap-h">${I.look}<b class="grow">${go ? "웹 AI가 이 글로 퀘스트를 시작하자고 해요" : `웹 AI가 ${esc(ROMAN(p.todo))} '${esc(QU.shortOf(p.name))}'에 이렇게 적자고 해요`}</b></div>
       <p class="ap-what">${esc(p.text)}</p><div class="row"><button type="button" class="btn pri" data-act="pr-ok" data-id="${esc(p.id)}">${go ? "맞아요, 시작해요" : "맞아요, 적어요"}</button><button type="button" class="btn" data-act="pr-no" data-id="${esc(p.id)}">아니요</button></div></section>`; }).join("")}</div>`);

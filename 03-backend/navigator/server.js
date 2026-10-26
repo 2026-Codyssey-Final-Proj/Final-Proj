@@ -79,12 +79,12 @@ function eventToken(file = TOKEN_FILE) {
   return t;
 }
 let token = null;
-const theToken = () => (token ??= eventToken());
+const theToken = () => (token ??= eventToken());   // 시험이 server.js를 불러오기만 할 때는 파일을 만들지 않는다
 
-// ── C-38 시험판 — 원격 MCP(웹 GPT · 웹 Claude가 터널로) — claude-drafted: 2026-10-25 (두승현 "이 브랜치에서 시험용으로 만들자") ──
-// 기본은 꺼짐: NAV_MCP=1일 때만 /mcp/<MCP 토큰>을 연다. 그 주소만 이 컴퓨터 밖(Host가 터널)에서 받고, 나머지 주소는 지금처럼 allowed()가 막는다.
+// ── C-38 시험판 — MCP(Claude Desktop은 이 컴퓨터 안에서, 웹 GPT · 웹 Claude는 터널로) — claude-drafted: 2026-10-25 (두승현 "이 브랜치에서 시험용으로 만들자" · "같이 쓸 앱으로 연결으로 해줘") ──
+// /mcp/<MCP 토큰>은 이 컴퓨터 안(Claude Desktop의 중계 파일 mcp-stdio.js)에서는 늘 받고, 밖(Host가 터널)에서는 NAV_MCP=1일 때만 받는다. 나머지 주소는 지금처럼 allowed()가 막는다.
 // MCP 토큰은 알림 확인 값과 따로(~/.floe-mcp-token, 나만 읽기) — 웹 AI의 설정 화면에 주소째 붙여 넣는 값이라, 새로 만들려면 파일을 지우고 다시 켠다.
-// 화면이 보낸 상태(POST /api/state)와 웹 AI의 제안(floe_report)은 메모리에만 — 서버를 다시 켜면 빈다. 제안은 섬에서 사람이 정해야 퀘스트에 적힌다
+// 화면이 보낸 상태(POST /api/state)와 AI의 제안(floe_start · floe_report)은 메모리에만 — 서버를 다시 켜면 빈다. 제안은 섬에서 사람이 정해야 시작되거나 적힌다
 const MCP_TOKEN_FILE = process.env.NAV_MCP_TOKEN_FILE || path.join(os.homedir(), ".floe-mcp-token");
 const mcpOn = () => process.env.NAV_MCP === "1";
 let mcpTok = null;
@@ -103,7 +103,7 @@ async function mcpRoute(req, res) {
   const out = Array.isArray(body) ? body.map((m) => Mcp.rpc(m, mcpCtx)).filter(Boolean) : Mcp.rpc(body, mcpCtx);
   if (!out || (Array.isArray(out) && !out.length)) { res.writeHead(202); return res.end(); }   // 알림뿐이면 답 없이 202
   return send(res, 200, out);
-}   // 시험이 server.js를 불러오기만 할 때는 파일을 만들지 않는다
+}
 
 const cookieOf = (header, name) => String(header || "").split(";").map((c) => c.trim()).find((c) => c.startsWith(`${name}=`))?.slice(name.length + 1);
 // 머리글(훅) 또는 쿠키(화면) — 길이가 같을 때만 비교하고, 비교 시간으로 값을 알아낼 수 없게 timingSafeEqual
@@ -501,7 +501,7 @@ async function checkAi(res) {
 }
 
 async function handle(req, res) {
-  if (req.url.startsWith("/mcp/")) return mcpRoute(req, res);   // C-38 시험판 — 이 주소만 밖(터널)에서 받는다. 꺼져 있으면 404
+  if (req.url.startsWith("/mcp/")) return mcpRoute(req, res);   // C-38 시험판 — allowed()보다 먼저: 밖(터널)에서도 받을 수 있는 주소는 이것뿐(NAV_MCP=1일 때). 출처는 mcpRoute가 본다
   if (!allowed(req.headers)) return refuse(res, "이 컴퓨터의 화면에서만 부를 수 있음", 403);
   if (req.method === "GET" && FILES[req.url]) {
     const [file, type] = FILES[req.url];

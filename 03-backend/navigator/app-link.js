@@ -32,7 +32,7 @@ const parse = (text) => { const j = JSON.parse(text); if (!j || typeof j !== "ob
 function status(file) {
   if (!file) return { found: false, linked: false };
   const t = read(file);
-  try { return { found: true, linked: !!(t && parse(t).mcpServers && parse(t).mcpServers.floe) }; } catch { return { found: true, linked: false }; }
+  try { const j = parse(t); return { found: true, linked: !!(j.mcpServers && j.mcpServers.floe) }; } catch { return { found: true, linked: false }; }   // 없음 · 빈 파일 · 깨진 설정은 parse가 던진다
 }
 function link(file, e) {
   if (!file) return { ok: false, message: "Claude Desktop을 찾지 못했어요 — 설치하고 한 번 켠 뒤 다시 해 주세요" };
