@@ -1172,33 +1172,45 @@
   let qpop = false;
   const openQwin = (tab) => { if (!st.qwin) qpop = true; st.qwin = true; st.qtab = tab || st.qtab; };
   const QTABS = [["canvas", "캔버스"], ["quest", "노트북"], ["tree", "도전과제"], ["lib", SHELF_ON ? "서고" : "책"]];   // 작업실 창(C-41, 2026-10-26): 캔버스가 먼저, 옛 퀘스트 탭은 노트북. 책 — C-26(2026-10-23). 배우기 탭은 2026-10-24 C-35로 도전과제의 장마다
-  // 캔버스 판 — 작업실 창의 첫 탭(C-41 PR① 2026-10-26 두승현, 스토리보드 stage-storyboard/index.html의 작업실 창 그대로): 지금 하는 일 · 단계 칩 · 지난 장 / 다음 장 보드 · 퀘스트 한 바퀴 다섯 칸(생각 → 행동 → 기록 → 저장 → 버전 → 관문).
+  // 캔버스 판 — 작업실 창의 첫 탭(C-41 ① 2026-10-26 · ⑥ 2026-10-27 두승현 "의도했던 것은 첨부한 이미지처럼 펼쳐져 있는 환경" — 디자인 캔버스 DockPrototype의 판 그대로):
+  //   1100×640 판을 칸(.cv)에 맞춰 줌한다(app.css .cvb의 --u — 컨테이너 단위라 스크립트 없이, 앱의 창이든 브라우저의 판이든). 지금 하는 일 · 단계 칩 · 왼쪽에 지난 장 / 다음 장 보드 ·
+  //   틀 안에 ① 생각(포스트잇) · 파일 카드 · 배울 말 · 화살표 → ② 행동 → ③ 기록(적은 칸 카드) → ④ 저장 → ⑤ 버전 → 관문, 작은 플로로는 첫 '지금' 칸 옆(FLO_AT).
   //   칸의 글은 지금 상태에서만 — 생각: 퀘스트의 지금 칸(quest.js), 행동: 맡긴 일(plan.js), 기록: 적은 칸 · 살펴본 결과(st.results), 저장: 단계 문서(st.docs · docs.js), 버전: 대회 뒤(C-23), 관문: 지난 날.
-  //   파일 카드(바뀐 줄)는 아직 — 서버가 줄 내용을 받지 않는다(API.md 3-2-1, 스토리보드 열린 질문). 배치(한 줄 · 두 줄 · 세로)는 app.css .cv-board의 너비로
+  const FLO_AT = { c1: [420, 100], c2: [640, 92], c3: [1040, 92], c4: [690, 382], c5: [920, 382], c6: [1040, 382] };   // 작은 플로로가 서는 자리(판 좌표) — 목업의 FLO
+  const FLO_MINI = '<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"></ellipse><circle cx="24" cy="34" r="3" fill="#1A2350"></circle><circle cx="40" cy="34" r="3" fill="#1A2350"></circle><ellipse cx="32" cy="40" rx="2.6" ry="1.8" fill="#1A2350"></ellipse><ellipse cx="20" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse><ellipse cx="44" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse></svg>';
+  const ARROW = (cls, w, h, d) => `<svg class="cv-ar ${cls}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
+  const ARROWS = ARROW("a1", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a2", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a3", 130, 60, "M120 4 C 110 40, 60 46, 14 48 M22 41 L12 48 L22 55") + ARROW("a4", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a5", 30, 20, "M2 10h20M17 4l7 6-7 6");
   function canvasPane() {
     const n = st.finished ? N.STAGES.length - 1 : atStage(), s = N.STAGES[n], q = st.quest && st.quest.chap === n ? st.quest : null, r = st.results[n], ci = q ? QU.curIdx(q) : -1;
-    const cell = (k, no, name, body, ft) => `<div class="cv-c ${k}"><p class="ch">${no ? `${no} ` : ""}${name}<em>${{ now: "● 지금", done: "✓ 끝" }[k] || ""}</em></p><p>${esc(body)}</p>${ft ? `<p class="ft">${esc(ft)}</p>` : ""}</div>`;
+    let floAt = "";
+    const cell = (pos, k, no, name, body, ft, extra) => { if (k === "now" && !floAt) floAt = pos; return `<div class="cv-c ${pos} ${k}"><p class="ch">${no ? `${no} ` : ""}${name}<em>${{ now: "● 지금", done: "✓ 끝" }[k] || ""}</em></p><p>${esc(body)}</p>${extra || ""}${ft ? `<p class="ft">${esc(ft)}</p>` : ""}</div>`; };
     const p = q ? QU.progress(q) : null;
     const now = st.busy ? "플로로가 살펴보는 중" : st.finished ? "모든 장을 끝냈어요" : !q && !st.j ? "채팅에서 원하는 것을 말하면 1단계 초안을 만들어요" : q && q.phase === "draft" ? "퀘스트를 받기 전 — 노트북 탭에서 받아요" : q && q.phase === "done" ? "보고했어요 — 넘어가기 전 확인은 섬에서" : q && ci >= 0 ? `${p.n}개 중 ${p.k}번째 칸 — ${QU.shortOf(q.objs[ci].name)}` : q ? "칸을 다 적었어요 — 완료 보고" : progress();
     const chipCls = (x) => (st.finished ? "done" : stepClass(x.n));   // 다 마치면 마지막 장도 ✓(stepClass는 finished를 모른다 — 새 맥락 리뷰 2026-10-26)
-    const chips = N.STAGES.map((x) => { const k = chipCls(x); return `<span class="${k}">${LB(x.n)}${k === "done" ? " ✓" : ""}</span>`; }).join("");
+    const ks = N.STAGES.map((x) => chipCls(x) || (x.n === n ? "cur" : "")), last = N.STAGES.length - 1, i0 = ks.findIndex((k, i) => k !== "done" && k !== "cur" && i > ks.lastIndexOf("cur"));   // 아직인 장은 하나로 묶는다(목업 "3 ~ 7"). 아직 시작 전(st.j 없음)이어도 지금 장은 따로
+    const chip = (x, k) => `<span class="${k}">${LB(x.n)}${k === "done" ? " ✓" : ""}</span>`;
+    const chips = (i0 < 0 || i0 === last ? N.STAGES.map((x, i) => chip(x, ks[i])) : [...N.STAGES.slice(0, i0).map((x, i) => chip(x, ks[i])), `<span>${LB(i0)} ~ ${LB(last)}</span>`]).join("");
     const pr = n > 0 ? st.results[n - 1] : null;
-    const prev = n > 0 ? `<div class="cv-bd">보드 · ✓ 지남${pr && pr.passed ? ` · ${esc(pr.passed.slice(5))}` : ""}<b>${LB(n - 1)} · ${esc(N.STAGES[n - 1].title)}</b></div>` : `<div class="cv-bd next">보드 · 처음이에요<b>지난 장 없음</b></div>`;
-    const next = n + 1 < N.STAGES.length ? `<div class="cv-bd next">보드 · 관문을 넘으면 열려요<b>${LB(n + 1)} · ${esc(N.STAGES[n + 1].title)}</b></div>` : `<div class="cv-bd next">보드 · 다 마치면<b>다음 프로젝트 — 배운 것을 들고 가요</b></div>`;
+    const prev = n > 0 ? `<div class="cv-bd prev">보드 · ✓ 지남${pr && pr.passed ? ` · ${esc(pr.passed.slice(5))}` : ""}<b>${LB(n - 1)} · ${esc(N.STAGES[n - 1].title)}</b></div>` : `<div class="cv-bd prev later">보드 · 처음이에요<b>지난 장 없음</b></div>`;
+    const next = n + 1 < N.STAGES.length ? `<div class="cv-bd next later">보드 · 관문을 넘으면 열려요<b>${LB(n + 1)} · ${esc(N.STAGES[n + 1].title)}</b></div>` : `<div class="cv-bd next later">보드 · 다 마치면<b>다음 프로젝트 — 배운 것을 들고 가요</b></div>`;
     const line = q && ci >= 0 ? (q.lines[ci] || [])[0] : "", draft = q && ci >= 0 ? QU.proposalOf(q, ci) : "";
-    const think = q && ci >= 0 ? cell("now", "①", "생각", line || draft || "비었어요 — 채팅에서 같이 적어요", !line && draft ? "플로로 초안 — 채팅에서 맞는지 봐요" : "")
-      : q || r ? cell("done", "①", "생각", "칸을 다 적었어요") : cell(st.idea ? "done" : "now", "①", "생각", st.idea ? st.idea.slice(0, 80) : "무엇을 만들고 싶은지 말해요");
+    const think = q && ci >= 0 ? cell("c1", "now", "①", "생각", line || draft || "비었어요 — 채팅에서 같이 적어요", !line && draft ? "플로로 초안 — 채팅에서 맞는지 봐요" : "")
+      : q || r ? cell("c1", "done", "①", "생각", "칸을 다 적었어요") : cell("c1", st.idea ? "done" : "now", "①", "생각", st.idea ? st.idea.slice(0, 80) : "무엇을 만들고 싶은지 말해요");
     const b = FP && st.plan, run = b && FP.running(b), pg = b ? FP.progress(b) : null;
-    const act = run ? cell("now", "②", "행동", `Claude Code가 하는 중 — 맡긴 일 ${pg.done}/${pg.total}`, "다 되면 채팅에 보고가 와요") : b && b.confirmed ? cell(pg.done === pg.total ? "done" : "later", "②", "행동", `맡길 일 ${pg.done}/${pg.total}`, "채팅의 '맡기기'로 다음 줄을") : cell("later", "②", "행동", "Claude Code에 맡김", "준비 계획을 확정하면 맡겨요");
+    const act = run ? cell("c2", "now", "②", "행동", `Claude Code가 하는 중 — 맡긴 일 ${pg.done}/${pg.total}`, "다 되면 채팅에 보고가 와요") : b && b.confirmed ? cell("c2", pg.done === pg.total ? "done" : "later", "②", "행동", `맡길 일 ${pg.done}/${pg.total}`, "채팅의 '맡기기'로 다음 줄을") : cell("c2", "later", "②", "행동", "Claude Code에 맡김", "준비 계획을 확정하면 맡겨요");
     const ck = r && r.check;
-    const rec = r ? cell("done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, "도전과제 탭에서 칸마다 누가 정했는지") : q ? cell(QU.isDone(q) ? "now" : "later", "③", "기록", `적은 칸 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "") : cell("later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
-    const save = docDone(n) ? cell("done", "④", "저장", "단계 문서를 확정했어요") : FDOCS && st.results[0] && st.results[1] ? cell("now", "④", "저장", "문서로 묶어 GitHub에", "도전과제 탭의 한눈에 보기에서") : cell("later", "④", "저장", "아직 — 관문 뒤에");
-    const ver = cell("later", "⑤", "버전", `${LB(n)}를 넘으면 책에 V.${n + 1}`, "대회 뒤 (C-23)");
-    const gate = r && r.passed ? cell("done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : holding() ? cell("later", "", "관문", "멈춰 둔 단계 — 섬에서 다시 열어요") : allDone() ? cell("now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("later", "", "관문", st.j ? `남은 할 일 ${left()}` : "할 일을 다 하면 열려요");
-    return `<div class="cv"><div class="cv-top"><span class="cv-now">지금 하는 일 <b>${esc(now)}</b></span><div class="cv-stg" aria-label="단계">${chips}</div></div>
-      <div class="cv-main"><div class="cv-bds">${prev}${next}</div><div class="cv-board"><div class="bh"><b>${LB(n)} · ${esc(s.title)}</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div><div class="cv-g">${think}${act}${rec}${save}${ver}${gate}</div>${fileCard()}</div></div></div>`;
+    const cards = q ? `<div class="cv-cards">${q.objs.map((o, i) => `<span class="${QU.filled(q, i) ? "y" : ""}">${ROMAN(i)} ${esc(QU.shortOf(o.name))}</span>`).join("")}</div>` : "";   // 적은 칸은 카드로(목업 ③의 카드)
+    const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, "도전과제 탭에서 칸마다 누가 정했는지") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `적은 칸 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
+    const save = docDone(n) ? cell("c4", "done", "④", "저장", "단계 문서를 확정했어요") : FDOCS && st.results[0] && st.results[1] ? cell("c4", "now", "④", "저장", "문서로 묶어 GitHub에", "도전과제 탭의 한눈에 보기에서") : cell("c4", "later", "④", "저장", "아직 — 관문 뒤에");
+    const ver = cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 책에 V.${n + 1}`, "대회 뒤 (C-23)");
+    const gate = r && r.passed ? cell("c6", "done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : holding() ? cell("c6", "later", "", "관문", "멈춰 둔 단계 — 섬에서 다시 열어요") : allDone() ? cell("c6", "now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("c6", "later", "", "관문", st.j ? `남은 할 일 ${left()}` : "할 일을 다 하면 열려요");
+    const terms = [...new Set(crits(n).map((c) => c.term).filter(Boolean))], tl = terms[0] && G ? G.explain(terms[0]) : "";   // 배울 말 — 이 장의 용어 첫 것과 풀이(glossary.js)
+    const learn = `<div class="cv-learn"><b>배울 말${terms[0] ? ` · ${esc(terms[0])}` : ""}</b>${terms[0] ? esc(tl || "도전과제 탭 '이 장에서 쓰는 말'에서") : "이 장은 새 말이 없어요"}${terms.length > 1 ? ` <small>+${terms.length - 1}</small>` : ""}</div>`;
+    const [fx, fy] = FLO_AT[floAt || "c1"];
+    return `<div class="cv"><div class="cvb"><div class="cv-now">지금 하는 일 <b>${esc(now)}</b></div><div class="cv-stg" aria-label="단계">${chips}</div>${prev}${next}<div class="cv-frame"></div><div class="cv-bh"><b>${LB(n)} · ${esc(s.title)}</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div>
+      ${think}${fileCard()}${learn}${ARROWS}${act}${rec}${save}${ver}${gate}<div class="cv-flo" style="--fx:${fx};--fy:${fy}" title="플로로 — 지금 칸 옆에">${FLO_MINI}</div></div></div>`;
   }
-  // 파일 카드(C-41 ④, 두승현 결정 2026-10-27 "이름과 줄 수만"): Claude Code가 고친 · 만든 파일 — 가장 최근 세션에서 이름과 +/− 줄 수만(AI 진행의 훅이 이미 보내는 것, API.md 3-2-1). 줄 내용은 서버가 받지 않는다
+  // 파일 카드(C-41 ④, 두승현 결정 2026-10-27 "이름과 줄 수만"): Claude Code가 고친 · 만든 파일 — 가장 최근 세션에서 이름과 +/− 줄 수만(AI 진행의 훅이 이미 보내는 것, API.md 3-2-1). 줄 내용은 서버가 받지 않는다. 자리는 ① 생각 아래(목업)
   function fileCard() {
     const s = latestSession(), seen = new Map();
     for (const x of ((s && s.steps) || []).slice().reverse()) {
@@ -1209,15 +1221,22 @@
     const rows = [...seen].map(([name, f]) => `<li><span>${esc(name)}</span><small>${f.add ? `+${f.add}` : ""}${f.add && f.del ? " " : ""}${f.del ? `−${f.del}` : ""}</small></li>`).join("");
     return `<div class="cv-file"><p class="ch">파일 · 바뀐 줄 수<em>${s && aiMode === "example" ? "예시" : s ? esc(s.project || "") : ""}</em></p>${rows ? `<ul>${rows}</ul>` : `<p class="ft">아직 — Claude Code가 파일을 고치면 이름과 줄 수가 여기에 와요</p>`}</div>`;
   }
+  // 파일 칸(C-41 ⑥, 두승현 2026-10-27 "3번은 이재엽 몫으로 남기고 더미 데이터로 UI 출력만") — 작업실 왼쪽의 폴더 트리(목업 DockPrototype의 nav). 작업 폴더의 파일 목록을 주는 API는 아직 없다(project.js는 폴더가 비었는지만 본다).
+  //   아래 상수는 목업의 예시 그대로 — [이름, 안쪽인가, 상태 글, 모양]. API가 생기면 이 상수를 지우고 그 값으로 바꾼다(모양 — 이름 · 상태(읽음 · 지금 · 고침 · 새로) · 폴더 접힘 — 은 그대로). 화면에는 '예시' 표시가 붙는다
+  const FILES_DUMMY = [["README.md", 0, "고침 · 책", "fix"], ["CLAUDE.md", 0, "", ""], ["▾ docs", 0, "", "dir"], ["01-idea.md", 1, "읽음", ""], ["03-requirements.md", 1, "● 지금", "now"], ["decisions.md", 1, "새로", "new"], ["기획서.md", 1, "", ""], ["▸ src", 0, "", "dir"]];
+  const fileNav = () => `<p class="fn-h"><b>${esc(project() || "club-events")}</b><em title="파일 목록은 아직 예시예요">예시</em></p><ul class="fn">${FILES_DUMMY.map(([name, inner, tag, k]) => `<li class="${k}${inner ? " in" : ""}"><span>${esc(name)}</span>${tag ? `<small>${esc(tag)}</small>` : ""}</li>`).join("")}</ul><p class="fn-ft">작업 폴더의 진짜 파일 목록은 다음 판에 — Claude Code가 고친 파일은 캔버스의 파일 카드에 와요</p>`;
   function qwinHTML() {
     if (!st.qwin || !QU) return "";
-    const [w, h] = QU.SIZES[qsize], pop = qpop ? " pop" : ""; qpop = false;
+    const [w, h] = QU.SIZES[qsize], pop = qpop ? " winpop" : ""; qpop = false;   // 처음 열 때 한 번의 움직임. 이름은 winpop — "pop"은 말풍선 판(.pop — 14px 안쪽 여백 · 아래 정렬)의 이름이라 작업실 창이 처음 열릴 때 그 모양을 뒤집어썼다(⑥ 2026-10-27, 앱에서 처음 열면 창이 아래에 148px로 붙었다)
     const pane = st.qtab === "canvas" ? canvasPane() : st.qtab === "tree" ? treePane() : st.qtab === "lib" ? bookPane() : questTab();
-    return `<div class="win qwin ${qsize}${pop}" role="dialog" aria-label="작업실 창" style="width:${w}px;height:${h}px"><div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="grow"></span>
+    const n = st.finished ? N.STAGES.length - 1 : atStage();
+    // 머리 한 줄(⑥, 목업): 프로젝트 · 단계 이름 · 탭 · LV · 조개 · 크기 · 닫기. 왼쪽 파일 칸(.wnav)은 탭에 상관없이 — 펼쳐진 환경
+    return `<div class="win qwin ${qsize}${pop}" role="dialog" aria-label="작업실 창" style="width:${w}px;height:${h}px"><div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="wst">${LB(n)} · ${esc(N.STAGES[n].title)}</span>
+        <div class="wtabs" role="tablist" aria-label="작업실 창">${QTABS.map(([id, label]) => `<button type="button" role="tab" data-act="qtab" data-tab="${id}" aria-selected="${st.qtab === id}">${label}</button>`).join("")}</div><span class="grow"></span>
+        <span class="wlv" title="칭호 · ${esc(QU.rankOf(Math.min(level, 7)))}">LV ${level} · ${coin()}${st.shells}</span>
         <span class="sz" role="group" aria-label="크기">${["s", "m", "l"].map((k) => `<button type="button" data-act="qsize" data-v="${k}" aria-pressed="${qsize === k}" title="${{ s: "작게", m: "보통", l: "크게" }[k]}">${k.toUpperCase()}</button>`).join("")}</span>
         <button type="button" class="ti" data-act="qwin" aria-label="작업실 창 닫기" title="닫기">${X_ICON}</button></div>
-      <div class="wtabs" role="tablist" aria-label="작업실 창">${QTABS.map(([id, label]) => `<button type="button" role="tab" data-act="qtab" data-tab="${id}" aria-selected="${st.qtab === id}">${label}</button>`).join("")}</div>
-      <div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : ""}`)}">${pane}</div></div>`;
+      <div class="wmain"><nav class="wnav" aria-label="파일">${fileNav()}</nav><div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : ""}`)}">${pane}</div></div></div>`;
   }
   // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 고한결 [정할 것 2 · 5]
   const PIC = `<svg viewBox="0 0 320 140" aria-hidden="true"><defs><linearGradient id="q-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1550"></stop><stop offset="1" stop-color="#2A4AC8"></stop></linearGradient><linearGradient id="q-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3BA6"></stop><stop offset="1" stop-color="#0E1A4F"></stop></linearGradient></defs><rect width="320" height="140" fill="url(#q-sky)"></rect><g fill="#fff"><circle cx="30" cy="22" r="1.4"></circle><circle cx="80" cy="40" r="1"></circle><circle cx="140" cy="18" r="1.6"></circle><circle cx="200" cy="34" r="1"></circle><circle cx="260" cy="16" r="1.3"></circle><circle cx="300" cy="46" r="1"></circle></g><circle cx="262" cy="36" r="16" fill="#FFF3C4"></circle><circle cx="268" cy="31" r="14" fill="url(#q-sky)"></circle><path d="M0 95 Q 80 80 160 95 T 320 95 V140 H0z" fill="url(#q-sea)"></path><path d="M70 100 L 110 78 L 200 76 L 250 100 Z" fill="#E6F6FF"></path><path d="M70 100 L 250 100 L 240 112 L 85 112 Z" fill="#A9DDFF"></path><rect x="130" y="52" width="60" height="30" rx="4" fill="#F3EBD8" stroke="#6B5B3E" stroke-width="2"></rect><path d="M138 60h44M138 67h36M138 74h40" stroke="#B99A4F" stroke-width="2" stroke-linecap="round"></path></svg>`;
