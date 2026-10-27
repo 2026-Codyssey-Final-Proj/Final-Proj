@@ -98,7 +98,7 @@ test("app.js — C-35: 명령 네 칸은 오버레이에서 뺐다. 퀘스트 �
   assert.ok(!/\.cmd4\b/.test(read("navigator/app.css")), "명령 네 칸 CSS도 없다");
   assert.match(app, /<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="\$\{st\.qwin\}"[^>]*>퀘스트<\/button>/, "위 줄의 '퀘스트' 단추 — 이재엽 그림(2026-10-24)");
   assert.match(app, /"qwin-toggle": \(\) => \{ if \(st\.qwin\) return set\(\{ qwin: false \}\); openQwin\("canvas"\); render\(\); \}/, "켜고 끈다 — 작업실은 캔버스 탭부터(C-41, 2026-10-26)");
-  assert.match(app, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "노트북"\], \["tree", "도전과제"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "작업실 창의 탭 넷(C-41 2026-10-26 — 캔버스가 먼저, 옛 퀘스트 탭은 노트북) — 배우기는 도전과제 안으로");
+  assert.match(app, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "노트북"\], \["tree", "도전과제"\], \["lib", SHELF_ON \? "서고" : "책"\], \["map", "문서 지도"\]\];/, "작업실 창의 탭(C-41 2026-10-26 — 캔버스가 먼저, 옛 퀘스트 탭은 노트북, 2026-10-27 C-45 문서 지도) — 배우기는 도전과제 안으로");
   assert.match(app, /if \(planNow\(\)\) return momentPlan\(\);/, "맡길 일 퀘스트를 고르면 채팅의 지금 말이 계획 · 맡기기 · 보고");
   assert.match(app, /const body = st\.settings && QU \? settingsPane\(\) : st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판은 알림 · AI 진행 둘 — 계획판은 채팅으로 옮겼다");
   const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];

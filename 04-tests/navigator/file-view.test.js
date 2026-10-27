@@ -29,3 +29,17 @@ test("server.js — /api/file은 확인 값(BOOK_ROUTES) · POST_ROUTES, 열기�
   assert.match(s, /const file = Files\.safePath\(lastFiles\.dir, e\.raw\);/, "그 폴더 안 · 바로가기 없이"); assert.match(s, /readJson\(req, Files\.FILE_MAX \* 2 \+ 1000\)/);
   assert.match(s, /"readme-book\.js", "md-view\.js",/);
 });
+
+// C-44 맡기기 틀(이재엽 버튼 "지금 자리에 더한다") · C-45 문서 지도(버튼 "작업실의 새 탭" · "앱에 한 벌 넣기")
+test("app.js — 연 파일 머리의 '틀로 맡기기' 고르기 · 채팅의 '문서 틀' 칩 → presets.js의 글 · 끝 조건으로 /api/task/start, 보고가 오면 파일을 다시 읽는다; '문서 지도' 탭은 docmap.html iframe, 상자의 열기는 map-open", () => {
+  const a = read("navigator/app.js"), s = fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8");
+  assert.match(a, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "노트북"\], \["tree", "도전과제"\], \["lib", SHELF_ON \? "서고" : "책"\], \["map", "문서 지도"\]\];/);
+  assert.match(a, /<iframe class="docmap" src="\/navigator\/docmap\.html#now=\$\{encodeURIComponent\(nowDocPath\(n\)\)\}"/, "지금 장 문서는 주소 끝(#)으로 — 물음표 뒤가 붙으면 화면 파일을 못 찾는다");
+  assert.match(a, /"map-open": \(i, el\) => \{/, "상자의 '파일 보기에서 열기' → 목록의 번호로 연다"); assert.match(a, /window\.addEventListener\("message", \(e\) => \{ const d = e\.data; if \(d && d\.floe === "open"/);
+  assert.match(a, /const PR = window\.FloePresets \|\| null;/); assert.match(a, /data-act="preset-pick"/, "연 파일 머리의 틀 고르기"); assert.match(a, /\{ label: "문서 틀", act: "preset-open", kind: "ghost" \}/, "채팅 칩");
+  assert.match(a, /body: JSON\.stringify\(\{ text, checks: PR\.checksOf\(p\) \}\)/, "틀의 글과 끝 조건으로 맡긴다(FR-17 그대로)"); assert.match(a, /if \(t && t\.report && st\.presetTask\)/, "보고가 오면 다시 읽기");
+  assert.match(read("navigator/win.js"), /d\.floe === "open" && typeof d\.path === "string"\) F\.winEvent\(\{ type: "click", act: "map-open"/);
+  assert.match(s, /"03-backend\/navigator\/board": \["board\.js", "board\.css"\]/, "엔진 사본을 서버가 내준다"); assert.match(s, /route === "\/api\/docmap"/);
+  assert.match(read("navigator/docmap.html"), /\.\.\/\.\.\/03-backend\/navigator\/board\/board\.js/, "엔진은 앱 안의 사본 — 밖으로 요청하지 않는다");
+  assert.ok(fs.existsSync(path.join(__dirname, "../../03-backend/navigator/board/LICENSE")), "MIT 라이선스 사본");
+});

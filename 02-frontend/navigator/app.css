@@ -765,6 +765,8 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .fv-code li{display:flex;gap:12px;padding:0 12px 0 0;counter-increment:ln;white-space:pre;min-height:1.6em}
 .fv-code li::before{content:counter(ln);flex:none;width:44px;text-align:right;padding-right:8px;color:var(--sub);border-right:1px solid var(--line);user-select:none}
 .fv-code li.chg{background:var(--okbg)}.fv-code li.chg::before{color:var(--ok);font-weight:700}
+.fpreset{min-height:36px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));padding:0 8px}   /* 틀로 맡기기(C-44) */
+.docmap{flex:1;min-height:360px;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}   /* 문서 지도(C-45) */
 .fv-edit{flex:1;min-height:240px;resize:none;font:calc(13px * var(--ui-scale,1))/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink);background:var(--card);border:1px solid var(--acc-mid);border-radius:12px;padding:10px 12px;white-space:pre;overflow:auto;tab-size:2}
 .wnav .fn li.now{background:var(--acc-soft);font-weight:600}
 .wnav .fn li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}

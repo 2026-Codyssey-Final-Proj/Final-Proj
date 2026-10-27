@@ -38,6 +38,7 @@
 | `POST /api/quest` | 섬 — 퀘스트를 만들 때(C-22, 2026-10-21) | 출처 · 확인 값(쿠키) | `{ok, quest:{desc, why, qa[]}, tokens}` | 403 · 413 · 400 · 502 |
 | `GET /api/files` | 섬 — 작업실을 열 때(C-42 R-8, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, files:[{name, path, dir, depth}], total, cut, unread, depth, max, why}` — 연결한 폴더의 이름만, 깊이 3 · 200개 | 403 |
 | `GET /api/file?i=N` | 섬 — 파일 칸에서 파일을 누를 때(C-43, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, i, name, path, kind, text, size, mtime, changed}` — 목록의 N번 파일(글 파일 · 512KB까지), 바뀐 줄은 git과 다른 [시작, 개수]. `ok:false`면 `why`(big · binary) | 403 · 400 · 404 |
+| `GET /api/docmap?now=<경로>` | 작업실의 문서 지도 탭(C-45, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, board}` — 문서(docs/** · README · CLAUDE.md)를 상자로, md 링크를 선으로 이은 archi-board 보드 데이터 | 403 |
 | `POST /api/file` | 섬 — 연 파일을 저장할 때(C-43) | 출처 · 확인 값(쿠키) | `{i, text, mtime, force?, overwrite?, commit?}` → `{ok, mtime, task, note}` — 그 파일에만 쓰고 commit이면 그 파일만 커밋 · 푸시를 Claude Code에 | 403 · 400 · 404 · 409(sensitive · changed · busy) · 413 · 500 |
 | `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/stagedraft` | 섬 — 1단계 관문을 지났을 때(C-37, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, draft:{items[{text} 또는 {pick, why}], say}, tokens}` | 403 · 413 · 400 · 502 |
@@ -585,6 +586,13 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
   - 연 뒤에 파일이 바뀌었으면(`mtime` 다름 — Claude Code가 고치는 중일 수 있다) 409 `why:"changed"`(+ 지금 `mtime`), 맡긴 일이 돌고 있으면 409 `why:"busy"` — `overwrite: true`로 덮어쓴다.
   - `commit: true`면 쓴 뒤 **그 파일만** 커밋 · 지금 브랜치를 푸시하도록 Claude Code에 맡긴다(`saveRequest` — 강제 푸시 없음, 원격이 없으면 푸시하지 않고 까닭만. 기준 둘 `SAVE_CHECKS`). 허락 카드는 섬의 채팅에(3-13 ~ 3-15). 넘긴 일이 이미 돌고 있으면 저장만 하고 `note`에 까닭. 답 `{ ok, mtime, task, note }`.
 - 화면(`app.js` `filePane` · `openFile` · `saveFile`): 파일 칸의 파일을 누르면 열린 파일 탭 · 판 — md는 보기 좋게([md-view.js](md-view.js) — 모든 글을 가려 태그가 살아나지 않는다, 링크는 http(s)만 새 창) · 원문, 코드 · 글은 줄 번호와 바뀐 줄 표시. 고치기 → 글 칸, 저장(단추 · ⌘/Ctrl+S)은 바로 쓰고, 저장 이력은 열린 파일마다 20번(이 켜짐 동안, 되돌리기). 이름 찾기. 서버 없이 · 연습 모드는 예시 목록이라 열지 않는다. 시험: `04-tests/navigator/files-api.test.js` · `md-view.test.js` · `file-view.test.js` · `e2e/file-view.test.js`.
+
+### 3-27. `GET /api/docmap?now=<경로>` — 문서 지도: 문서가 이어진 모습을 보드 데이터로 (C-45, 2026-10-27)
+
+<!-- claude-drafted: 2026-10-27 — 이재엽 "아치보드로 문서들이 이어지고 확인이 가능한 기능" · 버튼 "작업실의 새 탭" · "앱에 한 벌 넣기" -->
+- 확인 값이 있어야 한다. 읽기만 — 연결한 폴더(3-18과 같은 '폴더 고르기')의 `docs/**` · `README.md` · `CLAUDE.md`(3-25 목록 규칙 — 숨김 · 비밀값 · 바로가기 제외, 깊이 3) md를 앞 64KB만 읽어 **링크만** 본다. `now`는 지금 장 문서의 폴더 안 상대 경로(화면이 준다 — 그 문서를 `part`로 표시).
+- 만드는 것([docmap.js](docmap.js) `build`, archi-board format 1): 문서 하나 = 상자 하나(`dobject`, `c`에 경로), 창 셋(단계 문서 · 기획서/결정 기록 · 저장소), 선은 `## 재료` 절의 링크가 `realization`(1순위 — 어느 단계 칸에서 왔나), 그 밖의 md 링크가 `association`. git에서 바뀐 문서(`git status --porcelain`)는 `cand`. 없는 문서로 가는 선 · 폴더 밖 링크는 버린다. 답에 절대 경로 없음.
+- 화면: 작업실 '문서 지도' 탭 → `navigator/docmap.html`(iframe)이 이 길을 불러 `window.BOARD`에 두고 **엔진 사본** [board/](board/README.md)(archi-board v1, MIT, 앱 안 — 밖으로 요청 없음)으로 그린다. 상자를 누르면 오른쪽 판에 '파일 보기에서 열기' — 부모에 `postMessage({ floe: "open", path })` → 파일 보기(3-26). 폴더를 모르면 `ok:false, why:"folder"`와 까닭. 시험: `04-tests/navigator/docmap.test.js` · `e2e/docmap.test.js`.
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

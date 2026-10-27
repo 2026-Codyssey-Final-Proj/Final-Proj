@@ -1,0 +1,35 @@
+<!doctype html>
+<!-- claude-drafted: 2026-10-27 — C-45 문서 지도: 작업실의 '문서 지도' 탭이 이 페이지를 iframe으로 연다. 서버 GET /api/docmap(API.md 3-27)의 보드 데이터를 window.BOARD에 두고
+     archi-board 엔진 v1 사본(../../03-backend/navigator/board/, MIT — 이재엽의 gamercross/archi-board)을 불러 그린다. 앱 안의 사본이라 밖으로 요청하지 않는다(이재엽 버튼 "앱에 한 벌 넣기").
+     상자를 누르면 오른쪽 판의 '코드 · 파일 위치'에 '파일 보기에서 열기' 단추를 더한다 — 누르면 부모(작업실 창 win.js · 섬 index.html)에 postMessage({ floe: "open", path }) -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>문서 지도</title>
+<link rel="stylesheet" href="../../03-backend/navigator/board/board.css">
+<style>
+.floe-empty{padding:24px;font:15px/1.6 "Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;color:#353943}
+.floe-open{display:inline-flex;align-items:center;min-height:36px;margin-top:6px;padding:0 12px;border:1px solid var(--acc,#4A6FD6);border-radius:8px;background:var(--acc-soft,#E2EAFB);color:var(--acc-ink,#2A4AA8);font:600 13px system-ui,sans-serif;cursor:pointer}
+</style>
+</head>
+<body>
+<script>
+(async () => {
+  let r = null;
+  const now = decodeURIComponent((/[#&]now=([^&]*)/.exec(location.hash) || [, ""])[1]);   // 지금 장 문서(섬이 주소 끝에 준다)
+  try { r = await (await fetch(`/api/docmap?now=${encodeURIComponent(now)}`, { cache: "no-store" })).json(); } catch {}
+  if (!r || !r.ok || !r.board) { document.body.insertAdjacentHTML("afterbegin", `<p class="floe-empty">${r && r.reason ? r.reason : "문서 지도를 만들지 못했어요 — 폴더를 연결하면 보여요"}</p>`); return; }
+  window.BOARD = r.board;
+  const s = document.createElement("script"); s.src = "../../03-backend/navigator/board/board.js";
+  s.onload = () => {
+    const pb = document.getElementById("pB"); if (!pb) return;
+    const add = () => { const code = pb.querySelector("code"); if (!code || pb.querySelector(".floe-open")) return; const p = code.textContent.trim(); if (!/\.md$/i.test(p)) return;
+      const b = document.createElement("button"); b.type = "button"; b.className = "floe-open"; b.textContent = "파일 보기에서 열기"; b.addEventListener("click", () => parent.postMessage({ floe: "open", path: p }, "*")); code.parentElement.appendChild(b); };
+    new MutationObserver(add).observe(pb, { childList: true, subtree: true }); add();
+  };
+  document.body.appendChild(s);
+})();
+</script>
+</body>
+</html>

@@ -687,6 +687,7 @@
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
     if (st.screen === "gate") return momentGate();
     if (st.meal) return feedSortMoment();   // 먹이를 나눠 정리하는 중(C-15)
+    if (st.presetPick) return momentPreset();   // 문서 틀 고르기(C-44)
     if (planNow()) return momentPlan();   // 준비 계획 · 맡길 일(C-35) — 퀘스트 창에서 '맡길 일'을 고르거나 계획 칩을 누르면
     if (st.ship && FDOCS) return momentShip();   // 2단계를 마친 뒤 문서 올리기(C-37)
     if (gateStop()) return momentStop();   // R-10: 보고했는데 '안 됨'이 남았다 — 관문 앞에서 멈춘다
@@ -991,6 +992,7 @@
       if (!st.j && !st.quest && FD && st.mode === "live") out.push({ label: "먹이 주기(파일 · 글)", act: "open-input", kind: "ghost" });
       if (st.j && !st.openInput) out.push({ label: "바뀐 작업 보여 주기", act: "open-input", kind: "ghost" });
       if (FP) out.push(planChip());
+      if (PR && st.j && canLive && st.mode !== "fixture" && !st.presetPick) out.push({ label: "문서 틀", act: "preset-open", kind: "ghost" });   // C-44 — 지금 장 문서를 틀로 맡기기
     }
     out.push({ label: unreadN() ? `알림 ${unreadN()}` : "알림", act: "base-alerts", kind: "ghost" });
     return out;
@@ -1188,7 +1190,7 @@
   // 퀘스트 창(C-22) — 머리띠(제목 · 프로젝트 · 크기 S/M/L · 닫기) · 탭(퀘스트 · 도전과제 · 책) · 판. 위 줄의 '퀘스트' 단추로 켜고 끈다(C-35). 끌어 옮기기는 Electron 창으로 만들 때(다음 판, 정할 것 10)
   let qpop = false;
   const openQwin = (tab) => { if (!st.qwin) { qpop = true; loadFiles(); } st.qwin = true; st.qtab = tab || st.qtab; };   // 열 때 파일 칸의 목록도(R-8)
-  const QTABS = [["canvas", "캔버스"], ["quest", "노트북"], ["tree", "도전과제"], ["lib", SHELF_ON ? "서고" : "책"]];   // 작업실 창(C-41, 2026-10-26): 캔버스가 먼저, 옛 퀘스트 탭은 노트북. 책 — C-26(2026-10-23). 배우기 탭은 2026-10-24 C-35로 도전과제의 장마다
+  const QTABS = [["canvas", "캔버스"], ["quest", "노트북"], ["tree", "도전과제"], ["lib", SHELF_ON ? "서고" : "책"], ["map", "문서 지도"]];   // 문서 지도 — C-45(2026-10-27, 이재엽 버튼 "작업실의 새 탭")   // 작업실 창(C-41, 2026-10-26): 캔버스가 먼저, 옛 퀘스트 탭은 노트북. 책 — C-26(2026-10-23). 배우기 탭은 2026-10-24 C-35로 도전과제의 장마다
   // 캔버스 판 — 작업실 창의 첫 탭(C-41 ① 2026-10-26 · ⑥ 2026-10-27 두승현 "의도했던 것은 첨부한 이미지처럼 펼쳐져 있는 환경" — 디자인 캔버스 DockPrototype의 판 그대로):
   //   1100×640 판을 칸(.cv)에 맞춰 줌한다(app.css .cvb의 --u — 컨테이너 단위라 스크립트 없이, 앱의 창이든 브라우저의 판이든). 2026-10-27 C-42 R-11(이재엽 "줌 + 모자라면 다시 배치"): 0.85배 아래로 줄어야 하면
   //   줌하지 않고 격자로 다시 배치한다 — 두 줄(① ② ③ / ④ ⑤ 관문) · 640 미만은 세로 한 줄, 글자 크기는 설정 그대로(app.css @container). 지금 하는 일 · 단계 칩 · 왼쪽에 지난 장 / 다음 장 보드 ·
@@ -1338,6 +1340,7 @@
       ${f.kind === "md" && !f.edit ? `<button type="button" class="lnk" data-act="fraw" data-v="${k}" aria-pressed="${f.raw}">${f.raw ? "보기 좋게" : "원문"}</button>` : ""}
       <button type="button" class="lnk" data-act="fedit" data-v="${k}" aria-pressed="${f.edit}">${f.edit ? "보기" : "고치기"}</button>
       ${f.hist.length ? `<button type="button" class="lnk" data-act="fundo" data-v="${k}" title="마지막으로 저장하기 전 글로">되돌리기</button>` : ""}
+      ${PR && canLive && st.mode !== "fixture" ? presetOpts(k) : ""}
       <button type="button" class="b pri sm" data-act="fsave" data-v="${k}" ${f.dirty ? "" : "disabled"} title="⌘/Ctrl+S">저장</button></div>`;
     let body;
     if (f.edit) body = `<textarea class="fv-edit" data-act="ftext" data-v="${k}" spellcheck="false" aria-label="${esc(f.name)} 고치기">${esc(f.text)}</textarea>`;
@@ -1345,13 +1348,42 @@
     else body = `<pre class="fv-code"><ol>${f.text.replace(/\n$/, "").split("\n").map((l, j) => `<li${chg === null || (chg && chg.has(j + 1)) ? ' class="chg"' : ""}><span>${esc(l) || " "}</span></li>`).join("")}</ol></pre>`;
     return `<div class="fv">${head}${note}${body}</div>`;
   }
+  // ── 문서 지도(C-45, 2026-10-27 이재엽 "아치보드로 문서들이 이어지고 확인" · 버튼 "작업실의 새 탭" · "앱에 한 벌 넣기"): docmap.html을 iframe으로 — 서버 GET /api/docmap(API.md 3-27)이 보드 데이터를, 엔진은 앱 안의 archi-board v1 사본.
+  //   상자의 '파일 보기에서 열기'는 postMessage → win.js · 아래 message 듣기 → ACT map-open(경로로 목록의 번호를 찾아 파일 보기로). 서버 없이 · 연습 모드는 지도가 없다(까닭을 쓴다)
+  const nowDocPath = (n) => { const slug = FDOCS ? FDOCS.SLUGS[n] : ""; return slug ? `docs/${slug}/${slug.slice(3)}.md` : ""; };
+  function mapPane(n) {
+    if (!canLive || st.mode === "fixture") return `<div class="qempty"><b>문서 지도는 폴더를 연결한 앱에서 보여요</b>${canLive ? "연습 모드예요 — 진짜 폴더를 연결하면 문서가 이어진 모습이 여기에 와요." : "서버 없이 열었어요 — 앱으로 열면 보여요."}</div>`;
+    return `<iframe class="docmap" src="/navigator/docmap.html#now=${encodeURIComponent(nowDocPath(n))}" title="문서 지도 — 상자를 누르면 오른쪽에 설명, '파일 보기에서 열기'로 열어요"></iframe>`;   // 지금 장 문서는 주소 끝(#)으로 — 서버의 화면 파일 찾기는 정확한 경로만(물음표 뒤가 있으면 404)
+  }
+  // ── 문서 고치기 맡기기 틀(C-44, 2026-10-27 이재엽 "md파일을 수정하거나 다른 문서들을 수정하기 위한 프리셋들" · 버튼 "Floe의 맡기기 틀" · "지금 자리에 더한다"): 틀은 presets.js 한 파일(사람이 더하고 고친다).
+  //   연 파일의 머리 '틀로 맡기기'(고르면 바로) · 채팅의 '문서 틀' 칩(지금 장 문서, 카드에서 고름) → Claude Code에 맡긴다(/api/task/start + 틀의 끝 조건 — 허락은 섬, 끝에 기준마다 보고 C-32). 보고가 오면 열린 파일의 바뀐 줄을 다시 읽는다
+  const PR = window.FloePresets || null;
+  const presetOpts = (k) => `<select class="fpreset" data-act="preset-pick" data-v="${k}" aria-label="틀로 맡기기"><option value="">틀로 맡기기…</option>${(PR ? PR.PRESETS : []).map((p) => `<option value="${p.id}" title="${esc(p.what)}">${esc(p.name)}</option>`).join("")}</select>`;
+  async function presetGo(id, path) {
+    const p = PR && PR.byId(id); if (!p || !path) return;
+    if (!canLive || st.mode === "fixture") return say("연습 모드라 맡기지 않아요 — 진짜 폴더를 연결한 앱에서 돼요");
+    const n = st.finished ? N.STAGES.length - 1 : atStage();
+    const text = PR.requestOf(p, { path, stage: `${LB(n)} · ${N.STAGES[n].title}` });
+    st.presetPick = null; render();
+    try {
+      const r = await (await fetch("/api/task/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, checks: PR.checksOf(p) }) })).json();
+      if (r && r.ok) { st.presetTask = { path, name: p.name, at: Date.now() }; say(`'${p.name}' 틀로 ${path}를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 허용해 주세요. 끝나면 보고가 와요.`); }
+      else say(`맡기지 못했어요 — ${(r && r.reason) || "서버가 답하지 않았어요"}`);
+    } catch { say("서버에 닿지 않았어요"); }
+  }
+  function momentPreset() {
+    const pk = st.presetPick, n = st.finished ? N.STAGES.length - 1 : atStage();
+    return { tone: "blue", mood: "think", badge: "?", meta: `<span class="mm-stage">${LB(n)} · 문서 틀</span>`, title: `어느 틀로 맡길까요? — ${esc(pk.path)}`,
+      sub: "틀을 고르면 플로로가 지시를 적어 Claude Code에 맡겨요. 허락 카드는 여기 채팅에 떠요. 틀은 presets.js 한 파일에 있어 더하고 고칠 수 있어요.",
+      acts: [...(PR ? PR.PRESETS : []).map((p) => ({ label: p.name, act: "preset-go", kind: "opt", i: p.id })), { label: "그만둘게요", act: "preset-x", key: "Escape", kind: "ghost" }] };
+  }
   const BROWSER_WIN = [920, 640];   // 브라우저 판(섬 옆)의 크기 — 앱의 창 크기는 main.js(R-1)
   const FULL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5"/></svg>';
   function qwinHTML() {
     if (!st.qwin || !QU) return "";
     const pop = qpop ? " winpop" : ""; qpop = false;   // 처음 열 때 한 번의 움직임. 이름은 winpop — "pop"은 말풍선 판(.pop — 14px 안쪽 여백 · 아래 정렬)의 이름이라 작업실 창이 처음 열릴 때 그 모양을 뒤집어썼다(⑥ 2026-10-27, 앱에서 처음 열면 창이 아래에 148px로 붙었다)
     const n = st.finished ? N.STAGES.length - 1 : atStage();
-    const pane = st.qtab === "canvas" ? canvasPane(n) : st.qtab === "tree" ? treePane() : st.qtab === "lib" ? bookPane() : st.qtab === "file" ? filePane() : questTab();
+    const pane = st.qtab === "canvas" ? canvasPane(n) : st.qtab === "tree" ? treePane() : st.qtab === "lib" ? bookPane() : st.qtab === "file" ? filePane() : st.qtab === "map" ? mapPane(n) : questTab();
     // 머리 한 줄(⑥, 목업): 프로젝트 · 단계 이름 · 탭 · LV · 조개 · 크기 · 닫기. 왼쪽 파일 칸(.wnav)은 탭에 상관없이 — 펼쳐진 환경
     // 크기(R-1, 2026-10-27 이재엽 버튼 "'화면 가득' 하나로"): 앱에서는 창이 작업 영역 가득 · 사람이 바꾼 크기를 기억(main.js) — 아래 style은 브라우저 판에서만 쓰인다(win.html은 auto!important로 덮는다). S/M/L은 뺐다
     return `<div class="win qwin${pop}" role="dialog" aria-label="작업실 창" style="width:${BROWSER_WIN[0]}px;height:${BROWSER_WIN[1]}px"><div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="wst">${LB(n)} · ${esc(N.STAGES[n].title)}</span>
@@ -2015,6 +2047,7 @@
     if (t && t.state === "running") return;
     clearInterval(planTimer); planTimer = null;
     // 보고는 맡길 일의 지금 말로(C-35). 단계 퀘스트를 보고 있으면 지금 할 퀘스트는 그대로 두고 채팅에 한 줄 · 칩(planChip)으로 알린다 — 고르는 것은 사람(2026-10-24 리뷰). 접혀 있으면 살짝 보인다
+    if (t && t.report && st.presetTask) { const k = st.openFiles.findIndex((f) => f.path === st.presetTask.path); st.presetTask = null; if (k >= 0) reloadFile(k); }   // 틀로 맡긴 일이 끝났다 — 바뀐 줄을 다시(C-44)
     if (t && t.report) { st.plan = FP.report(st.plan, id, t.report); logMsg("sys", `Claude Code가 보고를 보냈어요${st.qfocus === "plan" ? "" : " — '맡길 일'에서 봐요"}`); peek(); say(t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy); }
     else { st.plan = FP.failed(st.plan, id); peek(); say("보고를 받지 못했어요 — 다시 맡길 수 있어요"); }
     save(); render(); fetchUsage();
@@ -2849,6 +2882,12 @@
     "tu-sel": (i, el) => { const v = (el && el.dataset.v) || ""; set({ tuSel: st.tuSel === v ? "" : v }); },   // 다시 누르면 접는다
     "rb-sel": (i) => set({ rbSel: i | 0 }),
     "rb-reload": () => loadReadme(),
+    // 문서 지도(C-45) · 맡기기 틀(C-44)
+    "map-open": (i, el) => { const p = el && el.dataset.v; if (!p || !st.files || !st.files.list) return; const k = st.files.list.findIndex((x) => !x.dir && x.path === p); if (k >= 0) openFile(k); else say(`'${p}'은 파일 목록에 없어요 — 깊이 3 · 200개 안의 글 파일만 열어요`); },
+    "preset-open": () => { const n = st.finished ? N.STAGES.length - 1 : atStage(); st.presetPick = { path: nowDocPath(n) }; render(); },
+    "preset-x": () => { st.presetPick = null; render(); },
+    "preset-go": (i, el) => { const id = el && el.dataset.i; if (st.presetPick) presetGo(id, st.presetPick.path); },
+    "preset-pick": () => {},
     // 파일 보기 · 고치기(C-43)
     "fn-open": (i, el) => { if (el && el.dataset.v !== undefined) openFile(el.dataset.v); },
     ftab: (i, el) => { const k = Number(el && el.dataset.v); if (st.openFiles[k]) { st.fileSel = k; st.qtab = "file"; render(); } },
@@ -3121,7 +3160,8 @@
     if (a === "sound") { set({ sound: t.checked }); if (st.sound) C.chime("pop"); }
     if (a === "hard") toggleHard(Number(t.dataset.i), t.checked);
     if (a === "tier") setTier(t.value);
-    if (a === "qauto") { qauto = t.checked; writeLS(QAUTO_KEY, qauto ? "1" : "0"); }   // 퀘스트를 받으면 퀘스트 창이 바로 뜨기(C-22)
+    if (a === "qauto") { qauto = t.checked; writeLS(QAUTO_KEY, qauto ? "1" : "0"); }
+    if (a === "preset-pick") { const f = st.openFiles[Number(t.dataset.v)]; const id = t.value; if (f && id) { t.value = ""; presetGo(id, f.path); } return; }   // 연 파일을 틀로 맡기기(C-44)   // 퀘스트를 받으면 퀘스트 창이 바로 뜨기(C-22)
     if (a === "plan-readme") { st.planReadme = t.checked; save(); }   // 준비 계획 — 작업 폴더의 README도 읽나(C-34)
     if (a === "feed-kind" && st.meal) st.meal.kinds[Number(t.dataset.i)] = t.value;   // FR-15 더함 — 구간의 종류를 고친다(다시 그리지 않는다)
     if (a === "inbox-kind" && st.inbox[Number(t.dataset.i)]) { st.inbox[Number(t.dataset.i)].kind = t.value; save(); }
@@ -3392,6 +3432,7 @@
   }
   // 처음 설정(setup.js)이 끝나면 — 고른 길에 맞춰 보기 방식을 두고, '시작하기'를 눌렀으면 바로 보여 주기 화면으로 (2026-10-19)
   // 처음 설정을 닫은 뒤에 가져오기 · 새로 만들기가 끝났다(C-31) — 작업 폴더가 바뀌었으니 알린다
+  window.addEventListener("message", (e) => { const d = e.data; if (d && d.floe === "open" && typeof d.path === "string") clickAct({ dataset: { act: "map-open", v: d.path.slice(0, 500) } }); });   // 문서 지도의 '파일 보기에서 열기'(C-45) — 브라우저 판
   document.addEventListener("floe:project-picked", (e) => {
     const d = (e && e.detail) || {}, n = String(d.name || "");
     st.gh = null;
