@@ -86,6 +86,7 @@
 - 이재엽에게 짧게: PR 번호 · 묶음마다 비교 사진 · 남은 줄 · 정한 것(버튼).
 - [fixes/workspace-storyboard.md](../../07-maintenance/fixes/workspace-storyboard.md) 상태, [fix-map](../../07-maintenance/fix-map.md) F-60 · F-61 줄, 요구서 C-42 등급 칸('만듦'), 스토리보드 README "확인한 것"에 한 줄.
 - 이 문서 머리에 "끝남" 한 줄.
+- **다음 일:** C-42 PR이 병합되면 [파일 보기 · 고치기 · 맡기기 틀 · 문서 지도 넘김 문서](fable-handoff-2026-10-27-files.md)(C-43 · C-44 · C-45, 이재엽 2026-10-27 버튼 "C-42 끝난 뒤, 11/1 전"). <!-- claude-drafted: 2026-10-27 -->
 
 ## 7. 페이블 세션에 붙여 넣을 말
 
