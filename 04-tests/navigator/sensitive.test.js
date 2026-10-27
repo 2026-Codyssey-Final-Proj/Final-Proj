@@ -30,3 +30,13 @@ test("redact: 비밀값과 연락처를 가리고 값은 남기지 않는다", (
   assert.doesNotMatch(out, /abcd1234|a@b\.co/);
   assert.match(out, /\[비밀값\]/); assert.match(out, /\[이메일 가림\]/);
 });
+
+// 2026-10-27(C-43 파일 저장): 512KB 글 파일(한 줄짜리 묶인 코드 · 긴 표)도 저장 전 검사가 바로 끝나야 한다 — 이메일 패턴이 '@' 없는 긴 글자 묶음에서 제곱으로 느려져(128KB 28초) 저장이 멈췄다
+test("scan: '@' 없는 512KB 한 줄도 1초 안에 끝나고, 그 안의 이메일은 여전히 찾는다", () => {
+  const t0 = Date.now();
+  assert.deepEqual(S.scan("x".repeat(512 * 1024)).findings, []);
+  assert.ok(Date.now() - t0 < 1000, `${Date.now() - t0}ms`);
+  const r = S.scan("a".repeat(100) + " 연락: team.lead+x@example.co.kr 끝 " + "b".repeat(100));
+  assert.deepEqual(r.findings.map((f) => f.match), ["team.lead+x@example.co.kr"]);
+  assert.equal(S.redact("긴" + "y".repeat(200000) + " me@example.com"), "긴" + "y".repeat(200000) + " [이메일 가림]");
+});

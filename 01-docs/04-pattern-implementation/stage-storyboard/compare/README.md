@@ -37,3 +37,11 @@
 | 작업실 1440 × 860 · 섬 위 접음 | 가로 알약(두께 56) | [pill-col-top-folded.png](pill-col-top-folded.png) |
 
 네 가장자리 모두 e2e [pill-overlay.test.js](../../../../04-tests/e2e/pill-overlay.test.js)가 잰다(두께 56 · 손잡이 없음 · 캔버스가 넓어짐 · 넘침 0).
+
+## C-43 파일 보기 · 고치기 (2026-10-27, 브랜치 `v2/workspace-files`)
+
+| 화면 | 결과 | 사진 |
+|---|---|---|
+| 1440 × 900 브라우저(서버를 다른 포트로, 시험 폴더) · README.md | 파일 칸의 파일을 눌러 열림 — md를 보기 좋게(제목 · 목록 · 표), 열린 파일 탭 | [files-md.png](files-md.png) |
+| 같은 화면 · src/app.js 고치기 | 글 칸에서 고쳐 저장(⌘S) → 파일에 쓰임, 비밀값 모양이면 멈추고 묻기 → 그대로 저장 | [files-edit.png](files-edit.png) |
+| 같은 화면 · '문서 지도' 탭(C-45) | docs/** · README를 상자로, 재료 링크(굵은 선) · md 링크를 선으로 — archi-board v1 사본(밖으로 요청 0), 상자 → '파일 보기에서 열기' | [files-docmap.png](files-docmap.png) |

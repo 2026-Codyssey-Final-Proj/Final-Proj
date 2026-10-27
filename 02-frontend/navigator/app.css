@@ -733,6 +733,42 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li.dir button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .wnav .fn li.dir button:focus-visible{outline:2px solid var(--acc);outline-offset:1px;border-radius:5px}
 .wnav .fn li.dir{color:var(--sub)}
+/* 파일 보기 · 고치기(C-43, 2026-10-27) — 파일 칸의 찾기 · 파일 행 단추(44px), 열린 파일 탭, 판(머리 한 줄 · 알림 · md 보기 · 줄 번호 코드 · 글 칸) */
+.wnav .fn-find{margin:0 0 6px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));min-height:44px}
+.wnav .fn li.fnrow{padding:0}
+.wnav .fn li .fn-file{all:unset;cursor:pointer;flex:1;min-height:44px;display:flex;align-items:center;min-width:0;color:inherit}
+.wnav .fn li .fn-file>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.wnav .fn li .fn-file:focus-visible{outline:2px solid var(--acc);outline-offset:1px;border-radius:5px}
+.wnav .fn li:has(.fn-file){padding-top:0;padding-bottom:0}
+.wnav .fn li.sel{background:var(--acc-soft);font-weight:600}
+.wtabs .ftab{display:inline-flex;align-items:center;border-left:1px solid var(--seg);padding-left:4px;margin-left:2px}
+.wtabs .ftab button[role=tab]{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.wtabs .ftab.dirty button[role=tab]{color:var(--warn)}
+.wtabs .ftab .fx{border:0;background:transparent;color:var(--mute);border-radius:50%;width:44px;height:44px;font-size:calc(14px * var(--ui-scale,1));padding:0;margin:-10px -12px -10px -14px}   /* 누르는 곳 44px(새 맥락 리뷰) — 보이는 탭 줄은 그대로, 겉 여백을 투명하게 넓혔다 */
+.wtabs .ftab .fx:hover{background:var(--acc-soft);color:var(--acc)}
+.fv{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}
+.fv-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.fv-h b{font-family:ui-monospace,Menlo,monospace;font-size:calc(12.5px * var(--ui-scale,1));overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;max-width:60%}
+.fv-h small{color:var(--sub);font-size:calc(12px * var(--ui-scale,1))}
+.fv-h .lnk{min-height:44px}.fv-h .b.sm{min-height:44px;padding:0 14px}
+.fv-note{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-radius:12px;background:var(--soft);color:var(--ink);font-size:calc(13px * var(--ui-scale,1))}
+.fv-note.ok{background:var(--okbg);color:var(--ok)}.fv-note.bad{background:var(--badbg);color:var(--bad)}.fv-note.ask{background:var(--warnbg);color:var(--warn)}
+.fv-note .lnk{min-height:44px;color:inherit;font-weight:700}
+.fv-md{flex:1;min-height:0;overflow:auto;padding:12px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line);line-height:1.65;font-size:calc(14px * var(--ui-scale,1));color:var(--ink);overflow-wrap:anywhere}
+.fv-md h1,.fv-md h2,.fv-md h3,.fv-md h4{margin:14px 0 6px;line-height:1.3;text-wrap:balance}.fv-md h1{font-size:1.5em}.fv-md h2{font-size:1.25em}.fv-md h3{font-size:1.1em}.fv-md h4,.fv-md h5,.fv-md h6{font-size:1em}
+.fv-md p,.fv-md ul,.fv-md ol,.fv-md blockquote,.fv-md pre,.fv-md table{margin:6px 0}.fv-md ul,.fv-md ol{padding-left:22px}.fv-md li.task{list-style:none;margin-left:-18px}.fv-md li.task.done{color:var(--sub)}
+.fv-md blockquote{border-left:3px solid var(--seg);padding:2px 12px;color:var(--sub)}.fv-md code{background:var(--soft);border-radius:5px;padding:1px 5px;font-family:ui-monospace,Menlo,monospace;font-size:.92em}
+.fv-md pre.mdv-code{background:var(--soft);border-radius:10px;padding:10px 12px;overflow:auto}.fv-md pre.mdv-code code{background:none;padding:0}
+.fv-md table{border-collapse:collapse;max-width:100%;display:block;overflow:auto}.fv-md th,.fv-md td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}.fv-md th{background:var(--soft)}
+.fv-md a{color:var(--acc)}.fv-md hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.fv-code{flex:1;min-height:0;overflow:auto;margin:0;padding:8px 0;border-radius:12px;background:var(--card);border:1px solid var(--line);font:calc(12.5px * var(--ui-scale,1))/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink)}
+.fv-code ol{list-style:none;margin:0;padding:0;counter-reset:ln}
+.fv-code li{display:flex;gap:12px;padding:0 12px 0 0;counter-increment:ln;white-space:pre;min-height:1.6em}
+.fv-code li::before{content:counter(ln);flex:none;width:44px;text-align:right;padding-right:8px;color:var(--sub);border-right:1px solid var(--line);user-select:none}
+.fv-code li.chg{background:var(--okbg)}.fv-code li.chg::before{color:var(--ok);font-weight:700}
+.fpreset{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));padding:0 8px}   /* 틀로 맡기기(C-44) */
+.docmap{flex:1;min-height:360px;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}   /* 문서 지도(C-45) */
+.fv-edit{flex:1;min-height:240px;resize:none;font:calc(13px * var(--ui-scale,1))/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink);background:var(--card);border:1px solid var(--acc-mid);border-radius:12px;padding:10px 12px;white-space:pre;overflow:auto;tab-size:2}
 .wnav .fn li.now{background:var(--acc-soft);font-weight:600}
 .wnav .fn li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .wnav .fn li small{flex:none;font-size:calc(11px * var(--ui-scale,1));color:var(--sub)}
