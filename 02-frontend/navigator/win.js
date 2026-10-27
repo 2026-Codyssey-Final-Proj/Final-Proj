@@ -19,9 +19,10 @@
     // 옆 칸의 대화 기록([data-log]) — 맨 아래를 보고 있었으면 새 말이 와도 맨 아래, 위로 올려 읽는 중이면 그 자리(섬의 render와 같은 뜻, C-41 ⑤)
     const lg = root.querySelector("[data-log]"), lgTop = lg ? lg.scrollTop : null, lgEnd = !lg || lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 4;
     root.innerHTML = html || "";
+    if (window.FloeCanvas) window.FloeCanvas.apply(root);   // 캔버스를 옮겼거나 키웠으면 그 자리 · 배율로(F-65, canvas-pan.js) — 섬은 모른다
     if (key) { const b = [...root.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.i || ""}|${x.dataset.k || ""}` === key); if (b) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; } }
     const body = root.querySelector(".wbody"); if (body) body.scrollTop = body.dataset.view === view ? scroll : 0;
-    const now = body && body.dataset.view !== view && root.querySelector(".cv-c.now"); if (now) now.scrollIntoView({ block: "nearest" });   // 캔버스 탭으로 올 때 '지금' 칸이 보이게(C-41 기준 7, 2026-10-26)
+    const now = body && body.dataset.view !== view && !root.querySelector(".cv.free") && root.querySelector(".cv-c.now"); if (now) now.scrollIntoView({ block: "nearest" });   // 캔버스 탭으로 올 때 '지금' 칸이 보이게(C-41 기준 7, 2026-10-26)
     const lg2 = root.querySelector("[data-log]"); if (lg2) lg2.scrollTop = lgTop === null || lgEnd ? lg2.scrollHeight : lgTop;
     layoutCol();
   });

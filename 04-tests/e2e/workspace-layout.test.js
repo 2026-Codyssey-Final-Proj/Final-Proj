@@ -123,3 +123,55 @@ test("R-9 · R-5 — 3단계 장면: 칩은 '시작 ✓ · 1 ✓ V.1 · 2 ✓ V.
     for (const j of ["EARS", "MoSCoW", "Kano", "RTM", "PRD", "Planguage"]) assert.ok(!s.big.includes(j), `큰 글에 '${j}'`);
   } finally { await browser.close(); }
 });
+
+// F-65 · F-66(2026-10-27 이재엽 "캔버스가 움직이는것도 안되고" · "지금 폴더들도 폴더라는 느낌이 안들어") — 작업실 창(win.html)에서 실제로 끌고 · ⌘/Ctrl+휠로 키우고 · 맞춤으로 돌아오는지,
+//   섬이 다시 그려 보내도(1초마다도 온다) 보던 자리인지, 예시 파일 칸의 폴더가 그림 · 꺾쇠 · 굵은 이름으로 보이는지 — claude-drafted: 2026-10-27
+test("F-65 · F-66 — 캔버스: 끌면 옮겨지고 · ⌘/Ctrl+휠은 커서 자리에서 1.2배 · 섬이 다시 보내도 그 자리 · '맞춤'으로 처음처럼 · 키 + 0. 파일 칸: 폴더는 그림 · 꺾쇠 · 굵게", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const h = await islandHTML(browser), html = `${h.qwin}<div class="isl-col side-right narrow">${h.isl}</div>`;
+    const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => { window.floeApp = { onWinHtml: (f) => { window.__h = f; }, onDock() {}, winEvent() {} }; });
+    await page.setViewport({ width: 1728, height: 1000 });
+    await page.goto(url("navigator/win.html#quest"), { waitUntil: "load" });
+    await page.evaluate((x) => window.__h(x), html); await wait(250);
+    const now = () => page.evaluate(() => { const cv = document.querySelector(".cv"), r = (s) => document.querySelector(s).getBoundingClientRect();
+      return { free: cv.classList.contains("free"), z: parseFloat(cv.style.getPropertyValue("--cvz")) || 0, c2: r(".cv-c.c2").left, c3: { x: r(".cv-c.c3").left, y: r(".cv-c.c3").top }, label: document.querySelector('[data-cv="fit"]').textContent }; });
+    const box = await page.$eval(".cv", (cv) => { const r = cv.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+    const fit0 = await now();
+    assert.ok(!fit0.free && fit0.label === "맞춤", "처음은 맞춤");
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "pan-0-fit.png") });
+    // 끌기 — 칸 아래쪽 가운데(단추는 오른쪽 아래)에서 왼쪽 위로 120 · 50
+    const sx = box.x + box.w * 0.45, sy = box.y + box.h - 30;
+    await page.mouse.move(sx, sy); await page.mouse.down(); await page.mouse.move(sx - 60, sy - 25, { steps: 5 }); await page.mouse.move(sx - 120, sy - 50, { steps: 5 }); await page.mouse.up(); await wait(50);
+    const d = await now();
+    assert.ok(d.free, "끌면 옮기기(.free)"); assert.ok(Math.abs(fit0.c2 - d.c2 - 120) <= 3, `끈 만큼 옮겨짐 — ② ${fit0.c2} → ${d.c2}`); assert.match(d.label, /^\d+%$/, d.label);
+    // ⌘/Ctrl+휠 — 커서 아래의 판 자리는 그대로, 1.2배
+    const at = { x: d.c3.x + 10, y: d.c3.y + 10 };
+    await page.mouse.move(at.x, at.y); await page.keyboard.down("Control"); await page.mouse.wheel({ deltaY: -100 }); await page.keyboard.up("Control"); await wait(50);
+    const z = await now();
+    assert.ok(Math.abs(z.z / d.z - 1.2) < 0.01, `1.2배 — ${d.z} → ${z.z}`);
+    assert.ok(Math.abs(z.c3.x - (d.c3.x - 10 * 0.2)) <= 1.5 && Math.abs(z.c3.y - (d.c3.y - 10 * 0.2)) <= 1.5, "커서 자리를 중심으로 커진다");
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "pan-1-moved.png") });
+    // 섬이 다시 그려 보내도 그 자리 · 배율
+    await page.evaluate((x) => window.__h(x), html); await wait(100);
+    const again = await now();
+    assert.deepEqual([again.free, again.z, Math.round(again.c2)], [true, z.z, Math.round(z.c2)], "다시 그려도 그대로");
+    // 맞춤 → 처음처럼
+    await page.click('[data-cv="fit"]'); await wait(50);
+    const back = await now();
+    assert.ok(!back.free && back.label === "맞춤" && Math.abs(back.c2 - fit0.c2) <= 1, "맞춤으로 처음처럼");
+    // 키 — 칸에 포커스: + 는 1.25배, 0은 맞춤
+    await page.focus(".cv"); await page.keyboard.press("Equal"); await wait(300);
+    const k = await now(); assert.ok(k.free && k.label !== "맞춤", "+ 키로 크게");
+    await page.keyboard.press("Digit0"); await wait(50); assert.equal((await now()).label, "맞춤", "0 키로 맞춤");
+    // F-66 — 예시 파일 칸(서버 없이 연 화면)의 폴더
+    const dirs = await page.evaluate(() => [...document.querySelectorAll(".wnav .fn li.dir")].map((li) => ({ name: li.textContent.trim(), icon: !!li.querySelector(".fi svg"), chev: !!li.querySelector(".chev-w svg"),
+      open: li.querySelector(".chev-w").classList.contains("on"), weight: getComputedStyle(li).fontWeight })));
+    assert.deepEqual(dirs.map((x) => x.name), ["docs", "src"]);
+    assert.ok(dirs.every((x) => x.icon && x.chev && x.weight === "600"), JSON.stringify(dirs)); assert.deepEqual(dirs.map((x) => x.open), [true, false], "docs는 펼침 · src는 접힘");
+    const inner = await page.$$eval(".wnav .fn li.d2", (ls) => ls.map((l) => getComputedStyle(l, "::before").borderLeftStyle));
+    assert.ok(inner.length === 4 && inner.every((s) => s === "solid"), "안쪽 파일에 안내선");
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "folders.png"), clip: { x: 0, y: 40, width: 260, height: 360 } });
+  } finally { await browser.close(); }
+});
