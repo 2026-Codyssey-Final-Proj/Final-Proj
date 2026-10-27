@@ -95,3 +95,31 @@ test("R-11 · R-1 — 화면 1024 · 1280 · 1440 · 1728, 섬 옆 · 아래: �
     console.log(`  잰 값: ${rows.map((r) => `${r.width}×${r.height}/${r.side} 칸 ${r.cw}×${r.ch} ${r.display === "block" ? `줌 ${(r.bw / 1100).toFixed(2)}` : `격자 ${r.cols === 5 ? "두 줄" : "한 줄"}`}${r.nav ? "" : " (파일 칸 숨김)"}`).join(" · ")}`);
   } finally { await browser.close(); }
 });
+
+// ② 칸의 내용(R-5) · 단계 칩(R-9) — 3단계 연습 장면에서 글로 본다
+test("R-9 · R-5 — 3단계 장면: 칩은 '시작 ✓ · 1 ✓ V.1 · 2 ✓ V.2 · 3 기능 정리 · 4 ~ 8', ④ 저장에 올라갈 파일 이름, 관문에 남은 기준 수, ③ 기록 카드는 정한 줄, 큰 글에 전문 용어 없음", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(url("navigator/index.html#base"), { waitUntil: "load" });
+    await page.evaluate(() => { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); });
+    await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" }); await wait(400);
+    if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
+    await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
+    const s = await page.evaluate(() => ({
+      chips: [...document.querySelectorAll(".cv-stg span")].map((x) => x.textContent.trim()),
+      head: document.querySelector(".qwin .wh .wst")?.textContent || "",
+      files: [...document.querySelectorAll(".cv-c.c4 .cv-files li")].map((x) => x.textContent),
+      gate: document.querySelector(".cv-c.c6")?.textContent || "",
+      cards: [...document.querySelectorAll(".cv-c.c3 .cv-cards span")].map((x) => x.textContent.trim()),
+      big: [...document.querySelectorAll(".cvb .ch, .cvb .cv-now, .cv-stg")].map((x) => x.textContent).join(" "),
+    }));
+    assert.deepEqual(s.chips, ["시작 ✓", "1 ✓ V.1", "2 ✓ V.2", "3 기능 정리", "4 ~ 8"], `머리 '${s.head}'와 같은 번호`);
+    assert.ok(s.head.startsWith("3단계"), s.head);
+    assert.deepEqual(s.files, ["docs/03-requirements/requirements.md", "docs/PRD.md", "docs/decisions.md"], "④ 저장 — 단계 문서 · 기획서 · 결정 기록");
+    assert.match(s.gate, /남은 기준 \d/, s.gate);
+    assert.equal(s.cards.length, 5, "3단계 할 일 다섯 = 카드 다섯"); assert.ok(s.cards.every((x) => /^[ⅠⅡⅢⅣⅤ]/.test(x)), s.cards.join(" | "));
+    for (const j of ["EARS", "MoSCoW", "Kano", "RTM", "PRD", "Planguage"]) assert.ok(!s.big.includes(j), `큰 글에 '${j}'`);
+  } finally { await browser.close(); }
+});

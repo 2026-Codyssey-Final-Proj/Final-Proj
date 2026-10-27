@@ -61,7 +61,7 @@ test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · �
   assert.match(a, /const FILES_DUMMY = \[\["README\.md", 0, "고침 · 책", "fix"\]/, "예시 데이터 — API가 생기면 지운다"); assert.match(a, /\$\{esc\(project\(\) \|\| "예시 프로젝트"\)\}/, "더미 이름이 진짜 프로젝트처럼 보이지 않게(새 맥락 리뷰 2026-10-27)");
   assert.match(a, /<em title="파일 목록은 아직 예시예요">예시<\/em>/, "화면에 예시 표시");
   const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("function fileCard"));
-  for (const s of ['<div class="cv"><div class="cvb" style="--fa:', 'class="cv-frame"', 'class="cv-bh"', "${fileCard()}${learn}${ARROWS}", 'class="cv-flo" style="--fx:${fx};--fy:${fy}"', '>${N.STAGES[i0].n} ~ ${N.STAGES[last].n}</span>`', '>${x.n}${k === "done" ? " ✓" : ""}</span>`']) assert.ok(cv.includes(s), s);   // 칩은 번호만 — 이름까지면 6번째 장부터 판 밖(새 맥락 리뷰 2026-10-27)
+  for (const s of ['<div class="cv"><div class="cvb" style="--fa:', 'class="cv-frame"', 'class="cv-bh"', "${fileCard()}${learn}${ARROWS}", 'class="cv-flo" style="--fx:${fx};--fy:${fy}"', '>${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}</span>`']) assert.ok(cv.includes(s), s);   // 칩은 앱 번호(R-9, 2026-10-27 — 전에는 코드 번호만이었다)터 판 밖(새 맥락 리뷰 2026-10-27)
   assert.match(cv, /if \(k === "now" && !floAt\) floAt = pos;/, "작은 플로로는 첫 '지금' 칸 옆");
   assert.match(c, /\.cv\{flex:1;min-height:0;min-width:0;overflow:auto;container-type:size;/);
   assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{\.cvb\{--u:min\(calc\(100cqw \/ 1100\),calc\(100cqh \/ 640\),1px\);display:block;width:calc\(1100 \* var\(--u\)\);height:calc\(640 \* var\(--u\)\)/, "판 1100×640을 칸에 맞춰 줌하는 것은 0.85배 이상 담을 수 있을 때만(935 = 1100 × .85 · 544 = 640 × .85) — R-11(이재엽 버튼 \"줌 + 모자라면 다시 배치\")");
@@ -105,4 +105,20 @@ test("app.js render — 브라우저 판의 작업실 몸통(.qwin .wbody)은 �
   const a = read("navigator/app.js");
   assert.match(a, /const ob = \$nav\.querySelector\("\.qwin \.wbody"\), bodyWas = ob \? \{ view: ob\.dataset\.view, top: ob\.scrollTop \} : null;/);
   assert.match(a, /const nb = bodyWas && \$nav\.querySelector\("\.qwin \.wbody"\); if \(nb && nb\.dataset\.view === bodyWas\.view\) nb\.scrollTop = bodyWas\.top;/);
+});
+
+// R-9(단계 칩은 앱 번호로) · R-5(칸에는 상태 대신 내용) — C-42, 넘김 문서 3절 ② 묶음(2026-10-27)
+test("app.js canvasPane — R-9 단계 칩: '시작 ✓' · 지난 장 'n ✓ V.n' · 지금 장 'n 짧은 이름' · 뒤 장 'n+1 ~ 8'(머리와 같은 번호 1~8). R-5: ② 맡길 일 이름, ③ 정한 줄, ④ 올라갈 파일 이름, 관문에 남은 기준 수와 '안 됨'인 기준 이름", () => {
+  const a = read("navigator/app.js"), c = read("navigator/app.css");
+  const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("function fileCard"));
+  assert.ok(cv.includes('${k === "done" ? `${dn(x)} ✓ V.${dn(x)}` : k === "cur" ? `${dn(x)} ${esc(x.short)}` : dn(x)}'), "칩 — 지난 장 n ✓ V.n · 지금 장 n 짧은 이름 · 뒤 장 번호(dn = n + 1)");
+  assert.ok(cv.includes('"시작 ✓" : "시작"'), "시작 칩");
+  assert.ok(cv.includes("${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}"), "뒤 장은 'n+1 ~ 8'로 묶음");
+  assert.ok(!cv.includes(">${x.n}${k"), "코드 번호(0~7)는 화면에 없다");
+  assert.ok(cv.includes("const curItem = ") && cv.includes("맡긴 일 ${pg.done}/${pg.total}"), "② 행동 — 지금 맡긴 일의 이름과 진행");
+  assert.ok(cv.includes('class="cv-files"') && cv.includes("`docs/${slug}/${slug.slice(3)}.md`") && cv.includes("FDOCS.MAIN_DOC, FDOCS.LOG_DOC"), "④ 저장 — 올라갈 파일 이름(단계 문서 · 기획서 · 결정 기록)");
+  assert.ok(cv.includes("const unmet = ") && cv.includes("남은 기준 ${left()}") && cv.includes('class="cv-unmet"'), "관문 — 남은 기준 수와 '안 됨'인 기준 이름");
+  assert.ok(cv.includes("정한 줄 ${") && cv.includes("QU.filled(q, i) && ln ? ln : QU.shortOf(o.name)"), "③ 기록 — 적은 칸은 그 줄(정한 것)을 보인다");
+  assert.match(c, /\.cv-files,\.cv-unmet\{list-style:none;padding:0;/); assert.match(c, /\.cv-unmet li\{color:var\(--bad\)/);
+  assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{[\s\S]*\.cv-stg\{left:calc\(672 \* var\(--u\)\);top:calc\(8 \* var\(--u\)\);width:calc\(412 \* var\(--u\)\);flex-wrap:wrap\}/, "줌에서는 칩이 판 오른쪽 끝 안에서 줄 바꿈(이름이 붙어 길어진다)");
 });

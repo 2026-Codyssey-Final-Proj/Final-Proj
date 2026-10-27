@@ -1133,6 +1133,9 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .cv-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:calc(6 * var(--u))}
 .cv-cards span{padding:calc(6 * var(--u)) calc(8 * var(--u));border-radius:calc(8 * var(--u));border:1px dashed var(--seg);font-size:calc(11.5 * var(--u));color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cv-cards span.y{background:var(--card);border:1px solid var(--line);color:var(--ink)}
+.cv-files,.cv-unmet{list-style:none;padding:0;display:grid;gap:calc(3 * var(--u));font-size:calc(11 * var(--u))}   /* R-5(2026-10-27): ④ 올라갈 파일 이름 · 관문의 '안 됨' 기준 이름 */
+.cv-files li{font-family:ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.cv-unmet li{color:var(--bad);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* 파일 카드(C-41 ④, 2026-10-27) — 이름과 +/− 줄 수만. ⑥: ① 생각 아래(목업의 '파일 · 03-requirements.md' 자리) */
 .cv-file{grid-area:file;padding:calc(10 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);box-shadow:0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(30,42,90,.07);font-size:calc(11.5 * var(--u));display:flex;flex-direction:column;gap:calc(6 * var(--u))}
 .cv-file .ch{font-weight:600;font-size:calc(12.5 * var(--u));display:flex;gap:calc(6 * var(--u));align-items:center;flex-wrap:wrap;color:var(--ink)}
@@ -1156,7 +1159,8 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 @container (min-width:935px) and (min-height:544px){.cvb{--u:min(calc(100cqw / 1100),calc(100cqh / 640),1px);display:block;width:calc(1100 * var(--u));height:calc(640 * var(--u));padding:0}
 .cvb>*{position:absolute}
 .cv-now{left:calc(16 * var(--u));top:calc(12 * var(--u));width:calc(640 * var(--u))}
-.cv-stg{left:calc(672 * var(--u));top:calc(12 * var(--u));flex-wrap:nowrap}
+.cv-stg{left:calc(672 * var(--u));top:calc(8 * var(--u));width:calc(412 * var(--u));flex-wrap:wrap}
+.cv-stg span{padding:calc(6 * var(--u)) calc(8 * var(--u))}
 .cv-bd{left:calc(16 * var(--u));width:calc(170 * var(--u))}
 .cv-bd.prev{top:calc(70 * var(--u));height:calc(100 * var(--u))}
 .cv-bd.next{top:calc(186 * var(--u));height:calc(92 * var(--u))}
