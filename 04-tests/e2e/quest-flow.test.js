@@ -158,13 +158,21 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.ok(await page.$(".qwin .ln .easy"), "쉬운 한 줄"); assert.equal(await page.$(".qwin .ln .full"), null, "원래 문장은 접혀 있다");
     await click(page, ".qwin [data-act=qmore]");
     assert.match(await page.$eval(".qwin .ln .full", (e) => e.textContent), /흔히 쓰는 방법 목록에서/, "자세히 보기 — 원래 할 일 문장");
+    // R-10(C-42, 2026-10-27): 예시 초안에 빈칸 표시가 남은 칸(7단계 '잰 값: (재고 적기)')은 '됨'이 아니라 관문 앞에서 멈춘다 — 연습에서는 까닭을 적고 넘긴다(까닭은 결정 기록에)
+    const stops = [];
     for (let n = 4; n <= 8; n++) {
       if (n > 4) await click(page, ".mc.chat [data-act=ship-later]");
       assert.match(await page.$eval(".tb-stage", (e) => e.textContent), new RegExp(`${n}단계 · `));
       await click(page, ".mc.chat [data-act=draft-all]");
-      await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
+      await page.waitForFunction(() => /모두 했어요|관문 앞에서 멈췄어요/.test(document.querySelector(".msg.now .say")?.textContent || ""), { timeout: 5000 });
+      if (await page.$(".mc.chat [data-act=gate-skip]")) {
+        stops.push(n);
+        await click(page, ".mc.chat [data-act=gate-skip]"); await page.type("[data-act=skip-reason]", "연습이라 넘겨요"); await click(page, ".mc.chat [data-act=gate-skip-save]");
+        await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
+      }
       await passGate(page);
     }
+    assert.deepEqual(stops, [7], "7단계만 — 예시의 잰 값이 '(재고 적기)'라 멈춘다(5 · 6단계의 증거는 연습 세션의 파일 기록)");
     assert.match(await nowSay(page), /1 ~ 8단계에서 정한 것을 문서로 묶었어요/, "마지막 관문에서도 올릴지 묻는다");
     const s8 = await saved(page);
     assert.equal(s8.results["7"].checkBy, "confirm", "확인한 대로(AI 없이)"); assert.match(s8.results["7"].passed, /^\d{4}-/);
