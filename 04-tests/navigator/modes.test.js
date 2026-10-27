@@ -50,8 +50,8 @@ test("app.js — 채팅 중심 섬(C-22): 위 줄 하나(집 · 단계 띠 · �
   assert.match(app, /out\.push\(\{ label: unreadN\(\) \? `알림 \$\{unreadN\(\)\}` : "알림", act: "base-alerts", kind: "ghost" \}\);/, "알림 칩");
   assert.match(app, /return st\.back \|\| C\.greeting\(new Date\(\)\.getHours\(\)\);/, "지금 한 줄 — 알림 · AI가 한 일이 없으면 인사");
   assert.match(app, /foot: esc\(nowLine\(\)\)/, "지금 한 줄은 첫 카드의 작은 줄");
-  assert.match(app, /go\("home"\);   \/\/ 인사가 끝나면 인사 카드 대신 기본 화면/);
-  assert.match(app, /else if \(st\.ui === "greet"\) st\.ui = "home";/, "인사 움직임이 없어도 기본 화면");
+  assert.match(app, /go\("petit"\);   \/\/ 인사가 끝나도 알약 그대로\(C-46 R-1\)/, "2026-10-27 C-46: 인사가 끝나면 알약(전에는 기본 화면)");
+  assert.match(app, /else if \(st\.ui === "greet"\) st\.ui = location\.hash && location\.hash !== "#" \? "home" : "petit";/, "인사 움직임이 없어도 알약(C-46) — 주소 끝 장면은 기본 화면");
   assert.match(app, /if \(d\.open\) \{ setPlace\("vibe"\); st\.tab = "today"; go\("home"\); \}/, "처음 설정의 '시작하기'는 바이브 코딩으로");
 });
 

@@ -23,7 +23,7 @@ test("main.js — 작업실이 뜨면 섬 창은 숨고(hide), 닫히면 다시 
 
 test("app.js — 작업실에 보내는 HTML = 작업실 판 + 섬의 옆 칸(.isl-col side-… narrow|wide). 자리를 바꾸면 다시 그릴 뿐(앱에 보내지 않음). 옆 칸의 채팅 Enter는 섬의 send()로", () => {
   const a = read("navigator/app.js");
-  assert.match(a, /const islCol = \(\) => `<div class="isl-col side-\$\{side\} \$\{side === "left" \|\| side === "right" \? "narrow" : "wide"\}">\$\{islandHTML\(""\)\}<\/div>`;/);
+  assert.match(a, /const islCol = \(\) => `<div class="isl-col side-\$\{side\} \$\{side === "left" \|\| side === "right" \? "narrow" : "wide"\}\$\{colFolded\(\) \? " folded" : ""\}">\$\{colFolded\(\) \? pillHTML\(\) : islandHTML\(""\)\}<\/div>`;/, "작업실 판 + 섬의 옆 칸(접혀 있으면 알약 — C-46 R-2, 2026-10-27)");
   assert.match(a, /\[\["quest", st\.qwin, st\.qwin \? qwinHTML\(\) \+ islCol\(\) : ""\]\]/);
   assert.match(a, /if \(p\.type === "key" && p\.key === "Enter" && p\.act === "say"\) return send\(\);/);
   assert.match(a, /side = QU\.sideOf\(el\.dataset\.v\); writeLS\(SIDE_KEY, side\); render\(\);/);
@@ -33,10 +33,10 @@ test("app.js — 작업실에 보내는 HTML = 작업실 판 + 섬의 옆 칸(.i
 
 test("win.js · win.html — 옆 칸의 자리는 html[data-side], 크기는 --col-w(320 ~ 760 · 창 너비의 반까지, 처음 420) · --col-h(320 ~ 480, 처음 360). 손잡이: 끌기 · 화살표 20 · Home · End · Enter/두 번 누르기. Enter는 채팅 보내기. 대화 기록은 맨 아래를 따라간다", () => {
   const j = read("navigator/win.js"), h = read("navigator/win.html");
-  assert.match(j, /const RANGE = \{ w: \[320, 760, 420\], h: \[320, 480, 360\] \};/);
+  assert.match(j, /const RANGE = \{ w: \[320, 760, 420\], h: \[320, 480, 360\] \}, FOLD = 56;/);
   assert.match(j, /const hiOf = \(axis\) => \(axis === "w" \? Math\.max\(RANGE\.w\[0\], Math\.min\(RANGE\.w\[1\], Math\.floor\(innerWidth \/ 2\)\)\) : RANGE\.h\[1\]\);/, "옆은 760과 창 너비의 반 중 작은 것(두승현 결정 2026-10-27)");
   assert.match(j, /const sideOf = \(\) => \{ const c = root\.querySelector\("\.isl-col"\);/);
-  assert.match(j, /h\.dataset\.side = side; hd\.hidden = !side;/);
+  assert.match(j, /h\.dataset\.side = side; hd\.hidden = !side \|\| folded;/);
   assert.match(j, /localStorage\.setItem\(axis === "w" \? "floe:col-w" : "floe:col-h", col\[axis\]\)/, "크기는 작업실이 이 컴퓨터에 기억");
   assert.match(j, /if \(e\.key === "Enter"\) reset\(\); else if \(e\.key === grow\) setCol\(col\[axis\] \+ 20\); else if \(e\.key === shrink\) setCol\(col\[axis\] - 20\); else if \(e\.key === "Home"\) setCol\(RANGE\[axis\]\[0\]\); else if \(e\.key === "End"\) setCol\(hiOf\(axis\)\);/);
   assert.match(j, /hd\.addEventListener\("dblclick", reset\)/);

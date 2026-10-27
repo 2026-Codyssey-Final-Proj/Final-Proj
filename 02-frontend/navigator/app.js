@@ -162,7 +162,7 @@
   // 답을 기다리는 중이면 저절로 접히지 않는다 (CouCou의 pinned). 할 일을 다 했으면 확인하러 가자고 펼쳐 둔다
   // 멈춰 둔 단계인가(FR-5 보류) — 멈춰 두면 다 했어도 펼쳐 두지 않는다
   const holding = () => !!(st.hold && st.j && st.hold.stage === st.j.stage && !st.finished);
-  const pinned = () => st.userPin || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || st.qwin || !!st.gacha || st.openInput || typing();
+  const pinned = () => st.userPin || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || st.openInput || typing();   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
   // 플로로의 [표정, 말] — 기다림·경고·오류가 먼저, 그다음 확인 질문·잠시 멈추기(understand.js), 나머지는 navigator.js
   function face() {
     const base = N.face({ busy: st.busy, warn: st.warn, error: st.error, gate: st.screen === "gate", step: st.step,
@@ -1713,8 +1713,11 @@
     else if (!s) main = `<b>플로로</b><span class="pl-now">눌러서 지금 만드는 걸 보여 주세요</span>`;
     else if (holding() && st.screen !== "gate") main = `<b>${LB(s.n)} · 보류 중</b><span class="pl-now">${esc(U.holdLine(st.hold, ymd()).replace(/^보류 중 · /, ""))}</span>`;
     else main = `<b>${allDone() ? "다 했어요! · " : ""}${LB(s.n)}</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
-    const base = st.ping ? "look" : face()[0];
-    return `<button class="pill${st.ping || st.warn ? " ping" : ""}" data-act="pill" aria-expanded="false" aria-label="플로로 펼치기 · ${esc(stateWords())}">
+    // C-46 R-1: 켤 때 인사는 알약 안에서 — 인사 중이면 플로로가 솟아 손을 흔들고(app.css [data-greet]) 글은 시간대 인사 한 줄(다시 온 사람에게는 그 말)
+    const greeting = document.documentElement.classList.contains("greeting");
+    if (greeting) main = `<b>플로로</b><span class="pl-now pl-hello">${esc(st.back || C.greeting(new Date().getHours()))}</span>`;
+    const base = st.ping ? "look" : greeting ? "happy" : face()[0];
+    return `<button class="pill${st.ping || st.warn ? " ping" : ""}${greeting ? " greet" : ""}" data-act="pill" aria-expanded="false" aria-label="플로로 펼치기 · ${esc(stateWords())}">
       <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { face: true })}</span>${main}${modeChip()}${connLed()}</button>`;
   }
   // 접혀 있을 때도 보이는 작은 표시(시연 안전장치) — 연습인지 진짜 AI인지, Claude Code·Codex와 연결됐는지
@@ -1734,18 +1737,7 @@
     <path d="M6 5 Q40 2 75 5 Q110 8 144 5" fill="none" stroke="url(#strip-wl)" stroke-width="2" stroke-linecap="round"></path><path d="M40 9 Q58 7.5 72 9 M84 9.5 Q98 8 112 9.5" fill="none" stroke="#A9DDFF" stroke-width="1" opacity=".45" stroke-linecap="round"></path></svg>`;
   const stripHTML = () => `<button class="strip" data-act="strip" aria-label="플로로 부르기 · ${esc(stateWords())}" title="마우스를 올리면 나와요 · ${esc(stateWords())}"><span class="head" aria-hidden="true">${cat("idle", 58, { face: true })}</span>${WAVE}<span class="zz" aria-hidden="true">z<b>z</b></span>
     <span class="st-mode ${st.mode}${conn() === "off" ? " off" : ""}" aria-hidden="true">${st.mode === "live" ? esc(wsShort()) : "연습"}${conn() === "off" ? " · 끊음" : ""}</span></button>`;
-  // 켤 때 인사의 물결 선(C-10) — 띠(stripHTML)의 WAVE와 같은 선을 pathLength로 그어 그려지게 한다(app.css .greet-wl)
-  const GREET_WAVE = () => WAVE.replace('class="wl"', 'class="wl greet-wl"').replace(/<path /g, '<path pathLength="100" ');
-  function greetHTML(enter) {
-    deskKeys = { Enter: { act: "open" } };
-    const greeting = document.documentElement.classList.contains("greeting");
-    return `<div class="isl greet${enter}">${greeting ? GREET_WAVE() : ""}<section class="mc tone-blue"><div class="mc-cat">${petCat("happy", 116)}</div>
-      <div class="mc-main">
-        <h2 class="mc-title">${st.back ? "다시 오셨네요!" : "안녕하세요! 저는 길잡이 물범 플로로예요."}</h2>
-        <p class="mc-sub">${st.back ? esc(st.back) : "지금 만들고 있는 걸 보여 주시면, 몇 단계쯤인지와 다음에 할 일을 알려 드려요. 평소엔 화면 위에 작게 있을게요."}</p>
-        <div class="acts"><button class="b pri" data-act="open">${st.back ? "이어서 하기" : "보여 주기"}<kbd aria-hidden="true">Enter</kbd></button>
-          <span class="hint">${I.bubble}${st.pets ? `우리는 ${esc(C.bond(st.pets).name)}예요` : "플로로를 눌러 쓰다듬어 보세요"}</span></div></div></section></div>`;
-  }
+  // 켤 때의 큰 인사 카드(greetHTML · 물결 선)는 2026-10-27 C-46으로 뺐다 — 인사는 알약(pillHTML) 안에서
   // ── 기본 화면(C-13, 2026-10-20 — 이재엽 "버튼식으로 준비가 되어있는 공간이 기본값") — 플로로와 지금 한 줄, 단추 넷. 알림 · AI 진행은 섬 안에서 바로(hub.js의 순수 함수 FloeHub) ──
   let aiSessions = [], aiMode = "none", aiLatest = 0;   // AI 진행(C-12)의 세션 · 어디서 왔나(none · example · live) · 마지막 번호
   const latestSession = () => [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0];   // 가장 최근 세션 — AI 진행 판 · 작업실 파일 카드가 같이 쓴다
@@ -2058,7 +2050,10 @@
   let winClosing = { settings: false, quest: false };   // 내가 닫는 중(자리를 바꿀 때) — 창의 '닫힘' 알림으로 상태를 끄지 않게
   const winSize = (kind) => (kind === "quest" ? null : [Math.round(380 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1)), 760]);
   // 작업실에 보내는 것 = 작업실 판(qwinHTML) + 섬의 옆 칸(.isl-col — 플로로 · 채팅 · 판, C-41 ⑤). 자리(side-…) · 좁은지(narrow — 옆 자리)는 class로, 칸의 크기는 작업실(win.js)이 갖는다
-  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}">${islandHTML("")}</div>`;
+  // C-46 R-2(2026-10-27 이재엽 버튼 "펼치면 비킴 · 접으면 알약" · "고른 가장자리에" · 세로 알약 · 설정의 시간대로): 섬이 접혀 있으면(petit · hidden) 옆 칸은 그 가장자리의 알약(folded — 왼쪽 · 오른쪽은 세로)이고 작업실이 넓어진다(win.js · win.html).
+  //   알약을 누르면(ACT pill) 펼쳐지고 작업실이 비킨다. 알릴 일(허락 카드 · 질문 · 오류)은 peek · alert로 저절로 펼친다. 저절로 접히기는 설정 '접히기까지' 그대로(pinned에서 st.qwin을 앱에서는 빼서)
+  const colFolded = () => st.ui === "petit" || st.ui === "hidden";
+  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${colFolded() ? " folded" : ""}">${colFolded() ? pillHTML() : islandHTML("")}</div>`;
   function syncWins() {
     if (!WINS || !QU) return;
     for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() : ""]]) {
@@ -2141,7 +2136,6 @@
     placeFrom = st.place; paneFrom = st.pane;
     deskKeys = {};
     if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); }
-    else if (st.ui === "greet") $nav.innerHTML = greetHTML(enter);
     else if (st.ui === "petit") $nav.innerHTML = `<div class="${enter.trim()}">${pillHTML()}</div>`;
     else $nav.innerHTML = islandHTML(enter);
     $nav.classList.toggle("side", !!$nav.querySelector(":scope > .win"));   // 창(설정 · 퀘스트)이 열리면 섬 옆에 나란히(C-22) — 아래에 열리면 글자를 키웠을 때 바로 안 보였다(6.2.0)
@@ -3279,14 +3273,18 @@
 
   // ── 켤 때 인사(C-10, 2026-10-20 이재엽 "처음에 반갑다고 인사하고 하는 모습이랑 켜지는 모습들") — 시간표는 greet.js, 단계마다 모양은 app.css([data-greet]) ──
   // 켤 때마다. 주소 끝 장면 · 휴대폰 · 움직임 줄이기면 안 한다(greet.js shouldGreet). 처음 설정(setup.js)은 인사가 끝난 뒤 열린다(floe:greet-done)
-  const greetNow = !!GR && st.ui === "greet" && GR.shouldGreet({ hash: location.hash, still: STILL, phone: isPhone() }).greet;
-  if (greetNow) document.documentElement.classList.add("greeting");
-  else if (st.ui === "greet") st.ui = "home";   // 인사 움직임이 없으면(움직임 줄이기 등) 바로 기본 화면 — 인사 카드는 이제 없다(C-13)
+  // C-46 R-1(2026-10-27 이재엽 "플로가 켜지면 … 알약" · 버튼 "알약 안에서 인사" · "하루에 한 번"): 켜면 큰 인사 카드 없이 알약(petit)으로, 인사는 알약 안에서(startGreeting — greet.js PILL_TIMELINE).
+  //   같은 날 다시 켜면 인사 없이 알약만(floe:greet-day). 주소 끝 장면(시험 · 녹화)은 전처럼 기본 화면. 움직임 줄이기 · 휴대폰은 알약만
+  const GREET_DAY = "floe:greet-day";
+  const greetNow = !!GR && st.ui === "greet" && GR.shouldGreet({ hash: location.hash, still: STILL, phone: isPhone(), lastDay: readLS(GREET_DAY, ""), today: ymd() }).greet;
+  if (greetNow) { document.documentElement.classList.add("greeting"); st.ui = "petit"; }
+  else if (st.ui === "greet") st.ui = location.hash && location.hash !== "#" ? "home" : "petit";
   function startGreeting() {
     const h = document.documentElement;
     const finish = () => {
       greetSkip = null; h.classList.remove("greeting"); delete h.dataset.greet;
-      go("home");   // 인사가 끝나면 인사 카드 대신 기본 화면(C-13, 넘김 문서 9절 3번) — 바이브 코딩 단추가 '이어서 하기'를 맡는다
+      writeLS(GREET_DAY, ymd());   // 오늘은 인사했다(C-46 — 하루에 한 번)
+      go("petit");   // 인사가 끝나도 알약 그대로(C-46 R-1) — 누르면 기본 화면. 전에는 기본 화면으로 펼쳤다(C-13)
       clearIdle(); scheduleIdle();
       document.dispatchEvent(new CustomEvent("floe:greet-done"));
     };
@@ -3294,11 +3292,11 @@
       if (p === "done") return finish();
       h.dataset.greet = p;
       const host = liveCat();
-      if (p === "pop" && host) C.burst(...center(host, 0.65), "bubble", 7, 160);
+      if (p === "pop" && host) C.burst(...center(host, 0.65), "bubble", 5, 120);   // 알약 크기의 거품(C-46)
       if (p === "hello" && st.sound) C.chime("pop");
       if (p === "settle") { document.body.classList.add("blink"); setTimeout(() => document.body.classList.remove("blink"), 140); }
     };
-    const run = GR.play(GR.TIMELINE, { onPhase });
+    const run = GR.play(GR.PILL_TIMELINE, { onPhase });   // 알약 안의 시간표(C-46) — 띠 · 열림 단계 없이 솟음 → 인사 → 자리 잡기
     greetSkip = () => run.skip();
     $nav.addEventListener("click", () => { if (greetSkip) greetSkip(); }, { capture: true });   // 누르면 바로 인사 카드로(누른 단추는 그대로 눌린다)
   }

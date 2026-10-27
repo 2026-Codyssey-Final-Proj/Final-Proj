@@ -13,13 +13,22 @@
     { at: 3400, phase: "done" },
   ];
   const LIMIT = 5000;   // 이보다 길면 안 된다(넘김 문서 9절 3번 기본값)
+  // C-46 R-1(2026-10-27 이재엽 "알약 안에서 인사"): 큰 인사 카드 없이 알약 안에서 — 솟음(pop) → 지느러미 흔들며 시간대 인사(hello) → 글이 제자리로(settle) → 끝. 띠 · 열림 단계는 없다(알약은 처음부터 보인다)
+  const PILL_TIMELINE = [
+    { at: 0, phase: "pop" },
+    { at: 500, phase: "hello" },
+    { at: 1900, phase: "settle" },
+    { at: 2400, phase: "done" },
+  ];
   const total = (timeline = TIMELINE) => (timeline.length ? timeline[timeline.length - 1].at : 0);
 
   // 인사를 할지 — 주소 끝(#…)이 있으면 녹화 · 시험 장면이라 안 한다(setup.js shouldOpen과 같은 규칙), 휴대폰 화면은 따로, 움직임 줄이기면 카드만
-  function shouldGreet({ hash = "", still = false, phone = false } = {}) {
+  // C-46(이재엽 버튼 2026-10-27 "하루에 한 번"): 같은 날 다시 켜면 인사 없이 알약만 — lastDay(지난 인사 날) · today(오늘, YYYY-MM-DD)
+  function shouldGreet({ hash = "", still = false, phone = false, lastDay = "", today = "" } = {}) {
     if (hash && hash !== "#") return { greet: false, why: "주소 끝 장면" };
     if (phone) return { greet: false, why: "휴대폰 화면" };
-    if (still) return { greet: false, why: "움직임 줄이기 — 인사 카드만" };
+    if (still) return { greet: false, why: "움직임 줄이기 — 알약만" };
+    if (lastDay && today && lastDay === today) return { greet: false, why: "오늘 이미 인사했어요" };
     return { greet: true, why: "" };
   }
 
@@ -35,7 +44,7 @@
     return { skip: done, cancel: () => { timers.forEach(cancelTimer); timers = []; finished = true; }, get finished() { return finished; } };
   }
 
-  const api = { TIMELINE, LIMIT, total, shouldGreet, play };
+  const api = { TIMELINE, PILL_TIMELINE, LIMIT, total, shouldGreet, play };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloeGreet = api;
 })(typeof window !== "undefined" ? window : globalThis);
