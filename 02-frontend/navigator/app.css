@@ -721,9 +721,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wh .ttl{font-weight:800;font-size:calc(14px * var(--ui-scale,1))}
 .wh .meta{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sub)}
 .wh .ti{width:30px;height:30px}
-.wh .sz{display:inline-flex;gap:2px}
-.wh .sz button{border:0;background:transparent;color:var(--mute);border-radius:8px;width:26px;height:26px;font-size:calc(12px * var(--ui-scale,1));font-weight:800}
-.wh .sz button[aria-pressed=true]{background:var(--acc-soft);color:var(--acc)}
+.wh .wfull svg{width:16px;height:16px}   /* '화면 가득'(R-1, 2026-10-27) — S/M/L 셋을 대신한다 */
 .wbody{flex:1;overflow:auto;padding:10px 12px 12px;min-height:0;display:flex;flex-direction:column;gap:10px}
 .wtabs{display:flex;gap:4px;background:rgba(127,127,127,.12);border-radius:999px;padding:4px;width:fit-content;margin:8px 12px 0;flex:none}
 .wtabs button{border:0;background:transparent;color:var(--mute);border-radius:999px;padding:4px 12px;font-size:calc(13px * var(--ui-scale,1));font-weight:700}
@@ -1089,29 +1087,31 @@ html.win-quest,.nav.side>.qwin{--win:#F7F9FC; --winbar:#EBF0F8; --side:#EBF0F8; 
 html.win-quest .win,.nav.side>.qwin{background:var(--card);border-color:var(--acc-mid)}   /* 브라우저 판도 같은 파스텔 — ⑥의 캔버스는 밝은 면이 고정값이라 네이비 토큰 위에서는 흰 글씨가 흰 면에 왔다(새 맥락 리뷰 2026-10-27) */
 html.win-quest .wh,.nav.side>.qwin .wh{background:var(--soft)}
 html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"이 이미 있다 — 머리띠에는 크기 · 닫기만 */
-/* claude-drafted: 2026-10-27 두승현 — C-41 ⑥ 캔버스: 디자인 캔버스(DockPrototype)의 1100×640 판을 칸(.cv)에 맞춰 줌한다. --u = 판의 1px — 컨테이너 단위(cqw · cqh)라 스크립트 없이, 앱의 창이든 브라우저의 판이든.
-   바닥 .75(× 글자 크기 설정) 아래로는 줄이지 않고 넘치면 칸이 스크롤. 판 위의 것은 전부 절대 좌표(목업과 같은 숫자). 글자 크기 설정(--ui-scale)은 판 안에서는 쓰지 않는다 — 줌이 대신한다 */
+/* claude-drafted: 2026-10-27 두승현 — C-41 ⑥ 캔버스: 디자인 캔버스(DockPrototype)의 1100×640 판. 판 위의 것은 전부 목업과 같은 숫자(--u = 판의 1px).
+   2026-10-27 C-42 R-11(이재엽 버튼 "줌 + 모자라면 다시 배치", F-61-11): 칸(.cv)이 판을 0.85배 이상 담을 수 있으면(935×544 이상) 아래 @container 블록이 판을 그대로 줌한다(--u = cqw/1100 · cqh/640, 1px까지 — 컨테이너 단위라 스크립트 없이).
+   그보다 작으면 줌하지 않고 **격자로 다시 배치**한다(기본 규칙) — 두 줄 ① ② ③ / ④ ⑤ 관문, 640 미만은 세로 한 줄(스토리보드 기준 7), 글자 크기는 설정(--ui-scale) 그대로. 어느 쪽이든 옆으로 넘치지 않는다(.75 바닥은 뺐다 — 모든 크기에서 넘쳤다).
+   쪽지 · 화살표 · 작은 플로로 · 파일 카드 · 배울 말 · 보드는 다시 배치에서도 남는다(화살표는 격자의 칸 사이, 플로로는 '지금' 칸 모서리 — --fa는 app.js가 준 그 칸의 영역 이름). 글자 크기 설정은 줌에서는 쓰지 않는다 — 줌이 대신한다 */
 .cv{flex:1;min-height:0;min-width:0;overflow:auto;container-type:size;border-radius:12px;background-image:radial-gradient(var(--seg) 1px,transparent 1.3px);background-size:18px 18px}
-.cvb{--u:max(calc(.75px * var(--ui-scale,1)),min(calc(100cqw / 1100),calc(100cqh / 640),1px));position:relative;width:calc(1100 * var(--u));height:calc(640 * var(--u));font-size:calc(13 * var(--u));line-height:1.45;color:var(--ink)}
-.cvb>*{position:absolute;box-sizing:border-box;min-width:0;margin:0}
+.cvb{--u:calc(1px * var(--ui-scale,1));position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr);grid-template-areas:"now now now now now" "stg stg stg stg stg" "bh bh bh bh bh" "c1 a1 c2 a2 c3" "file file a3 a3 a3" "c4 a4 c5 a5 c6" "learn learn prev prev next";align-items:start;gap:calc(10 * var(--u));box-sizing:border-box;width:100%;max-width:100%;padding:calc(12 * var(--u));font-size:calc(13 * var(--u));line-height:1.45;color:var(--ink)}
+.cvb>*{position:static;box-sizing:border-box;min-width:0;max-width:100%;margin:0}
 .cvb p,.cvb ul{margin:0}
-.cv-now{left:calc(16 * var(--u));top:calc(12 * var(--u));width:calc(640 * var(--u));display:flex;align-items:center;gap:calc(10 * var(--u));padding:calc(9 * var(--u)) calc(14 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);font-size:calc(12 * var(--u));color:var(--sub);white-space:nowrap;overflow:hidden}
+.cv-now{grid-area:now;display:flex;align-items:center;gap:calc(10 * var(--u));padding:calc(9 * var(--u)) calc(14 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);font-size:calc(12 * var(--u));color:var(--sub);white-space:nowrap;overflow:hidden}
 .cv-now::before{content:"";width:calc(10 * var(--u));height:calc(10 * var(--u));border-radius:50%;background:var(--acc);flex:none}
 .cv-now b{color:var(--ink);font-weight:600;font-size:calc(14 * var(--u));overflow:hidden;text-overflow:ellipsis;min-width:0}
-.cv-stg{left:calc(672 * var(--u));top:calc(12 * var(--u));display:flex;gap:calc(4 * var(--u))}
+.cv-stg{grid-area:stg;display:flex;flex-wrap:wrap;gap:calc(4 * var(--u))}
 .cv-stg span{padding:calc(8 * var(--u)) calc(10 * var(--u));border-radius:calc(10 * var(--u));font-size:calc(12 * var(--u));border:1px dashed var(--seg);color:var(--sub);white-space:nowrap}
 .cv-stg span.done{background:var(--okbg);color:var(--ok);border-color:transparent}
 .cv-stg span.cur{background:#9DBDE8;color:#16225E;font-weight:700;border-color:transparent}
-.cv-bd{left:calc(16 * var(--u));width:calc(170 * var(--u));padding:calc(10 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);font-size:calc(11.5 * var(--u));color:var(--ok);overflow:hidden}
-.cv-bd.prev{top:calc(70 * var(--u));height:calc(100 * var(--u))}
-.cv-bd.next{top:calc(186 * var(--u));height:calc(92 * var(--u))}
+.cv-bd{padding:calc(10 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);font-size:calc(11.5 * var(--u));color:var(--ok);overflow:hidden;overflow-wrap:anywhere}
+.cv-bd.prev{grid-area:prev}
+.cv-bd.next{grid-area:next}
 .cv-bd.later{background:transparent;border:1.5px dashed var(--seg);color:var(--sub)}
 .cv-bd b{display:block;color:var(--ink);font-size:calc(12.5 * var(--u));margin-top:calc(4 * var(--u))}
 .cv-bd.later b{color:var(--sub)}
-.cv-frame{left:calc(204 * var(--u));top:calc(62 * var(--u));width:calc(880 * var(--u));height:calc(564 * var(--u));border-radius:calc(20 * var(--u));border:2px solid #A9C2E8;background:rgba(247,249,252,.6)}
-.cv-bh{left:calc(226 * var(--u));top:calc(74 * var(--u));font-weight:700;font-size:calc(16 * var(--u));white-space:nowrap;color:var(--ink)}
+.cv-frame{display:none}
+.cv-bh{grid-area:bh;font-weight:700;font-size:calc(16 * var(--u));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
 .cv-bh span{font-weight:400;font-size:calc(12 * var(--u));color:var(--sub);margin-left:calc(8 * var(--u))}
-.cv-c{padding:calc(12 * var(--u));border-radius:calc(14 * var(--u));background:rgba(248,249,252,.8);border:1.5px dashed var(--seg);color:var(--sub);display:flex;flex-direction:column;gap:calc(6 * var(--u));overflow:hidden}
+.cv-c{padding:calc(12 * var(--u));border-radius:calc(14 * var(--u));background:rgba(248,249,252,.8);border:1.5px dashed var(--seg);color:var(--sub);display:flex;flex-direction:column;gap:calc(6 * var(--u));overflow:hidden;min-height:calc(124 * var(--u));align-self:stretch}
 .cv-c .ch{font-weight:700;font-size:calc(13.5 * var(--u));display:flex;gap:calc(6 * var(--u));align-items:center;flex-wrap:wrap;color:var(--ink)}
 .cv-c .ch em{font-style:normal;font-size:calc(11.5 * var(--u));color:var(--sub)}
 .cv-c p{font-size:calc(12.5 * var(--u));overflow-wrap:anywhere}
@@ -1120,21 +1120,21 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .cv-c.now .ch em{color:var(--acc)}
 .cv-c.done{background:#E8F4EE;border:1px solid #C4E2D3;color:#24584A}
 .cv-c.done .ch em{color:var(--ok)}
-.cv-c.c1{left:calc(226 * var(--u));top:calc(110 * var(--u));width:calc(190 * var(--u));height:calc(124 * var(--u));transform:rotate(-2deg);border-radius:calc(4 * var(--u));box-shadow:0 calc(3 * var(--u)) calc(8 * var(--u)) rgba(30,42,90,.1);background:#F7EDC0;border:0;color:#3B3317}   /* ① 생각은 포스트잇 — 상태와 상관없이(목업) */
+.cv-c.c1{grid-area:c1;transform:rotate(-2deg);border-radius:calc(4 * var(--u));box-shadow:0 calc(3 * var(--u)) calc(8 * var(--u)) rgba(30,42,90,.1);background:#F7EDC0;border:0;color:#3B3317}   /* ① 생각은 포스트잇 — 상태와 상관없이(목업) */
 .cv-c.c1 .ch,.cv-c.c1 .ch em,.cv-c.c1 .ft{color:#5A4F2A}
 .cv-c.c1 p{font-size:calc(15 * var(--u));line-height:1.3;color:#3B3317}
-.cv-c.c2{left:calc(466 * var(--u));top:calc(110 * var(--u));width:calc(200 * var(--u));height:calc(124 * var(--u))}
-.cv-c.c3{left:calc(716 * var(--u));top:calc(110 * var(--u));width:calc(350 * var(--u));height:calc(250 * var(--u))}
-.cv-c.c4{left:calc(466 * var(--u));top:calc(400 * var(--u));width:calc(250 * var(--u));height:calc(150 * var(--u))}
-.cv-c.c5{left:calc(766 * var(--u));top:calc(400 * var(--u));width:calc(160 * var(--u));height:calc(150 * var(--u))}
-.cv-c.c6{left:calc(962 * var(--u));top:calc(400 * var(--u));width:calc(104 * var(--u));height:calc(150 * var(--u));background:rgba(236,232,248,.6);border:1.5px dashed #B9AEDD;color:#4A3F7A}
+.cv-c.c2{grid-area:c2}
+.cv-c.c3{grid-area:c3}
+.cv-c.c4{grid-area:c4}
+.cv-c.c5{grid-area:c5}
+.cv-c.c6{grid-area:c6;background:rgba(236,232,248,.6);border:1.5px dashed #B9AEDD;color:#4A3F7A}
 .cv-c.c6 .ch{color:#4A3F7A}
 .cv-c.c6.done{background:#E3DDF5;border-color:transparent}
 .cv-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:calc(6 * var(--u))}
 .cv-cards span{padding:calc(6 * var(--u)) calc(8 * var(--u));border-radius:calc(8 * var(--u));border:1px dashed var(--seg);font-size:calc(11.5 * var(--u));color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cv-cards span.y{background:var(--card);border:1px solid var(--line);color:var(--ink)}
 /* 파일 카드(C-41 ④, 2026-10-27) — 이름과 +/− 줄 수만. ⑥: ① 생각 아래(목업의 '파일 · 03-requirements.md' 자리) */
-.cv-file{left:calc(226 * var(--u));top:calc(256 * var(--u));width:calc(190 * var(--u));padding:calc(10 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);box-shadow:0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(30,42,90,.07);font-size:calc(11.5 * var(--u));display:flex;flex-direction:column;gap:calc(6 * var(--u))}
+.cv-file{grid-area:file;padding:calc(10 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);box-shadow:0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(30,42,90,.07);font-size:calc(11.5 * var(--u));display:flex;flex-direction:column;gap:calc(6 * var(--u))}
 .cv-file .ch{font-weight:600;font-size:calc(12.5 * var(--u));display:flex;gap:calc(6 * var(--u));align-items:center;flex-wrap:wrap;color:var(--ink)}
 .cv-file .ch em{font-style:normal;font-size:calc(11 * var(--u));color:var(--sub);font-weight:500}
 .cv-file ul{list-style:none;padding:0;display:grid;gap:calc(3 * var(--u))}
@@ -1142,17 +1142,41 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .cv-file li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,Menlo,monospace;font-size:calc(11 * var(--u))}
 .cv-file li small{flex:none;color:var(--ok);font-weight:700;font-size:calc(11 * var(--u))}
 .cv-file .ft{color:var(--sub);font-size:calc(11 * var(--u))}
-.cv-learn{left:calc(226 * var(--u));top:calc(450 * var(--u));width:calc(190 * var(--u));padding:calc(10 * var(--u));border-radius:calc(12 * var(--u));background:#E3DDF5;color:#4A3F7A;font-size:calc(12 * var(--u));line-height:1.45;overflow:hidden}
+.cv-learn{grid-area:learn;padding:calc(10 * var(--u));border-radius:calc(12 * var(--u));background:#E3DDF5;color:#4A3F7A;font-size:calc(12 * var(--u));line-height:1.45;overflow:hidden;overflow-wrap:anywhere}
 .cv-learn b{display:block;color:#4A3F7A}
 .cv-learn small{font-size:calc(11 * var(--u))}
-.cv-ar{color:#7F93B8}
-.cv-ar.a1{left:calc(422 * var(--u));top:calc(160 * var(--u));width:calc(40 * var(--u));height:calc(20 * var(--u))}
-.cv-ar.a2{left:calc(672 * var(--u));top:calc(160 * var(--u));width:calc(40 * var(--u));height:calc(20 * var(--u))}
-.cv-ar.a3{left:calc(640 * var(--u));top:calc(362 * var(--u));width:calc(130 * var(--u));height:calc(60 * var(--u))}
-.cv-ar.a4{left:calc(722 * var(--u));top:calc(466 * var(--u));width:calc(40 * var(--u));height:calc(20 * var(--u))}
-.cv-ar.a5{left:calc(930 * var(--u));top:calc(466 * var(--u));width:calc(30 * var(--u));height:calc(20 * var(--u))}
-.cv-flo{left:calc(var(--fx) * var(--u));top:calc(var(--fy) * var(--u));width:calc(40 * var(--u));height:calc(40 * var(--u))}   /* 움직임 없음 — 다시 그릴 때마다 새 요소라 transition은 돌지 않는다 */
+.cv-ar{color:#7F93B8;align-self:center;justify-self:center;width:calc(40 * var(--u));height:calc(20 * var(--u))}   /* 격자에서는 칸 사이의 화살표 — 굽은 화살표(a3)는 윗줄 ③에서 아랫줄 ④로 내려가는 자리 */
+.cv-ar.a1{grid-area:a1}.cv-ar.a2{grid-area:a2}.cv-ar.a4{grid-area:a4}.cv-ar.a5{grid-area:a5}
+.cv-ar.a3{grid-area:a3;width:calc(130 * var(--u));height:calc(60 * var(--u));justify-self:end}
+.cv-flo{grid-area:var(--fa,c1);justify-self:end;align-self:start;width:calc(40 * var(--u));height:calc(40 * var(--u));margin:calc(-14 * var(--u)) calc(-6 * var(--u)) 0 0;z-index:1;pointer-events:none}   /* 움직임 없음 — 다시 그릴 때마다 새 요소라 transition은 돌지 않는다 */
 .cv-flo svg{width:100%;height:100%;display:block}
+@container (max-width:639px){.cvb{grid-template-columns:minmax(0,1fr);grid-template-areas:"now" "stg" "bh" "c1" "a1" "c2" "a2" "c3" "a3" "c4" "a4" "c5" "a5" "c6" "file" "learn" "prev" "next"}
+  .cv-ar{transform:rotate(90deg);margin:calc(8 * var(--u)) 0}.cv-ar.a3{width:calc(40 * var(--u));height:calc(20 * var(--u));justify-self:center}}
+/* 줌 — 판을 0.85배 이상으로 담을 수 있을 때만(935 = 1100 × .85 · 544 = 640 × .85). 안의 숫자는 목업 그대로 */
+@container (min-width:935px) and (min-height:544px){.cvb{--u:min(calc(100cqw / 1100),calc(100cqh / 640),1px);display:block;width:calc(1100 * var(--u));height:calc(640 * var(--u));padding:0}
+.cvb>*{position:absolute}
+.cv-now{left:calc(16 * var(--u));top:calc(12 * var(--u));width:calc(640 * var(--u))}
+.cv-stg{left:calc(672 * var(--u));top:calc(12 * var(--u));flex-wrap:nowrap}
+.cv-bd{left:calc(16 * var(--u));width:calc(170 * var(--u))}
+.cv-bd.prev{top:calc(70 * var(--u));height:calc(100 * var(--u))}
+.cv-bd.next{top:calc(186 * var(--u));height:calc(92 * var(--u))}
+.cv-frame{display:block;left:calc(204 * var(--u));top:calc(62 * var(--u));width:calc(880 * var(--u));height:calc(564 * var(--u));border-radius:calc(20 * var(--u));border:2px solid #A9C2E8;background:rgba(247,249,252,.6)}
+.cv-bh{left:calc(226 * var(--u));top:calc(74 * var(--u));overflow:visible}
+.cv-c{min-height:0}
+.cv-c.c1{left:calc(226 * var(--u));top:calc(110 * var(--u));width:calc(190 * var(--u));height:calc(124 * var(--u))}
+.cv-c.c2{left:calc(466 * var(--u));top:calc(110 * var(--u));width:calc(200 * var(--u));height:calc(124 * var(--u))}
+.cv-c.c3{left:calc(716 * var(--u));top:calc(110 * var(--u));width:calc(350 * var(--u));height:calc(250 * var(--u))}
+.cv-c.c4{left:calc(466 * var(--u));top:calc(400 * var(--u));width:calc(250 * var(--u));height:calc(150 * var(--u))}
+.cv-c.c5{left:calc(766 * var(--u));top:calc(400 * var(--u));width:calc(160 * var(--u));height:calc(150 * var(--u))}
+.cv-c.c6{left:calc(962 * var(--u));top:calc(400 * var(--u));width:calc(104 * var(--u));height:calc(150 * var(--u))}
+.cv-file{left:calc(226 * var(--u));top:calc(256 * var(--u));width:calc(190 * var(--u))}
+.cv-learn{left:calc(226 * var(--u));top:calc(450 * var(--u));width:calc(190 * var(--u))}
+.cv-ar.a1{left:calc(422 * var(--u));top:calc(160 * var(--u))}
+.cv-ar.a2{left:calc(672 * var(--u));top:calc(160 * var(--u))}
+.cv-ar.a3{left:calc(640 * var(--u));top:calc(362 * var(--u));width:calc(130 * var(--u));height:calc(60 * var(--u))}
+.cv-ar.a4{left:calc(722 * var(--u));top:calc(466 * var(--u))}
+.cv-ar.a5{left:calc(930 * var(--u));top:calc(466 * var(--u));width:calc(30 * var(--u))}
+.cv-flo{left:calc(var(--fx) * var(--u));top:calc(var(--fy) * var(--u));margin:0}}
 
 /* claude-drafted: 2026-10-27 두승현 — 작업실 안의 섬 옆 칸(.isl-col, C-41 ⑤ — 두승현 "다른 창도 큰 화면에서 진행, 그 옆에 플로로"). 칸의 자리 · 크기는 win.html · win.js(--col-w · --col-h).
    옆(narrow)이면 플로로 위 · 대화 아래 한 열, 위 줄은 두 줄, 넘치면 몸통이 세로로 스크롤. 위아래(wide)는 940 그대로 */

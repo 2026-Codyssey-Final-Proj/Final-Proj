@@ -80,7 +80,7 @@ test("앱(main.js) — 설정 창은 테두리 없음 · 항상 위 · 불투명
   const at = m.indexOf("function openSideWin(kind, opt = {})"); assert.ok(at > 0);
   const block = m.slice(at, at + 2800);
   assert.match(block, /boundsFor\(kind, opt\.side, isl, wa, opt\.size\)/);
-  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? L\.workBounds\(isl, wa, size\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\)/, "작업실은 섬 아래 달라는 크기 그대로, 설정 창은 옆자리(C-41)");
+  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? L\.workBounds\(wa, savedWork\(\)\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\)/, "작업실은 작업 영역 가득 · 기억한 자리(C-42 R-1, 2026-10-27), 설정 창은 옆자리(C-41)");
   assert.match(block, /const ws = kind === "quest";/);
   assert.match(block, /frame: ws, transparent: false, backgroundColor: ws \? "#E9EEF6" : "#16225E", alwaysOnTop: !ws, resizable: ws/);
   assert.match(block, /if \(!ws\) w\.setAlwaysOnTop\(true, "floating"\)/);
@@ -127,5 +127,5 @@ test("섬(app.js) — 앱이 창을 열 수 있으면(WINS) 섬 옆의 판 대�
   assert.match(app, /if \(p\.type === "change"\) return onChange\(el\);/); assert.match(app, /if \(p\.type === "input"\) return onInput\(el\);/);
   assert.match(app, /if \(WINS && \(st\.settings \|\| st\.qwin\)\) \{ st\.settings = false; st\.qwin = false; syncWins\(\); \}/, "서고로 갈 때");
   assert.match(app, /\$root\.addEventListener\("change", \(e\) => onChange\(e\.target\)\);/, "섬도 같은 손잡이");
-  assert.match(app, /if \(WINS && winOpen\.quest\) window\.floeApp\.sizeWin\("quest", QU\.SIZES\[qsize\]\);/, "S/M/L은 창 크기로");
+  assert.match(app, /if \(WINS && winOpen\.quest\) window\.floeApp\.sizeWin\("quest", "full"\);/, "'화면 가득'은 창 크기로(R-1 — S/M/L은 뺐다)");
 });

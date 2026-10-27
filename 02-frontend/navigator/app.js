@@ -82,11 +82,11 @@
   let foldSec = readFold();
   const foldDelay = () => foldSec * 1000;
   // 창 자리 · 퀘스트 창 크기 · 받으면 바로 뜨기 · 이름(설정 창의 '○○ 님의 작업실') — 이 컴퓨터에만(C-22, 2026-10-21). 기록(KEY)에는 넣지 않는다
-  const SIDE_KEY = "floe:win-side", QSIZE_KEY = "floe:qwin-size", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level";
+  const SIDE_KEY = "floe:win-side", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level";
   const readLS = (k, d = "") => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
   const writeLS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch {} };
   const SIDE_UI = { top: ["위", "▲"], bottom: ["아래", "▼"], left: ["왼쪽", "◀"], right: ["오른쪽", "▶"] };   // 섬 자리(C-41 ②) — [말, 단추 글자]
-  let side = QU ? QU.sideOf(readLS(SIDE_KEY, "right")) : "right", qsize = QU ? QU.sizeOf(readLS(QSIZE_KEY, "m")) : "m", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
+  let side = QU ? QU.sideOf(readLS(SIDE_KEY, "right")) : "right", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
   const GR = window.FloeGreet;   // 켤 때 인사의 시간표 · 규칙(greet.js, C-10 2026-10-20). 없으면 인사 움직임 없이 카드만
   let greetSkip = null;         // 인사 움직임이 도는 동안만 — 누름 · Esc로 바로 끝낸다
   const PHONE = matchMedia("(max-width: 600px)");
@@ -1173,7 +1173,8 @@
   const openQwin = (tab) => { if (!st.qwin) qpop = true; st.qwin = true; st.qtab = tab || st.qtab; };
   const QTABS = [["canvas", "캔버스"], ["quest", "노트북"], ["tree", "도전과제"], ["lib", SHELF_ON ? "서고" : "책"]];   // 작업실 창(C-41, 2026-10-26): 캔버스가 먼저, 옛 퀘스트 탭은 노트북. 책 — C-26(2026-10-23). 배우기 탭은 2026-10-24 C-35로 도전과제의 장마다
   // 캔버스 판 — 작업실 창의 첫 탭(C-41 ① 2026-10-26 · ⑥ 2026-10-27 두승현 "의도했던 것은 첨부한 이미지처럼 펼쳐져 있는 환경" — 디자인 캔버스 DockPrototype의 판 그대로):
-  //   1100×640 판을 칸(.cv)에 맞춰 줌한다(app.css .cvb의 --u — 컨테이너 단위라 스크립트 없이, 앱의 창이든 브라우저의 판이든). 지금 하는 일 · 단계 칩 · 왼쪽에 지난 장 / 다음 장 보드 ·
+  //   1100×640 판을 칸(.cv)에 맞춰 줌한다(app.css .cvb의 --u — 컨테이너 단위라 스크립트 없이, 앱의 창이든 브라우저의 판이든). 2026-10-27 C-42 R-11(이재엽 "줌 + 모자라면 다시 배치"): 0.85배 아래로 줄어야 하면
+  //   줌하지 않고 격자로 다시 배치한다 — 두 줄(① ② ③ / ④ ⑤ 관문) · 640 미만은 세로 한 줄, 글자 크기는 설정 그대로(app.css @container). 지금 하는 일 · 단계 칩 · 왼쪽에 지난 장 / 다음 장 보드 ·
   //   틀 안에 ① 생각(포스트잇) · 파일 카드 · 배울 말 · 화살표 → ② 행동 → ③ 기록(적은 칸 카드) → ④ 저장 → ⑤ 버전 → 관문, 작은 플로로는 첫 '지금' 칸 옆(FLO_AT).
   //   칸의 글은 지금 상태에서만 — 생각: 퀘스트의 지금 칸(quest.js), 행동: 맡긴 일(plan.js), 기록: 적은 칸 · 살펴본 결과(st.results), 저장: 단계 문서(st.docs · docs.js), 버전: 대회 뒤(C-23), 관문: 지난 날.
   const FLO_AT = { c1: [420, 100], c2: [640, 92], c3: [1040, 92], c4: [690, 382], c5: [920, 382], c6: [1040, 382] };   // 작은 플로로가 서는 자리(판 좌표) — 목업의 FLO
@@ -1207,7 +1208,7 @@
     const terms = [...new Set(crits(n).map((c) => c.term).filter(Boolean))], tl = terms[0] && G ? G.explain(terms[0]) : "";   // 배울 말 — 이 장의 용어 첫 것과 풀이(glossary.js)
     const learn = `<div class="cv-learn"><b>배울 말${terms[0] ? ` · ${esc(terms[0])}` : ""}</b>${terms[0] ? esc(tl || "도전과제 탭 '이 장에서 쓰는 말'에서") : "이 장은 새 말이 없어요"}${terms.length > 1 ? ` <small>+${terms.length - 1}</small>` : ""}</div>`;
     const [fx, fy] = FLO_AT[floAt || "c1"];
-    return `<div class="cv"><div class="cvb"><div class="cv-now">지금 하는 일 <b>${esc(now)}</b></div><div class="cv-stg" aria-label="단계">${chips}</div>${prev}${next}<div class="cv-frame"></div><div class="cv-bh"><b>${LB(n)} · ${esc(s.title)}</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div>
+    return `<div class="cv"><div class="cvb" style="--fa:${floAt || "c1"}"><div class="cv-now">지금 하는 일 <b>${esc(now)}</b></div><div class="cv-stg" aria-label="단계">${chips}</div>${prev}${next}<div class="cv-frame"></div><div class="cv-bh"><b>${LB(n)} · ${esc(s.title)}</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div>
       ${think}${fileCard()}${learn}${ARROWS}${act}${rec}${save}${ver}${gate}<div class="cv-flo" style="--fx:${fx};--fy:${fy}" title="플로로 — 지금 칸 옆에">${FLO_MINI}</div></div></div>`;
   }
   // 파일 카드(C-41 ④, 두승현 결정 2026-10-27 "이름과 줄 수만"): Claude Code가 고친 · 만든 파일 — 가장 최근 세션에서 이름과 +/− 줄 수만(AI 진행의 훅이 이미 보내는 것, API.md 3-2-1). 줄 내용은 서버가 받지 않는다. 자리는 ① 생각 아래(목업)
@@ -1225,16 +1226,19 @@
   //   아래 상수는 목업의 예시 그대로 — [이름, 안쪽인가, 상태 글, 모양]. API가 생기면 이 상수를 지우고 그 값으로 바꾼다(모양 — 이름 · 상태(읽음 · 지금 · 고침 · 새로) · 폴더 접힘 — 은 그대로). 화면에는 '예시' 표시가 붙는다
   const FILES_DUMMY = [["README.md", 0, "고침 · 책", "fix"], ["CLAUDE.md", 0, "", ""], ["▾ docs", 0, "", "dir"], ["01-idea.md", 1, "읽음", ""], ["03-requirements.md", 1, "● 지금", "now"], ["decisions.md", 1, "새로", "new"], ["기획서.md", 1, "", ""], ["▸ src", 0, "", "dir"]];
   const fileNav = () => `<p class="fn-h"><b>${esc(project() || "예시 프로젝트")}</b><em title="파일 목록은 아직 예시예요">예시</em></p><ul class="fn">${FILES_DUMMY.map(([name, inner, tag, k]) => `<li class="${k}${inner ? " in" : ""}"><span>${esc(name)}</span>${tag ? `<small>${esc(tag)}</small>` : ""}</li>`).join("")}</ul><p class="fn-ft">작업 폴더의 진짜 파일 목록은 다음 판에 — Claude Code가 고친 파일은 캔버스의 파일 카드에 와요</p>`;
+  const BROWSER_WIN = [920, 640];   // 브라우저 판(섬 옆)의 크기 — 앱의 창 크기는 main.js(R-1)
+  const FULL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5"/></svg>';
   function qwinHTML() {
     if (!st.qwin || !QU) return "";
-    const [w, h] = QU.SIZES[qsize], pop = qpop ? " winpop" : ""; qpop = false;   // 처음 열 때 한 번의 움직임. 이름은 winpop — "pop"은 말풍선 판(.pop — 14px 안쪽 여백 · 아래 정렬)의 이름이라 작업실 창이 처음 열릴 때 그 모양을 뒤집어썼다(⑥ 2026-10-27, 앱에서 처음 열면 창이 아래에 148px로 붙었다)
+    const pop = qpop ? " winpop" : ""; qpop = false;   // 처음 열 때 한 번의 움직임. 이름은 winpop — "pop"은 말풍선 판(.pop — 14px 안쪽 여백 · 아래 정렬)의 이름이라 작업실 창이 처음 열릴 때 그 모양을 뒤집어썼다(⑥ 2026-10-27, 앱에서 처음 열면 창이 아래에 148px로 붙었다)
     const n = st.finished ? N.STAGES.length - 1 : atStage();
     const pane = st.qtab === "canvas" ? canvasPane(n) : st.qtab === "tree" ? treePane() : st.qtab === "lib" ? bookPane() : questTab();
     // 머리 한 줄(⑥, 목업): 프로젝트 · 단계 이름 · 탭 · LV · 조개 · 크기 · 닫기. 왼쪽 파일 칸(.wnav)은 탭에 상관없이 — 펼쳐진 환경
-    return `<div class="win qwin ${qsize}${pop}" role="dialog" aria-label="작업실 창" style="width:${w}px;height:${h}px"><div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="wst">${LB(n)} · ${esc(N.STAGES[n].title)}</span>
+    // 크기(R-1, 2026-10-27 이재엽 버튼 "'화면 가득' 하나로"): 앱에서는 창이 작업 영역 가득 · 사람이 바꾼 크기를 기억(main.js) — 아래 style은 브라우저 판에서만 쓰인다(win.html은 auto!important로 덮는다). S/M/L은 뺐다
+    return `<div class="win qwin${pop}" role="dialog" aria-label="작업실 창" style="width:${BROWSER_WIN[0]}px;height:${BROWSER_WIN[1]}px"><div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="wst">${LB(n)} · ${esc(N.STAGES[n].title)}</span>
         <div class="wtabs" role="tablist" aria-label="작업실 창">${QTABS.map(([id, label]) => `<button type="button" role="tab" data-act="qtab" data-tab="${id}" aria-selected="${st.qtab === id}">${label}</button>`).join("")}</div><span class="grow"></span>
         <span class="wlv" title="칭호 · ${esc(QU.rankOf(Math.min(level, 7)))}">LV ${level} · ${coin()}${st.shells}</span>
-        <span class="sz" role="group" aria-label="크기">${["s", "m", "l"].map((k) => `<button type="button" data-act="qsize" data-v="${k}" aria-pressed="${qsize === k}" title="${{ s: "작게", m: "보통", l: "크게" }[k]}">${k.toUpperCase()}</button>`).join("")}</span>
+        ${WINS ? `<button type="button" class="ti wfull" data-act="qfull" aria-label="작업실을 화면 가득" title="화면 가득">${FULL_ICON}</button>` : ""}
         <button type="button" class="ti" data-act="qwin" aria-label="작업실 창 닫기" title="닫기">${X_ICON}</button></div>
       <div class="wmain"><nav class="wnav" aria-label="파일">${fileNav()}</nav><div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : ""}`)}">${pane}</div></div></div>`;
   }
@@ -1391,7 +1395,6 @@
     return `${SHELF_ON ? `<button type="button" class="golib" data-act="lib-enter"><span class="bk">${I.lib}</span><span>서재로 가기<small>끝낸 책 · 서고 — 지금 책은 퀘스트 창의 서고 탭에</small></span></button>` : ""}
       ${sgrp(I.scroll, "작업실 · 퀘스트 창", `${srow("이름", `<input class="name-in" data-act="name" value="${esc(userName)}" maxlength="20" placeholder="이름" aria-label="이름">`, "작업실 이름에 보여요 · 이 컴퓨터에만")}
         ${srow("섬 자리", pick("섬 자리", [["top", "위"], ["bottom", "아래"], ["left", "왼쪽"], ["right", "오른쪽"]], side, "side"), "작업실 창의 가장자리에 붙어요 — 섬 머리의 네 칸 단추로도")}
-        ${srow("작업실 처음 크기", pick("작업실 처음 크기", [["s", "S"], ["m", "M"], ["l", "L"]], qsize, "qsize"))}
         <label class="chk"><input type="checkbox" data-act="qauto" ${qauto ? "checked" : ""}>퀘스트를 받으면 작업실이 바로 뜨기</label>`)}
       ${sgrp(coin(), "꾸미기", `<span class="closet">${st.owned.map(QU.itemOf).filter(Boolean).map((it) => `<button type="button" data-act="wear" data-v="${it.id}" aria-pressed="${st.wear[it.slot] === it.id}">${it.emoji} ${esc(it.name)}</button>`).join("")}<button type="button" data-act="gacha">조개 열기 <span class="shells">${coin()}${st.shells}</span></button></span>
         <span class="meta">뽑기로 얻은 것 · 조개 ${st.shells}개</span>`)}`;
@@ -1999,7 +2002,7 @@
   // ── 앱의 옆 창 둘(C-22): 섬이 창의 내용을 그려 보내고, 창의 누름은 돌아온다(win.js). 열림 · 닫힘 · 내용이 바뀐 것만 보낸다 ──
   const winOpen = { settings: false, quest: false }, winHtml = { settings: "", quest: "" };
   let winClosing = { settings: false, quest: false };   // 내가 닫는 중(자리를 바꿀 때) — 창의 '닫힘' 알림으로 상태를 끄지 않게
-  const winSize = (kind) => (kind === "quest" ? QU.SIZES[qsize] : [Math.round(380 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1)), 760]);
+  const winSize = (kind) => (kind === "quest" ? null : [Math.round(380 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1)), 760]);
   // 작업실에 보내는 것 = 작업실 판(qwinHTML) + 섬의 옆 칸(.isl-col — 플로로 · 채팅 · 판, C-41 ⑤). 자리(side-…) · 좁은지(narrow — 옆 자리)는 class로, 칸의 크기는 작업실(win.js)이 갖는다
   const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}">${islandHTML("")}</div>`;
   function syncWins() {
@@ -2215,7 +2218,11 @@
     // 채팅 칸의 스크롤 — 다시 그리면 칸이 새로 생겨 맨 위로 간다. 1초마다 바뀌는 '살펴보고 있어요 16초' 때문에 올려 둔 스크롤이 계속 아래로 끌려갔다(임유정 2026-10-22)
     const og = $nav.querySelector("[data-log]");
     const logWas = og ? { top: og.scrollTop } : null;
+    // 브라우저 판의 작업실 몸통(.qwin .wbody)도 같은 화면(data-view)이면 스크롤을 되돌린다 — 앱 창은 win.js가 하지만 브라우저 판은 아무도 안 해서, 마우스가 섬에 들어오기만 해도(mouseenter → render)
+    //   받기 화면이 맨 위로 튀어 아래의 '고쳐 주세요'를 누를 수 없었다(e2e C-22 · C-36이 #212부터 깨져 있던 까닭, 2026-10-27) — claude-drafted: 2026-10-27
+    const ob = $nav.querySelector(".qwin .wbody"), bodyWas = ob ? { view: ob.dataset.view, top: ob.scrollTop } : null;
     if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); fitGacha(); }
+    const nb = bodyWas && $nav.querySelector(".qwin .wbody"); if (nb && nb.dataset.view === bodyWas.view) nb.scrollTop = bodyWas.top;
     if (keep) {
       const b = document.querySelector(keep);
       if (b && b !== a) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; }
@@ -2739,7 +2746,7 @@
     "qwin-toggle": () => { if (st.qwin) return set({ qwin: false }); openQwin("canvas"); render(); },   // 위 줄의 '퀘스트' 단추(C-35, 이재엽 그림 2026-10-24) — 작업실은 캔버스 탭부터(C-41, 2026-10-26)
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
-    qsize: (i, el) => { if (!QU || !el) return; qsize = QU.sizeOf(el.dataset.v); writeLS(QSIZE_KEY, qsize); if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", QU.SIZES[qsize]); render(); },
+    qfull: () => { if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", "full"); },   // 작업실을 다시 작업 영역 가득(R-1) — 브라우저 판에서는 단추가 없다
     side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); render(); say(`섬은 작업실 ${SIDE_UI[side][0]}에 붙어요`); },   // C-41 ⑤(2026-10-27): 작업실 안 옆 칸의 자리 넷 — 작업실이 class(side-…)로 받아 배치한다
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
     // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기

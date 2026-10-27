@@ -33,8 +33,7 @@
   const SIDES = ["top", "bottom", "left", "right"];
   const sideOf = (v) => (SIDES.includes(v) ? v : "right");   // otherSide(반대쪽)는 2026-10-27에 뺌 — 쓰는 곳이 없었다
   // 퀘스트 창 크기 S · M · L — [가로, 세로] px(화면이 작으면 CSS가 줄인다)
-  const SIZES = { s: [720, 520], m: [920, 640], l: [1120, 760] };   // 작업실 창(C-41, 2026-10-26) — 가장 작은 것도 720(⑥부터 캔버스는 판을 줌하므로 너비에 따른 배치는 없다). 창 테두리로도 바꿀 수 있다
-  const sizeOf = (v) => (SIZES[v] ? v : "m");
+  // 작업실 크기 S/M/L(SIZES · sizeOf)은 2026-10-27 C-42 R-1로 뺐다 — 작업실은 화면 가득, 사람이 바꾼 크기 · 자리는 앱(main.js workspace.json)이 기억한다
   // 보상 — 조개는 장을 지날 때 하나, 셋이면 뽑기(확률은 늘 화면에 — 다음 판). 돈으로 사는 것은 없다
   const SHELL_COST = 3;
   const ITEMS = [
@@ -313,7 +312,7 @@
   // 위 줄의 진행 — "M개 중 k번째 할 일"(다 했으면 M)
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
-  const api = { BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, SIZES, sizeOf, SHELL_COST, ITEMS, draw, oddsOk,
+  const api = { BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, SHELL_COST, ITEMS, draw, oddsOk,
     itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT,
     pickOf, withStageDraft, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;
