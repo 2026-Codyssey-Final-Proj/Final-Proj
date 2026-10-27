@@ -198,6 +198,7 @@ test("설정의 '프로젝트 바꾸기'는 처음 설정을 프로젝트 칸부
   try {
     const { page, seen } = await open(browser);
     await page.keyboard.press("Escape"); await wait(300);   // 처음 설정을 닫고(나중에)
+    if (await page.$(".pill")) await click(page, ".pill");   // C-46(2026-10-27): 켜면 알약 — 설정 단추는 펼친 섬에 있다
     await page.evaluate(() => { window.floeApp.cloneProject = async (t) => { window.__calls.push(["clone", t]); return { ok: true, name: "test-1", where: "~/Floe/test-1", made: false, repo: "gamercross/test-1", config: true }; }; });
     await click(page, "[data-act=settings]");
     await click(page, "[data-act=set-tab][data-tab=keep]");   // 설정 판의 기록 탭(2026-10-25)

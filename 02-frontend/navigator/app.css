@@ -172,33 +172,19 @@ html.notch .pill{border-radius:0 0 25px 25px}
 /* 서고로 잠수하는 동안(2026-10-20, app.js enterLibrary) — 앱 창이 화면만큼 넓어져도 섬은 제자리(--dx · --dy는 앱이 알려 준 창의 옮긴 거리) */
 html.in-app.diving .nav{transform:translate(var(--dx,0px),var(--dy,0px))}
 
-/* 켤 때 인사(C-10, 2026-10-20 — 시간표 greet.js, 단계는 html[data-greet]). 창은 처음부터 인사 크기(투명이라 안 보인다), 섬 모양만 안에서 움직인다.
-   wave: 띠 자리(노치면 노치 폭 · 검정)만 보이고 물결 선이 그어진다 → open: 섬이 인사 크기로 열린다(살짝 넘쳤다 돌아옴) → pop: 플로로가 솟는다 →
-   hello: 옆으로 가 지느러미를 흔든다 → settle: 글과 단추 → done: 평소 인사 카드 */
-html{--gw:150px;--gh:52px}
-html.notch{--gw:max(150px,calc(var(--notch-w,200px) + 28px));--gh:calc(var(--notch-h,38px) + 18px)}
-html.greeting .isl.greet{transition:clip-path .5s cubic-bezier(.34,1.56,.64,1),background-color .4s ease,box-shadow .4s ease}
-html.greeting .isl.greet .mc-cat,html.greeting .isl.greet .mc-main{opacity:0}
-html[data-greet="wave"] .isl.greet{clip-path:inset(0 calc(50% - var(--gw) / 2) calc(100% - var(--gh)) calc(50% - var(--gw) / 2) round 0 0 18px 18px);background:transparent;box-shadow:none;transition:none}
-html.notch[data-greet="wave"] .isl.greet{background:#000}
-html[data-greet="open"] .isl.greet,html[data-greet="pop"] .isl.greet,html[data-greet="hello"] .isl.greet,html[data-greet="settle"] .isl.greet{clip-path:inset(0 0 0 0 round 28px)}
-html.notch[data-greet="open"] .isl.greet,html.notch[data-greet="pop"] .isl.greet,html.notch[data-greet="hello"] .isl.greet,html.notch[data-greet="settle"] .isl.greet{clip-path:inset(0 0 0 0 round 0 0 28px 28px)}
-.greet-wl{position:absolute;left:50%;top:calc(var(--gh) - 16px);transform:translateX(-50%);width:150px;height:12px;pointer-events:none;transition:opacity .3s ease}
-.greet-wl path{stroke-dasharray:100;stroke-dashoffset:100;animation:wl-draw .4s ease-out forwards}
-.greet-wl path:nth-child(2){animation-delay:.12s}
-@keyframes wl-draw{to{stroke-dashoffset:0}}
-html[data-greet="pop"] .greet-wl,html[data-greet="hello"] .greet-wl,html[data-greet="settle"] .greet-wl{opacity:0}
-html:not(.greeting) .greet-wl{display:none}
-html[data-greet="pop"] .isl.greet .mc-cat,html[data-greet="hello"] .isl.greet .mc-cat,html[data-greet="settle"] .isl.greet .mc-cat{opacity:1}
-html[data-greet="pop"] .isl.greet .mc-cat{animation:greet-pop .5s cubic-bezier(.3,1.4,.5,1)}
-@keyframes greet-pop{from{transform:translateY(70px) scale(.75,.9);opacity:0}60%{transform:translateY(-10px) scale(.96,1.06);opacity:1}80%{transform:translateY(4px) scale(1.06,.94)}to{transform:none}}
-html[data-greet="hello"] .isl.greet .mc-cat{animation:greet-swim 1.5s ease-in-out}
-@keyframes greet-swim{0%{transform:none}30%{transform:translateX(-18px) rotate(-5deg)}70%{transform:translateX(-18px) rotate(-3deg)}100%{transform:none}}
-html[data-greet="hello"] .isl.greet .mc-cat .c-fin{transform-origin:49px 72px;animation:fin-wave .3s ease-in-out .35s 5 alternate}
+/* 켤 때 인사(C-10 → C-46 R-1, 2026-10-27 이재엽 "알약 안에서 인사"): 시간표는 greet.js PILL_TIMELINE, 단계는 html[data-greet]. 큰 인사 카드는 뺐다 — 알약(.pill.greet) 안에서
+   플로로가 솟아(pop) 지느러미를 흔들며 시간대 인사 한 줄(hello), 글이 제자리로(settle). 움직임 줄이기면 알약만(인사 없음 — greet.js shouldGreet) */
+html.greeting .pill.greet .pet,html.greeting .pill.greet .pl-hello{opacity:0}
+html[data-greet="pop"] .pill.greet .pet,html[data-greet="hello"] .pill.greet .pet,html[data-greet="settle"] .pill.greet .pet{opacity:1}
+html[data-greet="pop"] .pill.greet .pet{animation:greet-pop .5s cubic-bezier(.3,1.4,.5,1)}
+@keyframes greet-pop{from{transform:translateY(40px) scale(.75,.9);opacity:0}60%{transform:translateY(-6px) scale(.96,1.06);opacity:1}80%{transform:translateY(2px) scale(1.06,.94)}to{transform:none}}
+html[data-greet="hello"] .pill.greet .pet{animation:greet-swim 1.4s ease-in-out}
+@keyframes greet-swim{0%{transform:none}30%{transform:translateX(-6px) rotate(-6deg)}70%{transform:translateX(-6px) rotate(-3deg)}100%{transform:none}}
+html[data-greet="hello"] .pill.greet .pet .c-fin{transform-origin:49px 72px;animation:fin-wave .3s ease-in-out .3s 5 alternate}
 @keyframes fin-wave{to{transform:rotate(-24deg) translate(-3px,-2px)}}
-html[data-greet="settle"] .isl.greet .mc-main{opacity:1;animation:greet-text .5s ease-out}
+html[data-greet="hello"] .pill.greet .pl-hello,html[data-greet="settle"] .pill.greet .pl-hello{opacity:1;animation:greet-text .5s ease-out}
 @keyframes greet-text{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){html.greeting .isl.greet .mc-cat,html.greeting .isl.greet .mc-main{opacity:1}html[data-greet] .isl.greet{clip-path:none;animation:none}}
+@media (prefers-reduced-motion:reduce){html.greeting .pill.greet .pet,html.greeting .pill.greet .pl-hello{opacity:1;animation:none}}
 
 /* 띠 — 물결 선 위로 플로로가 얼굴 위쪽만 빼꼼(2026-10-17, 그림은 seal.js의 얼굴만). 마우스를 올리면 한 줄 알약으로 펼쳐진다(navigator.js nextView) */
 /* 띠 — 아래 16px는 작업 자리 이름표(.st-mode) 자리. 이름표가 오른쪽 아래에 있을 때 긴 이름이 플로로 머리를 덮었다(F-55, 2026-10-25 두승현) */
@@ -227,7 +213,6 @@ html[data-greet="settle"] .isl.greet .mc-main{opacity:1;animation:greet-text .5s
 /* 펼침 — 섬 하나: 위 아이콘 줄, 아래 카드 */
 .isl{position:relative;width:100%;padding:8px 12px 14px;display:flex;flex-direction:column;gap:8px;border-radius:28px;background:var(--glass2);
   -webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:var(--shadow);max-height:calc(100vh - 28px);overflow:auto}
-.isl.greet{padding:12px}
 .tb{display:flex;align-items:center;gap:4px;min-height:46px}
 .tb .grow{flex:1}
 .tabs{display:flex;gap:2px;padding:3px;border-radius:999px;background:rgba(127,127,127,.12)}
@@ -1199,6 +1184,14 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.narrow .tb-proj{display:none}
 .isl-col.narrow .mc.chat .log{max-height:max(120px,calc(100vh - 340px))}
 .isl-col.wide .mc.chat .log{max-height:max(110px,calc(var(--col-h,360px) - 250px))}
+/* 접힌 옆 칸(C-46 R-2, 2026-10-27) — 그 가장자리의 알약 하나. 왼쪽 · 오른쪽은 세로 알약(이재엽 버튼 "세로 알약"): 플로로 얼굴은 바로, 글은 세로쓰기. 칸의 두께(56)는 win.js FOLD */
+.isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이 */
+.isl-col.folded .pill{max-width:100%;flex:none}
+.isl-col.folded .pill:hover{transform:none}   /* 올리면 커지는 움직임은 접힌 칸에서는 잘린다 — 하지 않는다 */
+.isl-col.folded.side-left .pill,.isl-col.folded.side-right .pill{height:auto;max-height:100%;width:48px;flex-direction:column;align-items:center;padding:6px 0 16px;gap:8px}
+.isl-col.folded.side-left .pill .pet,.isl-col.folded.side-right .pill .pet{margin:0}
+.isl-col.folded.side-left .pill b,.isl-col.folded.side-left .pill .pl-now,.isl-col.folded.side-left .pill .pl-cta,.isl-col.folded.side-left .pill .pl-mode,.isl-col.folded.side-left .pill .mini,
+.isl-col.folded.side-right .pill b,.isl-col.folded.side-right .pill .pl-now,.isl-col.folded.side-right .pill .pl-cta,.isl-col.folded.side-right .pill .pl-mode,.isl-col.folded.side-right .pill .mini{writing-mode:vertical-rl;max-width:none;max-height:240px}
 /* 섬 머리의 자리 네 칸(▲ ▼ ◀ ▶) */
 .dk{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:var(--soft);flex:none}
 .dk button{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--mute);font-size:calc(11px * var(--ui-scale,1));cursor:pointer}

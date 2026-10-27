@@ -27,3 +27,13 @@
 | 화면 | 결과 | 사진 |
 |---|---|---|
 | 1440 × 900 브라우저(서버를 다른 포트로 띄우고 시험 폴더를 연결) | 파일 칸에 진짜 이름 — `.env` · `secret.pem`은 없고, 지금 장 문서 '● 지금', `src`를 눌러 펼침 | [app3-files.png](app3-files.png) |
+
+## C-46 켤 때는 알약 · 작업실 안의 섬 접기 (2026-10-27, 브랜치 `v2/pill-overlay`)
+
+| 화면 | 결과 | 사진 |
+|---|---|---|
+| 켤 때(주소 없이, 1440) | 큰 인사 카드 없이 위 가운데 알약 — 플로로가 솟아 손을 흔들고 시간대 인사 한 줄(하루에 한 번) | [pill-greet.png](pill-greet.png) |
+| 작업실 1440 × 860 · 섬 오른쪽 접음 | 세로 알약(두께 56) · 캔버스가 넓어져 줌 | [pill-col-right-folded.png](pill-col-right-folded.png) |
+| 작업실 1440 × 860 · 섬 위 접음 | 가로 알약(두께 56) | [pill-col-top-folded.png](pill-col-top-folded.png) |
+
+네 가장자리 모두 e2e [pill-overlay.test.js](../../../../04-tests/e2e/pill-overlay.test.js)가 잰다(두께 56 · 손잡이 없음 · 캔버스가 넓어짐 · 넘침 0).
