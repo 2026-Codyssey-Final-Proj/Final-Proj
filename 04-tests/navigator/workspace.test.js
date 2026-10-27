@@ -59,7 +59,7 @@ test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · �
   assert.match(a, /<span class="wlv" title="칭호 · \$\{esc\(QU\.rankOf\(Math\.min\(level, 7\)\)\)\}">LV \$\{level\} · \$\{coin\(\)\}\$\{st\.shells\}<\/span>/, "머리에 LV · 조개");
   assert.match(a, /<div class="wmain"><nav class="wnav" aria-label="파일">\$\{fileNav\(\)\}<\/nav><div class="wbody"/, "파일 칸은 탭에 상관없이 판 왼쪽");
   assert.match(a, /const FILES_DUMMY = \[\["README\.md", 0, "고침 · 책", "fix"\]/, "예시 데이터 — API가 생기면 지운다"); assert.match(a, /\$\{esc\(project\(\) \|\| "예시 프로젝트"\)\}/, "더미 이름이 진짜 프로젝트처럼 보이지 않게(새 맥락 리뷰 2026-10-27)");
-  assert.match(a, /<em title="파일 목록은 아직 예시예요">예시<\/em>/, "화면에 예시 표시");
+  assert.match(a, /폴더를 연결하면 진짜 목록이 와요"\)\}">예시<\/em>/, "서버 없이 · 연습 · 폴더를 모르면 화면에 예시 표시(R-8)");
   const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("function fileCard"));
   for (const s of ['<div class="cv"><div class="cvb" style="--fa:', 'class="cv-frame"', 'class="cv-bh"', "${fileCard()}${learn}${ARROWS}", 'class="cv-flo" style="--fx:${fx};--fy:${fy}"', '>${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}</span>`']) assert.ok(cv.includes(s), s);   // 칩은 앱 번호(R-9, 2026-10-27 — 전에는 코드 번호만이었다)터 판 밖(새 맥락 리뷰 2026-10-27)
   assert.match(cv, /if \(k === "now" && !floAt\) floAt = pos;/, "작은 플로로는 첫 '지금' 칸 옆");
@@ -121,4 +121,18 @@ test("app.js canvasPane — R-9 단계 칩: '시작 ✓' · 지난 장 'n ✓ V.
   assert.ok(cv.includes("정한 줄 ${") && cv.includes("QU.filled(q, i) && ln ? ln : QU.shortOf(o.name)"), "③ 기록 — 적은 칸은 그 줄(정한 것)을 보인다");
   assert.match(c, /\.cv-files,\.cv-unmet\{list-style:none;padding:0;/); assert.match(c, /\.cv-unmet li\{color:var\(--bad\)/);
   assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{[\s\S]*\.cv-stg\{left:calc\(672 \* var\(--u\)\);top:calc\(8 \* var\(--u\)\);width:calc\(412 \* var\(--u\)\);flex-wrap:wrap\}/, "줌에서는 칩이 판 오른쪽 끝 안에서 줄 바꿈(이름이 붙어 길어진다)");
+});
+
+// R-8(C-42, 2026-10-27 이재엽 버튼 "전부" · "깊이 3 · 200개") — 진짜 파일 목록: 서버 GET /api/files(이름만 · 읽기만, API.md 3-25), 화면은 작업실을 열 때 받는다
+test("app.js — R-8 파일 칸: 작업실을 열 때 /api/files를 받아 진짜 이름(지금 장 '● 지금' · 지난 장 '읽음' · 폴더 접고 펼치기), 서버 없이 · 연습 · 폴더 모름이면 예시. 서버는 경로를 받지 않는다", () => {
+  const a = read("navigator/app.js"), s = fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8");
+  assert.match(a, /const openQwin = \(tab\) => \{ if \(!st\.qwin\) \{ qpop = true; loadFiles\(\); \}/, "열 때 받는다");
+  assert.match(a, /if \(!canLive \|\| st\.mode === "fixture"\) \{ st\.files = \{ src: "example"/, "연습 · 서버 없음은 예시");
+  assert.match(a, /await fetch\("\/api\/files", \{ cache: "no-store" \}\)/);
+  assert.ok(a.includes('return "● 지금"') && a.includes('? "읽음" : ""'), "지금 장 · 지난 장 표시");
+  assert.match(a, /"fn-dir": \(i, el\) => \{/, "폴더 접고 펼치기");
+  assert.ok(!a.includes("진짜 파일 목록은 다음 판에"), "'다음 판' 글은 없다 — 이 판이다");
+  assert.match(s, /const BOOK_ROUTES = \["\/api\/readme", "\/api\/files",/, "확인 값이 필요한 주소");
+  assert.match(s, /if \(req\.method === "GET" && route === "\/api\/files"\) return send\(res, 200, filesNow\(\)\);/);
+  assert.match(s, /const r = Files\.listFiles\(s\.dir, \{ redact: Sensitive\.redact \}\);/, "이름은 가린다 · 폴더는 서버가 아는 것만(요청의 경로 없음)");
 });

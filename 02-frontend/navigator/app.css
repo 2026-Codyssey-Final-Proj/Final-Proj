@@ -741,6 +741,9 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
 .wnav .fn li{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 6px;border-radius:7px;min-width:0}
 .wnav .fn li.in{padding-left:18px}
+.wnav .fn li.d2{padding-left:18px}.wnav .fn li.d3{padding-left:30px}   /* 진짜 목록(R-8)의 깊이 — 맨 위가 1 */
+.wnav .fn li.dir button{all:unset;cursor:pointer;min-height:24px;display:inline-flex;align-items:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:inherit}
+.wnav .fn li.dir button:focus-visible{outline:2px solid var(--acc);outline-offset:1px;border-radius:5px}
 .wnav .fn li.dir{color:var(--sub)}
 .wnav .fn li.now{background:var(--acc-soft);font-weight:600}
 .wnav .fn li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
