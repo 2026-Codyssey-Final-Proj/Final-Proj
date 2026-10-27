@@ -39,7 +39,6 @@
   function layoutCol() {
     const side = sideOf(), h = document.documentElement, folded = foldedCol();
     h.dataset.side = side; hd.hidden = !side || folded;   // 접힌 칸(C-46 R-2)은 손잡이 없이 두께 FOLD — 작업실이 그만큼 넓어진다(0.3초, win.html)
-    h.classList.toggle("col-folded", folded);
     if (!side) return;
     const axis = axisOf(side), v = (col[axis] = clamp(axis, col[axis]));
     h.style.setProperty("--col-w", `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);
@@ -74,6 +73,12 @@
     F.winEvent({ type: "click", act: t.dataset.act || "", bv: t.dataset.bv || "", data: data(t), label: t.dataset.label || "", ghost: t.classList.contains("ghost"), tag: t.tagName });
   });
   root.addEventListener("change", (e) => { const t = e.target; if (!t.dataset || (!t.dataset.act && !t.dataset.bv)) return; F.winEvent({ type: "change", act: t.dataset.act || "", bv: t.dataset.bv || "", data: data(t), value: t.value, checked: !!t.checked }); });
+  // 옆 칸에 마우스가 있거나 채팅 칸에 글을 쓰는 동안 섬이 접히지 않게(C-46, 새 맥락 리뷰 2026-10-27) — 상태가 바뀔 때만 보낸다
+  let colHover = false;
+  root.addEventListener("mouseover", (e) => { const on = !!(e.target.closest && e.target.closest(".isl-col")); if (on !== colHover) { colHover = on; F.winEvent({ type: "col", hover: on }); } });
+  root.addEventListener("mouseleave", () => { if (colHover) { colHover = false; F.winEvent({ type: "col", hover: false }); } });
+  root.addEventListener("focusin", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: true }); });
+  root.addEventListener("focusout", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: false }); });
   root.addEventListener("input", (e) => { const t = e.target; if (!t.dataset || !t.dataset.act) return; F.winEvent({ type: "input", act: t.dataset.act, data: data(t), value: t.value }); });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); return F.winEvent({ type: "key", key: "Escape", kind }); }

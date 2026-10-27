@@ -77,7 +77,8 @@ async function measure(browser, h, side, folded) {
   await page.evaluate((html) => window.__h(html), `${h.qwin}<div class="isl-col ${cls}">${folded ? h.pill : h.isl}</div>`);
   await wait(450);
   const m = await page.evaluate(() => { const c = document.querySelector(".isl-col").getBoundingClientRect(), cv = document.querySelector(".cv"), p = document.querySelector(".isl-col .pill"), hd = document.getElementById("hd");
-    return { w: Math.round(c.width), h: Math.round(c.height), cvw: cv.clientWidth, cvh: cv.clientHeight, pill: p ? { w: Math.round(p.getBoundingClientRect().width), h: Math.round(p.getBoundingClientRect().height), wm: getComputedStyle(p.querySelector(".pl-now") || p).writingMode } : null, hd: !!hd && !hd.hidden, overflow: cv.scrollWidth > cv.clientWidth + 1 }; });
+    const pr = p && p.getBoundingClientRect(), inside = !!pr && pr.top >= c.top - 0.5 && pr.bottom <= c.bottom + 0.5 && pr.left >= c.left - 0.5 && pr.right <= c.right + 0.5;
+    return { w: Math.round(c.width), h: Math.round(c.height), cvw: cv.clientWidth, cvh: cv.clientHeight, pill: p ? { w: Math.round(pr.width), h: Math.round(pr.height), wm: getComputedStyle(p.querySelector(".pl-now") || p).writingMode, inside } : null, hd: !!hd && !hd.hidden, overflow: cv.scrollWidth > cv.clientWidth + 1 }; });
   await shot(page, `col-${side}-${folded ? "folded" : "open"}`);
   await page.close();
   return m;
@@ -95,7 +96,7 @@ test("R-2 — 작업실 창 안에서 섬을 접으면 옆 칸이 알약(두께 
       assert.ok(!f.hd && o.hd, `${side} — 접히면 손잡이 없음`);
       assert.ok(vertical ? f.cvw > o.cvw + 200 : f.cvh > o.cvh + 200, `${side} — 캔버스가 넓어진다: 펼침 ${o.cvw}×${o.cvh} → 접힘 ${f.cvw}×${f.cvh}`);
       assert.ok(f.pill && (vertical ? f.pill.wm === "vertical-rl" && f.pill.w <= 56 : f.pill.wm === "horizontal-tb" && f.pill.h <= 56), `${side} — ${vertical ? "세로" : "가로"} 알약: ${JSON.stringify(f.pill)}`);
-      assert.ok(!f.overflow && !o.overflow, `${side} — 넘침 0`);
+      assert.ok(!f.overflow && !o.overflow, `${side} — 넘침 0`); assert.ok(f.pill.inside, `${side} — 알약이 칸 안에 다 들어간다(잘리지 않음): ${JSON.stringify(f.pill)}`);
     }
   } finally { await browser.close(); }
 });

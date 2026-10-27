@@ -72,7 +72,7 @@ test("app.js — 인사는 greet.js 규칙으로 켤 때(하루에 한 번) 알�
   assert.match(app, /else if \(st\.ui === "greet"\) st\.ui = location\.hash && location\.hash !== "#" \? "home" : "petit";/, "인사가 없어도 알약 — 주소 끝 장면(시험 · 녹화)은 기본 화면");
   assert.match(app, /writeLS\(GREET_DAY, ymd\(\)\);/, "오늘 인사했다"); assert.match(app, /go\("petit"\);   \/\/ 인사가 끝나도 알약 그대로/, "끝나도 알약");
   assert.match(app, /GR\.play\(GR\.PILL_TIMELINE, \{ onPhase \}\)/);
-  assert.match(app, /\$\{greeting \? " greet" : ""\}" data-act="pill"/, "인사 중인 알약"); assert.match(app, /class="pl-now pl-hello">\$\{esc\(st\.back \|\| C\.greeting\(new Date\(\)\.getHours\(\)\)\)\}/, "시간대 인사 한 줄");
+  assert.match(app, /\$\{greeting \? " greet" : ""\}" data-act="pill"/, "인사 중인 알약"); assert.match(app, /class="pl-now pl-hello" aria-live="polite">\$\{esc\(st\.back \|\| C\.greeting\(new Date\(\)\.getHours\(\)\)\)\}/, "시간대 인사 한 줄");
   assert.ok(!app.includes("function greetHTML"), "큰 인사 카드는 없다");
   assert.match(app, /h\.dataset\.greet = p/);
   assert.match(app, /if \(greetSkip\) \{ greetSkip\(\); if \(e\.key === "Escape"\)/, "키 — Esc는 건너뛰기만");

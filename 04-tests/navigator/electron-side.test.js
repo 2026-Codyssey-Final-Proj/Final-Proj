@@ -124,7 +124,7 @@ test("섬(app.js) — 앱이 창을 열 수 있으면(WINS) 섬 옆의 판 대�
   assert.match(app, /side = QU\.sideOf\(el\.dataset\.v\); writeLS\(SIDE_KEY, side\); render\(\);/, "자리를 바꾸면 다시 그릴 뿐 — 작업실 안 옆 칸의 자리는 class로 간다(C-41 ⑤ 2026-10-27)");
   assert.match(app, /if \(winClosing\[kind\]\) \{ winClosing\[kind\] = false; return; \}/, "내가 닫은 것은 상태를 끄지 않는다");
   assert.match(app, /if \(p\.type === "click"\) \{ if \(p\.bv\) return bvClick\(el\); return clickAct\(el\); \}/);
-  assert.match(app, /if \(p\.type === "change"\) return onChange\(el\);/); assert.match(app, /if \(p\.type === "input"\) return onInput\(el\);/);
+  assert.match(app, /if \(p\.type === "change"\) return onChange\(el\);/); assert.match(app, /if \(p\.type === "input"\) \{ if \(st\.ui === "home" && timer\) \{ clearIdle\(\); scheduleIdle\(\); \} return onInput\(el\); \}/, "글을 치면 접히는 시계를 되돌린다(C-46)");
   assert.match(app, /if \(WINS && \(st\.settings \|\| st\.qwin\)\) \{ st\.settings = false; st\.qwin = false; syncWins\(\); \}/, "서고로 갈 때");
   assert.match(app, /\$root\.addEventListener\("change", \(e\) => onChange\(e\.target\)\);/, "섬도 같은 손잡이");
   assert.match(app, /if \(WINS && winOpen\.quest\) window\.floeApp\.sizeWin\("quest", "full"\);/, "'화면 가득'은 창 크기로(R-1 — S/M/L은 뺐다)");

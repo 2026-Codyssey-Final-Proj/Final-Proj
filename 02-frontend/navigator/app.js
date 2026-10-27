@@ -162,7 +162,8 @@
   // 답을 기다리는 중이면 저절로 접히지 않는다 (CouCou의 pinned). 할 일을 다 했으면 확인하러 가자고 펼쳐 둔다
   // 멈춰 둔 단계인가(FR-5 보류) — 멈춰 두면 다 했어도 펼쳐 두지 않는다
   const holding = () => !!(st.hold && st.j && st.hold.stage === st.j.stage && !st.finished);
-  const pinned = () => st.userPin || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || st.openInput || typing();   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
+  let colHover = false, colTyping = false;   // 작업실 옆 칸(win.js)에서 온 '마우스 올림' · '글 쓰는 중' — 섬 창의 hovering · typing과 같은 뜻(C-46, 새 맥락 리뷰 2026-10-27 막힘: 옆 칸에 글을 쓰는 중에도 접혔다)
+  const pinned = () => st.userPin || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || st.openInput || typing() || colTyping;   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
   // 플로로의 [표정, 말] — 기다림·경고·오류가 먼저, 그다음 확인 질문·잠시 멈추기(understand.js), 나머지는 navigator.js
   function face() {
     const base = N.face({ busy: st.busy, warn: st.warn, error: st.error, gate: st.screen === "gate", step: st.step,
@@ -327,14 +328,15 @@
     if (greetSkip) return;   // 켜질 때 인사 움직임이 끝난 뒤부터 센다(C-10)
     clearIdle();
     // 마우스가 올라가 있으면 인사도 접지 않는다(플로로를 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
-    if (isPhone() || st.ui === "hidden" || hovering || (st.ui !== "greet" && pinned())) return;
+    if (isPhone() || st.ui === "hidden" || hovering || colHover || (st.ui !== "greet" && pinned())) return;
+    if (WINS && st.qwin && st.ui === "petit") return;   // 작업실 안의 접힌 알약은 더 접히지(hidden) 않는다 — 옆 칸은 마우스 올림을 보내지 않아 되살릴 길이 없다(새 맥락 리뷰 2026-10-27 막힘)
     idleAt = Date.now();
     timer = setTimeout(() => { timer = null; view("idle"); }, st.ui === "home" ? foldDelay() : DELAY[st.ui]);
   }
   function go(ui) { if (ui !== st.ui) { st.ui = ui; clearIdle(); } render(); }
   const view = (ev) => go(N.nextView(st.ui, ev, pinned()));   // 일(enter·click·esc·idle·alert)에 따라 다음 모습으로
   // 알릴 일이 생기면 접혀 있던 것(띠·인사)만 한 줄로 살짝 보인다 — 펼쳐져 있으면 그대로
-  const peek = () => go(st.ui === "hidden" || st.ui === "greet" ? "petit" : st.ui);
+  const peek = () => go(st.ui === "hidden" || st.ui === "greet" ? "petit" : WINS && st.qwin && st.ui === "petit" ? "home" : st.ui);   // 작업실 안의 접힌 알약은 알릴 일이 오면 펼친다(C-46 R-2 — 새 맥락 리뷰)
   // 모드 바꾸기(C-13) — 규칙은 navigator.js nextPlace. 바꾸면 이 창에 기억한다(판은 닫는다)
   function setPlace(ev) {
     const p = N.nextPlace(st.place, ev);
@@ -1715,7 +1717,7 @@
     else main = `<b>${allDone() ? "다 했어요! · " : ""}${LB(s.n)}</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
     // C-46 R-1: 켤 때 인사는 알약 안에서 — 인사 중이면 플로로가 솟아 손을 흔들고(app.css [data-greet]) 글은 시간대 인사 한 줄(다시 온 사람에게는 그 말)
     const greeting = document.documentElement.classList.contains("greeting");
-    if (greeting) main = `<b>플로로</b><span class="pl-now pl-hello">${esc(st.back || C.greeting(new Date().getHours()))}</span>`;
+    if (greeting) main = `<b>플로로</b><span class="pl-now pl-hello" aria-live="polite">${esc(st.back || C.greeting(new Date().getHours()))}</span>`;
     const base = st.ping ? "look" : greeting ? "happy" : face()[0];
     return `<button class="pill${st.ping || st.warn ? " ping" : ""}${greeting ? " greet" : ""}" data-act="pill" aria-expanded="false" aria-label="플로로 펼치기 · ${esc(stateWords())}">
       <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { face: true })}</span>${main}${modeChip()}${connLed()}</button>`;
@@ -2051,7 +2053,7 @@
   const winSize = (kind) => (kind === "quest" ? null : [Math.round(380 * (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-scale")) || 1)), 760]);
   // 작업실에 보내는 것 = 작업실 판(qwinHTML) + 섬의 옆 칸(.isl-col — 플로로 · 채팅 · 판, C-41 ⑤). 자리(side-…) · 좁은지(narrow — 옆 자리)는 class로, 칸의 크기는 작업실(win.js)이 갖는다
   // C-46 R-2(2026-10-27 이재엽 버튼 "펼치면 비킴 · 접으면 알약" · "고른 가장자리에" · 세로 알약 · 설정의 시간대로): 섬이 접혀 있으면(petit · hidden) 옆 칸은 그 가장자리의 알약(folded — 왼쪽 · 오른쪽은 세로)이고 작업실이 넓어진다(win.js · win.html).
-  //   알약을 누르면(ACT pill) 펼쳐지고 작업실이 비킨다. 알릴 일(허락 카드 · 질문 · 오류)은 peek · alert로 저절로 펼친다. 저절로 접히기는 설정 '접히기까지' 그대로(pinned에서 st.qwin을 앱에서는 빼서)
+  //   알약을 누르면(ACT pill) 펼쳐지고 작업실이 비킨다. 알릴 일(허락 카드 · 보고 · 질문 · 오류)은 peek · alert로 저절로 펼친다(peek는 앱의 작업실 안이면 home으로). 저절로 접히기는 설정 '접히기까지' 그대로(pinned에서 st.qwin을 앱에서는 빼서) — 단 옆 칸에 마우스가 있거나 글을 쓰는 중(colHover · colTyping)이면 안 접히고, 접힌 알약은 더 접히지 않는다
   const colFolded = () => st.ui === "petit" || st.ui === "hidden";
   const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${colFolded() ? " folded" : ""}">${colFolded() ? pillHTML() : islandHTML("")}</div>`;
   function syncWins() {
@@ -2077,9 +2079,12 @@
     const el = { dataset: p.data && typeof p.data === "object" ? p.data : {}, value: p.value, checked: !!p.checked, tagName: p.tag || "BUTTON", classList: { contains: (c) => c === "ghost" && !!p.ghost }, disabled: false, focus() {} };
     if (p.type === "click") { if (p.bv) return bvClick(el); return clickAct(el); }
     if (p.type === "change") return onChange(el);
-    if (p.type === "input") return onInput(el);
+    if (p.type === "input") { if (st.ui === "home" && timer) { clearIdle(); scheduleIdle(); } return onInput(el); }   // 글을 치는 동안 접히는 시계를 되돌린다(C-46)
     if (p.type === "key" && p.key === "Enter" && p.act === "say") return send();   // 작업실 옆 칸의 채팅 입력에서 Enter(C-41 ⑤) — 섬의 채팅 칸과 같이 보내기
-    if (p.type === "key" && p.key === "Escape") { if (deskKeys.Escape && st.ui === "home" && p.kind === "quest") return run(deskKeys.Escape); if (p.kind === "quest" && st.qwin) return set({ qwin: false }); }
+    // 옆 칸에 마우스를 올리거나 글을 쓰는 동안은 접히지 않는다(C-46) — 떠나면 접히는 시계를 다시 센다
+    if (p.type === "col") { if (typeof p.hover === "boolean") { colHover = p.hover; if (p.hover) clearIdle(); else scheduleIdle(); } if (typeof p.typing === "boolean") { colTyping = p.typing; if (!p.typing) scheduleIdle(); } return; }
+    // Esc — 옆 칸이 펼쳐져 있으면 먼저 접고(알약), 접혀 있으면 작업실을 닫는다(C-46, 새 맥락 리뷰 — 접기 단추의 '(Esc)'와 맞춤)
+    if (p.type === "key" && p.key === "Escape") { if (deskKeys.Escape && st.ui === "home" && p.kind === "quest") return run(deskKeys.Escape); if (p.kind === "quest" && st.qwin) { if (!colFolded()) return go("petit"); return set({ qwin: false }); } }
   }
   // ── 섬의 움직임(C-14, 2026-10-20 — 규칙 · 숫자는 morph.js) ──
   // 바탕(배경 · 그림자)을 가진 요소 — 섬(.isl) · 한 줄(.pill) · 띠(.strip — 바탕 없음)
@@ -2647,7 +2652,7 @@
     strip: () => view("enter"),
     open: () => view("click"),
     pin: () => { clearIdle(); set({ userPin: !st.userPin }); say(st.userPin ? "여기 열어 둘게요" : "이제 잠시 뒤 작게 접힐게요"); },
-    pill: () => view("click"),
+    pill: () => (st.ui === "hidden" ? go("home") : view("click")),   // 접힌 알약은 어느 상태든 누르면 펼침(C-46, 새 맥락 리뷰)
     fold: () => go("petit"),
     pet: () => pet("tap"),
     // 연습용은 바로 살펴보고, 진짜 AI 모드에서는 글만 넣어 둔다(보내는 건 사용자가 '어디쯤인지 보기'를 누를 때)

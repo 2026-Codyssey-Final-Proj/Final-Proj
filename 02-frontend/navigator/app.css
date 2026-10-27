@@ -1185,8 +1185,9 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.narrow .mc.chat .log{max-height:max(120px,calc(100vh - 340px))}
 .isl-col.wide .mc.chat .log{max-height:max(110px,calc(var(--col-h,360px) - 250px))}
 /* 접힌 옆 칸(C-46 R-2, 2026-10-27) — 그 가장자리의 알약 하나. 왼쪽 · 오른쪽은 세로 알약(이재엽 버튼 "세로 알약"): 플로로 얼굴은 바로, 글은 세로쓰기. 칸의 두께(56)는 win.js FOLD */
-.isl-col.folded{padding:4px;align-items:center;justify-content:center;overflow:hidden}
+.isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이 */
 .isl-col.folded .pill{max-width:100%;flex:none}
+.isl-col.folded .pill:hover{transform:none}   /* 올리면 커지는 움직임은 접힌 칸에서는 잘린다 — 하지 않는다 */
 .isl-col.folded.side-left .pill,.isl-col.folded.side-right .pill{height:auto;max-height:100%;width:48px;flex-direction:column;align-items:center;padding:6px 0 16px;gap:8px}
 .isl-col.folded.side-left .pill .pet,.isl-col.folded.side-right .pill .pet{margin:0}
 .isl-col.folded.side-left .pill b,.isl-col.folded.side-left .pill .pl-now,.isl-col.folded.side-left .pill .pl-cta,.isl-col.folded.side-left .pill .pl-mode,.isl-col.folded.side-left .pill .mini,
