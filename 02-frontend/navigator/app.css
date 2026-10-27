@@ -83,6 +83,7 @@ html.in-app.plat-win32 .isl,html.in-app.plat-win32 .pill:not(.ping){box-shadow:i
 .in-app .isl{max-height:none}
 .in-app .tb{-webkit-app-region:drag}
 .in-app .tb button,.in-app .tb select{-webkit-app-region:no-drag}
+.in-app .gacha-layer{-webkit-app-region:no-drag}   /* 뽑기 창은 위 줄(drag)을 덮는다 — 빼지 않으면 겹친 X 클릭이 창 끌기로 먹힌다(F-63) */
 /* Mac 노치(다이내믹 아일랜드, 2026-10-19 이재엽 결정) — 앱이 노치 크기를 보내면(app.js → --notch-w · --notch-h) 띠는 노치와 같은 검정으로 노치를 덮고,
    한 줄 · 펼침은 노치 아래로 늘어난다. 위 모서리는 화면 맨 위에 붙으니 각지게, 아래만 둥글게. 노치 없는 컴퓨터 · 브라우저에는 .notch가 안 붙는다 */
 html.notch .strip{width:max(150px,calc(var(--notch-w,200px) + 28px));height:calc(var(--notch-h,38px) + 34px);background:transparent;border-radius:0 0 18px 18px}   /* F-47(2026-10-20 이재엽 "원래대로 배경은 투명으로"): 검게 칠하니 노치가 더 커 보였다. 높이 +16은 아래 이름표 자리(F-55) */

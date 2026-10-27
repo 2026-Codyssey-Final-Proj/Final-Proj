@@ -94,7 +94,7 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 | 새 외부 스킬/플러그인/MCP를 설치·평가(`dev-workflow` 명령 4) | [`.claude/rules/external-integration.md`](.claude/rules/external-integration.md) |
 | 도구 이름만 받았거나 작업에 지금 없는 도구가 필요해 보일 때 | [`01-docs/catalog/external-tools.md`](01-docs/catalog/external-tools.md) "필요할 때 꺼낼 후보" |
 
-**규칙 파일은 필요할 때만 읽는다.** 매칭되는 규칙이 없으면 그냥 진행하되, 위험한 git 명령이나 테스트 없는 커밋은 훅이 한 번 더 막는다.
+<!-- claude-drafted: 2026-10-27 --> **규칙 파일은 두 가지로 불러와진다.** `review-mode` · `git-workflow` · `security-records`는 매 세션 불러와지고, 나머지는 머리말 `paths:`의 경로를 읽거나 고칠 때 Claude Code가 불러온다. 경로 없이 생기는 일(참고 자료를 링크로만 받음 · MCP를 들임)은 위 표에서 찾아 직접 읽는다. 매칭되는 규칙이 없으면 그냥 진행하되, 위험한 git 명령이나 테스트 없는 커밋은 훅이 한 번 더 막는다.
 
 ## `dev-workflow` 스킬
 
