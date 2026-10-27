@@ -19,7 +19,7 @@ function listFiles(dir, { depth = DEPTH, max = MAX, redact = (s) => s } = {}) {
     for (const e of ents) {
       if (files.length >= max) { cut = true; return; }
       const isDir = e.isDirectory(), p = rel ? `${rel}/${e.name}` : e.name;
-      files.push({ name: redact(e.name), path: redact(p), dir: isDir, depth: lvl });
+      files.push({ name: redact(e.name), path: redact(p), dir: isDir, depth: lvl, raw: p });   // raw — 가리지 않은 상대 경로(서버가 열 때 쓰고 답에는 넣지 않는다, C-43)
       if (isDir && lvl < depth) walk(path.join(d, e.name), lvl + 1, p);
       if (cut) return;
     }
@@ -27,4 +27,29 @@ function listFiles(dir, { depth = DEPTH, max = MAX, redact = (s) => s } = {}) {
   walk(dir, 1, "");
   return { files, total: files.length, cut, unread };
 }
-module.exports = { listFiles, DEPTH, MAX, SECRET };
+
+// ── C-43 파일 보기 · 고치기(2026-10-27 이재엽 버튼 "읽기 + 고치기" · "512KB" · "내용을 이해하고 어떤 내용인지만 판단"): 확장자 목록이 아니라 **내용으로** 글 파일인지 본다 ──
+const FILE_MAX = 512 * 1024;
+// 글 파일인가 — 앞 8KB에 NUL이 없고 UTF-8로 읽힌다(그림 · 압축 · 실행 파일은 NUL이 있다). 종류는 보이는 방식을 고르기 위한 것일 뿐 — 모르면 글(text)
+function isText(buf) {
+  const head = buf.subarray(0, 8192);
+  if (head.includes(0)) return false;
+  try { new TextDecoder("utf-8", { fatal: true }).decode(head); return true; } catch { return false; }
+}
+const KIND_BY_EXT = { md: "md", markdown: "md", txt: "text", log: "text", csv: "text", json: "code", yaml: "code", yml: "code", toml: "code", ini: "code", env: "code", js: "code", mjs: "code", cjs: "code", ts: "code", tsx: "code", jsx: "code", py: "code", rb: "code", go: "code", rs: "code", java: "code", kt: "code", swift: "code", c: "code", h: "code", cpp: "code", cs: "code", php: "code", sh: "code", bash: "code", zsh: "code", html: "code", htm: "code", css: "code", scss: "code", sql: "code", xml: "code", svg: "code" };
+const kindOf = (name) => { const m = /\.([A-Za-z0-9]+)$/.exec(String(name)); return (m && KIND_BY_EXT[m[1].toLowerCase()]) || "text"; };
+// 폴더 안의 상대 경로를 안전하게 — 가는 길에 바로가기가 있으면 null(서버 docTargets와 같은 생각), 폴더 밖(..)도 null
+function safePath(root, rel) {
+  const parts = String(rel || "").split("/");
+  if (!parts.length || parts.some((x) => !x || x === "." || x === "..")) return null;
+  let cur = path.resolve(root);
+  for (const part of parts) {
+    cur = path.join(cur, part);
+    let st = null; try { st = fs.lstatSync(cur); } catch { return null; }
+    if (st.isSymbolicLink()) return null;
+  }
+  return cur;
+}
+// git diff의 덩어리 머리(@@ -a,b +c,d @@)에서 새 쪽의 바뀐 줄 [시작, 개수]만 — 내용은 받지 않는다
+const changedLines = (diff) => [...String(diff || "").matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)].map((m) => [Number(m[1]), m[2] === undefined ? 1 : Number(m[2])]).filter(([, n]) => n > 0);
+module.exports = { listFiles, DEPTH, MAX, SECRET, FILE_MAX, isText, kindOf, safePath, changedLines };

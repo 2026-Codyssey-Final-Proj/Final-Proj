@@ -74,6 +74,7 @@
   root.addEventListener("input", (e) => { const t = e.target; if (!t.dataset || !t.dataset.act) return; F.winEvent({ type: "input", act: t.dataset.act, data: data(t), value: t.value }); });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); return F.winEvent({ type: "key", key: "Escape", kind }); }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); return F.winEvent({ type: "key", key: "s", mod: true, kind }); }   // 파일 보기의 저장(C-43) — 섬이 지금 연 파일을 쓴다
     // 옆 칸의 채팅 칸(C-41 ⑤): Enter는 보내기, Shift+Enter는 줄 바꿈 — 섬(app.js)의 채팅 칸과 같다
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.target && e.target.dataset && e.target.dataset.act === "say") { e.preventDefault(); F.winEvent({ type: "key", key: "Enter", act: "say", kind }); }   // isComposing — 한글 조합 중의 Enter(IME 확정)는 보내지 않는다(섬 app.js와 같이)
   });

@@ -36,7 +36,9 @@
 | `POST /api/task/start` | 섬 "허락하고 넘기기" | 출처 · 확인 값(쿠키) | `{ok, project, task:{state, project, at, code}}` — 연결한 폴더에서 `claude -p`를 연다 | 403 · 413 · 400 · 409 · 502 |
 | `GET /api/task` | 섬 | 출처 · 확인 값(쿠키) | `{ok, task}` 넘긴 일의 상태(없으면 null) | 403 |
 | `POST /api/quest` | 섬 — 퀘스트를 만들 때(C-22, 2026-10-21) | 출처 · 확인 값(쿠키) | `{ok, quest:{desc, why, qa[]}, tokens}` | 403 · 413 · 400 · 502 |
-| `GET /api/files` | 섬 — 작업실을 열 때(C-42 R-8, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, files:[{name, path, dir, depth}], total, cut, depth, max, why}` — 연결한 폴더의 이름만, 깊이 3 · 200개 | 403 |
+| `GET /api/files` | 섬 — 작업실을 열 때(C-42 R-8, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, files:[{name, path, dir, depth}], total, cut, unread, depth, max, why}` — 연결한 폴더의 이름만, 깊이 3 · 200개 | 403 |
+| `GET /api/file?i=N` | 섬 — 파일 칸에서 파일을 누를 때(C-43, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, i, name, path, kind, text, size, mtime, changed}` — 목록의 N번 파일(글 파일 · 512KB까지), 바뀐 줄은 git과 다른 [시작, 개수]. `ok:false`면 `why`(big · binary) | 403 · 400 · 404 |
+| `POST /api/file` | 섬 — 연 파일을 저장할 때(C-43) | 출처 · 확인 값(쿠키) | `{i, text, mtime, force?, overwrite?, commit?}` → `{ok, mtime, task, note}` — 그 파일에만 쓰고 commit이면 그 파일만 커밋 · 푸시를 Claude Code에 | 403 · 400 · 404 · 409(sensitive · changed · busy) · 413 · 500 |
 | `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/stagedraft` | 섬 — 1단계 관문을 지났을 때(C-37, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, draft:{items[{text} 또는 {pick, why}], say}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/docs` | 섬 — 2단계를 마치고 '올리기'를 눌렀을 때(C-37) | 출처 · 확인 값(쿠키) | `{ok, project, files[], task}` | 403 · 413 · 400 · 409 · 500 |
@@ -571,6 +573,18 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 한계: 깊이 3(맨 위가 1 — `docs/03-requirements/requirements.md`까지), 200개(넘으면 `cut: true` — 화면은 "더 있어요"). 폴더마다 파일 먼저 · 이름순, 깊이 우선(폴더 안쪽이 바로 뒤에 온다). 규칙은 [files.js](files.js).
 - 답(늘 200) `{ ok: true, project, files, total, cut, depth, max, why }` — `project`는 폴더 **이름**만, `files`는 `[{ name, path(폴더 안 상대 경로), dir, depth }]`. 폴더를 모르면 `files: null, why: "folder"`.
 - 화면: 작업실 창을 열 때 부른다(`app.js loadFiles`) — 지금 장 문서(`docs/<장 폴더>/…`)는 '● 지금', 지난 장 문서는 '읽음', 폴더는 눌러 접고 펼친다(지금 장의 폴더는 펼쳐져 있다). 서버 없이 · 연습 모드 · 폴더를 모르면 예시 목록(`FILES_DUMMY`)에 '예시' 표시. 시험: `04-tests/navigator/files-api.test.js`.
+
+### 3-26. `GET /api/file?i=N` · `POST /api/file` — 작업실 파일 보기 · 고치기 (C-43, 2026-10-27)
+
+<!-- claude-drafted: 2026-10-27 — 이재엽 "orca를 인용해서 코드나 md 파일을 확인" · 버튼 "읽기 + 고치기" · "바로 저장 + 되돌리기" · "저장마다 커밋 맡기기" · "512KB · 내용을 이해하고 어떤 내용인지만 판단". 코드보다 시험(files-api.test.js)을 먼저 썼다 -->
+- 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. **경로를 받지 않는다** — 3-25 목록의 **번호(`i`)**로만 연다(목록은 서버 메모리에 마지막 것 하나. 폴더가 바뀌었거나 빠졌으면 옛 목록으로 열지 않는다 — 400). 번호가 없거나 범위 밖이면 404, 폴더면 400.
+- **열기(GET)** — 그 폴더 안의 파일만(가는 길에 바로가기가 있으면 400, [files.js](files.js) `safePath`), 512KB(`FILE_MAX`)까지, **내용으로** 글 파일인지 본다(앞 8KB에 NUL이 없고 UTF-8로 읽힘 — 확장자 목록이 아니다, 이재엽 "내용을 이해하고 어떤 내용인지만 판단"). 그림 · 압축 · 실행 파일은 `ok:false, why:"binary"`, 크면 `why:"big"` — 까닭(`reason`)은 쉬운 말. `kind`는 보이는 방식만(md · code · text — 모르면 text).
+  - `changed`: 작업 폴더가 git이면 `git diff -U0 HEAD -- <파일>`의 덩어리 머리에서 새 쪽의 [시작, 개수]만(내용은 받지 않는다), 아직 git에 없는 파일은 `"new"`, git이 아니거나 실패하면 `[]`. 지금 장 문서 · Claude Code가 고친 파일의 바뀐 줄이 여기서 온다.
+- **저장(POST)** `{ i, text, mtime, force?, overwrite?, commit? }` — 본문은 글 파일 크기만큼(`readJson` 한계 ≈ 1MB, 넘으면 413). 그 파일에만 쓴다(폴더 · 목록 밖 · 바로가기는 400 · 404).
+  - 비밀번호 · 키 모양(sensitive.js `scan` — block)이 있으면 **쓰지 않고** 409 `why:"sensitive"`(+ `labels`) — 화면이 "그대로 저장 / 고칠게요"를 묻고, `force: true`로 다시 보내면 쓴다(막지는 않는다 — security-records 6-3).
+  - 연 뒤에 파일이 바뀌었으면(`mtime` 다름 — Claude Code가 고치는 중일 수 있다) 409 `why:"changed"`(+ 지금 `mtime`), 맡긴 일이 돌고 있으면 409 `why:"busy"` — `overwrite: true`로 덮어쓴다.
+  - `commit: true`면 쓴 뒤 **그 파일만** 커밋 · 지금 브랜치를 푸시하도록 Claude Code에 맡긴다(`saveRequest` — 강제 푸시 없음, 원격이 없으면 푸시하지 않고 까닭만. 기준 둘 `SAVE_CHECKS`). 허락 카드는 섬의 채팅에(3-13 ~ 3-15). 넘긴 일이 이미 돌고 있으면 저장만 하고 `note`에 까닭. 답 `{ ok, mtime, task, note }`.
+- 화면(`app.js` `filePane` · `openFile` · `saveFile`): 파일 칸의 파일을 누르면 열린 파일 탭 · 판 — md는 보기 좋게([md-view.js](md-view.js) — 모든 글을 가려 태그가 살아나지 않는다, 링크는 http(s)만 새 창) · 원문, 코드 · 글은 줄 번호와 바뀐 줄 표시. 고치기 → 글 칸, 저장(단추 · ⌘/Ctrl+S)은 바로 쓰고, 저장 이력은 열린 파일마다 20번(이 켜짐 동안, 되돌리기). 이름 찾기. 서버 없이 · 연습 모드는 예시 목록이라 열지 않는다. 시험: `04-tests/navigator/files-api.test.js` · `md-view.test.js` · `file-view.test.js` · `e2e/file-view.test.js`.
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

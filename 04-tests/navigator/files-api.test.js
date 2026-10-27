@@ -99,3 +99,71 @@ test("GET /api/files — 앱이 알려 준 폴더의 이름만(경로 없음), �
   Srv.dropProject(PROJ);
   assert.deepEqual((await call("GET", "/api/files")).json, { ok: true, project: "", files: null, why: "folder" });
 });
+
+// ── C-43 파일 보기 · 고치기(2026-10-27 이재엽 버튼 "읽기 + 고치기" · "바로 저장 + 되돌리기" · "저장마다 커밋 맡기기" · "512KB · 내용으로 판단"): GET /api/file?i=N · POST /api/file ──
+const { execSync } = require("node:child_process");
+const idx = (list, p) => list.findIndex((f) => f.path === p);
+test("GET /api/file — 목록의 번호로만 연다: 확인 값 없으면 403, 목록 전이면 400, 없는 번호 404, 폴더 400, 글 파일이면 kind · text · mtime, 바로가기 · 숨김 · 비밀값은 목록에 없어 열 수 없다", async () => {
+  assert.equal(Srv.useProject(PROJ), true);
+  fs.writeFileSync(path.join(PROJ, "README.md"), "# 제목\n\n- 하나\n");
+  fs.writeFileSync(path.join(PROJ, "src/app.js"), "const a = 1;\nconsole.log(a);\n");
+  fs.writeFileSync(path.join(PROJ, "pic.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 13]));
+  fs.writeFileSync(path.join(PROJ, "big.txt"), "x".repeat(512 * 1024 + 1));
+  assert.equal((await call("GET", "/api/file?i=0", { token: false })).status, 403);
+  const list = (await call("GET", "/api/files")).json.files;
+  assert.ok(!JSON.stringify(list).includes('"raw"'), "가리지 않은 경로(raw)는 답에 없다");
+  const md = await call("GET", `/api/file?i=${idx(list, "README.md")}`);
+  assert.equal(md.status, 200); assert.deepEqual([md.json.ok, md.json.kind, md.json.text, md.json.name, md.json.path], [true, "md", "# 제목\n\n- 하나\n", "README.md", "README.md"]);
+  assert.ok(Number.isFinite(md.json.mtime) && md.json.size === Buffer.byteLength(md.json.text), "mtime · size");
+  assert.ok(!md.text.includes(TMP), "절대 경로 없음");
+  const js = await call("GET", `/api/file?i=${idx(list, "src/app.js")}`); assert.equal(js.json.kind, "code");
+  assert.equal((await call("GET", `/api/file?i=${idx(list, "docs")}`)).status, 400, "폴더");
+  assert.equal((await call("GET", "/api/file?i=999")).status, 404); assert.equal((await call("GET", "/api/file?i=abc")).status, 404); assert.equal((await call("GET", "/api/file")).status, 404);
+  const png = await call("GET", `/api/file?i=${idx(list, "pic.png")}`); assert.equal(png.status, 200); assert.deepEqual([png.json.ok, png.json.why], [false, "binary"]); assert.match(png.json.reason, /글 파일이 아니에요/);
+  const big = await call("GET", `/api/file?i=${idx(list, "big.txt")}`); assert.deepEqual([big.json.ok, big.json.why], [false, "big"]); assert.match(big.json.reason, /512KB/);
+  assert.equal(idx(list, ".env"), -1); assert.equal(idx(list, "cert.pem"), -1); assert.equal(idx(list, "link-file.md"), -1, "숨김 · 비밀값 · 바로가기는 목록에 없어 번호가 없다");
+  Srv.dropProject(PROJ);
+  assert.equal((await call("GET", "/api/file?i=0")).status, 400, "폴더를 모르면 목록도 없다");
+});
+
+test("GET /api/file — 바뀐 줄: git 저장소면 HEAD와 다른 줄의 [시작, 개수](내용은 안 받음), 아직 git에 없는 파일은 'new', git이 아니면 []", async () => {
+  const g = path.join(TMP, "gitproj"); fs.mkdirSync(g, { recursive: true });
+  fs.writeFileSync(path.join(g, "a.md"), "1\n2\n3\n4\n");
+  execSync("git init -q && git -c user.name=t -c user.email=t@t add -A && git -c user.name=t -c user.email=t@t commit -q -m init", { cwd: g });
+  fs.writeFileSync(path.join(g, "a.md"), "1\n둘\n3\n4\n5\n6\n"); fs.writeFileSync(path.join(g, "b.md"), "새 파일\n");
+  assert.equal(Srv.useProject(g), true);
+  const list = (await call("GET", "/api/files")).json.files;
+  const a = (await call("GET", `/api/file?i=${idx(list, "a.md")}`)).json; assert.deepEqual(a.changed, [[2, 1], [5, 2]], "고친 줄 2, 더한 줄 5~6");
+  const b = (await call("GET", `/api/file?i=${idx(list, "b.md")}`)).json; assert.equal(b.changed, "new");
+  Srv.dropProject(g);
+  assert.equal(Srv.useProject(PROJ), true);
+  const l2 = (await call("GET", "/api/files")).json.files;
+  assert.deepEqual((await call("GET", `/api/file?i=${idx(l2, "README.md")}`)).json.changed, [], "git이 아니면 빈 목록");
+  Srv.dropProject(PROJ);
+});
+
+test("POST /api/file — 저장: 그 파일에만 쓴다, 비밀값 모양이면 409 sensitive(force로 그대로), 연 뒤에 바뀌었으면 409 changed(overwrite로 덮어씀), 너무 크면 413, commit이면 Claude Code에 맡긴 일(task)이 답에", async () => {
+  assert.equal(Srv.useProject(PROJ), true);
+  const list = (await call("GET", "/api/files")).json.files, i = idx(list, "README.md");
+  const opened = (await call("GET", `/api/file?i=${i}`)).json;
+  let r = await call("POST", "/api/file", { body: { i, text: "# 고침\n", mtime: opened.mtime } });
+  assert.equal(r.status, 200); assert.equal(r.json.ok, true); assert.equal(r.json.task, null); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "# 고침\n");
+  assert.ok(Number.isFinite(r.json.mtime), "새 mtime");
+  r = await call("POST", "/api/file", { body: { i, text: "password: hunter22\n", mtime: r.json.mtime } });
+  assert.equal(r.status, 409); assert.equal(r.json.why, "sensitive"); assert.deepEqual(r.json.labels, ["비밀번호·키 대입"]); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "# 고침\n", "쓰지 않았다");
+  r = await call("POST", "/api/file", { body: { i, text: "password: hunter22\n", mtime: r.json.mtime || 0, force: true, overwrite: true } });
+  assert.equal(r.status, 200, "그대로 저장");
+  fs.writeFileSync(path.join(PROJ, "README.md"), "밖에서 고침\n"); const touched = Date.now() + 5000; fs.utimesSync(path.join(PROJ, "README.md"), touched / 1000, touched / 1000);
+  r = await call("POST", "/api/file", { body: { i, text: "내가 고침\n", mtime: 1 } });
+  assert.equal(r.status, 409); assert.equal(r.json.why, "changed"); assert.ok(Number.isFinite(r.json.mtime)); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "밖에서 고침\n");
+  r = await call("POST", "/api/file", { body: { i, text: "내가 고침\n", mtime: 1, overwrite: true } }); assert.equal(r.status, 200);
+  assert.equal((await call("POST", "/api/file", { body: { i, text: "x".repeat(512 * 1024 + 1) } })).status, 413);
+  assert.equal((await call("POST", "/api/file", { body: { i: idx(list, "docs"), text: "x" } })).status, 400, "폴더에는 쓰지 않는다");
+  assert.equal((await call("POST", "/api/file", { body: { i: 999, text: "x" } })).status, 404);
+  assert.equal((await call("POST", "/api/file", { body: { i } })).status, 400, "글이 없으면");
+  assert.equal((await call("POST", "/api/file", { body: { i, text: "x" }, token: false })).status, 403);
+  // commit — 넘긴 일(claude -p)은 이 시험에서 켜지지 않는다(claude 없음 · NAV_REPLAY) — 저장은 되고 task 또는 note가 온다
+  r = await call("POST", "/api/file", { body: { i, text: "커밋도\n", commit: true, overwrite: true } });
+  assert.equal(r.status, 200); assert.equal(r.json.ok, true); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "커밋도\n"); assert.ok("task" in r.json);
+  Srv.dropProject(PROJ);
+});
