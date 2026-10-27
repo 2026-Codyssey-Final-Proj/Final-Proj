@@ -1,3 +1,8 @@
+---
+paths:
+  - ".claude/skills/**"
+---
+
 # 스킬 작성 규칙 — Agent Skills 명세
 
 `.claude/skills/**`에 스킬을 새로 만들거나 고칠 때만 읽으세요.
