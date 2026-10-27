@@ -127,8 +127,9 @@ const STATIC = {
   // notes.js — 실사용의 '느낀 점 남기기'(2026-10-19)
   // setup.js · setup.css — 처음 켤 때 반기고 연결(Claude Code / API 키)을 돕는 화면(2026-10-19)
   // greet.js — 켤 때 인사의 시간표(C-10, 2026-10-20)
+  // canvas-pan.js — 작업실 캔버스를 끌어서 옮기고 크게 · 작게(F-66, 2026-10-27)
   // morph.js — 섬의 움직임 규칙(C-14, 2026-10-20). 내비게이터는 hub.js(순수 함수) · steps.js도 부른다(C-13 기본 화면)
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js", "greet.js", "morph.js", "win.html", "win.js", "docmap.html"],   // docmap.html — 문서 지도(C-45, 2026-10-27)
+  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js", "greet.js", "morph.js", "win.html", "win.js", "docmap.html", "canvas-pan.js"],   // docmap.html — 문서 지도(C-45, 2026-10-27)
   "03-backend/navigator/board": ["board.js", "board.css"],   // archi-board 엔진 v1 사본(C-45) — docmap.html이 부른다   // win.html · win.js — 앱의 설정 창 · 퀘스트 창(C-22, 2026-10-21)
   // 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다. 2026-10-19(이재엽): learn.js · skills.js를 지우고, 지식 은하(sky.*)는 내주지 않는다(길을 막음 — 파일은 남김)
   // my-books.js — 내 책 · 예시 책 지우기(2026-10-19 실사용). 내비게이터(`../library/my-books.js`)와 서고가 같이 쓴다

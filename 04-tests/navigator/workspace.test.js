@@ -63,7 +63,7 @@ test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · �
   assert.match(a, /const FILES_DUMMY = \[\["README\.md", 0, "고침 · 책", "fix"\]/, "예시 데이터 — API가 생기면 지운다"); assert.match(a, /\$\{esc\(project\(\) \|\| "예시 프로젝트"\)\}/, "더미 이름이 진짜 프로젝트처럼 보이지 않게(새 맥락 리뷰 2026-10-27)");
   assert.match(a, /폴더를 연결하면 진짜 목록이 와요"\)\}">예시<\/em>/, "서버 없이 · 연습 · 폴더를 모르면 화면에 예시 표시(R-8)");
   const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("function fileCard"));
-  for (const s of ['<div class="cv"><div class="cvb" style="--fa:', 'class="cv-frame"', 'class="cv-bh"', "${fileCard()}${learn}${ARROWS}", 'class="cv-flo" style="--fx:${fx};--fy:${fy}"', '>${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}</span>`']) assert.ok(cv.includes(s), s);   // 칩은 앱 번호(R-9, 2026-10-27 — 전에는 코드 번호만이었다)터 판 밖(새 맥락 리뷰 2026-10-27)
+  for (const s of ['<div class="cvp"><div class="cvb" style="--fa:', 'class="cv-frame"', 'class="cv-bh"', "${fileCard()}${learn}${ARROWS}", 'class="cv-flo" style="--fx:${fx};--fy:${fy}"', '>${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}</span>`']) assert.ok(cv.includes(s), s);   // 칩은 앱 번호(R-9, 2026-10-27 — 전에는 코드 번호만이었다)터 판 밖(새 맥락 리뷰 2026-10-27)
   assert.match(cv, /if \(k === "now" && !floAt\) floAt = pos;/, "작은 플로로는 첫 '지금' 칸 옆");
   assert.match(c, /\.cv\{flex:1;min-height:0;min-width:0;overflow:auto;container-type:size;/);
   assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{\.cvb\{--u:min\(calc\(100cqw \/ 1100\),calc\(100cqh \/ 640\),1px\);display:block;width:calc\(1100 \* var\(--u\)\);height:calc\(640 \* var\(--u\)\)/, "판 1100×640을 칸에 맞춰 줌하는 것은 0.85배 이상 담을 수 있을 때만(935 = 1100 × .85 · 544 = 640 × .85) — R-11(이재엽 버튼 \"줌 + 모자라면 다시 배치\")");
@@ -154,4 +154,21 @@ test("app.js — R-10: landed는 gateRules를 거친다(빈칸 · 증거 — 그
   assert.match(a, /skipped: true, reason/, "넘긴 기준은 까닭과 함께");
   assert.match(a, /skip: \{ reason, items/, "결과에 까닭 · 넘긴 기준 이름");
   assert.match(a, /else if \(st\.results\[j\.stage\] && !st\.results\[j\.stage\]\.passed\) st\.results = \{ \.\.\.st\.results, \[j\.stage\]: \{ \.\.\.st\.results\[j\.stage\], check: checkOf\(j\)/, "다시 살펴본 결과가 오면 결정 기록의 기준 n/m도 그것으로(F-60 ①)");
+});
+
+// F-67(2026-10-27 이재엽 "지금 폴더들도 폴더라는 느낌이 안들어") — 파일 칸: 폴더는 꺾쇠 + 폴더 그림(접힘 · 펼침) + 굵은 이름 + 안의 개수, 파일은 종류 그림, 깊이마다 안내선. 예시도 같은 모양
+test("app.js · app.css — F-67 파일 칸이 폴더 트리처럼: 꺾쇠 · 폴더 그림 · 안의 개수 · 파일 종류 그림 · 안내선", () => {
+  const a = read("navigator/app.js"), c = read("navigator/app.css");
+  const nav = a.slice(a.indexOf("const FILES_DUMMY"), a.indexOf("// ── 파일 보기 · 고치기"));
+  assert.ok(!/[▸▾]/.test(nav), "글자 화살표(▸ ▾) 대신 그림");
+  assert.match(a, /const FN_ICON = \{ dir: '<svg/); for (const k of ["open:", "md:", "code:", "file:"]) assert.ok(a.slice(a.indexOf("const FN_ICON"), a.indexOf("const FN_CHEV")).includes(k), k);
+  assert.match(a, /const fKind = \(name\) =>/, "파일 종류 — md · 코드 · 그 밖");
+  assert.ok(nav.includes('<i class="chev-w${isOpen ? " on" : ""}">${FN_CHEV}</i>${fIcon(isOpen ? "open" : "dir")}<span>${esc(x.name)}</span>'), "폴더 행: 꺾쇠 · 폴더 그림 · 이름");
+  assert.ok(nav.includes('${kids[i] ? `<small class="fn-n">${kids[i]}</small>` : ""}'), "안의 개수(바로 아래만)");
+  assert.ok(nav.includes('<i class="chev-w"></i>${fIcon(fKind(x.name))}'), "파일 행: 꺾쇠 자리를 비워 폴더 이름과 줄을 맞춘다");
+  assert.match(a, /\["docs", 0, "", "dir", 1\]/, "예시의 펼친 폴더"); assert.match(a, /\["src", 0, "", "dir"\]/, "예시의 접힌 폴더");
+  assert.match(c, /\.wnav \.fn li\.dir\{color:var\(--ink\);font-weight:600\}/, "폴더 이름은 굵게 · 진하게(전에는 흐린 회색)");
+  assert.match(c, /\.wnav \.fn \.chev-w\.on svg\{transform:rotate\(90deg\)\}/);
+  assert.match(c, /\.wnav \.fn li\.d2::before,\.wnav \.fn li\.d3::before,\.wnav \.fn li\.d3::after\{content:"";position:absolute;/, "깊이마다 안내선");
+  assert.match(c, /\.wnav \.fn li\.dir button\{all:unset;cursor:pointer;min-height:44px;/, "누르는 곳 44px 그대로");
 });
