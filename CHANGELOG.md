@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v36.4 | 2026-10-27 | 임유정 | 앱에서 조개 뽑기 창의 닫기 X가 안 눌리던 것 — 뽑기 창을 창 끌기 영역에서 뺌 (F-63) (#223) | `02-frontend/navigator/` · `01-docs/07-maintenance/fix-map.md` |
 | v36.3 | 2026-10-27 | 이재엽 | 외부 도구 후보 표에 Laya(작은 판정 모델) — 채택 안 함, 우리 자료로 잰 결과 50% · 61% (#222) | `01-docs/catalog/external-tools.md` |
 | v36.2 | 2026-10-27 | 이재엽 | KAN-75 규칙 파일 8개에 `paths:` 머리말 — 매 세션 다 불러와지던 규칙을 그 경로를 다룰 때만 불러오게 (prompt-audit) (#221) | `.claude/rules/`(code · docs-editing · skill-authoring · consistency · problem-save-gate · reference-intake · external-integration · implementations), `CLAUDE.md` 97줄 |
 | v36.1 | 2026-10-27 | 이재엽 | 고칠 목록 F-62(관문에서 넘긴 기준의 까닭이 작업 폴더 문서에서 빠짐 — 페이블 세션이 C-46과 함께) · F-61 묶음 줄을 고침 상태로 (#219) | `01-docs/07-maintenance/` · `01-docs/00-overview/기록/`(C-46 넘김 문서 ⓒ) |
