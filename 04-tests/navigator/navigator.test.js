@@ -641,3 +641,32 @@ test("일 넘기기(연습): 서버 없이도 적은 글을 줄로 나눈다 —
   assert.equal(Nav.taskLines(Array.from({ length: 10 }, (_, i) => `일 ${i}`).join("\n")).lines.length, 6);
   assert.deepEqual(Nav.taskLines("").lines, []); assert.deepEqual(Nav.taskLines(null).lines, []);
 });
+
+// C-42 R-10(F-60, 2026-10-27 이재엽 버튼 "Go" · "증거가 있어야 됨"): 판정(AI · 연습 · 확인한 대로) 뒤에 코드가 한 번 더 본다(ADR-0003) —
+//   빈칸 표시가 남은 칸은 '됨'이 아니고, 증거가 있어야 하는 칸(5단계 도는지 · 6단계 작은 확인 — 그 장에서 Claude Code가 파일을 고친 기록, 7단계 잰 값 — 숫자)은 증거 없이는 '됨'이 아니다
+test("gateRules: 빈칸 표시('(재고 적기)' · '[채워 주세요: …]')가 남은 칸은 '됨'이 아니다 — 이미 '안 됨'인 칸과 다른 칸은 그대로", () => {
+  const j = { stage: 6, reason: "r", criteria: Nav.STAGES[6].criteria.map((c) => ({ text: c.text, term: c.term, met: true, evidence: "e" })), next: null };
+  const lines = ["30초 안에", "알림 시각: (재고 적기) · 잰 날: (재고 적기)", "아직 못 함: 없음", "로그인: 있음"];
+  const g = Nav.gateRules(j, { lines, work: true });
+  assert.deepEqual(g.criteria.map((c) => c.met), [true, false, true, true]);
+  assert.equal(g.criteria[1].why, "blank");
+  assert.equal(Nav.gateRules(j, { lines: ["[채워 주세요: 숫자]", "12초", "x", "y"], work: true }).criteria[0].why, "blank");
+  const off = { ...j, criteria: j.criteria.map((c, i) => ({ ...c, met: i !== 0 })) };
+  assert.deepEqual(Nav.gateRules(off, { lines: ["a", "12", "b", "c"], work: true }).criteria.map((c) => c.met), [false, true, true, true], "안 됨은 그대로");
+  assert.equal(Nav.gateRules(null, {}), null); assert.equal(Nav.GATE_WHY.blank, "빈칸 표시가 남았어요");
+});
+
+test("gateRules: 7단계 '잰 값'은 숫자가 있어야, 5단계 '도는지' · 6단계 '작은 확인'은 Claude Code가 파일을 고친 기록(work)이 있어야 '됨' — 다른 장 · 다른 칸은 안 건드린다", () => {
+  const mk = (n, lines) => Nav.gateRules({ stage: n, reason: "r", criteria: Nav.STAGES[n].criteria.map((c) => ({ text: c.text, term: c.term, met: true, evidence: "e" })), next: null }, { lines });
+  const m7 = mk(6, ["30초 안에", "알림 시각: 곧", "없음", "있음"]);
+  assert.equal(m7.criteria[1].met, false); assert.equal(m7.criteria[1].why, "evidence"); assert.ok(m7.criteria[0].met && m7.criteria[2].met);
+  assert.equal(mk(6, ["30초 안에", "알림 시각: 2026-10-27 12초", "없음", "있음"]).criteria[1].met, true, "숫자가 있으면 됨");
+  const m5 = Nav.gateRules({ stage: 4, reason: "r", criteria: Nav.STAGES[4].criteria.map((c) => ({ text: c.text, term: c.term, met: true, evidence: "e" })), next: null }, { lines: ["a", "b", "c", "d"], work: false });
+  assert.deepEqual(m5.criteria.map((c) => c.met), [true, false, true, true], "5단계 도는지 — 기록 없으면 안 됨"); assert.equal(m5.criteria[1].why, "evidence");
+  assert.deepEqual(Nav.gateRules({ ...m5, criteria: m5.criteria.map((c) => ({ ...c, met: true, why: undefined })) }, { lines: ["a", "b", "c", "d"], work: true }).criteria.map((c) => c.met), [true, true, true, true]);
+  const m6 = Nav.gateRules({ stage: 5, reason: "r", criteria: Nav.STAGES[5].criteria.map((c) => ({ text: c.text, term: c.term, met: true, evidence: "e" })), next: null }, { lines: ["a", "b", "c", "d", "e"], work: false });
+  assert.equal(m6.criteria.find((c) => c.text === "작은 부분마다 확인 통과하기").met, false);
+  const m3 = Nav.gateRules({ stage: 2, reason: "r", criteria: Nav.STAGES[2].criteria.map((c) => ({ text: c.text, term: c.term, met: true, evidence: "e" })), next: null }, { lines: ["a", "b", "c", "d", "e"], work: false });
+  assert.ok(m3.criteria.every((c) => c.met), "3단계는 증거 칸이 없다");
+  assert.deepEqual(Nav.EVIDENCE_CRITERIA, { 4: ["이어진 게 실제로 도는지 확인하기"], 5: ["작은 부분마다 확인 통과하기"], 6: ["잰 값을 그대로 적어 두기"] });
+});

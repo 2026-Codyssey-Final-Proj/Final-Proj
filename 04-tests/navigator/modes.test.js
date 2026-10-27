@@ -150,7 +150,7 @@ test("app.js — C-37: 내 말보다 먼저 지금 보이는 플로로의 말을
 test("app.js — C-37: 단계 결과(results)를 남기고 도전과제의 기본은 한눈에 보기(jmap) · 2단계 초안(/api/stagedraft) · 2단계가 끝나면 문서 올리기(/api/docs, docs.js)", () => {
   const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
   assert.ok(keep.includes('"results"'), "단계 결과는 다시 켜도 남는다");
-  assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: \{ \.\.\.QU\.resultOf\(st\.quest\), at: ymd\(\), check: j\.criteria\.map\(/, "보고가 된 퀘스트의 결과 + 확인한 날 · 완료 기준(C-39)");
+  assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: \{ \.\.\.QU\.resultOf\(st\.quest\), at: ymd\(\), check: checkOf\(j\)/, "보고가 된 퀘스트의 결과 + 확인한 날 · 완료 기준(C-39 — R-10부터 checkOf: why · skipped도)");
   assert.match(app, /function treeMap\(cur\)/); assert.match(app, /"jmap-fill": /);
   assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
   assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", results: shipResults\(\) \}\)/, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
@@ -171,5 +171,5 @@ test("app.js — C-40: 1단계 '남은 칸 모두 맞아요'는 만드는 크기
   const all = app.slice(app.indexOf('"draft-all": '), app.indexOf('"draft-all": ') + 400);
   assert.match(all, /setTier\(QU\.SIZE_TIER\[q\.draft\.size\]\)/, "크기 칩과 같게");
   assert.match(app, /async function callAI\(url, body, pending = null\)/); assert.match(app, /callAI\(null, null, hit\.p\)/);
-  assert.match(app, /function landed\(j, tokens, sent = st\.text, checkBy = ""\)/); assert.ok(!app.includes("checkByNext"), "전역 값 없음");
+  assert.match(app, /function landed\(j0, tokens, sent = st\.text, checkBy = ""\)/);   // R-10(2026-10-27): 들어온 판정 j0에 코드 규칙(gateRules)을 거친 j를 쓴다 assert.ok(!app.includes("checkByNext"), "전역 값 없음");
 });

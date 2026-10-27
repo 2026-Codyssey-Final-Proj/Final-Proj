@@ -43,7 +43,7 @@
     const gate = r.passed ? `${cell(r.passed)} — 이해했어요(예)` : R(n + 1) ? "지났어요 — 날짜는 남아 있지 않아요" : "아직";
     const proof = ["## 증빙", "", "| 무엇 | 내용 |", "|---|---|", `| 칸을 다 확인한 날 | ${r.at ? cell(r.at) : NONE} |`, `| 관문을 지난 날 | ${gate} |`, `| 누가 정했나 | ${count} |`].join("\n");
     // checkBy confirm(C-40) — 초안을 칸마다 확인한 단계는 AI가 다시 살펴보지 않았다. 그렇다고 적는다(증빙이 무엇에 기대는지)
-    const check = r.check && r.check.length ? `\n\n### 완료 기준 — ${r.checkBy === "confirm" ? "확인한 대로(AI가 다시 살펴보지 않고, 칸마다 사람이 확인)" : "살펴본 결과"}\n\n| 기준 | 됐나 | 근거 |\n|---|---|---|\n${r.check.map((c) => `| ${cell(red(c.text))} | ${c.met ? "됨" : "안 됨"} | ${cell(red(c.evidence))} |`).join("\n")}` : "";
+    const check = r.check && r.check.length ? `\n\n### 완료 기준 — ${r.checkBy === "confirm" ? "확인한 대로(AI가 다시 살펴보지 않고, 칸마다 사람이 확인)" : "살펴본 결과"}\n\n| 기준 | 됐나 | 근거 |\n|---|---|---|\n${r.check.map((c) => `| ${cell(red(c.text))} | ${c.skipped ? `넘김(까닭: ${cell(red((r.skip && r.skip.reason) || ""))})` : c.met ? "됨" : "안 됨"} | ${cell(red(c.evidence))} |`).join("\n")}` : "";
     const plan = n === 1 ? "\n\n이 문서가 이 프로젝트의 **계획서**예요. 일을 시작하기 전에 먼저 읽어요. 단계를 모은 기획서 한 장은 [../PRD.md](../PRD.md)에 있어요." : "";
     return `# ${label(n)} · ${s.title}${topic ? ` — ${topic}` : ""}\n\n${meta(s)}${plan}\n\n## 재료\n\n${mat}${prep}\n\n${items}\n\n${proof}${check}\n\n---\nFloe가 단계를 지나며 정리했어요. 누가 무엇을 정했는지는 [../decisions.md](../decisions.md)에 모았어요.\n`;
   }
@@ -66,7 +66,8 @@
     for (let n = 0; n < SLUGS.length; n++) {
       const r = R(n); if (!r) continue;
       for (const it of r.items) rows.push(`| ${cell(r.at)} | ${label(n)} | ${cell(red(Q.shortOf(it.name)))} | ${cell(it.draft ? red(it.draft) : "")} | ${cell(red(joined(it)))} | ${cell(Q.BY_WORD[it.by])} |`);
-      if (r.passed) { const c = r.check || []; rows.push(`| ${cell(r.passed)} | ${label(n)} | 관문 | — | 이해했어요(예)${c.length ? ` · 기준 ${c.filter((x) => x.met).length}/${c.length}` : ""} | 관문 |`); }
+      // R-10(2026-10-27): 넘긴 기준(skipped)은 '됨' 수에 들지 않고 '넘김 n — 까닭'으로 남긴다(까닭은 관문에서 사람이 적은 글)
+      if (r.passed) { const c = r.check || [], sk = c.filter((x) => x.skipped).length; rows.push(`| ${cell(r.passed)} | ${label(n)} | 관문 | — | 이해했어요(예)${c.length ? ` · 기준 ${c.filter((x) => x.met && !x.skipped).length}/${c.length}` : ""}${sk ? ` · 넘김 ${sk} — 까닭: ${cell(red((r.skip && r.skip.reason) || ""))}` : ""} | 관문 |`); }
     }
     return [MARK_START, `# 결정 기록${name ? ` — ${name}` : ""}`, "",
       "플로로가 초안을 내고 사람이 정했어요 — 그대로(초안 그대로) · 고침(초안을 고침) · 직접(초안 없이 적음) · 고름(셋 중에서 고름). 관문은 사람이 '이해했어요(예)'로 지나요.",

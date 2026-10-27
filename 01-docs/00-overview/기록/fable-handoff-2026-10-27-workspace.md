@@ -2,6 +2,8 @@
 
 # 넘김(페이블) — 앱을 스토리보드처럼: 화면 가득 · 보드 줌과 다시 배치 · 칸의 내용 · 진짜 파일 목록 · 단계 칩 · 관문 (C-42 · F-61 · F-60)
 
+> **끝남 — 2026-10-27 페이블 세션, 브랜치 `v2/workspace-storyboard` · PR #214(묶음 ① ~ ④).** 정한 것(버튼): S/M/L → '화면 가득' 하나 · 파일 목록 깊이 3 · 200개 · 증거가 있어야 '됨'. 남은 줄은 [fixes/workspace-storyboard.md](../../07-maintenance/fixes/workspace-storyboard.md). <!-- claude-drafted: 2026-10-27 -->
+
 > **기록 문서.** 2026-10-27 `main` 113fff4(C-41 ① ~ ⑥ — #207 ~ #212 뒤) 기준이다. 요구는 [requirements.md](../requirements.md) 2-2 **C-42**, 줄마다의 상태는 [fixes/workspace-storyboard.md](../../07-maintenance/fixes/workspace-storyboard.md)(F-61-1 ~ 11), 기준 그림은 [0~8단계 스토리보드](../../04-pattern-implementation/stage-storyboard/README.md) **3단계 장면**.
 
 ## 0. 먼저

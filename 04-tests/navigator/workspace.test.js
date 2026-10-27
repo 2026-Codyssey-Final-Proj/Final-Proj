@@ -136,3 +136,17 @@ test("app.js — R-8 파일 칸: 작업실을 열 때 /api/files를 받아 진�
   assert.match(s, /if \(req\.method === "GET" && route === "\/api\/files"\) return send\(res, 200, filesNow\(\)\);/);
   assert.match(s, /const r = Files\.listFiles\(s\.dir, \{ redact: Sensitive\.redact \}\);/, "이름은 가린다 · 폴더는 서버가 아는 것만(요청의 경로 없음)");
 });
+
+// R-10(C-42 · F-60, 2026-10-27): 판정이 오면 코드 규칙(gateRules)을 한 번 더 거치고, '안 됨'이 남으면 관문 앞에서 멈춰 '채우러 가기 / 까닭 적고 넘기기'를 묻는다 — 넘기면 까닭이 결정 기록 관문 줄에
+test("app.js — R-10: landed는 gateRules를 거친다(빈칸 · 증거 — 그 장의 줄과 Claude Code 파일 기록), 보고한 뒤 '안 됨'이 남으면 멈춤 카드(채우러 가기 · 까닭 적고 넘기기), 넘기면 까닭과 함께 '됨'으로 · 결과의 check도 최신 판정으로", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /function landed\(j0, tokens, sent = st\.text, checkBy = ""\) \{\n\s+const j = gateApply\(j0\);/, "판정 뒤 코드 규칙");
+  assert.match(a, /const workEvidence = \(\) => \{ const s = latestSession\(\); return !!\(s && \(s\.steps \|\| \[\]\)\.some\(\(x\) => x\.what && \(x\.add \|\| x\.del\)\)\); \};/, "증거 = 파일을 고친 기록");
+  assert.match(a, /N\.gateRules\(j, \{ lines: q \? q\.objs\.map\(\(_, i\) => \(q\.lines\[i\] \|\| \[\]\)\.join\(" \/ "\)\) : \[\], work: workEvidence\(\) \}\)/);
+  assert.match(a, /if \(gateStop\(\)\) return momentStop\(\);/, "멈춤 카드가 먼저");
+  assert.match(a, /const gateStop = \(\) => !!\(QU && st\.quest && st\.quest\.phase === "done" && st\.j && st\.j\.stage === st\.quest\.chap && !st\.finished && left\(\) > 0\);/);
+  for (const s of ['"gate-fill": () =>', '"gate-skip": () =>', '"gate-skip-save": () =>', '"gate-skip-back": () =>', 'label: "채우러 가기", act: "gate-fill"', 'label: "까닭 적고 넘기기", act: "gate-skip"', 'if (a === "skip-reason")']) assert.ok(a.includes(s), s);
+  assert.match(a, /skipped: true, reason/, "넘긴 기준은 까닭과 함께");
+  assert.match(a, /skip: \{ reason, items/, "결과에 까닭 · 넘긴 기준 이름");
+  assert.match(a, /else if \(st\.results\[j\.stage\] && !st\.results\[j\.stage\]\.passed\) st\.results = \{ \.\.\.st\.results, \[j\.stage\]: \{ \.\.\.st\.results\[j\.stage\], check: checkOf\(j\)/, "다시 살펴본 결과가 오면 결정 기록의 기준 n/m도 그것으로(F-60 ①)");
+});

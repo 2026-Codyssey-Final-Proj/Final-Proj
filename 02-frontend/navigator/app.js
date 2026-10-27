@@ -687,6 +687,7 @@
     if (st.meal) return feedSortMoment();   // 먹이를 나눠 정리하는 중(C-15)
     if (planNow()) return momentPlan();   // 준비 계획 · 맡길 일(C-35) — 퀘스트 창에서 '맡길 일'을 고르거나 계획 칩을 누르면
     if (st.ship && FDOCS) return momentShip();   // 2단계를 마친 뒤 문서 올리기(C-37)
+    if (gateStop()) return momentStop();   // R-10: 보고했는데 '안 됨'이 남았다 — 관문 앞에서 멈춘다
     if (QU && st.quest && st.quest.phase !== "done" && !st.openInput) return momentQuest();   // 퀘스트(C-22): 받기 전 · 한 줄씩 · 완료 보고
     if (st.ping) return { tone: "gray", mood: "look", badge: "…",
       meta: `<span class="mm-stage">${esc(pingHead())}</span>${s ? `<span>${LB(s.n)} · ${progress()}</span>${mini()}` : ""}`,
@@ -824,6 +825,20 @@
   });
 
   // 넘어가기 전 확인 — 이해했나요? → (아니요) 헷갈린 곳 → 묻기 → 한 장 요약 → (예) 다음 단계 순서 정하기
+  // R-10 멈춤(C-42 · F-60, 2026-10-27 이재엽 버튼 "Go"): 완료 보고 뒤 '안 됨'이 남으면 관문이 열리지 않는다 — 채우러 가기(공책으로) / 까닭 적고 넘기기(까닭은 결정 기록의 관문 줄에).
+  //   넘긴 기준은 '됨' 수에 들지 않고 '넘김'으로 남는다(docs.js). 이해했어요(예)는 그 뒤 전처럼
+  const gateStop = () => !!(QU && st.quest && st.quest.phase === "done" && st.j && st.j.stage === st.quest.chap && !st.finished && left() > 0);
+  function momentStop() {
+    const s = stage(), meta = `<span class="mm-stage">${LB(s.n)} · 관문 앞</span>${flowLine()}`;
+    const un = st.j.criteria.filter((c) => !c.met);
+    const rows = `<ul class="unmet">${un.map((c) => `<li><b>${esc(QU.shortOf(c.text))}</b>${c.why && N.GATE_WHY && N.GATE_WHY[c.why] ? ` <small>${esc(N.GATE_WHY[c.why])}</small>` : ""}</li>`).join("")}</ul>`;
+    if (st.skip) return { tone: "amber", mood: "think", badge: "!", meta, title: "왜 넘기는지 한 줄 적어 주세요", sub: "이 까닭은 결정 기록의 관문 줄에 남아요 — 나중에 읽는 사람이 알 수 있게",
+      body: `${rows}<textarea class="mc-input" data-act="skip-reason" rows="2" aria-label="넘기는 까닭" placeholder="예) 아직 잴 수 없어요 — 발표 뒤에 재요">${esc(st.skip.reason || "")}</textarea>`,
+      acts: [{ label: "이 까닭으로 넘기기", act: "gate-skip-save", key: "c-Enter", pri: true }, { label: "돌아가기", act: "gate-skip-back", key: "Escape", kind: "ghost" }] };
+    return { tone: "amber", mood: "think", badge: "!", meta, title: `아직 '안 됨'이 ${un.length}개 있어요 — 관문 앞에서 멈췄어요`,
+      sub: "채우러 가면 공책에서 그 칸을 고치고 다시 완료 보고를 해요. 넘기려면 까닭 한 줄이 결정 기록에 남아요.",
+      body: rows, acts: [{ label: "채우러 가기", act: "gate-fill", key: "Enter", pri: true }, { label: "까닭 적고 넘기기", act: "gate-skip" }] };
+  }
   function momentGate() {
     const s = stage(), nx = nextStage(), meta = `<span class="mm-stage">${LB(s.n)}에서 한 일</span>${flowLine()}`;
     const yes = { label: "네, 이해했어요", act: "yes", key: "y", pri: true }, no = { label: "아니요, 같이 풀어요", act: "no", key: "n" };
@@ -2490,14 +2505,21 @@
   let pendingNotice = "";
   // sent: 살펴본 작업 글 — '물어보기'가 글 칸이 비었을 때 대신 보낸다(F-11)
   //   checkBy — 완료 기준을 누가 봤나(C-40 confirm — 초안을 칸마다 확인한 대로). 그 보고에만 붙는다(2026-10-26 리뷰 — 전역 값이 실패 뒤 다음 판정에 남을 수 있었다)
-  function landed(j, tokens, sent = st.text, checkBy = "") {
+  // R-10(C-42 · F-60, 2026-10-27): 판정이 오면 코드 규칙(navigator.js gateRules)을 한 번 더 — 빈칸 표시 · 증거(그 장의 줄과 Claude Code가 파일을 고친 기록). 확인한 대로(C-40)도 같다
+  const workEvidence = () => { const s = latestSession(); return !!(s && (s.steps || []).some((x) => x.what && (x.add || x.del))); };
+  const gateApply = (j) => { if (!j || !N.gateRules) return j; const q = st.quest && st.quest.chap === j.stage ? st.quest : null; return N.gateRules(j, { lines: q ? q.objs.map((_, i) => (q.lines[i] || []).join(" / ")) : [], work: workEvidence() }); };
+  const checkOf = (j) => j.criteria.map((c) => ({ text: c.text, met: !!c.met, evidence: String(c.evidence || "").slice(0, 300), ...(c.why ? { why: c.why } : {}), ...(c.skipped ? { skipped: true } : {}) }));
+  function landed(j0, tokens, sent = st.text, checkBy = "") {
+    const j = gateApply(j0);
     const was = allDone();
     Object.assign(st, { j, tokens: tokens || 0, todos: null, openInput: false, choice: null, later: false, picking: false, back: "", notice: pendingNotice, finished: false, judged: sent });
     if (QU && st.quest && st.quest.phase === "quest" && QU.isDone(st.quest) && st.quest.chap === j.stage) {   // 다 적은 퀘스트를 살펴본 결과가 왔다 = 완료 보고가 됐다
       st.quest = { ...st.quest, phase: "done" };
       // 단계 결과(C-37) — 한곳에서 보기 · 도전과제 지도 · 다음 장 초안 · 문서. C-39: 칸을 다 확인한 날 · 완료 기준과 근거(문서의 증빙)
-      st.results = { ...st.results, [st.quest.chap]: { ...QU.resultOf(st.quest), at: ymd(), check: j.criteria.map((c) => ({ text: c.text, met: !!c.met, evidence: String(c.evidence || "").slice(0, 300) })), ...(checkBy ? { checkBy } : {}) } };
+      st.results = { ...st.results, [st.quest.chap]: { ...QU.resultOf(st.quest), at: ymd(), check: checkOf(j), ...(checkBy ? { checkBy } : {}) } };
     }
+    // 다시 살펴본 결과 — 결정 기록의 '기준 n/m'이 관문을 연 살펴보기와 같게(F-60 ①: test-1은 첫 살펴보기 1/4만 남았다)
+    else if (st.results[j.stage] && !st.results[j.stage].passed) st.results = { ...st.results, [j.stage]: { ...st.results[j.stage], check: checkOf(j), ...(checkBy ? { checkBy } : {}) } };
     pendingNotice = "";
     if (j.reason) logMsg("floro", esc(j.reason));   // 플로로의 쉬운 말 풀이(AI의 reason)는 채팅에 남긴다(C-22)
     const fresh = learn(j);
@@ -2782,7 +2804,19 @@
     "gacha-close": () => set({ gacha: null }),
     "gacha-roll": () => gachaRoll(),
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
-    qwin: () => set({ qwin: false }),   // 퀘스트 창의 ×(닫기만 — 옆 창에서 두 번 눌러도 다시 열리지 않게)
+    qwin: () => set({ qwin: false }),
+    // R-10 관문 앞 멈춤(2026-10-27)
+    "gate-fill": () => { if (!st.quest) return; st.quest = { ...st.quest, phase: "quest", edit: false }; st.skip = null; openQwin("quest"); render(); say("공책에서 '안 됨'인 칸을 고치고 다시 완료 보고를 눌러요"); },
+    "gate-skip": () => { st.skip = { reason: "" }; render(); },
+    "gate-skip-back": () => { st.skip = null; render(); },
+    "gate-skip-save": () => {
+      const reason = String((st.skip && st.skip.reason) || "").trim().slice(0, 200); if (!reason) return say("까닭을 한 줄 적어 주세요");
+      const items = st.j.criteria.filter((c) => !c.met).map((c) => c.text);
+      st.j = { ...st.j, criteria: st.j.criteria.map((c) => (c.met ? c : { ...c, met: true, skipped: true, reason })) };
+      const r = st.results[st.j.stage]; if (r) st.results = { ...st.results, [st.j.stage]: { ...r, check: checkOf(st.j), skip: { reason, items } } };
+      st.skip = null; logMe(`넘겨요 — ${reason}`); save();
+      if (allDone()) { view("alert"); return; } render();
+    },   // 퀘스트 창의 ×(닫기만 — 옆 창에서 두 번 눌러도 다시 열리지 않게)
     "qwin-toggle": () => { if (st.qwin) return set({ qwin: false }); openQwin("canvas"); render(); },   // 위 줄의 '퀘스트' 단추(C-35, 이재엽 그림 2026-10-24) — 작업실은 캔버스 탭부터(C-41, 2026-10-26)
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
@@ -3021,6 +3055,7 @@
     if (a === "hold-when") st.holdWhen = t.value;
     if (a === "text") st.text = t.value;
     if (a === "question") st.question = t.value;
+    if (a === "skip-reason") { st.skip = { ...(st.skip || {}), reason: t.value.slice(0, 200) }; return; }   // R-10 넘기는 까닭 — 다시 그리지 않는다(글 칸이 흔들리지 않게)
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다
     if (a === "task-text") { st.task.text = t.value; const b = $nav.querySelector("[data-act=task-tidy]"); if (b) b.disabled = !st.task.text.trim(); }
     if (a === "task-lines") st.task.lines = t.value.split("\n");
