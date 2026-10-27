@@ -1,3 +1,11 @@
+---
+paths:
+  - "02-frontend/**"
+  - "03-backend/**"
+  - "04-tests/**"
+  - "05-projects/*/implementations/**"
+---
+
 # 코드 작업 규칙 (frontend · backend · tests)
 
 `02-frontend/**`·`03-backend/**`·`04-tests/**` 또는 `05-projects/*/implementations/**` 아래 코드를 새로 쓰거나 고칠 때만 읽으세요.

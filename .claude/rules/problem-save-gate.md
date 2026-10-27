@@ -1,3 +1,8 @@
+---
+paths:
+  - "01-docs/01-problem-save/sessions/**"
+---
+
 # 1단계(문제 저장) 게이트 규칙
 
 `01-docs/01-problem-save/sessions/**`에 새 세션 파일을 쓰거나, `dev-workflow`

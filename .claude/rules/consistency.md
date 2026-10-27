@@ -1,3 +1,22 @@
+---
+paths:
+  - "CLAUDE.md"
+  - "05-projects/*/CLAUDE.md"
+  - ".claude/rules/**"
+  - ".claude/hooks/**"
+  - ".claude/agents/**"
+  - ".claude/skills/dev-workflow/**"
+  - ".claude/skills/VENDORED.md"
+  - "CHANGELOG.md"
+  - "changes/README.md"
+  - "01-docs/00-overview/growth-log.md"
+  - "01-docs/00-overview/jira.md"
+  - "01-docs/07-maintenance/fix-map.md"
+  - "01-docs/07-maintenance/fixes/**"
+  - "01-docs/04-pattern-implementation/03-diagramming-guide.md"
+  - "01-docs/catalog/checklist.md"
+---
+
 # `.claude/` 구조 자체를 고칠 때의 정합성 규칙
 
 `CLAUDE.md`, `.claude/rules/*.md`, `.claude/hooks/*.sh`, `.claude/agents/*.md`,
@@ -17,7 +36,7 @@
 
 | 기준 파일(고치는 대상) | 이걸 참조하는 파일(같이 확인) |
 |---|---|
-| `CLAUDE.md` | `.claude/skills/dev-workflow/SKILL.md` (라우터 링크), `05-projects/*/CLAUDE.md`(루트를 따른다고 적은 부분) |
+| `CLAUDE.md` | `.claude/skills/dev-workflow/SKILL.md` (라우터 링크), `05-projects/*/CLAUDE.md`(루트를 따른다고 적은 부분), `.claude/rules/*.md` 머리말 `paths:`(라우팅 표의 경로와 같은 경로를 적었다 — 표의 경로를 바꾸면 그 규칙의 머리말도, 2026-10-27 KAN-75) |
 | `05-projects/*/CLAUDE.md` | 루트 `CLAUDE.md`("프로젝트" 표), 같은 프로젝트의 `README.md`(문서 지도) |
 | `.claude/rules/git-workflow.md` | `CLAUDE.md`(라우팅 표·"브랜치·커밋"), `05-projects/*/CLAUDE.md`("병합은 사용자가 한다"), `.claude/skills/dev-workflow/PROCEDURE.md`(명령 3의 커밋 단계). "버전과 알림"을 바꾸면 아래 `CHANGELOG.md` 행도 |
 | `01-docs/00-overview/jira.md` (Jira 잇기 — 키 넣는 규칙 · 릴리스 Action) | `.github/workflows/jira-release.yml` · `.github/scripts/jira-release.js`(CHANGELOG 줄 모양 · 비밀값 이름 — 바꾸면 `04-tests/repo/jira-release.test.js`도), `.claude/rules/git-workflow.md`("버전과 알림"의 Jira 줄), `.github/pull_request_template.md`(PR 제목 모양), `01-docs/00-overview/team-guide.md` 3절, `.claude/rules/security-records.md` 3절(밖으로 나가는 것), `01-docs/catalog/external-tools.md`(판정 행), `CLAUDE.md`(라우팅 표), `.mcp.json`(`atlassian` 주소 — 4절 Claude 읽기 · 쓰기 규칙) |

@@ -1,3 +1,9 @@
+---
+paths:
+  - "01-docs/catalog/external-tools.md"
+  - ".claude/skills/VENDORED.md"
+---
+
 # 외부 스킬 / MCP 통합 규칙
 
 새 외부 스킬, 플러그인, MCP 서버를 설치하거나 평가할 때만 읽으세요
