@@ -27,7 +27,7 @@
   });
   // ── 섬 옆 칸(.isl-col)의 자리와 크기 — 자리는 class side-top · bottom · left · right(섬이 보냄), 크기는 여기서: 옆이면 너비 320 ~ 760(그리고 창 너비의 반까지, 처음 420), 위아래면 높이 320 ~ 480(처음 360).
   //   손잡이(#hd, role separator): 끌기 · 화살표 20 · Home · End · Enter/두 번 누르기로 처음. 두승현 결정 2026-10-27(스토리보드 열린 질문 6 · 8)
-  const RANGE = { w: [320, 760, 420], h: [320, 480, 360] };
+  const RANGE = { w: [320, 760, 420], h: [320, 480, 360] }, FOLD = 56;   // FOLD: 접힌 칸(C-46 R-2 — 알약 하나)의 두께
   const ls = (k) => { try { return +localStorage.getItem(k) || 0; } catch { return 0; } };   // 저장소가 막혀도 창은 돌아야 한다
   const col = { w: ls("floe:col-w") || 420, h: ls("floe:col-h") || 360 };
   const sideOf = () => { const c = root.querySelector(".isl-col"); return c ? (c.className.match(/\bside-(top|bottom|left|right)\b/) || [])[1] || "right" : ""; };
@@ -35,12 +35,14 @@
   const hiOf = (axis) => (axis === "w" ? Math.max(RANGE.w[0], Math.min(RANGE.w[1], Math.floor(innerWidth / 2))) : RANGE.h[1]);   // 옆은 760과 창 너비의 반 중 작은 것
   const clamp = (axis, v) => Math.max(RANGE[axis][0], Math.min(hiOf(axis), Math.round(v)));
   const hd = document.createElement("div"); hd.id = "hd"; hd.setAttribute("role", "separator"); hd.tabIndex = 0; hd.hidden = true; hd.innerHTML = "<span></span>"; document.body.appendChild(hd);
+  const foldedCol = () => { const c = root.querySelector(".isl-col"); return !!c && c.classList.contains("folded"); };
   function layoutCol() {
-    const side = sideOf(), h = document.documentElement;
-    h.dataset.side = side; hd.hidden = !side;
+    const side = sideOf(), h = document.documentElement, folded = foldedCol();
+    h.dataset.side = side; hd.hidden = !side || folded;   // 접힌 칸(C-46 R-2)은 손잡이 없이 두께 FOLD — 작업실이 그만큼 넓어진다(0.3초, win.html)
     if (!side) return;
     const axis = axisOf(side), v = (col[axis] = clamp(axis, col[axis]));
-    h.style.setProperty("--col-w", `${col.w}px`); h.style.setProperty("--col-h", `${col.h}px`);
+    h.style.setProperty("--col-w", `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);
+    if (folded) return;
     hd.className = axis === "w" ? "v" : "h";
     hd.style.cssText = axis === "w" ? `left:${side === "left" ? v - 7 : innerWidth - v - 7}px;top:0;width:14px;height:100%` : `top:${side === "top" ? v - 7 : innerHeight - v - 7}px;left:0;height:14px;width:100%`;
     hd.setAttribute("aria-orientation", axis === "w" ? "vertical" : "horizontal"); hd.setAttribute("aria-label", axis === "w" ? "플로로 칸 너비 손잡이" : "플로로 칸 높이 손잡이");
@@ -71,6 +73,12 @@
     F.winEvent({ type: "click", act: t.dataset.act || "", bv: t.dataset.bv || "", data: data(t), label: t.dataset.label || "", ghost: t.classList.contains("ghost"), tag: t.tagName });
   });
   root.addEventListener("change", (e) => { const t = e.target; if (!t.dataset || (!t.dataset.act && !t.dataset.bv)) return; F.winEvent({ type: "change", act: t.dataset.act || "", bv: t.dataset.bv || "", data: data(t), value: t.value, checked: !!t.checked }); });
+  // 옆 칸에 마우스가 있거나 채팅 칸에 글을 쓰는 동안 섬이 접히지 않게(C-46, 새 맥락 리뷰 2026-10-27) — 상태가 바뀔 때만 보낸다
+  let colHover = false;
+  root.addEventListener("mouseover", (e) => { const on = !!(e.target.closest && e.target.closest(".isl-col")); if (on !== colHover) { colHover = on; F.winEvent({ type: "col", hover: on }); } });
+  root.addEventListener("mouseleave", () => { if (colHover) { colHover = false; F.winEvent({ type: "col", hover: false }); } });
+  root.addEventListener("focusin", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: true }); });
+  root.addEventListener("focusout", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: false }); });
   root.addEventListener("input", (e) => { const t = e.target; if (!t.dataset || !t.dataset.act) return; F.winEvent({ type: "input", act: t.dataset.act, data: data(t), value: t.value }); });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); return F.winEvent({ type: "key", key: "Escape", kind }); }

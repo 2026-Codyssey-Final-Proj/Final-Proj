@@ -34,6 +34,12 @@ test("언제 인사하나 — 켤 때마다. 주소 끝 장면 · 휴대폰 · �
   for (const hash of ["#start", "#ex=1", "#tab=lib", "#setup", "#tab=lib&back"]) assert.equal(G.shouldGreet({ hash }).greet, false, `${hash}: 녹화 · 시험 · 돌아오기 장면`);
   assert.match(G.shouldGreet({ still: true }).why, /움직임 줄이기/);
   assert.equal(G.shouldGreet({ phone: true }).greet, false);
+  // C-46(이재엽 버튼 2026-10-27 "하루에 한 번"): 같은 날이면 인사 없이 알약만
+  assert.deepEqual(G.shouldGreet({ lastDay: "2026-10-27", today: "2026-10-27" }), { greet: false, why: "오늘 이미 인사했어요" });
+  assert.equal(G.shouldGreet({ lastDay: "2026-10-26", today: "2026-10-27" }).greet, true);
+  assert.equal(G.shouldGreet({ lastDay: "", today: "2026-10-27" }).greet, true, "처음");
+  assert.deepEqual(G.PILL_TIMELINE.map((x) => x.phase), ["pop", "hello", "settle", "done"], "알약 안의 시간표 — 띠 · 열림 없이");
+  assert.ok(G.total(G.PILL_TIMELINE) <= G.LIMIT && G.total(G.PILL_TIMELINE) < G.total(G.TIMELINE), "알약 인사는 짧다");
 });
 
 test("돌리기 — 단계가 차례로 오고 끝에 done, 끝난 뒤 남은 타이머가 없다", () => {
@@ -59,16 +65,21 @@ test("건너뛰기(누름 · Esc) — 남은 단계를 지우고 바로 done 한
   assert.deepEqual(seen2, [], "cancel은 아무것도 부르지 않는다");
 });
 
-test("app.js — 인사는 greet.js 규칙으로 켤 때 한 번, 단계는 html[data-greet], 누름 · 키로 건너뛰고, 끝나면 floe:greet-done · 접힘 타이머 시작", () => {
+test("app.js — 인사는 greet.js 규칙으로 켤 때(하루에 한 번) 알약 안에서, 단계는 html[data-greet], 누름 · 키로 건너뛰고, 끝나면 알약 그대로 · floe:greet-done · 접힘 타이머 시작(C-46 R-1)", () => {
   const app = read("navigator/app.js");
-  assert.match(app, /GR\.shouldGreet\(\{ hash: location\.hash, still: STILL, phone: isPhone\(\) \}\)\.greet/);
+  assert.match(app, /GR\.shouldGreet\(\{ hash: location\.hash, still: STILL, phone: isPhone\(\), lastDay: readLS\(GREET_DAY, ""\), today: ymd\(\) \}\)\.greet/);
+  assert.match(app, /if \(greetNow\) \{ document\.documentElement\.classList\.add\("greeting"\); st\.ui = "petit"; \}/, "켜면 알약");
+  assert.match(app, /else if \(st\.ui === "greet"\) st\.ui = location\.hash && location\.hash !== "#" \? "home" : "petit";/, "인사가 없어도 알약 — 주소 끝 장면(시험 · 녹화)은 기본 화면");
+  assert.match(app, /writeLS\(GREET_DAY, ymd\(\)\);/, "오늘 인사했다"); assert.match(app, /go\("petit"\);   \/\/ 인사가 끝나도 알약 그대로/, "끝나도 알약");
+  assert.match(app, /GR\.play\(GR\.PILL_TIMELINE, \{ onPhase \}\)/);
+  assert.match(app, /\$\{greeting \? " greet" : ""\}" data-act="pill"/, "인사 중인 알약"); assert.match(app, /class="pl-now pl-hello" aria-live="polite">\$\{esc\(st\.back \|\| C\.greeting\(new Date\(\)\.getHours\(\)\)\)\}/, "시간대 인사 한 줄");
+  assert.ok(!app.includes("function greetHTML"), "큰 인사 카드는 없다");
   assert.match(app, /h\.dataset\.greet = p/);
   assert.match(app, /if \(greetSkip\) \{ greetSkip\(\); if \(e\.key === "Escape"\)/, "키 — Esc는 건너뛰기만");
   assert.match(app, /\$nav\.addEventListener\("click", \(\) => \{ if \(greetSkip\) greetSkip\(\); \}, \{ capture: true \}\)/, "누름");
   assert.match(app, /new CustomEvent\("floe:greet-done"\)/);
   assert.match(app, /function scheduleIdle\(\) \{\n\s*if \(greetSkip\) return;/, "인사 중에는 접히지 않는다");
   assert.match(app, /if \(p === "hello" && st\.sound\) C\.chime\("pop"\);/, "hello 단계는 소리만 — 머리 위 말풍선은 2026-10-25에 뺐다");
-  assert.match(app, /GREET_WAVE/, "띠의 물결 선이 섬 안에서 그어진다");
   assert.match(read("navigator/index.html"), /<script src="greet\.js"><\/script>\s*<script src="app\.js">/, "greet.js는 app.js보다 먼저");
 });
 
@@ -79,8 +90,8 @@ test("setup.js — 처음 설정은 인사가 끝난 뒤에 연다(인사가 두
 
 test("app.css — 단계마다 모양이 있고 움직임 줄이기면 바로 보인다", () => {
   const css = read("navigator/app.css");
-  for (const p of ["wave", "open", "pop", "hello", "settle"]) assert.match(css, new RegExp(`html\\[data-greet="${p}"\\]`), p);
+  for (const p of ["pop", "hello", "settle"]) assert.match(css, new RegExp(`html\\[data-greet="${p}"\\] \\.pill\\.greet`), p);
   assert.match(css, /@keyframes fin-wave/, "지느러미 흔들기");
-  assert.match(css, /\.greet-wl path\{stroke-dasharray:100;stroke-dashoffset:100;animation:wl-draw/, "물결 선이 그어진다");
-  assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{html\.greeting \.isl\.greet \.mc-cat,html\.greeting \.isl\.greet \.mc-main\{opacity:1\}/);
+  assert.ok(!css.includes(".greet-wl") && !css.includes(".isl.greet"), "띠의 물결 선 · 큰 인사 카드 모양은 뺐다(C-46)");
+  assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{html\.greeting \.pill\.greet \.pet,html\.greeting \.pill\.greet \.pl-hello\{opacity:1;animation:none\}/);
 });
