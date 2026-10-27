@@ -18,7 +18,7 @@ test("main.js — 작업실이 뜨면 섬 창은 숨고(hide), 닫히면 다시 
   for (const gone of ["function placeIsland", "L.dockBounds(", 'ipcMain.on("floe:dock-side"', 'ipcMain.on("floe:dock-inner"', "parkIsland(", "docked() ?"]) assert.ok(!m.includes(gone), `${gone} — 창 둘을 좌표로 맞추던 길은 뺐다(두승현 PC에서 두 번 다 안 붙었다)`);
   for (const gone of ["dockSide:", "dockInner:", "onDock:", "onDockRoom:"]) assert.ok(!p.includes(gone), gone);
   assert.equal(L.dockBounds, undefined);
-  assert.match(m, /if \(!w\.floeMoved && kind !== "quest"\) \{/, "작업실은 S · M · L로도 제자리에서 크기만");
+  assert.match(m, /if \(kind === "quest"\) \{ if \(size === "full"\)/, "작업실 크기는 '화면 가득'(R-1, 2026-10-27)만 — S · M · L은 뺐다");
 });
 
 test("app.js — 작업실에 보내는 HTML = 작업실 판 + 섬의 옆 칸(.isl-col side-… narrow|wide). 자리를 바꾸면 다시 그릴 뿐(앱에 보내지 않음). 옆 칸의 채팅 Enter는 섬의 send()로", () => {

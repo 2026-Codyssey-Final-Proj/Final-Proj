@@ -36,6 +36,7 @@
 | `POST /api/task/start` | 섬 "허락하고 넘기기" | 출처 · 확인 값(쿠키) | `{ok, project, task:{state, project, at, code}}` — 연결한 폴더에서 `claude -p`를 연다 | 403 · 413 · 400 · 409 · 502 |
 | `GET /api/task` | 섬 | 출처 · 확인 값(쿠키) | `{ok, task}` 넘긴 일의 상태(없으면 null) | 403 |
 | `POST /api/quest` | 섬 — 퀘스트를 만들 때(C-22, 2026-10-21) | 출처 · 확인 값(쿠키) | `{ok, quest:{desc, why, qa[]}, tokens}` | 403 · 413 · 400 · 502 |
+| `GET /api/files` | 섬 — 작업실을 열 때(C-42 R-8, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, files:[{name, path, dir, depth}], total, cut, depth, max, why}` — 연결한 폴더의 이름만, 깊이 3 · 200개 | 403 |
 | `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/stagedraft` | 섬 — 1단계 관문을 지났을 때(C-37, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, draft:{items[{text} 또는 {pick, why}], say}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/docs` | 섬 — 2단계를 마치고 '올리기'를 눌렀을 때(C-37) | 출처 · 확인 값(쿠키) | `{ok, project, files[], task}` | 403 · 413 · 400 · 409 · 500 |
@@ -561,6 +562,15 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - **같이 쓸 앱 — Claude Desktop(터널 없음, 같은 날 두승현 "같이 쓸 앱으로 연결으로 해줘").** 처음 설정의 AI 연결 다음 칸 '같이 쓸 앱이 있나요?'에서 'Claude Desktop과 잇기'를 누르면 서버가 [app-link.js](app-link.js)로 Claude Desktop 설정 파일(`claude_desktop_config.json` — Windows 스토어판 `%LOCALAPPDATA%\Claude-Data\claude_*`, 일반판 `%APPDATA%\Claude`, Mac `~/Library/Application Support/Claude`)의 `mcpServers`에 `floe` 한 칸만 넣는다. 다른 칸은 그대로, 처음 한 번 원본을 `.floe-bak`으로 남기고, 깨진 설정이면 쓰지 않는다(409). 넣는 칸은 지금 실행 파일(Electron이면 `ELECTRON_RUN_AS_NODE`)로 [mcp-stdio.js](mcp-stdio.js)를 켜고, 포트와 **토큰 파일 자리**만 담는다(값은 넣지 않는다). 중계 파일은 줄마다 `/mcp/<토큰>`에 넘기고, Floe가 꺼져 있으면 `mcp.js`가 직접 답한다(도구 목록 · 'Floe 앱이 열려 있지 않아요'). AI 연결을 대신하지 않는다 — Floe의 판정 · 초안은 여전히 Claude Code나 API 키. 잇고 나면 Claude Desktop을 다시 켠다.
 - 웹으로 써 보는 법: ① `NAV_MCP=1 node server.js` ② 다른 창에서 터널 ③ 웹 AI에 `https://<터널 주소>/mcp/<~/.floe-mcp-token의 값>`을 MCP 서버로 더한다. **이 주소를 아는 사람은 지금 할 일 · 적은 줄을 읽고 제안을 띄울 수 있다** — 시험이 끝나면 터널을 닫는다. 밖으로 나가는 것: [security-records.md](../../.claude/rules/security-records.md) 3절.
 - 시험: [`mcp.test.js`](../../04-tests/navigator/mcp.test.js)(가짜 웹 AI가 JSON-RPC를 직접 보낸다 — 진짜 웹 AI · 터널은 부르지 않는다). 2026-10-25 헤드리스 Chrome으로 상태 → `floe_now` → `floe_report` → 카드 → 맞아요 → Ⅰ에 적힘을, 퀘스트 없는 화면에서 `floe_start` → 시작 카드 → 맞아요 → 진짜 AI 초안으로 1단계 퀘스트 → `floe_report`까지 확인했다. 같은 날 Electron 실행 파일을 node로 켠 중계 파일이 켜져 있는 앱의 지금 상태를 읽는 것까지 확인했다. 진짜 웹 GPT · 웹 Claude · Claude Desktop 화면으로는 **확인 못 함**. 시험: [`app-link.test.js`](../../04-tests/navigator/app-link.test.js) · E2E [`setup-flow.test.js`](../../04-tests/e2e/setup-flow.test.js).
+
+### 3-25. `GET /api/files` — 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만 (C-42 R-8, 2026-10-27)
+
+<!-- claude-drafted: 2026-10-27 — 이재엽 버튼 "전부"(R-8을 페이블에) · "깊이 3 · 200개". 코드보다 시험(files-api.test.js)을 먼저 썼다 -->
+- 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. 본문 없음 — **경로를 받지 않는다**(물음표 뒤 값도 보지 않는다). 폴더는 3-18과 같다(앱이 고른 작업 폴더, 없으면 훅 알림의 cwd) — 서버 메모리의 그 폴더 안만 본다.
+- **읽기만 · 이름만.** 파일 내용은 읽지 않는다. 바로가기(심볼릭 링크)는 따라가지 않고 목록에도 넣지 않는다(폴더 밖으로 나가는 길을 막는다). 빼는 것: 점으로 시작하는 것(`.git` · `.env` · `.claude` …) · `node_modules` · 비밀값 파일(`.claude/hooks/check-secrets.sh`의 금지 경로와 같은 모양 — `.env.*` · `id_rsa` · `id_ed25519` · `credentials.json` · `*.pem` · `*.key` · `*.p12` · `*.pfx`). 이름은 [sensitive.js](sensitive.js)로 한 번 더 가린다.
+- 한계: 깊이 3(맨 위가 1 — `docs/03-requirements/requirements.md`까지), 200개(넘으면 `cut: true` — 화면은 "더 있어요"). 폴더마다 파일 먼저 · 이름순, 깊이 우선(폴더 안쪽이 바로 뒤에 온다). 규칙은 [files.js](files.js).
+- 답(늘 200) `{ ok: true, project, files, total, cut, depth, max, why }` — `project`는 폴더 **이름**만, `files`는 `[{ name, path(폴더 안 상대 경로), dir, depth }]`. 폴더를 모르면 `files: null, why: "folder"`.
+- 화면: 작업실 창을 열 때 부른다(`app.js loadFiles`) — 지금 장 문서(`docs/<장 폴더>/…`)는 '● 지금', 지난 장 문서는 '읽음', 폴더는 눌러 접고 펼친다(지금 장의 폴더는 펼쳐져 있다). 서버 없이 · 연습 모드 · 폴더를 모르면 예시 목록(`FILES_DUMMY`)에 '예시' 표시. 시험: `04-tests/navigator/files-api.test.js`.
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

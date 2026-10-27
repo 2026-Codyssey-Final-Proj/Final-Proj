@@ -197,7 +197,7 @@ test("C-16: 퀘스트 창의 탭은 셋(퀘스트 · 도전과제 · 책 — 배
     const page = await fresh(browser);
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tab=doc"), { waitUntil: "load" }); await wait(400);
     const s = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".qwin .wtabs [role=tab]")].map((t) => t.dataset.tab), head: document.querySelector(".bdoc-head b")?.textContent || "", draft: !!document.querySelector("[data-act=draft]") }));
-    assert.deepEqual(s.tabs, ["quest", "tree", "lib"]);
+    assert.deepEqual(s.tabs, ["canvas", "quest", "tree", "lib"]);   // C-41 ①(2026-10-26)부터 캔버스가 먼저 — 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다(2026-10-27 고침)
     assert.ok(s.head.includes("2단계") && s.draft, `단계 번호는 1~8로(코드 1 = 2단계): ${JSON.stringify(s)}`);
     await page.click("[data-act=draft]"); await wait(400);
     await page.evaluate(() => { const t = document.querySelector("textarea[data-act=doc]"); t.value = t.value.replace(/\[채워 주세요: [^\]]*\]/g, "채움"); t.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -480,10 +480,10 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     // 칭호는 섬의 플로로 아래에서 뺐고(2026-10-25) 설정 판 왼쪽 칸에 있다 — 관문을 넘으면 바뀐다
     assert.ok((await page.evaluate(() => document.querySelector(".setp .who")?.textContent || "")).includes("적어 두는 사람"), "설정 판의 칭호가 바뀐다");
     const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > *")].filter((x) => !x.classList.contains("shell")).map((x) => (x.classList.contains("qwin") ? "quest" : "isl")));
+    assert.deepEqual(await order(), ["quest", "isl"], "처음은 섬이 오른쪽(C-41 ② 2026-10-27 — side는 섬 자리, 작업실은 그 반대쪽. 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다)");
+    await page.click("[data-act=side][data-v=left]"); await wait(300);   // 설정의 '왼쪽' — 섬이 왼쪽으로
     assert.deepEqual(await order(), ["isl", "quest"]);
-    await page.click("[data-act=side][data-v=right]"); await wait(300);   // '왼쪽' 단추 — 값은 그대로 side(퀘스트 창은 그 반대쪽)
-    assert.deepEqual(await order(), ["quest", "isl"]);
-    assert.equal(await page.evaluate(() => localStorage.getItem("floe:win-side")), "right");
+    assert.equal(await page.evaluate(() => localStorage.getItem("floe:win-side")), "left");
     // 탭 — 하나씩 보인다
     await page.click("[data-act=set-tab][data-tab=view]"); await wait(200);
     assert.ok(await page.$(".set-body [data-act=mode]") && !(await page.$(".set-body [data-act=name]")), "보기 탭에는 보기 칸만");

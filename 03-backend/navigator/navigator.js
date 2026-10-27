@@ -78,6 +78,25 @@
 
   // FR-4·5: 할 일을 다 하고 "이해했어요(예)"가 있어야만 다음 단계로 간다.
   const canAdvance = (met, understood) => met.length > 0 && met.every(Boolean) && understood === "yes";
+  // C-42 R-10(F-60, 2026-10-27 이재엽 버튼 "Go" · "증거가 있어야 됨") — 관문 규칙: AI · 연습 · 확인한 대로(C-40)의 판정 뒤에 코드가 한 번 더 본다(ADR-0003 '판정은 코드 규칙').
+  //   ① 빈칸 표시('(재고 적기)' 같은 틀 글 · '[채워 주세요: …]')가 남은 칸은 '됨'이 아니다(why: blank).
+  //   ② 증거가 있어야 하는 칸 — 5단계 '도는지 확인'(코드 4) · 6단계 '작은 부분마다 확인'(코드 5)은 그 장에서 Claude Code가 파일을 고친 기록(ctx.work)이, 7단계 '잰 값'(코드 6)은 숫자가 있어야 '됨'(why: evidence).
+  //   '안 됨'은 그대로. 다른 칸 · 다른 장은 건드리지 않는다. ctx.lines[i]: 그 칸에 적은 줄(없으면 판정의 근거 글로 본다) — claude-drafted: 2026-10-27
+  const BLANK_MARK = /\((재고 적기|적기|채워 넣기|여기에 적기)\)|\[채워 주세요:[^\]]*\]/;
+  const EVIDENCE_CRITERIA = { 4: ["이어진 게 실제로 도는지 확인하기"], 5: ["작은 부분마다 확인 통과하기"], 6: ["잰 값을 그대로 적어 두기"] };
+  const GATE_WHY = { blank: "빈칸 표시가 남았어요", evidence: "증거가 아직 없어요" };
+  const UNMEASURED = /아직\s*(못|안|모름)|못\s*(잼|쟀|재)|재지\s*못|모르겠/;   // '2단계 숫자를 아직 못 잼'처럼 숫자가 섞여도 잰 값이 아니다(새 맥락 리뷰 2026-10-27)
+  function gateRules(j, ctx = {}) {
+    if (!j || !Array.isArray(j.criteria)) return j;
+    const lines = Array.isArray(ctx.lines) ? ctx.lines : [], work = !!ctx.work, need = EVIDENCE_CRITERIA[j.stage] || [];
+    return { ...j, criteria: j.criteria.map((c, i) => {
+      if (!c || !c.met) return c;
+      const text = String(lines[i] == null ? c.evidence || "" : lines[i]);
+      if (BLANK_MARK.test(text)) return { ...c, met: false, why: "blank" };
+      if (need.includes(c.text) && (j.stage === 6 ? !/\d/.test(text) || UNMEASURED.test(text) : !work)) return { ...c, met: false, why: "evidence" };
+      return c;
+    }) };
+  }
 
   // FR-12: 순서는 사용자가 정한다. 원본을 바꾸지 않는다.
   function reorder(list, i, dir) {
@@ -502,7 +521,7 @@
     };
   }
 
-  const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
+  const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, gateRules, BLANK_MARK, EVIDENCE_CRITERIA, GATE_WHY, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, TASK_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt, taskPrompt,
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
     FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest,   // C-22 퀘스트 제작(2026-10-21)

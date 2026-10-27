@@ -72,3 +72,15 @@ test("모양: 결과가 없는 단계는 틀만, 주제가 비어도 단계 이�
   assert.ok(f.find((x) => x.path === "docs/02-plan/README.md"), "2단계를 아직 안 했으면 2단계도 틀");
   assert.match(f.find((x) => x.path === "docs/01-idea/idea.md").text, /^# 1단계 · 무엇을 만들지 정하기\n/);
 });
+
+// C-42 R-10(2026-10-27): 관문에서 '까닭 적고 넘기기'로 지났으면 결정 기록의 관문 줄에 넘긴 기준 수와 까닭이 남고, 단계 문서의 완료 기준 표에는 '넘김'이 보인다
+test("decisions · stageDoc — 넘긴 기준(skipped)은 '됨' 수에 들지 않고 '넘김 n — 까닭'으로, 완료 기준 표에는 '넘김(까닭)'", () => {
+  const D = require("../../03-backend/navigator/docs.js");
+  const r = { chap: 6, title: "재 보기", at: "2026-10-27", passed: "2026-10-28", items: [{ name: "잰 값을 그대로 적어 두기", lines: ["알림 시각: (재고 적기)"], by: "ok" }],
+    check: [{ text: "2단계에서 정한 숫자를 실제로 재 보기", met: true, evidence: "e" }, { text: "잰 값을 그대로 적어 두기", met: true, skipped: true, evidence: "" }], skip: { reason: "아직 잴 수 없어요 — 발표 뒤에", items: ["잰 값을 그대로 적어 두기"] } };
+  const files = D.files({ topic: "t", idea: "", results: { 6: r }, redact: (x) => x });
+  const dec = files.find((f) => f.path === "docs/decisions.md").text, doc = files.find((f) => f.path === "docs/07-measure/measure.md").text;
+  assert.match(dec, /\| 2026-10-28 \| 7단계 \| 관문 \| — \| 이해했어요\(예\) · 기준 1\/2 · 넘김 1 — 까닭: 아직 잴 수 없어요 — 발표 뒤에 \| 관문 \|/);
+  assert.match(doc, /\| 잰 값을 그대로 적어 두기 \| 넘김\(까닭: 아직 잴 수 없어요 — 발표 뒤에\) \|/);
+  assert.match(doc, /\| 2단계에서 정한 숫자를 실제로 재 보기 \| 됨 \|/);
+});
