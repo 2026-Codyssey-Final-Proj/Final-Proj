@@ -5,16 +5,15 @@ const assert = require("node:assert/strict");
 const P = require("../../03-backend/navigator/presets.js");
 const N = require("../../03-backend/navigator/navigator.js");
 
-test("틀 — 열한 가지, id는 하나뿐, 이름 · 무엇 · 지시 · 끝 조건(1~3줄 · 200자 안)이 있고 이름에 전문 용어가 없다", () => {
-  assert.equal(P.PRESETS.length, 11);
-  assert.deepEqual(P.PRESETS.map((p) => p.name), ["단계 문서 칸 채우기", "요구 줄 더하기", "결정 기록 한 줄", "고칠 목록 한 줄", "돌아보기", "넘김 문서", "README 한 절", "목차 만들기", "머리말 넣기", "표 정리", "쉬운 말로 다듬기"]);
-  assert.equal(new Set(P.PRESETS.map((p) => p.id)).size, 11);
+test("틀 — 하나 이상, id는 하나뿐, 이름 · 무엇 · 지시 · 끝 조건(1~3줄 · 200자 안)이 있고 이름에 전문 용어가 없다(목록 · 이름은 사람이 바꾼다 — 개수 · 이름을 고정하지 않는다)", () => {
+  assert.ok(P.PRESETS.length >= 1);
+  assert.equal(new Set(P.PRESETS.map((p) => p.id)).size, P.PRESETS.length);
   for (const p of P.PRESETS) {
     assert.ok(p.name && p.what && typeof p.lines === "function", p.id);
     assert.ok(p.checks.length >= 1 && p.checks.length <= 3 && p.checks.every((c) => c.length <= 200), `${p.id} 끝 조건`);
     for (const j of N.JARGON) assert.ok(!p.name.includes(j) && !p.what.includes(j), `${p.id} '${j}'`);
   }
-  assert.equal(P.byId("nope"), null); assert.equal(P.byId("easy").name, "쉬운 말로 다듬기");
+  assert.equal(P.byId("nope"), null); assert.ok(P.byId("easy"), "쉬운 말 틀은 있다(C-33)");
 });
 
 test("넘길 글 — 틀 이름 · 파일 · 지금 단계 · 지시 · 쉬운 말 규칙 · 그 파일만 · 커밋 안 함, 사람이 덧붙인 말은 300자, 서버 한계(4,000자) 안", () => {

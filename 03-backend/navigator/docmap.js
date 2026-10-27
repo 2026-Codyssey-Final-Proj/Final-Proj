@@ -25,7 +25,7 @@ const stageNo = (p) => { const m = /^docs\/(\d\d)-/.exec(p); return m ? Number(m
 function build(docs, opt = {}) {
   const list = (docs || []).filter((d) => d && /\.md$/i.test(d.path)).sort((a, b) => stageNo(a.path) - stageNo(b.path) || a.path.localeCompare(b.path));
   const have = new Set(list.map((d) => d.path)), changed = opt.changed instanceof Set ? opt.changed : new Set(opt.changed || []);
-  const elements = list.map((d) => ({ f: frameOf(d.path), id: idOf(d.path), t: "dobject", n: d.path.split("/").pop(), d: d.path === opt.now ? "지금 장의 문서예요" : changed.has(d.path) ? "고친 뒤 아직 저장하지 않은 문서예요" : "", s: d.path === opt.now ? "part" : changed.has(d.path) ? "cand" : "done", c: d.path }));
+  const elements = list.map((d) => ({ f: frameOf(d.path), id: idOf(d.path), t: "dobject", n: d.name || d.path.split("/").pop(), d: d.path === opt.now ? "지금 장의 문서예요" : changed.has(d.path) ? "고친 뒤 아직 저장하지 않은 문서예요" : "", s: d.path === opt.now ? "part" : changed.has(d.path) ? "cand" : "done", c: d.path }));
   const seen = new Set(), relations = [];
   for (const d of list) for (const l of linksOf(d)) { if (!have.has(l.to)) continue; const key = `${d.path}>${l.to}`; if (seen.has(key)) continue; seen.add(key); relations.push([idOf(d.path), idOf(l.to), l.kind === "material" ? "realization" : "association"]); }
   const frames = [

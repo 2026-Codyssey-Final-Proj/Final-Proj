@@ -21,5 +21,6 @@ test("목록(- · 1. · 할 일 칸) · 인용 · 코드 울타리 · 표 · 가
   assert.equal(M.toHtml("| 이름 | 값 |\n|---|---|\n| a | **b** |\n| c |"), "<table><thead><tr><th>이름</th><th>값</th></tr></thead><tbody><tr><td>a</td><td><b>b</b></td></tr><tr><td>c</td><td></td></tr></tbody></table>");
   assert.equal(M.toHtml("위\n\n---\n\n아래"), "<p>위</p>\n<hr>\n<p>아래</p>");
   assert.equal(M.toHtml("<!-- claude-drafted: x -->\n글"), "<p>글</p>", "주석은 보이지 않는다");
+  assert.equal(M.toHtml("<!-- 닫지 않음\n글"), "<p>&lt;!-- 닫지 않음 글</p>", "닫는 표시가 없으면 글로 — 나머지가 사라지지 않는다");
   assert.equal(M.toHtml("한 줄\n이어진 줄"), "<p>한 줄 이어진 줄</p>", "빈 줄 없이 이어지면 한 문단");
 });

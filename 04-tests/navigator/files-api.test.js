@@ -11,7 +11,8 @@ const net = require("node:net");
 
 const BACK = path.join(__dirname, "../../03-backend/navigator");
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "floe-files-"));
-Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "event-token"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json") });
+fs.writeFileSync(path.join(TMP, "claude-stub.js"), `process.stdin.resume(); process.stdin.on("end", () => setTimeout(() => { process.stdout.write(JSON.stringify({ type: "result", result: "ok" })); process.exit(0); }, 300));`);   // 가짜 claude — 저장마다 커밋을 맡기므로, 진짜 Claude Code가 시험 폴더에서 돌지 않게(NAV_CLAUDE_BIN)
+Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "event-token"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: path.join(TMP, "claude-stub.js") });
 fs.writeFileSync(process.env.NAV_REPLAY, "{}");
 const Files = require(path.join(BACK, "files.js"));
 
@@ -109,6 +110,7 @@ test("GET /api/file — 목록의 번호로만 연다: 확인 값 없으면 403,
   fs.writeFileSync(path.join(PROJ, "src/app.js"), "const a = 1;\nconsole.log(a);\n");
   fs.writeFileSync(path.join(PROJ, "pic.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0, 0, 0, 13]));
   fs.writeFileSync(path.join(PROJ, "big.txt"), "x".repeat(512 * 1024 + 1));
+  fs.writeFileSync(path.join(PROJ, "한글.md"), "가".repeat(4000)); fs.writeFileSync(path.join(PROJ, "edge.md"), "a".repeat(8191) + "가"); fs.writeFileSync(path.join(PROJ, "u16.txt"), Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from("ab", "utf16le")])); fs.writeFileSync(path.join(PROJ, "win.md"), "줄\r\n둘\r\n");
   assert.equal((await call("GET", "/api/file?i=0", { token: false })).status, 403);
   const list = (await call("GET", "/api/files")).json.files;
   assert.ok(!JSON.stringify(list).includes('"raw"'), "가리지 않은 경로(raw)는 답에 없다");
@@ -119,8 +121,12 @@ test("GET /api/file — 목록의 번호로만 연다: 확인 값 없으면 403,
   const js = await call("GET", `/api/file?i=${idx(list, "src/app.js")}`); assert.equal(js.json.kind, "code");
   assert.equal((await call("GET", `/api/file?i=${idx(list, "docs")}`)).status, 400, "폴더");
   assert.equal((await call("GET", "/api/file?i=999")).status, 404); assert.equal((await call("GET", "/api/file?i=abc")).status, 404); assert.equal((await call("GET", "/api/file")).status, 404);
-  const png = await call("GET", `/api/file?i=${idx(list, "pic.png")}`); assert.equal(png.status, 200); assert.deepEqual([png.json.ok, png.json.why], [false, "binary"]); assert.match(png.json.reason, /글 파일이 아니에요/);
+  const png = await call("GET", `/api/file?i=${idx(list, "pic.png")}`); assert.equal(png.status, 200); assert.deepEqual([png.json.ok, png.json.why], [false, "binary"]); assert.match(png.json.reason, /글 파일이 아니거나/);
   const big = await call("GET", `/api/file?i=${idx(list, "big.txt")}`); assert.deepEqual([big.json.ok, big.json.why], [false, "big"]); assert.match(big.json.reason, /512KB/);
+  assert.equal((await call("GET", `/api/file?i=${idx(list, "한글.md")}`)).json.ok, true, "한글 12KB — 8KB 경계에 글자가 걸려도 글 파일(새 맥락 리뷰 막힘)");
+  assert.equal((await call("GET", `/api/file?i=${idx(list, "edge.md")}`)).json.ok, true, "8191자 뒤 한글");
+  const u16 = (await call("GET", `/api/file?i=${idx(list, "u16.txt")}`)).json; assert.equal(u16.why, "binary"); assert.match(u16.reason, /UTF-16/, "까닭이 맞다");
+  const win = (await call("GET", `/api/file?i=${idx(list, "win.md")}`)).json; assert.equal(win.eol, "crlf");
   assert.equal(idx(list, ".env"), -1); assert.equal(idx(list, "cert.pem"), -1); assert.equal(idx(list, "link-file.md"), -1, "숨김 · 비밀값 · 바로가기는 목록에 없어 번호가 없다");
   Srv.dropProject(PROJ);
   assert.equal((await call("GET", "/api/file?i=0")).status, 400, "폴더를 모르면 목록도 없다");
@@ -146,23 +152,32 @@ test("POST /api/file — 저장: 그 파일에만 쓴다, 비밀값 모양이면
   assert.equal(Srv.useProject(PROJ), true);
   const list = (await call("GET", "/api/files")).json.files, i = idx(list, "README.md");
   const opened = (await call("GET", `/api/file?i=${i}`)).json;
-  let r = await call("POST", "/api/file", { body: { i, text: "# 고침\n", mtime: opened.mtime } });
+  assert.equal((await call("POST", "/api/file", { body: { i, text: "# 고침\n" } })).status, 400, "mtime 없이는 안 쓴다(덮어쓰기가 아니면)");
+  assert.deepEqual((await call("POST", "/api/file", { body: { i, path: "다른.md", text: "# 고침\n", mtime: opened.mtime } })).json.why, "moved", "가린 경로가 목록과 다르면 409 moved");
+  let r = await call("POST", "/api/file", { body: { i, path: opened.path, text: "# 고침\n", mtime: opened.mtime } });
   assert.equal(r.status, 200); assert.equal(r.json.ok, true); assert.equal(r.json.task, null); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "# 고침\n");
-  assert.ok(Number.isFinite(r.json.mtime), "새 mtime");
-  r = await call("POST", "/api/file", { body: { i, text: "password: hunter22\n", mtime: r.json.mtime } });
+  assert.ok(Number.isFinite(r.json.mtime), "새 mtime"); const m1 = r.json.mtime;
+  r = await call("POST", "/api/file", { body: { i, text: "password: hunter22\n", mtime: m1 } });
   assert.equal(r.status, 409); assert.equal(r.json.why, "sensitive"); assert.deepEqual(r.json.labels, ["비밀번호·키 대입"]); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "# 고침\n", "쓰지 않았다");
-  r = await call("POST", "/api/file", { body: { i, text: "password: hunter22\n", mtime: r.json.mtime || 0, force: true, overwrite: true } });
+  r = await call("POST", "/api/file", { body: { i, text: "password: hunter22\n", mtime: m1, force: true } });
   assert.equal(r.status, 200, "그대로 저장");
   fs.writeFileSync(path.join(PROJ, "README.md"), "밖에서 고침\n"); const touched = Date.now() + 5000; fs.utimesSync(path.join(PROJ, "README.md"), touched / 1000, touched / 1000);
   r = await call("POST", "/api/file", { body: { i, text: "내가 고침\n", mtime: 1 } });
   assert.equal(r.status, 409); assert.equal(r.json.why, "changed"); assert.ok(Number.isFinite(r.json.mtime)); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "밖에서 고침\n");
   r = await call("POST", "/api/file", { body: { i, text: "내가 고침\n", mtime: 1, overwrite: true } }); assert.equal(r.status, 200);
-  assert.equal((await call("POST", "/api/file", { body: { i, text: "x".repeat(512 * 1024 + 1) } })).status, 413);
+  assert.equal((await call("POST", "/api/file", { body: { i, text: "x".repeat(512 * 1024 + 1), overwrite: true } })).status, 413);
+  r = await call("POST", "/api/file", { body: { i, text: "x".repeat(512 * 1024), overwrite: true } }); assert.equal(r.status, 200, "딱 512KB는 쓴다");
+  r = await call("POST", "/api/file", { body: { i, text: "줄 하나\n줄 둘\n", eol: "crlf", overwrite: true } }); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "줄 하나\r\n줄 둘\r\n", "eol crlf면 CRLF로 되돌려 쓴다");
+  assert.equal((await call("GET", `/api/file?i=${i}`)).json.eol, "crlf", "열 때 줄 끝을 알려 준다");
   assert.equal((await call("POST", "/api/file", { body: { i: idx(list, "docs"), text: "x" } })).status, 400, "폴더에는 쓰지 않는다");
   assert.equal((await call("POST", "/api/file", { body: { i: 999, text: "x" } })).status, 404);
   assert.equal((await call("POST", "/api/file", { body: { i } })).status, 400, "글이 없으면");
   assert.equal((await call("POST", "/api/file", { body: { i, text: "x" }, token: false })).status, 403);
-  // commit — 넘긴 일(claude -p)은 이 시험에서 켜지지 않는다(claude 없음 · NAV_REPLAY) — 저장은 되고 task 또는 note가 온다
+  // 틀로 맡기기(C-44) — 번호 · docs/ 이름, 모르는 틀은 400. 맡기기는 가짜 claude(NAV_CLAUDE_BIN)로 돈다
+  assert.equal((await call("POST", "/api/preset", { body: { i, preset: "nope" } })).status, 400);
+  assert.equal((await call("POST", "/api/preset", { body: { path: "../x.md", preset: "fill" } })).status, 400, "docs/ 안의 md 이름만");
+  assert.equal((await call("POST", "/api/preset", { body: { i: 999, preset: "fill" } })).status, 404);
+  // commit — 넘긴 일은 가짜 claude로 돈다(진짜 Claude Code는 켜지지 않는다) — 저장은 되고 task 또는 note가 온다
   r = await call("POST", "/api/file", { body: { i, text: "커밋도\n", commit: true, overwrite: true } });
   assert.equal(r.status, 200); assert.equal(r.json.ok, true); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "커밋도\n"); assert.ok("task" in r.json);
   Srv.dropProject(PROJ);

@@ -32,7 +32,8 @@ const freePort = () => new Promise((resolve) => { const s = net.createServer(); 
 
 test("C-43 — 파일 칸에서 누르면 작업실에 열린다(md 보기 좋게 · 원문 · 코드 줄 번호 · 찾기), 고쳐 저장하면 파일에 쓰이고 되돌리기, 비밀값 모양이면 멈추고 묻는다", { skip }, async () => {
   const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "floe-fv-")), PROJ = path.join(TMP, "my-club-app");
-  Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "tok"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json") });
+  fs.writeFileSync(path.join(TMP, "claude-stub.js"), `process.stdin.resume(); process.stdin.on("end", () => setTimeout(() => { process.stdout.write(JSON.stringify({ type: "result", result: "ok" })); process.exit(0); }, 300));`);   // 가짜 claude — 저장마다 커밋을 맡기므로, 진짜 Claude Code가 시험 폴더에서 돌지 않게(NAV_CLAUDE_BIN)
+  Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "tok"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: path.join(TMP, "claude-stub.js") });
   fs.writeFileSync(process.env.NAV_REPLAY, "{}");
   const w = (p, s) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, s); };
   w(path.join(PROJ, "README.md"), "# 동아리 앱\n\n- **신청** 받기\n- 마감 알림\n\n| 기능 | 꼭 |\n|---|---|\n| 신청 | 꼭 |\n");

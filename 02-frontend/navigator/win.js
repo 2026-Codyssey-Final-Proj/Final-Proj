@@ -87,7 +87,7 @@
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing && e.target && e.target.dataset && e.target.dataset.act === "say") { e.preventDefault(); F.winEvent({ type: "key", key: "Enter", act: "say", kind }); }   // isComposing — 한글 조합 중의 Enter(IME 확정)는 보내지 않는다(섬 app.js와 같이)
   });
   // 문서 지도(C-45)의 iframe이 보낸 '파일 보기에서 열기' — 섬으로(ACT map-open)
-  window.addEventListener("message", (e) => { const d = e.data; if (d && d.floe === "open" && typeof d.path === "string") F.winEvent({ type: "click", act: "map-open", data: { act: "map-open", v: d.path.slice(0, 500) } }); });
+  window.addEventListener("message", (e) => { if (e.origin !== location.origin) return; const d = e.data; if (d && d.floe === "open" && typeof d.path === "string") F.winEvent({ type: "click", act: "map-open", data: { act: "map-open", v: d.path.slice(0, 500) } }); });
   // 설명 풍선 — 섬(app.js showTT)과 같은 모양 · 같은 글
   const tt = document.createElement("div"); tt.className = "tt"; tt.setAttribute("role", "tooltip"); document.body.appendChild(tt);
   function showTT(el) {

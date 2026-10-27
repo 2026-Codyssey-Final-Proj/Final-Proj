@@ -29,7 +29,7 @@
     { id: "toc", name: "목차 만들기", what: "문서 맨 위에 제목 목차를 만들어요",
       lines: (c) => [`${c.path} 맨 위(첫 제목 아래)에 ## · ### 제목으로 목차를 만들어요 — 제목 글과 같은 글, 링크는 제목의 앵커로.`, "본문 글은 바꾸지 마세요."],
       checks: ["목차의 항목이 본문의 제목과 하나하나 맞는다", "본문은 그대로다"] },
-    { id: "front", name: "머리말 넣기", what: "맨 위에 단계 · 누가 · 날짜 머리말(YAML)",
+    { id: "front", name: "머리말 넣기", what: "맨 위에 단계 · 누가 · 날짜 머리말",
       lines: (c) => [`${c.path} 맨 위에 YAML 머리말을 넣어요 — stage: "${c.stage}", who: "사람 이름 대신 역할", date: 오늘(YYYY-MM-DD), status: draft.`, "이미 머리말이 있으면 빠진 칸만 더해요."],
       checks: ["머리말에 stage · who · date · status가 있다"] },
     { id: "table", name: "표 정리", what: "줄 목록을 표로, 깨진 표는 바로",

@@ -8,7 +8,7 @@
     { type: "secret", label: "비밀번호·키 대입", severity: "block",
       re: /((비밀번호|패스워드|암호)\s*[:=]\s*\S{4,}|(password|passwd|secret|token|api[_-]?key)\s*[:=]\s*\S{4,})/gi },
     { type: "rrn", label: "주민등록번호 모양", severity: "block", re: /\b\d{6}-[1-4]\d{6}\b/g },
-    { type: "email", label: "이메일", severity: "mask", re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g },
+    { type: "email", label: "이메일", severity: "mask", re: /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,}/g },   // 묶음의 첫 글자에서만 · 길이 상한 — '@' 없는 긴 한 줄(512KB 코드)에서 제곱으로 느려지지 않게(2026-10-27 C-43)
     { type: "phone", label: "전화번호", severity: "mask", re: /\b01[016789]-?\d{3,4}-?\d{4}\b/g },
     { type: "ip", label: "IP 주소", severity: "mask", re: /\b\d{1,3}(?:\.\d{1,3}){3}\b/g },
   ];

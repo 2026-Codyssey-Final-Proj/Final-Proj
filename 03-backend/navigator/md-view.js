@@ -1,5 +1,5 @@
 // claude-drafted: 2026-10-27 — C-43 파일 보기(이재엽 버튼 "읽기 + 고치기"): md를 보기 좋게 보이기 위한 작은 변환기. 순수 함수 — 밖의 글을 받으므로 **모든 글은 HTML로 가린다**(태그 · 스크립트가 살아나지 않게).
-//   제목(#~######) · 목록(- · * · 1.) · 인용(>) · 코드 울타리(```) · 표(| |) · 가로줄 · 굵게(**) · 기울임(*) · 코드(`) · 링크([글](주소) — 주소는 보이기만, 누르면 밖으로 안 나감 — rel=noopener · http(s)만)
+//   제목(#~######) · 목록(- · * · 1.) · 인용(>) · 코드 울타리(```) · 표(| |) · 가로줄 · 굵게(**) · 기울임(*) · 코드(`) · 링크([글](주소) — http(s)만 새 창(앱은 기본 브라우저, main.js), 그 밖의 주소는 글로 보인다)
 //   시험: 04-tests/navigator/md-view.test.js. 섬(index.html)이 읽어 작업실 창에 보낸다
 (function (root) {
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -46,7 +46,7 @@
         out.push(`<${ordered ? "ol" : "ul"}>${items.join("")}</${ordered ? "ol" : "ul"}>`); continue;
       }
       if (/^\s*>\s?/.test(line)) { flush(); const q = []; while (i < lines.length && /^\s*>\s?/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, "")); out.push(`<blockquote>${toHtml(q.join("\n"))}</blockquote>`); continue; }
-      if (/^\s*<!--/.test(line)) { flush(); while (i < lines.length && !/-->/.test(lines[i])) i++; i++; continue; }   // 주석은 보이지 않는다(글에 섞인 HTML은 가려서 보인다)
+      if (/^\s*<!--/.test(line)) { let j = i; while (j < lines.length && !/-->/.test(lines[j])) j++; if (j < lines.length) { flush(); i = j + 1; continue; } }   // 주석은 보이지 않는다 — 닫는 표시가 없으면 글로 보인다(문서 나머지가 사라지지 않게)
       if (!line.trim()) { flush(); i++; continue; }
       para.push(line.trim()); i++;
     }

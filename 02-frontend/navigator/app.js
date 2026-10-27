@@ -1300,21 +1300,23 @@
     try {
       const r = await (await fetch(`/api/file?i=${n}`, { cache: "no-store" })).json();
       if (!r || !r.ok) return say(`'${x.name}'은 열지 않았어요 — ${(r && r.reason) || "서버가 답하지 않았어요"}`);
-      st.openFiles.push({ i: n, path: r.path, name: r.name, kind: r.kind, text: r.text, saved: r.text, mtime: r.mtime, changed: r.changed, dirty: false, edit: false, raw: false, hist: [], note: null });
+      if (st.openFiles.length >= 12) return say("연 파일이 12개예요 — 하나를 닫고 열어요");   // 저장 이력(20번 × 512KB)이 파일 수만큼 늘지 않게(새 맥락 리뷰)
+      const text = r.text.replace(/\r\n/g, "\n");   // 글 칸은 LF — 저장할 때 eol로 되돌린다(CRLF 파일이 LF로 바뀌지 않게)
+      st.openFiles.push({ i: n, path: r.path, name: r.name, kind: r.kind, eol: r.eol || "lf", text, saved: text, mtime: r.mtime, changed: r.changed, dirty: false, edit: false, raw: false, hist: [], note: null });
       st.fileSel = st.openFiles.length - 1; st.qtab = "file"; render();
     } catch { say("서버에 닿지 않았어요"); }
   }
   async function reloadFile(k) {
     const f = st.openFiles[k]; if (!f || f.i < 0) return;
-    try { const r = await (await fetch(`/api/file?i=${f.i}`, { cache: "no-store" })).json(); if (r && r.ok) Object.assign(f, { text: r.text, saved: r.text, mtime: r.mtime, changed: r.changed, dirty: false, note: null }); else f.note = { kind: "bad", text: (r && r.reason) || "다시 열지 못했어요" }; }
+    try { const r = await (await fetch(`/api/file?i=${f.i}`, { cache: "no-store" })).json(); if (r && r.ok) { const text = r.text.replace(/\r\n/g, "\n"); Object.assign(f, { text, saved: text, mtime: r.mtime, changed: r.changed, eol: r.eol || "lf", dirty: false, note: null }); } else f.note = { kind: "bad", text: (r && r.reason) || "다시 열지 못했어요" }; }
     catch { f.note = { kind: "bad", text: "서버에 닿지 않았어요" }; }
     render();
   }
   async function saveFile(k, opt = {}) {
-    const f = st.openFiles[k]; if (!f) return;
+    const f = st.openFiles[k]; if (!f || (!f.dirty && !opt.overwrite)) return;   // 고친 것이 없으면 쓰지도 커밋을 맡기지도 않는다(새 맥락 리뷰)
     if (f.i < 0) { f.note = { kind: "bad", text: "이 파일이 목록에서 사라졌어요 — 작업실을 다시 열어요" }; return render(); }
     try {
-      const res = await fetch("/api/file", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ i: f.i, text: f.text, mtime: f.mtime, commit: true, ...opt }) });
+      const res = await fetch("/api/file", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ i: f.i, path: f.path, text: f.text, mtime: f.mtime, eol: f.eol, commit: true, ...opt }) });
       const r = await res.json();
       if (r && r.ok) {
         if (f.saved !== f.text) { f.hist.push({ at: Date.now(), text: f.saved }); if (f.hist.length > FHIST_MAX) f.hist.shift(); }
@@ -1324,7 +1326,8 @@
       const why = r && r.why;
       if (why === "sensitive") f.note = { kind: "ask", text: `${(r.labels || []).join(" · ")} 모양이 있어요 — 그대로 저장할까요?`, acts: [["그대로 저장", "fsave-force"], ["고칠게요", "fnote-x"]] };
       else if (why === "changed") f.note = { kind: "ask", text: "연 뒤에 이 파일이 바뀌었어요(Claude Code가 고치는 중일 수 있어요)", acts: [["다시 열기", "freload"], ["덮어쓰기", "fsave-over"]] };
-      else if (why === "busy") f.note = { kind: "ask", text: "맡긴 일이 아직 돌고 있어요 — Claude Code가 같은 파일을 고치는 중일 수 있어요", acts: [["그래도 저장", "fsave-over"], ["기다릴게요", "fnote-x"]] };
+      else if (why === "busy") f.note = { kind: "ask", text: "맡긴 일이 아직 돌고 있어요 — Claude Code가 같은 파일을 고치는 중일 수 있어요", acts: [["그래도 저장", "fsave-busy"], ["기다릴게요", "fnote-x"]] };
+      else if (why === "moved") { f.i = -1; f.note = { kind: "bad", text: (r && r.reason) || "목록이 바뀌었어요 — 파일을 다시 열어요" }; }
       else f.note = { kind: "bad", text: (r && r.reason) || "저장하지 못했어요" };
     } catch { f.note = { kind: "bad", text: "서버에 닿지 않았어요" }; }
     render();
@@ -1335,7 +1338,7 @@
     const k = st.fileSel, f = st.openFiles[k];
     if (!f) return `<div class="qempty"><b>연 파일이 없어요</b>왼쪽 파일 칸에서 파일을 누르면 여기에 열려요.</div>`;
     const chg = changedSet(f), nChg = f.changed === "new" ? "새 파일" : chg && chg.size ? `바뀐 줄 ${chg.size}` : "";
-    const note = f.note ? `<div class="fv-note ${f.note.kind}"><span>${esc(f.note.text)}</span>${(f.note.acts || []).map(([l, a]) => `<button type="button" class="lnk" data-act="${a}" data-v="${k}">${l}</button>`).join("")}${f.note.kind !== "ask" ? `<button type="button" class="lnk" data-act="fnote-x" data-v="${k}" aria-label="알림 닫기">×</button>` : ""}</div>` : "";
+    const note = f.note ? `<div class="fv-note ${f.note.kind}" role="status" aria-live="polite"><span>${esc(f.note.text)}</span>${(f.note.acts || []).map(([l, a]) => `<button type="button" class="lnk" data-act="${a}" data-v="${k}">${l}</button>`).join("")}${f.note.kind !== "ask" ? `<button type="button" class="lnk" data-act="fnote-x" data-v="${k}" aria-label="알림 닫기">×</button>` : ""}</div>` : "";
     const head = `<div class="fv-h"><b title="${esc(f.path)}">${esc(f.path)}</b><small>${{ md: "글(md)", code: "코드", text: "글" }[f.kind] || "글"}${nChg ? ` · ${nChg}` : ""}${f.hist.length ? ` · 저장 ${f.hist.length}번` : ""}</small><span class="grow"></span>
       ${f.kind === "md" && !f.edit ? `<button type="button" class="lnk" data-act="fraw" data-v="${k}" aria-pressed="${f.raw}">${f.raw ? "보기 좋게" : "원문"}</button>` : ""}
       <button type="button" class="lnk" data-act="fedit" data-v="${k}" aria-pressed="${f.edit}">${f.edit ? "보기" : "고치기"}</button>
@@ -1359,22 +1362,22 @@
   //   연 파일의 머리 '틀로 맡기기'(고르면 바로) · 채팅의 '문서 틀' 칩(지금 장 문서, 카드에서 고름) → Claude Code에 맡긴다(/api/task/start + 틀의 끝 조건 — 허락은 섬, 끝에 기준마다 보고 C-32). 보고가 오면 열린 파일의 바뀐 줄을 다시 읽는다
   const PR = window.FloePresets || null;
   const presetOpts = (k) => `<select class="fpreset" data-act="preset-pick" data-v="${k}" aria-label="틀로 맡기기"><option value="">틀로 맡기기…</option>${(PR ? PR.PRESETS : []).map((p) => `<option value="${p.id}" title="${esc(p.what)}">${esc(p.name)}</option>`).join("")}</select>`;
-  async function presetGo(id, path) {
-    const p = PR && PR.byId(id); if (!p || !path) return;
+  // target: { i }(연 파일 — 목록 번호) 또는 { path }(지금 장 문서 — docs/ 안 이름). 글 · 끝 조건은 서버가 presets.js로 만든다(API.md 3-28 — 화면은 가린 경로를 보내지 않는다)
+  async function presetGo(id, target) {
+    const p = PR && PR.byId(id); if (!p || !target) return;
     if (!canLive || st.mode === "fixture") return say("연습 모드라 맡기지 않아요 — 진짜 폴더를 연결한 앱에서 돼요");
-    const n = st.finished ? N.STAGES.length - 1 : atStage();
-    const text = PR.requestOf(p, { path, stage: `${LB(n)} · ${N.STAGES[n].title}` });
+    const n = st.finished ? N.STAGES.length - 1 : atStage(), shown = target.path || (st.openFiles.find((f) => f.i === target.i) || {}).path || "";
     st.presetPick = null; render();
     try {
-      const r = await (await fetch("/api/task/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, checks: PR.checksOf(p) }) })).json();
-      if (r && r.ok) { st.presetTask = { path, name: p.name, at: Date.now() }; say(`'${p.name}' 틀로 ${path}를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 허용해 주세요. 끝나면 보고가 와요.`); }
+      const r = await (await fetch("/api/preset", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...target, preset: p.id, stage: `${LB(n)} · ${N.STAGES[n].title}` }) })).json();
+      if (r && r.ok) { st.presetTask = { path: shown, name: p.name, at: Date.now() }; say(`'${p.name}' 틀로 ${shown}를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 허용해 주세요. 끝나면 보고가 와요.`); }
       else say(`맡기지 못했어요 — ${(r && r.reason) || "서버가 답하지 않았어요"}`);
     } catch { say("서버에 닿지 않았어요"); }
   }
   function momentPreset() {
     const pk = st.presetPick, n = st.finished ? N.STAGES.length - 1 : atStage();
     return { tone: "blue", mood: "think", badge: "?", meta: `<span class="mm-stage">${LB(n)} · 문서 틀</span>`, title: `어느 틀로 맡길까요? — ${esc(pk.path)}`,
-      sub: "틀을 고르면 플로로가 지시를 적어 Claude Code에 맡겨요. 허락 카드는 여기 채팅에 떠요. 틀은 presets.js 한 파일에 있어 더하고 고칠 수 있어요.",
+      sub: "틀을 고르면 플로로가 지시를 적어 Claude Code에 맡겨요. 허락 카드는 여기 채팅에 떠요. 틀은 Floe의 틀 파일에서 더하고 고칠 수 있어요.",
       acts: [...(PR ? PR.PRESETS : []).map((p) => ({ label: p.name, act: "preset-go", kind: "opt", i: p.id })), { label: "그만둘게요", act: "preset-x", key: "Escape", kind: "ghost" }] };
   }
   const BROWSER_WIN = [920, 640];   // 브라우저 판(섬 옆)의 크기 — 앱의 창 크기는 main.js(R-1)
@@ -2883,20 +2886,21 @@
     "rb-sel": (i) => set({ rbSel: i | 0 }),
     "rb-reload": () => loadReadme(),
     // 문서 지도(C-45) · 맡기기 틀(C-44)
-    "map-open": (i, el) => { const p = el && el.dataset.v; if (!p || !st.files || !st.files.list) return; const k = st.files.list.findIndex((x) => !x.dir && x.path === p); if (k >= 0) openFile(k); else say(`'${p}'은 파일 목록에 없어요 — 깊이 3 · 200개 안의 글 파일만 열어요`); },
+    "map-open": (i, el) => { const p = el && el.dataset.v; if (!p || !st.files || !st.files.list) return; const k = st.files.list.findIndex((x) => !x.dir && (x.path === p || (window.NavSensitive && window.NavSensitive.redact(p) === x.path))); if (k >= 0) openFile(k); else say(`'${p}'은 파일 목록에 없어요 — 깊이 3 · 200개 안의 글 파일만 열어요`); },
     "preset-open": () => { const n = st.finished ? N.STAGES.length - 1 : atStage(); st.presetPick = { path: nowDocPath(n) }; render(); },
     "preset-x": () => { st.presetPick = null; render(); },
-    "preset-go": (i, el) => { const id = el && el.dataset.i; if (st.presetPick) presetGo(id, st.presetPick.path); },
+    "preset-go": (i, el) => { const id = el && el.dataset.i; if (st.presetPick) presetGo(id, { path: st.presetPick.path }); },
     "preset-pick": () => {},
     // 파일 보기 · 고치기(C-43)
     "fn-open": (i, el) => { if (el && el.dataset.v !== undefined) openFile(el.dataset.v); },
     ftab: (i, el) => { const k = Number(el && el.dataset.v); if (st.openFiles[k]) { st.fileSel = k; st.qtab = "file"; render(); } },
-    fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "canvas"; render(); },
+    fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (k < st.fileSel) st.fileSel--; if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "canvas"; render(); },
     fedit: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.edit = !f.edit; render(); } },
     fraw: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.raw = !f.raw; render(); } },
     fsave: (i, el) => { const k = el && el.dataset.v !== undefined ? Number(el.dataset.v) : st.fileSel; const f = st.openFiles[k]; if (f) { f.closing = false; saveFile(k); } },
     "fsave-force": (i, el) => saveFile(Number(el && el.dataset.v), { force: true }),
-    "fsave-over": (i, el) => saveFile(Number(el && el.dataset.v), { force: true, overwrite: true }),
+    "fsave-over": (i, el) => saveFile(Number(el && el.dataset.v), { overwrite: true }),   // 연 뒤 바뀐 파일을 덮어쓴다(비밀값 검사는 그대로 — 깃발을 나눴다, 새 맥락 리뷰)
+    "fsave-busy": (i, el) => saveFile(Number(el && el.dataset.v), { ignoreBusy: true }),
     freload: (i, el) => reloadFile(Number(el && el.dataset.v)),
     fundo: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (!f || !f.hist.length) return; const h = f.hist.pop(); f.text = h.text; f.dirty = f.text !== f.saved; f.edit = true; f.note = { kind: "ok", text: "마지막으로 저장하기 전 글로 되돌렸어요 — 저장을 누르면 그대로 써요" }; render(); },
     "fnote-x": (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.note = null; f.closing = false; render(); } },
@@ -3161,7 +3165,7 @@
     if (a === "hard") toggleHard(Number(t.dataset.i), t.checked);
     if (a === "tier") setTier(t.value);
     if (a === "qauto") { qauto = t.checked; writeLS(QAUTO_KEY, qauto ? "1" : "0"); }
-    if (a === "preset-pick") { const f = st.openFiles[Number(t.dataset.v)]; const id = t.value; if (f && id) { t.value = ""; presetGo(id, f.path); } return; }   // 연 파일을 틀로 맡기기(C-44)   // 퀘스트를 받으면 퀘스트 창이 바로 뜨기(C-22)
+    if (a === "preset-pick") { const f = st.openFiles[Number(t.dataset.v)]; const id = t.value; if (f && id && f.i >= 0) { t.value = ""; presetGo(id, { i: f.i }); } return; }   // 연 파일을 틀로 맡기기(C-44) — 번호로   // 퀘스트를 받으면 퀘스트 창이 바로 뜨기(C-22)
     if (a === "plan-readme") { st.planReadme = t.checked; save(); }   // 준비 계획 — 작업 폴더의 README도 읽나(C-34)
     if (a === "feed-kind" && st.meal) st.meal.kinds[Number(t.dataset.i)] = t.value;   // FR-15 더함 — 구간의 종류를 고친다(다시 그리지 않는다)
     if (a === "inbox-kind" && st.inbox[Number(t.dataset.i)]) { st.inbox[Number(t.dataset.i)].kind = t.value; save(); }
@@ -3432,10 +3436,10 @@
   }
   // 처음 설정(setup.js)이 끝나면 — 고른 길에 맞춰 보기 방식을 두고, '시작하기'를 눌렀으면 바로 보여 주기 화면으로 (2026-10-19)
   // 처음 설정을 닫은 뒤에 가져오기 · 새로 만들기가 끝났다(C-31) — 작업 폴더가 바뀌었으니 알린다
-  window.addEventListener("message", (e) => { const d = e.data; if (d && d.floe === "open" && typeof d.path === "string") clickAct({ dataset: { act: "map-open", v: d.path.slice(0, 500) } }); });   // 문서 지도의 '파일 보기에서 열기'(C-45) — 브라우저 판
+  window.addEventListener("message", (e) => { if (e.origin !== location.origin) return; const d = e.data; if (d && d.floe === "open" && typeof d.path === "string") clickAct({ dataset: { act: "map-open", v: d.path.slice(0, 500) } }); });   // 문서 지도의 '파일 보기에서 열기'(C-45) — 브라우저 판
   document.addEventListener("floe:project-picked", (e) => {
     const d = (e && e.detail) || {}, n = String(d.name || "");
-    st.gh = null;
+    st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "canvas";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
     say(d.config ? "가져온 저장소에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${n.length > 20 ? `${n.slice(0, 19)}…` : n} 폴더로 바꿨어요. 이제 여기서 같이 일해요.`);
   });
   document.addEventListener("floe:setup-done", (e) => {

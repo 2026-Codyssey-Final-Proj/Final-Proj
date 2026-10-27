@@ -39,7 +39,8 @@
 | `GET /api/files` | 섬 — 작업실을 열 때(C-42 R-8, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, files:[{name, path, dir, depth}], total, cut, unread, depth, max, why}` — 연결한 폴더의 이름만, 깊이 3 · 200개 | 403 |
 | `GET /api/file?i=N` | 섬 — 파일 칸에서 파일을 누를 때(C-43, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, i, name, path, kind, text, size, mtime, changed}` — 목록의 N번 파일(글 파일 · 512KB까지), 바뀐 줄은 git과 다른 [시작, 개수]. `ok:false`면 `why`(big · binary) | 403 · 400 · 404 |
 | `GET /api/docmap?now=<경로>` | 작업실의 문서 지도 탭(C-45, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, board}` — 문서(docs/** · README · CLAUDE.md)를 상자로, md 링크를 선으로 이은 archi-board 보드 데이터 | 403 |
-| `POST /api/file` | 섬 — 연 파일을 저장할 때(C-43) | 출처 · 확인 값(쿠키) | `{i, text, mtime, force?, overwrite?, commit?}` → `{ok, mtime, task, note}` — 그 파일에만 쓰고 commit이면 그 파일만 커밋 · 푸시를 Claude Code에 | 403 · 400 · 404 · 409(sensitive · changed · busy) · 413 · 500 |
+| `POST /api/file` | 섬 — 연 파일을 저장할 때(C-43) | 출처 · 확인 값(쿠키) | `{i, path, text, mtime, eol?, force?, overwrite?, ignoreBusy?, commit?}` → `{ok, mtime, task, note}` — 그 파일에만 쓰고 commit이면 그 파일만 커밋 · 푸시를 Claude Code에 | 403 · 400 · 404 · 409(moved · sensitive · changed · busy) · 413 · 500 |
+| `POST /api/preset` | 섬 — 연 파일 머리의 '틀로 맡기기' · 채팅 '문서 틀'(C-44, 2026-10-27) | 출처 · 확인 값(쿠키) | `{i 또는 path(docs/…md), preset, stage?, note?}` → 3-16과 같은 `{ok, task, preset, name}` — presets.js의 글 · 끝 조건으로 Claude Code에 | 403 · 400 · 404 · 409 · 502 |
 | `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/stagedraft` | 섬 — 1단계 관문을 지났을 때(C-37, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, draft:{items[{text} 또는 {pick, why}], say}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/docs` | 섬 — 2단계를 마치고 '올리기'를 눌렀을 때(C-37) | 출처 · 확인 값(쿠키) | `{ok, project, files[], task}` | 403 · 413 · 400 · 409 · 500 |
@@ -581,10 +582,11 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 확인 값(쿠키 · `X-Nav-Token`)이 있어야 한다. **경로를 받지 않는다** — 3-25 목록의 **번호(`i`)**로만 연다(목록은 서버 메모리에 마지막 것 하나. 폴더가 바뀌었거나 빠졌으면 옛 목록으로 열지 않는다 — 400). 번호가 없거나 범위 밖이면 404, 폴더면 400.
 - **열기(GET)** — 그 폴더 안의 파일만(가는 길에 바로가기가 있으면 400, [files.js](files.js) `safePath`), 512KB(`FILE_MAX`)까지, **내용으로** 글 파일인지 본다(앞 8KB에 NUL이 없고 UTF-8로 읽힘 — 확장자 목록이 아니다, 이재엽 "내용을 이해하고 어떤 내용인지만 판단"). 그림 · 압축 · 실행 파일은 `ok:false, why:"binary"`, 크면 `why:"big"` — 까닭(`reason`)은 쉬운 말. `kind`는 보이는 방식만(md · code · text — 모르면 text).
   - `changed`: 작업 폴더가 git이면 `git diff -U0 HEAD -- <파일>`의 덩어리 머리에서 새 쪽의 [시작, 개수]만(내용은 받지 않는다), 아직 git에 없는 파일은 `"new"`, git이 아니거나 실패하면 `[]`. 지금 장 문서 · Claude Code가 고친 파일의 바뀐 줄이 여기서 온다.
-- **저장(POST)** `{ i, text, mtime, force?, overwrite?, commit? }` — 본문은 글 파일 크기만큼(`readJson` 한계 ≈ 1MB, 넘으면 413). 그 파일에만 쓴다(폴더 · 목록 밖 · 바로가기는 400 · 404).
+- **저장(POST)** `{ i, path, text, mtime, eol?, force?, overwrite?, ignoreBusy?, commit? }` — 본문은 글 파일 크기만큼(`readJson` 한계 ≈ 1MB, 넘으면 413). 그 파일에만 쓴다(폴더 · 목록 밖 · 바로가기는 400 · 404). `path`(열 때 받은 가린 경로)가 목록의 그것과 다르면 409 `moved`(폴더가 바뀌었거나 다른 화면이 목록을 갈아끼움 — 다른 파일을 덮지 않게). `mtime`은 `overwrite`가 아니면 꼭(없으면 400). `eol: "crlf"`면 줄 끝을 CRLF로 되돌려 쓴다(화면의 글 칸은 LF — Windows 문서가 통째로 바뀌지 않게). 열기 답의 `eol`이 그것이다.
   - 비밀번호 · 키 모양(sensitive.js `scan` — block)이 있으면 **쓰지 않고** 409 `why:"sensitive"`(+ `labels`) — 화면이 "그대로 저장 / 고칠게요"를 묻고, `force: true`로 다시 보내면 쓴다(막지는 않는다 — security-records 6-3).
-  - 연 뒤에 파일이 바뀌었으면(`mtime` 다름 — Claude Code가 고치는 중일 수 있다) 409 `why:"changed"`(+ 지금 `mtime`), 맡긴 일이 돌고 있으면 409 `why:"busy"` — `overwrite: true`로 덮어쓴다.
-  - `commit: true`면 쓴 뒤 **그 파일만** 커밋 · 지금 브랜치를 푸시하도록 Claude Code에 맡긴다(`saveRequest` — 강제 푸시 없음, 원격이 없으면 푸시하지 않고 까닭만. 기준 둘 `SAVE_CHECKS`). 허락 카드는 섬의 채팅에(3-13 ~ 3-15). 넘긴 일이 이미 돌고 있으면 저장만 하고 `note`에 까닭. 답 `{ ok, mtime, task, note }`.
+  - 연 뒤에 파일이 바뀌었으면(`mtime` 다름 — Claude Code가 고치는 중일 수 있다) 409 `why:"changed"`(+ 지금 `mtime`) → `overwrite: true`로 덮어쓴다. 맡긴 일이 돌고 있으면(앞선 '저장 커밋'은 빼고) 409 `why:"busy"` → `ignoreBusy: true`. 깃발은 따로다 — 비밀값 검사는 어느 쪽이든 그대로.
+  - `commit: true`면 쓴 뒤 **그 파일만** 커밋 · 지금 브랜치를 푸시하도록 Claude Code에 맡긴다(`saveRequest` — 강제 푸시 없음, 원격이 없으면 푸시하지 않고 까닭만. 기준 둘 `SAVE_CHECKS`). 허락 카드는 섬의 채팅에(3-13 ~ 3-15). 넘긴 일이 이미 돌고 있으면 저장만 하고 `note`에 "저장했어요 · 커밋은 앞 일이 끝난 뒤 다시 저장하면 맡겨요"(6-1 — 무엇이 빠졌는지). 답 `{ ok, mtime, task, note }`.
+  - 글 파일 판단: 앞 8KB에 NUL이 없고 UTF-8로 읽힘(8KB 경계에 걸린 글자는 떼고 본다). UTF-16(BOM)은 "글자 방식이 UTF-8이 아니에요"로.
 - 화면(`app.js` `filePane` · `openFile` · `saveFile`): 파일 칸의 파일을 누르면 열린 파일 탭 · 판 — md는 보기 좋게([md-view.js](md-view.js) — 모든 글을 가려 태그가 살아나지 않는다, 링크는 http(s)만 새 창) · 원문, 코드 · 글은 줄 번호와 바뀐 줄 표시. 고치기 → 글 칸, 저장(단추 · ⌘/Ctrl+S)은 바로 쓰고, 저장 이력은 열린 파일마다 20번(이 켜짐 동안, 되돌리기). 이름 찾기. 서버 없이 · 연습 모드는 예시 목록이라 열지 않는다. 시험: `04-tests/navigator/files-api.test.js` · `md-view.test.js` · `file-view.test.js` · `e2e/file-view.test.js`.
 
 ### 3-27. `GET /api/docmap?now=<경로>` — 문서 지도: 문서가 이어진 모습을 보드 데이터로 (C-45, 2026-10-27)
@@ -593,6 +595,13 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 확인 값이 있어야 한다. 읽기만 — 연결한 폴더(3-18과 같은 '폴더 고르기')의 `docs/**` · `README.md` · `CLAUDE.md`(3-25 목록 규칙 — 숨김 · 비밀값 · 바로가기 제외, 깊이 3) md를 앞 64KB만 읽어 **링크만** 본다. `now`는 지금 장 문서의 폴더 안 상대 경로(화면이 준다 — 그 문서를 `part`로 표시).
 - 만드는 것([docmap.js](docmap.js) `build`, archi-board format 1): 문서 하나 = 상자 하나(`dobject`, `c`에 경로), 창 셋(단계 문서 · 기획서/결정 기록 · 저장소), 선은 `## 재료` 절의 링크가 `realization`(1순위 — 어느 단계 칸에서 왔나), 그 밖의 md 링크가 `association`. git에서 바뀐 문서(`git status --porcelain`)는 `cand`. 없는 문서로 가는 선 · 폴더 밖 링크는 버린다. 답에 절대 경로 없음.
 - 화면: 작업실 '문서 지도' 탭 → `navigator/docmap.html`(iframe)이 이 길을 불러 `window.BOARD`에 두고 **엔진 사본** [board/](board/README.md)(archi-board v1, MIT, 앱 안 — 밖으로 요청 없음)으로 그린다. 상자를 누르면 오른쪽 판에 '파일 보기에서 열기' — 부모에 `postMessage({ floe: "open", path })` → 파일 보기(3-26). 폴더를 모르면 `ok:false, why:"folder"`와 까닭. 시험: `04-tests/navigator/docmap.test.js` · `e2e/docmap.test.js`.
+
+### 3-28. `POST /api/preset` — 문서 고치기 맡기기 틀 (C-44, 2026-10-27)
+
+<!-- claude-drafted: 2026-10-27 — 이재엽 "md파일을 수정하거나 다른 문서들을 수정하기 위한 프리셋" · 버튼 "Floe의 맡기기 틀" · "지금 자리에 더한다" -->
+- 확인 값이 있어야 한다. 본문 `{ i 또는 path, preset, stage?, note? }` — `i`는 3-25 목록의 번호(연 파일), `path`는 `docs/` 안의 md 이름(지금 장 문서 — 아직 없는 파일도 된다, 그 밖의 모양은 400). `preset`은 [presets.js](presets.js)의 id(없으면 400). 화면은 가린 경로를 보내지 않고 서버가 번호를 폴더 안 상대 경로로 바꾼다.
+- 서버가 `presets.js` `requestOf`(틀 이름 · 파일 · 지금 단계 · 지시 · 쉬운 말 규칙(C-33) · 그 파일만 · 커밋 안 함)로 글을 만들어 3-16과 같이 `startTask`(label '틀로 맡기기', 끝 조건 = 틀의 `checks`)로 Claude Code에 맡긴다 — 허락은 섬(3-13 ~ 3-15), 끝에 기준마다 보고(C-32). 답은 3-16과 같은 `{ ok, task }` + `preset` · `name`; 넘긴 일이 돌고 있으면 409.
+- 틀은 한 파일에 모아 사람이 더하고 고친다(시험은 모양만 본다 — 개수 · 이름을 고정하지 않는다). 화면(`app.js presetGo`): 연 파일 머리의 '틀로 맡기기' 고르기 · 채팅의 '문서 틀' 칩 → 보고가 오면 열린 파일의 바뀐 줄을 다시 읽는다.
 
 ## 4. 화면과 맞대어 본 결과 (2026-10-18)
 

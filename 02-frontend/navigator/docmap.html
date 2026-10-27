@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="../../03-backend/navigator/board/board.css">
 <style>
 .floe-empty{padding:24px;font:15px/1.6 "Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;color:#353943}
-.floe-open{display:inline-flex;align-items:center;min-height:36px;margin-top:6px;padding:0 12px;border:1px solid var(--acc,#4A6FD6);border-radius:8px;background:var(--acc-soft,#E2EAFB);color:var(--acc-ink,#2A4AA8);font:600 13px system-ui,sans-serif;cursor:pointer}
+.floe-open{display:inline-flex;align-items:center;min-height:44px;margin-top:6px;padding:0 12px;border:1px solid var(--acc,#4A6FD6);border-radius:8px;background:var(--acc-soft,#E2EAFB);color:var(--acc-ink,#2A4AA8);font:600 13px system-ui,sans-serif;cursor:pointer}
 </style>
 </head>
 <body>
@@ -25,7 +25,7 @@
   s.onload = () => {
     const pb = document.getElementById("pB"); if (!pb) return;
     const add = () => { const code = pb.querySelector("code"); if (!code || pb.querySelector(".floe-open")) return; const p = code.textContent.trim(); if (!/\.md$/i.test(p)) return;
-      const b = document.createElement("button"); b.type = "button"; b.className = "floe-open"; b.textContent = "파일 보기에서 열기"; b.addEventListener("click", () => parent.postMessage({ floe: "open", path: p }, "*")); code.parentElement.appendChild(b); };
+      const b = document.createElement("button"); b.type = "button"; b.className = "floe-open"; b.textContent = "파일 보기에서 열기"; b.addEventListener("click", () => parent.postMessage({ floe: "open", path: p }, location.origin)); code.parentElement.appendChild(b); };
     new MutationObserver(add).observe(pb, { childList: true, subtree: true }); add();
   };
   document.body.appendChild(s);
