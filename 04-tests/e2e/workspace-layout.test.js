@@ -124,9 +124,9 @@ test("R-9 · R-5 — 3단계 장면: 칩은 '시작 ✓ · 1 ✓ V.1 · 2 ✓ V.
   } finally { await browser.close(); }
 });
 
-// F-65 · F-66(2026-10-27 이재엽 "캔버스가 움직이는것도 안되고" · "지금 폴더들도 폴더라는 느낌이 안들어") — 작업실 창(win.html)에서 실제로 끌고 · ⌘/Ctrl+휠로 키우고 · 맞춤으로 돌아오는지,
+// F-66 · F-67(2026-10-27 이재엽 "캔버스가 움직이는것도 안되고" · "지금 폴더들도 폴더라는 느낌이 안들어") — 작업실 창(win.html)에서 실제로 끌고 · ⌘/Ctrl+휠로 키우고 · 맞춤으로 돌아오는지,
 //   섬이 다시 그려 보내도(1초마다도 온다) 보던 자리인지, 예시 파일 칸의 폴더가 그림 · 꺾쇠 · 굵은 이름으로 보이는지 — claude-drafted: 2026-10-27
-test("F-65 · F-66 — 캔버스: 끌면 옮겨지고 · ⌘/Ctrl+휠은 커서 자리에서 1.2배 · 섬이 다시 보내도 그 자리 · '맞춤'으로 처음처럼 · 키 + 0. 파일 칸: 폴더는 그림 · 꺾쇠 · 굵게", { skip }, async () => {
+test("F-66 · F-67 — 캔버스: 끌면 옮겨지고 · ⌘/Ctrl+휠은 커서 자리에서 1.2배 · 섬이 다시 보내도 그 자리 · '맞춤'으로 처음처럼 · 키 + 0. 파일 칸: 폴더는 그림 · 꺾쇠 · 굵게", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
     const h = await islandHTML(browser), html = `${h.qwin}<div class="isl-col side-right narrow">${h.isl}</div>`;
@@ -165,7 +165,7 @@ test("F-65 · F-66 — 캔버스: 끌면 옮겨지고 · ⌘/Ctrl+휠은 커서 
     await page.focus(".cv"); await page.keyboard.press("Equal"); await wait(300);
     const k = await now(); assert.ok(k.free && k.label !== "맞춤", "+ 키로 크게");
     await page.keyboard.press("Digit0"); await wait(50); assert.equal((await now()).label, "맞춤", "0 키로 맞춤");
-    // F-66 — 예시 파일 칸(서버 없이 연 화면)의 폴더
+    // F-67 — 예시 파일 칸(서버 없이 연 화면)의 폴더
     const dirs = await page.evaluate(() => [...document.querySelectorAll(".wnav .fn li.dir")].map((li) => ({ name: li.textContent.trim(), icon: !!li.querySelector(".fi svg"), chev: !!li.querySelector(".chev-w svg"),
       open: li.querySelector(".chev-w").classList.contains("on"), weight: getComputedStyle(li).fontWeight })));
     assert.deepEqual(dirs.map((x) => x.name), ["docs", "src"]);

@@ -1,4 +1,4 @@
-// claude-drafted: 2026-10-27 — F-65(이재엽 "캔버스가 움직이는것도 안되고"): 작업실 캔버스 탭을 끌어서 옮기고 ⌘/Ctrl+휠(트랙패드 오므리기) · 단추 · 키로 크게 · 작게.
+// claude-drafted: 2026-10-27 — F-66(이재엽 "캔버스가 움직이는것도 안되고"): 작업실 캔버스 탭을 끌어서 옮기고 ⌘/Ctrl+휠(트랙패드 오므리기) · 단추 · 키로 크게 · 작게.
 //   canvas-pan.js(순수 계산)의 숫자와, app.js · win.js · win.html · index.html · app.css가 그 규칙대로 이어 붙였는지(글로)를 본다. 실제로 끌리는지는 e2e/workspace-layout.test.js
 // 실행: node --test 04-tests/navigator/canvas-pan.test.js
 const test = require("node:test");

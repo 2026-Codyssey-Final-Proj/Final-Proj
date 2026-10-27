@@ -156,8 +156,8 @@ test("app.js — R-10: landed는 gateRules를 거친다(빈칸 · 증거 — 그
   assert.match(a, /else if \(st\.results\[j\.stage\] && !st\.results\[j\.stage\]\.passed\) st\.results = \{ \.\.\.st\.results, \[j\.stage\]: \{ \.\.\.st\.results\[j\.stage\], check: checkOf\(j\)/, "다시 살펴본 결과가 오면 결정 기록의 기준 n/m도 그것으로(F-60 ①)");
 });
 
-// F-66(2026-10-27 이재엽 "지금 폴더들도 폴더라는 느낌이 안들어") — 파일 칸: 폴더는 꺾쇠 + 폴더 그림(접힘 · 펼침) + 굵은 이름 + 안의 개수, 파일은 종류 그림, 깊이마다 안내선. 예시도 같은 모양
-test("app.js · app.css — F-66 파일 칸이 폴더 트리처럼: 꺾쇠 · 폴더 그림 · 안의 개수 · 파일 종류 그림 · 안내선", () => {
+// F-67(2026-10-27 이재엽 "지금 폴더들도 폴더라는 느낌이 안들어") — 파일 칸: 폴더는 꺾쇠 + 폴더 그림(접힘 · 펼침) + 굵은 이름 + 안의 개수, 파일은 종류 그림, 깊이마다 안내선. 예시도 같은 모양
+test("app.js · app.css — F-67 파일 칸이 폴더 트리처럼: 꺾쇠 · 폴더 그림 · 안의 개수 · 파일 종류 그림 · 안내선", () => {
   const a = read("navigator/app.js"), c = read("navigator/app.css");
   const nav = a.slice(a.indexOf("const FILES_DUMMY"), a.indexOf("// ── 파일 보기 · 고치기"));
   assert.ok(!/[▸▾]/.test(nav), "글자 화살표(▸ ▾) 대신 그림");

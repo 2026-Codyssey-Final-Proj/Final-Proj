@@ -45,7 +45,7 @@
   const BV = window.FloeBookView;   // 책 보기 설정(C-9 · C-3, 2026-10-20) — ../library/book-view.js, 서고와 같은 설정을 읽는다
   // 기본 화면 · 섬의 움직임(2026-10-20): 알림 · AI 진행 판의 순수 함수(hub.js) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js). 없어도 화면은 돈다
   const HUB = window.FloeHub, STEPS = window.NavSteps, MO = window.FloeMorph;
-  const CVP = window.FloeCanvas || null;   // 캔버스 끌어서 옮기기 · 크게 작게(F-65, canvas-pan.js) — 브라우저 판은 다시 그린 뒤 apply
+  const CVP = window.FloeCanvas || null;   // 캔버스 끌어서 옮기기 · 크게 작게(F-66, canvas-pan.js) — 브라우저 판은 다시 그린 뒤 apply
   const FD = window.NavFeed;
   const QU = window.NavQuest;   // 퀘스트 규칙(C-22, 2026-10-21 — 03-backend/navigator/quest.js). 없으면 퀘스트 없이 전처럼 돈다
   // claude-drafted: 2026-10-23 — 이재엽 결정(C-26 · C-28 · C-29 · C-30): 책은 README를 받아 와 보여 주기만 · 레벨은 관문마다 +1 누적 · 명령 네 칸 맡기기 · 살피기 · 책 · 배우기 · 서재 잠시 뺌
@@ -1201,7 +1201,7 @@
   const FLO_MINI = '<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"></ellipse><circle cx="24" cy="34" r="3" fill="#1A2350"></circle><circle cx="40" cy="34" r="3" fill="#1A2350"></circle><ellipse cx="32" cy="40" rx="2.6" ry="1.8" fill="#1A2350"></ellipse><ellipse cx="20" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse><ellipse cx="44" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse></svg>';
   const ARROW = (cls, w, h, d) => `<svg class="cv-ar ${cls}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
   const ARROWS = ARROW("a1", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a2", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a3", 130, 60, "M120 4 C 110 40, 60 46, 14 48 M22 41 L12 48 L22 55") + ARROW("a4", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a5", 30, 20, "M2 10h20M17 4l7 6-7 6");
-  // F-65(2026-10-27 이재엽 "캔버스가 움직이는것도 안되고"): 캔버스를 끌어서 옮기고 크게 · 작게 — canvas-pan.js가 작업실 안에서 한다(단추는 data-cv라 섬으로 보내지 않는다).
+  // F-66(2026-10-27 이재엽 "캔버스가 움직이는것도 안되고"): 캔버스를 끌어서 옮기고 크게 · 작게 — canvas-pan.js가 작업실 안에서 한다(단추는 data-cv라 섬으로 보내지 않는다).
   //   처음은 '맞춤'(줌 · 다시 배치, R-11). 가운데 단추의 글(맞춤 · n%)은 canvas-pan.js가 바꾼다
   const CV_HINT = "캔버스 — 끌어서 옮겨요. ⌘ 또는 Ctrl을 누른 채 휠(트랙패드는 두 손가락 오므리기)로 크게 · 작게, 키보드는 + − 0과 화살표";
   const CV_TOOLS = `<div class="cv-tools" role="group" aria-label="캔버스 크기"><button type="button" data-cv="out" aria-label="작게" title="작게 (−)">−</button><button type="button" class="cv-z" data-cv="fit" aria-pressed="true" aria-label="화면에 맞춤 (지금 맞춤)" title="화면에 맞춤 (0)">맞춤</button><button type="button" data-cv="in" aria-label="크게" title="크게 (+)">+</button></div>`;
@@ -1263,7 +1263,7 @@
   //   서버 없이 · 연습 모드 · 폴더를 모르면 아래 예시 그대로(목업의 예시 — [이름, 안쪽인가, 상태 글, 모양])에 '예시' 표시. 지금 장 문서는 '● 지금', 지난 장 문서는 '읽음', 폴더는 눌러 접고 펼친다
   //   예시 한 줄 = [이름, 안쪽인가, 상태 글, 모양, 펼친 폴더인가]
   const FILES_DUMMY = [["README.md", 0, "고침 · 책", "fix"], ["CLAUDE.md", 0, "", ""], ["docs", 0, "", "dir", 1], ["01-idea.md", 1, "읽음", ""], ["03-requirements.md", 1, "● 지금", "now"], ["decisions.md", 1, "새로", "new"], ["기획서.md", 1, "", ""], ["src", 0, "", "dir"]];
-  // F-66(2026-10-27 이재엽 "지금 폴더들도 폴더라는 느낌이 안들어"): 폴더는 꺾쇠(펼치면 아래로) + 폴더 그림(접힘 · 펼침) + 굵은 이름 + 안의 개수, 파일은 종류 그림(md · 코드 · 그 밖).
+  // F-67(2026-10-27 이재엽 "지금 폴더들도 폴더라는 느낌이 안들어"): 폴더는 꺾쇠(펼치면 아래로) + 폴더 그림(접힘 · 펼침) + 굵은 이름 + 안의 개수, 파일은 종류 그림(md · 코드 · 그 밖).
   //   깊이마다 들여쓰기 안내선(app.css). 그림은 파스텔 — 이름 글자가 뜻을 갖고 그림은 거든다
   const FN_PAGE = (fill, line, glyph) => `<svg viewBox="0 0 16 16"><path d="M3.5 1.5h6l3 3v10h-9z" fill="${fill}" stroke="${line}" stroke-linejoin="round"/><path d="M9.5 1.5v3h3" fill="none" stroke="${line}" stroke-linejoin="round"/>${glyph}</svg>`;
   const FN_ICON = { dir: '<svg viewBox="0 0 16 16"><path d="M1.5 4.25c0-.69.56-1.25 1.25-1.25h3.4l1.5 1.5h5.6c.69 0 1.25.56 1.25 1.25v6.5c0 .69-.56 1.25-1.25 1.25H2.75c-.69 0-1.25-.56-1.25-1.25z" fill="#F2DC94" stroke="#B48A2C"/></svg>',
@@ -1294,7 +1294,7 @@
     if (!mine) return `<p class="fn-h"><b>${fIcon("open")}<span>${esc(project() || "예시 프로젝트")}</span></b><em title="${esc(f && f.why ? `${f.why} — 폴더를 연결하면 진짜 목록이 와요` : "폴더를 연결하면 진짜 목록이 와요")}">예시</em></p><ul class="fn">${FILES_DUMMY.map(exRow).join("")}</ul><p class="fn-ft">폴더를 연결하면 그 폴더의 진짜 파일 이름이 여기에 와요 — Claude Code가 고친 파일은 캔버스의 파일 카드에</p>`;
     const n = st.finished ? N.STAGES.length - 1 : atStage(), slugs = FDOCS ? FDOCS.SLUGS : [], nowDir = slugs[n] ? `docs/${slugs[n]}/` : "";
     const tagOf = (x) => { if (x.dir) return ""; if (nowDir && x.path.startsWith(nowDir)) return "● 지금"; const k = slugs.findIndex((s, i) => i < n && x.path.startsWith(`docs/${s}/`)); return k >= 0 && st.results[k] ? "읽음" : ""; };
-    const kids = {}, up = [];   // 폴더마다 바로 아래의 수(F-66) — 목록은 깊이 순서라 쌓아 가며 센다
+    const kids = {}, up = [];   // 폴더마다 바로 아래의 수(F-67) — 목록은 깊이 순서라 쌓아 가며 센다
     f.list.forEach((x, i) => { while (up.length && f.list[up[up.length - 1]].depth >= x.depth) up.pop(); if (up.length) kids[up[up.length - 1]] = (kids[up[up.length - 1]] || 0) + 1; if (x.dir) up.push(i); });
     const open = new Set(st.fnOpen); let closedAt = 0;   // 접힌 폴더의 안쪽(더 깊은 것)은 건너뛴다 — 깊이로 본다(경로 글에 기대지 않는다)
     const q = st.fnFind.trim().toLowerCase(), cur = st.openFiles[st.fileSel];   // 찾기(C-43): 글이 있으면 접힘과 상관없이 이름에 그 글이 든 파일만 한 줄로
