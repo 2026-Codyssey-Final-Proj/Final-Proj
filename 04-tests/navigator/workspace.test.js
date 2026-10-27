@@ -33,8 +33,10 @@ test("lib.js workBounds — 작업실은 작업 영역 가득, 기억한 크기 
 test("main.js — 작업실 창: 처음은 작업 영역 가득(workBounds(wa, 기억)), 사람이 옮기거나 늘리면 기억(설정 폴더 workspace.json), '화면 가득'(floe:win-size \"full\")은 다시 작업 영역만큼 — S/M/L은 없다", () => {
   const m = read("electron/main.js");
   assert.match(m, /const workFile = \(\) => path\.join\(app\.getPath\("userData"\), "workspace\.json"\);/, "기억은 설정 폴더의 workspace.json(project.json과 같은 자리)");
-  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? L\.workBounds\(wa, savedWork\(\)\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\);/, "작업실은 작업 영역 가득 · 기억한 자리(R-1), 설정 창은 옆자리");
-  assert.match(m, /w\.on\("resize", rememberWork\); w\.on\("move", rememberWork\);/, "사람이 바꾼 크기 · 자리를 기억한다");
+  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? workBoundsNow\(wa\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\);/, "작업실은 작업 영역 가득 · 기억한 자리(R-1), 설정 창은 옆자리");
+  assert.match(m, /screen\.getDisplayMatching\(s\)\.workArea : wa, s\)/, "기억한 자리는 그 자리가 있는 화면의 작업 영역으로(둘째 모니터 — 새 맥락 리뷰)");
+  assert.match(m, /w\.on\("will-resize", \(\) => \{ w\.floeUser = true; \}\); w\.on\("resize", rememberWork\); w\.on\("move", rememberWork\);/, "사람이 바꾼 크기 · 자리만 기억한다(이재엽 버튼 2026-10-27)");
+  assert.match(m, /if \(!w \|\| w\.isDestroyed\(\) \|\| !w\.floeUser/, "앱이 둔 크기는 적지 않는다"); assert.match(m, /w\.floeUser = false; forgetWork\(\); w\.setBounds\(L\.workBounds\(wa\)\)/, "'화면 가득'은 기억을 지운다");
   assert.match(m, /if \(kind === "quest"\) \{ if \(size === "full"\)[^\n]*L\.workBounds\(wa\)/, "'화면 가득'은 작업 영역만큼");
   assert.ok(!m.includes("floeSize: opt.size"), "작업실 · 설정 창 모두 S/M/L 크기 기억(floeSize)은 없다 — 설정 창은 2026-10-25부터 열리지 않고, 작업실은 자리 · 크기를 workspace.json에");
 });
@@ -130,7 +132,9 @@ test("app.js — R-8 파일 칸: 작업실을 열 때 /api/files를 받아 진�
   assert.match(a, /if \(!canLive \|\| st\.mode === "fixture"\) \{ st\.files = \{ src: "example"/, "연습 · 서버 없음은 예시");
   assert.match(a, /await fetch\("\/api\/files", \{ cache: "no-store" \}\)/);
   assert.ok(a.includes('return "● 지금"') && a.includes('? "읽음" : ""'), "지금 장 · 지난 장 표시");
-  assert.match(a, /"fn-dir": \(i, el\) => \{/, "폴더 접고 펼치기");
+  assert.match(a, /"fn-dir": \(i, el\) => \{/, "폴더 접고 펼치기"); assert.match(a, /data-act="fn-dir" data-v="\$\{i\}"/, "열쇠는 번호 — 가린 이름끼리 경로가 겹쳐도(새 맥락 리뷰)");
+  assert.match(a, /if \(closedAt && x\.depth > closedAt\) return "";/, "접힌 폴더의 안쪽은 깊이로 건너뛴다"); assert.ok(a.includes("비어 있어요 — 이 폴더에 보일 파일이 없어요") && a.includes("읽지 못한 폴더 ${f.unread}"), "빈 폴더 · 읽지 못한 폴더");
+  assert.match(read("navigator/app.css"), /\.wnav \.fn li\.dir button\{all:unset;cursor:pointer;min-height:44px;/, "폴더 단추는 44px(이재엽 버튼 2026-10-27)");
   assert.ok(!a.includes("진짜 파일 목록은 다음 판에"), "'다음 판' 글은 없다 — 이 판이다");
   assert.match(s, /const BOOK_ROUTES = \["\/api\/readme", "\/api\/files",/, "확인 값이 필요한 주소");
   assert.match(s, /if \(req\.method === "GET" && route === "\/api\/files"\) return send\(res, 200, filesNow\(\)\);/);
@@ -141,10 +145,11 @@ test("app.js — R-8 파일 칸: 작업실을 열 때 /api/files를 받아 진�
 test("app.js — R-10: landed는 gateRules를 거친다(빈칸 · 증거 — 그 장의 줄과 Claude Code 파일 기록), 보고한 뒤 '안 됨'이 남으면 멈춤 카드(채우러 가기 · 까닭 적고 넘기기), 넘기면 까닭과 함께 '됨'으로 · 결과의 check도 최신 판정으로", () => {
   const a = read("navigator/app.js");
   assert.match(a, /function landed\(j0, tokens, sent = st\.text, checkBy = ""\) \{\n\s+const j = gateApply\(j0\);/, "판정 뒤 코드 규칙");
-  assert.match(a, /const workEvidence = \(\) => \{ const s = latestSession\(\); return !!\(s && \(s\.steps \|\| \[\]\)\.some\(\(x\) => x\.what && \(x\.add \|\| x\.del\)\)\); \};/, "증거 = 파일을 고친 기록");
+  assert.match(a, /const workEvidence = \(\) => \{ if \(st\.mode === "fixture"\) return true; if \(aiMode !== "live"\) return false; const s = latestSession\(\);/, "증거 = 진짜 세션의 파일 기록만, 연습은 면제(이재엽 버튼 2026-10-27)");
+  assert.match(a, /!holding\(\) && !st\.openInput && left\(\) > 0\);/, "멈춰 둔 단계 · 글 칸 연 동안은 멈춤 카드가 서지 않는다");
   assert.match(a, /N\.gateRules\(j, \{ lines: q \? q\.objs\.map\(\(_, i\) => \(q\.lines\[i\] \|\| \[\]\)\.join\(" \/ "\)\) : \[\], work: workEvidence\(\) \}\)/);
   assert.match(a, /if \(gateStop\(\)\) return momentStop\(\);/, "멈춤 카드가 먼저");
-  assert.match(a, /const gateStop = \(\) => !!\(QU && st\.quest && st\.quest\.phase === "done" && st\.j && st\.j\.stage === st\.quest\.chap && !st\.finished && left\(\) > 0\);/);
+  assert.match(a, /const gateStop = \(\) => !!\(QU && st\.quest && st\.quest\.phase === "done" && st\.j && st\.j\.stage === st\.quest\.chap && !st\.finished && !holding\(\) && !st\.openInput && left\(\) > 0\);/);
   for (const s of ['"gate-fill": () =>', '"gate-skip": () =>', '"gate-skip-save": () =>', '"gate-skip-back": () =>', 'label: "채우러 가기", act: "gate-fill"', 'label: "까닭 적고 넘기기", act: "gate-skip"', 'if (a === "skip-reason")']) assert.ok(a.includes(s), s);
   assert.match(a, /skipped: true, reason/, "넘긴 기준은 까닭과 함께");
   assert.match(a, /skip: \{ reason, items/, "결과에 까닭 · 넘긴 기준 이름");

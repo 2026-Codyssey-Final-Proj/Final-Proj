@@ -827,7 +827,7 @@
   // 넘어가기 전 확인 — 이해했나요? → (아니요) 헷갈린 곳 → 묻기 → 한 장 요약 → (예) 다음 단계 순서 정하기
   // R-10 멈춤(C-42 · F-60, 2026-10-27 이재엽 버튼 "Go"): 완료 보고 뒤 '안 됨'이 남으면 관문이 열리지 않는다 — 채우러 가기(공책으로) / 까닭 적고 넘기기(까닭은 결정 기록의 관문 줄에).
   //   넘긴 기준은 '됨' 수에 들지 않고 '넘김'으로 남는다(docs.js). 이해했어요(예)는 그 뒤 전처럼
-  const gateStop = () => !!(QU && st.quest && st.quest.phase === "done" && st.j && st.j.stage === st.quest.chap && !st.finished && left() > 0);
+  const gateStop = () => !!(QU && st.quest && st.quest.phase === "done" && st.j && st.j.stage === st.quest.chap && !st.finished && !holding() && !st.openInput && left() > 0);   // 멈춰 둔 단계 · 글 칸을 연 동안은 그 카드가 먼저(새 맥락 리뷰)
   function momentStop() {
     const s = stage(), meta = `<span class="mm-stage">${LB(s.n)} · 관문 앞</span>${flowLine()}`;
     const un = st.j.criteria.filter((c) => !c.met);
@@ -1259,8 +1259,8 @@
       const r = await (await fetch("/api/files", { cache: "no-store" })).json();
       if (r && r.ok && r.files) {
         const n = st.finished ? N.STAGES.length - 1 : atStage(), slug = FDOCS ? FDOCS.SLUGS[n] : "";
-        st.fnOpen = r.files.filter((f) => f.dir && (f.path === "docs" || (slug && f.path === `docs/${slug}`))).map((f) => f.path);   // 지금 장의 폴더는 펼쳐 둔다
-        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, depth: r.depth, why: "" };
+        st.fnOpen = r.files.map((f, i) => (f.dir && (f.path === "docs" || (slug && f.path === `docs/${slug}`)) ? String(i) : "")).filter(Boolean);   // 지금 장의 폴더는 펼쳐 둔다 — 열쇠는 목록의 번호(가린 이름끼리 경로가 겹칠 수 있다, 새 맥락 리뷰)
+        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, why: "" };
       } else st.files = { src: "example", why: "연결한 폴더를 아직 몰라요" };
     } catch { st.files = { src: "example", why: "서버에 닿지 않았어요" }; }
     render();
@@ -1270,15 +1270,15 @@
     if (!mine) return `<p class="fn-h"><b>${esc(project() || "예시 프로젝트")}</b><em title="${esc(f && f.why ? `${f.why} — 폴더를 연결하면 진짜 목록이 와요` : "폴더를 연결하면 진짜 목록이 와요")}">예시</em></p><ul class="fn">${FILES_DUMMY.map(([name, inner, tag, k]) => `<li class="${k}${inner ? " in" : ""}"><span>${esc(name)}</span>${tag ? `<small>${esc(tag)}</small>` : ""}</li>`).join("")}</ul><p class="fn-ft">폴더를 연결하면 그 폴더의 진짜 파일 이름이 여기에 와요 — Claude Code가 고친 파일은 캔버스의 파일 카드에</p>`;
     const n = st.finished ? N.STAGES.length - 1 : atStage(), slugs = FDOCS ? FDOCS.SLUGS : [], nowDir = slugs[n] ? `docs/${slugs[n]}/` : "";
     const tagOf = (x) => { if (x.dir) return ""; if (nowDir && x.path.startsWith(nowDir)) return "● 지금"; const k = slugs.findIndex((s, i) => i < n && x.path.startsWith(`docs/${s}/`)); return k >= 0 && st.results[k] ? "읽음" : ""; };
-    const open = new Set(st.fnOpen), closed = [];   // 접힌 폴더의 안쪽은 건너뛴다
-    const rows = f.list.map((x) => {
-      while (closed.length && !x.path.startsWith(`${closed[closed.length - 1]}/`)) closed.pop();
-      if (closed.length) return "";
-      const isOpen = x.dir && open.has(x.path); if (x.dir && !isOpen) closed.push(x.path);
+    const open = new Set(st.fnOpen); let closedAt = 0;   // 접힌 폴더의 안쪽(더 깊은 것)은 건너뛴다 — 깊이로 본다(경로 글에 기대지 않는다)
+    const rows = f.list.map((x, i) => {
+      if (closedAt && x.depth > closedAt) return ""; closedAt = 0;
+      const isOpen = x.dir && open.has(String(i)); if (x.dir && !isOpen) closedAt = x.depth;
       const tag = tagOf(x);
-      return `<li class="${x.dir ? "dir" : tag === "● 지금" ? "now" : ""} d${x.depth}">${x.dir ? `<button type="button" data-act="fn-dir" data-v="${esc(x.path)}" aria-expanded="${isOpen}">${isOpen ? "▾" : "▸"} ${esc(x.name)}</button>` : `<span>${esc(x.name)}</span>`}${tag ? `<small>${tag}</small>` : ""}</li>`;
+      return `<li class="${x.dir ? "dir" : tag === "● 지금" ? "now" : ""} d${x.depth}">${x.dir ? `<button type="button" data-act="fn-dir" data-v="${i}" aria-expanded="${isOpen}"><span>${isOpen ? "▾" : "▸"} ${esc(x.name)}</span></button>` : `<span>${esc(x.name)}</span>`}${tag ? `<small>${tag}</small>` : ""}</li>`;
     }).join("");
-    return `<p class="fn-h"><b>${esc(f.project || project() || "")}</b></p><ul class="fn">${rows}</ul><p class="fn-ft">${f.total}개 · 깊이 ${f.depth}까지 · 이름만 봐요${f.cut ? " · 더 있어요(200개까지만)" : ""}</p>`;
+    const ft = f.total ? `${f.total}개 · 깊이 ${f.depth}까지 · 이름만 봐요${f.cut ? " · 더 있어요(200개까지만)" : ""}${f.unread ? ` · 읽지 못한 폴더 ${f.unread}` : ""}` : "비어 있어요 — 이 폴더에 보일 파일이 없어요";
+    return `<p class="fn-h"><b>${esc(f.project || project() || "")}</b></p><ul class="fn">${rows}</ul><p class="fn-ft">${ft}</p>`;
   }
   const BROWSER_WIN = [920, 640];   // 브라우저 판(섬 옆)의 크기 — 앱의 창 크기는 main.js(R-1)
   const FULL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5"/></svg>';
@@ -2506,7 +2506,8 @@
   // sent: 살펴본 작업 글 — '물어보기'가 글 칸이 비었을 때 대신 보낸다(F-11)
   //   checkBy — 완료 기준을 누가 봤나(C-40 confirm — 초안을 칸마다 확인한 대로). 그 보고에만 붙는다(2026-10-26 리뷰 — 전역 값이 실패 뒤 다음 판정에 남을 수 있었다)
   // R-10(C-42 · F-60, 2026-10-27): 판정이 오면 코드 규칙(navigator.js gateRules)을 한 번 더 — 빈칸 표시 · 증거(그 장의 줄과 Claude Code가 파일을 고친 기록). 확인한 대로(C-40)도 같다
-  const workEvidence = () => { const s = latestSession(); return !!(s && (s.steps || []).some((x) => x.what && (x.add || x.del))); };
+  //   증거는 진짜 세션(aiMode live)의 파일 기록만 — 서버 없이 열면 예시 세션이라 증거가 아니다. 연습 모드(fixture)는 증거 면제(빈칸 표시 규칙만 — 이재엽 버튼 2026-10-27 "연습은 증거 면제")
+  const workEvidence = () => { if (st.mode === "fixture") return true; if (aiMode !== "live") return false; const s = latestSession(); return !!(s && (s.steps || []).some((x) => x.what && (x.add || x.del))); };
   const gateApply = (j) => { if (!j || !N.gateRules) return j; const q = st.quest && st.quest.chap === j.stage ? st.quest : null; return N.gateRules(j, { lines: q ? q.objs.map((_, i) => (q.lines[i] || []).join(" / ")) : [], work: workEvidence() }); };
   const checkOf = (j) => j.criteria.map((c) => ({ text: c.text, met: !!c.met, evidence: String(c.evidence || "").slice(0, 300), ...(c.why ? { why: c.why } : {}), ...(c.skipped ? { skipped: true } : {}) }));
   function landed(j0, tokens, sent = st.text, checkBy = "") {
@@ -2634,6 +2635,7 @@
     // 퀘스트(C-22): 장을 지나면 무지개 조개 하나, 다음 장 퀘스트(받기 화면)를 만들고 퀘스트 창이 바로 뜬다(설정 '바로 뜨기'). 마지막이면 퀘스트 없이 마무리
     if (QU) { st.shells += 1; level = QU.levelUp(level); if (st.mode !== "fixture") writeLS(LEVEL_KEY, level); st.quest = nx ? QU.retitle(QU.makeQuest(nx, crits(nx.n)), st.topic) : null; if (nx && qauto) openQwin("quest"); }   // 다음 장도 주제를 제목으로(C-36)
     if (st.results[s.n]) st.results = { ...st.results, [s.n]: { ...st.results[s.n], passed: ymd() } };   // 관문을 지난 날(C-39 — 문서의 증빙 · 결정 기록)
+    if (st.qwin) loadFiles();   // 작업실 파일 칸 — 장이 바뀌면 '● 지금' · 펼친 폴더도 바뀐다(R-8, 새 맥락 리뷰)
     if (QU && FDOCS && s.n >= 1 && st.results[0] && st.results[1]) { st.ship = { phase: "offer" }; st.qfocus = "stage"; }   // 마지막(8단계) 관문도(2026-10-25 리뷰)   // 2단계부터 관문마다 — 단계 문서 · 기획서 · 결정 기록을 다시 묶어 올릴지 묻는다(C-37 → C-39 버튼 "2단계부터 관문마다")
     render();
     if (QU && nx && N.DRAFT_STAGES.includes(nx.n) && st.results[nx.n - 1]) stageDraft(nx.n);   // 지난 장 결과로 이 장의 초안 — 먼저 생각하고 동의를 구한다(C-37)

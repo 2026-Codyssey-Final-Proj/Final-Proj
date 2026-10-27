@@ -38,7 +38,7 @@ test("files.js listFiles — 이름만, 파일 먼저 · 이름순 · 깊이 우
   assert.ok(!paths.includes("docs/03-requirements/deep/too-deep.md") && !paths.includes("src/lib/inner/x.js"), "깊이 4는 없다(폴더 자체는 깊이 3으로 보인다)");
   assert.equal(r.files.find((f) => f.path === "docs").dir, true); assert.equal(r.files.find((f) => f.path === "README.md").dir, false);
   assert.deepEqual(r.files.map((f) => f.depth).slice(0, 6), [1, 1, 1, 1, 2, 3]);
-  assert.equal(r.cut, false); assert.equal(r.total, 14);
+  assert.equal(r.cut, false); assert.equal(r.total, 14); assert.equal(r.unread, 0);
   assert.ok(!JSON.stringify(r).includes(TMP), "절대 경로는 어디에도 없다");
   assert.equal(Files.DEPTH, 3); assert.equal(Files.MAX, 200);
   assert.ok(Files.SECRET.test(".env.local") && !Files.SECRET.test(".env.example") && Files.SECRET.test("a.p12") && !Files.SECRET.test("keys.md"), "비밀값 모양은 check-secrets.sh와 같다");
@@ -49,7 +49,7 @@ test("files.js listFiles — 200개를 넘으면 자르고 cut, 없는 폴더는
   for (let i = 0; i < 230; i++) fs.writeFileSync(path.join(many, `f${String(i).padStart(3, "0")}.txt`), "");
   const r = Files.listFiles(many);
   assert.equal(r.files.length, 200); assert.equal(r.cut, true); assert.equal(r.total, 200);
-  assert.deepEqual(Files.listFiles(path.join(TMP, "nope")), { files: [], total: 0, cut: false });
+  assert.deepEqual(Files.listFiles(path.join(TMP, "nope")), { files: [], total: 0, cut: false, unread: 1 }, "읽지 못한 폴더는 센다(빈 폴더와 구분)");
   const red = Files.listFiles(PROJ, { redact: (s) => s.replace(/README/, "***") });
   assert.ok(red.files.some((f) => f.name === "***.md" && f.path === "***.md"));
 });
@@ -65,10 +65,10 @@ before(async () => {
   Srv.eventToken();
 });
 after(() => { srv && srv.close(); fs.rmSync(TMP, { recursive: true, force: true }); });
-function call(method, url, { body, token: withTok = true } = {}) {
+function call(method, url, { body, token: withTok = true, headers = {} } = {}) {
   return new Promise((resolve, reject) => {
     const data = body === undefined ? undefined : JSON.stringify(body);
-    const h = { ...(data !== undefined ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}), ...(withTok ? { "X-Nav-Token": token() } : {}) };
+    const h = { ...(data !== undefined ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}), ...(withTok ? { "X-Nav-Token": token() } : {}), ...headers };
     const req = http.request({ host: "127.0.0.1", port, path: url, method, headers: h }, (res) => {
       let text = ""; res.setEncoding("utf8"); res.on("data", (d) => (text += d));
       res.on("end", () => { let json = null; try { json = JSON.parse(text); } catch {} resolve({ status: res.statusCode, json, text }); });
@@ -79,6 +79,8 @@ function call(method, url, { body, token: withTok = true } = {}) {
 
 test("GET /api/files — 확인 값이 없으면 403, POST는 404, 폴더를 모르면 files: null · why 'folder'", async () => {
   assert.equal((await call("GET", "/api/files", { token: false })).status, 403);
+  assert.equal((await call("GET", "/api/files", { headers: { Origin: "http://evil.example" } })).status, 403, "다른 출처는 확인 값이 맞아도 403(allowed)");
+  assert.equal((await call("GET", "/api/files", { headers: { Host: "evil.example" } })).status, 403, "다른 Host도 403 — 다른 컴퓨터에서 오는 요청을 받지 않는다");
   assert.equal((await call("POST", "/api/files", { body: {} })).status, 404);
   const r = await call("GET", "/api/files");
   assert.equal(r.status, 200); assert.deepEqual(r.json, { ok: true, project: "", files: null, why: "folder" });

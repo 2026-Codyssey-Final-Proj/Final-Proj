@@ -742,7 +742,9 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:5px 6px;border-radius:7px;min-width:0}
 .wnav .fn li.in{padding-left:18px}
 .wnav .fn li.d2{padding-left:18px}.wnav .fn li.d3{padding-left:30px}   /* 진짜 목록(R-8)의 깊이 — 맨 위가 1 */
-.wnav .fn li.dir button{all:unset;cursor:pointer;min-height:24px;display:inline-flex;align-items:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:inherit}
+.wnav .fn li.dir{padding-top:0;padding-bottom:0}
+.wnav .fn li.dir button{all:unset;cursor:pointer;min-height:44px;flex:1;display:flex;align-items:center;min-width:0;color:inherit}   /* 누르는 곳 44px(넘김 문서 4절 — 새 맥락 리뷰 막힘, 이재엽 버튼 2026-10-27 "44px로 키운다") */
+.wnav .fn li.dir button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .wnav .fn li.dir button:focus-visible{outline:2px solid var(--acc);outline-offset:1px;border-radius:5px}
 .wnav .fn li.dir{color:var(--sub)}
 .wnav .fn li.now{background:var(--acc-soft);font-weight:600}
@@ -1138,7 +1140,7 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .cv-cards span.y{background:var(--card);border:1px solid var(--line);color:var(--ink)}
 .cv-files,.cv-unmet{list-style:none;padding:0;display:grid;gap:calc(3 * var(--u));font-size:calc(11 * var(--u))}   /* R-5(2026-10-27): ④ 올라갈 파일 이름 · 관문의 '안 됨' 기준 이름 */
 .cv-files li{font-family:ui-monospace,Menlo,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
-.cv-unmet li{color:var(--bad);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cv-unmet li{color:var(--bad);overflow-wrap:anywhere}   /* 줌의 좁은 관문 칸(104)에서도 잘리지 않고 줄 바꿈(새 맥락 리뷰) */
 .mc .unmet{list-style:none;margin:0;padding:0;display:grid;gap:4px}.mc .unmet li{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;padding:6px 10px;border-radius:10px;background:var(--badbg);color:var(--bad);font-size:calc(13px * var(--ui-scale,1))}.mc .unmet small{color:var(--sub)}   /* R-10 관문 앞 멈춤 카드의 '안 됨' 목록 */
 /* 파일 카드(C-41 ④, 2026-10-27) — 이름과 +/− 줄 수만. ⑥: ① 생각 아래(목업의 '파일 · 03-requirements.md' 자리) */
 .cv-file{grid-area:file;padding:calc(10 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);box-shadow:0 calc(2 * var(--u)) calc(6 * var(--u)) rgba(30,42,90,.07);font-size:calc(11.5 * var(--u));display:flex;flex-direction:column;gap:calc(6 * var(--u))}

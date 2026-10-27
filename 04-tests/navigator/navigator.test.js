@@ -669,4 +669,10 @@ test("gateRules: 7단계 '잰 값'은 숫자가 있어야, 5단계 '도는지' �
   const m3 = Nav.gateRules({ stage: 2, reason: "r", criteria: Nav.STAGES[2].criteria.map((c) => ({ text: c.text, term: c.term, met: true, evidence: "e" })), next: null }, { lines: ["a", "b", "c", "d", "e"], work: false });
   assert.ok(m3.criteria.every((c) => c.met), "3단계는 증거 칸이 없다");
   assert.deepEqual(Nav.EVIDENCE_CRITERIA, { 4: ["이어진 게 실제로 도는지 확인하기"], 5: ["작은 부분마다 확인 통과하기"], 6: ["잰 값을 그대로 적어 두기"] });
+  // 경계(새 맥락 리뷰 2026-10-27): 숫자가 섞인 '아직 못 잼'은 잰 값이 아니다 · 줄이 기준보다 짧으면 판정의 근거 글로 본다 · 빈 줄은 증거 칸에서만 걸린다
+  assert.equal(mk(6, ["30초", "2단계 숫자를 아직 못 잼", "없음", "있음"]).criteria[1].met, false, "'아직 못 잼'");
+  assert.equal(mk(6, ["30초", "알림 시각: 12초 — 모르겠어요", "없음", "있음"]).criteria[1].met, false, "'모르겠'");
+  const short = Nav.gateRules({ stage: 6, reason: "r", criteria: Nav.STAGES[6].criteria.map((c, i) => ({ text: c.text, term: c.term, met: true, evidence: i === 1 ? "잰 값 (재고 적기)" : "e" })), next: null }, { lines: ["30초"] });
+  assert.equal(short.criteria[1].why, "blank", "줄이 없으면 근거 글을 본다"); assert.equal(short.criteria[0].met, true);
+  assert.equal(mk(6, ["30초", "", "없음", "있음"]).criteria[1].why, "evidence", "빈 줄 — 잰 값 없음"); assert.equal(mk(2, ["", "", "", "", ""]).criteria.every((c) => c.met), true, "증거 칸이 아니면 빈 줄도 건드리지 않는다(적은 적 없는 칸은 애초에 met이 아니다)");
 });

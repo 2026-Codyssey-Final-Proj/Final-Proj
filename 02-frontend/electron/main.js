@@ -272,11 +272,14 @@ const workFile = () => path.join(app.getPath("userData"), "workspace.json");
 const savedWork = () => { try { return JSON.parse(fs.readFileSync(workFile(), "utf8")); } catch { return null; } };
 let workTimer = null;
 function rememberWork() {
-  const w = wins.quest; if (!w || w.isDestroyed() || w.isMinimized() || w.isMaximized()) return;   // 내려간 창(-32000) · 최대화는 기억하지 않는다 — 다음에 열 때 작업 영역 가득이 맞다
+  const w = wins.quest; if (!w || w.isDestroyed() || !w.floeUser || w.isMinimized() || w.isMaximized()) return;   // 사람이 바꾼 것만(will-resize · will-move — 새 맥락 리뷰 2026-10-27, 이재엽 버튼 "사람이 바꾼 것만 기억"). 내려간 창(-32000) · 최대화는 기억하지 않는다
   clearTimeout(workTimer);
   workTimer = setTimeout(() => { const b = w.isDestroyed() ? null : w.getBounds(); if (b) try { fs.writeFileSync(workFile(), JSON.stringify(b), { mode: 0o600 }); } catch {} }, 300);
 }
-const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? L.workBounds(wa, savedWork()) : L.sideWinBounds(kind, side, isl, wa, size));   // 작업실은 작업 영역 가득 · 기억한 자리(R-1), 설정 창은 옆자리
+const forgetWork = () => { try { fs.unlinkSync(workFile()); } catch {} };   // '화면 가득'을 누르면 기억을 지운다 — 다음에 어느 화면에서 열어도 그 화면의 작업 영역 가득
+// 기억한 자리가 있으면 **그 자리가 있는 화면**의 작업 영역으로 당긴다(작업실을 둘째 모니터에 둔 사람 — 새 맥락 리뷰 2026-10-27), 없으면 섬이 있는 화면 가득
+const workBoundsNow = (wa) => { const s = savedWork(); return L.workBounds(s && Number.isFinite(s.x) && Number.isFinite(s.y) ? screen.getDisplayMatching(s).workArea : wa, s); };
+const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? workBoundsNow(wa) : L.sideWinBounds(kind, side, isl, wa, size));   // 작업실은 작업 영역 가득 · 기억한 자리(R-1), 설정 창은 옆자리
 // ── C-41 ⑤(2026-10-27 두승현 "퀘스트뿐 아니라 다른 창도 큰 화면에서 진행, 그 옆에 플로로가 배치되는 형식"): 작업실이 열려 있는 동안 섬 창은 숨고, 섬의 내용(플로로 · 채팅 · 판)은
 //   작업실 안의 옆 칸(.isl-col)에 같이 그려진다(app.js syncWins → win.js). 닫으면 섬 창이 다시 뜬다(두승현 결정 1번 — 오버레이로 허락 카드 · 알림을 받는 쓸모를 남긴다).
 //   섬을 창 좌표로 작업실 가장자리에 붙이던 ②~④의 길(placeIsland · dockBounds · 손잡이의 창 간 통신)은 뺐다 — 두승현 PC에서 두 번 다 붙지 않았고, 한 창 안의 칸은 어긋날 자리가 없다
@@ -293,8 +296,8 @@ function openSideWin(kind, opt = {}) {
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   if (!ws) w.setAlwaysOnTop(true, "floating");
   Object.assign(w, { floeSide: opt.side, floeMoved: false });   // 다시 둘 때(placeSideWins · floe:win-size) 같은 규칙으로
-  if (ws) { w.on("resize", rememberWork); w.on("move", rememberWork); }   // 작업실 — 사람이 바꾼 크기 · 자리를 기억(R-1). 앱이 둔 자리(setBounds)도 같은 값이라 그대로 적힌다
-  w.on("will-move", () => { w.floeMoved = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
+  if (ws) { w.on("will-resize", () => { w.floeUser = true; }); w.on("resize", rememberWork); w.on("move", rememberWork); }   // 작업실 — 사람이 바꾼 크기 · 자리를 기억(R-1). 앱이 둔 자리(setBounds)는 will-* 없이 와서 적히지 않는다
+  w.on("will-move", () => { w.floeMoved = true; w.floeUser = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
   w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
   if (ws) w.once("ready-to-show", () => { if (win && !win.isDestroyed()) win.hide(); });   // 작업실이 뜨면 섬 창은 숨는다 — 섬은 작업실 안의 옆 칸에(C-41 ⑤)
   w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
@@ -324,7 +327,7 @@ ipcMain.on("floe:win-size", (e, kind, size) => {
   const w = sideKind(kind) && wins[kind];
   if (!fromIsland(e) || !w || w.isDestroyed()) return;
   // 작업실(R-1): "full"이면 그 창이 있는 화면의 작업 영역 가득(최대화가 아니라 크기 — 기억에도 그대로 적힌다). 설정 창: 사람이 옮기지 않았으면 같은 자리 규칙으로(커진 창이 섬을 덮지 않게, 2026-10-24) — 옮겼으면 그 자리에서 크기만
-  if (kind === "quest") { if (size === "full") { const wa = screen.getDisplayMatching(w.getBounds()).workArea; if (w.isMaximized()) w.unmaximize(); w.setBounds(L.workBounds(wa)); } return; }
+  if (kind === "quest") { if (size === "full") { const wa = screen.getDisplayMatching(w.getBounds()).workArea; if (w.isMaximized()) w.unmaximize(); w.floeUser = false; forgetWork(); w.setBounds(L.workBounds(wa)); } return; }
   if (!Array.isArray(size)) return;
   if (!w.floeMoved) { const isl = win.getContentBounds(); return w.setBounds(boundsFor(kind, w.floeSide, isl, screen.getDisplayMatching(isl).workArea, size)); }
   const b = w.getBounds(); w.setBounds({ ...b, width: Math.max(260, Math.round(size[0]) || b.width), height: Math.max(200, Math.round(size[1]) || b.height) });

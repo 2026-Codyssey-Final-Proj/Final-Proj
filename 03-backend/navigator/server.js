@@ -355,7 +355,7 @@ function filesNow() {
   const s = projectNow();
   if (!s) return { ok: true, project: "", files: null, why: "folder" };
   const r = Files.listFiles(s.dir, { redact: Sensitive.redact });
-  return { ok: true, project: s.project, files: r.files, total: r.total, cut: r.cut, depth: Files.DEPTH, max: Files.MAX, why: "" };
+  return { ok: true, project: s.project, files: r.files, total: r.total, cut: r.cut, unread: r.unread, depth: Files.DEPTH, max: Files.MAX, why: "" };
 }
 function readmeBook() {
   const s = projectNow();

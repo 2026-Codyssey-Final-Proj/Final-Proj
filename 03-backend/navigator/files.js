@@ -10,11 +10,11 @@ const DEPTH = 3, MAX = 200;
 const SECRET = /^(\.env(\.(?!example$|sample$|template$)[^/]+)?|id_rsa|id_ed25519|credentials\.json)$|\.(pem|key|p12|pfx)$/i;
 const skip = (e) => e.name.startsWith(".") || e.isSymbolicLink() || SECRET.test(e.name) || (e.isDirectory() && e.name === "node_modules") || !(e.isDirectory() || e.isFile());
 
-// { files: [{ name, path, dir, depth }](깊이 우선 — 폴더의 안쪽이 바로 뒤에), total, cut }. redact: 이름을 가리는 함수(sensitive.js) — 폴더 경로(dir)는 답에 넣지 않는다
+// { files: [{ name, path, dir, depth }](깊이 우선 — 폴더의 안쪽이 바로 뒤에), total, cut, unread }. redact: 이름을 가리는 함수(sensitive.js) — 폴더 경로(dir)는 답에 넣지 않는다
 function listFiles(dir, { depth = DEPTH, max = MAX, redact = (s) => s } = {}) {
-  const files = []; let cut = false;
+  const files = []; let cut = false, unread = 0;   // unread: 읽지 못한 폴더 수(권한 등) — 빈 폴더와 구분해 알린다(security-records 6-1, 새 맥락 리뷰 2026-10-27)
   const walk = (d, lvl, rel) => {
-    let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+    let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { unread++; return; }
     ents = ents.filter((e) => !skip(e)).sort((a, b) => Number(a.isDirectory()) - Number(b.isDirectory()) || a.name.localeCompare(b.name));
     for (const e of ents) {
       if (files.length >= max) { cut = true; return; }
@@ -25,6 +25,6 @@ function listFiles(dir, { depth = DEPTH, max = MAX, redact = (s) => s } = {}) {
     }
   };
   walk(dir, 1, "");
-  return { files, total: files.length, cut };
+  return { files, total: files.length, cut, unread };
 }
 module.exports = { listFiles, DEPTH, MAX, SECRET };

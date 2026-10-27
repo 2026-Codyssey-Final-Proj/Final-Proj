@@ -68,7 +68,7 @@ test("앱(main.js) — 섬 크기가 바뀌어 옆 창과 겹치면 다시 둔�
   const m = read("electron/main.js");
   assert.match(m, /function placeSideWins\(\)/);
   assert.match(m, /L\.overlaps\(w\.getBounds\(\), isl\)/);
-  assert.match(m, /w\.on\("will-move", \(\) => \{ w\.floeMoved = true; \}\)/);
+  assert.match(m, /w\.on\("will-move", \(\) => \{ w\.floeMoved = true; w\.floeUser = true; \}\)/);
   const resize = m.slice(m.indexOf('ipcMain.on("floe:resize"'), m.indexOf('ipcMain.on("floe:resize"') + 2200);
   assert.match(resize, /placeSideWins\(\)/, "섬 창 크기를 맞춘 뒤");
   const size = m.slice(m.indexOf('ipcMain.on("floe:win-size"'), m.indexOf('ipcMain.on("floe:win-size"') + 700);
@@ -80,7 +80,7 @@ test("앱(main.js) — 설정 창은 테두리 없음 · 항상 위 · 불투명
   const at = m.indexOf("function openSideWin(kind, opt = {})"); assert.ok(at > 0);
   const block = m.slice(at, at + 2800);
   assert.match(block, /boundsFor\(kind, opt\.side, isl, wa, opt\.size\)/);
-  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? L\.workBounds\(wa, savedWork\(\)\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\)/, "작업실은 작업 영역 가득 · 기억한 자리(C-42 R-1, 2026-10-27), 설정 창은 옆자리(C-41)");
+  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? workBoundsNow\(wa\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\)/, "작업실은 작업 영역 가득 · 기억한 자리(C-42 R-1, 2026-10-27), 설정 창은 옆자리(C-41)");
   assert.match(block, /const ws = kind === "quest";/);
   assert.match(block, /frame: ws, transparent: false, backgroundColor: ws \? "#E9EEF6" : "#16225E", alwaysOnTop: !ws, resizable: ws/);
   assert.match(block, /if \(!ws\) w\.setAlwaysOnTop\(true, "floating"\)/);
