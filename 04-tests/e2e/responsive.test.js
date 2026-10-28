@@ -122,3 +122,20 @@ test("접근성 자동 검사(axe, WCAG 2 A·AA): 시연 장면마다 위반이 
     assert.deepEqual(found, [], `접근성 위반:\n${found.join("\n")}`);
   } finally { await browser.close(); }
 });
+
+// F-76(작업실 개편 TASK T01, 2026-10-29): 작업실 · 섬의 한국어는 낱말 사이에서만 줄을 바꾼다 — 지도 카드 · 캔버스 칸 · 섬 말풍선 · 알약의 계산 스타일이 keep-all
+test("F-76 — 작업실 캔버스 칸 · 섬 말풍선 · 알약의 word-break가 keep-all이다(낱말 중간에서 끊지 않는다)", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(`${pathToFileURL(path.join(FRONT, "navigator/index.html")).href}#base`, { waitUntil: "load" });
+    await page.evaluate(() => { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); });
+    await page.goto(`${pathToFileURL(path.join(FRONT, "navigator/index.html")).href}#ex=2&q=quest`, { waitUntil: "load" }); await page.reload({ waitUntil: "load" });
+    await new Promise((r) => setTimeout(r, 400));
+    if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await new Promise((r) => setTimeout(r, 300)); }
+    await page.click("[data-act=qtab][data-tab=canvas]"); await new Promise((r) => setTimeout(r, 300));
+    const got = await page.evaluate(() => Object.fromEntries([".cv-c .ch", ".cv-c p", ".isl .msg > .b", ".isl .say", ".wnav .fn-ft"].map((s) => { const el = document.querySelector(s); return [s, el ? getComputedStyle(el).wordBreak : "없음"]; })));
+    assert.deepEqual(got, Object.fromEntries(Object.keys(got).map((k) => [k, "keep-all"])), JSON.stringify(got));
+  } finally { await browser.close(); }
+});
