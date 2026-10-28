@@ -761,7 +761,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wtabs .ftab button[role=tab]{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
 .wtabs .ftab.dirty button[role=tab]{color:var(--warn)}
 .wtabs .ftab .ftab-x{position:absolute;top:-7px;right:-5px;z-index:1;display:grid;place-items:center;border:0;background:var(--card);color:var(--mute);border-radius:50%;width:16px;height:16px;font-size:calc(11px * var(--ui-scale,1));line-height:1;padding:0;box-shadow:0 0 0 1px var(--seg)}   /* 탭 오른쪽 위 작은 배지(임유정 2026-10-28 "기존처럼 우측 상단 작게") — 이름이 .fx(반짝이 효과 — position:fixed · translate)와 겹쳐 앞 탭 위로 밀렸던 것을 제 탭의 모서리에 둔다 */
-.wtabs .ftab .ftab-x::after{content:"";position:absolute;inset:-6px;border-radius:50%}   /* 누르는 곳은 28px — 44px로 넓히면 옆 탭 이름 앞쪽까지 덮는다 */
+.wtabs .ftab .ftab-x::after{content:"";position:absolute;inset:-4px;border-radius:50%}   /* 누르는 곳은 24px — 더 넓히면 제 탭 이름 · 옆 탭 앞쪽까지 덮는다(새 맥락 리뷰) */
 .wtabs .ftab .ftab-x:hover{background:var(--acc-soft);color:var(--acc)}
 .fv{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}
 .fv-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -778,7 +778,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .fv-md pre.mdv-code{background:var(--soft);border-radius:10px;padding:10px 12px;overflow:auto}.fv-md pre.mdv-code code{background:none;padding:0}
 .fv-md table{border-collapse:collapse;max-width:100%;display:block;overflow:auto}.fv-md th,.fv-md td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}.fv-md th{background:var(--soft)}
 .fv-md a{color:var(--acc)}.fv-md hr{border:0;border-top:1px solid var(--line);margin:12px 0}
-.fv-code{flex:1;min-height:0;overflow:auto;margin:0;padding:8px 0;border-radius:12px;background:var(--card);border:1px solid var(--line);font:calc(12.5px * var(--ui-scale,1))/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink)}
+.fv-code{position:relative;flex:1;min-height:0;overflow:auto;margin:0;padding:8px 0;border-radius:12px;background:var(--card);border:1px solid var(--line);font:calc(12.5px * var(--ui-scale,1))/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink)}
 .fv-code ol{list-style:none;margin:0;padding:0;counter-reset:ln}
 .fv-code li{display:flex;gap:12px;padding:0 12px 0 0;counter-increment:ln;white-space:pre;min-height:1.6em}
 .fv-code li::before{content:counter(ln);flex:none;width:44px;text-align:right;padding-right:8px;color:var(--sub);border-right:1px solid var(--line);user-select:none}

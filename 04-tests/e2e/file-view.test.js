@@ -36,7 +36,7 @@ test("C-43 — 파일 칸에서 누르면 작업실에 열린다(md 보기 좋�
   Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "tok"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: path.join(TMP, "claude-stub.js") });
   fs.writeFileSync(process.env.NAV_REPLAY, "{}");
   const w = (p, s) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, s); };
-  w(path.join(PROJ, "README.md"), "# 동아리 앱\n\n- **신청** 받기\n- 마감 알림\n\n| 기능 | 꼭 |\n|---|---|\n| 신청 | 꼭 |\n");
+  w(path.join(PROJ, "README.md"), "# 동아리 앱\n\n- **신청** 받기\n- 마감 알림\n\n| 기능 | 꼭 |\n|---|---|\n| 신청 | 꼭 |\n" + Array.from({ length: 30 }, (_, n) => `\n## 절 ${n + 1}\n\n글 ${n + 1}\n`).join("") + "\n## 끝 절\n```\n코드만\n```\n");   // 목차가 길어 오른쪽 칸이 스크롤되고, 마지막 절은 코드 블록만
   w(path.join(PROJ, "docs/01-idea/idea.md"), "# 아이디어\n"); w(path.join(PROJ, "src/app.js"), "const a = 1;\nconsole.log(a);\n"); w(path.join(PROJ, ".env"), "KEY=1");
   const port = await freePort(); process.env.NAV_PORT = String(port);
   const Srv = require(path.join(ROOT, "03-backend/navigator/server.js"));
@@ -58,6 +58,13 @@ test("C-43 — 파일 칸에서 누르면 작업실에 열린다(md 보기 좋�
     if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, "file-md.png") }); }
     await page.click("[data-act=fraw]"); await wait(300);
     assert.ok(await page.$(".fv-code"), "원문은 줄 번호로"); assert.equal(await page.$eval(".fv-code li:first-child span", (e) => e.textContent), "# 동아리 앱");
+    // 목차 — 코드 블록만 있는 절도 채운 절, 아래쪽 목차를 누르면 그 줄로 옮겨 가고 오른쪽 칸은 그 자리(임유정 2026-10-28)
+    const sideAt = await page.evaluate(() => { const sd = document.querySelector(".qwin .wside"); sd.scrollTop = sd.scrollHeight; return sd.scrollTop; });
+    assert.ok(sideAt > 0, "목차가 길어 오른쪽 칸이 스크롤된다");
+    assert.equal(await page.$eval(".ws-toc li:last-child", (l) => l.classList.contains("empty")), false, "코드 블록만 있는 '끝 절'은 비지 않았다");
+    await page.click(".ws-toc li:last-child button"); await wait(400);
+    s = await page.evaluate(() => { const c = document.querySelector(".fv-code"), g = c.querySelector("[data-go]"), cr = c.getBoundingClientRect(), gr = g.getBoundingClientRect(); return { side: document.querySelector(".qwin .wside").scrollTop, codeTop: c.scrollTop > 0, line: g.textContent, inView: gr.top >= cr.top && gr.bottom <= cr.bottom }; });
+    assert.deepEqual(s, { side: sideAt, codeTop: true, line: "## 끝 절", inView: true }, JSON.stringify(s));
     // 코드 열기 — 줄 번호, git이 아니라 바뀐 줄 없음
     await page.type(".fn-find", "app"); await wait(400);
     const found = await page.$$eval(".wnav .fn-file:not(.fn-opened)", (bs) => bs.map((b) => b.textContent.trim()));
