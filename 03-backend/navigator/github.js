@@ -69,15 +69,22 @@ function createRequest(project, visibility = "private") {
   ].join("\n");
 }
 
-// 지식 퀘스트 C-52(2026-10-29, PRD 6절 · 9절 10번 '저장소마다 처음 한 번'): 기록(단계 문서 · 배운 것)을 올리기 전에 이 폴더의 원격 저장소가 비공개인지 gh에게 묻는다(읽기만).
-//   답: 원격이 없으면 null, 있으면 { key, vis } — vis는 private · public · ""(gh가 없거나 로그인 전 · GitHub가 아님 — 모름). key는 원격 주소(비밀번호 · 토큰 칸을 뗀 것)의 sha256 앞 16자 — 주소를 내지 않는다
-function visibility(dir, run = runner()) {
+// 지식 퀘스트 C-52(2026-10-29, PRD 6절 · 9절 10번 '저장소마다 처음 한 번'): 기록(단계 문서 · 배운 것)을 올리기 전에 푸시할 곳(origin)이 비공개인지 본다 — 읽기만.
+//   originKey: origin이 없으면 null, 있으면 { key, repo } — GitHub면 repo는 owner/repo이고 열쇠도 그 이름으로(https · ssh 주소가 같은 열쇠), 아니면 주소(비밀번호 · 토큰 칸을 뗀 것)로.
+//   key는 sha256 앞 16자 — 주소 · 이름을 남기지 않는다
+const hash16 = (t) => crypto.createHash("sha256").update(t).digest("hex").slice(0, 16);
+function originKey(dir, run = runner()) {
   if (!dir) return null;
   const r = run("git", ["remote", "get-url", "origin"], dir);
   if (r.code !== 0 || !r.out) return null;
-  const key = crypto.createHash("sha256").update(r.out.replace(/^([a-z+]+:\/\/)[^@/]*@/i, "$1").replace(/\/+$/, "").replace(/\.git$/, "")).digest("hex").slice(0, 16);
-  const v = run("gh", ["repo", "view", "--json", "isPrivate", "-q", ".isPrivate"], dir);
-  return { key, vis: v.code === 0 && v.out === "true" ? "private" : v.code === 0 && v.out === "false" ? "public" : "" };
+  const g = parseRemote(r.out), gh = g && g.kind === "github";
+  return { key: hash16(gh ? `github:${g.owner}/${g.repo}`.toLowerCase() : r.out.replace(/^([a-z+]+:\/\/)[^@/]*@/i, "$1")), repo: gh ? `${g.owner}/${g.repo}` : "" };
+}
+// 공개 범위 — gh에게 그 이름(owner/repo)으로 묻는다(gh가 고르는 다른 원격 — upstream 등 — 이 아니라 푸시할 origin). GitHub가 아니거나 gh가 답하지 못하면 ""(모름)
+function visibility(o, run = runner()) {
+  if (!o || !o.repo) return "";
+  const v = run("gh", ["repo", "view", o.repo, "--json", "isPrivate", "-q", ".isPrivate"]);
+  return v.code === 0 && v.out === "true" ? "private" : v.code === 0 && v.out === "false" ? "public" : "";
 }
 
-module.exports = { parseRemote, status, runner, createRequest, visibility, VIS, TIMEOUT_MS };
+module.exports = { parseRemote, status, runner, createRequest, originKey, visibility, VIS, TIMEOUT_MS };

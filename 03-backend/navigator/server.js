@@ -661,9 +661,16 @@ function shipDocs(body) {
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];   // 쓰기 전에(쓰고 나서 못 맡기지 않게)
   { const hk = Connect.hookReady(s.dir); if (!hk.ok) return [409, { ok: false, why: "hook", reason: NO_HOOK[hk.why] || NO_HOOK.none }]; }   // 허락 연결도 쓰기 전에(F-69 — 커밋 · 푸시가 모두 막힌 채 문서만 남지 않게)
-  // C-52(2026-10-29, 지식 퀘스트 PRD 9절 10번): 공개(또는 모름) 저장소면 저장소마다 처음 한 번 묻는다 — 쓰기 전에. 화면이 '올릴게요'면 publicOk: true로 다시 보낸다
-  { let ask; try { ask = PublicOk.ask(GH.visibility(s.dir), { ok: body.publicOk === true }); } catch { return [500, { ok: false, reason: "올려도 된다는 답을 이 컴퓨터에 남기지 못했어요 — 다시 해 주세요" }]; }
-    if (ask) return [409, { ok: false, why: "public", reason: ask }]; }
+  // C-52(2026-10-29, 지식 퀘스트 PRD 9절 10번): 푸시할 곳(origin)이 공개(또는 모름)면 저장소마다 처음 한 번 묻는다 — 쓰기 전에. 화면이 '올릴게요'면 publicOk: true로 다시 보낸다.
+  //   이미 '올릴게요'를 받은 저장소는 gh를 부르지 않는다(서버를 붙잡지 않게)
+  { const o = GH.originKey(s.dir);
+    if (o && !PublicOk.has(o.key)) {
+      const vis = GH.visibility(o);
+      if (vis !== "private") {
+        if (body.publicOk !== true) return [409, { ok: false, why: "public", reason: PublicOk.say(vis) }];
+        try { PublicOk.remember(o.key); } catch { return [500, { ok: false, reason: "올려도 된다는 답을 이 컴퓨터에 남기지 못했어요 — 다시 해 주세요" }]; }
+      }
+    } }
   const files = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];

@@ -19,6 +19,14 @@
   const meta = (s) => `- 받는 것: ${s.gets}\n- 하는 일: ${s.does}\n- 남는 것: ${s.gives}`;
   const cell = (t) => String(t == null ? "" : t).replace(/\\/g, "\\\\").replace(/\r\n?|\n/g, " ").replace(/\|/g, "\\|") || "—";   // 표 칸 — 줄바꿈 · | · \ 가 표를 깨지 않게(\를 먼저)
   const joined = (it) => (it.lines || []).join(" / ");
+  const oneLine = (t) => String(t == null ? "" : t).replace(/\r?\n/g, " ").trim();
+  // C-47 관문 n에서 견준 원하는 결과 — 앞 관문(2단계부터)에서 바꾼 말 중 마지막, 없으면 1단계 '다 만들면 무엇이 달라지는지 쓰기' 칸(화면 app.js wantNow와 같은 규칙)
+  const WANT = "다 만들면 무엇이 달라지는지 쓰기";
+  function wantAt(R, n) {
+    for (let k = n - 1; k >= 1; k--) { const g = R(k) && R(k).goal; if (g && g.changed) return String(g.changed); }
+    const it = R(0) && R(0).items.find((x) => x.name === WANT);
+    return it ? it.lines.filter((l) => l && l.trim()).join(" / ") : "";
+  }
 
   // 그 단계 결과로 문서 한 장 — 받은 것은 묶음(ctx: results · idea · redact · docOf)
   function stageDoc(n, r, topic, ctx) {
@@ -47,10 +55,12 @@
     // checkBy confirm(C-40) — 초안을 칸마다 확인한 단계는 AI가 다시 살펴보지 않았다. 그렇다고 적는다(증빙이 무엇에 기대는지)
     const check = r.check && r.check.length ? `\n\n### 완료 기준 — ${r.checkBy === "confirm" ? "확인한 대로(AI가 다시 살펴보지 않고, 칸마다 사람이 확인)" : "살펴본 결과"}\n\n| 기준 | 됐나 | 근거 |\n|---|---|---|\n${r.check.map((c) => `| ${cell(red(c.text))} | ${c.skipped ? `넘김(까닭: ${cell(red((r.skip && r.skip.reason) || ""))})` : c.met ? "됨" : "안 됨"} | ${cell(red(c.evidence))} |`).join("\n")}` : "";
     // 지식 퀘스트 C-47(2026-10-29, PRD 6절 · A-13): 배운 것 — 관문에서 사람이 적은 말 그대로(플로로 · AI는 이 칸을 쓰지 않는다). 비우면 '비어 있음', 칸을 만들기 전에 지난 관문은 '남아 있지 않아요'.
-    //   줄머리 #은 \#로 — 사람 글이 절 제목이 되어 문서 모양(C-49가 다시 읽는 '## ' 경계)을 깨지 않게
-    const learned = typeof r.learned === "string" ? (r.learned.trim() ? red(r.learned.trim()).replace(/\r\n?/g, "\n").replace(/^(\s*)#/gm, "$1\\#") : "비어 있음 — 관문에서 적지 않았어요")
+    //   사람 글은 줄마다 '> '(인용) — 줄머리 # · --- 가 절 제목이 되지 않게, <는 &lt; — <!-- 가 뒤의 증빙을 숨기지 않게(새 맥락 리뷰 2026-10-29)
+    const learned = typeof r.learned === "string" ? (r.learned.trim() ? red(r.learned.trim()).replace(/\r\n?/g, "\n").split("\n").map((l) => `> ${l.replace(/</g, "&lt;")}`.trimEnd()).join("\n") : "비어 있음 — 관문에서 적지 않았어요")
       : r.passed || R(n + 1) ? "남아 있지 않아요(배운 것 칸을 만들기 전에 지난 관문)" : "아직 — 관문에서 적어요";
-    const goal = r.goal ? `\n\n## 처음 뜻 다시 보기\n\n${r.goal.changed ? `바뀌었어요 — “${red(String(r.goal.changed).replace(/\r?\n/g, " "))}”(처음 말은 [기획서](../PRD.md)의 '처음 말한 것'에 그대로)` : "아직 같아요 — 1단계에서 적은 원하는 결과 그대로"}` : "";
+    // 처음 뜻 — 관문에서 견준 말(1단계의 원하는 결과, 앞 관문에서 바꿨으면 바꾼 말)을 같이 적는다
+    const was = oneLine(red(wantAt(R, n)));
+    const goal = r.goal ? `\n\n## 처음 뜻 다시 보기\n\n${r.goal.changed ? `바뀌었어요 — “${oneLine(red(r.goal.changed))}”${was ? ` (전: “${was}”)` : ""}\n\n처음 말은 [기획서](../PRD.md)의 '처음 말한 것'에 그대로 있어요.` : `아직 같아요 — ${was ? `“${was}” ` : ""}그대로`}` : "";
     const plan = n === 1 ? "\n\n이 문서가 이 프로젝트의 **계획서**예요. 일을 시작하기 전에 먼저 읽어요. 단계를 모은 기획서 한 장은 [../PRD.md](../PRD.md)에 있어요." : "";
     return `# ${label(n)} · ${s.title}${topic ? ` — ${topic}` : ""}\n\n${meta(s)}${plan}\n\n## 재료\n\n${mat}${prep}\n\n${items}\n\n## 배운 것\n\n${learned}${goal}\n\n${proof}${check}\n\n---\nFloe가 단계를 지나며 정리했어요. 누가 무엇을 정했는지는 [../decisions.md](../decisions.md)에 모았어요.\n`;
   }
@@ -63,7 +73,8 @@
     const rows = SLUGS.map((_, n) => `| ${label(n)} · ${N.STAGES[n].title} | ${state(n)} | ${R(n) ? `[${ctx.docOf(n).slice(5)}](${ctx.docOf(n).slice(5)})` : "—"} |`).join("\n");
     const parts = done.map((n, k) => `## ${k + 1}. ${PRD_PART[n]} — ${label(n)}\n\n${R(n).items.map((it) => `- **${red(Q.shortOf(it.name))}** — ${it.lines.length ? red(joined(it)) : "아직 적지 않았어요"}`).join("\n")}`).join("\n\n");
     // C-47 처음 뜻 다시 보기 — 관문에서 '바뀌었어요'면 처음 말 아래에 덧붙인다(처음 말은 지우지 않는다)
-    const changed = done.filter((n) => R(n).goal && R(n).goal.changed).map((n) => `\n>\n> 바뀐 뜻 — ${label(n)} 관문${R(n).passed ? `(${cell(R(n).passed)})` : ""}: “${red(String(R(n).goal.changed).replace(/\r?\n/g, " "))}”`).join("");
+    const changed = done.filter((n) => R(n).goal && R(n).goal.changed).map((n) => { const was = oneLine(red(wantAt(R, n)));
+      return `\n>\n> 바뀐 뜻 — ${label(n)} 관문${R(n).passed ? `(${cell(R(n).passed)})` : ""}: “${oneLine(red(R(n).goal.changed))}”${was ? ` (전: “${was}”)` : ""}`; }).join("");
     const later = SLUGS.map((_, n) => n).filter((n) => !R(n)).map((n) => `- ${label(n)} · ${N.STAGES[n].title} — 아직(이 단계를 지나면 '${PRD_PART[n]}' 절이 생겨요)`).join("\n");
     return [MARK_START, `# 기획서${name ? ` — ${name}` : ""}`, "",
       "Floe의 단계를 지나며 정한 것을 한 장으로 묶었어요. 칸마다 누가 어떻게 정했는지는 [결정 기록](decisions.md)에, 단계마다의 근거는 각 단계 문서의 '증빙'에 있어요.", "",

@@ -134,13 +134,19 @@ test("C-47 배운 것 · 처음 뜻 — 단계 문서 '배운 것' 칸에 그대
   };
   const files = D.files({ topic: "동아리", idea: "신청이 한곳에 모이면 좋겠어요", results, redact: (x) => x });
   const doc = (p) => files.find((f) => f.path === p).text;
-  assert.match(doc("docs/02-plan/plan.md"), /## 배운 것\n\n칸을 먼저 채우니 빠진 기능이 보였다/, "사람이 적은 말 그대로");
+  assert.match(doc("docs/02-plan/plan.md"), /## 배운 것\n\n> 칸을 먼저 채우니 빠진 기능이 보였다\n/, "사람이 적은 말 그대로(인용)");
   assert.match(doc("docs/01-idea/idea.md"), /## 배운 것\n\n비어 있음 — 관문에서 적지 않았어요/, "비우면 비어 있음(관문을 막지 않는다)");
   assert.match(doc("docs/03-requirements/requirements.md"), /## 배운 것\n\n아직 — 관문에서 적어요/);
-  assert.match(doc("docs/02-plan/plan.md"), /## 처음 뜻 다시 보기\n\n바뀌었어요 — “신청과 출석까지 한곳에”/);
+  assert.match(doc("docs/02-plan/plan.md"), /## 처음 뜻 다시 보기\n\n바뀌었어요 — “신청과 출석까지 한곳에” \(전: “신청이 한곳에 모인다”\)/, "견준 말(1단계 원하는 결과)도 같이");
   const prd = doc("docs/PRD.md");
   assert.match(prd, /신청이 한곳에 모이면 좋겠어요/, "처음 말은 지우지 않는다");
-  assert.match(prd, /바뀐 뜻 — 2단계 관문\(2026-10-29\): “신청과 출석까지 한곳에”/);
+  assert.match(prd, /바뀐 뜻 — 2단계 관문\(2026-10-29\): “신청과 출석까지 한곳에” \(전: “신청이 한곳에 모인다”\)/);
   const old = D.files({ topic: "t", idea: "", results: { 0: { ...results[0], learned: undefined }, 1: { ...results[1], learned: undefined, goal: undefined } }, redact: (x) => x });
   assert.match(old.find((f) => f.path === "docs/01-idea/idea.md").text, /## 배운 것\n\n남아 있지 않아요/, "배운 것 칸을 만들기 전에 지난 관문은 지어내지 않는다");
+  // 새 맥락 리뷰(2026-10-29): 여러 줄 · 줄머리 # · --- · <!-- 가 문서 모양을 깨지 않는다 — 줄마다 인용, <는 &lt;. 앞 관문에서 바꾼 뒤 '아직 같아요'는 바꾼 말과 견준다
+  const tricky = D.files({ topic: "t", idea: "", results: { 0: results[0], 1: results[1], 2: { ...results[2], passed: "2026-10-30", learned: "# 제목처럼\n---\n<!-- 숨김\n\n끝", goal: { same: true } } }, redact: (x) => x });
+  const req = tricky.find((f) => f.path === "docs/03-requirements/requirements.md").text;
+  assert.match(req, /## 배운 것\n\n> # 제목처럼\n> ---\n> &lt;!-- 숨김\n>\n> 끝\n\n## 처음 뜻 다시 보기/);
+  assert.ok(!/^---$/m.test(req.split("## 증빙")[0].split("## 배운 것")[1]), "줄 하나가 ---여도 인용 안");
+  assert.match(req, /아직 같아요 — “신청과 출석까지 한곳에” 그대로/, "앞 관문에서 바꾼 말과 견줬다");
 });
