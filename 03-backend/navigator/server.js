@@ -184,9 +184,11 @@ const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "applic
 const refuse = (res, reason, code = 400) => send(res, code, { ok: false, reason });
 const as = (key, read) => (d) => { const v = read(d); return v && { [key]: v }; };   // 확인한 결과를 화면이 읽는 칸 이름으로
 // 작업실 개편 C-61(2026-10-29, API.md 3-31) — 대화 모양이 틀린 까닭(navigator.js talkOf) → 거절 말, 대화의 말마다 비밀값 가림
-const TALK_WHY = { empty: "대화가 비어 있음 — 마지막은 사람의 말", last: "대화가 비어 있음 — 마지막은 사람의 말", shape: "대화 모양이 맞지 않음 — [{ who: me | floro, text }]",
+const TALK_WHY = { empty: "대화가 비어 있음 — 마지막은 사람의 말", shape: "대화 모양이 맞지 않음 — [{ who: me | floro, text }]",
   long: `대화가 너무 김 — ${Nav.CHAT_TURNS_MAX}줄 · 줄 ${Nav.CHAT_LINE_MAX.toLocaleString()}자 · 합 ${Nav.CHAT_TOTAL_MAX.toLocaleString()}자까지` };
 const redactTalk = (talk) => talk.map((m) => ({ ...m, text: Sensitive.redact(m.text) }));
+const redactPrev = (prev) => prev.map((p) => ({ stage: p.stage, items: p.items.map((x) => ({ ...x, name: Sensitive.redact(x.name), lines: (x.lines || []).map((l) => Sensitive.redact(l)) })) }));   // 지난 단계 결과도 가린 뒤 AI에(새 맥락 리뷰 2026-10-29 막힘)
+const none = (v) => v == null || (Array.isArray(v) && !v.length);   // 빈 목록은 '없음'과 같다 — 화면이 [ ]을 보내도 거절하지 않게
 const stageOf = (v) => (Number.isInteger(v) ? Nav.STAGES[v] : undefined);   // 단계는 정수 0~7만 — "2"·"length" 같은 글자는 단계가 아니다
 
 // Claude에게 묻고, 답의 모양을 확인한 것만 돌려준다. read: 확인해서 화면에 줄 칸들을 만든다(모양이 틀리면 null)
@@ -817,7 +819,7 @@ async function handle(req, res) {
       return refuse(res, "다른 예시 요청의 모양이 맞지 않음 — { i: 칸 자리, texts: 이미 본 예시 1~3개 }");
     if (body.base != null && !strOk(body.base, BASE_MAX)) return refuse(res, `기준 카드 글은 ${BASE_MAX}자까지`);   // C-56 R-2 — 기준 카드(한 줄씩 '칸: 내용')
     if (body.work != null && !strOk(body.work, Nav.WORK_MAX)) return refuse(res, `방금 한 일 글은 ${Nav.WORK_MAX}자까지`);   // C-56 R-5 — 작업을 따라 다시 맞추기(훅 알림의 작업 글)
-    const tk = body.talk == null ? { talk: [] } : Nav.talkOf(body.talk, { lastMe: false });   // 작업실 개편 C-61 — 그 단계의 대화(받은 글처럼, 가린 뒤)
+    const tk = none(body.talk) ? { talk: [] } : Nav.talkOf(body.talk, { lastMe: false });   // 작업실 개편 C-61 — 그 단계의 대화(받은 글처럼, 가린 뒤)
     if (!tk.talk) return refuse(res, TALK_WHY[tk.why]);
     return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev, base: body.base || "", work: body.work || "", ...(avoid ? { avoid: { i: avoid.i, texts: avoid.texts } } : {}), ...(tk.talk.length ? { talk: redactTalk(tk.talk) } : {}) }), Nav.STAGE_DRAFT_SCHEMA,
       as("draft", (d) => Nav.parseStageDraft(d, body.stage, body.tier, prev)), "단계 초안", { fast: true, maxTokens: 4096 });
@@ -828,17 +830,16 @@ async function handle(req, res) {
     const tk = Nav.talkOf(body.talk);
     if (!tk.talk) return refuse(res, TALK_WHY[tk.why]);
     if (body.idea != null && !strOk(body.idea, Nav.IDEA_MAX)) return refuse(res, `처음 말한 것은 ${Nav.IDEA_MAX}자까지`);
-    const n = Nav.criteriaFor(body.stage, body.tier).length;   // 적은 줄 — 그 등급의 칸 수와 같은 길이, 칸마다 줄 5개 · 줄 400자(없으면 모두 빈칸)
-    const lines = body.lines == null ? [] : body.lines;
-    if (body.lines != null && !(Array.isArray(lines) && lines.length === n && lines.every((l) => Array.isArray(l) && l.length <= 5 && l.every((x) => strOk(x, LINE_MAX)))))
+    const n = Nav.criteriaFor(body.stage, body.tier).length;   // 적은 줄 — 그 등급의 칸 수와 같은 길이, 칸마다 줄 5개 · 줄 400자(없거나 빈 목록이면 모두 빈칸)
+    const lines = none(body.lines) ? [] : body.lines;
+    if (lines.length && !(lines.length === n && lines.every((l) => Array.isArray(l) && l.length <= 5 && l.every((x) => strOk(x, LINE_MAX)))))
       return refuse(res, `적은 줄의 모양이 맞지 않음 — 그 등급의 칸 ${n}개, 칸마다 줄 5개 · 줄 ${LINE_MAX}자까지`);
-    const prev = body.prev == null ? [] : prevStagesOf(body.prev, body.stage);
+    const prev = none(body.prev) ? [] : prevStagesOf(body.prev, body.stage);
     if (!prev) return refuse(res, `지난 단계 결과의 모양이 맞지 않음 — [{ stage, items }], 바로 앞 단계는 꼭 · 할 일 8개 · 줄 5개 · 줄 ${LINE_MAX}자까지`);
     // 비밀값처럼 보이는 글은 가린 뒤 AI에 넘긴다(sensitive.js) — 화면도 보내기 전에 묻지만 서버가 한 번 더(API.md 3-31)
-    const red = (t) => Sensitive.redact(String(t));
-    const safeLines = lines.map((l) => l.map(red));
-    return ask(res, Nav.chatPrompt(body.stage, body.tier, { idea: red(body.idea || ""), talk: redactTalk(tk.talk), lines: safeLines, prev }), Nav.CHAT_SCHEMA,
-      (d) => Nav.parseChat(d, body.stage, body.tier, safeLines), "대화", { fast: true });
+    const safeLines = lines.map((l) => l.map((x) => Sensitive.redact(x)));
+    return ask(res, Nav.chatPrompt(body.stage, body.tier, { idea: Sensitive.redact(body.idea || ""), talk: redactTalk(tk.talk), lines: safeLines, prev: redactPrev(prev) }), Nav.CHAT_SCHEMA,
+      (d) => Nav.parseChat(d, body.stage, body.tier, safeLines), "대화", { fast: true, maxTokens: 4096 });   // 답 400자 + 칸 한 줄 400자 × 여러 칸 — 기본 길이에서 잘리지 않게
   }
   if (route === "/api/start") {   // C-36 처음 한 바퀴(API.md 3-21, 2026-10-25) — AI 한 번. 받은 글 전체로 1단계 초안(제목 · 불편 · 달라지는 것 · 누가 · 크기). 도구 없이, 글만
     if (!body || !Nav.filled(body.text)) return refuse(res, "받은 글이 비어 있음");
