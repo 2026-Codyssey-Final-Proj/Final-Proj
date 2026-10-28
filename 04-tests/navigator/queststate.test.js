@@ -14,9 +14,9 @@ const prev2 = [R(0, {}), R(1, { 1: ["3초 안에 '신청됨' · 마감 하루 �
 test("factsFrom — 결과 · 받은 글 · 파일 목록에서 사실만 뽑는다: 기능 수(3단계 Ⅰ 줄 수), 공개 여부(2단계 Ⅳ 글), 성공 숫자가 있나(2단계 Ⅱ), 코드 파일 수. 모르면 null — 지어내지 않는다", () => {
   const results = { 0: R(0, {}), 1: prev2[1], 2: R(2, { 0: ["회원이 신청을 누르면, 앱은 신청서를 보인다", "운영진이 행사를 만들면, 앱은 목록에 올린다", "마감 하루 전이 되면, 앱은 알림을 보낸다", "명단을 내려받으면, 앱은 CSV를 준다"] }) };
   const f = S.factsFrom({ results, files: [{ path: "src/app.js", dir: false }, { path: "docs", dir: true }, { path: "README.md", dir: false }] });
-  assert.deepEqual(f, { features: 4, publish: false, success: true, codeFiles: 1 });
+  assert.deepEqual(f, { features: 4, publish: false, success: true, codeFiles: 1, codeless: false });
   assert.equal(S.factsFrom({ results: { 2: R(2, { 0: ["신청하면, 앱은 받는다 / 만들면, 앱은 올린다 / 마감 전이면, 앱은 알린다 / 내려받으면, 앱은 CSV를 준다 / 지우면, 앱은 지운다 / 바꾸면, 앱은 고친다"] }) } }).features, 6, "' / '로 이은 한 줄은 조각 수로(3단계 초안 지시 그대로 — 리뷰 막힘)");
-  assert.deepEqual(S.factsFrom({ results: {}, files: null }), { features: null, publish: null, success: null, codeFiles: null }, "모르면 null");
+  assert.deepEqual(S.factsFrom({ results: {}, files: null }), { features: null, publish: null, success: null, codeFiles: null, codeless: false }, "모르면 null");
   assert.equal(S.factsFrom({ results: { 1: R(1, { 1: ["언제 성공: 아직 모름"] }) } }).success, false, "'아직 모름' · 숫자 없음은 성공 숫자 빈칸");
   assert.equal(S.factsFrom({ results: { 1: R(1, { 3: ["누구나 쓰게 웹에 공개해요"] }) } }).publish, true);
   assert.equal(S.factsFrom({ results: { 1: R(1, { 3: ["이름만 다뤄요"] }) } }).publish, null, "공개 말이 없으면 모름");
@@ -35,6 +35,10 @@ test("stateOf — 옮겨 옴(지난 칸과 같은 글) · 건너뜀(기준의 �
   assert.equal(first7.state, "first"); assert.deepEqual(first7.go, { s: 1, i: 1 }); assert.match(first7.why, /언제 성공/);
   const first6 = S.stateOf({ stage: 5, i: 1, text: "", prev: prev2, facts: { codeFiles: 0 } });
   assert.equal(first6.state, "first"); assert.deepEqual(first6.go, { s: 4, i: 0 }); assert.match(first6.why, /코드 파일이 없/);
+  assert.equal(first6.code, true, "코드 파일이 없어서 먼저 — 화면이 '코드 파일을 만드시겠습니까?'로 묻는다(A-04, F-70)");
+  assert.equal(S.stateOf({ stage: 5, i: 1, text: "", prev: prev2, facts: { codeFiles: 0, codeless: true } }).state, "write", "아니요(코드 없이)를 골랐으면 막지 않는다 — 문서만 만드는 일일 수 있다");
+  assert.equal(S.factsFrom({ results: {}, files: [], codeless: true }).codeless, true);
+  assert.equal(first7.code, undefined, "다른 '먼저'에는 코드 물음 표시가 없다");
   assert.equal(S.stateOf({ stage: 5, i: 1, text: "", prev: prev2, facts: { codeFiles: null } }).state, "write");
 });
 

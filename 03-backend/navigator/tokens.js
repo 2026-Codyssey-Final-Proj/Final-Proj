@@ -33,6 +33,14 @@ function resultOf(text) {
 // 결과 한 덩이 → { usage, cost } — 장부에 쓰는 숫자만. 답 글(result)은 담지 않는다
 const summarize = (j) => ({ usage: usageOf(j.usage), cost: money(j.total_cost_usd ?? j.cost_usd) });
 const parseResult = (text) => { const j = resultOf(text); return j ? summarize(j) : null; };
+// 허락을 못 받은 도구(F-69, 2026-10-28) — claude -p는 거절당해도 끝 코드 0 · subtype success라 이 목록만 남는다. 도구 이름 · 개수만 센다(도구 입력 — 명령 · 파일 글 — 은 읽지 않는다)
+const TOOL_NAME = /^[A-Za-z0-9_.-]{1,60}$/;
+function denialsOf(j) {
+  const list = j && Array.isArray(j.permission_denials) ? j.permission_denials : [];
+  const tools = {};
+  for (const d of list) { const n = d && TOOL_NAME.test(String(d.tool_name || "")) ? String(d.tool_name) : "other"; tools[n] = (tools[n] || 0) + 1; }
+  return { count: list.length, tools };
+}
 
 const blankKind = () => ({ count: 0, tokens: 0, cost: 0 });
 const blank = (since) => ({ since, kinds: Object.fromEntries(KINDS.map((k) => [k, blankKind()])), runs: [] });
@@ -73,4 +81,4 @@ const fileStore = (file) => ({
 // 자리 — NAV_TOKENS_FILE, 없으면 NAV_USAGE_FILE 옆(시험이 홈 폴더에 쓰지 않게), 없으면 홈의 .navigator-tokens.json
 const fileOf = (env, home = os.homedir()) => env.NAV_TOKENS_FILE || (env.NAV_USAGE_FILE ? env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-tokens.json") : path.join(home, ".navigator-tokens.json"));
 
-module.exports = { KINDS, RUNS_MAX, usageOf, resultOf, summarize, parseResult, createLedger, fileStore, fileOf };
+module.exports = { KINDS, RUNS_MAX, usageOf, resultOf, summarize, parseResult, denialsOf, createLedger, fileStore, fileOf };

@@ -50,6 +50,8 @@ test("main.js: 다시 켜면 지난번 폴더를 서버에 다시 알린다(서�
   const at = ready.indexOf("serverState = await startServer()"), back = ready.indexOf("restoreProject()");
   assert.ok(at > 0 && back > at, "서버를 켠 뒤에");
   assert.match(main, /function restoreProject\(\)/);
+  const rp = main.slice(main.indexOf("function restoreProject()"), main.indexOf("function restoreProject()") + 400);
+  assert.match(rp, /L\.refreshDir\(dir, P\.backend\)/, "다시 켤 때 그 폴더의 훅이 지금 앱 자리를 가리키게(F-69 — 옛 자리 훅이면 맡긴 일이 모두 막힌다)");
 });
 
 test("서버에는 폴더를 받는 HTTP 주소가 없다 — useProject는 내보내기로만(앱만 부른다)", () => {
