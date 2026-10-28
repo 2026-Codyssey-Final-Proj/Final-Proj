@@ -32,6 +32,18 @@
     return { greet: true, why: "" };
   }
 
+  // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선" · "켤 때마다"): 켤 때 무엇을 여나 — 작업실(지금 단계의 퀘스트 보드) · 알약 옆 말풍선 · 인사 줄.
+  //   처음 설정이 필요하면(setup.js shouldOpen) 설정부터 — 작업실 · 말풍선 없이(인사는 전처럼 알약 안에서, 끝나면 설정이 열린다). 주소 끝 장면 · 휴대폰은 전처럼.
+  //   말풍선은 켤 때마다(멈춘 곳 · 섬 펼치기 / 나중에), 시간대 인사 줄만 하루에 한 번(C-46 버튼). 움직임 줄이기면 인사 움직임 없이 말풍선만
+  const BUBBLE_MS = 8000;   // 말풍선이 사라지기까지 — 요구서 C-55 '몇 초 뒤(시간 미정)' → 8초로 두었다. 누르면(섬 펼치기 · 나중에) 바로
+  function bootPlan({ hash = "", still = false, phone = false, lastDay = "", today = "", setupNeeded = false } = {}) {
+    if (hash && hash !== "#") return { workspace: false, bubble: false, greet: false, why: "주소 끝 장면" };
+    if (phone) return { workspace: false, bubble: false, greet: false, why: "휴대폰 화면" };
+    if (setupNeeded) return { workspace: false, bubble: false, greet: shouldGreet({ hash, still, phone, lastDay, today }).greet, why: "처음 설정부터" };
+    const g = shouldGreet({ hash, still: false, phone, lastDay, today });
+    return { workspace: true, bubble: true, greet: g.greet && !still, why: still && g.greet ? "움직임 줄이기 — 알약만" : g.why };
+  }
+
   // 시간표를 돌린다 — onPhase(단계 이름)를 차례로 부른다. skip()은 남은 타이머를 모두 지우고 바로 "done"을 한 번만 부른다(누름 · Esc).
   // cancel()은 지우기만 한다(화면을 떠날 때). 타이머 함수는 시험이 가짜로 넣는다
   function play(timeline, { setTimeout: later = root.setTimeout, clearTimeout: cancelTimer = root.clearTimeout, onPhase } = {}) {
@@ -44,7 +56,7 @@
     return { skip: done, cancel: () => { timers.forEach(cancelTimer); timers = []; finished = true; }, get finished() { return finished; } };
   }
 
-  const api = { TIMELINE, PILL_TIMELINE, LIMIT, total, shouldGreet, play };
+  const api = { TIMELINE, PILL_TIMELINE, LIMIT, BUBBLE_MS, total, shouldGreet, bootPlan, play };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloeGreet = api;
 })(typeof window !== "undefined" ? window : globalThis);

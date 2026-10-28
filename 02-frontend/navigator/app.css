@@ -1263,6 +1263,24 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.folded.side-left .pill .pet,.isl-col.folded.side-right .pill .pet{margin:0}
 .isl-col.folded.side-left .pill b,.isl-col.folded.side-left .pill .pl-now,.isl-col.folded.side-left .pill .pl-cta,.isl-col.folded.side-left .pill .pl-mode,.isl-col.folded.side-left .pill .mini,
 .isl-col.folded.side-right .pill b,.isl-col.folded.side-right .pill .pl-now,.isl-col.folded.side-right .pill .pl-cta,.isl-col.folded.side-right .pill .pl-mode,.isl-col.folded.side-right .pill .mini{writing-mode:vertical-rl;max-width:none;max-height:240px}
+/* claude-drafted: 2026-10-28 — C-55 켤 때 알약 옆 말풍선(.hello-bub, 이재엽 버튼 "접힌 알약 + 말풍선"). 파스텔 종이 + 남색 글씨(대비 4.5:1 이상), 단추 44px. 접힌 칸(56) 밖으로 나와 작업실 위에 뜬다 — 그 가장자리의 반대쪽으로 */
+.hello-bub{box-sizing:border-box;width:300px;max-width:calc(100vw - 32px);padding:14px 16px;border-radius:16px;background:#F2F5FA;color:#2B3463;box-shadow:0 10px 28px -12px rgba(43,52,99,.45),0 0 0 1px #C5CEE2;display:grid;gap:8px;font-size:14px;line-height:1.5;text-align:left;animation:bub-in .3s cubic-bezier(.2,.8,.2,1)}
+.hello-bub .hb-hi{font-size:16px}
+.hello-bub .hb-now{color:#2B3463}
+.hello-bub .hb-acts{display:flex;gap:8px;flex-wrap:wrap}
+.hello-bub .hb-acts button{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#B8C9F0;color:#263066;font:inherit;font-size:14px;cursor:pointer}
+.hello-bub .hb-acts button.ghost{background:transparent;color:#2B3463;box-shadow:inset 0 0 0 1.5px #C5CEE2}
+.hello-bub .hb-acts button:focus-visible{outline:2px solid #4D66B5;outline-offset:2px}
+@keyframes bub-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.hello-bub{animation:none}}
+.nav>div>.hello-bub{margin-top:8px}   /* 브라우저 판 — 알약 아래 */
+.isl-col.folded.has-bub{overflow:visible;position:relative}   /* 말풍선이 있는 동안만 칸 밖으로 나온다(알약은 그대로 칸 안) */
+.isl-col.folded .hello-bub{position:absolute;z-index:3}
+.isl-col.folded.side-right .hello-bub{right:62px;top:12px}
+.isl-col.folded.side-left .hello-bub{left:62px;top:12px}
+.isl-col.folded.side-top .hello-bub{top:62px;left:50%;transform:translateX(-50%)}
+.isl-col.folded.side-bottom .hello-bub{bottom:62px;left:50%;transform:translateX(-50%)}
+@media (prefers-reduced-motion:no-preference){.isl-col.folded.side-top .hello-bub,.isl-col.folded.side-bottom .hello-bub{animation:none}}   /* translateX와 겹치는 움직임은 두지 않는다 */
 /* 섬 머리의 자리 네 칸(▲ ▼ ◀ ▶) */
 .dk{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:var(--soft);flex:none}
 .dk button{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--mute);font-size:calc(11px * var(--ui-scale,1));cursor:pointer}
