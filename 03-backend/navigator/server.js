@@ -145,7 +145,7 @@ const STATIC = {
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "build.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -564,7 +564,7 @@ const skipOk = (k) => k && typeof k === "object" && !Array.isArray(k) && strOk(k
 const stageExtraOk = (v) => (v.prep == null || (Array.isArray(v.prep) && v.prep.length <= Nav.PREP_MAX && v.prep.every((x) => strOk(x, Nav.PREP_LINE))))
   && (v.at == null || (typeof v.at === "string" && DATE_RE.test(v.at))) && (v.passed == null || (typeof v.passed === "string" && DATE_RE.test(v.passed))) && (v.check == null || checkOk(v.check))
   && (v.checkBy == null || v.checkBy === "confirm")
-  && (v.skip == null || skipOk(v.skip));   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
+  && (v.skip == null || skipOk(v.skip)) && (v.nocode == null || v.nocode === true);   // nocode — 6단계를 코드 없이 지남(A-04 '아니요', F-70)   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
 // 화면이 보낸 단계 결과들 — { "0": {title, items, …}, "1": … }. 1 · 2단계(0 · 1)가 다 있어야. 단계 번호 0~7만. 모르는 칸은 버린다
 // 답: { results } 또는 { why } — 무엇이 틀렸는지 그대로 말한다(2026-10-25 리뷰)
 function resultsOf(r) {
@@ -578,7 +578,7 @@ function resultsOf(r) {
     out[n] = { items: items.map((x, i) => ({ ...x, ...extraOf(v.items[i]) })),
       ...(v.prep && v.prep.length ? { prep: [...v.prep] } : {}), ...(v.at ? { at: v.at } : {}), ...(v.passed ? { passed: v.passed } : {}),
       ...(v.check && v.check.length ? { check: v.check.map((c) => ({ text: c.text, met: c.met, evidence: c.evidence || "", ...(c.skipped ? { skipped: true } : {}) })) } : {}), ...(v.checkBy ? { checkBy: v.checkBy } : {}),
-      ...(v.skip ? { skip: { reason: v.skip.reason, items: Array.isArray(v.skip.items) ? [...v.skip.items] : [] } } : {}) };
+      ...(v.skip ? { skip: { reason: v.skip.reason, items: Array.isArray(v.skip.items) ? [...v.skip.items] : [] } } : {}), ...(v.nocode === true ? { nocode: true } : {}) };
   }
   return { results: out };
 }

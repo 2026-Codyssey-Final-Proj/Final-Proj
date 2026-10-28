@@ -199,6 +199,17 @@ test("POST /api/docs(F-62): 넘긴 기준의 까닭이 단계 문서 · 결정 �
   assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: { ...E1, check: c1.map((c) => ({ ...c, skipped: "yes" })) } } } })).status, 400, "skipped는 참 · 거짓만");
 });
 
+// F-70(2026-10-28, 결정 모음 A-04): 6단계에서 '코드 파일을 만드시겠습니까?'에 아니요 — 서버는 결과의 nocode(true만)를 받아 결정 기록 관문 줄에 남긴다
+test("POST /api/docs(F-70): 6단계를 코드 없이 지났으면(nocode) 결정 기록 관문 줄에 '코드 없이 지남', nocode는 true만", async () => {
+  assert.equal(Srv.useProject(DIR), true);
+  const R5 = { items: [{ name: "확인 방법을 먼저 정하고 만들기", lines: ["목차 문서로 확인"] }], at: "2026-10-28", passed: "2026-10-28", nocode: true };
+  const r = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1, 5: R5 } } });
+  assert.equal(r.status, 200, r.text);
+  assert.match(fs.readFileSync(path.join(DIR, "docs/decisions.md"), "utf8"), /6단계 \| 관문 \|[^\n]*코드 없이 지남/);
+  await untilDone();
+  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1, 5: { ...R5, nocode: "yes" } } } })).status, 400, "nocode는 true만");
+});
+
 // F-68(2026-10-28): 받은 글 전부(source)를 받아 docs/00-source/idea.md에 쓴다 — 64KB까지, 넘으면 400(잘라 쓰지 않는다 — 화면이 알린다)
 test("POST /api/docs(F-68): source(받은 글 전부)를 docs/00-source/idea.md에 통째로, 1단계 문서는 줄로 가리킨다, 64KB 넘으면 400", async () => {
   assert.equal(Srv.useProject(DIR), true);
