@@ -34,6 +34,8 @@
 .ic.lg{width:22px;height:22px}
 .cv-c.now .ch em::before,.wnav .fn li.now small::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acc);margin-right:5px;vertical-align:1px}
 body{margin:0;background:var(--desk);color:var(--ink);font:calc(15px * var(--ui-scale,1))/1.55 var(--font-text);-webkit-font-smoothing:antialiased}
+/* F-76(2026-10-29): 섬 · 작업실 · 섬 옆 칸 · 말풍선의 한국어는 낱말 사이에서만 줄을 바꾼다 — '적 / 어요' · '정 / 하기'가 지도 카드 · 캔버스 칸 · 섬 제목에서 났다. 긴 영문 · 경로는 칸 안에서 끊는다 */
+.isl,.pill,.win,.isl-col,.hello-bub{word-break:keep-all;overflow-wrap:anywhere}
 button{font:inherit;color:inherit;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
