@@ -70,6 +70,8 @@ test("메뉴로 다른 폴더를 이으면 섬이 이름을 다시 묻고 새 �
     assert.equal(await page.evaluate(() => window.floeUnsaved()), 0, "앱이 폴더를 고르기 전에 묻는 '저장 안 한 파일 수' — 열린 파일이 없으면 0");
     const before = asked.length;
 
+    // 켤 때는 접힌 알약(C-55, 2026-10-28) — 플로로의 말은 채팅에 쌓이니 섬을 펼쳐 둔다(전에는 펼친 섬을 가정해 이 Mac에서 늘 실패했다)
+    if (await page.$(".pill")) { await page.click(".pill"); await wait(300); }
     name = "samsung-stock-ai";
     await page.evaluate(() => window.__project({ add: true, name: "samsung-stock-ai", config: false }));
     await page.waitForFunction(() => document.body.innerText.includes("samsung-stock-ai 폴더와 이었어요"), { timeout: 5000 });
