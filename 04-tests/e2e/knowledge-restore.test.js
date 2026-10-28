@@ -62,7 +62,7 @@ async function open(browser, seedState, docs) {
   page.on("request", (req) => {
     const p = new URL(req.url()).pathname, json = (o) => req.respond({ status: 200, contentType: "application/json; charset=utf-8", body: JSON.stringify(o) });
     if (p === "/api/events") return json({ ok: true, latest: 0, project: "club-app", events: [] });
-    if (p === "/api/docs" && req.method() === "GET") return json({ ok: true, project: "club-app", topic: "동아리 앱", idea: IDEA, source: "", stages: docs });
+    if (p === "/api/docs" && req.method() === "GET") return json({ ok: true, project: "club-app", key: "k-club", topic: "동아리 앱", idea: IDEA, source: "", stages: docs });
     if (["/api/stagedraft", "/api/quest", "/api/prepare"].includes(p)) return json({ ok: false, reason: "시험 — AI 없음" });
     return req.continue();
   });
@@ -85,7 +85,7 @@ test("① 브라우저에 기록이 없으면 폴더의 단계 문서로 되살�
     assert.deepEqual(Object.keys(s.results).sort(), ["0", "1"]);
     assert.equal(s.results["1"].learned, "칸을 먼저 채웠다", "배운 것도 되살아난다");
     assert.deepEqual(s.results["0"].items.map((x) => x.lines[0]), R0.items.map((x) => x.lines[0]));
-    assert.deepEqual(s.docPrints, { project: "club-app", seen: { 0: "print-0", 1: "print-1" }, wrote: { 0: "print-0", 1: "print-1" }, dirty: false }, "지문을 기억한다(다시 써도 같은 글이라 Floe가 덮어도 된다)");
+    assert.deepEqual(s.docPrints, { project: "k-club", seen: { 0: "print-0", 1: "print-1" }, wrote: { 0: "print-0", 1: "print-1" }, own: {}, dirty: false }, "지문을 기억한다(다시 써도 같은 글이라 Floe가 덮어도 된다)");
     assert.equal(s.j.stage, 2, "3단계부터"); assert.equal(s.tier, "Xpress", "1단계 크기 '크기: 보통' → 등급"); assert.equal(s.topic, "동아리 앱");
     assert.equal(s.idea, IDEA, "처음 말한 것도 되살린다 — 다음 올리기에서 기획서의 처음 말이 지워지지 않게");
     assert.deepEqual(errors, []);
@@ -95,7 +95,7 @@ test("① 브라우저에 기록이 없으면 폴더의 단계 문서로 되살�
 test("④ 다른 폴더의 지문이면 견주지 않는다 — 같은 경로라도 '근거 없음' · '낡음'을 붙이지 않는다", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
   try {
-    const seed = { mode: "live", tier: "Xpress", topic: "동아리 앱", results: { 0: { chap: 0, ...R0 }, 1: { chap: 1, ...R1 } }, docPrints: { project: "other-app", wrote: { 0: "x", 1: "y" }, seen: { 0: "x", 1: "y" } } };
+    const seed = { mode: "live", tier: "Xpress", topic: "동아리 앱", results: { 0: { chap: 0, ...R0 }, 1: { chap: 1, ...R1 } }, docPrints: { project: "other-key", wrote: { 0: "x", 1: "y" }, seen: { 0: "x", 1: "y" } } };   // 이름은 같아도(club-app) 열쇠가 다른 폴더
     const { page, errors } = await open(browser, seed, {});
     await wait(3500);
     const s = await saved(page);
@@ -111,7 +111,7 @@ test("② 손으로 고친 문서(지문이 다름)는 '낡음' — 다시 읽�
     const edited = { ...R1, items: R1.items.map((x, i) => (i === 0 ? { ...x, lines: ["손으로 고친 줄"] } : x)) };
     const R2 = { title: "동아리 앱", at: "2026-10-29", items: Nav.criteriaFor(2, "Xpress").map((c) => it(c.text, ["셋째"])) };
     const seed = { mode: "live", tier: "Xpress", topic: "동아리 앱", results: { 0: { chap: 0, ...R0 }, 1: { chap: 1, ...R1 }, 2: { chap: 2, ...R2 } },
-      docPrints: { project: "club-app", wrote: { 0: "print-0", 1: "old-1", 2: "print-2" }, seen: { 0: "print-0", 1: "old-1", 2: "print-2" } } };
+      docPrints: { project: "k-club", wrote: { 0: "print-0", 1: "old-1", 2: "print-2" }, seen: { 0: "print-0", 1: "old-1", 2: "print-2" } } };
     const { page, errors } = await open(browser, seed, stagesOf({ 0: R0, 1: edited }));   // 3단계 문서는 폴더에 없다
     await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("다시 읽어 올까요"), { timeout: 10000 });
     const say = await page.evaluate(() => document.querySelector(".msg.now").textContent);

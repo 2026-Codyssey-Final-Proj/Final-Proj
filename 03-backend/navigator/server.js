@@ -673,14 +673,17 @@ function shipDocs(body) {
     } }
   // C-49(2026-10-29): 화면이 아는 단계 문서 지문({ 경로: 지문 } — Floe가 마지막에 쓴 것). 주면 지금 폴더의 글이 그 지문과 다른(사람이 고친 · Floe가 쓰지 않은) 단계 문서는
   //   덮지 않고 kept로 알린다 — 기록의 원본은 폴더다. 주지 않으면(옛 기록 · 새로 시작) 전처럼 쓴다
-  const known = body && body.prints != null ? body.prints : null;
-  if (known !== null && !(known && typeof known === "object" && !Array.isArray(known) && Object.entries(known).every(([k, v]) => Docs.SLUGS.some((_, n) => Docs.stagePath(n) === k) && typeof v === "string" && /^[0-9a-f]{16}$/.test(v))))
+  //   keep(경로 목록)은 화면이 사람 것으로 아는 단계 문서(되읽어 다시 쓰면 다른 글 · 읽을 수 없는 글) — 있으면 덮지 않는다. 화면이 모르는(지문도 keep도 없는) 문서는 Floe 것으로 보고 쓴다
+  const known = body && body.prints != null ? body.prints : null, keep = body && body.keep != null ? body.keep : [];
+  const isStagePath = (k) => Docs.SLUGS.some((_, n) => Docs.stagePath(n) === k);
+  if ((known !== null && !(known && typeof known === "object" && !Array.isArray(known) && Object.entries(known).every(([k, v]) => isStagePath(k) && typeof v === "string" && /^[0-9a-f]{16}$/.test(v))))
+    || !Array.isArray(keep) || keep.length > Docs.SLUGS.length || !keep.every((k) => typeof k === "string" && isStagePath(k)))
     return [400, { ok: false, reason: "문서 지문의 모양이 맞지 않음" }];
   const files = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
   const isStage = (f) => !f.merge && !!Docs.parseStage(f.text);
-  const kept = known ? t.list.filter((f) => isStage(f) && fs.existsSync(f.file) && (() => { try { return printOf(fs.readFileSync(f.file, "utf8")) !== known[f.path]; } catch { return true; } })()).map((f) => f.path) : [];
+  const kept = t.list.filter((f) => isStage(f) && fs.existsSync(f.file) && (keep.includes(f.path) || (known && known[f.path] && (() => { try { return printOf(fs.readFileSync(f.file, "utf8")) !== known[f.path]; } catch { return true; } })()))).map((f) => f.path);
   const writes = t.list.filter((f) => !kept.includes(f.path));
   try {
     for (const f of writes) {
@@ -692,13 +695,15 @@ function shipDocs(body) {
   // C-49(2026-10-29): 쓴 단계 문서마다 글 지문 — 화면이 기억해 두었다가 폴더의 글이 바뀌면 '낡음'으로 알아본다(GET /api/docs)
   const prints = Object.fromEntries(writes.filter(isStage).map((f) => [f.path, printOf(f.text)]));
   const paths = writes.map((f) => f.path), [code, out] = startTask(Docs.shipRequest(paths), "문서 올리기", Docs.SHIP_CHECKS);
-  return [code, { ...out, files: paths, prints, kept }];
+  return [code, { ...out, files: paths, prints, kept, key: folderKey(s.dir) }];
 }
 
 // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번 "사람이 확인한 기록만" · "글 지문"): 기록의 원본은 프로젝트 폴더 ──
 // 폴더의 단계 문서를 다시 읽어 단계마다 { path, print, result } — 브라우저 기록을 지웠으면 되살리고, 지문이 다르면 '낡음'. 읽기만.
 //   바로가기 · 파일이 아닌 것 · 256KB 넘는 것은 읽지 않는다. 손으로 넣은 비밀값도 가린 뒤 준다(이 결과는 뒤에 AI 묻는 글의 재료가 된다 — C-52)
 const DOC_READ_MAX = 256 * 1024;
+// 폴더 열쇠 — 이름이 같은 다른 폴더의 지문과 견주지 않게(폴더 이름이 아니라 실제 경로의 sha256 앞 16자 — 경로는 내지 않는다)
+const folderKey = (dir) => crypto.createHash("sha256").update(realDir(dir)).digest("hex").slice(0, 16);
 const printOf = (text) => crypto.createHash("sha256").update(String(text).replace(/\r\n?/g, "\n")).digest("hex").slice(0, 16);   // 줄 끝(CRLF)만 다른 것은 같은 글 — git이 줄 끝을 바꿔도 낡음이 아니다
 const redactDeep = (v) => (typeof v === "string" ? Sensitive.redact(v) : Array.isArray(v) ? v.map(redactDeep) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, redactDeep(x)])) : v);
 function docsRead() {
@@ -723,7 +728,7 @@ function docsRead() {
     const f = again.find((y) => y.path === Docs.stagePath(Number(n)));
     stages[n] = { path: Docs.stagePath(Number(n)), print: printOf(x.text), result: redactDeep(x.r.result), lossless: !!f && norm(f.text) === norm(x.text) };
   }
-  return { ok: true, project: s.project, topic: Sensitive.redact(topic), idea: Sensitive.redact(idea), source: Sensitive.redact(source), stages };
+  return { ok: true, project: s.project, key: folderKey(s.dir), topic: Sensitive.redact(topic), idea: Sensitive.redact(idea), source: Sensitive.redact(source), stages };
 }
 
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──

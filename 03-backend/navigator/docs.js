@@ -38,7 +38,8 @@
     const how = (it) => {
       const w = HOW_WORDS[it.by];
       if (!w) return "";
-      const d = it.draft && it.by === "edit" ? ` — 플로로 초안: “${red(it.draft)}”` : it.draft && it.by === "pick" ? ` — 플로로가 권한 것: “${red(it.draft)}”` : "";
+      // 초안은 누가 정했든 같이 적는다(고름이면 '플로로가 권한 것') — 다시 읽을 때 결정 기록의 '플로로 초안' 칸이 비지 않게(C-49 새 맥락 리뷰)
+      const d = it.draft ? ` — ${it.by === "pick" ? "플로로가 권한 것" : "플로로 초안"}: “${red(it.draft)}”` : "";
       return `- 어떻게: ${w}${d}`;
     };
     const items = r.items.map((it) => {
@@ -52,7 +53,8 @@
     const NONE = "남아 있지 않아요(증빙을 남기기 전에 끝낸 단계)";
     const count = r.items.some((it) => it.by) ? Q.BY.map((b) => `${Q.BY_WORD[b]} ${r.items.filter((it) => it.by === b).length}칸`).join(" · ") : NONE;
     const gate = r.passed ? `${cell(r.passed)} — 이해했어요(예)` : R(n + 1) ? "지났어요 — 날짜는 남아 있지 않아요" : "아직";
-    const proof = ["## 증빙", "", "| 무엇 | 내용 |", "|---|---|", `| 칸을 다 확인한 날 | ${r.at ? cell(r.at) : NONE} |`, `| 관문을 지난 날 | ${gate} |`, `| 누가 정했나 | ${count} |`].join("\n");
+    const proof = ["## 증빙", "", "| 무엇 | 내용 |", "|---|---|", `| 칸을 다 확인한 날 | ${r.at ? cell(r.at) : NONE} |`, `| 관문을 지난 날 | ${gate} |`, `| 누가 정했나 | ${count} |`,
+      ...(r.nocode ? ["| 코드 | 코드 없이 지남 — '코드 파일을 만드시겠습니까?'에 아니요 |"] : [])].join("\n");   // nocode(F-70) — 다시 읽을 때도 남게(C-49)
     // checkBy confirm(C-40) — 초안을 칸마다 확인한 단계는 AI가 다시 살펴보지 않았다. 그렇다고 적는다(증빙이 무엇에 기대는지)
     const check = r.check && r.check.length ? `\n\n### 완료 기준 — ${r.checkBy === "confirm" ? "확인한 대로(AI가 다시 살펴보지 않고, 칸마다 사람이 확인)" : "살펴본 결과"}\n\n| 기준 | 됐나 | 근거 |\n|---|---|---|\n${r.check.map((c) => `| ${cell(red(c.text))} | ${c.skipped ? `넘김(까닭: ${cell(red((r.skip && r.skip.reason) || ""))})` : c.met ? "됨" : "안 됨"} | ${cell(red(c.evidence))} |`).join("\n")}` : "";
     // 지식 퀘스트 C-47(2026-10-29, PRD 6절 · A-13): 배운 것 — 관문에서 사람이 적은 말 그대로(플로로 · AI는 이 칸을 쓰지 않는다). 비우면 '비어 있음', 칸을 만들기 전에 지난 관문은 '남아 있지 않아요'.
@@ -136,7 +138,7 @@
   // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번): 기록의 원본은 내 프로젝트 폴더. Floe가 쓴 단계 문서(stageDoc)를 다시 읽어 단계 결과로 ──
   //   사람이 손으로 고친 줄은 고친 대로 읽는다. Floe 단계 문서가 아니면(아직인 단계의 틀 · 다른 글) null. 가린 글은 가린 채로(원본이 이미 가려져 있다)
   const stagePath = (n) => `docs/${SLUGS[n]}/${SLUGS[n].slice(3)}.md`;
-  const REF_LINE = /^재료: \d단계 [ⅠⅡⅢⅣⅤⅥⅦⅧ](?: [^·]*)?(?: · \d단계 [ⅠⅡⅢⅣⅤⅥⅦⅧ](?: [^·]*)?)*$/;   // stageDoc refName들을 ' · '로 이은 줄 — 이 모양일 때만 재료로 읽는다
+  const REF_LINE = /^재료: \d단계 [ⅠⅡⅢⅣⅤⅥⅦⅧ](?: |$)/;   // stageDoc refName들을 ' · '로 이은 줄 — 'N단계 Ⅰ'로 시작할 때만 재료로 읽는다(짧은 이름 안에도 ' · '가 있다 — '왜 · 어디까지 · 언제 성공')
   const FIXED = ["재료", "이 단계 전에 준비할 것", "배운 것", "처음 뜻 다시 보기", "증빙"];
   const DATE = /^(\d{4}-\d{2}-\d{2})/;
   // 표 한 줄 → 칸들(cell의 거꾸로 — \\ → \, \| → |)
@@ -172,7 +174,7 @@
         const it = { name: body[0].slice(2), lines: [] }, ls = body.slice(1).filter((l) => l.startsWith("- ")).map((l) => l.slice(2));
         // '재료:' · '어떻게:' 줄은 stageDoc이 칸 끝에 쓴다 — 끝에서만, 모양이 맞을 때만 읽는다(사람이 쓴 '어떻게: …' 줄을 먹지 않게, 새 맥락 리뷰)
         if (ls.length && REF_LINE.test(ls[ls.length - 1])) {
-          const from = [...ls.pop().matchAll(/(\d)단계 ([ⅠⅡⅢⅣⅤⅥⅦⅧ])/g)].map((x) => ({ s: Number(x[1]) - 1, i: "ⅠⅡⅢⅣⅤⅥⅦⅧ".indexOf(x[2]) })).filter((x) => x.s >= 0 && x.s < N.STAGES.length);   // refName의 거꾸로(Q.roman)
+          const from = [...ls.pop().matchAll(/(?:^재료: | · )(\d)단계 ([ⅠⅡⅢⅣⅤⅥⅦⅧ])(?= |$)/g)].map((x) => ({ s: Number(x[1]) - 1, i: "ⅠⅡⅢⅣⅤⅥⅦⅧ".indexOf(x[2]) })).filter((x) => x.s >= 0 && x.s < N.STAGES.length);   // refName의 거꾸로(Q.roman)
           if (from.length) it.from = from;
         }
         const hm = ls.length && /^어떻게: (.+)$/.exec(ls[ls.length - 1]), [hw, hd] = hm ? hm[1].split(/ — (?:플로로 초안|플로로가 권한 것): /) : [], by = hm ? Object.keys(HOW_WORDS).find((k) => HOW_WORDS[k] === hw) : null;
@@ -201,6 +203,7 @@
           if (!check) {
             if (c[0] === "칸을 다 확인한 날" && DATE.test(c[1])) result.at = DATE.exec(c[1])[1];
             if (c[0] === "관문을 지난 날" && DATE.test(c[1])) result.passed = DATE.exec(c[1])[1];
+            if (c[0] === "코드" && (c[1] || "").startsWith("코드 없이 지남")) result.nocode = true;
           } else if (!(c[0] === "기준" && c[1] === "됐나")) {
             const skip = /^넘김\(까닭: ([\s\S]*)\)$/.exec(c[1] || "");
             check.push({ text: c[0], met: !!skip || c[1] === "됨", evidence: c[2] === "—" ? "" : c[2] || "", ...(skip ? { skipped: true } : {}) });

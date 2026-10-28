@@ -1263,19 +1263,21 @@
   // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번 "사람이 확인한 기록만" · "글 지문"): 기록의 원본은 프로젝트 폴더 ──
   //   폴더를 알면(진짜 AI 모드 · 앱이 고른 폴더) 그 폴더마다 한 번 단계 문서를 다시 읽는다(GET /api/docs). 이 브라우저에 기록이 없으면 되살릴지 묻고,
   //   본 뒤 글 지문이 바뀐 문서는 '낡음' — 다시 읽을지 묻는다(나중에면 다음에 열 때 다시). 없어진 문서의 기록은 지우지 않고 '근거 없음'(nosrc).
-  //   지문 st.docPrints = { project, wrote: {단계: Floe가 마지막에 쓴 글 — 이것과 같을 때만 다시 덮는다}, seen: {단계: 마지막으로 본 폴더 글}, dirty: 다시 읽은 기록으로 기획서 · 결정 기록을 아직 안 고침, declined: 되살리지 않고 새로 시작 }
-  let docsFor = "";
+  //   지문 st.docPrints = { project: 폴더 열쇠(실제 경로의 지문 — 이름이 같은 다른 폴더와 견주지 않게), wrote: {단계: Floe가 마지막에 쓴 글 — 이것과 같을 때만 다시 덮는다},
+  //     own: {단계: 사람 것 — 되읽어 다시 쓰면 다른 글 · 읽을 수 없는 글, 덮지 않는다}, seen: {단계: 마지막으로 본 폴더 글}, dirty: 다시 읽은 기록으로 기획서 · 결정 기록을 아직 안 고침, declined: 되살리지 않고 새로 시작 }
+  let docsFor = "", docsKey = "";
   const DP = () => (st.docPrints && typeof st.docPrints === "object" && !Array.isArray(st.docPrints) ? st.docPrints : {});
   const stageOfPath = (p) => N.STAGES.findIndex((_, i) => FDOCS.stagePath(i) === p);
   const byStage = (o) => Object.fromEntries(Object.entries(o || {}).map(([p, v]) => [stageOfPath(p), v]).filter(([n]) => n >= 0));
-  // 올릴 때 서버에 줄 지문 — 이 폴더에서 Floe가 쓴 것만. 모르면(옛 기록 · 새로 시작 · 다른 폴더) 주지 않는다 → 전처럼 쓴다
-  const knownPrints = () => { const P = DP(); return P.project && P.project === appName && !P.declined ? Object.fromEntries(Object.entries(P.wrote || {}).map(([n, v]) => [FDOCS.stagePath(Number(n)), v])) : null; };
+  // 올릴 때 서버에 줄 것 — 이 폴더에서 Floe가 쓴 지문(prints)과 사람 것(keep). 모르면(옛 기록 · 새로 시작 · 다른 폴더) 주지 않는다 → 전처럼 쓴다
+  const shipKnown = () => { const P = DP(), at = (n) => FDOCS.stagePath(Number(n)); return P.project && P.project === docsKey && !P.declined ? { prints: Object.fromEntries(Object.entries(P.wrote || {}).map(([n, v]) => [at(n), v])), keep: Object.keys(P.own || {}).map(at) } : null; };
   async function docsCheck() {
     if (!canLive || st.mode !== "live" || !FDOCS) return;
     let r; try { r = await (await fetch("/api/docs", { cache: "no-store" })).json(); } catch { return; }
     if (!r || !r.ok || r.why === "folder" || !r.stages || typeof r.stages !== "object") return;
     const got = Object.keys(r.stages).map(Number).filter((n) => N.STAGES[n] && r.stages[n].result).sort((a, b) => a - b);
-    const P = DP(), mine = !!r.project && P.project === r.project;
+    docsKey = r.key || "";
+    const P = DP(), mine = !!r.key && P.project === r.key;
     if (!Object.keys(st.results).length) { if (got.length && !(mine && P.declined)) { st.restore = { phase: "offer", got, data: r }; render(); } return; }
     if (!mine) return;   // 다른 폴더(또는 지문을 남기기 전)의 기록 — 견주지 않는다(같은 경로라도 다른 프로젝트의 문서다)
     const stale = [], gone = [];
@@ -1320,15 +1322,17 @@
     if (!st.ship || !(st.ship.phase === "offer" || (publicOk && st.ship.phase === "public"))) return;
     if (st.mode !== "live" || !canLive) { st.ship = null; render(); return say("연습이라 올리지 않았어요 — 진짜 AI 모드에서 작업 폴더에 만들고 올려요"); }
     st.planBusy = "ship";
-    const known = knownPrints();
-    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
+    const known = shipKnown();
+    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
     st.planBusy = "";
     // C-52(2026-10-29): 공개(또는 모름) 저장소 — 저장소마다 처음 한 번 더 묻는다. 서버는 아직 아무것도 쓰지 않았다
     if (!r.ok && r.why === "public") { st.ship = { ...st.ship, phase: "public", reason: r.reason || "" }; return render(); }
     // C-49: 쓴 단계 문서의 지문을 기억한다(맡기기가 실패해도 파일은 썼다) — 다음에 열 때 폴더의 글이 바뀌었는지(낡음) 본다. 다시 쓴 단계는 '근거 없음'도 걷는다
     if (r.prints) {
-      const P = DP(), same = P.project === appName && !P.declined, w = byStage(r.prints);
-      st.docPrints = { project: appName, wrote: { ...(same ? P.wrote : {}), ...w }, seen: { ...(same ? P.seen : {}), ...w }, dirty: false };
+      if (r.key) docsKey = r.key;
+      const P = DP(), same = P.project === docsKey && !P.declined, w = byStage(r.prints), own = { ...(same ? P.own : {}) };
+      for (const n of Object.keys(w)) delete own[n];   // Floe가 방금 쓴 문서는 Floe 것
+      st.docPrints = { project: docsKey, wrote: { ...(same ? P.wrote : {}), ...w }, seen: { ...(same ? P.seen : {}), ...w }, own, dirty: false };
       st.results = Object.fromEntries(Object.entries(st.results).map(([k, x]) => { if (!(k in w) || !x.nosrc) return [k, x]; const { nosrc, ...rest } = x; return [k, rest]; }));
       save();
     }
@@ -3378,7 +3382,8 @@
       if (!st.topic && d.topic) st.topic = d.topic;
       if (!st.idea && d.idea) st.idea = d.idea;   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰)
       if (!st.source && d.source) st.source = d.source;
-      st.docPrints = { project: d.project, seen: Object.fromEntries(R.got.map((n) => [n, d.stages[n].print])), wrote: Object.fromEntries(R.got.filter((n) => d.stages[n].lossless).map((n) => [n, d.stages[n].print])), dirty: false };
+      const all = Object.entries(d.stages);   // 읽을 수 없는 문서(result null)도 — 사람 것으로 두고 덮지 않는다
+      st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
       const t = tierOf(st.results[0]); if (t) st.tier = t;
       st.restore = null;
       if (nx > 0) resumeAt(nx);
@@ -3387,18 +3392,18 @@
     },
     "restore-read": () => {
       const R = st.restore; if (!R || R.phase !== "stale") return;
-      const d = R.data, read = R.stale.filter((n) => d.stages[n].result), P = DP(), wrote = { ...(P.wrote || {}) };
+      const d = R.data, read = R.stale.filter((n) => d.stages[n].result && st.results[n]), P = DP(), wrote = { ...(P.wrote || {}) }, own = { ...(P.own || {}) };
       // 그 단계 기록을 폴더의 글로 바꾼다(문서에 없는 칸 — 제목 · 코드 없이 지남 — 만 남긴다). 사람이 칸을 비웠으면 비운 대로
       st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result }]; })) };
-      for (const n of R.stale) { if (d.stages[n].lossless) wrote[n] = d.stages[n].print; else delete wrote[n]; }   // 다시 써도 같은 글일 때만 Floe가 덮는다 — 아니면 그 문서는 사람 것(올릴 때 kept)
-      st.docPrints = { ...P, wrote, seen: { ...(P.seen || {}), ...Object.fromEntries(R.stale.map((n) => [n, d.stages[n].print])) }, dirty: !!read.length || !!P.dirty };
+      for (const n of R.stale) { if (d.stages[n].lossless) { wrote[n] = d.stages[n].print; delete own[n]; } else { own[n] = d.stages[n].print; delete wrote[n]; } }   // 다시 써도 같은 글일 때만 Floe가 덮는다 — 아니면 그 문서는 사람 것(올릴 때 keep → kept)
+      st.docPrints = { ...P, wrote, own, seen: { ...(P.seen || {}), ...Object.fromEntries(R.stale.map((n) => [n, d.stages[n].print])) }, dirty: !!read.length || !!P.dirty };
       st.restore = null;
       if (read.length && st.results[0] && st.results[1]) st.ship = { phase: "offer" };   // 그 글로 만든 기획서 · 결정 기록도 같은 파일에 고쳐 쓸지(새 파일을 쌓지 않는다)
       save(); render(); if (read.length) say(`${read.map((n) => LB(n)).join(" · ")} 기록을 폴더의 글로 다시 읽었어요.`);
     },
     "restore-later": () => {   // 새로 시작(되살리기를 고르지 않음)이면 이 폴더에서는 다시 묻지 않는다. 낡음 · 근거 없음은 다음에 열 때 다시
       const R = st.restore;
-      if (R && R.phase === "offer") { st.docPrints = { project: R.data.project, wrote: {}, seen: {}, declined: true }; save(); }
+      if (R && R.phase === "offer") { st.docPrints = { project: R.data.key || "", wrote: {}, seen: {}, own: {}, declined: true }; save(); }
       set({ restore: null });
     },
     "ship-later": () => { st.ship = null; render(); say("나중에 도전과제의 한눈에 보기에서 올릴 수 있어요"); },

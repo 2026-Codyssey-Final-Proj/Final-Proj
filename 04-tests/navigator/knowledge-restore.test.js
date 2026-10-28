@@ -18,12 +18,12 @@ const Q = require(path.join(BACK, "quest.js"));
 const it = (name, lines, extra = {}) => ({ name, lines, ...extra });
 const RESULTS = {
   0: { chap: 0, title: "동아리 앱", at: "2026-10-28", passed: "2026-10-28", learned: "",
-    items: Nav.STAGES[0].criteria.map((c, i) => it(c.text, [`${c.text} 줄 | 표 칸`, ...(i === 0 ? ["둘째 줄"] : [])], { by: ["ok", "edit", "me", "pick"][i], ...(i === 1 ? { draft: "플로로 초안" } : {}) })),
+    items: Nav.STAGES[0].criteria.map((c, i) => it(c.text, [`${c.text} 줄 | 표 칸`, ...(i === 0 ? ["둘째 줄"] : [])], { by: ["ok", "edit", "me", "pick"][i], ...(i === 1 ? { draft: "플로로 초안" } : i === 0 ? { draft: "그대로 쓴 초안" } : {}) })),
     check: [{ text: "불편을 한 문장으로", met: true, evidence: "적음 \\ 역슬래시" }, { text: "누가 쓰는지", met: false, evidence: "" }] },
   1: { chap: 1, title: "동아리 앱", at: "2026-10-29", passed: "2026-10-29", learned: "# 칸을 먼저 채우니\n빠진 기능이 보였다", goal: { changed: "신청과 출석까지" }, prep: ["준비 하나"],
-    items: Nav.criteriaFor(1, "Xpress").map((c) => it(c.text, [`${c.text} 정함`], { by: "chat", from: [{ s: 0, i: 2 }] })), checkBy: "confirm",
+    items: Nav.criteriaFor(1, "Xpress").map((c) => it(c.text, [`${c.text} 정함`], { by: "chat", draft: "대화로 낸 초안", from: [{ s: 0, i: 2 }] })), checkBy: "confirm",
     check: [{ text: "기획서 칸", met: true, skipped: true, evidence: "" }], skip: { reason: "발표 뒤에 재요", items: ["기획서 칸"] } },
-  2: { chap: 2, title: "동아리 앱", at: "2026-10-29", goal: { same: true }, items: [it(Nav.criteriaFor(2, "Xpress")[0].text, [])] },
+  2: { chap: 2, title: "동아리 앱", at: "2026-10-29", goal: { same: true }, nocode: true, items: [it(Nav.criteriaFor(2, "Xpress")[0].text, [], { by: "moved", from: [{ s: 1, i: 1 }, { s: 1, i: 3 }] })] },   // 짧은 이름 안에 ' · '(왜 · 어디까지 · 언제 성공 · 남의 정보 · 밖으로) — 새 맥락 리뷰
 };
 const FILES = D.files({ topic: "동아리 앱", idea: "신청을 모으고 싶어요", results: RESULTS, redact: (x) => x });
 const docText = (n) => FILES.find((f) => f.path === D.stagePath(n)).text;
@@ -48,6 +48,9 @@ test("C-49 parseStage — Floe가 쓴 단계 문서를 단계 결과로 되읽�
   assert.deepEqual(r0.check, [{ text: "불편을 한 문장으로", met: true, evidence: "적음 \\ 역슬래시" }, { text: "누가 쓰는지", met: false, evidence: "" }]);
   assert.deepEqual(r1.check, [{ text: "기획서 칸", met: true, skipped: true, evidence: "" }]); assert.equal(r1.skip.reason, "발표 뒤에 재요");
   assert.equal(r2.passed, undefined, "관문 아직");
+  assert.equal(r0.items[0].draft, "그대로 쓴 초안", "그대로(ok) 칸의 초안도"); assert.equal(r1.items[0].draft, "대화로 낸 초안", "대화(chat) 칸의 초안도");
+  assert.deepEqual(r2.items[0].from, [{ s: 1, i: 1 }, { s: 1, i: 3 }], "짧은 이름에 ' · '가 있어도 재료"); assert.equal(r2.items[0].by, "moved"); assert.deepEqual(r2.items[0].lines, []);
+  assert.equal(r2.nocode, true, "코드 없이 지남(F-70)");
 });
 
 test("C-49 parseStage — 사람이 손으로 고친 줄은 그 글대로, Floe 단계 문서가 아니면(틀 · 다른 글) null", () => {
@@ -135,6 +138,13 @@ test("C-49 서버 — POST /api/docs가 쓴 단계 문서의 글 지문(prints)�
   assert.match(fs.readFileSync(f1, "utf8"), /손으로 고침/); assert.ok(!again.json.files.includes(D.stagePath(1)), "Claude Code에 올리라고 넘기는 목록에도 없다");
   assert.ok(again.json.files.includes(D.stagePath(2)), "없어진 문서는 다시 만든다");
   assert.equal((await call("POST", "/api/docs", { topic: "동아리 앱", results, prints: { "docs/x.md": "0123456789abcdef" } })).status, 400, "지문의 모양");
+  assert.equal((await call("POST", "/api/docs", { topic: "동아리 앱", results, keep: ["../x.md"] })).status, 400, "keep의 모양");
+  assert.match(again.json.key, /^[0-9a-f]{16}$/, "폴더 열쇠(경로를 내지 않는다)"); assert.equal(again.json.key, r.json.key);
+  // 화면이 모르는(지문도 keep도 없는) 문서는 Floe 것으로 보고 쓴다 — '새로 시작' 뒤 옛 문서가 잠기지 않게(새 맥락 리뷰). keep에 있으면 덮지 않는다
+  fs.writeFileSync(path.join(DIR, D.stagePath(0)), "옛 프로젝트의 글\n");
+  const unknown = await call("POST", "/api/docs", { topic: "동아리 앱", idea: "신청을 모으고 싶어요", results, prints: {}, keep: [D.stagePath(1)] });
+  assert.equal(unknown.status, 200, unknown.text); await untilDone();
+  assert.ok(unknown.json.files.includes(D.stagePath(0)), "모르는 문서는 다시 쓴다"); assert.deepEqual(unknown.json.kept, [D.stagePath(1)], "keep은 덮지 않는다");
   // 있지만 Floe가 읽을 수 없게 바뀐 문서 — result null(지우지도 덮지도 않는다)
   fs.writeFileSync(f1, "# 2단계: 내 마음대로\n");
   assert.equal((await call("GET", "/api/docs")).json.stages[1].result, null);
@@ -150,7 +160,7 @@ test("C-49 화면 — 지문을 기억하고(KEEP docPrints), 폴더를 알면 �
   const app = fs.readFileSync(path.join(FRONT, "app.js"), "utf8");
   assert.match(app, /"docPrints", "results"/, "지문을 저장한다");
   assert.match(app, /wrote: \{ \.\.\.\(same \? P\.wrote : \{\}\), \.\.\.w \}/, "올린 뒤 Floe가 쓴 지문을 기억");
-  assert.match(app, /\.\.\.\(known \? \{ prints: known \} : \{\}\)/, "올릴 때 아는 지문을 준다 — 서버가 사람이 고친 문서는 덮지 않는다");
+  assert.match(app, /\.\.\.\(known \? \{ prints: known\.prints, keep: known\.keep \} : \{\}\)/, "올릴 때 아는 지문 · 사람 것을 준다 — 서버가 사람이 고친 문서는 덮지 않는다");
   assert.match(app, /if \(!st\.idea && d\.idea\) st\.idea = d\.idea;/, "처음 말한 것도 되살린다");
   assert.match(app, /if \(!mine\) return;/, "다른 폴더의 기록과 견주지 않는다");
   assert.match(app, /fetch\("\/api\/docs", \{ cache: "no-store" \}\)/, "폴더의 단계 문서를 읽는다");
