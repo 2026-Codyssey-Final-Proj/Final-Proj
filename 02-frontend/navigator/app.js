@@ -501,7 +501,7 @@
     // 연결 칸 — 서버로 열었으면 보기 방식과 상관없이 보인다(연습 중에도 알림은 들어오니까). '연결 끊기'를 누르면 들어온 알림을 받지 않는다
     const link = canLive ? sgrp(SG.link, "연결", `${ledRow(conn(), st.unplug
         ? "연결을 끊었어요 — 작업 알림이 와도 글 칸을 채우거나 살펴보지 않아요"
-        : st.feed.at ? `${toolName(st.feed.tool)}와 연결됨 · ${esc(st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}`
+        : st.feed.at ? `${toolName(st.feed.tool)}와 연결됨 · ${esc(wsFull() || st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}${st.feed.project && wsFull() && st.feed.project !== wsFull() ? `(${esc(st.feed.project)}에서)` : ""}`   // 이름은 연결한 폴더 먼저 — 마지막 알림이 다른 폴더에서 왔으면 그 이름은 뒤에(F-73)
         : "Claude Code·Codex 알림을 기다리는 중 — connect.js로 연결해 주세요",
         `<button type="button" class="btn" data-act="unplug" aria-pressed="${st.unplug}">${st.unplug ? "다시 연결" : "연결 끊기"}</button>`)}
       ${st.mode === "live" ? `<label class="chk"><input type="checkbox" data-act="auto" ${st.auto ? "checked" : ""} ${st.unplug ? "disabled" : ""}>AI 코딩 도구가 작업을 마치면 자동으로 살펴보기</label>
@@ -1024,7 +1024,7 @@
     // 플로로 아래 칭호 · 기분 글은 뺐다(2026-10-25 두승현) — 칭호는 설정 창 머리에 있다
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}</div>
       <div class="main"><div class="log" data-log>${st.chat.map((m) => `<div class="msg ${m.who}"><div class="b">${m.html}</div></div>`).join("")}${
-        working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast() ? ` — ${esc(stepLine(aiLast()))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
+        working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast(mine()) ? ` — ${esc(stepLine(aiLast(mine())))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
         ${proposalsHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
         ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts fixed">${more.map(chip).join("")}</div>` : ""}
         <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`;
@@ -1265,7 +1265,7 @@
       const f = seen.get(x.what); f.add += x.add || 0; f.del += x.del || 0;
     }
     const rows = [...seen].map(([name, f]) => `<li><span>${esc(name)}</span><small>${f.add ? `+${f.add}` : ""}${f.add && f.del ? " " : ""}${f.del ? `−${f.del}` : ""}</small></li>`).join("");
-    return `<div class="cv-file"><p class="ch">파일 · 바뀐 줄 수<em>${s && aiMode === "example" ? "예시" : s ? esc(s.project || "") : ""}</em></p>${rows ? `<ul>${rows}</ul>` : `<p class="ft">아직 — Claude Code가 파일을 고치면 이름과 줄 수가 여기에 와요</p>`}</div>`;
+    return `<div class="cv-file"><p class="ch">파일 · 바뀐 줄 수<em>${s && aiMode === "example" ? "예시" : s ? esc(wsFull() || s.project || "") : ""}</em></p>${rows ? `<ul>${rows}</ul>` : `<p class="ft">아직 — Claude Code가 파일을 고치면 이름과 줄 수가 여기에 와요</p>`}</div>`;
   }
   // 파일 칸(C-41 ⑥ → C-42 R-8, 2026-10-27 이재엽 버튼 "전부" · "깊이 3 · 200개"): 작업실 왼쪽의 폴더 트리. 서버로 연 화면은 GET /api/files(API.md 3-25 — 연결한 폴더의 이름만, 읽기만)로 진짜 목록을,
   //   서버 없이 · 연습 모드 · 폴더를 모르면 아래 예시 그대로(목업의 예시 — [이름, 안쪽인가, 상태 글, 모양])에 '예시' 표시. 지금 장 문서는 '● 지금', 지난 장 문서는 '읽음', 폴더는 눌러 접고 펼친다
@@ -1924,14 +1924,16 @@
   // 접혀 있을 때도 보이는 작은 표시(시연 안전장치) — 연습인지 진짜 AI인지, Claude Code·Codex와 연결됐는지
   const conn = () => (!canLive ? "" : st.unplug ? "off" : st.feed.at ? "on" : "wait");
   const CONN_WORD = { on: "연결됨", off: "연결 끊음", wait: "알림 기다리는 중" };
-  // 작업 자리 이름(2026-10-25 두승현 — 옛 "진짜 AI" 표시 대신): GitHub 저장소(주인/이름)를 알면 그것, 아니면 연결한 폴더 이름. 연습이면 그대로 "연습"
-  //   보이는 이름은 저장소 이름만(주인 빼고) — 전체 이름은 title · aria-label에. 글자 수 제한은 뺐다(F-55로 띠의 이름표가 물결 아래로 가서, 두승현 2026-10-25)
-  //   원격이 없으면 앱에서 고른 폴더 이름(/api/github의 project — git이 아니어도 온다)을 먼저. 전에는 훅 알림의 폴더(st.project)만 봐서,
+  // 작업 자리 이름(2026-10-25 두승현 — 옛 "진짜 AI" 표시 대신). 연습이면 그대로 "연습". 글자 수 제한은 뺐다(F-55로 띠의 이름표가 물결 아래로 가서, 두승현 2026-10-25)
+  //   앱에서 고른 폴더 이름(/api/github의 project — git이 아니어도 온다)을 먼저, 그다음 훅 알림의 폴더 — 전에는 훅 알림의 폴더(st.project)만 봐서
   //   일반 폴더 · 원격 없는 git 폴더는 Claude Code를 한 번 쓰기 전까지 '폴더 없음'이었다(임유정 2026-10-25, F-58-5) — claude-drafted: 2026-10-25
-  const wsFull = () => { const r = st.gh && st.gh.remote; if (canLive && !st.gh && !ghLoading) setTimeout(loadGithub, 0); return r && r.kind === "github" ? `${r.owner}/${r.repo}` : (st.gh && st.gh.project) || project(); };
-  const wsShort = () => { const s = wsFull().split("/").pop() || "폴더 없음"; return s; };
-  const stateWords = () => [st.mode === "live" ? `작업 자리 ${wsFull() || "없음"}` : "연습용 예시", CONN_WORD[conn()]].filter(Boolean).join(" · ");
-  const modeChip = () => `<span class="pl-mode ${st.mode}" title="${st.mode === "live" ? esc(wsFull() ? `작업 자리 — ${wsFull()}` : "연결한 폴더가 없어요") : "미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요"}">${st.mode === "live" ? esc(wsShort()) : "연습"}</span>`;
+  // 2026-10-28 임유정 "폴더 이름 뜨는거 어떤 형태든 로컬 폴더 이름을 최우선으로"(F-73): 보이는 이름은 늘 이 컴퓨터의 폴더 이름 — GitHub 저장소(주인/이름)는 title · aria-label에만 덧붙인다(F-54의 '저장소 먼저'를 바꿈)
+  const wsFull = () => { if (canLive && !st.gh && !ghLoading) setTimeout(loadGithub, 0); return (st.gh && st.gh.project) || project(); };
+  const wsRepo = () => { const r = st.gh && st.gh.remote; return r && r.kind === "github" ? `${r.owner}/${r.repo}` : ""; };
+  const wsShort = () => wsFull() || "폴더 없음";
+  const wsTitle = () => (wsFull() ? `작업 자리 — ${wsFull()}${wsRepo() ? ` · GitHub ${wsRepo()}` : ""}` : "연결한 폴더가 없어요");
+  const stateWords = () => [st.mode === "live" ? `작업 자리 ${wsFull() || "없음"}${wsRepo() ? ` · GitHub ${wsRepo()}` : ""}` : "연습용 예시", CONN_WORD[conn()]].filter(Boolean).join(" · ");
+  const modeChip = () => `<span class="pl-mode ${st.mode}" title="${st.mode === "live" ? esc(wsTitle()) : "미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요"}">${st.mode === "live" ? esc(wsShort()) : "연습"}</span>`;
   const connLed = () => (conn() ? `<span class="led ${conn() === "on" ? "on" : conn()}" title="${CONN_WORD[conn()]}"></span>` : "");
   // 띠 — 물결 선 위로 얼굴 위쪽만 빼꼼. 마우스를 올리면 한 줄로 나온다. 졸면 body.dozing으로 눈을 감는다(app.css)
   const WAVE = `<svg class="wl" viewBox="0 0 150 12" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="strip-wl" x2="1"><stop offset="0" stop-color="#A9DDFF" stop-opacity="0"></stop><stop offset=".5" stop-color="#A9DDFF" stop-opacity=".9"></stop><stop offset="1" stop-color="#A9DDFF" stop-opacity="0"></stop></linearGradient></defs>
@@ -1941,8 +1943,9 @@
   // 켤 때의 큰 인사 카드(greetHTML · 물결 선)는 2026-10-27 C-46으로 뺐다 — 인사는 알약(pillHTML) 안에서
   // ── 기본 화면(C-13, 2026-10-20 — 이재엽 "버튼식으로 준비가 되어있는 공간이 기본값") — 플로로와 지금 한 줄, 단추 넷. 알림 · AI 진행은 섬 안에서 바로(hub.js의 순수 함수 FloeHub) ──
   let aiSessions = [], aiMode = "none", aiLatest = 0;   // AI 진행(C-12)의 세션 · 어디서 왔나(none · example · live) · 마지막 번호
-  const latestSession = () => [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0];   // 가장 최근 세션 — AI 진행 판 · 작업실 파일 카드가 같이 쓴다
-  const aiLast = () => { let best = null; for (const s of aiSessions) for (const x of s.steps || []) if (!best || (x.at || 0) > (best.at || 0)) best = { ...x, project: s.project }; return best; };
+  const mine = () => aiSessions.filter((s) => s.here !== false);   // 연결한 폴더(또는 그 안)의 세션 — 서버가 here를 붙인다(F-73). AI 진행 판의 목록은 다른 폴더 것도 이름을 붙여 그대로 보인다
+  const latestSession = () => [...mine()].sort((a, b) => (b.at || 0) - (a.at || 0))[0];   // 연결한 폴더의 가장 최근 세션 — AI 진행 판 머리 · 작업실 파일 카드 · 살펴보기의 일한 증거(workEvidence)가 같이 쓴다
+  const aiLast = (list = aiSessions) => { let best = null; for (const s of list) for (const x of s.steps || []) if (!best || (x.at || 0) > (best.at || 0)) best = { ...x, project: s.project }; return best; };
   const stepLine = (s) => (STEPS ? STEPS.line(s) : `${s.verb || ""} ${s.what || ""}`.trim());
   // 지금 한 줄 — 알림과 AI가 한 일 중 더 최근 것, 없으면 다시 온 인사 또는 시간대 인사(넘김 문서 9절 2번 기본값)
   function nowLine() {
@@ -1953,7 +1956,7 @@
     return st.back || C.greeting(new Date().getHours());
   }
   const unreadN = () => (HUB ? HUB.unread(st.alerts, seenAlerts) : 0);
-  const working = () => (HUB ? HUB.anyWorking(aiSessions) : false);
+  const working = () => (HUB ? HUB.anyWorking(mine()) : false);   // 연결한 폴더의 세션만 — 다른 폴더의 Claude Code가 일해도 A의 채팅에 '일하고 있어요'를 띄우지 않는다(F-73)
   // 기본 화면의 단추 넷(C-13 baseBody)은 2026-10-21 C-22로 채팅(chatCard)이 됐다 — 알림 · AI 진행 판은 아래 그대로, 채팅의 칩(알림 · 도전과제)으로 연다
   // 알림 판 · AI 진행 판 — 왼쪽: 플로로 · 프로젝트 · 도구 이름 · (AI 진행) 상태와 한 일의 종류별 수, 오른쪽: 줄 목록(hub.js가 만드는 글 · 섬의 기록). 집(또는 '단추로')으로 돌아온다.
   //   AI 진행은 C-12 규칙 그대로 — 파일 이름 · 첫 줄 · 줄 수뿐, 파일 내용은 받지도 보이지도 않는다
@@ -1963,7 +1966,7 @@
     const now = Date.now(), [title, lead] = PANE[kind] || PANE.alerts;
     const last = kind === "ai" ? latestSession() : null;
     const tool = toolName(kind === "ai" ? (last && last.tool) || "claude" : st.feed.tool || (st.alerts[0] && st.alerts[0].tool));
-    const proj = kind === "ai" && last ? last.project : project();
+    const proj = wsFull() || (kind === "ai" && last ? last.project : "");   // 연결한 폴더 이름 먼저 — A 안의 backend에서 연 Claude Code도 머리는 A(F-73, 새 맥락 리뷰)
     const counts = kind === "ai" && last ? Object.entries((last.steps || []).reduce((m, s) => { m[s.verb || ""] = (m[s.verb || ""] || 0) + 1; return m; }, {})) : [];
     const body = !HUB ? `<p class="empty">아직 준비 중이에요</p>` : kind === "ai" ? HUB.aiHTML(aiSessions, aiMode, STEPS, now) : HUB.alertsHTML(st.alerts, now);
     const top = kind === "ai" ? `${approvalsHTML()}${taskBox()}` : "";   // FR-17: 허락이 필요한 카드(맨 위) · 할 일 적기
@@ -3381,15 +3384,17 @@
 
   // ── Claude Code·Codex 연결 — 서버에 2초마다 새 알림을 묻는다(서버로 열었을 때만) ──
   let lastSeq = -1;   // -1: 아직 한 번도 안 물음 — 처음에는 지난 알림을 다시 띄우지 않고 기준만 잡는다
+  let appName = "";   // 앱이 고른 작업 폴더 이름(서버 답의 project) — 있으면 이름은 이것만 따른다. 다른 폴더에서 쓴 Claude Code의 알림(here: false)이 이름을 바꾸지 않게(임유정 2026-10-28)
   async function poll() {
     let r;
     try { r = await (await fetch(`/api/events?since=${Math.max(lastSeq, 0)}`)).json(); } catch { return; }
     if (!r.ok) return;
+    const was = st.project; appName = r.project || ""; if (appName) st.project = appName;
     const first = lastSeq < 0, ev = r.events[r.events.length - 1];
     lastSeq = r.latest;   // 연결을 끊은 동안에도 기준은 앞으로 — 다시 연결했을 때 지난 알림을 한꺼번에 받지 않는다
-    if (!ev) return;
+    if (!ev) return st.project !== was ? render() : undefined;
     if (!first) return onEvent(r.events.findLast(A.notifies) || ev);   // 2초 사이에 마침 · 시작이 같이 오면 마침을 알린다(2026-10-23 — 알림은 마칠 때만)
-    if (!st.unplug) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project) st.project = ev.project; }
+    if (!st.unplug) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project && ev.here !== false && !appName) st.project = ev.project; }
     render();
   }
   // 작업을 알아챈다: 알림 기록에 한 줄 남기고(FR-7), 글 칸에 최근 작업을 채우고 한 줄로 알린다. 작업을 마쳤을 때 바로 살펴보는 건
@@ -3397,7 +3402,9 @@
   let lastPing = { tool: "", kind: "" };
   async function onEvent(ev) {
     if (!A.accept(ev, st.unplug)) return;   // 연결을 끊은 동안 들어온 알림 — 글 칸 채우기·살펴보기·기록 모두 하지 않는다
-    if (!ev.sim) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project) st.project = ev.project; }
+    if (!ev.sim) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project && ev.here !== false && !appName) st.project = ev.project; }
+    // 연결한 폴더가 아닌 곳의 알림 — 연결 표시만 살고, 글 칸 · 살펴보기 · 알림 기록은 지금 폴더의 것이라 건드리지 않는다(채팅에 한 줄로 어디서 온 일인지만)
+    if (ev.here === false) { if (A.notifies(ev)) logMsg("sys", `${esc(ev.project || "다른 폴더")}에서 ${esc(toolName(ev.tool))}가 일을 마쳤어요 — 지금 작업 폴더가 아니라 살펴보지 않아요`); return render(); }
     if (!A.notifies(ev)) return render();   // 새 작업을 시작했을 때는 알리지 않는다 — 연결 표시(마지막 소식 때)만(2026-10-23)
     if (st.settings && !ev.sim) fetchUsage();   // 일을 마쳤다 — 열려 있는 토큰 칸을 새 값으로(2026-10-24)
     if (!ev.sim && st.plan && FP && FP.running(st.plan)) checkPlanTask();   // 맡긴 계획 줄이 끝났을 수 있다 — 3초를 기다리지 않고 바로 묻는다(C-32)

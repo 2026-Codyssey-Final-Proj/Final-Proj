@@ -59,7 +59,7 @@ test("app.js — 알림 · AI 진행 판은 섬 안에서 바로, hub.js의 순�
   assert.match(app, /const HUB = window\.FloeHub, STEPS = window\.NavSteps, MO = window\.FloeMorph;/);
   assert.match(app, /kind === "ai" \? HUB\.aiHTML\(aiSessions, aiMode, STEPS, now\) : HUB\.alertsHTML\(st\.alerts, now\)/);
   assert.match(app, /HUB\.unread\(st\.alerts, seenAlerts\)/, "읽지 않은 수");
-  assert.match(app, /HUB\.anyWorking\(aiSessions\)/, "일하는 중 점");
+  assert.match(app, /HUB\.anyWorking\(mine\(\)\)/, "일하는 중 점 — 연결한 폴더의 세션만(F-73)");
   assert.ok(!app.includes('"hub-alerts"') && !app.includes("크게 보기"), "크게 보기 · 모아 보기 창이 없다");
   assert.match(app, /fetch\(`\/api\/steps\?since=\$\{aiLatest\}`/, "AI 진행만 묻는다");
   assert.match(app, /if \(st\.ui !== "home"\) return; const was = aiLatest;/, "펼쳐져 있을 때만 2초마다(C-22부터는 채팅의 '일하고 있어요' 띠가 쓴다)");
@@ -130,10 +130,14 @@ test("app.js — C-36: 처음 말은 '한 줄로' 대신 원하는 것을 플로
 });
 
 // 접힌 섬 · 띠의 작업 자리 표시(2026-10-25 두승현 — 옛 "진짜 AI" 표시 대신)
-test("접힌 섬의 표시 — 진짜 AI 모드면 '진짜 AI' 대신 GitHub 저장소 · 폴더 이름(글자 수 제한 없음 — F-55). 연습이면 '연습' 그대로", () => {
+test("접힌 섬의 표시 — 진짜 AI 모드면 '진짜 AI' 대신 이 컴퓨터의 폴더 이름(글자 수 제한 없음 — F-55), GitHub 저장소는 title에만. 연습이면 '연습' 그대로", () => {
   assert.doesNotMatch(app, /\? "진짜 AI" : "연습"/, "옛 표시가 남지 않는다");
-  // F-58-5(2026-10-25 임유정): 원격이 없으면 앱에서 고른 폴더 이름(/api/github의 project)을 먼저, 그다음 훅 알림의 폴더 — claude-drafted: 2026-10-25
-  assert.match(app, /r && r\.kind === "github" \? `\$\{r\.owner\}\/\$\{r\.repo\}` : \(st\.gh && st\.gh\.project\) \|\| project\(\)/, "저장소를 알면 주인/이름, 아니면 앱에서 고른 폴더 이름, 그다음 훅 알림의 폴더");
+  // F-58-5(2026-10-25 임유정): 앱에서 고른 폴더 이름(/api/github의 project)을 먼저, 그다음 훅 알림의 폴더 — claude-drafted: 2026-10-25
+  // F-73(2026-10-28 임유정 "어떤 형태든 로컬 폴더 이름을 최우선으로"): 저장소 이름을 먼저 보이던 것(F-54)을 바꿨다 — 저장소(주인/이름)는 title · aria-label에만
+  assert.match(app, /const wsFull = \(\) => \{[^\n]*return \(st\.gh && st\.gh\.project\) \|\| project\(\); \};/, "보이는 이름은 앱에서 고른 폴더 이름, 그다음 훅 알림의 폴더");
+  assert.doesNotMatch(app, /\$\{st\.mode === "live" \? esc\(wsRepo\(\)\)/, "저장소 이름을 보이는 글자로 쓰지 않는다");
+  assert.match(app, /const wsShort = \(\) => wsFull\(\) \|\| "폴더 없음";/, "알약 · 띠도 폴더 이름 그대로(저장소 이름으로 바꾸지 않는다)");
+  assert.match(app, /작업 자리 — \$\{wsFull\(\)\}\$\{wsRepo\(\) \? ` · GitHub \$\{wsRepo\(\)\}` : ""\}/, "저장소는 마우스를 올리면");
   assert.doesNotMatch(app, /s\.length > 14/, "글자 수로 자르지 않는다(띠 폭을 넘으면 CSS가 … 로)");
   assert.match(app, /\$\{st\.mode === "live" \? esc\(wsShort\(\)\) : "연습"\}/, "연습이면 그대로");
 });
