@@ -632,7 +632,7 @@
     if (st.step === "next") return [`<span class="ask">좋아요! 다음은 ${nx ? `${LB(nx.n)} "${esc(nx.title)}"` : "마무리"}예요</span>
       <span class="meta">무엇부터 할지 순서를 정해 보세요. 지금 안 해도 되는 일은 '나중에'로 미뤄 둬요.</span>${todoList(true)}`,
       `<button class="btn pri wide" data-act="go" ${N.canAdvance(met(), "yes") ? "" : "disabled"}>이 순서로 시작하기</button>`];
-    return ["", yesNo];
+    return [learnBox(s.n), yesNo];   // C-47 배운 것 · 처음 뜻 — 좁은 화면에서도(새 맥락 리뷰: 칸 없이 '비어 있음'이 남았다)
   }
   const chips = () => `<div class="chips">${N.STAGES.map((x) => `<span class="chip ${stepClass(x.n)}">${stepClass(x.n) === "done" ? `${OK_ICON} ` : ""}${x.n + 1} ${esc(x.short)}</span>`).join("")}</div>`;
   const flow = () => { const s = stage(); return `<div class="flow"><div class="box"><b>받은 것</b>${esc(s.gets)}</div><span class="arrow">→</span>
@@ -872,6 +872,23 @@
       sub: "채우러 가면 공책에서 그 칸을 고치고 다시 완료 보고를 해요. 넘기려면 까닭 한 줄이 결정 기록에 남아요.",
       body: rows, acts: [{ label: "채우러 가기", act: "gate-fill", key: "Enter", pri: true }, { label: "까닭 적고 넘기기", act: "gate-skip" }] };
   }
+  // 지식 퀘스트 C-47(2026-10-29 — 지식 퀘스트 PRD 6절, 결정 모음 A-13): 관문 카드의 '배운 것' 칸. 사람이 자기 말로 적는다(플로로 · AI는 이 칸을 쓰지 않는다), 비워도 관문은 열린다.
+  //   2단계부터 1단계에서 적은 원하는 결과(앞 관문에서 바꿨으면 바꾼 말)를 다시 보이고 아직 같은지 묻는다. 지나면 advance가 그 단계 결과에 learned · goal로 남긴다 → docs.js
+  const WANT = "다 만들면 무엇이 달라지는지 쓰기";
+  function wantNow(n) {
+    const it = st.results[0] && st.results[0].items.find((x) => x.name === WANT), first = it ? it.lines.filter((l) => l && l.trim()).join(" / ") : "";
+    for (let k = n - 1; k >= 1; k--) { const g = st.results[k] && st.results[k].goal; if (g && g.changed) return { text: g.changed, from: `${LB(k)} 관문에서 바꾼 원하는 결과` }; }
+    return first ? { text: first, from: "처음 원한 결과" } : null;
+  }
+  function learnBox(n) {
+    if (!st.results[n]) return "";   // 남길 단계 결과가 없으면 적은 글이 버려진다 — 칸을 보이지 않는다(새 맥락 리뷰)
+    const w = n >= 1 ? wantNow(n) : null, g = st.goalDraft;
+    return `<div class="learn"><p class="mc-sub">이번 단계에서 배운 것을 내 말로 한 줄 적어요. 비워도 넘어가요 — 비우면 문서에 '비어 있음'으로 남아요.</p>
+      <textarea class="mc-input" data-act="learned" rows="2" maxlength="400" aria-label="이번 단계에서 배운 것" placeholder="이번 단계에서 새로 알게 된 것은 무엇인가요?">${esc(st.learnDraft || "")}</textarea>${w ? `
+      <p class="mc-sub">${w.from}: “${esc(w.text)}” — 아직 같은가요?</p>
+      <div class="opts">${btn({ label: "아직 같아요", act: "goal-same", kind: "opt toggle", pressed: !!(g && g.same) })}${btn({ label: "바뀌었어요", act: "goal-changed", kind: "opt toggle", pressed: !!(g && g.changed != null) })}</div>${g && g.changed != null ? `
+      <input class="mc-input" data-act="goal-new" maxlength="200" aria-label="지금 원하는 결과" placeholder="지금 원하는 결과는 무엇인가요?" value="${esc(g.changed)}">` : ""}` : ""}</div>`;
+  }
   function momentGate() {
     const s = stage(), nx = nextStage(), meta = `<span class="mm-stage">${LB(s.n)}에서 한 일</span>${flowLine()}`;
     const yes = { label: "네, 이해했어요", act: "yes", key: "y", pri: true }, no = { label: "아니요, 같이 풀어요", act: "no", key: "n" };
@@ -909,7 +926,7 @@
       body: todoList(true), acts: [{ label: "이 순서로 시작하기", act: "go", key: "Enter", pri: true }] };
     return { tone: "amber", mood: face()[0], badge: "!", meta, title: s.n === 0 && BC ? "이 프로젝트의 기준 — 맞나요?" : "이번 단계에서 한 일, 이해되셨나요?",
       sub: s.n === 0 && BC ? "1단계 칸과 받은 글로 기준 한 장을 만들었어요. 옮겨 온 줄은 어디서 왔는지 적혀 있고, 사람만 아는 칸(성공)은 비워 두었어요 — 채워 주면 다음 단계 퀘스트가 이 기준으로 지어져요." : `잘 모르겠으면 헷갈린 곳을 골라 같이 풀어요. 몇 번이고 괜찮아요.${st.noCount ? ` (다시 물어본 횟수 ${st.noCount}번)` : ""}`,
-      ...(s.n === 0 && BC ? { body: baseCardHTML(BC.withEdits(BC.build({ results: st.results, source: st.source }), st.cardEdits), true) } : {}),   // C-56 R-1 기준 카드(목업 ③)
+      body: `${s.n === 0 && BC ? baseCardHTML(BC.withEdits(BC.build({ results: st.results, source: st.source }), st.cardEdits), true) : ""}${learnBox(s.n)}`,   // C-56 R-1 기준 카드(목업 ③) + C-47 배운 것
       acts: [yes, no] };
   }
   // 가로 카드 하나 — 왼쪽 플로로, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
@@ -1294,6 +1311,9 @@
   function momentShip() {
     if (st.ship.phase === "sent") return { tone: "green", mood: "happy", badge: OK_ICON, meta: `<span class="mm-stage">문서 올리기</span>`, title: "올리기를 Claude Code에 맡겼어요",
       sub: "커밋 · 푸시 전에 허락 카드가 이 위에 떠요. 끝나면 알려 드릴게요.", acts: [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "확인했어요", act: "ship-done", kind: "ghost" }] };
+    if (st.ship.phase === "public") return { tone: "amber", mood: "think", badge: "!", meta: `<span class="mm-stage">문서 올리기 · 한 번 더 확인</span>`, title: "누구나 볼 수 있는 저장소일 수 있어요",
+      sub: esc(st.ship.reason || ""), foot: "이 저장소는 한 번만 물어요. 비밀로 둘 글이 있으면 '나중에'를 누르고 문서를 먼저 고쳐요.",
+      acts: [{ label: "올릴게요", act: "ship-public", pri: true }, { label: "나중에", act: "ship-later", kind: "ghost" }] };   // 단축키 없음 — 앞 카드의 '올리기'(Enter)를 습관처럼 눌러 공개 푸시를 확인하지 않게(새 맥락 리뷰)
     // C-39(2026-10-25 — 버튼 "2단계부터 관문마다" · "증빙 칸 + 기획서 + 결정 기록"): 관문을 지날 때마다 다시 묶는다 — 같은 파일을 고쳐 쓰고 커밋 하나 더. 미리 보기는 기획서 · 결정 기록
     const files = shipFiles(), upto = Math.max(...Object.keys(st.results).map(Number)), peeks = [[FDOCS.MAIN_DOC, "기획서"], [FDOCS.LOG_DOC, "결정 기록"]];
     const peek = st.ship.peek != null && peeks[st.ship.peek] ? files.find((f) => f.path === peeks[st.ship.peek][0]) : null, tag = (p) => (peeks.find(([x]) => x === p) || [])[1];   // 파일 이름 옆 쉬운 이름(기획서 · 결정 기록)
@@ -1302,12 +1322,14 @@
       body: `<ul class="ship-files">${files.map((f) => `<li>${tag(f.path) ? `<b>${tag(f.path)}</b> ` : ""}${esc(f.path)}${f.merge ? " <small>절만 바꿈</small>" : ""}</li>`).join("")}</ul><div class="ship-peek">${peeks.map(([, label], k) => `<button type="button" class="lnk" data-act="ship-peek" data-i="${k}" aria-expanded="${st.ship.peek === k}">${label} 미리 보기</button>`).join("")}${peek ? `<pre>${esc(peek.text)}</pre>` : ""}</div>`,
       acts: [{ label: "올리기", act: "ship-go", key: "Enter", pri: true }, { label: "나중에", act: "ship-later", kind: "ghost" }] };
   }
-  async function shipGo() {
-    if (!st.ship || st.ship.phase !== "offer") return;
+  async function shipGo(publicOk = false) {
+    if (!st.ship || !(st.ship.phase === "offer" || (publicOk && st.ship.phase === "public"))) return;
     if (st.mode !== "live" || !canLive) { st.ship = null; render(); return say("연습이라 올리지 않았어요 — 진짜 AI 모드에서 작업 폴더에 만들고 올려요"); }
     st.planBusy = "ship";
-    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
+    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
     st.planBusy = "";
+    // C-52(2026-10-29): 공개(또는 모름) 저장소 — 저장소마다 처음 한 번 더 묻는다. 서버는 아직 아무것도 쓰지 않았다
+    if (!r.ok && r.why === "public") { st.ship = { ...st.ship, phase: "public", reason: r.reason || "" }; return render(); }
     if (!r.ok) { render(); return say(r.reason || "문서를 올리지 못했어요"); }
     st.ship = { phase: "sent", at: r.task && r.task.at }; render(); watchTask(r.task, "ship");
   }
@@ -3229,7 +3251,10 @@
     // 퀘스트(C-22): 장을 지나면 무지개 조개 하나, 다음 장 퀘스트(받기 화면)를 만들고 퀘스트 창이 바로 뜬다(설정 '바로 뜨기'). 마지막이면 퀘스트 없이 마무리
     questStarted();   // C-61 — 새 단계: 섬은 가운데부터
     if (QU) { st.shells += 1; level = QU.levelUp(level); if (st.mode !== "fixture") writeLS(LEVEL_KEY, level); st.quest = nx ? QU.retitle(QU.makeQuest(nx, crits(nx.n)), st.topic) : null; if (nx && qauto) openQwin("quest"); }   // 다음 장도 주제를 제목으로(C-36)
-    if (st.results[s.n]) st.results = { ...st.results, [s.n]: { ...st.results[s.n], passed: ymd() } };   // 관문을 지난 날(C-39 — 문서의 증빙 · 결정 기록)
+    // 관문을 지난 날(C-39 — 문서의 증빙 · 결정 기록) + C-47 배운 것(비우면 '' — '비어 있음') · 처음 뜻(고르지 않았으면 남기지 않는다, 바뀌었어요인데 비우면 고르지 않은 것)
+    const learned = String(st.learnDraft || "").trim().slice(0, 400), gd = st.goalDraft, goal = gd && gd.same ? { same: true } : gd && gd.changed && gd.changed.trim() ? { changed: gd.changed.trim().slice(0, 200) } : null;
+    if (st.results[s.n]) st.results = { ...st.results, [s.n]: { ...st.results[s.n], passed: ymd(), learned, ...(goal && s.n >= 1 ? { goal } : {}) } };
+    st.learnDraft = ""; st.goalDraft = null;
     if (st.qwin) loadFiles();   // 작업실 파일 칸 — 장이 바뀌면 '● 지금' · 펼친 폴더도 바뀐다(R-8, 새 맥락 리뷰)
     if (QU && FDOCS && s.n >= 1 && st.results[0] && st.results[1]) { st.ship = { phase: "offer" }; st.qfocus = "stage"; }   // 마지막(8단계) 관문도(2026-10-25 리뷰)   // 2단계부터 관문마다 — 단계 문서 · 기획서 · 결정 기록을 다시 묶어 올릴지 묻는다(C-37 → C-39 버튼 "2단계부터 관문마다")
     render();
@@ -3365,6 +3390,7 @@
     },
     // 문서 올리기(C-37) — 올리기 · 나중에(도전과제 지도에서 다시) · 확인 · 지도에서 열기
     "ship-go": () => shipGo(),
+    "ship-public": () => shipGo(true),   // C-52 공개 저장소 — 저장소마다 처음 한 번
     "ship-later": () => { st.ship = null; render(); say("나중에 도전과제의 한눈에 보기에서 올릴 수 있어요"); },
     "ship-done": () => set({ ship: null }),
     "ship-peek": (i) => { if (st.ship) set({ ship: { ...st.ship, peek: st.ship.peek === i ? null : i } }); },   // 기획서 · 결정 기록 미리 보기(C-39) — 다시 그려도 펼친 채로(<details>는 다시 그릴 때마다 닫혔다)
@@ -3491,6 +3517,8 @@
     // R-10 관문 앞 멈춤(2026-10-27)
     "gate-fill": () => { if (!st.quest) return; st.quest = { ...st.quest, phase: "quest", edit: false }; st.skip = null; openQwin("quest"); render(); say("공책에서 '안 됨'인 칸을 고치고 다시 완료 보고를 눌러요"); },
     "gate-skip": () => { st.skip = { reason: "" }; render(); },
+    "goal-same": () => set({ goalDraft: st.goalDraft && st.goalDraft.same ? null : { same: true } }),   // C-47 처음 뜻 — 다시 누르면 고르지 않음
+    "goal-changed": () => set({ goalDraft: st.goalDraft && st.goalDraft.changed != null ? null : { changed: "" } }),
     "gate-skip-back": () => { st.skip = null; render(); },
     "gate-skip-save": () => {
       const reason = String((st.skip && st.skip.reason) || "").trim().slice(0, 200); if (!reason) return say("까닭을 한 줄 적어 주세요");
@@ -3748,6 +3776,8 @@
     if (a === "text") st.text = t.value;
     if (a === "question") st.question = t.value;
     if (a === "skip-reason") { st.skip = { ...(st.skip || {}), reason: t.value.slice(0, 200) }; return; }
+    if (a === "learned") { st.learnDraft = t.value.slice(0, 400); return; }   // C-47 배운 것 — 다시 그리지 않는다(관문 '네'를 지나며 저장)
+    if (a === "goal-new") { st.goalDraft = { changed: t.value.slice(0, 200) }; return; }
     if (a === "ftext") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.text = t.value; const d = f.text !== f.saved; if (d !== f.dirty) { f.dirty = d; render(); } return; }   // 파일 고치기(C-43) — 바뀜 표시만 다시 그린다(글 칸이 흔들리지 않게)
     if (a === "fn-find") { st.fnFind = t.value.slice(0, 60); render(); return; }
     if (a === "card-field") { st.cardEdits = { ...st.cardEdits, [String(t.dataset.v)]: t.value.slice(0, 200) }; return; }   // C-56 기준 카드의 빈칸 — 다시 그리지 않는다(관문 '네' 또는 '고친 것 적용'에서 저장)

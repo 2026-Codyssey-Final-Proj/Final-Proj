@@ -35,6 +35,7 @@ const Project = require("./project.js");   // runCommand — 바뀐 줄을 git d
 const Docmap = require("./docmap.js");
 const Presets = require("./presets.js");   // C-44 맡기기 틀 — 번호로 받은 파일을 raw 경로로 바꿔 Claude Code에 넘긴다(화면은 경로를 보내지 않는다) — claude-drafted: 2026-10-27   // C-45 문서 지도 — 문서와 링크를 보드 데이터로(읽기만) — claude-drafted: 2026-10-27   // C-42 R-8 작업실 파일 칸 — 연결한 폴더의 이름만(읽기만, 2026-10-27) — claude-drafted: 2026-10-27
 const RB = require("./readme-book.js");   // C-26 내 작업 책 — README를 책으로 나눈다(읽기만) — claude-drafted: 2026-10-23
+const PublicOk = require("./publicok.js");   // C-52 공개 저장소면 저장소마다 처음 한 번 묻는다(2026-10-29)
 const GH = require("./github.js");   // 설정의 GitHub 칸(C-25, 2026-10-24) — git · gh에게 읽기만 묻는다 — claude-drafted: 2026-10-24
 const Docs = require("./docs.js");   // C-37 단계 문서 — 단계 결과로 사용자 저장소에 둘 파일(순수 함수) — claude-drafted: 2026-10-25
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
@@ -619,10 +620,14 @@ const checkOk = (a) => Array.isArray(a) && a.length <= 8 && a.every((c) => c && 
 // F-62(2026-10-28): 넘긴 기준의 까닭 — 화면이 보내는 skip { reason(관문에서 사람이 적은 한 줄 · 200자), items(넘긴 기준 글) }. docs.js가 단계 문서 · 결정 기록에 '넘김(까닭)'으로 쓴다
 //   items는 화면이 같이 보내는 값이라 모양만 검사해 넘긴다 — 지금 docs.js는 reason과 check[].skipped만 읽는다(새 맥락 리뷰 2026-10-28: 읽는 곳이 생기기 전까지는 쓰지 않는 값)
 const skipOk = (k) => k && typeof k === "object" && !Array.isArray(k) && strOk(k.reason, CHECK_LINE_MAX) && (k.items == null || (Array.isArray(k.items) && k.items.length <= 8 && k.items.every((x) => strOk(x, ITEM_NAME_MAX))));
+// 지식 퀘스트 C-47(2026-10-29): 관문에서 사람이 적은 배운 것(learned — 400자, ""는 '비어 있음' · A-13 막지 않음)과 처음 뜻(goal — { same: true } 또는 { changed: 새 말 200자 })
+const LEARNED_MAX = 400;
+const goalOk = (g) => g && typeof g === "object" && !Array.isArray(g) && (Object.keys(g).join() === "same" ? g.same === true : Object.keys(g).join() === "changed" && strOk(g.changed, CHECK_LINE_MAX) && Nav.filled(g.changed));
 const stageExtraOk = (v) => (v.prep == null || (Array.isArray(v.prep) && v.prep.length <= Nav.PREP_MAX && v.prep.every((x) => strOk(x, Nav.PREP_LINE))))
   && (v.at == null || (typeof v.at === "string" && DATE_RE.test(v.at))) && (v.passed == null || (typeof v.passed === "string" && DATE_RE.test(v.passed))) && (v.check == null || checkOk(v.check))
   && (v.checkBy == null || v.checkBy === "confirm")
-  && (v.skip == null || skipOk(v.skip)) && (v.nocode == null || v.nocode === true);   // nocode — 6단계를 코드 없이 지남(A-04 '아니요', F-70)   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
+  && (v.skip == null || skipOk(v.skip)) && (v.nocode == null || v.nocode === true)
+  && (v.learned == null || strOk(v.learned, LEARNED_MAX)) && (v.goal == null || goalOk(v.goal));   // nocode — 6단계를 코드 없이 지남(A-04 '아니요', F-70)   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
 // 화면이 보낸 단계 결과들 — { "0": {title, items, …}, "1": … }. 1 · 2단계(0 · 1)가 다 있어야. 단계 번호 0~7만. 모르는 칸은 버린다
 // 답: { results } 또는 { why } — 무엇이 틀렸는지 그대로 말한다(2026-10-25 리뷰)
 function resultsOf(r) {
@@ -636,7 +641,8 @@ function resultsOf(r) {
     out[n] = { items: items.map((x, i) => ({ ...x, ...extraOf(v.items[i]) })),
       ...(v.prep && v.prep.length ? { prep: [...v.prep] } : {}), ...(v.at ? { at: v.at } : {}), ...(v.passed ? { passed: v.passed } : {}),
       ...(v.check && v.check.length ? { check: v.check.map((c) => ({ text: c.text, met: c.met, evidence: c.evidence || "", ...(c.skipped ? { skipped: true } : {}) })) } : {}), ...(v.checkBy ? { checkBy: v.checkBy } : {}),
-      ...(v.skip ? { skip: { reason: v.skip.reason, items: Array.isArray(v.skip.items) ? [...v.skip.items] : [] } } : {}), ...(v.nocode === true ? { nocode: true } : {}) };
+      ...(v.skip ? { skip: { reason: v.skip.reason, items: Array.isArray(v.skip.items) ? [...v.skip.items] : [] } } : {}), ...(v.nocode === true ? { nocode: true } : {}),
+      ...(typeof v.learned === "string" ? { learned: v.learned } : {}), ...(v.goal ? { goal: v.goal.same ? { same: true } : { changed: v.goal.changed } } : {}) };
   }
   return { results: out };
 }
@@ -689,6 +695,16 @@ function shipDocs(body) {
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];   // 쓰기 전에(쓰고 나서 못 맡기지 않게)
   { const hk = Connect.hookReady(s.dir); if (!hk.ok) return [409, { ok: false, why: "hook", reason: NO_HOOK[hk.why] || NO_HOOK.none }]; }   // 허락 연결도 쓰기 전에(F-69 — 커밋 · 푸시가 모두 막힌 채 문서만 남지 않게)
+  // C-52(2026-10-29, 지식 퀘스트 PRD 9절 10번): 푸시할 곳(origin)이 공개(또는 모름)면 저장소마다 처음 한 번 묻는다 — 쓰기 전에. 화면이 '올릴게요'면 publicOk: true로 다시 보낸다.
+  //   이미 '올릴게요'를 받은 저장소는 gh를 부르지 않는다(서버를 붙잡지 않게)
+  { const o = GH.originKey(s.dir);
+    if (o && !PublicOk.has(o.key)) {
+      const vis = GH.visibility(o);
+      if (vis !== "private") {
+        if (body.publicOk !== true) return [409, { ok: false, why: "public", reason: PublicOk.say(vis) }];
+        try { PublicOk.remember(o.key); } catch { return [500, { ok: false, reason: "올려도 된다는 답을 이 컴퓨터에 남기지 못했어요 — 다시 해 주세요" }]; }
+      }
+    } }
   const files = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
