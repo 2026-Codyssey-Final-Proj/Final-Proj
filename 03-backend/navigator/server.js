@@ -37,6 +37,7 @@ const Presets = require("./presets.js");   // C-44 맡기기 틀 — 번호로 �
 const RB = require("./readme-book.js");   // C-26 내 작업 책 — README를 책으로 나눈다(읽기만) — claude-drafted: 2026-10-23
 const PublicOk = require("./publicok.js");   // C-52 공개 저장소면 저장소마다 처음 한 번 묻는다(2026-10-29)
 const GH = require("./github.js");   // 설정의 GitHub 칸(C-25, 2026-10-24) — git · gh에게 읽기만 묻는다 — claude-drafted: 2026-10-24
+const Carry = require("./carry.js");   // 지식 퀘스트 C-48 가져갈 것 — 기준 다섯 · 장부의 규칙(순수, 2026-10-29)
 const Docs = require("./docs.js");   // C-37 단계 문서 — 단계 결과로 사용자 저장소에 둘 파일(순수 함수) — claude-drafted: 2026-10-25
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 const Mcp = require("./mcp.js");   // C-38 시험판 — MCP(웹 GPT · 웹 Claude · Claude Desktop)의 규칙. 이 컴퓨터 안에서는 늘, 밖(터널)에서는 NAV_MCP=1일 때만 /mcp/<토큰>을 받는다 — claude-drafted: 2026-10-25
@@ -63,15 +64,15 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat"];   // /api/chat — 작업실 개편 C-61 플로로와 자유 대화(2026-10-29)   // /api/prepare — C-56 R-2 준비된 퀘스트(새 맥락 리뷰 2026-10-28 막힘: 토큰 없이 불렸다)   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/carry/draft"];   // /api/carry/draft — 지식 퀘스트 C-48 가져갈 것 초안(2026-10-29)   // /api/chat — 작업실 개편 C-61 플로로와 자유 대화(2026-10-29)   // /api/prepare — C-56 R-2 준비된 퀘스트(새 맥락 리뷰 2026-10-28 막힘: 토큰 없이 불렸다)   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start", "/api/task/retry", "/api/task/stop"];   // /api/task/retry — F-69 막힌 일을 다시 · 직접 하기 글, /api/task/stop — C-50 사람이 고르면 멈추기(2026-10-28)
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
-const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs"];   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
+const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs", "/api/carry"];   // /api/carry — 지식 퀘스트 C-48 가져갈 것 장부(이 컴퓨터, 2026-10-29)   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide", "/api/apps/link"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다 · Claude Desktop 설정 파일에 잇는다. 밖(터널)에서는 받지 않는다(allowed)
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
-const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/task/retry", "/api/task/stop", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/task/retry", "/api/task/stop", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link", "/api/carry/draft"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -146,7 +147,7 @@ const STATIC = {
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "build.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "build.js", "presets.js", "tutorial.js", "plan.js", "docs.js", "carry.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -731,6 +732,64 @@ function docsRead() {
   return { ok: true, project: s.project, key: folderKey(s.dir), topic: Sensitive.redact(topic), idea: Sensitive.redact(idea), source: Sensitive.redact(source), stages };
 }
 
+// ── 지식 퀘스트 C-48(2026-10-29 — PRD 6절 · 9절 1 · 2번 이재엽 버튼 "이 컴퓨터의 Floe 폴더" · "기준 다섯 · 3개 · 미루면 보류"): 다음 프로젝트로 가져가기 ──
+// 장부는 여러 프로젝트에 걸치므로 저장소가 아니라 이 컴퓨터의 파일 하나(NAV_USAGE_FILE 옆 -carry.json, 없으면 홈의 .navigator-carry.json, 600). 규칙은 carry.js
+const carryFile = () => (process.env.NAV_USAGE_FILE ? process.env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-carry.json") : path.join(os.homedir(), ".navigator-carry.json"));
+function carryBook() { try { return Carry.revive(JSON.parse(fs.readFileSync(carryFile(), "utf8"))); } catch { return Carry.blank(); } }
+function carrySave(book) {
+  const f = carryFile(), tmp = `${f}.${process.pid}.tmp`;
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(tmp, JSON.stringify(book), { mode: 0o600 });
+  fs.renameSync(tmp, f);
+}
+// 결정 기록 — 작업 폴더의 docs/decisions.md, 가린 뒤 4,000자까지(PRD 9절 9번). 바로가기 · 파일이 아닌 것 · 너무 큰 것은 읽지 않는다
+function decisionsText(dir) {
+  const t = docTargets(dir, [{ path: Docs.LOG_DOC }]);
+  if (t.why) return "";
+  try { const st = fs.lstatSync(t.list[0].file); if (!st.isFile() || st.size > DOC_READ_MAX) return ""; return Sensitive.redact(fs.readFileSync(t.list[0].file, "utf8")).slice(0, Nav.CARRY_DECISIONS_MAX); } catch { return ""; }
+}
+// POST /api/carry/draft { topic, lessons: [{ stage, text }] } — 단계마다 사람이 쓴 배운 것(관문의 칸)과 결정 기록으로 초안. 둘 다 가린 뒤 자료로만(C-52)
+async function carryDraft(res, body) {
+  const lessons = body.lessons, topic = body.topic != null ? body.topic : "";
+  if (!Array.isArray(lessons) || lessons.length > Nav.STAGES.length || !lessons.every((x) => x && Number.isInteger(x.stage) && x.stage >= 0 && x.stage < Nav.STAGES.length && strOk(x.text, LEARNED_MAX)))
+    return refuse(res, "배운 것의 모양이 맞지 않음 — 단계마다 400자까지");
+  if (!strOk(topic, 60)) return refuse(res, "주제는 60자까지");
+  if (!lessons.some((x) => Nav.filled(x.text))) return refuse(res, "배운 것이 하나도 없어요 — 관문에서 적은 배운 것으로 초안을 만들어요");
+  const s = projectNow(), today = Carry.today();
+  const args = { topic: Sensitive.redact(topic), lessons: lessons.map((x) => ({ stage: x.stage, text: Sensitive.redact(x.text) })), decisions: s ? decisionsText(s.dir) : "", today };
+  const r = await callClaude(Nav.carryPrompt(args), Nav.CARRY_SCHEMA, { label: "가져갈 것" });
+  let got = r.data && Nav.parseCarry(r.data), tokens = r.tokens || 0;
+  if (!got) return refuse(res, r.error || "가져갈 것 형식이 맞지 않음", 502);
+  const fix = got.items.map((d, i) => ({ i, missing: Carry.missing(Carry.measure(d, today)) })).filter((f) => f.missing.length);
+  if (fix.length) {   // 한 번만 다시(PRD 6절) — 그래도 못 채우면 그대로 보이고 사람이 고친다
+    const r2 = await callClaude(Nav.carryPrompt({ ...args, fix }), Nav.CARRY_SCHEMA, { label: "가져갈 것" });
+    const again = r2.data && Nav.parseCarry(r2.data);
+    tokens += r2.tokens || 0;
+    if (again) got = again;
+  }
+  return send(res, 200, { ok: true, drafts: got.items.map((d) => { const m = Carry.measure(d, today); return { ...d, measure: m, ok: Carry.passes(m) }; }), say: got.say, tokens, retried: fix.length > 0 });
+}
+// GET /api/carry?stage=n — 다른 프로젝트에서 채택한 것 중 그 단계에 닿는 것(최대 3개) · 보류한 것
+function carryGet(q) {
+  const stage = Number(q);
+  if (q == null || q === "" || !Number.isInteger(stage) || stage < 0 || stage >= Nav.STAGES.length) return { ok: false, why: "stage", reason: "단계 번호(0 ~ 7)가 필요해요" };
+  const s = projectNow(), project = s ? s.project : "", book = carryBook();
+  return { ok: true, items: Carry.forStage(book, stage, project), held: Carry.held(book, project) };
+}
+// POST /api/carry { action: adopt | reject | hold, item, reason?, id? } — 사람이 고른 것을 장부에. 반려는 까닭과 함께, 지우지 않는다. 글은 가린 뒤
+function carryPost(body) {
+  const state = { adopt: "adopted", reject: "rejected", hold: "held" }[body.action];
+  if (!state) return [400, { ok: false, reason: "action은 adopt · reject · hold 중 하나" }];
+  const it = body.item, reason = body.reason != null ? body.reason : "", id = body.id != null ? body.id : "";
+  if (!it || typeof it !== "object" || !strOk(it.text, Carry.TEXT_MAX) || (it.why != null && !strOk(it.why, Carry.WHY_MAX)) || !strOk(reason, Carry.REASON_MAX) || !(id === "" || (typeof id === "string" && /^c[0-9a-z]{1,30}$/.test(id))))
+    return [400, { ok: false, reason: "가져갈 것의 모양이 맞지 않음" }];
+  const s = projectNow(), book = carryBook();
+  const next = Carry.decide(book, { ...it, text: Sensitive.redact(it.text), why: Sensitive.redact(String(it.why || "")) }, state, { reason: Sensitive.redact(reason), project: s ? s.project : "", at: Carry.today(), id });
+  if (!next) return [400, { ok: false, reason: state === "rejected" ? "반려는 까닭을 한 줄 적어야 해요 — 반려도 지우지 않고 남겨요" : "가져갈 것의 모양이 맞지 않음" }];
+  try { carrySave(next); } catch { return [500, { ok: false, reason: "이 컴퓨터에 남기지 못했어요 — 다시 해 주세요" }]; }
+  return [200, { ok: true, id: next.items[next.items.length - 1].id }];
+}
+
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──
 // 폴더는 README와 같이 projectNow에서만 고른다. 저장소 만들기는 Floe가 하지 않고 일 넘기기(3-16)로 사용자의 Claude Code에 맡긴다 — 글은 github.js createRequest가 정한다(화면이 글을 보내지 않는다)
 function githubNow() { const s = projectNow(); return GH.status(s ? s.dir : "", s ? s.project : ""); }
@@ -824,6 +883,8 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/apps") return send(res, 200, { ok: true, claudeDesktop: AppLink.status(AppLink.desktopConfig()) });   // 같이 쓸 앱 — 찾았다 · 이었다만(경로는 보이지 않는다)
   if (req.method === "GET" && route === "/api/readme") return send(res, 200, readmeBook());   // C-26 내 작업 책(API.md 3-18) — 읽기만
   if (req.method === "GET" && route === "/api/docs") return send(res, 200, docsRead());   // C-49 폴더의 단계 문서를 다시 읽는다(API.md 3-23-1) — 읽기만
+  if (req.method === "GET" && route === "/api/carry") { const r = carryGet(new URL(req.url, "http://localhost").searchParams.get("stage")); return send(res, r.ok ? 200 : 400, r); }   // C-48 그 단계에 가져온 것(API.md 3-33) — 읽기만
+  if (req.method === "POST" && route === "/api/carry") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = carryPost(body || {}); return send(res, code, out); }   // C-48 채택 · 반려 · 보류
   if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
   if (req.method === "GET" && route === "/api/docmap") { const [code, out] = await docmapNow(new URL(req.url, "http://localhost").searchParams.get("now") || ""); return send(res, code, out); }   // C-45 문서 지도(API.md 3-27) — 읽기만
   if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만
@@ -858,7 +919,8 @@ async function handle(req, res) {
   if (route === "/api/state") { const s = Mcp.cleanState(body); if (!s) return refuse(res, "상태의 모양이 맞지 않음"); floeState = s; return send(res, 200, { ok: true }); }   // C-38 시험판 — 메모리에만
   if (route === "/api/apps/link") { if (!body || body.app !== "claude-desktop") return refuse(res, "모르는 앱"); mcpToken(); const r = AppLink.link(AppLink.desktopConfig(), AppLink.entry({ port: PORT, tokenFile: MCP_TOKEN_FILE })); return r.ok ? send(res, 200, { ok: true }) : refuse(res, r.message, 409); }   // 같이 쓸 앱 — 토큰 파일을 먼저 만든다(값은 설정 파일에 넣지 않는다)
   if (route === "/api/proposals/decide") { const k = proposals.findIndex((x) => body && x.id === body.id); if (k < 0) return refuse(res, "기다리는 제안이 아님", 404); proposals.splice(k, 1); return send(res, 200, { ok: true }); }   // 맞아요 · 아니요 — 적는 일은 화면이
-  if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
+  if (route === "/api/plan") return planAsk(res, body || {});
+  if (route === "/api/carry/draft") return carryDraft(res, body || {});   // 지식 퀘스트 C-48(API.md 3-33) — AI 한 번(기준을 못 채운 초안이 있으면 한 번만 다시)   // C-34 준비 계획판(API.md 3-20) — AI 한 번
   if (route === "/api/docs") { const [code, out] = shipDocs(body); return send(res, code, out); }   // C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(API.md 3-23)
   if (route === "/api/prepare") {   // C-56 R-2 + C-54(API.md 3-29, 2026-10-28) — 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 AI 한 번으로(빠른 모델). 받은 글 · 기준 카드 · 1 · 2단계 결과
     if (!body || !Nav.filled(body.idea)) return refuse(res, "받은 글이 비어 있음");

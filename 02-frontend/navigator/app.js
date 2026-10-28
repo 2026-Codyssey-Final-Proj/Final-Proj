@@ -57,6 +57,7 @@
   const SM = window.NavStageMap;   // C-54 지도(stagemap.js, 2026-10-28) — 도전과제 탭의 카드 지도 · 준비된 퀘스트. 없으면 흐름(한눈에 보기)만
   const QS = window.NavQuestState;   // C-56 퀘스트 상태 넷(queststate.js, 2026-10-28 — 이재엽 버튼 "'옮김' 새 값"): 쓰기 · 옮겨 옴 · 건너뜀 · 먼저. 없으면 전처럼
   const BC = window.NavBaseCard;   // C-56 R-1 기준 카드(basecard.js, 2026-10-28 — 이재엽 버튼 "1단계 관문에서"): 1단계 관문의 카드 한 장 · docs/base.md
+  const CY = window.FloeCarry;   // 지식 퀘스트 C-48 가져갈 것(carry.js, 2026-10-29) — 기준 다섯 · 오늘. 없으면 가져갈 것 카드 없이
   const FDOCS = window.FloeDocs;   // 단계 문서(C-37, 2026-10-25 — 03-backend/navigator/docs.js). 없으면 문서 올리기 없이
   const FP = window.FloePlan;   // 준비 계획 · 맡길 일 규칙(C-34 · C-32 · C-35, 2026-10-24 — 03-backend/navigator/plan.js). 없으면 채팅에 계획 칩이 없고 할 일 적기(AI 진행 판)만
   const AP = window.NavApprove;   // FR-17 승인 카드(2026-10-20) — 서버 없이 보일 예시 카드   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
@@ -144,6 +145,7 @@
     quest: null, idea: "", topic: "", shells: 0,
     results: {}, ship: null,                       // C-37(2026-10-25): 단계마다 보고한 결과(quest.js resultOf — 한곳에서 보기 · 도전과제 지도 · 문서) · 2단계를 마친 뒤 문서 올리기({phase: offer|sent, at}, 이 켜짐 동안만)
     docPrints: {}, restore: null,                  // C-49(2026-10-29): 쓴 단계 문서의 글 지문 {경로: 지문} · 폴더의 기록 카드({phase: offer|stale, …}, 이 켜짐 동안만)
+    carry: null, carryOffer: null, carryUse: {},   // C-48(2026-10-29): 8단계 가져갈 것 카드 · 단계에 들어설 때 지난 프로젝트에서 가져온 것 카드(이 켜짐 동안만) · 이번에 쓰기로 고른 것 {단계: [{id, text}]} — C-51 계획의 근거
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
     qwin: false, qtab: "canvas", boot: null, prep: null, mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
@@ -239,7 +241,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "codeless", "linesDone", "docPrints", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "codeless", "linesDone", "carryUse", "docPrints", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   function load() {
     let s;
@@ -271,6 +273,7 @@
     if (st.card && typeof st.card !== "object") st.card = null; st.cardEdits = {};
     if (typeof st.topic !== "string") st.topic = "";
     if (!st.docPrints || typeof st.docPrints !== "object" || Array.isArray(st.docPrints)) st.docPrints = {};
+    if (!st.carryUse || typeof st.carryUse !== "object" || Array.isArray(st.carryUse)) st.carryUse = {};
     st.results = st.results && typeof st.results === "object" && !Array.isArray(st.results)
       ? Object.fromEntries(Object.entries(st.results).filter(([k, r]) => N.STAGES[k] && r && Array.isArray(r.items) && r.items.every((x) => x && typeof x.name === "string" && Array.isArray(x.lines)))) : {};   // 고장 난 결과는 버린다
     st.back = N.welcome(s, Date.now());
@@ -718,6 +721,8 @@
     if (planNow()) return momentPlan();   // 준비 계획 · 맡길 일(C-35) — 퀘스트 창에서 '맡길 일'을 고르거나 계획 칩을 누르면
     if (st.restore && FDOCS) return momentRestore();   // C-49 폴더의 기록 — 되살리기 · 다시 읽기 · 근거 없음
     if (st.ship && FDOCS) return momentShip();   // 2단계를 마친 뒤 문서 올리기(C-37)
+    if (st.carry && CY) return momentCarry();   // C-48 8단계 — 다음 프로젝트에 가져갈 것
+    if (st.carryOffer && CY) return momentCarryOffer();   // C-48 단계에 들어서면 — 지난 프로젝트에서 가져온 것
     if (gateStop()) return momentStop();   // R-10: 보고했는데 '안 됨'이 남았다 — 관문 앞에서 멈춘다
     if (QU && st.quest && st.quest.phase !== "done" && !st.openInput) return momentQuest();   // 퀘스트(C-22): 받기 전 · 한 줄씩 · 완료 보고
     if (st.ping) return { tone: "gray", mood: "look", badge: "…",
@@ -1275,10 +1280,11 @@
     if (!canLive || st.mode !== "live" || !FDOCS) return;
     let r; try { r = await (await fetch("/api/docs", { cache: "no-store" })).json(); } catch { return; }
     if (!r || !r.ok || r.why === "folder" || !r.stages || typeof r.stages !== "object") return;
+    if (!st.carry) { carryMaybe(); if (st.carry) render(); }   // C-48
     const got = Object.keys(r.stages).map(Number).filter((n) => N.STAGES[n] && r.stages[n].result).sort((a, b) => a - b);
     docsKey = r.key || "";
     const P = DP(), mine = !!r.key && P.project === r.key;
-    if (!Object.keys(st.results).length) { if (got.length && !(mine && P.declined)) { st.restore = { phase: "offer", got, data: r }; render(); } return; }
+    if (!Object.keys(st.results).length) { if (got.length && !(mine && P.declined)) { st.restore = { phase: "offer", got, data: r }; render(); } else if (!got.length) carryLoad(0); return; }   // 새 프로젝트 — C-48 1단계에 가져온 것 · 보류한 것
     if (!mine) return;   // 다른 폴더(또는 지문을 남기기 전)의 기록 — 견주지 않는다(같은 경로라도 다른 프로젝트의 문서다)
     const stale = [], gone = [];
     for (const [k, print] of Object.entries(P.seen || {})) {
@@ -1316,6 +1322,60 @@
     if (!s) { st.finished = true; return; }
     st.j = { stage: n, reason: `폴더의 기록으로 ${LB(n)} "${s.title}"부터 이어서 해요.`, criteria: crits(n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     if (QU) st.quest = QU.retitle(QU.makeQuest(s, crits(n)), st.topic);
+  }
+
+  // ── 지식 퀘스트 C-48(2026-10-29 — PRD 6절 · 9절 1 · 2번): 다음 프로젝트로 가져가기 ──
+  //   8단계(돌아보기)에 오면 단계마다 적은 배운 것으로 가져갈 것 초안(1 ~ 3개, AI 한 번 — 서버가 기준을 못 채운 초안은 한 번만 다시)을 만들지 묻고,
+  //   초안마다 기준 다섯을 보이고 사람이 고쳐 채택 · 반려(까닭) · 보류를 고른다(장부는 이 컴퓨터의 Floe 폴더 — 서버). 단계에 들어서면 다른 프로젝트에서 채택한 것 중
+  //   그 단계에 닿는 것을 최대 3개 보이고 이번에 쓸지 고른다(st.carryUse — C-51 계획의 근거). 진짜 AI 모드만(연습은 장부가 없다)
+  const CARRY_WORD = { adopted: "채택했어요", rejected: "반려했어요(보관)", held: "보류했어요 — 다음 프로젝트를 시작할 때 다시 물어요" };
+  const learnedList = () => Object.entries(st.results).filter(([, r]) => typeof r.learned === "string" && r.learned.trim()).map(([k, r]) => ({ stage: Number(k), text: r.learned.trim().slice(0, 400) }));
+  // 8단계에 있으면 켤 때마다 한 번 묻는다 — '나중에'면 다음에 열 때 다시(관문을 지날 때 · 폴더를 알게 될 때 부른다)
+  let carryAsked = false;
+  function carryMaybe() { if (CY && !carryAsked && st.j && st.j.stage === 7 && !st.finished && st.mode === "live" && canLive) { carryAsked = true; st.carry = { phase: "offer" }; } }
+  async function carryLoad(n) {
+    if (!CY || !canLive || st.mode !== "live") return;
+    let r; try { r = await (await fetch(`/api/carry?stage=${n}`, { cache: "no-store" })).json(); } catch { return; }
+    if (!r || !r.ok) return;
+    const items = Array.isArray(r.items) ? r.items : [], held = n === 0 && Array.isArray(r.held) ? r.held : [];
+    if (items.length || held.length) { st.carryOffer = { n, items, held, pick: items.map((x) => x.id) }; render(); }
+  }
+  async function carryDecide(k, action, reason = "") {
+    const d = st.carry && st.carry.drafts[k]; if (!d) return;
+    let r; try { r = await (await fetch("/api/carry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, item: { text: d.text, why: d.why, stage: d.stage, review: d.review, from: d.from }, ...(reason ? { reason } : {}) }) })).json(); } catch { r = { ok: false, reason: "서버에 닿지 못했어요" }; }
+    if (!r.ok) return say(r.reason || "남기지 못했어요");
+    d.state = { adopt: "adopted", reject: "rejected", hold: "held" }[action]; d.rejecting = false; render();
+  }
+  function momentCarry() {
+    const C = st.carry, meta = `<span class="mm-stage">${LB(7)} · 가져갈 것</span>`, n = learnedList().length;
+    if (C.phase === "offer") return n
+      ? { tone: "blue", mood: "happy", badge: "!", meta, title: "다음 프로젝트에 가져갈 것을 정리해 볼까요?",
+        sub: `단계마다 적은 배운 것 ${n}개와 결정 기록으로 초안을 1 ~ 3개 만들어요. 고쳐서 채택하거나 버려도 돼요 — 정하는 건 나예요.`,
+        acts: [{ label: "초안 만들기", act: "carry-draft", key: "Enter", pri: true }, { label: "나중에", act: "carry-later", kind: "ghost" }] }
+      : { tone: "gray", mood: "think", badge: "", meta, title: "가져갈 것을 만들 재료가 없어요", sub: "관문에서 적은 배운 것이 없어요. 다음 관문부터 한 줄씩 적으면 여기서 모아요.", acts: [{ label: "확인했어요", act: "carry-later", key: "Enter", pri: true }] };
+    const rows = C.drafts.map((d, k) => {
+      const m = CY.measure(d, CY.today()), miss = CY.missing(m);
+      return `<li class="carry-d">${d.state ? `<p><b>${esc(d.text)}</b> — ${CARRY_WORD[d.state]}</p>` : `
+        <input class="mc-input" data-act="carry-text" data-i="${k}" maxlength="${CY.TEXT_MAX}" aria-label="다음엔 이렇게" value="${esc(d.text)}">
+        <p class="mc-sub">왜: ${esc(d.why || "(비어 있어요)")} · 언제 쓰나: ${N.STAGES[d.stage] ? LB(d.stage) : "(정하지 않음)"} · 근거: ${d.from.length ? d.from.map((x) => LB(x)).join(" · ") : "(없음)"}
+          · 다시 볼 날 <input type="date" data-act="carry-review" data-i="${k}" value="${esc(d.review)}" aria-label="다시 볼 날"></p>
+        <p class="mc-sub">${miss.length ? `못 채운 기준: ${miss.join(" · ")}` : "기준 다섯을 다 채웠어요"}</p>
+        ${d.rejecting ? `<input class="mc-input" data-act="carry-reason" data-i="${k}" maxlength="${CY.REASON_MAX}" aria-label="버리는 까닭" placeholder="왜 버리나요?" value="${esc(d.reason || "")}">` : ""}
+        <div class="opts">${btn({ label: "채택", act: "carry-adopt", i: k, kind: "opt" })}${btn({ label: "보류", act: "carry-hold", i: k, kind: "opt" })}${btn({ label: d.rejecting ? "이 까닭으로 반려" : "반려", act: "carry-reject", i: k, kind: "opt" })}</div>`}</li>`;
+    }).join("");
+    const left = C.drafts.filter((d) => !d.state).length;
+    return { tone: "blue", mood: "happy", badge: "!", meta, title: left ? `가져갈 것 초안 ${C.drafts.length}개 — 고쳐서 고르세요` : "가져갈 것을 다 정했어요",
+      sub: esc(C.say || ""), body: `<ol class="carry">${rows}</ol>`,
+      acts: [{ label: left ? "나중에 마저 할게요" : "확인했어요", act: "carry-later", key: left ? "" : "Enter", kind: left ? "ghost" : "", pri: !left }] };
+  }
+  function momentCarryOffer() {
+    const O = st.carryOffer, meta = `<span class="mm-stage">${LB(O.n)} · 지난 프로젝트에서</span>`;
+    const items = O.items.map((x, k) => btn({ label: x.text, act: "carry-use", i: k, kind: "opt toggle", pressed: O.pick.includes(x.id) })).join("");
+    const held = O.held.map((x, k) => `<li>${esc(x.text)} ${btn({ label: "채택", act: "carry-held-adopt", i: k, kind: "opt" })}</li>`).join("");
+    return { tone: "blue", mood: "happy", badge: "!", meta, title: O.items.length ? "지난 프로젝트에서 가져온 것이 있어요 — 이번에 쓸까요?" : "보류해 둔 가져갈 것이 있어요",
+      sub: O.items.length ? "고른 것은 이 단계의 준비 계획에 근거로 들어가요." : "채택하면 다음 프로젝트부터 그 단계에서 보여요.",
+      body: `${items ? `<div class="opts">${items}</div>` : ""}${held ? `<p class="mc-sub">보류한 것</p><ul class="carry">${held}</ul>` : ""}`,
+      acts: [{ label: "이대로", act: "carry-use-done", key: "Enter", pri: true }, { label: "이번엔 안 써요", act: "carry-use-none", kind: "ghost" }] };
   }
 
   async function shipGo(publicOk = false) {
@@ -3241,7 +3301,9 @@
     st.learnDraft = ""; st.goalDraft = null;
     if (st.qwin) loadFiles();   // 작업실 파일 칸 — 장이 바뀌면 '● 지금' · 펼친 폴더도 바뀐다(R-8, 새 맥락 리뷰)
     if (QU && FDOCS && s.n >= 1 && st.results[0] && st.results[1]) { st.ship = { phase: "offer" }; st.qfocus = "stage"; }   // 마지막(8단계) 관문도(2026-10-25 리뷰)   // 2단계부터 관문마다 — 단계 문서 · 기획서 · 결정 기록을 다시 묶어 올릴지 묻는다(C-37 → C-39 버튼 "2단계부터 관문마다")
+    carryMaybe();   // C-48 8단계(돌아보기)에 오면 가져갈 것을 정리할지
     render();
+    if (nx) carryLoad(nx.n);   // C-48 지난 프로젝트에서 그 단계에 가져온 것(있으면 카드)
     if (QU && nx && N.DRAFT_STAGES.includes(nx.n) && st.results[nx.n - 1]) stageDraft(nx.n);   // 지난 장 결과로 이 장의 초안 — 먼저 생각하고 동의를 구한다(C-37)
     else if (nx) questText();   // 다음 장의 퀘스트 글(진짜 AI)
     celebrate(nx ? "stage" : "finish");
@@ -3374,6 +3436,34 @@
     // 문서 올리기(C-37) — 올리기 · 나중에(도전과제 지도에서 다시) · 확인 · 지도에서 열기
     "ship-go": () => shipGo(),
     "ship-public": () => shipGo(true),   // C-52 공개 저장소 — 저장소마다 처음 한 번
+    // C-48 가져갈 것 — 8단계 초안(AI 한 번) · 채택 · 반려(까닭) · 보류, 단계에 들어서면 지난 프로젝트에서 가져온 것 고르기
+    "carry-draft": async () => {
+      if (!st.carry || st.carry.phase !== "offer") return;
+      const r = await callAI("/api/carry/draft", { topic: st.topic || "", lessons: learnedList() });
+      if (!r.ok) { render(); return say(r.reason || "초안을 만들지 못했어요"); }
+      st.carry = { phase: "drafts", drafts: r.drafts.map((d) => ({ text: d.text, why: d.why, stage: d.stage, review: d.review, from: d.from })), say: r.say || "" };
+      st.tokens = r.tokens || 0; fetchUsage(); render();
+    },
+    "carry-adopt": (i) => carryDecide(i, "adopt"),
+    "carry-hold": (i) => carryDecide(i, "hold"),
+    "carry-reject": (i) => {
+      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d) return;
+      if (!d.rejecting) { d.rejecting = true; return render(); }
+      if (!String(d.reason || "").trim()) return say("버리는 까닭을 한 줄 적어 주세요 — 반려도 지우지 않고 남겨요");
+      carryDecide(i, "reject", d.reason.trim());
+    },
+    "carry-later": () => set({ carry: null }),
+    "carry-use": (i) => { const O = st.carryOffer, x = O && O.items[i]; if (!x) return; O.pick = O.pick.includes(x.id) ? O.pick.filter((y) => y !== x.id) : [...O.pick, x.id]; render(); },
+    "carry-held-adopt": async (i) => {
+      const O = st.carryOffer, x = O && O.held[i]; if (!x) return;
+      let r; try { r = await (await fetch("/api/carry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "adopt", item: x, id: x.id }) })).json(); } catch { r = { ok: false }; }
+      if (!r.ok) return say(r.reason || "남기지 못했어요");
+      O.held = O.held.filter((y) => y.id !== x.id);
+      if (!O.items.length && !O.held.length) st.carryOffer = null;
+      render(); say("채택했어요 — 다음 프로젝트부터 그 단계에서 보여요");
+    },
+    "carry-use-done": () => { const O = st.carryOffer; if (!O) return; st.carryUse = { ...st.carryUse, [O.n]: O.items.filter((x) => O.pick.includes(x.id)).map((x) => ({ id: x.id, text: x.text })) }; st.carryOffer = null; save(); render(); },
+    "carry-use-none": () => { const O = st.carryOffer; if (O) st.carryUse = { ...st.carryUse, [O.n]: [] }; st.carryOffer = null; save(); render(); },
     // C-49 폴더의 기록 — 되살리기(이 브라우저에 기록이 없을 때) · 다시 읽기(낡음) · 나중에(다음에 열 때 다시)
     "restore-go": () => {
       const R = st.restore; if (!R || R.phase !== "offer") return;
@@ -3388,6 +3478,7 @@
       st.restore = null;
       if (nx > 0) resumeAt(nx);
       save(); render(); say(`${R.got.map((n) => LB(n)).join(" · ")} 기록을 폴더에서 되살렸어요.`);
+      if (N.STAGES[nx]) carryLoad(nx);   // C-48
       if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1]) stageDraft(nx); else if (st.j && st.j.stage === nx) questText();
     },
     "restore-read": () => {
@@ -3788,7 +3879,8 @@
     if (a === "text") st.text = t.value;
     if (a === "question") st.question = t.value;
     if (a === "skip-reason") { st.skip = { ...(st.skip || {}), reason: t.value.slice(0, 200) }; return; }
-    if (a === "learned") { st.learnDraft = t.value.slice(0, 400); return; }   // C-47 배운 것 — 다시 그리지 않는다(관문 '네'를 지나며 저장)
+    if (a === "learned") { st.learnDraft = t.value.slice(0, 400); return; }
+    if (a === "carry-text" || a === "carry-review" || a === "carry-reason") { const d = st.carry && st.carry.drafts && st.carry.drafts[Number(t.dataset.i)]; if (!d) return; if (a === "carry-text") d.text = t.value.slice(0, CY.TEXT_MAX); else if (a === "carry-review") { d.review = t.value; render(); } else d.reason = t.value.slice(0, CY.REASON_MAX); return; }   // C-48 — 글은 다시 그리지 않는다, 날짜는 기준을 다시 재려고 그린다   // C-47 배운 것 — 다시 그리지 않는다(관문 '네'를 지나며 저장)
     if (a === "goal-new") { st.goalDraft = { changed: t.value.slice(0, 200) }; return; }
     if (a === "ftext") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.text = t.value; const d = f.text !== f.saved; if (d !== f.dirty) { f.dirty = d; render(); } return; }   // 파일 고치기(C-43) — 바뀜 표시만 다시 그린다(글 칸이 흔들리지 않게)
     if (a === "fn-find") { st.fnFind = t.value.slice(0, 60); render(); return; }
