@@ -180,7 +180,8 @@
   // 멈춰 둔 단계인가(FR-5 보류) — 멈춰 두면 다 했어도 펼쳐 두지 않는다
   const holding = () => !!(st.hold && st.j && st.hold.stage === st.j.stage && !st.finished);
   let colHover = false, colTyping = false;   // 작업실 옆 칸(win.js)에서 온 '마우스 올림' · '글 쓰는 중' — 섬 창의 hovering · typing과 같은 뜻(C-46, 새 맥락 리뷰 2026-10-27 막힘: 옆 칸에 글을 쓰는 중에도 접혔다)
-  const pinned = () => st.userPin || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || st.openInput || typing() || colTyping;   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
+  // apWait · blocked · stall — 허락 카드 · 막힌 일 · 멈춘 것 같은 일은 사람이 고를 때까지 접지 않는다(F-69 · C-50, 새 맥락 리뷰 2026-10-28 — 전에는 15초 뒤 알약으로 접혀 카드가 안 보였다)
+  const pinned = () => st.userPin || !!st.apWait || !!(st.blocked && !st.blocked.retrying) || !!(st.stall && st.stall.lv !== "calm" && st.stall.wait !== st.stall.lv) || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || st.openInput || typing() || colTyping;   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
   // 플로로의 [표정, 말] — 기다림·경고·오류가 먼저, 그다음 확인 질문·잠시 멈추기(understand.js), 나머지는 navigator.js
   function face() {
     const base = N.face({ busy: st.busy, warn: st.warn, error: st.error, gate: st.screen === "gate", step: st.step,
@@ -982,8 +983,8 @@
     const fx = QS ? qstates(q)[i] : null;   // C-56 먼저 — 앞 칸이 비어 할 수 없다: 갈 곳을 말하고, 관문은 닫힌 채(적지 않으면 완료 보고가 안 된다)
     // A-04(2026-10-28 이재엽 "그냥 md파일을 만드는 작업일 수 있기 때문임"): 6단계에 코드 파일이 없으면 닫지 않고 묻는다 — 예: Claude Code에 실행할 수 있는 코드를 맡김 · 아니요: 코드 없이 지남(결정 기록에 남김)
     if (fx && fx.state === "first" && fx.code) return { tone: "amber", mood: "think", badge: "?", meta, title: "코드 파일을 만드시겠습니까?",
-      sub: "이 폴더에 코드 파일이 아직 없어요. 프로그램을 만드는 일이면 '예' — Claude Code가 문서대로 실행할 수 있는 파일을 만들어요. 문서만 만드는 일이면 '아니요' — 코드 없이 이 단계를 해요.",
-      foot: "아니요를 고르면 결정 기록의 관문 줄에 '코드 없이 지남'으로 남아요",
+      sub: "이 폴더에 코드 파일이 아직 없어요. 프로그램을 만드는 일이면 '예', 문서만 만드는 일이면 '아니요'예요.",
+      foot: "아니요 — 결정 기록에 '코드 없이 지남'으로 남아요",
       acts: [...(canLive && st.mode !== "fixture" ? [{ label: "예 — Claude Code에 맡기기", act: "code-yes", key: "Enter", pri: true }] : []), { label: "아니요 — 코드 없이 하기", act: "code-no", ...(canLive && st.mode !== "fixture" ? {} : { key: "Enter", pri: true }) }, { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
     if (fx && fx.state === "first") return { tone: "amber", mood: "think", badge: "!", meta, title: `먼저 — ${esc(QU.shortOf(q.objs[i].name))}은 아직 할 수 없어요`, sub: `${esc(fx.why)}. 그 칸을 채운 뒤에 돌아와요 — 지금 적어도 관문은 닫혀 있어요.`,
       acts: [{ label: `${LB(fx.go.s)} ${ROMAN(fx.go.i)} 보기`, act: "first-go", kind: "soft" }, { label: "아직 못 함으로 적기", act: "first-notyet", kind: "ghost" }, { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
@@ -991,10 +992,10 @@
     if (rv) return { tone: "amber", mood: "think", badge: "?", meta, title: `${ROMAN(rv.i)}. ${esc(QU.nameOf(q, rv.i))} — 적어 둔 줄과 달라요`,
       sub: `적어 둔 줄 “${esc((q.lines[rv.i] || [])[0] || "")}” · ${esc(st.refit.tool)}가 한 일로 본 새 줄 “${esc(rv.text)}”`, foot: "새 줄로 바꾸거나 적어 둔 줄을 그대로 둬요 — 플로로는 적은 줄을 덮지 않아요",
       acts: [{ label: "새 줄로", act: "refit-use", i: rv.i, key: "Enter", pri: true }, { label: "그대로 둘래요", act: "refit-keep", i: rv.i, key: "Escape" }] };
-    if (q.draft) return { ...momentConfirm(q, i, meta), ...refitBanner(q) };   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
+    if (q.draft) { const c = momentConfirm(q, i, meta); return { ...c, ...refitBanner(q), acts: [...c.acts, ...buildActs(q.chap)] }; }   // F-70 — 초안을 확인하는 중에도 코드 맡기기(A-02)   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
     return { tone: "blue", mood: f[0], badge: "?", meta, ...refitBanner(q), title: `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}`, sub: `${esc(QU.askOf(q, i))}${QU.doneOf(q, i) ? ` <small class="done-when">끝: ${esc(QU.doneOf(q, i))}</small>` : ""}${o.term ? ` ${termTag(o.term)}` : ""}`,
-      body: foundHTML(q, i), foot: "아래 칸에 한 줄 적고 보내기를 눌러요", acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
+      body: foundHTML(q, i), foot: "아래 칸에 한 줄 적고 보내기를 눌러요", acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), ...buildActs(q.chap), { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
   }
   // 1단계 초안 확인(C-36, 2026-10-25 — 이재엽 "불편한게 맞는 내용은 이게 플로로가 생각한 내용인데 맞나요 … 누가 쓰는 내용은 … 사람에 대한 내용이 있으면 이 내용이 맞는지 요청을 보내고
   //   없다면 본인 / 소수 / 불특정다수 … 얼마 크게도 … 짧음 / 보통 / 긺"): Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가(글에 사람이 있으면) — 맞나요, Ⅲ 사람이 없으면 셋 중 고르기, Ⅳ 플로로가 본 크기 + 셋 중 고르기.
@@ -1042,12 +1043,7 @@
       if (st.j && !st.openInput) out.push({ label: "바뀐 작업 보여 주기", act: "open-input", kind: "ghost" });
       if (FP) out.push(planChip());
       if (PR && st.j && canLive && st.mode !== "fixture" && !st.presetPick) out.push({ label: "문서 틀", act: "preset-open", kind: "ghost" });   // C-44 — 지금 장 문서를 틀로 맡기기
-      if (BUILD && canLive && st.mode !== "fixture") {   // F-70(A-02) — 5단계 뼈대 · 6단계 기능 줄 · 6 · 7단계 돌려 보기를 Claude Code에
-        const n = nowStage();
-        if (n === 4) out.push({ label: "뼈대 코드 맡기기", act: "build-skeleton", kind: "soft" });
-        if (n === 5) out.push({ label: "기능 줄 맡기기", act: "line-open", kind: "soft" });
-        if (n === 5 || n === 6) out.push({ label: "돌려 보기", act: "run-go", kind: "ghost" });
-      }
+      if (!(QU && st.quest && st.quest.phase !== "done")) out.push(...buildActs(nowStage()));   // F-70 — 퀘스트 카드가 없을 때(퀘스트를 마친 뒤)만 여기에. 있으면 퀘스트 카드의 답 줄에(A-02)
     }
     out.push({ label: unreadN() ? `알림 ${unreadN()}` : "알림", act: "base-alerts", kind: "ghost" });
     return out;
@@ -1507,13 +1503,20 @@
   // ── F-70 코드 맡기기(2026-10-28 — 이재엽 "결과물이 안나오는 문제 해결", 결정 모음 A-02 · A-04 · A-05): 5단계 뼈대 · 6단계 기능 줄마다 · 6 · 7단계 돌려 보기 ──
   //   글과 끝 조건은 build.js가 단계 결과로 짓고, 맡기기는 같은 길(/api/task/start — 허락은 섬, 끝에 기준마다 보고). 끝나면 파일 칸을 다시 읽고(코드 수 · 결과 파일), 보고를 채팅에.
   //   맡긴 일은 F-69 지켜보기(watchTask)가 맡는다 — 막히면 막힘 카드. 연습 · 서버 없이는 맡기지 않는다(FR-10)
+  // 6단계 Ⅰ('확인 방법을 먼저 정하고 만들기')에 사람이 적은 줄 — 지금 퀘스트, 없으면 6단계 결과에서(ⓒ 끝 조건으로)
+  const CHECK_FIRST = "확인 방법을 먼저 정하고 만들기";
+  const checksNote = () => { const q = st.quest && st.quest.chap === 5 ? st.quest : null, k = q ? q.objs.findIndex((o) => o.name === CHECK_FIRST) : -1;
+    if (k >= 0) return [...(q.lines[k] || [])]; const r = st.results[5], it = r && r.items ? r.items.find((x) => x.name === CHECK_FIRST) : null; return it ? [...it.lines] : []; };
   const nowStage = () => (st.quest && st.quest.phase !== "done" ? st.quest.chap : st.finished ? N.STAGES.length - 1 : atStage());
+  // 5단계 '뼈대 코드 맡기기' · 6단계 '기능 줄 맡기기' · 6 · 7단계 '돌려 보기'(A-02 — 퀘스트 안의 버튼). 진짜 폴더 · 진짜 AI 모드에서만
+  const buildActs = (n) => (!BUILD || !canLive || st.mode === "fixture" ? [] : [...(n === 4 ? [{ label: "뼈대 코드 맡기기", act: "build-skeleton", kind: "soft" }] : []),
+    ...(n === 5 ? [{ label: "기능 줄 맡기기", act: "line-open", kind: "soft" }] : []), ...(n === 5 || n === 6 ? [{ label: "돌려 보기", act: "run-go", kind: "ghost" }] : [])]);
   const BUILD_SAID = { build: "뼈대 코드를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 '허용'을 눌러 주세요", code: "실행할 수 있는 코드를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 '허용'을 눌러 주세요",
     line: "이 기능 줄을 Claude Code에 맡겼어요 — 허락 카드가 뜨면 '허용'을 눌러 주세요", run: "돌려 보기를 Claude Code에 맡겼어요 — 명령 허락 카드가 뜨면 '허용'을 눌러 주세요" };
   async function buildGo(kind, job, extra = {}) {
     if (!BUILD || !job) return;
     if (!canLive || st.mode === "fixture") return say("연습 모드라 맡기지 않아요 — 진짜 폴더를 연결한 앱에서 돼요");
-    if (tw) return say("맡긴 일이 아직 돌고 있어요 — 끝난 뒤에 맡겨요");
+    if (tw && !(st.blocked && st.blocked.at === tw.at)) return say("맡긴 일이 아직 돌고 있어요 — 끝난 뒤에 맡겨요");   // 막혀 있는 일은 새로 맡기면 끝맺는다(watchTask)
     const w = sensitive(job.text); if (w.length) return say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요 — 그 칸을 고친 뒤 다시`);
     st.planBusy = "hand";
     const r = await callAI("/api/task/start", { text: job.text, checks: job.checks });
@@ -2344,6 +2347,7 @@
   let tw = null, twTimer = null, twBusy = false;   // tw — 지금 지켜보는 맡긴 일 { at, kind }
   function watchTask(task, kind) {
     if (!task || !Number.isFinite(task.at) || !canLive) return;
+    if (tw && tw.at !== task.at) { const h = TASK_END[tw.kind] || {}; st.stall = null; if (h.lost) h.lost(); else if (h.stop) h.stop(); }   // 다른 일이 덮었다 — 앞 일을 끝맺는다(계획 줄을 다시 맡길 수 있게, 새 맥락 리뷰 2026-10-28)
     tw = { at: task.at, kind };
     if (st.blocked && st.blocked.at !== task.at) st.blocked = null;
     clearInterval(twTimer); twTimer = setInterval(twTick, 3000);
@@ -2359,9 +2363,11 @@
     if (!t || t.at !== w.at) { twStop(); st.blocked = null; st.stall = null; if (h.lost) h.lost(); else if (h.stop) h.stop(); render(); return; }   // 다른 일 — 이 일의 결과는 잃었다
     if (t.state === "running") { stallCheck(t, w.kind); return; }
     st.stall = null;
+    if (t.state === "blocked" && st.blocked && st.blocked.at === t.at && !st.blocked.retrying) return;   // 이미 카드로 물었다 — 훅 알림이 또 깨워도 단계를 올리지 않는다(새 맥락 리뷰 2026-10-28)
     if (t.state === "blocked") { clearInterval(twTimer); twTimer = null; onBlocked(t, w.kind); return; }
     if (t.state === "stopped") { twStop(); st.blocked = null; if (h.stop) h.stop(); render(); return; }   // C-50 사람이 멈췄다(다른 화면에서)
     twStop(); st.blocked = null;
+    if (t.state === "done" && t.denied > 0) logMsg("sys", `허락 카드에서 거절한 ${t.denied}번은 하지 않았어요`);   // 사람이 고른 거절뿐이라 끝남 — 그래도 빠진 것은 말한다(security-records 6-1)
     if (h.end) h.end(t);
     render();
   }
@@ -2382,14 +2388,14 @@
     return { tone: "amber", mood: "think", badge: "!", meta: `<span class="mm-stage">맡긴 일 · ${over ? "시간 초과" : "멈춘 것 같아요"}</span>`,
       title: over ? `${min}분 넘게 아무 소식이 없어요` : `Claude Code가 ${min}분째 조용해요 — 멈춘 것 같아요`,
       sub: "허락을 기다리거나 오래 걸리는 일일 수 있어요. 끄지 않고 더 기다릴 수도, 멈추고 다시 맡기거나 직접 할 수도 있어요.",
-      acts: [{ label: "더 기다리기", act: "stall-wait", key: "Enter", pri: true }, { label: "멈추고 다시 맡기기", act: "stall-again" }, { label: "직접 하기", act: "stall-self" }, { label: "멈추고 그만두기", act: "stall-stop", kind: "ghost" }] };
+      acts: [{ label: "더 기다리기", act: "stall-wait", key: "Enter", pri: true }, { label: "멈추고 다시 맡기기", act: "stall-again" }, { label: "멈추고 직접 하기", act: "stall-self" }, { label: "멈추고 그만두기", act: "stall-stop", kind: "ghost" }] };
   }
   // 사람이 고르면 멈춘다 — 지켜보기를 잠시 세우고(멈춘 결과를 끝으로 읽지 않게) 서버가 그 일을 끌 때까지 기다린다
   async function stallHalt() {
     const s = st.stall; if (!s) return null;
     clearInterval(twTimer); twTimer = null; st.stall = null;
     try { await fetch("/api/task/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at: s.at }) }); } catch {}
-    for (let k = 0; k < 20; k++) { let t = null; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch {} if (!t || t.at !== s.at || t.state !== "running") break; await new Promise((r) => setTimeout(r, 250)); }
+    for (let k = 0; k < 40; k++) { let t = null; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch {} if (!t || t.at !== s.at || t.state !== "running") break; await new Promise((r) => setTimeout(r, 250)); }
     return s;
   }
   // 막혔다 — ①이면 바로 다시 맡기고, ② · ③이면 카드(momentBlocked). 접혀 있어도 펼친다(허락 카드와 같이 — 사람이 골라야 이어진다)
@@ -2400,11 +2406,14 @@
     if (st.ui !== "home") go("home"); else render();
   }
   async function retryBlocked(way) {
-    const b = st.blocked; if (!b) return;
+    const b = st.blocked; if (!b || b.retrying) return;
+    if (way !== "brief") st.blocked = { ...b, retrying: true, brief: "" };   // 기다리는 동안 카드를 감춰 두 번 누르지 않게
     let r; try { r = await (await fetch("/api/task/retry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at: b.at, way }) })).json(); } catch { r = { ok: false, reason: "서버에 닿지 않았어요" }; }
-    if (!r || !r.ok) { render(); return say((r && r.reason) || "다시 맡기지 못했어요"); }
+    if (!r || !r.ok) {
+      if (b.stall) { st.blocked = null; watchTask({ at: b.at }, b.kind); } else st.blocked = b;   // 멈춤에서 온 다시 맡기기가 안 되면 지켜보기로 돌아간다(엉뚱한 '0번 막힘' 카드를 남기지 않게)
+      render(); return say((r && r.reason) || "다시 맡기지 못했어요");
+    }
     if (way === "brief") { st.blocked = { ...b, brief: r.brief || "" }; return render(); }
-    st.blocked = { ...b, retrying: true, brief: "" };
     watchTask(r.task, b.kind);
     render();
     say(b.step === 1 ? "허락을 못 받아 막혔어요 — 허락 카드를 다시 띄울게요. 카드가 뜨면 '허용'을 눌러 주세요"
@@ -2502,7 +2511,7 @@
     try { j = await (await fetch("/api/approvals", { credentials: "same-origin" })).json(); } catch { return; }
     if (!j || !j.ok || !Array.isArray(j.items)) return;
     const before = approvals.map((a) => a.id).join(), fresh = j.items.filter((a) => !apKnown.has(a.id));
-    apMode = "live"; approvals = j.items.filter((a) => st.apSure !== a.id || true);
+    apMode = "live"; approvals = j.items.filter((a) => st.apSure !== a.id || true); st.apWait = approvals.length > 0;
     for (const a of j.items) apKnown.add(a.id);
     if (fresh.length) {
       // 허락 카드는 채팅의 지금 말 위에(C-35, 2026-10-24 — 오버레이가 일하는 자리). AI 진행 판을 보고 있으면 거기에도 있으니 그대로, 다른 판은 닫는다
@@ -3013,7 +3022,7 @@
     if (QU && st.quest && st.quest.phase === "quest" && QU.isDone(st.quest) && st.quest.chap === j.stage) {   // 다 적은 퀘스트를 살펴본 결과가 왔다 = 완료 보고가 됐다
       st.quest = { ...st.quest, phase: "done" };
       // 단계 결과(C-37) — 한곳에서 보기 · 도전과제 지도 · 다음 장 초안 · 문서. C-39: 칸을 다 확인한 날 · 완료 기준과 근거(문서의 증빙)
-      st.results = { ...st.results, [st.quest.chap]: { ...QU.resultOf(st.quest), at: ymd(), check: checkOf(j), ...(checkBy ? { checkBy } : {}), ...(skipOf(j) ? { skip: skipOf(j) } : {}), ...(st.quest.chap === 5 && st.codeless ? { nocode: true } : {}) } };   // skip — 건너뛴 기준의 까닭(C-56 · F-62)
+      st.results = { ...st.results, [st.quest.chap]: { ...QU.resultOf(st.quest), at: ymd(), check: checkOf(j), ...(checkBy ? { checkBy } : {}), ...(skipOf(j) ? { skip: skipOf(j) } : {}), ...(st.quest.chap === 5 && st.codeless && !(factsNow().codeFiles > 0) ? { nocode: true } : {}) } };   // 아니요 뒤에 코드가 생겼으면 '코드 없이'로 남기지 않는다   // skip — 건너뛴 기준의 까닭(C-56 · F-62)
     }
     // 다시 살펴본 결과 — 결정 기록의 '기준 n/m'이 관문을 연 살펴보기와 같게(F-60 ①: test-1은 첫 살펴보기 1/4만 남았다)
     else if (st.results[j.stage] && !st.results[j.stage].passed) st.results = { ...st.results, [j.stage]: { ...st.results[j.stage], check: checkOf(j), ...(checkBy ? { checkBy } : {}) } };
@@ -3170,7 +3179,7 @@
     },
     judge: () => { if (refuse(mealWhy())) return; st.notice = ""; judge(false); },
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
-    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, ship: null, topic: "", prep: null, mapSel: null }); ACT.ex(S.examples.indexOf(S.first)); },
+    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [] }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => RETRY[st.warn.then](),
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
@@ -3212,7 +3221,7 @@
     "build-skeleton": () => buildGo("build", BUILD && BUILD.skeletonTask({ results: st.results, topic: st.topic })),
     "line-open": () => { st.linePick = true; render(); },
     "line-x": () => { st.linePick = false; render(); },
-    "line-go": (i) => { const l = BUILD ? BUILD.features(st.results)[i] : ""; if (l) buildGo("line", BUILD.lineTask({ line: l, results: st.results }), { line: l }); },
+    "line-go": (i) => { const l = BUILD ? BUILD.features(st.results)[i] : ""; if (l) buildGo("line", BUILD.lineTask({ line: l, results: st.results, checksNote: checksNote() }), { line: l }); },
     "run-go": () => { st.runOut = null; buildGo("run", BUILD && BUILD.runTask()); },
     "run-done": () => { st.runOut = null; render(); },
     "result-open": (k) => { const f = st.runOut && st.runOut.files[k || 0]; if (!f) return; const i = st.files && st.files.list ? st.files.list.findIndex((x) => !x.dir && x.path === f.path) : -1; if (i < 0) return say("파일 목록에서 그 파일을 못 찾았어요 — 작업실을 다시 열어요"); openQwin("quest"); openFile(i); },
@@ -3220,8 +3229,8 @@
     "code-no": () => { st.codeless = { at: ymd() }; save(); if (st.quest) st.quest = applyStates(st.quest); render(); say("코드 없이 이 단계를 해요 — 결정 기록에 '코드 없이 지남'으로 남겨요"); },
     // C-50 멈춘 것 같을 때(A-06) — 더 기다리기(다음 단계까지 묻지 않음) · 멈추고 다시 맡기기 · 직접 하기(멈추고 맡길 글) · 멈추고 그만두기
     "stall-wait": () => { if (!st.stall) return; st.stall.wait = st.stall.lv; render(); say("더 기다릴게요 — 소식이 오면 알려 드려요"); },
-    "stall-again": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("again"); },
-    "stall-self": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("brief"); },
+    "stall-again": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, stall: true, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("again"); },
+    "stall-self": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, stall: true, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("brief"); },
     "stall-stop": async () => { const s = await stallHalt(); if (!s) return; tw = null; const h = TASK_END[s.kind]; if (h && h.stop) h.stop(); render(); say("멈췄어요 — 언제든 다시 맡길 수 있어요"); },
     // F-69 막힌 일(A-03) — 다시 맡기기 · 명령 없이 파일만 · 직접 하기(맡길 글) · 글 복사 · 다 했어요 · 그만두기
     "blocked-again": () => retryBlocked("again"),
@@ -3835,7 +3844,7 @@
     if (q.approve && AP) { approvals = AP.EXAMPLE.map((a) => ({ ...a, at: Date.now() })); apMode = "example"; st.task = { text: "", lines: null, say: "", sent: "" }; st.apSure = ""; }   // &approve=1 — 예시 승인 카드(FR-17, 녹화 · 시험용)
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
-    if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, ship: null, prep: null, mapSel: null });
+    if (q.start) Object.assign(st, { codeless: null, linesDone: [], j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, ship: null, prep: null, mapSel: null });
     // #feed — 먹이 주기의 정리 장면(예시 먹이, C-15 — 녹화 · 시험용)
     if (q.feed && FD) Object.assign(st, { j: null, finished: false, todos: null, tab: "today", hold: null, text: FD.EXAMPLE, meal: feedState(FD.EXAMPLE, true) });
     if (q.ex !== undefined) {

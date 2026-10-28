@@ -78,7 +78,7 @@ const decide = (body) => call("POST", "/api/approvals/decide", { body });
 // ════════ 확인 값 — 여섯 주소 모두 ════════
 test("새 주소 여섯은 확인 값이 없거나 틀리면 403, 본문을 읽기 전에", async () => {
   const no = /확인 값이 없거나 맞지 않음/;
-  for (const [m, u] of [["POST", "/api/approval"], ["GET", "/api/approvals"], ["POST", "/api/approvals/decide"], ["GET", "/api/task"], ["POST", "/api/task/tidy"], ["POST", "/api/task/start"]]) {
+  for (const [m, u] of [["POST", "/api/approval"], ["GET", "/api/approvals"], ["POST", "/api/approvals/decide"], ["GET", "/api/task"], ["POST", "/api/task/tidy"], ["POST", "/api/task/start"], ["POST", "/api/task/retry"], ["POST", "/api/task/stop"]]) {   // retry · stop — F-69 · C-50(2026-10-28)
     refused(await call(m, u, { token: false, body: m === "POST" ? {} : undefined }), 403, no, u);
     refused(await call(m, u, { token: false, headers: { "X-Nav-Token": "wrong" }, body: m === "POST" ? {} : undefined }), 403, no, u);
   }

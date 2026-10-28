@@ -50,6 +50,10 @@ test("lineTask(ⓒ) — 그 줄 하나만, 확인 방법을 먼저, 첫 끝 조�
   assert.match(j.checks[0], /추천지를 고르면/); assert.match(j.checks[1], /먼저/);
   assert.ok(fits(j));
   assert.equal(B.lineTask({ line: "   " }), null);
+  // 6단계 Ⅰ에 사람이 적은 확인 방법이 있으면 그대로 넘기고 끝 조건도 그것으로(넘김 문서 ⓒ "끝 조건은 그 줄의 확인 방법", 새 맥락 리뷰 2026-10-28)
+  const w = B.lineTask({ line, results: RESULTS, checksNote: ["리포트: 날짜 2026-11-01을 넣으면 out/report.md가 생긴다"] });
+  assert.match(w.text, /6단계에 적은 확인 방법/); assert.match(w.text, /out\/report\.md가 생긴다/); assert.match(w.checks[1], /6단계에 적은 확인 방법/);
+  assert.ok(fits(w));
   assert.ok(fits(B.lineTask({ line: "라".repeat(1000), results: RESULTS })), "긴 줄도 한도 안");
 });
 
@@ -65,10 +69,9 @@ test("resultFiles — 보고 근거에 나온 경로 중 파일 목록에 있는
   assert.deepEqual(B.resultFiles(rep, files), [{ i: 4, path: "out/report.md" }, { i: 5, path: "src/app.py" }, { i: 1, path: "README.md" }]);
   assert.deepEqual(B.resultFiles({ items: [{ evidence: "없는/파일.txt" }] }, files), []);
   assert.deepEqual(B.resultFiles(null, files), []); assert.deepEqual(B.resultFiles(rep, null), []);
+  // 경로 경계로 맞춘다 — 'app.py'가 'src/myapp.py' · 'src/app.py'에 맞지 않게(새 맥락 리뷰 2026-10-28)
+  const root = [{ path: "app.py" }, { path: "src/app.py" }];
+  assert.deepEqual(B.resultFiles({ items: [{ evidence: "src/myapp.py 와 src/app.py 를 고쳤어요" }] }, root), [{ i: 1, path: "src/app.py" }]);
+  assert.deepEqual(B.resultFiles({ items: [{ evidence: "`app.py` · ./out 확인" }] }, root), [{ i: 0, path: "app.py" }]);
 });
 
-test("codeFiles — 폴더가 아닌 코드 파일 수, 목록이 없으면 null(모름)", () => {
-  assert.equal(B.codeFiles([{ path: "README.md" }, { path: "src", dir: true }, { path: "src/app.py" }, { path: "web/index.html" }]), 2);
-  assert.equal(B.codeFiles([{ path: "docs/a.md" }]), 0);
-  assert.equal(B.codeFiles(null), null);
-});

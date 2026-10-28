@@ -107,4 +107,4 @@ function main(argv) {
 }
 
 if (require.main === module) process.exitCode = main(process.argv.slice(2));
-module.exports = { addHooks, removeHooks, hookReady, approveHookPath, COMMAND, EVENTS, APPROVE_COMMAND, APPROVE_EVENT, APPROVE_TIMEOUT };
+module.exports = { addHooks, removeHooks, hookReady, COMMAND, EVENTS, APPROVE_COMMAND, APPROVE_EVENT, APPROVE_TIMEOUT };

@@ -163,3 +163,20 @@ test("A-04 예 — 실행할 수 있는 코드를 맡긴다('코드 파일이 �
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });
+
+test("A-04 '아니요'는 그 프로젝트에서만 — 처음부터 다시 시작하면 6단계에서 다시 묻는다(새 맥락 리뷰 2026-10-28 막힘 2)", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
+  try {
+    const { page, seen } = await openLive(browser, "#ex=5&q=quest");
+    await openIsland(page);
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 8000 });
+    await click(page, ".mc.chat [data-act=code-no]");
+    assert.ok(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).codeless));
+    await page.goto(`http://127.0.0.1:${port}/#start`, { waitUntil: "load" }); await wait(600);
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).codeless), null, "새로 시작하면 지운다");
+    await page.goto(`http://127.0.0.1:${port}/#ex=5&q=quest`, { waitUntil: "load" }); await wait(600);
+    await openIsland(page);
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 8000 });
+    assert.deepEqual(seen.errors, []);
+  } finally { await browser.close(); }
+});

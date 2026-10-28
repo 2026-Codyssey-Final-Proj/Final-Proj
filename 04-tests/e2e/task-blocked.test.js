@@ -141,6 +141,14 @@ test("직접 하기 — 맡길 글과 복사 · 다 했어요, 그만두기 — 
     await page.waitForSelector(".msg.now textarea.brief", { timeout: 5000 });
     assert.match(await page.$eval(".msg.now textarea.brief", (e) => e.value), /끝 조건/);
     assert.equal(await page.$eval(".msg.now textarea.brief", (e) => e.readOnly), true);
+    // 사람이 그 폴더에서 Claude Code에 붙여 넣어 일하면 훅 알림이 온다 — 그래도 카드 단계가 오르거나 글이 사라지지 않는다(새 맥락 리뷰 2026-10-28 막힘 1)
+    const tok = fs.readFileSync(process.env.NAV_EVENT_TOKEN_FILE, "utf8").trim();
+    for (const ev of [{ hook_event_name: "UserPromptSubmit", session_id: "self-1", cwd: TMP, prompt: "직접" }, { hook_event_name: "Stop", session_id: "self-1", cwd: TMP }]) {
+      await new Promise((res, rej) => { const d = JSON.stringify(ev); const q = http.request({ host: "127.0.0.1", port, path: "/api/event", method: "POST", headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(d), "X-Nav-Token": tok } }, (r) => { r.resume(); r.on("end", res); }); q.on("error", rej); q.end(d); });
+    }
+    await wait(4500);
+    assert.ok(await page.$(".msg.now textarea.brief"), "직접 하기 글이 그대로");
+    assert.doesNotMatch(await nowSay(page), /또 막혔어요/, "거짓 '또 막혔어요'가 뜨지 않는다");
     assert.ok(await page.$(".mc.chat [data-act=blocked-copy]"));
     await click(page, ".mc.chat [data-act=blocked-done]");
     assert.ok(!(await page.$(".mc.chat [data-act=blocked-copy]")), "다 했어요 → 카드가 닫힌다");

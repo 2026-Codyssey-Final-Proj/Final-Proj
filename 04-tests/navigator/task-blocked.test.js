@@ -24,7 +24,7 @@ fs.writeFileSync(STUB, `const fs = require("node:fs"); let i = ""; process.stdin
   const p = JSON.parse(fs.readFileSync(process.env.STUB_PLAN, "utf8"));
   fs.writeFileSync(${JSON.stringify(STUB_OUT)}, JSON.stringify({ stdin: i, n: (p.n || 0) }));
   setTimeout(() => { process.stdout.write(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: "끝", usage: { input_tokens: 10, output_tokens: 5 },
-    permission_denials: p.denials || [], ...(p.report ? { structured_output: p.report } : {}) })); process.exit(p.exit || 0); }, p.delay || 300); });`);
+    permission_denials: p.denials || [], ...(p.report ? { structured_output: p.report } : {}), ...(p.isError ? { is_error: true, subtype: "error_during_execution" } : {}) })); process.exit(p.exit || 0); }, p.delay || 300); });`);
 const plan = (p) => fs.writeFileSync(PLAN, JSON.stringify(p));
 
 const HOME = path.join(TMP, "claude-home-empty");   // 사용자 설정에 훅이 없는 컴퓨터
@@ -163,8 +163,8 @@ test("직접 하기 — brief는 맡길 글과 끝 조건을 돌려주고 아무
   assert.equal((await task()).state, "blocked", "직접 하기는 아무것도 열지 않는다");
 });
 
-test("허락 카드에 사람이 답하면 그 답을 센다 — 거절(deny)은 deny로, 허용은 allow로", async () => {
-  plan({ delay: 900, denials: [{ tool_name: "Bash", tool_input: {} }] });
+test("허락 카드에 사람이 답하면 그 답을 센다 — 거절(deny)은 deny로, 허용은 allow로(거절 둘 중 하나만 사람이 눌렀으니 막힘)", async () => {
+  plan({ delay: 900, denials: [{ tool_name: "Bash", tool_input: {} }, { tool_name: "Bash", tool_input: {} }] });
   const r = await call("POST", "/api/task/start", { text: "돌려 보기" });
   assert.equal(r.status, 200, r.text);
   const mk = (id, cmd) => { const ev = { hook_event_name: "PermissionRequest", session_id: "s-2", cwd: dir, tool_name: "Bash", tool_input: { command: cmd } }; return { id, sig: AP.sig(ev), session_id: "s-2", cwd: dir, tool: "claude", tool_name: "Bash", card: AP.card(ev) }; };
@@ -178,17 +178,37 @@ test("허락 카드에 사람이 답하면 그 답을 센다 — 거절(deny)은
   assert.equal(t.state, "blocked"); assert.deepEqual(t.blocked.asks, { allow: 1, deny: 1, none: 0 });
 });
 
-// 진짜 Claude Code로 본 일(2026-10-28): 사람이 위험해 보이는 명령 둘을 거절했지만 다른 길로 끝 조건 셋을 모두 해냈다 — 그때 막힘 카드를 띄우면 안 된다
-test("거절이 있어도 끝 조건 보고가 모두 '해냄'이면 done — 보고가 덜 됐거나 없으면 blocked", async () => {
+// 진짜 Claude Code로 본 일(2026-10-28): 사람이 섬에서 위험해 보이는 명령 둘을 '거절'했지만 다른 길로 일을 해냈다 — 사람이 고른 거절만 있으면 막힘 카드를 띄우지 않는다.
+//   기계 신호로만 가른다(모델의 보고를 믿지 않는다 — 새 맥락 리뷰 2026-10-28): 거절 수가 섬에서 누른 '거절' 수 안이면 done(+ denied 수), 답이 없거나 카드가 안 뜬 거절이 있으면 blocked
+test("거절이 모두 사람이 섬에서 누른 '거절'이면 done(denied에 수), 하나라도 답 없이 막혔으면 보고가 다 해냄이어도 blocked", async () => {
   const ok = { items: [{ check: "README에 실행 명령 한 줄", done: true, evidence: "README.md" }], easy: "뼈대를 만들었어요.", ask: "" };
-  plan({ delay: 150, denials: [{ tool_name: "Bash", tool_input: {} }, { tool_name: "Bash", tool_input: {} }], report: ok });
+  plan({ delay: 700, denials: [{ tool_name: "Bash", tool_input: {} }, { tool_name: "Bash", tool_input: {} }], report: ok });
   assert.equal((await call("POST", "/api/task/start", { text: "뼈대", checks: ["README에 실행 명령 한 줄"] })).status, 200);
+  const mk = (id) => { const ev = { hook_event_name: "PermissionRequest", session_id: "s-d", cwd: dir, tool_name: "Bash", tool_input: { command: `rm -rf ${id}` } }; return { id, sig: AP.sig(ev), session_id: "s-d", cwd: dir, tool: "claude", tool_name: "Bash", card: AP.card(ev) }; };
+  const a = mk("req-deny-00001"), b = mk("req-deny-00002"), ha = call("POST", "/api/approval", a), hb = call("POST", "/api/approval", b);
+  await wait(80);
+  for (const x of [a, b]) assert.equal((await call("POST", "/api/approvals/decide", { id: x.id, sig: x.sig, decision: "deny" })).status, 200);
+  await ha; await hb;
   let t = await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
-  assert.equal(t.state, "done", JSON.stringify(t)); assert.equal(t.blocked, null); assert.equal(t.report.done, 1);
-  plan({ delay: 150, denials: [{ tool_name: "Write", tool_input: {} }], report: { ...ok, items: [{ check: "README에 실행 명령 한 줄", done: false, evidence: "" }] } });
+  assert.equal(t.state, "done", JSON.stringify(t)); assert.equal(t.blocked, null); assert.equal(t.denied, 2, "화면이 '거절한 2번은 하지 않았어요'를 말할 수 있게");
+  plan({ delay: 150, denials: [{ tool_name: "Write", tool_input: {} }], report: ok });
   assert.equal((await call("POST", "/api/task/start", { text: "뼈대", checks: ["README에 실행 명령 한 줄"] })).status, 200);
   t = await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
-  assert.equal(t.state, "blocked", "보고가 덜 됐으면 막힘");
+  assert.equal(t.state, "blocked", "카드에 답이 없었던 거절 — 보고가 '해냄'이어도 막힘(모델의 보고를 믿지 않는다)");
+});
+
+test("결과가 is_error면 끝 코드 0이어도 failed, 다른 폴더에서 누른 허락 답은 이 일의 수로 세지 않는다", async () => {
+  plan({ delay: 150, isError: true });
+  assert.equal((await call("POST", "/api/task/start", { text: "오류 나는 일" })).status, 200);
+  assert.equal((await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; })).state, "failed");
+  plan({ delay: 700, denials: [{ tool_name: "Bash", tool_input: {} }] });
+  assert.equal((await call("POST", "/api/task/start", { text: "다른 폴더 답" })).status, 200);
+  const other = fs.mkdtempSync(path.join(TMP, "elsewhere-"));
+  const ev = { hook_event_name: "PermissionRequest", session_id: "s-o", cwd: other, tool_name: "Bash", tool_input: { command: "ls" } };
+  const x = { id: "req-other-0001", sig: AP.sig(ev), session_id: "s-o", cwd: other, tool: "claude", tool_name: "Bash", card: AP.card(ev) }, h = call("POST", "/api/approval", x);
+  await wait(80); await call("POST", "/api/approvals/decide", { id: x.id, sig: x.sig, decision: "deny" }); await h;
+  const t = await until(async () => { const y = await task(); return y && y.state !== "running" ? y : null; });
+  assert.equal(t.state, "blocked"); assert.deepEqual(t.blocked.asks, { allow: 0, deny: 0, none: 0 }, "다른 폴더의 거절은 세지 않는다");
 });
 
 test("끝 코드가 0이 아니면 전처럼 failed — 막힘(blocked)은 끝 코드 0 + 거절일 때만", async () => {
@@ -229,4 +249,11 @@ test("C-50 멈추기 — 사람이 고를 때만(stop): 그 번호의 도는 일
   const again = await call("POST", "/api/task/retry", { at: t0.at, way: "again" });
   assert.equal(again.status, 200, again.text); assert.equal(again.json.task.try, 1);
   assert.equal((await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; })).state, "done");
+});
+
+test("화면: 허락 카드 · 막힌 일 · 멈춘 것 같은 일이 있으면 섬을 저절로 접지 않는다(pinned) — 사람이 고를 때까지(새 맥락 리뷰 2026-10-28 막힘 3)", () => {
+  const a = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  const pin = a.slice(a.indexOf("const pinned = () =>"), a.indexOf("\n", a.indexOf("const pinned = () =>")));
+  assert.match(pin, /st\.apWait/); assert.match(pin, /st\.blocked && !st\.blocked\.retrying/); assert.match(pin, /st\.stall && st\.stall\.lv !== "calm"/);
+  assert.match(a, /st\.apWait = approvals\.length > 0;/, "허락 카드가 있는 동안");
 });

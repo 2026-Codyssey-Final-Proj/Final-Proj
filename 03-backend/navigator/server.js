@@ -261,7 +261,7 @@ function holdApproval(body, req, res) {
   if (pending.size >= MAX_PENDING) return "기다리는 승인 요청이 너무 많음";
   const id = String(body.id);
   const item = { id, sig: String(body.sig), at: Date.now(), project: Sensitive.redact(path.basename(String(body.cwd || ""))), tool: body.tool === "codex" ? "codex" : "claude", tool_name: card.tool_name, card };
-  const finish = (decision) => { const p = pending.get(id); if (!p) return; pending.delete(id); clearTimeout(p.timer); countAsk(decision); send(p.res, 200, { ok: true, id, decision }); };
+  const finish = (decision) => { const p = pending.get(id); if (!p) return; pending.delete(id); clearTimeout(p.timer); countAsk(decision, body.cwd); send(p.res, 200, { ok: true, id, decision }); };
   pending.set(id, { item, res, timer: setTimeout(() => finish("none"), APPROVAL_WAIT), finish });
   touchTask(body.cwd);   // C-50 허락을 구하는 것도 일하고 있다는 표시
   req.on("close", () => { const p = pending.get(id); if (p && p.res === res) { pending.delete(id); clearTimeout(p.timer); } });   // 훅이 먼저 끊으면(시간 초과) 표에서 뺀다
@@ -320,7 +320,7 @@ let task = null;   // {state: running|done|failed|blocked, project, at, try, cod
 // report — 기준(checks)을 같이 넘겼으면 Claude Code가 끝에 답한 기준마다 해냄 · 근거 · 쉬운 말 요약(C-32, navigator.js parseReport). 비밀값 모양은 가린다. 서버 메모리에만
 // try — 같은 일을 몇 번째로 다시 맡겼나(F-69 다시 맡기기, 처음은 0). blocked — 끝 코드 0인데 허락을 못 받은 도구가 있으면 그 까닭(아래 blockedOf)
 const publicTask = () => (task ? { state: task.state, project: task.project, at: task.at, code: task.code, tokens: task.tokens ?? null, cost: task.cost ?? null, report: task.report ?? null,
-  try: task.try || 0, blocked: task.state === "blocked" ? blockedOf(task) : null, quiet: task.state === "running" ? Math.max(0, Math.floor((Date.now() - (task.lastAt || task.at)) / 1000)) : 0 } : null);
+  try: task.try || 0, blocked: task.state === "blocked" ? blockedOf(task) : null, denied: task.denied ? task.denied.count : 0, quiet: task.state === "running" ? Math.max(0, Math.floor((Date.now() - (task.lastAt || task.at)) / 1000)) : 0 } : null);
 // C-50 맡긴 일이 멈추면(2026-10-28 — 결정 모음 A-06 "시간 값은 리허설에서 재서 정함, 그때까지 2분 · 5분 · 15분, 멈추면 끄지 않고 A-03의 선택창으로"):
 //   quiet — 그 일의 폴더(안)에서 훅 알림 · 허락 카드가 마지막으로 온 뒤 지난 초. 몇 초에 무엇을 할지는 화면이 정한다. 서버는 저절로 끄지 않는다 — 끄기는 사람이 고를 때만(stopTask)
 const inDir = (dir, cwd) => { if (!dir || !cwd) return false; const rel = path.relative(realDir(dir), realDir(cwd)); return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel)); };
@@ -334,7 +334,8 @@ function blockedOf(t) {
   for (const [tool, n] of Object.entries((t.denied && t.denied.tools) || {})) { const what = DENY_KIND[tool] || "다른 도구", k = kinds.find((x) => x.what === what); if (k) k.n += n; else kinds.push({ what, n }); }
   return { count: (t.denied && t.denied.count) || 0, kinds, asks: { ...t.asks } };
 }
-function countAsk(decision) { if (task && task.state === "running" && task.asks && Object.prototype.hasOwnProperty.call(task.asks, decision)) { task.asks[decision] += 1; task.lastAt = Date.now(); } }
+// 그 일의 폴더(안)에서 온 허락 답만 센다 — 같은 때 다른 폴더의 Claude Code에서 누른 답이 섞이지 않게(새 맥락 리뷰 2026-10-28)
+function countAsk(decision, cwd) { if (task && task.state === "running" && task.asks && Object.prototype.hasOwnProperty.call(task.asks, decision) && inDir(task.dir, cwd)) { task.asks[decision] += 1; task.lastAt = Date.now(); } }
 // 경로도 가린다(2026-10-24 리뷰) — 작업 폴더 앞부분은 '.'으로, 홈 폴더(/Users/이름 · /home/이름 · C:\Users\이름)는 '~'로. 보고는 화면에 보이고 이 컴퓨터의 브라우저 저장소에도 남는다
 const hidePaths = (t, dir) => (dir ? String(t).split(dir).join(".") : String(t)).replace(/\/(?:Users|home)\/[^/\s]+/g, "~").replace(/[A-Za-z]:\\Users\\[^\\\s]+/gi, "~");
 const hide = (t, dir) => Sensitive.redact(hidePaths(t, dir));
@@ -343,8 +344,8 @@ const CHECK_LINE_MAX = 200;
 // 기준 목록이 맞는 모양인가 — 1~12줄 · 글 · 한 줄 200자. 맞으면 다듬은 목록, 아니면 null
 const checksOf = (c) => (Array.isArray(c) && c.length >= 1 && c.length <= Nav.CHECKS_MAX && c.every((x) => Nav.filled(x) && x.length <= CHECK_LINE_MAX) ? c.map((x) => x.trim()) : null);
 const NO_FOLDER = "연결한 프로젝트 폴더를 아직 몰라요 — 처음 설정의 '프로젝트'에서 고르거나, 그 폴더에서 Claude Code를 한 번 열면 알게 돼요";
-const NO_HOOK = { none: "이 폴더에는 허락 카드를 띄우는 연결이 없어요 — 맡기면 파일 쓰기 · 명령이 모두 막혀요. 앱 메뉴의 '폴더 연결'로 이 폴더를 다시 연결해 주세요",
-  moved: "이 폴더의 허락 연결이 옛 자리(앱을 옮기기 전)를 가리켜요 — 앱 메뉴의 '폴더 연결'로 이 폴더를 다시 연결해 주세요" };
+const NO_HOOK = { none: "이 폴더에는 허락 카드를 띄우는 연결이 없어요 — 맡기면 파일 쓰기 · 명령이 모두 막혀요. Floe 앱 메뉴의 '프로젝트 폴더 연결…'로 이 폴더를 다시 연결해 주세요",
+  moved: "이 폴더의 허락 연결이 옛 자리(앱을 옮기기 전)를 가리켜요 — Floe 앱 메뉴의 '프로젝트 폴더 연결…'로 이 폴더를 다시 연결해 주세요" };
 // 다시 맡기기(F-69) — again: 같은 글 그대로(허락 카드가 다시 뜬다), files-only: 명령 없이 파일만(명령이 막혔을 때 결과에 가장 가까운 길)
 const FILES_ONLY = "\n\n[다시 맡김 — 명령 없이] 터미널 명령(Bash)은 쓰지 말고 파일만 만들거나 고쳐 주세요. 실행 · 설치 명령이 필요하면 README의 '실행하는 법'에 적기만 해요.";
 // opts.at · opts.try — 다시 맡기기는 같은 번호(at)로(지켜보던 화면 — 계획 줄 · 문서 올리기 — 이 그대로 따라간다), opts.note — 글 끝에 더할 한 줄(길이 제한 밖)
@@ -360,7 +361,7 @@ function startTask(text, label = "맡긴 일", checks = null, opts = {}) {
   const onResult = (r) => {
     if (!r) return;
     ledger.add("task", label, r.usage, r.cost);
-    if (task && task.child === child) { task.tokens = r.usage.total; task.cost = r.cost; task.denied = r.denials || null; task.report = checks ? hideReport(Nav.parseReport(r.output, checks), s.dir) : null; }
+    if (task && task.child === child) { task.tokens = r.usage.total; task.cost = r.cost; task.denied = r.denials || null; task.isError = !!r.isError; task.report = checks ? hideReport(Nav.parseReport(r.output, checks), s.dir) : null; }
   };
   const body = opts.note ? `${String(text).trim()}${opts.note}` : text;
   try { child = openClaude({ dir: s.dir, text: checks ? Nav.taskBrief(body, checks) : body, onResult, schema: checks ? Nav.REPORT_SCHEMA : null }); }
@@ -369,9 +370,10 @@ function startTask(text, label = "맡긴 일", checks = null, opts = {}) {
   task = { state: "running", label, project: s.project, at: Number.isFinite(opts.at) ? opts.at : Date.now(), lastAt: Date.now(), try: opts.try || 0, code: null, child, tokens: null, cost: null, report: null,
     denied: null, asks: { allow: 0, deny: 0, none: 0 }, req: { text: String(text), label, checks }, dir: s.dir };
   child.on("error", () => { if (task && task.child === child) task.state = "failed"; });
-  // 거절이 있어도 끝 조건 보고가 모두 '해냄'이면 끝남 — 사람이 위험해 보이는 명령을 거절했지만 다른 길로 해낸 때(진짜 Claude Code로 본 일, 2026-10-28)
-  const fullDone = () => !!(task.report && task.report.total > 0 && task.report.done === task.report.total);
-  child.on("close", (code) => { if (task && task.child === child) { task.state = task.stopped ? "stopped" : code !== 0 ? "failed" : task.denied && task.denied.count > 0 && !fullDone() ? "blocked" : "done"; task.code = code; } });
+  // 막힘은 기계 신호로만 — 거절 수가 그 일 동안 섬에서 사람이 누른 '거절' 수보다 많으면(답이 없었거나 카드가 안 뜬 거절이 있으면) blocked.
+  //   사람이 고른 거절뿐이면 done(denied에 수 — 화면이 한 줄로 말한다). 모델의 보고(해냄)는 믿지 않는다(진짜 Claude Code로 본 일 · 새 맥락 리뷰 2026-10-28)
+  const unasked = () => (task.denied ? task.denied.count : 0) > (task.asks ? task.asks.deny : 0);
+  child.on("close", (code) => { if (task && task.child === child) { task.state = task.stopped ? "stopped" : code !== 0 || task.isError ? "failed" : unasked() ? "blocked" : "done"; task.code = code; } });
   return [200, { ok: true, project: s.project, task: publicTask() }];
 }
 // C-50 멈추기 — 본문 { at }. 사람이 선택창에서 '다시 맡기기' · '그만두기'를 고를 때만 부른다(서버는 저절로 끄지 않는다). 그 번호의 도는 일만, 끝나면 state stopped
