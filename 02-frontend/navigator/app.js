@@ -2202,10 +2202,11 @@
     const meta = `<span class="mm-stage">맡길 일 · ${p.total}개 중 ${i + 1}번째</span>${planMini(b, i)}${ex}`;
     if (s === "running") return { tone: "gray", mood: "think", badge: "…", meta, title: `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,
       body: `<p class="mc-fine">허락이 필요하면 이 말 위에 카드가 떠요. 끝나면 기준마다 해냈는지 알려 줘요.</p>`, acts: [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "기다리지 않기", act: "plan-unwait", kind: "ghost" }] };   // 진행 보기 — Claude Code가 한 일 한 줄씩(AI 진행 판)
-    if (s === "report" && w.report) return { tone: "green", mood: "happy", badge: "!", meta, title: `보고가 왔어요 — 기준 ${Number(w.report.total) || 0}개 중 ${Number(w.report.done) || 0}개를 해냈대요`, sub: esc(w.report.easy),
-      body: planReportBody(b, id), acts: planReportActs(id, !!w.report.ask) };
+    if (s === "report" && w.report) { const v = N.reportVerdict ? N.reportVerdict(w.report, "done") : { kind: "done", word: "" };   // C-50 기준을 세어 미리 보기(AI를 더 부르지 않음)
+      return { tone: v.kind === "done" ? "green" : "amber", mood: v.kind === "done" ? "happy" : "think", badge: "!", meta, title: `보고가 왔어요 — 세어 보니 ${v.word} (기준 ${Number(w.report.total) || 0}개 중 ${Number(w.report.done) || 0}개)`, sub: esc(w.report.easy),
+        body: planReportBody(b, id), acts: planReportActs(id, !!w.report.ask, v.kind === "done") }; }
     return { tone: "blue", mood: face()[0], badge: "?", meta, title: `${ROMAN(i)}. ${esc(x.need)}`, sub: `다 됐는지 보는 기준 — ${esc(x.check)}`,
-      body: w.note ? `<p class="pl-ans"><b>지난번 의견</b> ${esc(w.note)}</p>` : "",
+      body: `${w.fail ? `<p class="pl-ans"><b>지난번에 끝까지 못 했어요${w.fail.n > 1 ? `(${w.fail.n}번)` : ""}</b> ${esc(w.fail.why)}</p>` : ""}${w.note ? `<p class="pl-ans"><b>지난번 의견</b> ${esc(w.note)}</p>` : ""}`,   // C-50 실패는 남겨 보인다(조용히 '남음'으로 되돌리지 않는다)
       foot: planPractice(b) ? "연습이라 Claude Code에 보내지 않고 예시 보고를 받아요" : "맡기면 Claude Code가 이 폴더에서 일하고, 끝나면 기준마다 해냈는지 알려 줘요",
       acts: [{ label: w.note ? "다시 맡기기" : "맡기기", act: "plan-hand", key: "Enter", pri: true }, { label: "새 계획 적기", act: "plan-reset", kind: "ghost" }] };
   }
@@ -2230,10 +2231,11 @@
   }
   // 보고의 칩 — 맞아요(끝냄) / 다르게 봐요(의견 달고 다시) / 물어보기(이 보고에 대해 플로로에게 — Floe의 AI 한 번, C-32).
   //   Claude Code가 물었으면 답하고 이어서 맡기기가 먼저(Ctrl+Enter) — 답 칸에서 Ctrl+Enter가 Enter의 '맞아요'로 넘어가 줄을 끝내던 것(2026-10-24 리뷰)
-  const planReportActs = (id, asked) => (st.planRej === id ? [{ label: "의견 달고 다시 맡기기", act: "plan-reject", key: "c-Enter", pri: true }, { label: "그만두기", act: "plan-rej-close", kind: "ghost" }]
+  // C-50(2026-10-29): '맞아요'는 미리 판정이 '다 됨'일 때만 큰 단추(done) — 덜 됐으면 '다르게 봐요'와 같은 크기
+  const planReportActs = (id, asked, done = true) => (st.planRej === id ? [{ label: "의견 달고 다시 맡기기", act: "plan-reject", key: "c-Enter", pri: true }, { label: "그만두기", act: "plan-rej-close", kind: "ghost" }]
     : st.planAsk === id ? [{ label: "물어보기", act: "plan-ask-send", key: "c-Enter", pri: true }, { label: "그만두기", act: "plan-ask-close", kind: "ghost" }]
     : asked ? [{ label: "답하고 이어서 맡기기", act: "plan-reply-send", key: "c-Enter", pri: true }, { label: "맞아요 — 끝냈어요", act: "plan-accept" }, { label: "다르게 봐요", act: "plan-rej-open" }, { label: "물어보기", act: "plan-ask-open" }]
-    : [{ label: "맞아요 — 끝냈어요", act: "plan-accept", key: "Enter", pri: true }, { label: "다르게 봐요", act: "plan-rej-open" }, { label: "물어보기", act: "plan-ask-open" }]);
+    : [{ label: "맞아요 — 끝냈어요", act: "plan-accept", ...(done ? { key: "Enter", pri: true } : {}) }, { label: "다르게 봐요", act: "plan-rej-open", ...(done ? {} : { key: "Enter" }) }, { label: "물어보기", act: "plan-ask-open" }]);
   // 채팅 칸에 적은 말 — 계획이 없으면 넣는 글에 이어 붙이고, 확인하는 중이면 전체 의견, 보고가 왔으면 Claude Code의 물음에 답하거나 플로로에게 묻기
   function planSay(t) {
     const b = st.plan, id = b && FP.next(b), w = id && b.work[id];
@@ -2324,11 +2326,11 @@
     const id = st.plan && FP.running(st.plan); if (!id) return;
     // 보고는 맡길 일의 지금 말로(C-35). 단계 퀘스트를 보고 있으면 지금 할 퀘스트는 그대로 두고 채팅에 한 줄 · 칩(planChip)으로 알린다 — 고르는 것은 사람(2026-10-24 리뷰). 접혀 있으면 살짝 보인다
     if (t && t.report) { st.plan = FP.report(st.plan, id, t.report); logMsg("sys", `Claude Code가 보고를 보냈어요${st.qfocus === "plan" ? "" : " — '맡길 일'에서 봐요"}`); peek(); say(t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy); }
-    else { st.plan = FP.failed(st.plan, id); peek(); say("보고를 받지 못했어요 — 다시 맡길 수 있어요"); }
+    else { st.plan = FP.failed(st.plan, id, t && t.state === "failed" ? "끝까지 가지 못했어요" : "보고를 받지 못했어요"); peek(); say("보고를 받지 못했어요 — 다시 맡길 수 있어요"); }
     save(); render(); fetchUsage();
   }
   // 다른 일(저장소 만들기 등)이 이 줄의 자리를 차지했다 — 이 줄의 보고는 잃었으니 다시 맡길 수 있게
-  const planLost = () => { const id = st.plan && FP.running(st.plan); if (!id) return; st.plan = FP.failed(st.plan, id); peek(); say("보고를 받지 못했어요 — 다시 맡길 수 있어요"); save(); render(); };
+  const planLost = () => { const id = st.plan && FP.running(st.plan); if (!id) return; st.plan = FP.failed(st.plan, id, "다른 일이 자리를 차지했어요"); peek(); say("보고를 받지 못했어요 — 다시 맡길 수 있어요"); save(); render(); };
   // ── F-69 맡긴 일 지켜보기 · 막힘(2026-10-28 — 이재엽 "결과물이 안나오는 문제 해결", 결정 모음 A-03 "허락 팝업을 다시 → 선택창 → 까닭과 가장 가까운 길") ──
   //   맡긴 일(계획 줄 · 문서 올리기 · 문서 틀 · 저장 커밋 · 저장소 만들기 · 일 넘기기 · 뼈대 · 요구 줄 · 돌려 보기)을 한 곳에서 3초마다 묻는다(/api/task — 그 일의 번호 at가 맞을 때만).
   //   끝나면 그 일의 끝(TASK_END[kind].end). claude -p는 허락을 못 받아도 끝 코드 0이라, 서버가 거절된 도구를 세어 state blocked로 준다 —
@@ -2336,7 +2338,7 @@
   //   ③ 또 막히면 까닭(무엇이 · 왜)과 결과에 가장 가까운 길(명령 없이 파일만 · 한 번 더 · 직접 하기 · 그만두기). 고르는 것은 사람 — 대신 허용하는 길은 없다(FR-17)
   const TASK_END = {
     ship: { end: shipEnd, stop: () => { st.ship = null; } },
-    plan: { end: planEnd, lost: planLost, stop: () => { const id = st.plan && FP.running(st.plan); if (id) { st.plan = FP.failed(st.plan, id); save(); } } },
+    plan: { end: planEnd, lost: planLost, stop: () => { const id = st.plan && FP.running(st.plan); if (id) { st.plan = FP.failed(st.plan, id, "막혀서 그만뒀어요"); save(); } } },
     preset: { end: (t) => presetEnd(t) },
     send: { end: (t) => say(t.state === "done" ? "Claude Code가 넘긴 일을 마쳤어요" : "넘긴 일이 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요") },
     commit: { end: (t) => { if (t.state !== "done") say("커밋을 맡긴 일이 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요"); } },
@@ -2401,16 +2403,17 @@
   // 막혔다 — ①이면 바로 다시 맡기고, ② · ③이면 카드(momentBlocked). 접혀 있어도 펼친다(허락 카드와 같이 — 사람이 골라야 이어진다)
   function onBlocked(t, kind) {
     const prev = st.blocked && st.blocked.at === t.at ? st.blocked : null, b = t.blocked || { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } };
-    if (!prev && !t.try && b.asks.none > 0 && !b.asks.deny) { st.blocked = { at: t.at, kind, step: 1, b, brief: "" }; retryBlocked("again"); return; }   // ① 카드를 못 눌렀다 — 다시 띄운다
-    st.blocked = { at: t.at, kind, step: prev ? Math.min(3, prev.step + 1) : 2, b, brief: "" };
+    const cap = (t.retries || 0) >= (t.retryMax || 2);   // C-50 사람이 고른 다시 맡기기는 2번까지(①은 세지 않는다)
+    if (!prev && !t.try && b.asks.none > 0 && !b.asks.deny) { st.blocked = { at: t.at, kind, step: 1, b, brief: "", cap }; retryBlocked("again", true); return; }   // ① 카드를 못 눌렀다 — 다시 띄운다
+    st.blocked = { at: t.at, kind, step: prev ? Math.min(3, prev.step + 1) : 2, b, brief: "", cap };
     if (st.ui !== "home") go("home"); else render();
   }
-  async function retryBlocked(way) {
+  async function retryBlocked(way, auto = false) {
     const b = st.blocked; if (!b || b.retrying) return;
     if (way !== "brief") st.blocked = { ...b, retrying: true, brief: "" };   // 기다리는 동안 카드를 감춰 두 번 누르지 않게
-    let r; try { r = await (await fetch("/api/task/retry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at: b.at, way }) })).json(); } catch { r = { ok: false, reason: "서버에 닿지 않았어요" }; }
+    let r; try { r = await (await fetch("/api/task/retry", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at: b.at, way, ...(auto ? { auto: true } : {}) }) })).json(); } catch { r = { ok: false, reason: "서버에 닿지 않았어요" }; }
     if (!r || !r.ok) {
-      if (b.stall) { st.blocked = null; watchTask({ at: b.at }, b.kind); } else st.blocked = b;   // 멈춤에서 온 다시 맡기기가 안 되면 지켜보기로 돌아간다(엉뚱한 '0번 막힘' 카드를 남기지 않게)
+      if (b.stall) { st.blocked = null; watchTask({ at: b.at }, b.kind); } else st.blocked = { ...b, ...(r && r.why === "cap" ? { cap: true, step: 3 } : {}) };   // 상한이면 ③ — 직접 하기 · 그만두기만   // 멈춤에서 온 다시 맡기기가 안 되면 지켜보기로 돌아간다(엉뚱한 '0번 막힘' 카드를 남기지 않게)
       render(); return say((r && r.reason) || "다시 맡기지 못했어요");
     }
     if (way === "brief") { st.blocked = { ...b, brief: r.brief || "" }; return render(); }
@@ -2428,6 +2431,8 @@
       body: `<textarea class="mc-input brief" readonly rows="6" aria-label="맡길 글">${esc(b.brief)}</textarea>`,
       acts: [{ label: "글 복사", act: "blocked-copy", key: "Enter", pri: true }, { label: "다 했어요", act: "blocked-done", kind: "ghost" }] };
     const files = k.kinds.some((x) => x.what === "파일 쓰기"), cmd = k.kinds.some((x) => x.what === "명령");
+    if (b.cap) return { tone: "amber", mood: "think", badge: "!", meta, title: `다시 맡기기는 2번까지예요 — ${esc(kinds)}`, sub: `${esc(askWhy(k.asks))}. 여기서부터는 직접 이어 가거나 그만둬요.`,
+      acts: [{ label: "직접 하기", act: "blocked-self", key: "Enter", pri: true }, { label: "그만두기", act: "blocked-stop", kind: "ghost" }] };   // C-50 상한
     if (b.step >= 3) {   // ③ 까닭과 가장 가까운 길 — 명령만 막혔으면 '명령 없이 파일만'이 먼저
       const why = [files ? "파일 쓰기가 막혀 파일이 생기지 않았어요" : "", cmd ? "명령이 막혀 실행 · 시험을 못 했어요" : "", askWhy(k.asks)].filter(Boolean).join(" · ");
       const near = cmd && !files;
@@ -3325,7 +3330,7 @@
     "plan-ask-open": (i, el) => { st.planAsk = planId(el); st.planQ = ""; render(); requestAnimationFrame(() => { const q = $nav.querySelector("[data-act=plan-q]"); if (q) q.focus(); }); },
     "plan-ask-close": () => { st.planAsk = ""; render(); },
     "plan-ask-send": (i, el) => askPlan(planId(el)),
-    "plan-unwait": () => { st.plan = FP.failed(st.plan, FP.running(st.plan)); save(); render(); say("기다리지 않을게요. 다시 맡길 수 있어요."); },
+    "plan-unwait": () => { st.plan = FP.failed(st.plan, FP.running(st.plan), "기다리지 않기로 했어요"); save(); render(); say("기다리지 않을게요. 다시 맡길 수 있어요."); },
     // 살피기 · 책 — 옛 명령 칸(C-29)의 길. 지금은 도전과제의 '알아 둘 것'에서 해 보기 · 끝 카드의 책 보기가 부른다(C-35)
     "cmd-look": () => {
       const q = st.quest;

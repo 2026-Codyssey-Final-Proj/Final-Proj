@@ -44,16 +44,19 @@
   // 맡길 글 · 기준 — 사용자가 '다르게 봐요'로 단 의견이 있으면 붙인다(서버가 navigator.js taskBrief로 기준과 보고 말을 더한다)
   function taskFor(b, id) {
     const x = item(b, id), w = b.work[id] || {};
-    return { text: w.note ? `${x.need}\n지난번에 사용자가 다르게 본 점: ${w.note}` : x.need, checks: [x.check] };
+    // C-50(2026-10-29): 다시 맡기면 지난번 보고 한 줄도 붙인다 — 앞에서 한 일을 다시 하지 않게(지식 퀘스트 PRD 9절 7번 '새로 맡기며 앞 보고만')
+    return { text: [x.need, ...(w.note ? [`지난번에 사용자가 다르게 본 점: ${w.note}`] : []), ...(w.prev ? [`지난번 보고: ${w.prev}`] : [])].join("\n"), checks: [x.check] };
   }
   const setWork = (b, id, w) => { const n = clone(b); n.work[id] = { ...(n.work[id] || {}), ...w }; return n; };
   // at — 서버가 알려 준 그 일의 시작 때(/api/task의 at). 끝났는지 물을 때 다른 일의 결과를 이 줄의 것으로 받지 않게
   const start = (b, id, at = null) => (!b.confirmed || !has(b, id) || running(b) || id !== next(b) ? b : setWork(b, id, { state: "running", at }));
-  const report = (b, id, rep) => (stateOf(b, id) === "running" ? setWork(b, id, { state: "report", report: rep || null }) : b);
+  const report = (b, id, rep) => (stateOf(b, id) === "running" ? setWork(b, id, { state: "report", report: rep || null, fail: undefined }) : b);
   const accept = (b, id) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "done" }) : b);
-  const reject = (b, id, why) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "todo", note: String(why || "").trim().slice(0, 300), report: null }) : b);
-  // 보고를 받지 못하고 끝났다(실패 · 모양이 틀림) — 다시 맡길 수 있게
-  const failed = (b, id) => (stateOf(b, id) === "running" ? setWork(b, id, { state: "todo" }) : b);
+  const prevOf = (r) => (r && r.easy ? `${String(r.easy).slice(0, 160)} (끝 조건 ${r.done}/${r.total})` : "");
+  const reject = (b, id, why) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "todo", note: String(why || "").trim().slice(0, 300), prev: prevOf((b.work[id] || {}).report), report: null }) : b);
+  // 보고를 받지 못하고 끝났다(실패 · 막힘 · 멈춤 · 모양이 틀림) — 다시 맡길 수 있게 남음으로 두되, 까닭과 횟수를 남긴다(C-50 '조용히 되돌리지 않는다', 2026-10-29)
+  const failed = (b, id, why = "") => { if (stateOf(b, id) !== "running") return b; const f = (b.work[id] || {}).fail;
+    return setWork(b, id, { state: "todo", fail: { why: String(why || "").trim().slice(0, 200) || "보고를 받지 못했어요", n: ((f && f.n) || 0) + 1 } }); };
   const progress = (b) => ({ done: b.plan.items.filter((x) => stateOf(b, x.id) === "done").length, total: b.plan.items.length });
 
   // 저장했던 판(브라우저 저장소) — 모양이 틀리면 null

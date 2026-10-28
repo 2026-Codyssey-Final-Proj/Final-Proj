@@ -103,7 +103,7 @@ test("① 카드를 못 눌러 막히면 다시 띄운다 → ② 또 막히면 
     await handFirst(page);
     // ① 첫 막힘 — 카드에 답이 없었다: 사람이 누르지 않아도 같은 일을 다시(again)
     await page.waitForFunction(() => document.body.innerText.includes("허락 카드를 다시 띄울게요"), { timeout: 12000 });
-    assert.deepEqual(seen.retry, [{ at: AT, way: "again" }]);
+    assert.deepEqual(seen.retry, [{ at: AT, way: "again", auto: true }], "①의 카드 다시는 auto — 상한(2번)에 세지 않는다(C-50)");
     // ② 또 막힘(거절) — 선택창
     await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("허락을 못 받아 2번 막혔어요"), { timeout: 12000 });
     const two = await nowSay(page);
@@ -179,5 +179,26 @@ test("C-50 멈춘 것 같으면(5분) 카드 — 더 기다리기 → 15분(시�
     assert.deepEqual(seen.retry, [{ at: AT, way: "again" }], "멈춘 뒤 같은 일을 다시");
     assert.match(await nowSay(page), /신청하는 종이를 화면으로 만들었어요/);
     assert.deepEqual(seen.errors, []);
+  } finally { await browser.close(); }
+});
+
+// C-50(2026-10-29, 지식 퀘스트 PRD 9절 7 · 8번): 미리 판정 — 덜 된 보고에서는 '맞아요'가 작은 단추. 다시 맡기기 상한(2번)에 닿은 막힘은 직접 하기 · 그만두기만
+test("C-50 미리 판정 '덜 됨'이면 '맞아요'는 작은 단추 · 상한에 닿은 막힘은 직접 하기 · 그만두기만", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
+  try {
+    const half = { ...REPORT, items: [{ check: PLAN.items[0].check, done: false, evidence: "" }], done: 0, total: 1, easy: "신청 칸은 아직이에요." };
+    const { page, seen } = await openLive(browser, [{ state: "done", code: 0, at: AT, try: 0, report: half, blocked: null, verdict: { kind: "partial", word: "덜 됨" } }]);
+    await handFirst(page);
+    await page.waitForSelector(".msg.now .pl-rep", { timeout: 12000 });
+    assert.match(await nowSay(page), /세어 보니 덜 됨/);
+    assert.equal(await page.$eval(".mc.chat [data-act=plan-accept]", (e) => e.classList.contains("pri")), false, "덜 됐으면 '맞아요'는 작은 단추");
+    assert.deepEqual(seen.errors, []);
+    await page.close();
+    const capped = await openLive(browser, [{ ...blocked([{ what: "명령", n: 1 }], { allow: 0, deny: 1, none: 0 }, 3), retries: 2, retryMax: 2 }]);
+    await handFirst(capped.page);
+    await capped.page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("다시 맡기기는 2번까지예요"), { timeout: 12000 });
+    assert.ok(await capped.page.$(".mc.chat [data-act=blocked-self]") && await capped.page.$(".mc.chat [data-act=blocked-stop]"));
+    assert.ok(!(await capped.page.$(".mc.chat [data-act=blocked-again]")) && !(await capped.page.$(".mc.chat [data-act=blocked-files]")), "다시 맡기기 단추는 없다");
+    assert.deepEqual(capped.seen.errors, []);
   } finally { await browser.close(); }
 });
