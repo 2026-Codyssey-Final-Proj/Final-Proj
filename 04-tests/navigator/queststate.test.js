@@ -15,6 +15,7 @@ test("factsFrom — 결과 · 받은 글 · 파일 목록에서 사실만 뽑는
   const results = { 0: R(0, {}), 1: prev2[1], 2: R(2, { 0: ["회원이 신청을 누르면, 앱은 신청서를 보인다", "운영진이 행사를 만들면, 앱은 목록에 올린다", "마감 하루 전이 되면, 앱은 알림을 보낸다", "명단을 내려받으면, 앱은 CSV를 준다"] }) };
   const f = S.factsFrom({ results, files: [{ path: "src/app.js", dir: false }, { path: "docs", dir: true }, { path: "README.md", dir: false }] });
   assert.deepEqual(f, { features: 4, publish: false, success: true, codeFiles: 1 });
+  assert.equal(S.factsFrom({ results: { 2: R(2, { 0: ["신청하면, 앱은 받는다 / 만들면, 앱은 올린다 / 마감 전이면, 앱은 알린다 / 내려받으면, 앱은 CSV를 준다 / 지우면, 앱은 지운다 / 바꾸면, 앱은 고친다"] }) } }).features, 6, "' / '로 이은 한 줄은 조각 수로(3단계 초안 지시 그대로 — 리뷰 막힘)");
   assert.deepEqual(S.factsFrom({ results: {}, files: null }), { features: null, publish: null, success: null, codeFiles: null }, "모르면 null");
   assert.equal(S.factsFrom({ results: { 1: R(1, { 1: ["언제 성공: 아직 모름"] }) } }).success, false, "'아직 모름' · 숫자 없음은 성공 숫자 빈칸");
   assert.equal(S.factsFrom({ results: { 1: R(1, { 3: ["누구나 쓰게 웹에 공개해요"] }) } }).publish, true);

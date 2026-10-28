@@ -10,7 +10,7 @@
   const node = typeof module !== "undefined" && module.exports;
   const N = node ? require("./navigator.js") : root.NavRules;
   const Q = node ? require("./quest.js") : root.NavQuest;
-  const BC = node ? require("./basecard.js") : root.NavBaseCard;   // 기준 카드(C-56 R-1, 2026-10-28) — docs/기준.md
+  const BC = node ? require("./basecard.js") : root.NavBaseCard;   // 기준 카드(C-56 R-1, 2026-10-28) — docs/base.md
   const SLUGS = ["01-idea", "02-plan", "03-requirements", "04-design", "05-skeleton", "06-build", "07-measure", "08-retro"];
   const PRD_PART = ["문제와 목표", "아이디어와 범위", "꼭 필요한 기능", "만드는 방법", "뼈대와 할 일", "만든 것과 확인", "잰 결과", "배운 것"];   // 기획서에서 그 단계가 맡는 절
   const MARK_START = "<!-- floe:start -->", MARK_END = "<!-- floe:end -->";

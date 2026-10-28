@@ -1159,7 +1159,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .sm-row button .sm-rl{color:#2B3463;overflow-wrap:anywhere}
 .sm-row button small{grid-column:2/-1;color:#5B6491;font-size:calc(11px * var(--ui-scale,1))}
 .sm-row.miss button .sm-rl{color:#5B6491;font-style:italic}
-.sm-row.by-ok button{border-left-color:#7FC9A6}.sm-row.by-edit button{border-left-color:#E6CB86}.sm-row.by-me button{border-left-color:#4D66B5}.sm-row.by-pick button{border-left-color:#B8C9F0}.sm-row.by-moved button{border-left-color:#A9E2C4}.sm-row.by-skip button{border-left-color:#C5CEE2}
+.sm-row.by-ok button{border-left-color:#4D66B5}.sm-row.by-edit button{border-left-color:#E6CB86}.sm-row.by-me button{border-left-color:#363E62}.sm-row.by-pick button{border-left-color:#B8C9F0}.sm-row.by-moved button{border-left-color:#A9E2C4}.sm-row.by-skip button{border-left-color:#C5CEE2}   /* 토큰 값만(금 · 민트 · 볼 · 바다 · 섬 · 단추 · 선 — 새 색을 지어내지 않는다, 새 맥락 리뷰 2026-10-28) */
 .sm-row.sel button,.sm-row button:focus-visible{outline:3px solid #4D66B5;outline-offset:1px}
 .ws-line h4{margin:0 0 4px}
 .ws-line .b.sm{min-height:34px;padding:0 12px;font-size:calc(12.5px * var(--ui-scale,1));margin:2px 6px 2px 0}
@@ -1170,16 +1170,16 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .jm-rails{position:absolute;right:-26px;top:-10px;bottom:-10px;width:20px;pointer-events:none;font-size:0;line-height:0}
 .jm-rails i{position:absolute;top:0;bottom:0;width:4px;margin:0;padding:0;border:0;border-radius:0;background:transparent}
 .jm-rails i:nth-child(1){left:0}.jm-rails i:nth-child(2){left:8px}.jm-rails i:nth-child(3){left:16px}
-.jm-rails i.a{background:#D4B45A}.jm-rails i.b{background:#7FC9A6}.jm-rails i.c{background:#D98C9D}
+.jm-rails i.a{background:#E6CB86}.jm-rails i.b{background:#A9E2C4}.jm-rails i.c{background:#EFC3CB}   /* 금 · 민트 · 볼 토큰 */
 .jm-rails i.s{top:50%}.jm-rails i.e{bottom:50%}
 .jm-rails i.s::before,.jm-rails i.e::after{content:"";position:absolute;left:-4px;width:12px;height:12px;border-radius:50%;background:inherit;box-shadow:0 0 0 2px #F2F5FA}
 .jm-rails i.s::before{top:-6px}.jm-rails i.e::after{bottom:-6px}
 .jm-h{flex-wrap:wrap}
 .jm-pair{flex:0 0 auto;margin-left:auto;min-height:34px;padding:0 10px;border-radius:999px;border:1.5px solid #C5CEE2;background:#fff;color:#2B3463;font:inherit;font-size:calc(11.5px * var(--ui-scale,1));font-weight:700;white-space:nowrap;cursor:pointer}
-.jm-pair.a{border-color:#D4B45A}.jm-pair.b{border-color:#7FC9A6}.jm-pair.c{border-color:#D98C9D}
+.jm-pair.a{border-color:#E6CB86}.jm-pair.b{border-color:#A9E2C4}.jm-pair.c{border-color:#EFC3CB}
 .jm-pair[aria-pressed=true]{background:#2B3463;color:#F2F5FA}
 .jm-side{border-radius:12px;border:2px solid #C5CEE2;background:#F2F5FA;padding:10px 12px;display:grid;gap:8px}
-.jm-side.a{border-color:#D4B45A}.jm-side.b{border-color:#7FC9A6}.jm-side.c{border-color:#D98C9D}
+.jm-side.a{border-color:#E6CB86}.jm-side.b{border-color:#A9E2C4}.jm-side.c{border-color:#EFC3CB}
 .jm-sh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.jm-sh b{flex:1 1 auto;font-size:calc(13px * var(--ui-scale,1))}
 .jm-sg{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:start}
 .jm-sl{font-size:calc(20px * var(--ui-scale,1));color:#5B6491;align-self:center}

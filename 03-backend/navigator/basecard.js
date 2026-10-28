@@ -1,6 +1,6 @@
 // claude-drafted: 2026-10-28 — C-56 R-1 기준 카드(이재엽 "사용자에 맞춰서 기준을 만들고 이미 있는 내용이라면 어떤식으로 작성할지", 버튼 "1단계 관문에서" · "'옮김' 새 값"):
 //   1단계 관문을 지날 때 1단계 칸 · 받은 글 · (있으면) 2단계 칸으로 이 프로젝트의 기준 한 장 — 만드는 것 · 쓰는 사람 · 크기 · 이미 정해진 것 · 재료 · 다룰 정보 · 밖으로 · 성공.
-//   지난 칸 · 받은 글에서 온 줄은 출처와 함께 '옮겨 옴'(moved), 사람만 아는 것(성공 숫자 등)은 빈칸(blank) — 지어내지 않는다. 사람이 채우면 '직접'(me). docs/기준.md로 남긴다(toMarkdown). 순수 함수 — 시험 04-tests/navigator/basecard.test.js
+//   지난 칸 · 받은 글에서 온 줄은 출처와 함께 '옮겨 옴'(moved), 사람만 아는 것(성공 숫자 등)은 빈칸(blank) — 지어내지 않는다. 사람이 채우면 '직접'(me). docs/base.md로 남긴다(toMarkdown). 순수 함수 — 시험 04-tests/navigator/basecard.test.js
 (function (root) {
   const FIELDS = [
     { key: "what", label: "만드는 것" }, { key: "who", label: "쓰는 사람" }, { key: "size", label: "크기" }, { key: "fixed", label: "이미 정해진 것" },

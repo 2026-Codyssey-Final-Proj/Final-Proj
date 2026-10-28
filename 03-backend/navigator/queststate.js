@@ -20,7 +20,7 @@
     const feat = lineOf(stageOf(results, 2), FEATURE_LINE), succ = lineOf(stageOf(results, 1), SUCCESS_LINE), out = lineOf(stageOf(results, 1), OUT_LINE);
     const outText = out ? norm(out.join(" ")) : "";
     return {
-      features: feat ? feat.filter((l) => norm(l)).length : null,
+      features: feat ? feat.flatMap((l) => String(l).split(/\s\/\s/)).filter((l) => norm(l)).length : null,   // 3단계 Ⅰ은 '~하면, 앱은 ~한다'를 ' / '로 이어 한 줄(navigator.js STAGE_HINT) — 줄 수가 아니라 조각 수(새 맥락 리뷰 2026-10-28 막힘)
       publish: !outText ? null : /공개\s*(안|하지)|공개하지|비공개|공개는\s*안/.test(outText) ? false : /공개/.test(outText) ? true : null,
       success: !succ || !succ.length ? null : succ.some((l) => /\d/.test(l) && !UNMEASURED.test(l)),
       codeFiles: Array.isArray(files) ? files.filter((f) => f && !f.dir && CODE_RE.test(String(f.path || ""))).length : null,

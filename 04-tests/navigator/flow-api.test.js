@@ -128,6 +128,7 @@ test("POST /api/prepare: 1 · 2단계 결과 · 받은 글(· 기준)로 3 ~ 8�
   assert.equal(r.status, 200, r.text); assert.deepEqual(Object.keys(r.json.prepare.cards), ["2", "3", "4", "5", "6", "7"]);
   assert.equal(r.json.prepare.cards["2"].title, "행사 신청 기능 여섯을 문장으로"); assert.equal(r.json.prepare.cards["3"].from, "새로 정함");
   assert.equal((await call("POST", "/api/prepare", { body: { tier: "Xpress", idea: IDEA, prev: PREV } })).status, 400, "2단계 결과가 없으면");
+  assert.equal((await call("POST", "/api/prepare", { body: { tier: "Xpress", idea: IDEA, prev: PREV3 }, token: false })).status, 403, "확인 값이 없으면 AI를 부르기 전에 403(새 맥락 리뷰 2026-10-28)");
   assert.equal((await call("POST", "/api/prepare", { body: { tier: "Xpress", idea: IDEA, prev: PREV3, base: "가".repeat(2000) } })).status, 400, "기준 카드 글은 1,500자까지");
 });
 

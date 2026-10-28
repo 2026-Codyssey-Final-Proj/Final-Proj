@@ -1,5 +1,5 @@
 // claude-drafted: 2026-10-28 — C-56 R-1 기준 카드(이재엽 "사용자에 맞춰서 기준을 만들고", 버튼 "1단계 관문에서"): 1단계 관문을 지날 때 1단계 칸 · 받은 글 · 작업 폴더로 이 프로젝트의 기준 한 장 —
-//   만드는 것 · 쓰는 사람 · 크기 · 이미 정해진 것 · 재료 · 다룰 정보 · 밖으로 · 성공. 받은 글 · 지난 칸에서 온 줄은 출처와 함께 '옮겨 옴', 사람만 아는 것(성공 숫자)은 빈칸. docs/기준.md로 남긴다. 코드보다 먼저 썼다(code.md 1번)
+//   만드는 것 · 쓰는 사람 · 크기 · 이미 정해진 것 · 재료 · 다룰 정보 · 밖으로 · 성공. 받은 글 · 지난 칸에서 온 줄은 출처와 함께 '옮겨 옴', 사람만 아는 것(성공 숫자)은 빈칸. docs/base.md로 남긴다. 코드보다 먼저 썼다(code.md 1번)
 // 실행: node --test 04-tests/navigator/basecard.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -30,7 +30,7 @@ test("build — 2단계 결과가 있으면 성공(숫자가 있을 때만) · �
   assert.equal(u.success.blank, true); assert.equal(u.success.note, "아직 모름 — 무엇이 막히는지 한 줄 적어요");
 });
 
-test("withEdits · toMarkdown — 사람이 채운 칸은 '직접'으로 남고 옮긴 칸을 덮지 않는다, docs/기준.md는 칸마다 출처(옮겨 옴 — 1단계 Ⅱ · 받은 글 3줄)와 빈칸 표시", () => {
+test("withEdits · toMarkdown — 사람이 채운 칸은 '직접'으로 남고 옮긴 칸을 덮지 않는다, docs/base.md는 칸마다 출처(옮겨 옴 — 1단계 Ⅱ · 받은 글 3줄)와 빈칸 표시", () => {
   const c = B.withEdits(B.build({ results: { 0: r0 }, source: SRC }), { success: "신청 40건이 한곳에 모이면" });
   assert.equal(c.success.text, "신청 40건이 한곳에 모이면"); assert.equal(c.success.by, "me"); assert.equal(c.success.blank, false); assert.equal(c.who.by, "moved");
   const md = B.toMarkdown(c, "동아리 앱");

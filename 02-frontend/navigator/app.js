@@ -994,14 +994,14 @@
     const from = QU.fromOf(q, i), mat = from.length ? `재료 — ${from.map((x) => esc(refLabel(x))).join(" · ")}` : "";
     // C-40(2026-10-26 — 버튼 "짧은 이름 + 쉬운 한 줄"): 제목은 짧은 이름 — 쉬운 한 줄(긴 할 일 문장은 퀘스트 창의 '자세히')
     const easy = QU.easyOf(o.name), title = `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}${easy && !QU.nameOf(q, i).includes(easy) ? ` — ${esc(easy)}` : ""}${o.term ? ` <small class="method">${esc(o.term)}</small>` : ""}`;
-    const ex = QU.examplesOf(q, i), left = q.objs.filter((_, k) => !QU.filled(q, k)).length;
+    const ex = QU.examplesOf(q, i);
     const opts = ex.length > 1 ? `<ol class="dalt" aria-label="플로로의 예시">${ex.map((t, k) => `<li><button type="button" data-act="draft-alt" data-i="${k}"${k ? "" : ' class="rec"'}>${k ? "" : "<small>플로로가 권해요</small>"}${esc(t)}</button></li>`).join("")}</ol>` : "";
     const head = { tone: "blue", mood: "look", badge: "?", meta: `${meta}${d.example ? `<span class="note">예시예요 · 연습</span>` : ""}`, title,
       passing: true, // 초안 확인은 카드 하나 — 칸마다 지난 말로 쌓지 않는다
       body: `${prep}${opts}${foundHTML(q, i)}<ol class="dchk" aria-label="이 장의 초안">${rows}</ol>` };
     const quiet = (acts) => acts.map((a) => ({ ...a, quiet: true }));
-    // 남은 칸 모두 맞아요(C-40 버튼) — 이 칸에 권한 것이 있고 남은 칸이 둘 넘을 때. 누가 정했나는 칸마다 '그대로'
-    const all = QU.acceptedLine(q, i) && left >= 2 && (!QS || QS.allOkOnly(qstates(q)).length >= left) ? [{ label: "남은 칸 모두 맞아요", act: "draft-all", kind: "ghost" }] : [];   // C-56: 옮겨 온 칸에만 — 사람만 아는 칸은 하나씩
+    // '남은 칸 모두 맞아요'(C-40)는 C-56 R-3으로 뺐다(2026-10-28 새 맥락 리뷰 막힘): 옮겨 온 칸은 applyStates가 이미 채우므로 남은 칸은 늘 사람이 볼 칸 — 하나씩 확인한다
+    const all = [];
     // 4 ~ 8단계(C-40 버튼 "예시 셋 중 고르기") — 셋 중 하나를 누르면 그 줄(누가 = 고름), 다 아니면 적거나 '다른 예시'(그 칸만 다시)
     if (ex.length > 1) return { ...head, sub: "플로로가 예시를 셋 만들었어요 — 맞는 것을 골라 주세요", foot: `${mat ? `${mat} · ` : ""}다 아니면 아래 칸에 적어요`,
       acts: quiet([{ label: "다른 예시", act: "draft-again" }, { label: "고칠래요", act: "draft-fix" }, ...all]) };
@@ -1103,8 +1103,8 @@
   const ideaNow = () => (st.idea || st.topic || "").slice(0, N.IDEA_MAX);
   // ── C-56 R-3 · R-4 상태 넷(2026-10-28): 퀘스트가 생기거나 초안이 오면 칸마다 상태를 매긴다(queststate.js — 규칙으로 정할 수 있는 것만). 옮겨 온 칸은 그 글을 '옮김'으로 미리 적고, 건너뛸 칸은 '건너뜀 — 까닭'으로 적어 둔다(판정에서 넘김으로, F-62와 같은 줄).
   //   먼저인 칸은 비워 두고 채팅 카드가 갈 곳을 말한다(관문은 닫힌 채). 사람이 적은 줄은 덮지 않는다
-  const factsNow = () => (QS ? QS.factsFrom({ results: st.results, source: st.source, files: st.files && st.files.src === "mine" ? st.files.list : null }) : {});
-  const qstates = (q = st.quest) => (QS && q ? QS.questStates(q, { prev: prevOf(q.chap), facts: factsNow(), draftOf: QU.draftOf }) : []);
+  const factsNow = (extra = null) => (QS ? QS.factsFrom({ results: extra ? { ...st.results, ...extra } : st.results, source: st.source, files: st.files && st.files.src === "mine" ? st.files.list : null }) : {});   // extra — 아직 결과로 남기 전의 지금 장(관문 판정 때, 새 맥락 리뷰 2026-10-28 막힘)
+  const qstates = (q = st.quest, extra = null) => (QS && q ? QS.questStates(q, { prev: prevOf(q.chap), facts: factsNow(extra), draftOf: QU.draftOf }) : []);
   function applyStates(q) {
     if (!QS || !q || q.phase === "done") return q;
     let out = q; const states = qstates(q);
@@ -1135,7 +1135,7 @@
     const q = st.quest, work = refitWork.join("\n").slice(-(N.WORK_MAX || 600)); refitWork = [];
     if (!work || !refitOk() || st.busy) return;
     const idea = ideaNow(), prev = prevOf(q.chap);
-    if (sensitive([idea, work].join("\n")).length) return;   // 비밀값처럼 보이면 밖에 보내지 않는다(관문의 guard와 같은 생각)
+    if (sensitive([idea, work, baseText(), ...prev.flatMap((p) => p.items.flatMap((x) => x.lines))].join("\n")).length) return;   // 비밀값처럼 보이면 밖에 보내지 않는다(관문의 guard와 같은 생각 — 지난 줄 · 기준 카드까지, 새 맥락 리뷰 2026-10-28)
     try {
       const r = await (await fetch("/api/stagedraft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage: q.chap, tier: st.tier, idea, prev, base: baseText(), work }) })).json();
       if (!r || !r.ok || !r.draft || !st.quest || st.quest.chap !== q.chap || st.quest.phase !== "quest") return;
@@ -1192,7 +1192,7 @@
   async function stageDraft(n, skipCheck) {
     const prev = prevOf(n), idea = ideaNow();
     if (st.mode !== "live" || !canLive) { const ex = QU.exampleStageDraft(n, crits(n), prev); if (ex && st.quest) st.quest = applyStates(QU.withStageDraft(st.quest, ex)); return render(); }
-    if (!skipCheck && guard([idea, ...prev.flatMap((p) => p.items.flatMap((x) => x.lines))].join("\n"), "stage")) return;
+    if (!skipCheck && guard([idea, baseText(), ...prev.flatMap((p) => p.items.flatMap((x) => x.lines))].join("\n"), "stage")) return;   // 기준 카드 줄도 같이 본다(새 맥락 리뷰 2026-10-28)
     Object.assign(st, { warn: null, error: "", planBusy: "stage" });
     const hit = pre && pre.key === preKey(n, prev) ? pre : null; pre = null;
     let r = hit && hit.r && hit.r.ok ? hit.r : null;
@@ -2823,7 +2823,8 @@
   const workEvidence = () => { if (st.mode === "fixture") return true; if (aiMode !== "live") return false; const s = latestSession(); return !!(s && (s.steps || []).some((x) => x.what && (x.add || x.del))); };
   const gateApply = (j) => { if (!j || !N.gateRules) return j; const q = st.quest && st.quest.chap === j.stage ? st.quest : null; const g = N.gateRules(j, { lines: q ? q.objs.map((_, i) => (q.lines[i] || []).join(" / ")) : [], work: workEvidence() });
     if (!q || !QS) return g;   // C-56: 건너뛴 칸의 기준은 넘김(까닭을 결정 기록 · 문서로, F-62와 같은 줄), 먼저인 칸은 '안 됨'(관문 닫힘)
-    const sts = qstates(q); return { ...g, criteria: g.criteria.map((c, i) => { const x = sts[i]; if (!x) return c; if (x.state === "skip") return { ...c, met: true, skipped: true, reason: x.why }; if (x.state === "first") return { ...c, met: false, why: "first" }; return c; }) }; };
+    // 지금 장의 줄(기능 수 등)을 사실에 넣는다 — 첫 판정 때는 아직 st.results에 없다(새 맥락 리뷰 2026-10-28 막힘)
+    const sts = qstates(q, { [q.chap]: QU.resultOf(q) }); return { ...g, criteria: g.criteria.map((c, i) => { const x = sts[i]; if (!x) return c; if (x.state === "skip") return { ...c, met: true, skipped: true, reason: x.why }; if (x.state === "first") return { ...c, met: false, why: "first" }; return c; }) }; };
   const skipOf = (j) => { const sk = (j && j.criteria ? j.criteria : []).filter((c) => c.skipped && c.reason); return sk.length ? { reason: [...new Set(sk.map((c) => c.reason))].join(" · ").slice(0, 200), items: sk.map((c) => c.text) } : null; };
   const checkOf = (j) => j.criteria.map((c) => ({ text: c.text, met: !!c.met, evidence: String(c.evidence || "").slice(0, 300), ...(c.why ? { why: c.why } : {}), ...(c.skipped ? { skipped: true } : {}) }));
   function landed(j0, tokens, sent = st.text, checkBy = "") {
@@ -3026,10 +3027,9 @@
     // C-40 — 예시 셋 중 고르기(누가 = 고름) · 남은 칸 모두 맞아요(누가 = 그대로) · 다른 예시(그 칸만 다시 — 진짜 AI는 이미 본 예시를 피해 다시, 연습은 순서만)
     "draft-alt": (k) => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex[k]) fillNow(ex[k], "pick"); },
     // 1단계에서 크기 칸까지 채우면 만드는 크기도 권한 크기로 — 크기 칩(draft-size)과 같게(2026-10-26 리뷰: 줄만 '보통'이고 등급은 Full로 남아 다음 장이 Full 할 일 수로 열렸다)
-    "card-edit": () => { if (!BC || !st.card) return; st.card = BC.withEdits(st.card, st.cardEdits); st.cardEdits = {}; if (st.prep && SM) st.prep = { ...SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits }), ok: st.prep.ok, fix: false }; save(); render(); say("기준을 고쳤어요 — 아직 안 한 단계의 퀘스트를 이 기준으로 다시 지어요"); },   // C-56 R-1: 카드를 고치면 아직 안 한 퀘스트를 다시(지금은 준비된 퀘스트 — AI 맞춤은 ⓓ)
+    "card-edit": () => { if (!BC || !st.card) return; st.card = BC.withEdits(st.card, st.cardEdits); st.cardEdits = {}; if (st.prep && SM) { const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits }); st.prep = { ...st.prep, cards: st.prep.ai ? mergePrepared(rule.cards, st.prep.cards) : rule.cards, fix: false }; } save(); render(); say("기준을 고쳤어요 — 아직 안 한 단계의 퀘스트를 이 기준으로 다시 지어요"); },   // C-56 R-1: 카드를 고치면 아직 안 한 퀘스트를 다시(지금은 준비된 퀘스트 — AI 맞춤은 ⓓ)
     "first-go": () => { treeChap = null; treeView = "flow"; openQwin("tree"); render(); say("한눈에 보기에서 그 칸을 찾아 채워요 — 지난 장의 칸은 '채우기'로 채팅에서 같이 적어요"); },   // C-56 먼저 → 갈 곳
     "first-notyet": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, x = i >= 0 ? qstates(q)[i] : null; if (!x || x.state !== "first") return; fillNow(`아직 못 함 — ${x.why}`, "me"); },   // 비워 두지 않고 적되 관문 규칙(evidence)이 막는다
-    "draft-all": () => { const q = st.quest; if (!q || !q.draft) return; if (q.chap === 0 && !QU.filled(q, QU.SIZE_AT) && QU.SIZE_TIER[q.draft.size]) setTier(QU.SIZE_TIER[q.draft.size]); st.quest = QU.fillAll(st.quest); afterFill(); },
     "draft-again": async () => {
       const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex.length < 2) return;
       const swap = (it) => ({ ...st.quest, draft: { ...st.quest.draft, items: st.quest.draft.items.map((x, k) => (k === i ? it : x)) } });

@@ -49,4 +49,4 @@ function find(files, { name = "", ask = "", max = 3 } = {}) {
   return out.sort((a, b) => b.hits.length - a.hits.length || a._o[0] - b._o[0] || a._o[1] - b._o[1]).slice(0, max).map(({ _o, ...x }) => x);
 }
 
-module.exports = { keywordsOf, find, STOP, LINE_MAX };
+module.exports = { keywordsOf, find };

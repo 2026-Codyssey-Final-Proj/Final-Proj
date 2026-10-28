@@ -168,8 +168,7 @@ test("app.js — C-39: 고르는 칩은 누가 정했나 = 고름(pick) · 관�
 
 // ── C-40(2026-10-26, 이재엽 "4 ~ 8단계 … 예시 … 선택 · 너무 느려 · 퀘스트에서도 … 어렵게") — 새 맥락 리뷰 뒤 ──
 test("app.js — C-40: 1단계 '남은 칸 모두 맞아요'는 만드는 크기도 권한 크기로 · 미리 부른 초안은 같은 기다림 화면(callAI pending) · 확인한 대로(checkBy)는 그 보고에만", () => {
-  const all = app.slice(app.indexOf('"draft-all": '), app.indexOf('"draft-all": ') + 400);
-  assert.match(all, /setTier\(QU\.SIZE_TIER\[q\.draft\.size\]\)/, "크기 칩과 같게");
+  assert.ok(!app.includes('"draft-all"') && !app.includes('act: "draft-all"'), "C-56 R-3(새 맥락 리뷰 2026-10-28): '남은 칸 모두 맞아요'는 뺐다 — 옮겨 온 칸은 미리 채워지므로 남은 칸은 하나씩");
   assert.match(app, /async function callAI\(url, body, pending = null\)/); assert.match(app, /callAI\(null, null, hit\.p\)/);
   assert.match(app, /function landed\(j0, tokens, sent = st\.text, checkBy = ""\)/);   // R-10(2026-10-27): 들어온 판정 j0에 코드 규칙(gateRules)을 거친 j를 쓴다 assert.ok(!app.includes("checkByNext"), "전역 값 없음");
 });
@@ -189,7 +188,7 @@ test("app.js — 상태 넷: applyStates가 초안 뒤에 붙고, gateApply가 �
   assert.match(a, /const QS = window\.NavQuestState/); assert.match(a, /applyStates\(QU\.withDraft\(/); assert.equal((a.match(/applyStates\(QU\.withStageDraft\(/g) || []).length, 2, "연습 · 진짜 초안 둘 다");
   assert.match(a, /if \(x\.state === "skip"\) return \{ \.\.\.c, met: true, skipped: true, reason: x\.why \}; if \(x\.state === "first"\) return \{ \.\.\.c, met: false, why: "first" \};/);
   assert.match(a, /\.\.\.\(skipOf\(j\) \? \{ skip: skipOf\(j\) \} : \{\}\)/, "결과에 건너뜀 까닭(F-62와 같은 줄)");
-  assert.match(a, /QS\.allOkOnly\(qstates\(q\)\)\.length >= left/, "모두 맞아요는 옮겨 온 칸에만"); assert.match(a, /"first-go": /); assert.match(a, /"first-notyet": /); assert.match(a, /class="qs qs-\$\{x\.state\}"/);
+  assert.ok(!/act: "draft-all"/.test(a), "'남은 칸 모두 맞아요' 단추 없음 — 옮겨 온 칸은 미리 채워지니 남은 칸은 하나씩(새 맥락 리뷰 2026-10-28)"); assert.match(a, /"first-go": /); assert.match(a, /"first-notyet": /); assert.match(a, /class="qs qs-\$\{x\.state\}"/);
   assert.match(read("navigator/index.html"), /queststate\.js/); assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8"), /"queststate\.js"/);
 });
 
