@@ -706,6 +706,7 @@
     if (st.error) return { tone: "red", mood: "think", extra: "oops", badge: "×", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요", sub: esc(st.error),
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
     if (st.blocked && !st.blocked.retrying) return momentBlocked();   // F-69 맡긴 일이 허락을 못 받아 막혔다 — 사람이 길을 고른다
+    if (stallShown()) return momentStall();   // C-50 맡긴 일이 멈춘 것 같다 — 끄지 않고 사람이 고른다
     if (st.screen === "gate") return momentGate();
     if (st.meal) return feedSortMoment();   // 먹이를 나눠 정리하는 중(C-15)
     if (st.presetPick) return momentPreset();   // 문서 틀 고르기(C-44)
@@ -2355,12 +2356,41 @@
     let t = null; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch { return; } finally { twBusy = false; }
     if (!tw) return;
     const w = tw, h = TASK_END[w.kind] || {};
-    if (!t || t.at !== w.at) { twStop(); st.blocked = null; if (h.lost) h.lost(); else if (h.stop) h.stop(); render(); return; }   // 다른 일 — 이 일의 결과는 잃었다
-    if (t.state === "running") return;
+    if (!t || t.at !== w.at) { twStop(); st.blocked = null; st.stall = null; if (h.lost) h.lost(); else if (h.stop) h.stop(); render(); return; }   // 다른 일 — 이 일의 결과는 잃었다
+    if (t.state === "running") { stallCheck(t, w.kind); return; }
+    st.stall = null;
     if (t.state === "blocked") { clearInterval(twTimer); twTimer = null; onBlocked(t, w.kind); return; }
+    if (t.state === "stopped") { twStop(); st.blocked = null; if (h.stop) h.stop(); render(); return; }   // C-50 사람이 멈췄다(다른 화면에서)
     twStop(); st.blocked = null;
     if (h.end) h.end(t);
     render();
+  }
+  // ── C-50 맡긴 일이 멈추면(2026-10-28 — 결정 모음 A-06): 서버가 준 조용한 시간(quiet — 그 폴더의 훅 알림 · 허락 카드가 마지막으로 온 뒤)으로
+  //   2분 조용함(한 줄) · 5분 멈춘 것 같음 · 15분 시간 초과(카드). 값은 임시 — 리허설에서 재서 정한다. 끄지 않고 A-03 선택창으로: 더 기다리기 · 멈추고 다시 맡기기 · 직접 하기 · 멈추고 그만두기(멈추기는 사람이 고를 때만)
+  const QUIET = { calm: 120, stuck: 300, over: 900 }, QLV = { calm: 1, stuck: 2, over: 3 };
+  function stallCheck(t, kind) {
+    const q = t.quiet || 0, lv = q >= QUIET.over ? "over" : q >= QUIET.stuck ? "stuck" : q >= QUIET.calm ? "calm" : "", prev = st.stall && st.stall.at === t.at ? st.stall : null;
+    if (!lv) { if (prev) { st.stall = null; render(); } return; }   // 다시 움직인다
+    if (prev && QLV[prev.lv] >= QLV[lv]) { prev.q = q; return; }
+    st.stall = { at: t.at, kind, lv, q, wait: prev ? prev.wait : "" };
+    if (lv === "calm") return say("Claude Code가 2분째 조용해요 — 조금 더 기다려 볼게요");
+    if (st.ui !== "home") go("home"); else render();
+  }
+  const stallShown = () => !!(st.stall && st.stall.lv !== "calm" && st.stall.wait !== st.stall.lv);
+  function momentStall() {
+    const s = st.stall, over = s.lv === "over", min = Math.max(1, Math.floor(s.q / 60));
+    return { tone: "amber", mood: "think", badge: "!", meta: `<span class="mm-stage">맡긴 일 · ${over ? "시간 초과" : "멈춘 것 같아요"}</span>`,
+      title: over ? `${min}분 넘게 아무 소식이 없어요` : `Claude Code가 ${min}분째 조용해요 — 멈춘 것 같아요`,
+      sub: "허락을 기다리거나 오래 걸리는 일일 수 있어요. 끄지 않고 더 기다릴 수도, 멈추고 다시 맡기거나 직접 할 수도 있어요.",
+      acts: [{ label: "더 기다리기", act: "stall-wait", key: "Enter", pri: true }, { label: "멈추고 다시 맡기기", act: "stall-again" }, { label: "직접 하기", act: "stall-self" }, { label: "멈추고 그만두기", act: "stall-stop", kind: "ghost" }] };
+  }
+  // 사람이 고르면 멈춘다 — 지켜보기를 잠시 세우고(멈춘 결과를 끝으로 읽지 않게) 서버가 그 일을 끌 때까지 기다린다
+  async function stallHalt() {
+    const s = st.stall; if (!s) return null;
+    clearInterval(twTimer); twTimer = null; st.stall = null;
+    try { await fetch("/api/task/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at: s.at }) }); } catch {}
+    for (let k = 0; k < 20; k++) { let t = null; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch {} if (!t || t.at !== s.at || t.state !== "running") break; await new Promise((r) => setTimeout(r, 250)); }
+    return s;
   }
   // 막혔다 — ①이면 바로 다시 맡기고, ② · ③이면 카드(momentBlocked). 접혀 있어도 펼친다(허락 카드와 같이 — 사람이 골라야 이어진다)
   function onBlocked(t, kind) {
@@ -3188,6 +3218,11 @@
     "result-open": (k) => { const f = st.runOut && st.runOut.files[k || 0]; if (!f) return; const i = st.files && st.files.list ? st.files.list.findIndex((x) => !x.dir && x.path === f.path) : -1; if (i < 0) return say("파일 목록에서 그 파일을 못 찾았어요 — 작업실을 다시 열어요"); openQwin("quest"); openFile(i); },
     "code-yes": () => buildGo("code", BUILD && BUILD.skeletonTask({ results: st.results, topic: st.topic, why: "code" })),
     "code-no": () => { st.codeless = { at: ymd() }; save(); if (st.quest) st.quest = applyStates(st.quest); render(); say("코드 없이 이 단계를 해요 — 결정 기록에 '코드 없이 지남'으로 남겨요"); },
+    // C-50 멈춘 것 같을 때(A-06) — 더 기다리기(다음 단계까지 묻지 않음) · 멈추고 다시 맡기기 · 직접 하기(멈추고 맡길 글) · 멈추고 그만두기
+    "stall-wait": () => { if (!st.stall) return; st.stall.wait = st.stall.lv; render(); say("더 기다릴게요 — 소식이 오면 알려 드려요"); },
+    "stall-again": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("again"); },
+    "stall-self": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("brief"); },
+    "stall-stop": async () => { const s = await stallHalt(); if (!s) return; tw = null; const h = TASK_END[s.kind]; if (h && h.stop) h.stop(); render(); say("멈췄어요 — 언제든 다시 맡길 수 있어요"); },
     // F-69 막힌 일(A-03) — 다시 맡기기 · 명령 없이 파일만 · 직접 하기(맡길 글) · 글 복사 · 다 했어요 · 그만두기
     "blocked-again": () => retryBlocked("again"),
     "blocked-files": () => retryBlocked("files-only"),

@@ -24,7 +24,7 @@ fs.writeFileSync(STUB, `const fs = require("node:fs"); let i = ""; process.stdin
   const p = JSON.parse(fs.readFileSync(process.env.STUB_PLAN, "utf8"));
   fs.writeFileSync(${JSON.stringify(STUB_OUT)}, JSON.stringify({ stdin: i, n: (p.n || 0) }));
   setTimeout(() => { process.stdout.write(JSON.stringify({ type: "result", subtype: "success", is_error: false, result: "끝", usage: { input_tokens: 10, output_tokens: 5 },
-    permission_denials: p.denials || [] })); process.exit(p.exit || 0); }, p.delay || 300); });`);
+    permission_denials: p.denials || [], ...(p.report ? { structured_output: p.report } : {}) })); process.exit(p.exit || 0); }, p.delay || 300); });`);
 const plan = (p) => fs.writeFileSync(PLAN, JSON.stringify(p));
 
 const HOME = path.join(TMP, "claude-home-empty");   // 사용자 설정에 훅이 없는 컴퓨터
@@ -178,6 +178,19 @@ test("허락 카드에 사람이 답하면 그 답을 센다 — 거절(deny)은
   assert.equal(t.state, "blocked"); assert.deepEqual(t.blocked.asks, { allow: 1, deny: 1, none: 0 });
 });
 
+// 진짜 Claude Code로 본 일(2026-10-28): 사람이 위험해 보이는 명령 둘을 거절했지만 다른 길로 끝 조건 셋을 모두 해냈다 — 그때 막힘 카드를 띄우면 안 된다
+test("거절이 있어도 끝 조건 보고가 모두 '해냄'이면 done — 보고가 덜 됐거나 없으면 blocked", async () => {
+  const ok = { items: [{ check: "README에 실행 명령 한 줄", done: true, evidence: "README.md" }], easy: "뼈대를 만들었어요.", ask: "" };
+  plan({ delay: 150, denials: [{ tool_name: "Bash", tool_input: {} }, { tool_name: "Bash", tool_input: {} }], report: ok });
+  assert.equal((await call("POST", "/api/task/start", { text: "뼈대", checks: ["README에 실행 명령 한 줄"] })).status, 200);
+  let t = await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+  assert.equal(t.state, "done", JSON.stringify(t)); assert.equal(t.blocked, null); assert.equal(t.report.done, 1);
+  plan({ delay: 150, denials: [{ tool_name: "Write", tool_input: {} }], report: { ...ok, items: [{ check: "README에 실행 명령 한 줄", done: false, evidence: "" }] } });
+  assert.equal((await call("POST", "/api/task/start", { text: "뼈대", checks: ["README에 실행 명령 한 줄"] })).status, 200);
+  t = await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+  assert.equal(t.state, "blocked", "보고가 덜 됐으면 막힘");
+});
+
 test("끝 코드가 0이 아니면 전처럼 failed — 막힘(blocked)은 끝 코드 0 + 거절일 때만", async () => {
   plan({ delay: 100, exit: 1, denials: [{ tool_name: "Write", tool_input: {} }] });
   assert.equal((await call("POST", "/api/task/start", { text: "실패하는 일" })).status, 200);
@@ -185,4 +198,35 @@ test("끝 코드가 0이 아니면 전처럼 failed — 막힘(blocked)은 끝 �
   assert.equal(t.state, "failed"); assert.equal(t.blocked, null);
   const r = await call("POST", "/api/task/retry", { at: t.at, way: "again" });
   assert.equal(r.status, 200, "실패한 일도 다시 맡길 수 있다"); await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+});
+
+// ════════ C-50 맡긴 일이 멈추면(결정 모음 A-06 — 시간 값은 리허설에서 재서 정함, 그때까지 2분 · 5분 · 15분. 끄지 않고 A-03의 선택창으로) ════════
+test("C-50 조용한 시간(quiet, 초) — 도는 동안 늘고, 그 폴더의 훅 알림 · 허락 카드가 오면 0으로. 끝나면 0", async () => {
+  plan({ delay: 4000 });
+  const r = await call("POST", "/api/task/start", { text: "오래 걸리는 일" });
+  assert.equal(r.status, 200, r.text); assert.equal(r.json.task.quiet, 0);
+  await wait(1300);
+  assert.ok((await task()).quiet >= 1, "조용하면 는다");
+  fs.mkdirSync(path.join(dir, "src"), { recursive: true });   // Claude Code는 있는 폴더(실제 경로)를 보낸다
+  assert.equal((await call("POST", "/api/event", { hook_event_name: "PostToolUse", session_id: "s-q", cwd: path.join(dir, "src"), tool_name: "Write", tool_input: { file_path: "a.js" } })).status, 200);
+  assert.equal((await task()).quiet, 0, "그 폴더(안)의 훅 알림이 오면 0");
+  await wait(1100);
+  await call("POST", "/api/event", { hook_event_name: "PostToolUse", session_id: "s-x", cwd: fs.mkdtempSync(path.join(TMP, "other-")), tool_name: "Write", tool_input: { file_path: "b.js" } });
+  assert.ok((await task()).quiet >= 1, "다른 폴더의 알림은 세지 않는다");
+});
+
+test("C-50 멈추기 — 사람이 고를 때만(stop): 그 번호의 도는 일만 끄고 state stopped, 다시 맡길 수 있다. 직접 하기 글은 도는 중에도", async () => {
+  const t0 = await task(); assert.equal(t0.state, "running");
+  const b = await call("POST", "/api/task/retry", { at: t0.at, way: "brief" });
+  assert.equal(b.status, 200, "직접 하기 글은 도는 중에도(멈췄다고 본 때 선택창에서)"); assert.match(b.json.brief, /오래 걸리는 일/);
+  assert.equal((await call("POST", "/api/task/stop", { at: t0.at + 1 })).status, 409, "다른 번호");
+  const s = await call("POST", "/api/task/stop", { at: t0.at });
+  assert.equal(s.status, 200, s.text);
+  const t = await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+  assert.equal(t.state, "stopped"); assert.equal(t.blocked, null);
+  assert.equal((await call("POST", "/api/task/stop", { at: t0.at })).status, 409, "이미 멈춘 일");
+  plan({ delay: 100 });
+  const again = await call("POST", "/api/task/retry", { at: t0.at, way: "again" });
+  assert.equal(again.status, 200, again.text); assert.equal(again.json.task.try, 1);
+  assert.equal((await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; })).state, "done");
 });

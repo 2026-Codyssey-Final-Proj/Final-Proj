@@ -54,7 +54,7 @@ const blocked = (kinds, asks, tryN) => ({ state: "blocked", code: 0, at: AT, try
 // steps — /api/task가 차례로 줄 답(마지막은 계속). /api/task/retry가 오면 다음 묶음으로
 async function openLive(browser, rounds) {
   const page = await browser.newPage();
-  const seen = { start: [], retry: [], errors: [], round: 0 };
+  const seen = { start: [], retry: [], stops: [], stopped: false, errors: [], round: 0 };
   page.on("pageerror", (e) => seen.errors.push(String(e)));
   page.on("console", (m) => { if (m.type() === "error" && !/favicon\.ico$/.test((m.location() && m.location().url) || "")) seen.errors.push(m.text()); });
   await page.setViewport({ width: 1440, height: 1000 });
@@ -67,9 +67,10 @@ async function openLive(browser, rounds) {
     if (p === "/api/task/retry") {
       const b = JSON.parse(req.postData() || "{}"); seen.retry.push(b);
       if (b.way === "brief") return json({ ok: true, brief: "회원이 신청 단추를 누르면, 앱은 신청을 받는다\n\n끝 조건:\n(1) 신청 단추를 누르면 목록에 한 줄이 생긴다" });
-      seen.round += 1; return json({ ok: true, project: "test-1", task: { state: "running", at: AT, try: seen.round } });
+      seen.round += 1; seen.stopped = false; return json({ ok: true, project: "test-1", task: { state: "running", at: AT, try: seen.round } });
     }
-    if (p === "/api/task") return json({ ok: true, task: rounds[Math.min(seen.round, rounds.length - 1)] });
+    if (p === "/api/task/stop") { seen.stops.push(JSON.parse(req.postData() || "{}")); seen.stopped = true; return json({ ok: true, task: { state: "running", at: AT } }); }
+    if (p === "/api/task") return json({ ok: true, task: seen.stopped ? { state: "stopped", code: null, at: AT, try: seen.round, report: null, blocked: null, quiet: 0 } : rounds[Math.min(seen.round, rounds.length - 1)] });
     return req.continue();
   });
   await page.evaluateOnNewDocument(() => {
@@ -144,6 +145,31 @@ test("직접 하기 — 맡길 글과 복사 · 다 했어요, 그만두기 — 
     await click(page, ".mc.chat [data-act=blocked-done]");
     assert.ok(!(await page.$(".mc.chat [data-act=blocked-copy]")), "다 했어요 → 카드가 닫힌다");
     assert.ok(await page.$(".mc.chat [data-act=plan-hand]"), "그 줄을 다시 맡길 수 있다");
+    assert.deepEqual(seen.errors, []);
+  } finally { await browser.close(); }
+});
+
+test("C-50 멈춘 것 같으면(5분) 카드 — 더 기다리기 → 15분(시간 초과)에 다시 묻는다 → 멈추고 다시 맡기기(멈춤 → 같은 일 다시) → 보고", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
+  try {
+    const running = { state: "running", at: AT, try: 0, report: null, blocked: null, quiet: 320 };
+    const { page, seen } = await openLive(browser, [running, { state: "done", code: 0, at: AT, try: 1, report: REPORT, blocked: null, quiet: 0 }]);
+    await handFirst(page);
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("멈춘 것 같아요"), { timeout: 12000 });
+    assert.match(await nowSay(page), /5분째 조용해요/);
+    for (const a of ["stall-wait", "stall-again", "stall-self", "stall-stop"]) assert.ok(await page.$(`.mc.chat [data-act=${a}]`), a);
+    await click(page, ".mc.chat [data-act=stall-wait]");
+    assert.doesNotMatch(await nowSay(page), /멈춘 것 같아요/, "더 기다리기 — 카드를 닫는다");
+    await wait(3500);
+    assert.doesNotMatch(await nowSay(page), /멈춘 것 같아요/, "같은 단계에서는 다시 묻지 않는다");
+    assert.deepEqual(seen.stops, [], "저절로 끄지 않는다");
+    running.quiet = 930;
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("넘게 아무 소식이 없어요"), { timeout: 12000 });
+    await click(page, ".mc.chat [data-act=stall-again]");
+    await page.waitForSelector(".msg.now .pl-rep", { timeout: 12000 });
+    assert.deepEqual(seen.stops, [{ at: AT }], "사람이 고를 때만 그 일을 멈춘다");
+    assert.deepEqual(seen.retry, [{ at: AT, way: "again" }], "멈춘 뒤 같은 일을 다시");
+    assert.match(await nowSay(page), /신청하는 종이를 화면으로 만들었어요/);
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });
