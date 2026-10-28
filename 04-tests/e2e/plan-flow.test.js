@@ -120,7 +120,7 @@ test("채팅에서 한 바퀴: 붙여 넣기 → 계획 → 줄마다 맞아요 
     await page.waitForSelector(".qwin .qsel [data-v=plan][aria-pressed=true]", { timeout: 5000 });
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .toc button")].map((b) => b.querySelector("small")?.textContent)), ["지금", "★ 아직"], "순서대로 — 지금 줄만 열린다");
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /맡길 일/);
-    assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /2개 중 1번째/);
+    assert.match(await page.$eval(".isl", (e) => e.textContent), /2개 중 1번째/, "진행은 섬 카드에(머리 줄의 단계 띠는 이름만 — C-58, PR ② 2026-10-29)");
     assert.match(await nowSay(page), /회원이 신청 단추를 누르면/);
     await click(page, ".mc.chat [data-act=plan-hand]");
     assert.deepEqual(seen.start, [{ text: PLAN.items[0].need, checks: [PLAN.items[0].check] }], "기준을 같이 넘긴다");

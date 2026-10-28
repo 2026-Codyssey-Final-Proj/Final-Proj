@@ -53,7 +53,8 @@
     h.style.setProperty("--col-w", `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);
     if (folded) return;
     hd.className = axis === "w" ? "v" : "h";
-    hd.style.cssText = axis === "w" ? `left:${side === "left" ? v - 7 : innerWidth - v - 7}px;top:0;width:14px;height:100%` : `top:${side === "top" ? v - 7 : innerHeight - v - 7}px;left:0;height:14px;width:100%`;
+    const whH = (root.querySelector(".wh") || {}).offsetHeight || 0;   // 머리 줄(C-62 — 창 전체 폭)은 손잡이가 덮지 않는다(새 맥락 리뷰 2026-10-29)
+    hd.style.cssText = axis === "w" ? `left:${side === "left" ? v - 7 : innerWidth - v - 7}px;top:${whH}px;width:14px;height:calc(100% - ${whH}px)` : `top:${side === "top" ? v - 7 : innerHeight - v - 7}px;left:0;height:14px;width:100%`;
     hd.setAttribute("aria-orientation", axis === "w" ? "vertical" : "horizontal"); hd.setAttribute("aria-label", axis === "w" ? "플로로 칸 너비 손잡이" : "플로로 칸 높이 손잡이");
     hd.setAttribute("aria-valuemin", RANGE[axis][0]); hd.setAttribute("aria-valuemax", hiOf(axis)); hd.setAttribute("aria-valuenow", v); hd.setAttribute("aria-valuetext", `${axis === "w" ? "너비" : "높이"} ${v}px`);
   }
