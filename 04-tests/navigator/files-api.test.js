@@ -65,7 +65,7 @@ before(async () => {
   await new Promise((r) => srv.listen(port, "127.0.0.1", r));
   Srv.eventToken();
 });
-after(() => { srv && srv.close(); fs.rmSync(TMP, { recursive: true, force: true }); });
+after(() => { srv && srv.close(); fs.rmSync(TMP, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); });   // maxRetries — Windows는 방금 끝난 git 자식 프로세스가 폴더를 잠깐 잡아 EPERM(F-78, 2026-10-29)
 function call(method, url, { body, token: withTok = true, headers = {} } = {}) {
   return new Promise((resolve, reject) => {
     const data = body === undefined ? undefined : JSON.stringify(body);
