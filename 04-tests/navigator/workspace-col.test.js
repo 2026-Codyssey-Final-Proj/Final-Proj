@@ -23,7 +23,7 @@ test("main.js — 작업실이 뜨면 섬 창은 숨고(hide), 닫히면 다시 
 
 test("app.js — 작업실에 보내는 HTML = 작업실 판 + 섬의 옆 칸(.isl-col side-… narrow|wide). 자리를 바꾸면 다시 그릴 뿐(앱에 보내지 않음). 옆 칸의 채팅 Enter는 섬의 send()로", () => {
   const a = read("navigator/app.js");
-  assert.match(a, /const islCol = \(\) => `<div class="isl-col side-\$\{side\} \$\{side === "left" \|\| side === "right" \? "narrow" : "wide"\}\$\{colFolded\(\) \? " folded" : ""\}">\$\{colFolded\(\) \? pillHTML\(\) : islandHTML\(""\)\}<\/div>`;/, "작업실 판 + 섬의 옆 칸(접혀 있으면 알약 — C-46 R-2, 2026-10-27)");
+  assert.match(a, /const islCol = \(\) => `<div class="isl-col side-\$\{side\} \$\{side === "left" \|\| side === "right" \? "narrow" : "wide"\}\$\{colFolded\(\) \? " folded" : ""\}\$\{colFolded\(\) && st\.boot \? " has-bub" : ""\}">\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\(""\)\}<\/div>`;/, "작업실 판 + 섬의 옆 칸(접혀 있으면 알약 — C-46 R-2, 2026-10-27 · 켤 때는 알약 옆 말풍선 — C-55, 2026-10-28)");
   assert.match(a, /\[\["quest", st\.qwin, st\.qwin \? qwinHTML\(\) \+ islCol\(\) : ""\]\]/);
   assert.match(a, /if \(p\.type === "key" && p\.key === "Enter" && p\.act === "say"\) return send\(\);/);
   assert.match(a, /side = QU\.sideOf\(el\.dataset\.v\); writeLS\(SIDE_KEY, side\); render\(\);/);
