@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld("floeApp", {
   platform: process.platform,                                 // "win32" · "darwin" · "linux" — 운영체제마다 다른 모양(app.css html.plat-win32, 2026-10-22)
   connect: () => ipcRenderer.invoke("floe:connect"),          // 프로젝트 폴더 고르기 → 훅 더하기
   disconnect: () => ipcRenderer.invoke("floe:disconnect"),    // 프로젝트 폴더 고르기 → 훅 빼기
+  // 앱 메뉴(상단바 · 트레이)의 '프로젝트 폴더 연결… · 연결 빼기…'가 끝나면 {add, name, config}가 온다(F-72, 2026-10-28) — 섬이 옛 이름 · 파일 목록을 잊는다
+  onProject: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:project", h); return () => ipcRenderer.removeListener("floe:project", h); },
   // C-31 시작하는 자리(2026-10-24) — 홈/Floe/이름에 새 폴더 · 내 GitHub 저장소를 가져오기(clone) · 내 저장소 목록. 화면은 이름 · 주소 글만 보내고 경로는 앱이 만든다
   newProject: (name) => ipcRenderer.invoke("floe:project-new", String(name || "")),
   cloneProject: (text) => ipcRenderer.invoke("floe:project-clone", String(text || "")),

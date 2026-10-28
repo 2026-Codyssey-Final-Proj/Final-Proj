@@ -3214,11 +3214,11 @@
     // Electron 앱(2026-10-19) — 폴더를 골라 훅을 더하거나 빼고, .env를 두는 설정 폴더를 연다. 앱 밖에서는 단추가 없다
     "app-connect": async () => {   // 고른 폴더가 곧 플로로가 움직이는 자리(C-31) — 앱이 서버에도 알린다. 경로 대신 폴더 이름만 말한다
       const r = await window.floeApp.connect();
-      if (r && r.ok && r.name) { st.gh = null; say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); } else if (r && r.message) say(r.message.split("\n")[0]);   // 말은 60자 안(SAY_MAX)
+      if (r && r.ok && r.name) connected(r); else if (r && r.message) say(r.message.split("\n")[0]);   // 말은 60자 안(SAY_MAX)
     },
     // 연결을 빼면 이름표의 옛 이름도 잊는다 — GitHub 칸(st.gh)은 다시 묻고(서버가 아는 다른 폴더가 있으면 그 이름), 훅 알림으로 안 이름(st.project)도 비운다.
     //   전에는 뺀 뒤에도 옛 폴더 · 저장소 이름이 남았다(F-58-5 새 맥락 리뷰, 2026-10-25) — claude-drafted: 2026-10-25
-    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.ok) { st.gh = null; st.project = ""; render(); } if (r && r.message) say(r.message.split("\n")[0]); },
+    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.ok) disconnected(); if (r && r.message) say(r.message.split("\n")[0]); },
     "app-settings": () => window.floeApp.openSettings(),
     "gh-reload": () => { st.ghNote = ""; st.gh = null; loadGithub(); render(); },   // 설정의 GitHub 칸(C-25, 2026-10-24)
     "tokens-reset": () => resetTokens(),   // 토큰 칸 — 새로 재기(2026-10-24)
@@ -3570,11 +3570,24 @@
   // C-53 상태 줄의 줄 위치 — 브라우저 판은 글 칸이 섬 안에 있어 여기서(앱의 작업실 창은 win.js가 같은 일을) 상태 줄 글만 바꾼다(전체 render 없이 — 치는 동안 글 칸이 흔들리지 않게)
   const caretHere = (e) => { const t = e.target; if (!t || !t.classList || !t.classList.contains("fv-edit")) return; caretLine = t.value.slice(0, t.selectionStart).split("\n").length; const pos = $nav.querySelector(".fv-st [data-pos]"); if (pos) pos.textContent = ` · 줄 ${caretLine}`; };
   $nav.addEventListener("keyup", caretHere); $nav.addEventListener("click", caretHere);
-  document.addEventListener("floe:project-picked", (e) => {
-    const d = (e && e.detail) || {}, n = String(d.name || "");
+  // 작업 폴더가 바뀌면 옛 폴더에서 받아 둔 것을 잊고 다시 받는다 — 이름표(st.gh) · 파일 칸(작업실이 열려 있으면 바로). 처음 설정의 가져오기 · 새로 만들기와 앱 메뉴(F-72)가 같이 쓴다
+  const forgetFolder = () => {
     st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "canvas";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
+    if (canLive && !ghLoading) loadGithub();
+    if (st.qwin) loadFiles();
+  };
+  window.floeUnsaved = () => st.openFiles.filter((f) => f.dirty).length;   // 앱(main.js pickAndConnect)이 폴더를 고르기 전에 묻는다 — 저장 안 한 파일이 있으면 한 번 더 확인(F-72)
+  const projectPicked = (d) => {
+    const n = String(d.name || "");
+    forgetFolder();
     say(d.config ? "가져온 저장소에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${n.length > 20 ? `${n.slice(0, 19)}…` : n} 폴더로 바꿨어요. 이제 여기서 같이 일해요.`);
-  });
+  };
+  document.addEventListener("floe:project-picked", (e) => projectPicked((e && e.detail) || {}));
+  // F-72(2026-10-28): 앱 메뉴(상단바 · 트레이)로 연결 · 연결 빼기 — 섬의 단추를 거치지 않아 앱이 끝난 뒤 알려 준다. 빼면 훅 알림으로 안 이름(st.project)도 잊는다(app-disconnect와 같이)
+  //   섬의 '프로젝트 폴더 연결… · 연결 빼기…' 단추도 같은 길 — 전에는 이름표(st.gh)만 비워 파일 칸은 옛 폴더 그대로였다(F-72 새 맥락 리뷰)
+  const connected = (r) => { forgetFolder(); say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); };
+  const disconnected = () => { st.project = ""; forgetFolder(); render(); };
+  if (window.floeApp && window.floeApp.onProject) window.floeApp.onProject((d) => (d && d.add ? connected({ name: String(d.name || ""), config: !!d.config }) : disconnected()));
   document.addEventListener("floe:setup-done", (e) => {
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });

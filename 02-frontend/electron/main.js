@@ -180,7 +180,17 @@ ipcMain.on("floe:thru", (e, on) => {
   win.setIgnoreMouseEvents(!!on, { forward: true });
 });
 ipcMain.on("floe:expand", (e) => { if (win && e.sender === win.webContents) expandWindow(); });
+// 저장하지 않은 파일 수 — 폴더를 바꾸거나 빼면 섬이 열어 둔 파일을 닫으므로(F-72) 고르기 전에 묻는다. 섬이 없거나 답을 못 받으면 0
+async function unsavedCount() {
+  if (!win || win.isDestroyed()) return 0;
+  try { return Number(await win.webContents.executeJavaScript("typeof window.floeUnsaved === 'function' ? window.floeUnsaved() : 0")) || 0; } catch { return 0; }
+}
 async function pickAndConnect(add) {
+  const n = await unsavedCount();
+  if (n) {
+    const a = await dialog.showMessageBox(win, { type: "warning", buttons: ["그래도 폴더 고르기", "취소"], defaultId: 1, cancelId: 1, message: `저장하지 않은 파일이 ${n}개 있어요.`, detail: "폴더를 바꾸거나 연결을 빼면 열어 둔 파일이 닫히고, 고친 내용은 버려져요. 먼저 저장하려면 취소를 눌러요." });
+    if (a.response !== 0) return { ok: false, message: "" };
+  }
   const r = await dialog.showOpenDialog(win, { title: add ? "Claude Code로 작업하는 프로젝트 폴더" : "연결을 뺄 프로젝트 폴더", properties: ["openDirectory"] });
   if (r.canceled || !r.filePaths[0]) return { ok: false, message: "" };
   try { return add ? useFolder(r.filePaths[0]) : dropFolder(r.filePaths[0]); }
@@ -223,7 +233,12 @@ function showIsland() {
 }
 // 메뉴 항목 하나 — Mac은 위 메뉴 줄, Windows · Linux는 창 우클릭 · 트레이에서 같은 것을 본다
 function floeItems() {
-  const say = async (add) => { const r = await pickAndConnect(add); if (r.message) dialog.showMessageBox(win, { message: r.message }); };
+  // F-72(2026-10-28): 메뉴로 바꾸면 섬(app.js)에도 알린다 — 전에는 서버만 새 폴더를 알고, 화면은 기억해 둔 옛 이름 · 파일 목록 그대로였다(창 '새로 고침'은 작업실 창만 다시 그려 소용없었다). 경로 대신 이름만
+  const say = async (add) => {
+    const r = await pickAndConnect(add);
+    if (r.ok && win && !win.isDestroyed()) win.webContents.send("floe:project", { add, name: r.name || "", config: !!r.config });
+    if (r.message) dialog.showMessageBox(win, { message: r.message });
+  };
   return [
     { label: `Floe ${app.getVersion()} · 새 버전 확인 (Releases)`, click: () => shell.openExternal(RELEASES) },
     { type: "separator" },

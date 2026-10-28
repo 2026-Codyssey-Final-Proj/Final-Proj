@@ -36,3 +36,9 @@ test("보드 — 문서마다 상자(단계 · 기획서 · 저장소 창), 재�
   assert.deepEqual(D.build([]).frames, []); assert.deepEqual(D.build([]).tour, []);
   assert.ok(!JSON.stringify(b).includes("/Users/"), "절대 경로 없음");
 });
+
+// claude-drafted: 2026-10-27 — F-71: 사본에서 @import를 뺄 때 남은 꼬리(`500&family=…swap');`)가 바로 뒤 :root를 먹어 색 변수가 모두 빠졌다 — 작은 지도 칸이 검게 그려짐
+test("board.css — 주석을 빼면 첫 규칙이 :root다(@import를 뺀 자리에 찌꺼기가 남아 색 변수를 먹지 않는다)", () => {
+  const css = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../03-backend/navigator/board/board.css"), "utf8");
+  assert.match(css.replace(/\/\*[\s\S]*?\*\//g, "").trimStart(), /^:root\{/);
+});
