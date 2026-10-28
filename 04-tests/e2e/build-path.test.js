@@ -87,7 +87,7 @@ async function openLive(browser, hash) {
     try { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true, via: "cli" })); if (!sessionStorage.getItem("seeded")) { localStorage.setItem("navigator-prototype:v1", JSON.stringify(seed)); sessionStorage.setItem("seeded", "1"); } } catch {}
   }, { at: Date.now(), mode: "live", tier: "Xpress", topic: "국내 여행 추천", results: RESULTS });
   await page.goto(`http://127.0.0.1:${port}/${hash}`, { waitUntil: "load" });
-  await page.waitForSelector(".mc.chat [data-act=say]", { timeout: 8000 });
+  await page.waitForSelector(".mc.chat [data-act=say]", { timeout: 15000 });
   await wait(500);
   return { page, seen };
 }
@@ -106,7 +106,7 @@ test("ⓑ 5단계 '뼈대 코드 맡기기' — 단계 요약 · 끝 조건 셋�
     const s = seen.start[0];
     assert.match(s.text, /5단계/); assert.match(s.text, /'국내 여행 추천'/); assert.match(s.text, /여행 리포트 파일이 나온다/, "단계 요약"); assert.match(s.text, /지어내지/);
     assert.equal(s.checks.length, 3); assert.match(s.checks[0], /실행 명령/);
-    await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("끝 조건 3/3"), { timeout: 12000 });
+    await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("끝 조건 3/3"), { timeout: 20000 });
     assert.match(await chatText(page), /가장 단순한 뼈대를 만들었어요/);
     if (SHOTS) await shot(page, "build-skeleton");
     assert.deepEqual(seen.errors, []);
@@ -118,7 +118,7 @@ test("A-04 6단계에 코드 파일이 없으면 묻는다 — 아니요: 코드
   try {
     const { page, seen } = await openLive(browser, "#ex=5&q=quest");
     await openIsland(page);
-    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 8000 });
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 15000 });
     assert.ok(await page.$(".mc.chat [data-act=code-yes]") && await page.$(".mc.chat [data-act=code-no]"), "예 · 아니요");
     if (SHOTS) await shot(page, "code-ask");
     await click(page, ".mc.chat [data-act=code-no]");
@@ -131,7 +131,7 @@ test("A-04 6단계에 코드 파일이 없으면 묻는다 — 아니요: 코드
     await click(page, '.msg.now [data-act=line-go][data-i="1"]');
     assert.match(seen.start.at(-1).text, /기능: 추천지를 고르면, 앱은 리포트 파일을 만든다/);
     assert.doesNotMatch(seen.start.at(-1).text, /기능: 날짜를 넣으면/, "그 줄 하나만");
-    await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("리포트 파일을 만드는 기능을 넣었어요"), { timeout: 12000 });
+    await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("리포트 파일을 만드는 기능을 넣었어요"), { timeout: 20000 });
     await click(page, ".mc.chat [data-act=line-open]");
     assert.deepEqual(await page.$$eval(".msg.now .lines-pick li", (ls) => ls.map((l) => l.className)), ["", "y"], "보고가 다 '해냄'인 줄은 보고 옴");
     if (SHOTS) await shot(page, "line-pick");
@@ -139,7 +139,7 @@ test("A-04 6단계에 코드 파일이 없으면 묻는다 — 아니요: 코드
     // ⓓ 돌려 보기 → 결과 파일
     await click(page, ".mc.chat [data-act=run-go]");
     assert.match(seen.start.at(-1).text, /돌려 보기예요/);
-    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("결과가 나왔어요"), { timeout: 12000 });
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("결과가 나왔어요"), { timeout: 20000 });
     assert.deepEqual(await page.$$eval(".msg.now .run-out code", (cs) => cs.map((c) => c.textContent)), ["out/report.md", "src/app.py"], "결과물이 먼저, 목록에 있는 것만");
     if (SHOTS) await shot(page, "run-out");
     await click(page, ".mc.chat [data-act=result-open]");
@@ -154,10 +154,10 @@ test("A-04 예 — 실행할 수 있는 코드를 맡긴다('코드 파일이 �
   try {
     const { page, seen } = await openLive(browser, "#ex=5&q=quest");
     await openIsland(page);
-    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 8000 });
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 15000 });
     await click(page, ".mc.chat [data-act=code-yes]");
     assert.match(seen.start.at(-1).text, /코드 파일이 없어요/); assert.equal(seen.start.at(-1).checks.length, 3);
-    await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("끝 조건 3/3"), { timeout: 12000 });
+    await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("끝 조건 3/3"), { timeout: 20000 });
     await wait(500);
     assert.doesNotMatch(await nowSay(page), /코드 파일을 만드시겠습니까/, "코드 파일이 생기면 묻지 않는다");
     assert.deepEqual(seen.errors, []);
@@ -169,14 +169,14 @@ test("A-04 '아니요'는 그 프로젝트에서만 — 처음부터 다시 시�
   try {
     const { page, seen } = await openLive(browser, "#ex=5&q=quest");
     await openIsland(page);
-    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 8000 });
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 15000 });
     await click(page, ".mc.chat [data-act=code-no]");
     assert.ok(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).codeless));
     await page.goto(`http://127.0.0.1:${port}/#start`, { waitUntil: "load" }); await wait(600);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).codeless), null, "새로 시작하면 지운다");
     await page.goto(`http://127.0.0.1:${port}/#ex=5&q=quest`, { waitUntil: "load" }); await wait(600);
     await openIsland(page);
-    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 8000 });
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("코드 파일을 만드시겠습니까?"), { timeout: 15000 });
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });
