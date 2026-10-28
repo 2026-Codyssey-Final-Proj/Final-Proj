@@ -6,6 +6,7 @@
 
 > **기록 문서.** 2026-10-28 `main` cf2dbcd(#225 병합 뒤) 기준이다. **[fable-handoff-2026-10-27-mdlayout.md](fable-handoff-2026-10-27-mdlayout.md)(ⓐ ~ ⓔ)에 덧붙이는 문서다** — 같은 브랜치 `v2/workspace-md`, 같은 PR에서 한다. 요구는 [requirements.md](../requirements.md) 2-2 **C-57**(새로) · **C-54**(⑧ ⑨ 보강), 한 말 그대로는 13-1.
 > **기준은 목업 캔버스 v10이다:** <https://claude.ai/artifact/1To4aBVaPbF74QoBjy7Pf3> (10번째 판, 2026-10-28) — 아홉 장(① ~ ⑦은 같은 화면을 새 모양으로, ⑧ 얼음 조각 가까이 · ⑨ 짝 선은 새로)과 쪽지 '색과 글꼴'. 이재엽 계정에서 열린다. 세션에서는 Artifact `read`로 `project/canvas.json`과 `project/*.dc.html`을 받아 읽는다.
+> **#228 뒤 — 2026-10-28:** mdlayout ⓐ ⓑ ⓒ ⓓ ⓔ는 PR #228로 끝났고 `v2/workspace-md`는 병합돼 더 올리지 않는다. #228은 지도(C-54)에만 웹사이트 토큰으로 얼음 조각 모양을 입혔다 — **남은 것은 ⓐ+ 디자인 바탕(C-57: 앱 전체 색 · 글꼴 · 아이콘, #228이 만든 말풍선 · 작업실 세 칸 · 지도까지)과 ⓔ+ 지도 보강(C-54 ⑧ ⑨)**. 옛 섬 남색(#16225E · #1A2766)이 앱과 시험에 아직 있다. 차례 · 브랜치 · 붙여 넣을 말은 [questfit 넘김](fable-handoff-2026-10-28-questfit.md) 0절 · 4절 6번 · 8절 — ⓐ+ → 맞춤 퀘스트(C-56) → ⓔ+. 아래 '같은 브랜치 `v2/workspace-md`' · 조각 `changes/workspace-md.md` · 7절은 #228 전의 것이다. <!-- claude-drafted: 2026-10-28 -->
 
 ## 0. 먼저
 
@@ -83,7 +84,7 @@
 
 ## 7. 페이블 세션에 붙여 넣을 말
 
-mdlayout 6절 대신 이것을 붙여 넣는다(둘을 함께 가리킨다).
+mdlayout 6절 대신 이것을 붙여 넣는다(둘을 함께 가리킨다). **#228 뒤로는 쓰지 않는다 — [questfit 넘김](fable-handoff-2026-10-28-questfit.md) 8절을 붙여 넣는다.** <!-- claude-drafted: 2026-10-28 -->
 
 ```text
 이재엽이에요. Floe 레포(Final-Proj)에서 이어서 해 주세요.

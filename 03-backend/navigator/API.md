@@ -19,7 +19,7 @@
 |---|---|---|---|---|
 | `GET` 화면 파일 (`/`, `/index.html` …) | 브라우저 | 출처 | 파일 + html이면 확인 값 쿠키 | 403 · 404 |
 | `POST /api/event` | 훅(`hook.js`) | 출처 · 확인 값(머리글) | `{ok, seq}` | 403 · 413 · 400 |
-| `GET /api/events?since=N` | 화면(2초마다) | 출처 · 확인 값(쿠키) | `{ok, latest, events[]}` | 403 · 404 |
+| `GET /api/events?since=N` | 화면(2초마다) | 출처 · 확인 값(쿠키) | `{ok, latest, project, events[]}` | 403 · 404 |
 | `GET /api/steps?since=N` | 섬의 AI 진행 판(2026-10-20 C-12) | 출처 · 확인 값(쿠키) | `{ok, latest, sessions[]}` | 403 · 404 |
 | `POST /api/events/clear` | 사람(curl) · 화면 '알림 기록 비우기' | 출처 · 확인 값(머리글 · 쿠키) | `{ok, cleared}` — 한 일(3-12)도 비운다 | 403 |
 | `GET /api/usage` | 사람(주소창·curl) | 출처 | `{ok, provider, model, host, compat, used, budget, state, …}` | 403 |
@@ -188,15 +188,17 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 | 칸 | 타입 | 뜻 |
 |---|---|---|
 | `latest` | 정수 | 지금까지 매긴 마지막 번호. 기록을 비워도 되돌리지 않는다 |
+| `project` | 글 | 앱이 고른 작업 폴더의 이름(가림 규칙 적용), 없으면 `""`. 화면의 폴더 이름은 이것만 따른다 — 비었을 때만 전처럼 알림의 `project`(2026-10-28 임유정 "폴더를 바꿔 열기 전까지는 그냥 폴더 A") <!-- claude-drafted: 2026-10-28 --> |
 | `events` | 목록(최대 20) | `seq`가 `since`보다 큰 알림, 오래된 것부터 |
 | `events[].seq` | 정수 | 알림 번호 |
 | `events[].at` | 숫자 | 받은 시각(밀리초, `Date.now()`) |
 | `events[].kind` | `"prompt"` · `"stop"` | 요청 받음 · 작업 마침 |
 | `events[].tool` | `"claude"` · `"codex"` | 어느 도구인지 |
 | `events[].project` | 글 | 작업 폴더의 마지막 이름(가림 규칙 적용) |
+| `events[].here` | 참/거짓 | 그 알림이 앱이 고른 폴더(또는 그 안의 폴더)에서 왔나. 앱이 고른 폴더가 없으면 늘 참. 거짓이면 화면은 연결 표시와 채팅 한 줄만 — 이름 · 글 칸 · 살펴보기 · 알림 기록은 건드리지 않는다(훅은 연결했던 폴더마다 남는다) |
 | `events[].work` | 글 | 그 세션의 최근 대화. 줄마다 `[사용자] …` · `[Claude] …` · `[Codex] …`. 최근 말 20개 안에서 **글자 합 4,000자까지**(줄바꿈은 세지 않는다) — 넘치면 오래된 말부터 버리고, 경계에 걸린 말은 앞부분만 남긴다 |
 
-- **화면이 읽는 칸:** `ok`, `latest`, 마지막 알림의 `at`·`project`·`tool`·`work`·`kind`.
+- **화면이 읽는 칸:** `ok`, `latest`, `project`, 마지막 알림의 `at`·`project`·`here`·`tool`·`work`·`kind`.
 - **거절:** 403 출처 · 403 확인 값 · GET이 아니면 404(확인 값을 본 뒤).
 
 ```jsonc
@@ -415,6 +417,7 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 | `sessions` | 목록(최대 10) | 세션(프로젝트), **최근에 쓴 것부터**. 한 일이 `since` 뒤에 없어도 세션은 보인다(상태를 보이려고) |
 | `sessions[].id` | 글 | `tool:session_id` (예: `claude:demo-1`) |
 | `sessions[].project` | 글 | 작업 폴더의 마지막 이름(가림 규칙 적용) |
+| `sessions[].here` | 참/거짓 | 그 세션이 앱이 고른 폴더(또는 그 안)에서 도나. 앱이 고른 폴더가 없으면 늘 참, 연결을 뺀 폴더면 거짓. 거짓이면 화면은 판정의 '일한 증거' · 작업실 파일 카드 · '일하고 있어요'에 쓰지 않고, AI 진행 목록에만 그 폴더 이름과 함께 보인다(F-73) <!-- claude-drafted: 2026-10-28 --> |
 | `sessions[].tool` | `"claude"` · `"codex"` | 어느 도구인지 |
 | `sessions[].state` | `"working"` · `"done"` · `""` | 요청 받음 뒤 · 작업 마침 뒤 · 아직 둘 다 안 옴(한 일만 왔다) |
 | `sessions[].at` | 숫자 | 이 세션에 마지막으로 무엇이든 온 시각(밀리초) |

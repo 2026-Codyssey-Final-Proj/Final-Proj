@@ -104,6 +104,10 @@
   let greetSkip = null;         // 인사 움직임이 도는 동안만 — 누름 · Esc로 바로 끝낸다
   const PHONE = matchMedia("(max-width: 600px)");
   const STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let tocGo = 0, goShown = "";   // 목차 → 제목 줄 스크롤(ftoc-go)의 차례 번호 · 마지막으로 옮겨 간 번호
+  const WS_PANES = [".wnav", ".wside"];   // 다시 그려도 스크롤을 지키는 작업실 옆 칸(파일 칸 · 오른쪽 칸). win.js에 같은 것
+  // 파일 보기(.fv)의 글 칸 스크롤 — was 없이 부르면 읽고, was를 주면 같은 파일(data-f) · 같은 보기(코드 · md)일 때 되돌린다. win.js에 같은 것
+  const fvScroll = (fv, was) => { const b = fv && fv.querySelector(".fv-code, .fv-md"); if (!was) return b ? { f: fv.dataset.f, c: b.className, top: b.scrollTop, left: b.scrollLeft } : null; if (b && b.className === was.c && fv.dataset.f === was.f) { b.scrollTop = was.top; b.scrollLeft = was.left; } };
 
   const st = {
     ui: "greet", screen: "main", tab: "today", mode: canLive ? "live" : "fixture", text: canLive ? "" : S.first.text,
@@ -508,7 +512,7 @@
     // 연결 칸 — 서버로 열었으면 보기 방식과 상관없이 보인다(연습 중에도 알림은 들어오니까). '연결 끊기'를 누르면 들어온 알림을 받지 않는다
     const link = canLive ? sgrp(SG.link, "연결", `${ledRow(conn(), st.unplug
         ? "연결을 끊었어요 — 작업 알림이 와도 글 칸을 채우거나 살펴보지 않아요"
-        : st.feed.at ? `${toolName(st.feed.tool)}와 연결됨 · ${esc(st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}`
+        : st.feed.at ? `${toolName(st.feed.tool)}와 연결됨 · ${esc(wsFull() || st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}${st.feed.project && wsFull() && st.feed.project !== wsFull() ? `(${esc(st.feed.project)}에서)` : ""}`   // 이름은 연결한 폴더 먼저 — 마지막 알림이 다른 폴더에서 왔으면 그 이름은 뒤에(F-73)
         : "Claude Code·Codex 알림을 기다리는 중 — connect.js로 연결해 주세요",
         `<button type="button" class="btn" data-act="unplug" aria-pressed="${st.unplug}">${st.unplug ? "다시 연결" : "연결 끊기"}</button>`)}
       ${st.mode === "live" ? `<label class="chk"><input type="checkbox" data-act="auto" ${st.auto ? "checked" : ""} ${st.unplug ? "disabled" : ""}>AI 코딩 도구가 작업을 마치면 자동으로 살펴보기</label>
@@ -1049,7 +1053,7 @@
     // 플로로 아래 칭호 · 기분 글은 뺐다(2026-10-25 두승현) — 칭호는 설정 창 머리에 있다
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}</div>
       <div class="main"><div class="log" data-log>${st.chat.map((m) => `<div class="msg ${m.who}"><div class="b">${m.html}</div></div>`).join("")}${
-        working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast() ? ` — ${esc(stepLine(aiLast()))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
+        working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast(mine()) ? ` — ${esc(stepLine(aiLast(mine())))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
         ${proposalsHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
         ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts fixed">${more.map(chip).join("")}</div>` : ""}
         <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`;
@@ -1336,7 +1340,7 @@
       const f = seen.get(x.what); f.add += x.add || 0; f.del += x.del || 0;
     }
     const rows = [...seen].map(([name, f]) => `<li><span>${esc(name)}</span><small>${f.add ? `+${f.add}` : ""}${f.add && f.del ? " " : ""}${f.del ? `−${f.del}` : ""}</small></li>`).join("");
-    return `<div class="cv-file"><p class="ch">파일 · 바뀐 줄 수<em>${s && aiMode === "example" ? "예시" : s ? esc(s.project || "") : ""}</em></p>${rows ? `<ul>${rows}</ul>` : `<p class="ft">아직 — Claude Code가 파일을 고치면 이름과 줄 수가 여기에 와요</p>`}</div>`;
+    return `<div class="cv-file"><p class="ch">파일 · 바뀐 줄 수<em>${s && aiMode === "example" ? "예시" : s ? esc(wsFull() || s.project || "") : ""}</em></p>${rows ? `<ul>${rows}</ul>` : `<p class="ft">아직 — Claude Code가 파일을 고치면 이름과 줄 수가 여기에 와요</p>`}</div>`;
   }
   // 파일 칸(C-41 ⑥ → C-42 R-8, 2026-10-27 이재엽 버튼 "전부" · "깊이 3 · 200개"): 작업실 왼쪽의 폴더 트리. 서버로 연 화면은 GET /api/files(API.md 3-25 — 연결한 폴더의 이름만, 읽기만)로 진짜 목록을,
   //   서버 없이 · 연습 모드 · 폴더를 모르면 아래 예시 그대로(목업의 예시 — [이름, 안쪽인가, 상태 글, 모양])에 '예시' 표시. 지금 장 문서는 '● 지금', 지난 장 문서는 '읽음', 폴더는 눌러 접고 펼친다
@@ -1394,7 +1398,7 @@
   //   고치기 → 글 칸, 저장(단추 · ⌘/Ctrl+S)은 바로 쓰고 그 파일만 커밋 · 푸시를 Claude Code에 맡긴다(허락 카드는 채팅에). 비밀값 모양 · 연 뒤에 바뀜 · 맡긴 일이 도는 중이면 서버가 멈추고(409) 여기서 묻는다.
   //   저장 이력은 이 켜짐 동안 열린 파일마다 20번까지(되돌리기) — 이 컴퓨터에만. 열린 파일 탭 · 이름 찾기. 서버 없이 · 연습 모드는 예시 목록이라 열지 못한다
   const MDV = window.FloeMd || null, FHIST_MAX = 20;
-  const fileTabs = () => st.openFiles.map((f, k) => `<span class="ftab${f.dirty ? " dirty" : ""}"><button type="button" role="tab" data-act="ftab" data-v="${k}" aria-selected="${st.qtab === "file" && st.fileSel === k}" title="${esc(f.path)}">${esc(f.name)}${f.dirty ? " •" : ""}</button><button type="button" class="fx" data-act="fclose" data-v="${k}" aria-label="${esc(f.name)} 닫기" title="닫기">×</button></span>`).join("");
+  const fileTabs = () => st.openFiles.map((f, k) => `<span class="ftab${f.dirty ? " dirty" : ""}"><button type="button" role="tab" data-act="ftab" data-v="${k}" aria-selected="${st.qtab === "file" && st.fileSel === k}" title="${esc(f.path)}">${esc(f.name)}${f.dirty ? " •" : ""}</button><button type="button" class="ftab-x" data-act="fclose" data-v="${k}" aria-label="${esc(f.name)} 닫기" title="닫기">×</button></span>`).join("");
   async function openFile(i) {
     const n = Number(i), x = st.files && st.files.list && st.files.list[n]; if (!x || x.dir) return;
     const k = st.openFiles.findIndex((f) => f.path === x.path);
@@ -1457,11 +1461,11 @@
     let body;
     if (f.edit) body = `<textarea class="fv-edit" data-act="ftext" data-v="${k}" spellcheck="false" aria-label="${esc(f.name)} 고치기">${esc(f.text)}</textarea>`;
     else if (f.kind === "md" && !f.raw && MDV) body = `<div class="fv-md mdv">${MDV.toHtml(f.text)}</div>`;
-    else body = `<pre class="fv-code"><ol>${f.text.replace(/\n$/, "").split("\n").map((l, j) => { const cls = [chg === null || (chg && chg.has(j + 1)) ? "chg" : "", hit(l) ? "hit" : ""].filter(Boolean).join(" "); return `<li${cls ? ` class="${cls}"` : ""}><span>${esc(l) || " "}</span></li>`; }).join("")}</ol></pre>`;
+    else body = `<pre class="fv-code"><ol>${f.text.replace(/\n$/, "").split("\n").map((l, j) => { const cls = [chg === null || (chg && chg.has(j + 1)) ? "chg" : "", hit(l) ? "hit" : ""].filter(Boolean).join(" "); return `<li${cls ? ` class="${cls}"` : ""}${f.go && f.go.seq === tocGo && f.go.line === j + 1 ? ` data-go="${f.go.seq}"` : ""}><span>${esc(l) || " "}</span></li>`; }).join("")}</ol></pre>`;
     // 상태 줄(C-53): 저장 수 · Claude Code가 바꾼 줄(git과 다른 줄) / 내가 바꾼 줄(저장한 글과 다른 줄 — 색으로 나눔) · 줄 수 · 줄 위치 · 줄 끝
     const mineChg = (() => { if (!f.dirty) return 0; const A = f.saved.split("\n"), B = f.text.split("\n"); let p = 0; while (p < A.length && p < B.length && A[p] === B[p]) p++; let q = 0; while (q < A.length - p && q < B.length - p && A[A.length - 1 - q] === B[B.length - 1 - q]) q++; return Math.max(A.length, B.length) - p - q; })();   // 앞뒤 공통 줄을 뺀 나머지 — 맨 위에 한 줄 넣어도 전체가 '바꾼 줄'이 되지 않게(새 맥락 리뷰)
     const stl = `<div class="fv-st" aria-label="문서 상태">${f.hist.length ? `<span>저장 ${f.hist.length}번</span>` : ""}${f.changed === "new" ? `<span class="st-ai">새 파일</span>` : chg && chg.size ? `<span class="st-ai">Claude Code가 바꾼 줄 ${chg.size}</span>` : ""}${mineChg ? `<span class="st-me">내가 바꾼 줄 ${mineChg}</span>` : ""}<span class="grow"></span><span>${f.text.split("\n").length}줄<span data-pos>${f.edit && caretLine ? ` · 줄 ${caretLine}` : ""}</span></span><span>UTF-8</span><span>${f.eol === "crlf" ? "CRLF" : "LF"}</span></div>`;
-    return `<div class="fv" style="--fz:${f.zoom || 1}">${head}${tools}${note}${body}${stl}</div>`;
+    return `<div class="fv" data-f="${esc(f.path)}" style="--fz:${f.zoom || 1}">${head}${tools}${note}${body}${stl}</div>`;
   }
   // ── 문서 지도(C-45, 2026-10-27 이재엽 "아치보드로 문서들이 이어지고 확인" · 버튼 "작업실의 새 탭" · "앱에 한 벌 넣기"): docmap.html을 iframe으로 — 서버 GET /api/docmap(API.md 3-27)이 보드 데이터를, 엔진은 앱 안의 archi-board v1 사본.
   //   상자의 '파일 보기에서 열기'는 postMessage → win.js · 아래 message 듣기 → ACT map-open(경로로 목록의 번호를 찾아 파일 보기로). 서버 없이 · 연습 모드는 지도가 없다(까닭을 쓴다)
@@ -1506,7 +1510,7 @@
       const toc = f.kind === "md" && MDV ? MDV.outline(f.text) : [], empty = toc.filter((h) => h.empty).length;
       const mats = [n > 0 ? `${LB(n - 1)} 문서 — ${nowDocPath(n - 1)}` : "", st.idea ? "처음 말한 것(01-idea/idea.md)" : ""].filter(Boolean);
       doc = `<section class="ws-doc"><h4>${head}</h4><p class="ws-sum">${esc(f.name)}${toc.length ? ` · 절 ${toc.length}개${empty ? ` · <b>빈 절 ${empty}</b> — 비었어요` : " · 다 채웠어요"}` : f.kind === "md" ? " · 제목 줄이 없어요" : ` · ${f.text.split("\n").length}줄`}</p>${
-        toc.length ? `<p class="ws-h">목차</p><ul class="ws-toc">${toc.map((h) => `<li class="l${h.level}${h.empty ? " empty" : ""}"><button type="button" data-act="ftoc-go" data-v="${esc(h.text)}" title="${h.empty ? "비었어요 — 눌러서 이 절을 찾기" : "눌러서 이 절을 찾기"}">${esc(h.text)}${h.empty ? "<small>비었어요</small>" : ""}</button></li>`).join("")}</ul>` : ""}${
+        toc.length ? `<p class="ws-h">목차</p><ul class="ws-toc">${toc.map((h) => `<li class="l${h.level}${h.empty ? " empty" : ""}"><button type="button" data-act="ftoc-go" data-v="${esc(h.text)}" data-line="${h.line}" title="${h.empty ? "비었어요 — 눌러서 이 절을 찾기" : "눌러서 이 절을 찾기"}">${esc(h.text)}${h.empty ? "<small>비었어요</small>" : ""}</button></li>`).join("")}</ul>` : ""}${
         mats.length ? `<p class="ws-h">재료가 온 곳</p><ul class="ws-mat">${mats.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</section>`;
     } else doc = `<section class="ws-doc"><h4>${head}</h4><p class="ws-sum">파일을 열면 목차와 빈 절이 여기에 와요</p></section>`;
     // C-54: 도전과제의 카드를 눌렀으면 그 카드의 퀘스트(준비된 다섯 칸) · 문서 · 재료
@@ -2003,7 +2007,7 @@
     return `<div class="tb">${homeBtn(!st.pane)}<span class="tb-stage" aria-live="polite">${stageBand()}</span><span class="grow"></span>${tbRight()}`;
   }
   const X_ICON = icon('<path d="M6 6l12 12M18 6L6 18"></path>', 16);
-  const countdownOn = () => st.ui === "home" && !hovering && !pinned() && !!timer;
+  const countdownOn = () => st.ui === "home" && !hovering && !colHover && !pinned() && !!timer;
   // 테두리 빛(C-20, 이재엽 "밑에 게이지바로 하면 너무 촉박한 느낌"): 위 가운데에서 켜져 양쪽 테두리를 따라 내려가고 아래 가운데에서 만나면 접힌다 — 접히는 시계(scheduleIdle)와 같은 시간 · 같은 시작점
   const countdown = () => (countdownOn() ? `<i class="glow" aria-hidden="true" title="곧 접혀요 — 핀을 누르면 열어 둬요" style="animation-duration:${foldDelay()}ms;animation-delay:-${Date.now() - idleAt}ms"></i>` : "");
   // 한 줄 — 플로로가 앞지느러미를 걸치고 있다. 알릴 일이 있으면 파란 테두리로 살짝 흔든다
@@ -2027,14 +2031,16 @@
   // 접혀 있을 때도 보이는 작은 표시(시연 안전장치) — 연습인지 진짜 AI인지, Claude Code·Codex와 연결됐는지
   const conn = () => (!canLive ? "" : st.unplug ? "off" : st.feed.at ? "on" : "wait");
   const CONN_WORD = { on: "연결됨", off: "연결 끊음", wait: "알림 기다리는 중" };
-  // 작업 자리 이름(2026-10-25 두승현 — 옛 "진짜 AI" 표시 대신): GitHub 저장소(주인/이름)를 알면 그것, 아니면 연결한 폴더 이름. 연습이면 그대로 "연습"
-  //   보이는 이름은 저장소 이름만(주인 빼고) — 전체 이름은 title · aria-label에. 글자 수 제한은 뺐다(F-55로 띠의 이름표가 물결 아래로 가서, 두승현 2026-10-25)
-  //   원격이 없으면 앱에서 고른 폴더 이름(/api/github의 project — git이 아니어도 온다)을 먼저. 전에는 훅 알림의 폴더(st.project)만 봐서,
+  // 작업 자리 이름(2026-10-25 두승현 — 옛 "진짜 AI" 표시 대신). 연습이면 그대로 "연습". 글자 수 제한은 뺐다(F-55로 띠의 이름표가 물결 아래로 가서, 두승현 2026-10-25)
+  //   앱에서 고른 폴더 이름(/api/github의 project — git이 아니어도 온다)을 먼저, 그다음 훅 알림의 폴더 — 전에는 훅 알림의 폴더(st.project)만 봐서
   //   일반 폴더 · 원격 없는 git 폴더는 Claude Code를 한 번 쓰기 전까지 '폴더 없음'이었다(임유정 2026-10-25, F-58-5) — claude-drafted: 2026-10-25
-  const wsFull = () => { const r = st.gh && st.gh.remote; if (canLive && !st.gh && !ghLoading) setTimeout(loadGithub, 0); return r && r.kind === "github" ? `${r.owner}/${r.repo}` : (st.gh && st.gh.project) || project(); };
-  const wsShort = () => { const s = wsFull().split("/").pop() || "폴더 없음"; return s; };
-  const stateWords = () => [st.mode === "live" ? `작업 자리 ${wsFull() || "없음"}` : "연습용 예시", CONN_WORD[conn()]].filter(Boolean).join(" · ");
-  const modeChip = () => `<span class="pl-mode ${st.mode}" title="${st.mode === "live" ? esc(wsFull() ? `작업 자리 — ${wsFull()}` : "연결한 폴더가 없어요") : "미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요"}">${st.mode === "live" ? esc(wsShort()) : "연습"}</span>`;
+  // 2026-10-28 임유정 "폴더 이름 뜨는거 어떤 형태든 로컬 폴더 이름을 최우선으로"(F-73): 보이는 이름은 늘 이 컴퓨터의 폴더 이름 — GitHub 저장소(주인/이름)는 title · aria-label에만 덧붙인다(F-54의 '저장소 먼저'를 바꿈)
+  const wsFull = () => { if (canLive && !st.gh && !ghLoading) setTimeout(loadGithub, 0); return (st.gh && st.gh.project) || project(); };
+  const wsRepo = () => { const r = st.gh && st.gh.remote; return r && r.kind === "github" ? `${r.owner}/${r.repo}` : ""; };
+  const wsShort = () => wsFull() || "폴더 없음";
+  const wsTitle = () => (wsFull() ? `작업 자리 — ${wsFull()}${wsRepo() ? ` · GitHub ${wsRepo()}` : ""}` : "연결한 폴더가 없어요");
+  const stateWords = () => [st.mode === "live" ? `작업 자리 ${wsFull() || "없음"}${wsRepo() ? ` · GitHub ${wsRepo()}` : ""}` : "연습용 예시", CONN_WORD[conn()]].filter(Boolean).join(" · ");
+  const modeChip = () => `<span class="pl-mode ${st.mode}" title="${st.mode === "live" ? esc(wsTitle()) : "미리 만들어 둔 응답으로 움직여요 — 진짜 AI가 아니에요"}">${st.mode === "live" ? esc(wsShort()) : "연습"}</span>`;
   const connLed = () => (conn() ? `<span class="led ${conn() === "on" ? "on" : conn()}" title="${CONN_WORD[conn()]}"></span>` : "");
   // 띠 — 물결 선 위로 얼굴 위쪽만 빼꼼. 마우스를 올리면 한 줄로 나온다. 졸면 body.dozing으로 눈을 감는다(app.css)
   const WAVE = `<svg class="wl" viewBox="0 0 150 12" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="strip-wl" x2="1"><stop offset="0" stop-color="#A9DDFF" stop-opacity="0"></stop><stop offset=".5" stop-color="#A9DDFF" stop-opacity=".9"></stop><stop offset="1" stop-color="#A9DDFF" stop-opacity="0"></stop></linearGradient></defs>
@@ -2044,8 +2050,9 @@
   // 켤 때의 큰 인사 카드(greetHTML · 물결 선)는 2026-10-27 C-46으로 뺐다 — 인사는 알약(pillHTML) 안에서
   // ── 기본 화면(C-13, 2026-10-20 — 이재엽 "버튼식으로 준비가 되어있는 공간이 기본값") — 플로로와 지금 한 줄, 단추 넷. 알림 · AI 진행은 섬 안에서 바로(hub.js의 순수 함수 FloeHub) ──
   let aiSessions = [], aiMode = "none", aiLatest = 0;   // AI 진행(C-12)의 세션 · 어디서 왔나(none · example · live) · 마지막 번호
-  const latestSession = () => [...aiSessions].sort((a, b) => (b.at || 0) - (a.at || 0))[0];   // 가장 최근 세션 — AI 진행 판 · 작업실 파일 카드가 같이 쓴다
-  const aiLast = () => { let best = null; for (const s of aiSessions) for (const x of s.steps || []) if (!best || (x.at || 0) > (best.at || 0)) best = { ...x, project: s.project }; return best; };
+  const mine = () => aiSessions.filter((s) => s.here !== false);   // 연결한 폴더(또는 그 안)의 세션 — 서버가 here를 붙인다(F-73). AI 진행 판의 목록은 다른 폴더 것도 이름을 붙여 그대로 보인다
+  const latestSession = () => [...mine()].sort((a, b) => (b.at || 0) - (a.at || 0))[0];   // 연결한 폴더의 가장 최근 세션 — AI 진행 판 머리 · 작업실 파일 카드 · 살펴보기의 일한 증거(workEvidence)가 같이 쓴다
+  const aiLast = (list = aiSessions) => { let best = null; for (const s of list) for (const x of s.steps || []) if (!best || (x.at || 0) > (best.at || 0)) best = { ...x, project: s.project }; return best; };
   const stepLine = (s) => (STEPS ? STEPS.line(s) : `${s.verb || ""} ${s.what || ""}`.trim());
   // 지금 한 줄 — 알림과 AI가 한 일 중 더 최근 것, 없으면 다시 온 인사 또는 시간대 인사(넘김 문서 9절 2번 기본값)
   function nowLine() {
@@ -2056,7 +2063,7 @@
     return st.back || C.greeting(new Date().getHours());
   }
   const unreadN = () => (HUB ? HUB.unread(st.alerts, seenAlerts) : 0);
-  const working = () => (HUB ? HUB.anyWorking(aiSessions) : false);
+  const working = () => (HUB ? HUB.anyWorking(mine()) : false);   // 연결한 폴더의 세션만 — 다른 폴더의 Claude Code가 일해도 A의 채팅에 '일하고 있어요'를 띄우지 않는다(F-73)
   // 기본 화면의 단추 넷(C-13 baseBody)은 2026-10-21 C-22로 채팅(chatCard)이 됐다 — 알림 · AI 진행 판은 아래 그대로, 채팅의 칩(알림 · 도전과제)으로 연다
   // 알림 판 · AI 진행 판 — 왼쪽: 플로로 · 프로젝트 · 도구 이름 · (AI 진행) 상태와 한 일의 종류별 수, 오른쪽: 줄 목록(hub.js가 만드는 글 · 섬의 기록). 집(또는 '단추로')으로 돌아온다.
   //   AI 진행은 C-12 규칙 그대로 — 파일 이름 · 첫 줄 · 줄 수뿐, 파일 내용은 받지도 보이지도 않는다
@@ -2066,7 +2073,7 @@
     const now = Date.now(), [title, lead] = PANE[kind] || PANE.alerts;
     const last = kind === "ai" ? latestSession() : null;
     const tool = toolName(kind === "ai" ? (last && last.tool) || "claude" : st.feed.tool || (st.alerts[0] && st.alerts[0].tool));
-    const proj = kind === "ai" && last ? last.project : project();
+    const proj = wsFull() || (kind === "ai" && last ? last.project : "");   // 연결한 폴더 이름 먼저 — A 안의 backend에서 연 Claude Code도 머리는 A(F-73, 새 맥락 리뷰)
     const counts = kind === "ai" && last ? Object.entries((last.steps || []).reduce((m, s) => { m[s.verb || ""] = (m[s.verb || ""] || 0) + 1; return m; }, {})) : [];
     const body = !HUB ? `<p class="empty">아직 준비 중이에요</p>` : kind === "ai" ? HUB.aiHTML(aiSessions, aiMode, STEPS, now) : HUB.alertsHTML(st.alerts, now);
     const top = kind === "ai" ? `${approvalsHTML()}${taskBox()}` : "";   // FR-17: 허락이 필요한 카드(맨 위) · 할 일 적기
@@ -2394,8 +2401,11 @@
     if (p.type === "key" && p.key === "Enter" && p.act === "say") return send();   // 작업실 옆 칸의 채팅 입력에서 Enter(C-41 ⑤) — 섬의 채팅 칸과 같이 보내기
     if (p.type === "key" && p.key === "s" && p.mod) { if (st.qtab === "file") ACT.fsave(); return; }   // 작업실 창의 ⌘/Ctrl+S(C-43)
     if (p.type === "caret") { caretLine = Number(p.line) || 0; return; }   // 글 칸의 줄 위치(C-53 상태 줄) — 다시 그리지 않는다(치는 동안 글 칸이 흔들리지 않게), 다음 그릴 때 보인다
+    // 작업실 창에서 움직이거나 누르면(poke — win.js가 1초에 한 번까지, 흰 줄이 돌 때만) 접히는 시계를 처음부터. 흰 줄은 그 창이 스스로 다시 그렸으니 다시 그리지 않는다(임유정 2026-10-28)
+    if (p.type === "poke") { if (st.ui === "home" && timer) { clearIdle(); scheduleIdle(); } return; }
     // 옆 칸에 마우스를 올리거나 글을 쓰는 동안은 접히지 않는다(C-46) — 떠나면 접히는 시계를 다시 센다
-    if (p.type === "col") { if (typeof p.hover === "boolean") { colHover = p.hover; if (p.hover) clearIdle(); else scheduleIdle(); } if (typeof p.typing === "boolean") { colTyping = p.typing; if (!p.typing) scheduleIdle(); } return; }
+    if (p.type === "col") { if (typeof p.hover === "boolean") { colHover = p.hover; if (p.hover) clearIdle(); else scheduleIdle(); render(); }   // 다시 그려 흰 줄을 숨기거나 처음부터(전에는 시계만 멈추고 흰 줄은 계속 돌았다)
+    if (typeof p.typing === "boolean") { colTyping = p.typing; if (!p.typing) scheduleIdle(); } return; }
     // Esc — 옆 칸이 펼쳐져 있으면 먼저 접고(알약), 접혀 있으면 작업실을 닫는다(C-46, 새 맥락 리뷰 — 접기 단추의 '(Esc)'와 맞춤)
     if (p.type === "key" && p.key === "Escape") { if (deskKeys.Escape && st.ui === "home" && p.kind === "quest") return run(deskKeys.Escape); if (p.kind === "quest" && st.qwin) { if (!colFolded()) return go("petit"); return set({ qwin: false }); } }
   }
@@ -2587,9 +2597,14 @@
     // 브라우저 판의 작업실 몸통(.qwin .wbody)도 같은 화면(data-view)이면 스크롤을 되돌린다 — 앱 창은 win.js가 하지만 브라우저 판은 아무도 안 해서, 마우스가 섬에 들어오기만 해도(mouseenter → render)
     //   받기 화면이 맨 위로 튀어 아래의 '고쳐 주세요'를 누를 수 없었다(e2e C-22 · C-36이 #212부터 깨져 있던 까닭, 2026-10-27) — claude-drafted: 2026-10-27
     const ob = $nav.querySelector(".qwin .wbody"), bodyWas = ob ? { view: ob.dataset.view, top: ob.scrollTop } : null;
+    const fvWas = fvScroll($nav.querySelector(".qwin .fv"));   // 파일 보기 안의 스크롤도(같은 파일 · 같은 보기일 때) — 다시 그리면 1줄로 돌아갔다(임유정 2026-10-28)
+    const sideWas = WS_PANES.map((c) => { const e = $nav.querySelector(`.qwin ${c}`); return e ? e.scrollTop : null; });   // 파일 칸 · 오른쪽 칸 — 아래쪽 목차를 누르면 칸이 맨 위로 올라갔다(임유정 2026-10-28)
     if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); fitGacha(); }
     const nb = bodyWas && $nav.querySelector(".qwin .wbody"); if (nb && nb.dataset.view === bodyWas.view) nb.scrollTop = bodyWas.top;
     if (CVP) CVP.apply($nav);
+    fvScroll($nav.querySelector(".qwin .fv"), fvWas);
+    WS_PANES.forEach((c, j) => { const e = $nav.querySelector(`.qwin ${c}`); if (e && sideWas[j] != null) e.scrollTop = sideWas[j]; });
+    const go = $nav.querySelector(".qwin [data-go]"); if (go && go.dataset.go !== goShown) { goShown = go.dataset.go; const p = go.closest(".fv-code"); if (p) p.scrollTop = go.offsetTop - (p.clientHeight - go.offsetHeight) / 2; }   // 목차로 고른 제목 줄로 한 번만(ftoc-go) — 다음 그리기에서 다시 끌어가지 않게. 글 칸만 옮긴다(scrollIntoView는 바깥 칸 · 페이지까지 움직였다 — 새 맥락 리뷰)
     if (keep) {
       const b = document.querySelector(keep);
       if (b && b !== a) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; }
@@ -2978,7 +2993,7 @@
     "wside-toggle": () => { wsideOpen = !wsideOpen; writeLS("floe:ws-side", wsideOpen ? "1" : "0"); render(); },
     fsize: (i, el) => { const f = st.openFiles[Number(el && el.dataset.i)]; if (!f) return; f.zoom = Math.round(Math.min(1.6, Math.max(0.8, (f.zoom || 1) + (el.dataset.v === "+" ? 0.1 : -0.1))) * 10) / 10; render(); },
     ftoc: () => { if (!wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); },
-    "ftoc-go": (i, el) => { const f = st.openFiles[st.fileSel]; if (!f) return; f.find = String((el && el.dataset.v) || "").slice(0, 60); if (f.kind === "md" && !f.edit) f.raw = true; render(); },   // 그 절의 제목을 찾기 칸에 — 원문 보기에서 그 줄이 표시된다
+    "ftoc-go": (i, el) => { const f = st.openFiles[st.fileSel]; if (!f) return; f.find = String((el && el.dataset.v) || "").slice(0, 60); if (f.kind === "md" && !f.edit) f.raw = true; f.go = f.edit ? null : { line: Number(el && el.dataset.line) || 0, seq: ++tocGo }; render(); },   // 그 절의 제목을 찾기 칸에 — 원문 보기에서 그 줄이 표시되고, 그 제목 줄로 스크롤(전에는 표시만 되고 옮기지 않았다 — 임유정 2026-10-28)
     ffmt: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k], ta = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (!f || !ta || !MDV) return;
       const r = MDV.format(ta.value, ta.selectionStart, ta.selectionEnd, el.dataset.fmt); ta.value = r.text; f.text = r.text; f.dirty = f.text !== f.saved; render();
       const t2 = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (t2) { t2.focus(); t2.setSelectionRange(r.start, r.end); } },
@@ -3349,11 +3364,11 @@
     // Electron 앱(2026-10-19) — 폴더를 골라 훅을 더하거나 빼고, .env를 두는 설정 폴더를 연다. 앱 밖에서는 단추가 없다
     "app-connect": async () => {   // 고른 폴더가 곧 플로로가 움직이는 자리(C-31) — 앱이 서버에도 알린다. 경로 대신 폴더 이름만 말한다
       const r = await window.floeApp.connect();
-      if (r && r.ok && r.name) { st.gh = null; say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); } else if (r && r.message) say(r.message.split("\n")[0]);   // 말은 60자 안(SAY_MAX)
+      if (r && r.ok && r.name) connected(r); else if (r && r.message) say(r.message.split("\n")[0]);   // 말은 60자 안(SAY_MAX)
     },
     // 연결을 빼면 이름표의 옛 이름도 잊는다 — GitHub 칸(st.gh)은 다시 묻고(서버가 아는 다른 폴더가 있으면 그 이름), 훅 알림으로 안 이름(st.project)도 비운다.
     //   전에는 뺀 뒤에도 옛 폴더 · 저장소 이름이 남았다(F-58-5 새 맥락 리뷰, 2026-10-25) — claude-drafted: 2026-10-25
-    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.ok) { st.gh = null; st.project = ""; render(); } if (r && r.message) say(r.message.split("\n")[0]); },
+    "app-disconnect": async () => { const r = await window.floeApp.disconnect(); if (r && r.ok) disconnected(); if (r && r.message) say(r.message.split("\n")[0]); },
     "app-settings": () => window.floeApp.openSettings(),
     "gh-reload": () => { st.ghNote = ""; st.gh = null; loadGithub(); render(); },   // 설정의 GitHub 칸(C-25, 2026-10-24)
     "tokens-reset": () => resetTokens(),   // 토큰 칸 — 새로 재기(2026-10-24)
@@ -3517,15 +3532,17 @@
 
   // ── Claude Code·Codex 연결 — 서버에 2초마다 새 알림을 묻는다(서버로 열었을 때만) ──
   let lastSeq = -1;   // -1: 아직 한 번도 안 물음 — 처음에는 지난 알림을 다시 띄우지 않고 기준만 잡는다
+  let appName = "";   // 앱이 고른 작업 폴더 이름(서버 답의 project) — 있으면 이름은 이것만 따른다. 다른 폴더에서 쓴 Claude Code의 알림(here: false)이 이름을 바꾸지 않게(임유정 2026-10-28)
   async function poll() {
     let r;
     try { r = await (await fetch(`/api/events?since=${Math.max(lastSeq, 0)}`)).json(); } catch { return; }
     if (!r.ok) return;
+    const was = st.project; appName = r.project || ""; if (appName) st.project = appName;
     const first = lastSeq < 0, ev = r.events[r.events.length - 1];
     lastSeq = r.latest;   // 연결을 끊은 동안에도 기준은 앞으로 — 다시 연결했을 때 지난 알림을 한꺼번에 받지 않는다
-    if (!ev) return;
+    if (!ev) return st.project !== was ? render() : undefined;
     if (!first) return onEvent(r.events.findLast(A.notifies) || ev);   // 2초 사이에 마침 · 시작이 같이 오면 마침을 알린다(2026-10-23 — 알림은 마칠 때만)
-    if (!st.unplug) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project) st.project = ev.project; }
+    if (!st.unplug) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project && ev.here !== false && !appName) st.project = ev.project; }
     render();
   }
   // 작업을 알아챈다: 알림 기록에 한 줄 남기고(FR-7), 글 칸에 최근 작업을 채우고 한 줄로 알린다. 작업을 마쳤을 때 바로 살펴보는 건
@@ -3533,7 +3550,9 @@
   let lastPing = { tool: "", kind: "" };
   async function onEvent(ev) {
     if (!A.accept(ev, st.unplug)) return;   // 연결을 끊은 동안 들어온 알림 — 글 칸 채우기·살펴보기·기록 모두 하지 않는다
-    if (!ev.sim) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project) st.project = ev.project; }
+    if (!ev.sim) { st.feed = { at: ev.at, project: ev.project, tool: ev.tool }; if (ev.project && ev.here !== false && !appName) st.project = ev.project; }
+    // 연결한 폴더가 아닌 곳의 알림 — 연결 표시만 살고, 글 칸 · 살펴보기 · 알림 기록은 지금 폴더의 것이라 건드리지 않는다(채팅에 한 줄로 어디서 온 일인지만)
+    if (ev.here === false) { if (A.notifies(ev)) logMsg("sys", `${esc(ev.project || "다른 폴더")}에서 ${esc(toolName(ev.tool))}가 일을 마쳤어요 — 지금 작업 폴더가 아니라 살펴보지 않아요`); return render(); }
     if (!A.notifies(ev)) return render();   // 새 작업을 시작했을 때는 알리지 않는다 — 연결 표시(마지막 소식 때)만(2026-10-23)
     if (st.settings && !ev.sim) fetchUsage();   // 일을 마쳤다 — 열려 있는 토큰 칸을 새 값으로(2026-10-24)
     if (!ev.sim && st.plan && FP && FP.running(st.plan)) checkPlanTask();   // 맡긴 계획 줄이 끝났을 수 있다 — 3초를 기다리지 않고 바로 묻는다(C-32)
@@ -3716,11 +3735,24 @@
   // C-53 상태 줄의 줄 위치 — 브라우저 판은 글 칸이 섬 안에 있어 여기서(앱의 작업실 창은 win.js가 같은 일을) 상태 줄 글만 바꾼다(전체 render 없이 — 치는 동안 글 칸이 흔들리지 않게)
   const caretHere = (e) => { const t = e.target; if (!t || !t.classList || !t.classList.contains("fv-edit")) return; caretLine = t.value.slice(0, t.selectionStart).split("\n").length; const pos = $nav.querySelector(".fv-st [data-pos]"); if (pos) pos.textContent = ` · 줄 ${caretLine}`; };
   $nav.addEventListener("keyup", caretHere); $nav.addEventListener("click", caretHere);
-  document.addEventListener("floe:project-picked", (e) => {
-    const d = (e && e.detail) || {}, n = String(d.name || "");
+  // 작업 폴더가 바뀌면 옛 폴더에서 받아 둔 것을 잊고 다시 받는다 — 이름표(st.gh) · 파일 칸(작업실이 열려 있으면 바로). 처음 설정의 가져오기 · 새로 만들기와 앱 메뉴(F-72)가 같이 쓴다
+  const forgetFolder = () => {
     st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "canvas";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
+    if (canLive && !ghLoading) loadGithub();
+    if (st.qwin) loadFiles();
+  };
+  window.floeUnsaved = () => st.openFiles.filter((f) => f.dirty).length;   // 앱(main.js pickAndConnect)이 폴더를 고르기 전에 묻는다 — 저장 안 한 파일이 있으면 한 번 더 확인(F-72)
+  const projectPicked = (d) => {
+    const n = String(d.name || "");
+    forgetFolder();
     say(d.config ? "가져온 저장소에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${n.length > 20 ? `${n.slice(0, 19)}…` : n} 폴더로 바꿨어요. 이제 여기서 같이 일해요.`);
-  });
+  };
+  document.addEventListener("floe:project-picked", (e) => projectPicked((e && e.detail) || {}));
+  // F-72(2026-10-28): 앱 메뉴(상단바 · 트레이)로 연결 · 연결 빼기 — 섬의 단추를 거치지 않아 앱이 끝난 뒤 알려 준다. 빼면 훅 알림으로 안 이름(st.project)도 잊는다(app-disconnect와 같이)
+  //   섬의 '프로젝트 폴더 연결… · 연결 빼기…' 단추도 같은 길 — 전에는 이름표(st.gh)만 비워 파일 칸은 옛 폴더 그대로였다(F-72 새 맥락 리뷰)
+  const connected = (r) => { forgetFolder(); say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); };
+  const disconnected = () => { st.project = ""; forgetFolder(); render(); };
+  if (window.floeApp && window.floeApp.onProject) window.floeApp.onProject((d) => (d && d.add ? connected({ name: String(d.name || ""), config: !!d.config }) : disconnected()));
   document.addEventListener("floe:setup-done", (e) => {
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });

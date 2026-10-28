@@ -33,3 +33,9 @@ test("win.js · win.html · app.css — 접힌 칸은 두께 56(손잡이 없음
   assert.match(c, /\.isl-col\.folded\.side-left \.pill,\.isl-col\.folded\.side-right \.pill\{height:auto;max-height:100%;width:48px;flex-direction:column/, "세로 알약");
   assert.match(c, /\.isl-col\.folded\.side-right \.pill \.mini\{writing-mode:vertical-rl/, "글은 세로쓰기");
 });
+
+test("작업실 안의 접힌 알약은 진한 남색 판 · 칸 안에 드는 작은 그림자 — 앱 창(.in-app)의 규칙이 작업실 창에는 없어 유리(반투명)로 그려져 파스텔 바탕이 비쳐 흐렸다(임유정 2026-10-28 Windows)", () => {
+  const c = read("navigator/app.css");
+  assert.match(c, /\.isl-col\.folded \.pill\{max-width:100%;flex:none;background:var\(--isl\);-webkit-backdrop-filter:none;backdrop-filter:none\}/, "섬 · 앱의 알약과 같은 남색(섬 토큰 --isl — C-57), 뒤를 비추지 않는다");
+  assert.match(c, /\.isl-col\.folded \.pill:not\(\.ping\)\{box-shadow:[^}]*0 1px 2px rgba\(0,4,30,\.35\)\}/, "바깥 그림자는 1+2 = 3px — 칸의 안쪽 여백(3px) 안에서 잘리지 않게");
+});

@@ -7,47 +7,31 @@
 <title>Floe 0~8단계 스토리보드</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <!-- claude-drafted: 2026-10-26 — 이재엽의 요청("0단계부터 8단계까지 … test-1 … 하나씩 스토리보드로 만들어서 … 새로운 웹페이지로 저걸 디자인 초기버전으로 해서 다른 팀원들도 확인 가능하도록")으로 Claude가 만든 디자인 첫 판. 구성 · 번호 · 틈 보이기 · 캔버스 기준 · 제안 셋은 이재엽이 버튼으로 골랐고, 장면 그림은 이재엽이 준 디자인 캔버스 스크린샷(DockPrototype, 같은 날 15:49)을 기준으로 다시 그렸다("이거를 기준으로 다시 스토리보드 재작성"). 기준: 넘김 문서 opus-handoff-2026-10-26-storyboard.md, 예시 gamercross/test-1 8e41922. -->
+<!-- claude-drafted: 2026-10-28 — 이재엽 요청("지금 예정되어있는 요구사항들을 반영해서 지금 만들어진 스토리보드에 설명들이랑 해서 자세하게 나타나도록", 버튼 "예정 화면도 그리기")으로 Claude가 둘째 판을 만들었다: 장면마다 ⑥ 예정(예정 화면 그림 + 요구 설명), 맨 앞 한눈에 표, C-57 색 · 글꼴(팀 웹사이트 — 2026-10-28 이재엽 "클로드가 만든 느낌" 대신). 기준 main f283abe · PR #232. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Gaegu:wght@400;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Gowun+Dodum&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
 <style>
 /* 레이아웃: 위에 붙는 단계 칩 아래로 장면 아홉이 세로로 — 장면마다 앱 화면 한 장(왼쪽 작업실 창 + 오른쪽 섬) 다음에 네 칸 설명 */
 :root{
-  --bg:#E9EEF6; --paper:#F5F8FC; --paper-2:#EBF0F8; --ink:#1E2A5A; --sub:#4A5678; --num:#5F6C90; --line:#D3DBE9; --line-2:#BCC8DD;
-  --link:#2E4A9A; --acc:#CFDDF7; --acc-2:#BDD0F2; --acc-ink:#1E2A5A; --focus:#3D6BD6;
-  --me:#F7E4D4; --me-ink:#7A3F1F; --fl:#DCEBFA; --fl-ink:#1E3F7A; --cc:#E7E2F6; --cc-ink:#4A3F7A; --floe:#DFF0E7; --floe-ink:#24584A;
-  --gap:#F7EDC0; --gap-ink:#5A4710; --gap-line:#E4D18A; --ok:#DFF0E7; --ok-ink:#24584A;
-  --thread:#D0668A; --thread-soft:#F6DDE6; --thread-ink:#9A3558;
-  --k-same:#5A84C9; --k-pick:#C9DAF4; --k-own:#C77A43;
-  --desk:#DCE4EF; --win:#F7F9FC; --side:#EEF2F8; --ws:#F3F6FA; --dot:#CBD4E3; --board:#FAFBFD; --card:#F8FAFD; --note:#F7EDC0; --note-ink:#3B3317;
-  --act:#E3ECFB; --must:#E6F4EC; --later:#FBEADF; --later-ink:#8A4B2A;
-  --isl:#1A2766; --isl-ink:#F2F6FF; --isl-sub:#B9C7E6; --isl-me:#C9DAF8; --isl-me-ink:#16225E; --sky:#A9DDFF; --sky-ink:#0E1A4F;
-  --f-body:'IBM Plex Sans KR','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
-  --f-hand:'Gaegu','IBM Plex Sans KR','Apple SD Gothic Neo',sans-serif;
-  --f-mono:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  /* 팀 웹사이트 토큰(C-57) — 바탕 · 종이 · 눈 · 얼음 · 서리 · 선 · 글자 · 흐린 글자 · 바다 · 섬 · 단추 · 금 · 민트 · 볼. 이 페이지는 밝은 파스텔 한 판이다 */
+  --bg:#E9EEF6; --paper:#F2F5FA; --paper-2:#E2E9F4; --ink:#2B3463; --sub:#5B6491; --num:#5B6491; --line:#D3E0F3; --line-2:#C5CEE2;
+  --snow:#E2E9F4; --ice:#D3E0F3; --frost:#C6D5EE; --sea:#4D66B5; --gold:#E6CB86; --gold-soft:#EFE3C0; --gold-ink:#7A5E1E; --mint:#A9E2C4; --cheek:#EFC3CB; --cheek-ink:#8E3A52;
+  --link:#4D66B5; --acc:#B8C9F0; --acc-2:#C6D5EE; --acc-ink:#263066; --focus:#4D66B5;
+  --me:#EFE3C0; --me-ink:#7A5E1E; --fl:#D3E0F3; --fl-ink:#2B3463; --cc:#363E62; --cc-ink:#EEF1FA; --floe:#A9E2C4; --floe-ink:#2B3463;
+  --gap:#EFC3CB; --gap-ink:#8E3A52; --gap-line:#DCA2AF; --ok:#A9E2C4; --ok-ink:#2B3463;
+  --thread:#C9A445; --thread-soft:#EFE3C0; --thread-ink:#7A5E1E;
+  --k-same:#4D66B5; --k-pick:#D3E0F3; --k-own:#E6CB86;
+  --desk:#D3E0F3; --win:#F2F5FA; --side:#E2E9F4; --ws:#E9EEF6; --dot:#C6D5EE; --board:#F2F5FA; --card:#E9EEF6; --note:#EFE3C0; --note-ink:#5E4716;
+  --act:#D3E0F3; --must:#A9E2C4; --later:#EFE3C0; --later-ink:#7A5E1E;
+  --isl:#363E62; --isl-ink:#EEF1FA; --isl-sub:#AAB3D4; --isl-me:#B8C9F0; --isl-me-ink:#263066; --sky:#B8C9F0; --sky-ink:#263066;
+  --f-disp:'Bagel Fat One','Gowun Dodum','Apple SD Gothic Neo',sans-serif;
+  --f-body:'Gowun Dodum','Apple SD Gothic Neo','Noto Sans KR',system-ui,sans-serif;
+  --f-hand:'Gowun Dodum','Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+  --f-mono:'Nanum Gothic Coding',ui-monospace,'SF Mono',Menlo,monospace;
   --ease:cubic-bezier(.2,.8,.2,1);
   --floro:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjE4IDUyIDE2NCAxMzQiPjxzdHlsZT48IVtDREFUQVsKOnJvb3R7LS1zZWFsOiNFRUY1RkQ7LS1zZWFsLXNoYWRlOiNFMEVCRjg7LS1zZWFsLWxpbmU6I0M4REFFRTstLXNlYWwtZmluOiNCNUQxRUU7LS1zZWFsLWluazojMUEyMzUwfQouY2F0e2ZsZXg6bm9uZTtvdmVyZmxvdzp2aXNpYmxlO2Rpc3BsYXk6YmxvY2t9Ci5jYXQgLmMtZnVye2ZpbGw6dmFyKC0tc2VhbCk7c3Ryb2tlOnZhcigtLXNlYWwtbGluZSk7c3Ryb2tlLXdpZHRoOjEuNX0KLmNhdCAuYy1zaGFkZXtmaWxsOnZhcigtLXNlYWwtc2hhZGUpfQouY2F0IC5jLWZpbntmaWxsOm5vbmU7c3Ryb2tlOnZhcigtLXNlYWwtZmluKTtzdHJva2Utd2lkdGg6My4yO3N0cm9rZS1saW5lY2FwOnJvdW5kfQouY2F0IC5jLXRhaWwgZWxsaXBzZXtmaWxsOnZhcigtLXNlYWwtZmluKX0KLmNhdCAuYy1wYXdzIGVsbGlwc2V7ZmlsbDp2YXIoLS1zZWFsKTtzdHJva2U6dmFyKC0tc2VhbC1maW4pO3N0cm9rZS13aWR0aDoxLjV9Ci5jYXQgLmMtYmx1c2ggZWxsaXBzZXtmaWxsOiNGN0FGQkE7b3BhY2l0eTowO3RyYW5zaXRpb246b3BhY2l0eSAuMnN9ICAgCi5jYXQgLmMtd2hpc2t7ZmlsbDpub25lO3N0cm9rZTp2YXIoLS1zZWFsLWluayk7c3Ryb2tlLXdpZHRoOjEuMTtzdHJva2UtbGluZWNhcDpyb3VuZH0gICAKLmNhdCAuYy1ub3Nle2ZpbGw6dmFyKC0tc2VhbC1pbmspfQouY2F0IC5jLW1vdXRoe2ZpbGw6bm9uZTtzdHJva2U6dmFyKC0tc2VhbC1pbmspO3N0cm9rZS13aWR0aDoxLjU7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWxpbmVqb2luOnJvdW5kfQouY2F0IC5jLW9wZW57ZmlsbDojQjQ1MDVGO2Rpc3BsYXk6bm9uZX0KLmNhdCAuYy1leWVzIGNpcmNsZXtmaWxsOnZhcigtLXNlYWwtaW5rKX0KLmNhdCAuYy1leWVzIC5lLWdsaW50e2ZpbGw6I0ZGRkZGRn0KLmNhdCAuYy1leWVzIHBhdGh7ZmlsbDpub25lO3N0cm9rZTp2YXIoLS1zZWFsLWluayk7c3Ryb2tlLXdpZHRoOjIuMjtzdHJva2UtbGluZWNhcDpyb3VuZH0KLmNhdCAuYy1leWVzIC5lLWhlYXJ0IHBhdGh7ZmlsbDojRkY1RDczO3N0cm9rZTpub25lfQouY2F0IC5zLWRvdHMgY2lyY2xle2ZpbGw6IzhGQTlENn0uY2F0IC5zLXNwYXJre2ZpbGw6I0Y1QTUyNH0uY2F0IC5zLWhlYXJ0e2ZpbGw6I0ZGNkY4Nn0KLmNhdCAucy1xe2ZvbnQ6ODAwIDIycHggLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmO2ZpbGw6dmFyKC0tc2VhbC1xLCMyRjZCRkYpfQouY2F0IC5zLWJhbmcgY2lyY2xle2ZpbGw6I0Y1QTUyNH0uY2F0IC5zLWJhbmcgcGF0aHtzdHJva2U6I2ZmZjtzdHJva2Utd2lkdGg6MztzdHJva2UtbGluZWNhcDpyb3VuZH0uY2F0IC5zLWJhbmcgY2lyY2xlOmxhc3QtY2hpbGR7ZmlsbDojZmZmfQouY2F0IC5zLXp6eiB0ZXh0e2ZvbnQ6ODAwIDEwcHggLWFwcGxlLXN5c3RlbSxzYW5zLXNlcmlmO2ZpbGw6dmFyKC0tc2VhbC16eiwjN0M4QkE4KX0KLmNhdCAucy16enogdGV4dDpudGgtY2hpbGQoMil7Zm9udC1zaXplOjEycHh9LmNhdCAucy16enogdGV4dDpudGgtY2hpbGQoMyl7Zm9udC1zaXplOjE1cHh9Ci5jYXQgLnMtc3dlYXR7ZmlsbDojN0ZCM0ZGfQouY2F0IC5jLWV5ZXM+KiwuY2F0IFtjbGFzc149InMtIl17ZGlzcGxheTpub25lfQoubS1pZGxlIC5lLWRvdCwubS1sb29rIC5lLWRvdCwubS1hbGVydCAuZS13aWRlLC5tLXdvdyAuZS13b3csLm0taGFwcHkgLmUtaGFwcHksLm0tZG9uZSAuZS1oYXBweSwubS10aGluayAuZS10aGluaywKLm0tbG92ZSAuZS1oZWFydCwubS1wdXJyIC5lLWNsb3NlZCwubS1zbGVlcCAuZS1jbG9zZWQsLm0teWF3biAuZS1jbG9zZWR7ZGlzcGxheTppbmxpbmV9Ci5tLWxvb2sgLnMtZG90cywubS1kb25lIC5zLXNwYXJrLC5tLXRoaW5rIC5zLXEsLm0tYWxlcnQgLnMtYmFuZywubS1sb3ZlIC5zLWhlYXJ0LC5tLXB1cnIgLnMtaGVhcnQsLm0tc2xlZXAgLnMtenp6e2Rpc3BsYXk6aW5saW5lfQouY2F0Lm9vcHMgLnMtc3dlYXR7ZGlzcGxheTppbmxpbmV9LmNhdC5vb3BzIC5zLXF7ZGlzcGxheTpub25lfQoubS15YXduIC5jLW1vdXRoLC5tLXdvdyAuYy1tb3V0aCwubS1hbGVydCAuYy1tb3V0aHtkaXNwbGF5Om5vbmV9Ci5tLXlhd24gLmMtb3BlbiwubS13b3cgLmMtb3BlbiwubS1hbGVydCAuYy1vcGVue2Rpc3BsYXk6aW5saW5lfQoubS1sb3ZlIC5jLWJsdXNoIGVsbGlwc2UsLm0tcHVyciAuYy1ibHVzaCBlbGxpcHNlLC5tLWhhcHB5IC5jLWJsdXNoIGVsbGlwc2UsLm0tZG9uZSAuYy1ibHVzaCBlbGxpcHNlLC5tLXNsZWVwIC5jLWJsdXNoIGVsbGlwc2V7b3BhY2l0eTouOH0KLm0tbG9vayAuZS1kb3R7dHJhbnNmb3JtOnRyYW5zbGF0ZVkoLTJweCl9Ci5zbWFsbCAuYy1tb3V0aCwuc21hbGwgLmMtb3Blbiwuc21hbGwgLmMtZmluLC5zbWFsbCAuYy13aGlza3tkaXNwbGF5Om5vbmV9Ci5ibGluayAubS1pZGxlIC5lLWRvdCwuYmxpbmsgLm0tbG9vayAuZS1kb3R7ZGlzcGxheTpub25lfQouYmxpbmsgLm0taWRsZSAuZS1ibGluaywuYmxpbmsgLm0tbG9vayAuZS1ibGlua3tkaXNwbGF5OmlubGluZX0KCgouY2F0IC5zLWJ1YiBjaXJjbGUgeyBmaWxsOiByZ2JhKDE2OSwgMjIxLCAyNTUsIC4zNSk7IHN0cm9rZTogI0NERTZGRjsgc3Ryb2tlLXdpZHRoOiAuODsgfQouZmFjZSAuYy1maW4geyBkaXNwbGF5OiBub25lOyB9ICAgCgouY2F0IC5oLXN0YXJzIGNpcmNsZSB7IGZpbGw6ICNGRkZGRkY7IG9wYWNpdHk6IC43OyB9Ci5jYXQgLmgtbGluZSwgLmNhdCAuaC1yaXBwbGUgeyBmaWxsOiBub25lOyBzdHJva2U6ICNFQUY0RkY7IHN0cm9rZS1saW5lY2FwOiByb3VuZDsgfQouY2F0IC5oLWxpbmUgeyBzdHJva2Utd2lkdGg6IDEuNjsgb3BhY2l0eTogLjc7IH0gLmNhdCAuaC1yaXBwbGUgeyBzdHJva2Utd2lkdGg6IDE7IG9wYWNpdHk6IC40OyB9CgoKQG1lZGlhIChwcmVmZXJzLXJlZHVjZWQtbW90aW9uOiBuby1wcmVmZXJlbmNlKSB7CiAgCiAgLmNhdCAuYy10YWlsIHsgdHJhbnNmb3JtLW9yaWdpbjogOTJweCAxMDhweDsgYW5pbWF0aW9uOiBzd2F5IDMuMnMgZWFzZS1pbi1vdXQgaW5maW5pdGU7IH0KICAubS1sb29rIC5jLXRhaWwsIC5tLWFsZXJ0IC5jLXRhaWwgeyBhbmltYXRpb24tZHVyYXRpb246IDEuMXM7IH0KICAubS1oYXBweSAuYy10YWlsLCAubS1kb25lIC5jLXRhaWwsIC5tLWxvdmUgLmMtdGFpbCwgLm0tcHVyciAuYy10YWlsIHsgYW5pbWF0aW9uOiB3YWcgLjMycyBlYXNlLWluLW91dCBpbmZpbml0ZSBhbHRlcm5hdGU7IH0KICAubS1zbGVlcCAuYy10YWlsLCAubS15YXduIC5jLXRhaWwgeyBhbmltYXRpb246IG5vbmU7IH0KCiAgCiAgLmNhdCAuYy1ib2R5IHsgdHJhbnNmb3JtLW9yaWdpbjogNTVweCAxMTJweDsgYW5pbWF0aW9uOiBicmVhdGggNC4ycyBlYXNlLWluLW91dCBpbmZpbml0ZTsgfQogIC5ob2xlIC5jLWJvZHkgeyB0cmFuc2Zvcm0tb3JpZ2luOiA1NXB4IDYwcHg7IGFuaW1hdGlvbjogZmxvYXQgNXMgZWFzZS1pbi1vdXQgaW5maW5pdGU7IH0gICAKICAubS1zbGVlcCAuYy1ib2R5IHsgYW5pbWF0aW9uOiBicmVhdGhlIDMuNHMgZWFzZS1pbi1vdXQgaW5maW5pdGU7IH0KICAubS1zbGVlcCAucy16enogdGV4dCB7IGFuaW1hdGlvbjogenogMi42cyBlYXNlLWluLW91dCBpbmZpbml0ZTsgfQogIC5tLXNsZWVwIC5zLXp6eiB0ZXh0Om50aC1jaGlsZCgyKSB7IGFuaW1hdGlvbi1kZWxheTogLjM1czsgfSAubS1zbGVlcCAucy16enogdGV4dDpudGgtY2hpbGQoMykgeyBhbmltYXRpb24tZGVsYXk6IC43czsgfQoKICAKICAubS1oYXBweSAuYy1maW4sIC5tLWRvbmUgLmMtZmluLCAubS13b3cgLmMtZmluIHsgdHJhbnNmb3JtLW9yaWdpbjogNDlweCA3MnB4OyBhbmltYXRpb246IGZsYXAgLjE2cyBlYXNlLWluLW91dCA2IGFsdGVybmF0ZTsgfQoKICAKICAuaG9sZS5tLXdvdyAuYy1ib2R5LCAuaG9sZS5tLWFsZXJ0IC5jLWJvZHkgeyBhbmltYXRpb246IHBvcHVwIDFzIGVhc2Utb3V0OyB9CiAgLmhvbGUubS10aGluayAuYy1ib2R5LCAuaG9sZS5tLWxvb2sgLmMtYm9keSB7IGFuaW1hdGlvbjogZGlwIDNzIGVhc2UtaW4tb3V0IGluZmluaXRlOyB9CiAgLmhvbGUubS13b3cgLnMtYnViLCAuaG9sZS5tLWFsZXJ0IC5zLWJ1YiwgLmhvbGUubS10aGluayAucy1idWIsIC5ob2xlLm0tbG9vayAucy1idWIsIC5ob2xlLm0tZG9uZSAucy1idWIsIC5zd2ltIC5jYXQgLnMtYnViIHsgZGlzcGxheTogaW5saW5lOyB9CiAgLmNhdCAucy1idWIgY2lyY2xlIHsgYW5pbWF0aW9uOiByaXNlIDEuM3MgZWFzZS1pbiBpbmZpbml0ZTsgfQogIC5jYXQgLnMtYnViIGNpcmNsZTpudGgtY2hpbGQoMikgeyBhbmltYXRpb24tZGVsYXk6IC40NXM7IH0gLmNhdCAucy1idWIgY2lyY2xlOm50aC1jaGlsZCgzKSB7IGFuaW1hdGlvbi1kZWxheTogLjlzOyB9CgogIC5tLWxvb2sgLnMtZG90cyB7IGFuaW1hdGlvbjogYmxpbmtkb3QgMXMgaW5maW5pdGU7IH0KICAuY2F0Lm0td293IHsgYW5pbWF0aW9uOiBqdW1wIC40cyBlYXNlOyB9CgogIAogIC5zd2ltIC5jYXQgLmMtYm9keSB7IHRyYW5zZm9ybS1vcmlnaW46IDU1cHggNjBweDsgYW5pbWF0aW9uOiBzd2ltIDMuNnMgZWFzZS1pbi1vdXQ7IH0gICAKCiAgCiAgLmdhbHVtcGggc3ZnLmNhdCB7IHRyYW5zZm9ybS1vcmlnaW46IDUwJSAxMDAlOyBhbmltYXRpb246IGdhbHVtcGggMS40cyBlYXNlLWluLW91dDsgfQp9CkBrZXlmcmFtZXMgc3dheSB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiByb3RhdGUoMCk7IH0gNTAlIHsgdHJhbnNmb3JtOiByb3RhdGUoLTE0ZGVnKTsgfSB9CkBrZXlmcmFtZXMgd2FnIHsgZnJvbSB7IHRyYW5zZm9ybTogcm90YXRlKDEwZGVnKTsgfSB0byB7IHRyYW5zZm9ybTogcm90YXRlKC0xOGRlZyk7IH0gfQpAa2V5ZnJhbWVzIGJyZWF0aCB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiBzY2FsZSgxKTsgfSA1MCUgeyB0cmFuc2Zvcm06IHNjYWxlKDEuMDEyLCAuOTkyKTsgfSB9CkBrZXlmcmFtZXMgYnJlYXRoZSB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiBzY2FsZSgxKTsgfSA1MCUgeyB0cmFuc2Zvcm06IHNjYWxlKDEuMDI1LCAuOTg1KTsgfSB9CkBrZXlmcmFtZXMgenogeyAwJSwgMTAwJSB7IG9wYWNpdHk6IC4yNTsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKDJweCk7IH0gNTAlIHsgb3BhY2l0eTogMTsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKC0ycHgpOyB9IH0KQGtleWZyYW1lcyBibGlua2RvdCB7IDUwJSB7IG9wYWNpdHk6IC4yNTsgfSB9CkBrZXlmcmFtZXMganVtcCB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiBub25lOyB9IDQwJSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlWSgtOHB4KTsgfSB9CkBrZXlmcmFtZXMgZmxhcCB7IHRvIHsgdHJhbnNmb3JtOiBzY2FsZSgxLjEyLCAuOSkgdHJhbnNsYXRlWSgtMXB4KTsgfSB9CgpAa2V5ZnJhbWVzIGZsb2F0IHsgMCUsIDEwMCUgeyB0cmFuc2Zvcm06IG5vbmU7IH0gMzAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKC0xLjVweCkgcm90YXRlKC0zZGVnKTsgfSA3MCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMXB4KSByb3RhdGUoM2RlZyk7IH0gfQpAa2V5ZnJhbWVzIHBvcHVwIHsgMCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoMTVweCk7IH0gNTAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKC0xM3B4KSBzY2FsZSguOTcsIDEuMDQpOyB9IDc1JSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlWSgycHgpOyB9IDEwMCUgeyB0cmFuc2Zvcm06IG5vbmU7IH0gfQpAa2V5ZnJhbWVzIGRpcCB7IDAlLCAxMDAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKDNweCk7IH0gNTAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKDEwcHgpOyB9IH0KQGtleWZyYW1lcyBzd2ltIHsKICAwJSB7IHRyYW5zZm9ybTogbm9uZTsgfQogIDE0JSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIDE5cHgpOyB9CiAgMzIlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGUoLTE0cHgsIDIxcHgpIHJvdGF0ZSgtOWRlZyk7IH0KICA1MiUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgxM3B4LCAxOXB4KSByb3RhdGUoOWRlZyk7IH0KICA2NCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgwLCAyMXB4KTsgfQogIDc2JSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlKDAsIDgycHgpOyB9CiAgOTAlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGUoMCwgLTZweCkgc2NhbGUoLjk3LCAxLjA1KTsgfQogIDEwMCUgeyB0cmFuc2Zvcm06IG5vbmU7IH0KfQpAa2V5ZnJhbWVzIHJpc2UgeyAwJSB7IG9wYWNpdHk6IDA7IHRyYW5zZm9ybTogdHJhbnNsYXRlWSgwKTsgfSAyMCUgeyBvcGFjaXR5OiAxOyB9IDEwMCUgeyBvcGFjaXR5OiAwOyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoLTM0cHgpOyB9IH0KQGtleWZyYW1lcyBnYWx1bXBoIHsKICAwJSwgMTAwJSB7IHRyYW5zZm9ybTogbm9uZTsgfQogIDEwJSB7IHRyYW5zZm9ybTogc2NhbGUoMS4wOCwgLjkpOyB9CiAgMjIlIHsgdHJhbnNmb3JtOiB0cmFuc2xhdGVZKC0xNnB4KSBzY2FsZSguOTQsIDEuMDgpIHJvdGF0ZSgtM2RlZyk7IH0KICAzNCUgeyB0cmFuc2Zvcm06IHNjYWxlKDEuMSwgLjg4KTsgfQogIDQ2JSB7IHRyYW5zZm9ybTogdHJhbnNsYXRlWSgtMTJweCkgc2NhbGUoLjk1LCAxLjA2KSByb3RhdGUoLTJkZWcpOyB9CiAgNTglIHsgdHJhbnNmb3JtOiBzY2FsZSgxLjA4LCAuOSk7IH0KICA3MCUgeyB0cmFuc2Zvcm06IHRyYW5zbGF0ZVkoLTdweCkgc2NhbGUoLjk3LCAxLjA0KTsgfQogIDgyJSB7IHRyYW5zZm9ybTogc2NhbGUoMS4wNCwgLjk2KTsgfQp9Cl1dPjwvc3R5bGU+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzNBNUZFMCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzE2MjI2QSIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxzdmcgeD0iMjAiIHk9IjI0IiBjbGFzcz0iY2F0IG0taGFwcHkgaG9sZSIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxNjAiIHZpZXdCb3g9IjAgMCAxMjAgMTIwIiBhcmlhLWhpZGRlbj0idHJ1ZSI+CiAgICAgIDxkZWZzPjxyYWRpYWxHcmFkaWVudCBpZD0iZmwxcCIgY3k9Ii42MiI+PHN0b3Agb2Zmc2V0PSIuMzUiIHN0b3AtY29sb3I9IiMxNjIyNkEiIHN0b3Atb3BhY2l0eT0iLjkiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMxNjIyNkEiIHN0b3Atb3BhY2l0eT0iMCI+PC9zdG9wPjwvcmFkaWFsR3JhZGllbnQ+CiAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iZmwxdyIgeDI9IjAiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM1RDg2RTYiIHN0b3Atb3BhY2l0eT0iLjk1Ij48L3N0b3A+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMkEzQjhDIiBzdG9wLW9wYWNpdHk9Ii44Ij48L3N0b3A+PC9saW5lYXJHcmFkaWVudD4KICAgICAgPGNsaXBQYXRoIGlkPSJmbDFjIj48cmVjdCB4PSItMjAiIHk9Ii00MCIgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxNTAiPjwvcmVjdD48L2NsaXBQYXRoPjwvZGVmcz4KICAgIAogICAgCiAgICA8ZyBjbGlwLXBhdGg9InVybCgjZmwxYykiPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAgMTgpIHNjYWxlKDEuMTIpIj48ZyBjbGFzcz0iYy1ib2R5Ij48ZGVmcz48cmFkaWFsR3JhZGllbnQgaWQ9ImZsMXYiIGN4PSIuNDIiIGN5PSIuMzYiIHI9Ii42OCI+PHN0b3Agb2Zmc2V0PSIuNiIgc3RvcC1jb2xvcj0iIzFBMjM1MCIgc3RvcC1vcGFjaXR5PSIwIj48L3N0b3A+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMUEyMzUwIiBzdG9wLW9wYWNpdHk9Ii4yIj48L3N0b3A+PC9yYWRpYWxHcmFkaWVudD4KICAgICAgICA8cmFkaWFsR3JhZGllbnQgaWQ9ImZsMXMiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI0ZGRkZGRiIgc3RvcC1vcGFjaXR5PSIuODUiPjwvc3RvcD48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiNGRkZGRkYiIHN0b3Atb3BhY2l0eT0iMCI+PC9zdG9wPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPgogICAgICAKICAgICAgPGcgY2xhc3M9ImMtaGVhZCI+CiAgICAgICAgPHBhdGggY2xhc3M9ImMtZnVyIiBkPSJNNTAgMTAgQzY2IDEwIDc4IDIxIDgwIDM4IEM4MSA1MCA4MyA1OCA5MSA2OCBDMTAwIDc5IDEwMiA5NiA5NCAxMDYgQzg3IDExNCA3MyAxMTUgNTcgMTE1IEMzOSAxMTUgMjcgMTEyIDIyIDEwMyBDMTcgOTQgMTggNzggMTkgNjMgQzIwIDQ3IDIwIDMxIDI2IDIxIEMzMiAxMyA0MCAxMCA1MCAxMCBaIj48L3BhdGg+CiAgICAgICAgPHBhdGggY2xhc3M9ImMtc2hhZGUiIGQ9Ik04MCAzOCBDODEgNTAgODMgNTggOTEgNjggQzEwMCA3OSAxMDIgOTYgOTQgMTA2IEM4NyAxMTQgNzMgMTE1IDYyIDExNSBDODAgMTA4IDkwIDk2IDg3IDgyIEM4NCA3MCA3OSA1OCA4MCAzOCBaIj48L3BhdGg+CiAgICAgICAgPHBhdGggY2xhc3M9ImMtdm9sIiBkPSJNNTAgMTAgQzY2IDEwIDc4IDIxIDgwIDM4IEM4MSA1MCA4MyA1OCA5MSA2OCBDMTAwIDc5IDEwMiA5NiA5NCAxMDYgQzg3IDExNCA3MyAxMTUgNTcgMTE1IEMzOSAxMTUgMjcgMTEyIDIyIDEwMyBDMTcgOTQgMTggNzggMTkgNjMgQzIwIDQ3IDIwIDMxIDI2IDIxIEMzMiAxMyA0MCAxMCA1MCAxMCBaIiBmaWxsPSJ1cmwoI2ZsMXYpIj48L3BhdGg+CiAgICAgICAgPGVsbGlwc2UgY2xhc3M9ImMtc2hpbmUiIGN4PSIzNiIgY3k9IjIyIiByeD0iMTIiIHJ5PSI3IiB0cmFuc2Zvcm09InJvdGF0ZSgtMjUgMzYgMjIpIiBmaWxsPSJ1cmwoI2ZsMXMpIj48L2VsbGlwc2U+CiAgICAgICAgPHBhdGggY2xhc3M9ImMtZmluIiBkPSJNMzcgNjIgUTQ1IDY0IDQ5IDc0IE02MiA1OSBRNTQgNjQgNDkgNzQgTTMxIDcyIFE0OSA4NSA2OSA3MSI+PC9wYXRoPgogICAgICAgIDxnIGNsYXNzPSJjLWJsdXNoIj48ZWxsaXBzZSBjeD0iMzMiIGN5PSI0MiIgcng9IjQuMiIgcnk9IjIuNiI+PC9lbGxpcHNlPjxlbGxpcHNlIGN4PSI2NiIgY3k9IjQyIiByeD0iNC4yIiByeT0iMi42Ij48L2VsbGlwc2U+PC9nPgogICAgICAgIDxwYXRoIGNsYXNzPSJjLXdoaXNrIiBkPSJNMzEgNDEgTDIyIDM5LjUgTTMxIDQzLjUgTDIyIDQ0LjUgTTY4IDQxIEw3NyAzOS41IE02OCA0My41IEw3NyA0NC41Ij48L3BhdGg+CiAgICAgICAgPGcgY2xhc3M9ImMtZXllcyI+CiAgICAgICAgICA8ZyBjbGFzcz0iZS1kb3QiPjxjaXJjbGUgY3g9IjM5IiBjeT0iMzUiIHI9IjMuNCI+PC9jaXJjbGU+IDxjaXJjbGUgY3g9IjYwIiBjeT0iMzUiIHI9IjMuNCI+PC9jaXJjbGU+PC9nPgogICAgICAgICAgPGcgY2xhc3M9ImUtd2lkZSI+PGNpcmNsZSBjeD0iMzkiIGN5PSIzNSIgcj0iNC42Ij48L2NpcmNsZT48Y2lyY2xlIGNsYXNzPSJlLWdsaW50IiBjeD0iNDAuNCIgY3k9IjMzLjQiIHI9IjEuNCI+PC9jaXJjbGU+IDxjaXJjbGUgY3g9IjYwIiBjeT0iMzUiIHI9IjQuNiI+PC9jaXJjbGU+PGNpcmNsZSBjbGFzcz0iZS1nbGludCIgY3g9IjYxLjQiIGN5PSIzMy40IiByPSIxLjQiPjwvY2lyY2xlPjwvZz4KICAgICAgICAgIDxnIGNsYXNzPSJlLXdvdyI+PGNpcmNsZSBjeD0iMzkiIGN5PSIzNSIgcj0iNS4yIj48L2NpcmNsZT48Y2lyY2xlIGNsYXNzPSJlLWdsaW50IiBjeD0iNDAuNiIgY3k9IjMzLjIiIHI9IjEuNyI+PC9jaXJjbGU+PGNpcmNsZSBjbGFzcz0iZS1nbGludCIgY3g9IjM3LjQiIGN5PSIzNyIgcj0iLjgiPjwvY2lyY2xlPiA8Y2lyY2xlIGN4PSI2MCIgY3k9IjM1IiByPSI1LjIiPjwvY2lyY2xlPjxjaXJjbGUgY2xhc3M9ImUtZ2xpbnQiIGN4PSI2MS42IiBjeT0iMzMuMiIgcj0iMS43Ij48L2NpcmNsZT48Y2lyY2xlIGNsYXNzPSJlLWdsaW50IiBjeD0iNTguNCIgY3k9IjM3IiByPSIuOCI+PC9jaXJjbGU+PC9nPgogICAgICAgICAgPHBhdGggY2xhc3M9ImUtaGFwcHkiIGQ9Ik0zNS41IDM2LjUgUTM5IDMxLjUgNDIuNSAzNi41IE01Ni41IDM2LjUgUTYwIDMxLjUgNjMuNSAzNi41Ij48L3BhdGg+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iZS1jbG9zZWQiIGQ9Ik0zNS41IDM0LjUgUTM5IDM4IDQyLjUgMzQuNSBNNTYuNSAzNC41IFE2MCAzOCA2My41IDM0LjUiPjwvcGF0aD4KICAgICAgICAgIDxwYXRoIGNsYXNzPSJlLWJsaW5rIiBkPSJNMzUuNSAzNSBMNDIuNSAzNSBNNTYuNSAzNSBMNjMuNSAzNSI+PC9wYXRoPgogICAgICAgICAgPGcgY2xhc3M9ImUtdGhpbmsiPjxjaXJjbGUgY3g9IjM5IiBjeT0iMzUiIHI9IjMuNCI+PC9jaXJjbGU+PHBhdGggZD0iTTU2IDMzLjUgTDY0IDM2LjUiPjwvcGF0aD48L2c+CiAgICAgICAgICA8ZyBjbGFzcz0iZS1oZWFydCI+PHBhdGggZD0iTTM5IDM4LjYgQzM0LjYgMzUuNiAzNC42IDMxLjYgMzcuNCAzMS42IEMzOC40IDMxLjYgMzkgMzIuNiAzOSAzMy4yIEMzOSAzMi42IDM5LjYgMzEuNiA0MC42IDMxLjYgQzQzLjQgMzEuNiA0My40IDM1LjYgMzkgMzguNiBaIj48L3BhdGg+IDxwYXRoIGQ9Ik02MCAzOC42IEM1NS42IDM1LjYgNTUuNiAzMS42IDU4LjQgMzEuNiBDNTkuNCAzMS42IDYwIDMyLjYgNjAgMzMuMiBDNjAgMzIuNiA2MC42IDMxLjYgNjEuNiAzMS42IEM2NC40IDMxLjYgNjQuNCAzNS42IDYwIDM4LjYgWiI+PC9wYXRoPjwvZz4KICAgICAgICA8L2c+CiAgICAgICAgPGcgY2xhc3M9ImMtc25vdXQiPgogICAgICAgICAgPHBhdGggY2xhc3M9ImMtbm9zZSIgZD0iTTQ3LjMgMzkuMiBRNDkuNSAzOC4yIDUxLjcgMzkuMiBRNTAuOCA0MS42IDQ5LjUgNDEuOCBRNDguMiA0MS42IDQ3LjMgMzkuMiBaIj48L3BhdGg+CiAgICAgICAgICA8cGF0aCBjbGFzcz0iYy1tb3V0aCIgZD0iTTQ5LjUgNDEuOCBMNDkuNSA0My40IE00NiA0MyBRNDcuNyA0NS4zIDQ5LjUgNDMuNCBRNTEuMyA0NS4zIDUzIDQzIj48L3BhdGg+CiAgICAgICAgICA8ZWxsaXBzZSBjbGFzcz0iYy1vcGVuIiBjeD0iNDkuNSIgY3k9IjQ1IiByeD0iMS44IiByeT0iMi40Ij48L2VsbGlwc2U+CiAgICAgICAgPC9nPgogICAgICA8L2c+CiAgICAgIDwvZz48L2c+PC9nPgogICAgPHBhdGggY2xhc3M9Imgtd2F0ZXIiIGQ9Ik00IDEwMCBRNjAgOTIgMTE2IDEwMCBRMTEwIDExNyA2MCAxMTggUTEwIDExNyA0IDEwMCBaIiBmaWxsPSJ1cmwoI2ZsMXcpIj48L3BhdGg+CiAgICA8cGF0aCBjbGFzcz0iaC1saW5lIiBkPSJNMTQgMTAwIFE2MCA5MyAxMDYgMTAwIj48L3BhdGg+PHBhdGggY2xhc3M9ImgtcmlwcGxlIiBkPSJNMzAgMTA2IFE0NCAxMDQgNTIgMTA2IE02NiAxMDggUTc4IDEwNiA5MCAxMDgiPjwvcGF0aD48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMiAxMikiPjxnIGNsYXNzPSJzLWRvdHMiPjxjaXJjbGUgY3g9Ijg0IiBjeT0iMjYiIHI9IjIuMiI+PC9jaXJjbGU+PGNpcmNsZSBjeD0iOTAiIGN5PSIxOCIgcj0iMyI+PC9jaXJjbGU+PGNpcmNsZSBjeD0iOTciIGN5PSI5IiByPSIzLjgiPjwvY2lyY2xlPjwvZz4KICAgICAgPHBhdGggY2xhc3M9InMtc3BhcmsiIGQ9Ik05NyAyIEw5OS41IDEwIEwxMDcgMTIuNSBMOTkuNSAxNSBMOTcgMjMgTDk0LjUgMTUgTDg3IDEyLjUgTDk0LjUgMTAgWiI+PC9wYXRoPgogICAgICA8dGV4dCBjbGFzcz0icy1xIiB4PSI4MiIgeT0iMjciPj88L3RleHQ+CiAgICAgIDxnIGNsYXNzPSJzLWJhbmciPjxjaXJjbGUgY3g9Ijk0IiBjeT0iMTYiIHI9IjgiPjwvY2lyY2xlPjxwYXRoIGQ9Ik05NCAxMSBMOTQgMTcuNSI+PC9wYXRoPjxjaXJjbGUgY3g9Ijk0IiBjeT0iMjEiIHI9IjEuNiI+PC9jaXJjbGU+PC9nPgogICAgICA8cGF0aCBjbGFzcz0icy1oZWFydCIgZD0iTTg0IDE1IEM4NCAxMCA5MSAxMCA5MSAxNSBDOTEgMTAgOTggMTAgOTggMTUgQzk4IDIxIDkxIDI0IDkxIDI3IEM5MSAyNCA4NCAyMSA4NCAxNSBaIj48L3BhdGg+CiAgICAgIDxnIGNsYXNzPSJzLXp6eiI+PHRleHQgeD0iODAiIHk9IjI4Ij56PC90ZXh0Pjx0ZXh0IHg9Ijg3IiB5PSIxOCI+ejwvdGV4dD48dGV4dCB4PSI5NSIgeT0iNyI+ejwvdGV4dD48L2c+CiAgICAgIDxwYXRoIGNsYXNzPSJzLXN3ZWF0IiBkPSJNODAgMjAgUTc2LjUgMjcgODAgMzAgUTgzLjUgMjcgODAgMjAgWiI+PC9wYXRoPgogICAgICA8ZyBjbGFzcz0icy1idWIiPjxjaXJjbGUgY3g9IjUwIiBjeT0iMTAwIiByPSIyIj48L2NpcmNsZT48Y2lyY2xlIGN4PSI2MCIgY3k9IjEwNCIgcj0iMS40Ij48L2NpcmNsZT48Y2lyY2xlIGN4PSI0MyIgY3k9IjEwNSIgcj0iMS42Ij48L2NpcmNsZT48L2c+PC9nPjwvc3ZnPjwvc3ZnPgo=");
 }
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#121831; --paper:#1A2242; --paper-2:#20294D; --ink:#E7ECFA; --sub:#AAB5D3; --num:#8F9BC0; --line:#2C3863; --line-2:#3E4B7C;
-  --link:#A9C2FF; --acc:#2E4380; --acc-2:#38508F; --acc-ink:#E7ECFA; --focus:#9DB8F7;
-  --me:#4A3226; --me-ink:#F4D3BC; --fl:#1E3356; --fl-ink:#C2D9F7; --cc:#332D55; --cc-ink:#D7CFF4; --floe:#1C3A31; --floe-ink:#AEDFC9;
-  --gap:#3D3417; --gap-ink:#EFDCA2; --gap-line:#6B5A23; --ok:#1C3A31; --ok-ink:#AEDFC9;
-  --thread:#E07A9C; --thread-soft:#3D2232; --thread-ink:#F2A9C0;
-  --k-same:#7FA6E6; --k-pick:#2F4675; --k-own:#E0A27A;
-  --desk:#0E1328; --win:#18203E; --side:#151C38; --ws:#1A2242; --dot:#2C3863; --board:#1F294C; --card:#232E55; --note:#4A4120; --note-ink:#F3E6B5;
-  --act:#22355E; --must:#1C3A31; --later:#43301F; --later-ink:#F4C9A8;
-  color-scheme:dark }}
-:root[data-theme="dark"]{
-  --bg:#121831; --paper:#1A2242; --paper-2:#20294D; --ink:#E7ECFA; --sub:#AAB5D3; --num:#8F9BC0; --line:#2C3863; --line-2:#3E4B7C;
-  --link:#A9C2FF; --acc:#2E4380; --acc-2:#38508F; --acc-ink:#E7ECFA; --focus:#9DB8F7;
-  --me:#4A3226; --me-ink:#F4D3BC; --fl:#1E3356; --fl-ink:#C2D9F7; --cc:#332D55; --cc-ink:#D7CFF4; --floe:#1C3A31; --floe-ink:#AEDFC9;
-  --gap:#3D3417; --gap-ink:#EFDCA2; --gap-line:#6B5A23; --ok:#1C3A31; --ok-ink:#AEDFC9;
-  --thread:#E07A9C; --thread-soft:#3D2232; --thread-ink:#F2A9C0;
-  --k-same:#7FA6E6; --k-pick:#2F4675; --k-own:#E0A27A;
-  --desk:#0E1328; --win:#18203E; --side:#151C38; --ws:#1A2242; --dot:#2C3863; --board:#1F294C; --card:#232E55; --note:#4A4120; --note-ink:#F3E6B5;
-  --act:#22355E; --must:#1C3A31; --later:#43301F; --later-ink:#F4C9A8;
-  color-scheme:dark }
 
 *,*::before,*::after{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -408,6 +392,233 @@ footer p+p{margin-top:6px}
   .pw,.pi,.hd{transition:none}
   .c-think{transform:none}
 }
+
+/* ───────── 2026-10-28 둘째 판 — C-57 디자인 바탕(팀 웹사이트의 색 · 글꼴)과 ⑥ 예정 ─────────
+   면의 색으로 나누고 테두리를 줄인다. 점 격자 바탕은 쓰지 않는다. 과감한 곳은 지도 하나 — 바다 위 얼음 조각. */
+h1,.sc-num,.scene h2,.sec h2.sh,.pw-top .an,.qhead b,.kcard h4,.ice .fn,.pcount b{font-family:var(--f-disp);font-weight:400;letter-spacing:0}
+.c-think,.c-think .ch{font-family:var(--f-body)}
+.canvas{background-image:none}
+.win,.tw,.box,.links a,.mats li,.oq li,.read,.seg,.btn{border-color:var(--line)}
+.five .app{display:inline-block;width:max-content;padding:0 7px;border-radius:7px;margin-top:4px}
+.app.y{background:var(--mint);color:var(--ink)} .app.p{background:var(--cheek);color:var(--cheek-ink)} .app.n{background:var(--snow);color:var(--sub)}
+.tree .t .i,.pf .i{width:15px;height:15px;stroke-width:1.75;flex:none}
+.tree .t{justify-content:flex-start} .tree .t small{margin-left:auto}
+
+/* 상태 표 — 만듦 · 만드는 중 · 다음 차례 · 결정 대기 · 대회 뒤 */
+.st{display:inline-flex;align-items:center;padding:1px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;line-height:1.7}
+.st.done{background:var(--mint);color:var(--ink)}
+.st.wip{background:var(--acc);color:var(--acc-ink)}
+.st.next{background:var(--ice);color:var(--ink)}
+.st.wait{background:var(--gold-soft);color:var(--gold-ink)}
+.st.later{background:var(--snow);color:var(--sub)}
+.rid{font-family:var(--f-mono);font-weight:700;font-size:12.5px;color:var(--sea);white-space:nowrap}
+
+/* 예정된 요구 — 한눈에 */
+.pcount{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 0;padding:0;list-style:none}
+.pcount li{display:flex;align-items:center;gap:10px;background:var(--paper);border-radius:14px;padding:10px 14px;font-size:14px}
+.pcount b{font-size:24px;line-height:1;font-variant-numeric:tabular-nums}
+.ptw{overflow-x:auto;margin-top:16px;border-radius:14px;background:var(--paper);max-width:100%}
+table.ptab{min-width:880px;font-size:13.5px}
+.ptab th,.ptab td{border-top:1px solid var(--line);padding:8px 10px}
+.ptab thead th{background:var(--snow);border-top:0}
+.ptab td.sg{text-align:center;padding:8px 2px;width:38px}
+.ptab td.sg a{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;text-decoration:none;font-size:11.5px;font-weight:700;color:var(--ink)}
+.ptab td.sg a.done{background:var(--mint)} .ptab td.sg a.wip{background:var(--acc);color:var(--acc-ink)} .ptab td.sg a.next{background:var(--ice)} .ptab td.sg a.wait{background:var(--gold-soft);color:var(--gold-ink)} .ptab td.sg a.later{background:var(--snow);color:var(--sub)}
+.ptab td.sg a.all{width:auto;padding:0 8px;border-radius:999px}
+.ptab .nm{font-weight:700}
+.ptab .wh{color:var(--sub);font-size:13px}
+.ptab tr.grp th{background:var(--bg);font-size:12.5px;color:var(--sub);font-weight:700;text-align:left}
+.pnote{font-size:13px;color:var(--sub);margin-top:10px;max-width:90ch}
+
+/* ⑥ 예정 — 장면마다 */
+.pp{margin-top:30px}
+.pp h3{font-size:17px}
+.pp-lead{max-width:80ch;font-size:15px}
+.preq{list-style:none;margin:12px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:10px}
+.preq li{background:var(--paper);border-radius:14px;padding:12px 14px;display:grid;gap:6px;align-content:start;min-width:0}
+.preq .h{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.preq .h b{font-size:15px}
+.preq p{font-size:14px;overflow-wrap:anywhere}
+.preq .t1{font-size:13px;color:var(--cheek-ink);background:var(--cheek);border-radius:10px;padding:6px 10px}
+.preq .src{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px}
+.preq .src a{display:inline-flex;align-items:center;min-height:32px}
+
+/* 예정 화면 — 작업실 세 칸(C-53) + 가장자리 섬. 넓으면 1500px 화면을 줄여, 좁으면 다시 배치 */
+.screen.ps{grid-template-columns:minmax(0,1fr) 380px;background:var(--desk);border:0;position:relative}
+.screen.ps.pill{grid-template-columns:minmax(0,1fr);padding-right:96px}
+@container frame (max-width:1099px){.screen.ps,.screen.ps.pill{grid-template-columns:minmax(0,1fr);padding-right:10px}}
+.pwin{container:pwin / inline-size;background:var(--win);border-radius:16px;display:flex;flex-direction:column;min-width:0;overflow:hidden;box-shadow:0 10px 30px rgba(43,52,99,.10)}
+.pw-top{display:flex;align-items:center;gap:8px 16px;padding:12px 18px;flex-wrap:wrap;background:var(--paper)}
+.pw-top .an{font-size:17px;white-space:nowrap}
+.pw-top .as{color:var(--sub);font-size:14px;white-space:nowrap}
+.vt{display:flex;gap:4px;flex-wrap:wrap}
+.vt span{padding:5px 12px;border-radius:9px;font-size:13.5px;color:var(--sub);background:var(--snow)}
+.vt span.on{background:var(--acc);color:var(--acc-ink);font-weight:700}
+.floes{display:flex;gap:4px;align-items:center}
+.floes i{width:20px;height:13px;border-radius:5px 8px 4px 7px;background:var(--snow)}
+.floes i.ok{background:var(--mint)} .floes i.on{background:var(--sea)} .floes i.rd{background:var(--ice)}
+.pw-top .lv{margin-left:auto;font-size:13px;color:var(--sub);white-space:nowrap}
+.pw-body{display:grid;grid-template-columns:206px minmax(0,1fr) 276px;flex:1;min-height:0}
+.pw-body.nr{grid-template-columns:206px minmax(0,1fr) 30px}
+@container pwin (max-width:860px){.pw-body,.pw-body.nr{grid-template-columns:minmax(0,1fr)}.pfiles,.pright.fold{display:none}}
+.pfiles{background:var(--snow);padding:12px 8px;font-size:13px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.pf{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:8px;white-space:nowrap;min-width:0}
+.pf span{overflow:hidden;text-overflow:ellipsis}
+.pf small{margin-left:auto;font-size:11px;color:var(--sub);flex:none;padding-left:6px}
+.pf.d1{padding-left:22px} .pf.d2{padding-left:36px} .pf.d3{padding-left:50px}
+.pf.dir{font-weight:700}
+.pf.cur{background:var(--ice);font-weight:700}
+.pf.new{background:var(--mint)} .pf.new small{color:var(--ink)}
+.pf.miss{background:var(--cheek);color:var(--cheek-ink)} .pf.miss small{color:var(--cheek-ink)}
+.pmain{padding:14px;min-width:0;background:var(--ws);display:flex;flex-direction:column;gap:12px}
+.pright{background:var(--paper);padding:14px;font-size:13px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pright h5{margin:0;font-size:12.5px;color:var(--sub);font-weight:700}
+.pright.fold{padding:12px 0;align-items:center;background:var(--snow)}
+.pright.fold span{writing-mode:vertical-rl;font-size:12px;color:var(--sub)}
+.pstat{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--sub);padding:2px 4px 0}
+.pstat b{color:var(--ink);font-weight:700}
+
+/* 퀘스트 보드(보기) — 할 일마다 이 프로젝트의 이름 · 방법 꼬리표 · 상태 넷(C-56) */
+.qhead{display:flex;align-items:baseline;gap:8px 12px;flex-wrap:wrap}
+.qhead b{font-size:19px}
+.qhead span{font-size:13px;color:var(--sub)}
+.fives{display:flex;gap:6px;flex-wrap:wrap}
+.fives span{padding:4px 11px;border-radius:999px;background:var(--paper);font-size:12.5px;color:var(--sub)}
+.fives span.ok{background:var(--mint);color:var(--ink)}
+.fives span.on{background:var(--sea);color:var(--paper);font-weight:700}
+.fives span.gt{background:var(--gold-soft);color:var(--gold-ink)}
+.ql{display:grid;gap:8px}
+.qi{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:4px 10px;align-items:start;background:var(--paper);border-radius:12px;padding:10px 12px}
+.qi .no{font-family:var(--f-disp);color:var(--sub);font-size:15px;line-height:1.4}
+.qi .nm{font-weight:700;font-size:14px;line-height:1.45}
+.qi .mt{display:inline-block;font-size:11.5px;color:var(--sub);background:var(--snow);padding:0 7px;border-radius:6px;margin-left:6px;font-weight:400;vertical-align:1px}
+.qi .qw{grid-column:2 / -1;font-size:12.5px;color:var(--sub)}
+.qi .ex3{grid-column:2 / -1;display:flex;gap:4px;flex-wrap:wrap}
+.qi .ex3 span{padding:2px 9px;border-radius:999px;background:var(--snow);font-size:12px}
+.qi .ex3 span.on{background:var(--acc);color:var(--acc-ink)}
+.qi .go1{grid-column:2 / -1;justify-self:start;padding:4px 12px;border-radius:999px;background:var(--acc);color:var(--acc-ink);font-size:12.5px;font-weight:700}
+.qi.dim{background:var(--snow)}
+.qs{padding:1px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;line-height:1.7}
+.qs.w{background:var(--acc);color:var(--acc-ink)}
+.qs.c{background:var(--ice);color:var(--ink)}
+.qs.s{background:var(--paper);color:var(--sub);box-shadow:inset 0 0 0 1px var(--line-2)}
+.qs.f{background:var(--cheek);color:var(--cheek-ink)}
+.qs.d{background:var(--mint);color:var(--ink)}
+.qs.n{background:var(--sea);color:var(--paper)}
+.qi.dim .qs.s{background:var(--snow)}
+.banner{background:var(--gold-soft);color:var(--gold-ink);border-radius:12px;padding:8px 12px;font-size:13px}
+.banner b{color:var(--gold-ink)}
+.empty{background:var(--paper);border-radius:14px;padding:18px;display:grid;gap:8px;justify-items:start}
+.empty b{font-size:16px}
+.empty p{color:var(--sub);font-size:13.5px}
+
+/* 문서 보기(C-53 · C-43) — 바뀐 줄: Claude Code는 바다색, 내가 고친 줄은 금색 */
+.dtool{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px}
+.dtool span{padding:4px 10px;border-radius:8px;background:var(--paper)}
+.dtool span.on{background:var(--acc);color:var(--acc-ink);font-weight:700}
+.dtool .grow{flex:1;background:none;padding:0}
+.dtool .fname{font-family:var(--f-mono);background:none;padding:0;font-weight:700}
+.dpage{background:var(--paper);border-radius:12px;padding:12px 16px 12px 0;font-size:13.5px;display:grid;gap:3px;min-width:0}
+.dl{display:grid;grid-template-columns:14px 30px minmax(0,1fr);gap:0 8px;align-items:baseline}
+.dl i{width:4px;height:1.3em;border-radius:2px;justify-self:center;align-self:center}
+.dl i.cc{background:var(--sea)} .dl i.me{background:var(--gold)}
+.dl .ln{font-family:var(--f-mono);font-size:11px;color:var(--sub);text-align:right}
+.dl .tx{overflow-wrap:anywhere;min-width:0}
+.dl.h .tx{font-weight:700;font-size:15px}
+.dl.mono .tx{font-family:var(--f-mono);font-size:12.5px}
+.blank{background:var(--cheek);color:var(--cheek-ink);padding:0 6px;border-radius:5px;white-space:nowrap}
+.side2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.side2 div{background:var(--paper);border-radius:10px;padding:8px 10px;font-size:12.5px;min-width:0;overflow-wrap:anywhere}
+.side2 b{display:block;font-size:11.5px;color:var(--sub);margin-bottom:2px}
+.side2 .to{box-shadow:inset 0 0 0 2px var(--ice)}
+
+/* 오른쪽 칸 — 이 문서 · 퀘스트 */
+.ro{display:grid;gap:6px}
+.ro div{display:flex;align-items:baseline;gap:6px;justify-content:space-between;background:var(--snow);border-radius:8px;padding:5px 8px;min-width:0}
+.ro div span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.ro div.cur{background:var(--ice);font-weight:700}
+.rgate{background:var(--gold-soft);color:var(--gold-ink);border-radius:10px;padding:8px 10px;font-size:12.5px}
+.rbtn{display:flex;gap:6px;flex-wrap:wrap}
+.rbtn span{padding:6px 12px;border-radius:999px;font-weight:700;font-size:12.5px;background:var(--snow)}
+.rbtn span.p{background:var(--acc);color:var(--acc-ink)}
+
+/* 기준 카드(C-56 R-1) */
+.kcard{background:var(--paper);border-radius:16px;padding:16px 18px;display:grid;gap:4px;max-width:820px}
+.kcard h4{font-size:21px;margin:0}
+.kcard .kl{font-size:13px;color:var(--sub);margin-bottom:6px}
+.kr{display:grid;grid-template-columns:104px minmax(0,1fr) auto;gap:4px 12px;align-items:baseline;padding:7px 0;border-top:1px solid var(--line)}
+.kr .k{color:var(--sub);font-size:13px}
+.kr .v{font-size:14px;min-width:0;overflow-wrap:anywhere}
+.chipsrc{font-size:11.5px;background:var(--ice);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.chipsrc.ex{background:none;box-shadow:inset 0 0 0 1px var(--line-2);color:var(--sub)}
+.kr.blank{white-space:normal;background:var(--cheek);border-radius:10px;padding:8px 10px;border-top:0;margin-top:4px}
+.kr.blank .k,.kr.blank .v{color:var(--cheek-ink)}
+.kr .pick{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.kr .pick span{padding:2px 9px;border-radius:999px;background:var(--paper);font-size:12px;color:var(--ink)}
+
+/* 지도(C-54) — 바다 위 얼음 조각. 1 → 4 위 줄, 5 ← 8 아래 줄(뱀 모양이라 짝 1 ↔ 8 · 2 ↔ 7 · 3 ↔ 6이 위아래로 맞는다) */
+.map{background:var(--sea);border-radius:14px;padding:16px;display:grid;gap:10px;color:var(--paper)}
+.map-h{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;font-size:13px}
+.map-h b{font-size:15px}
+.mg{display:grid;grid-template-columns:minmax(0,1fr) 44px minmax(0,1fr) 44px minmax(0,1fr) 44px minmax(0,1fr);grid-template-rows:auto 54px auto;align-items:stretch}
+.ice{background:var(--ice);color:var(--ink);border-radius:18px 26px 16px 24px;padding:10px 12px;display:grid;gap:3px;align-content:start;position:relative;min-width:0}
+.ice:nth-child(odd){border-radius:24px 16px 26px 18px}
+.ice .fn{font-size:22px;line-height:1}
+.ice .fs{font-size:12.5px;font-weight:700}
+.ice .fx{font-size:11.5px;color:var(--sub)}
+.ice.ok{background:var(--mint)}
+.ice.on{background:var(--paper);box-shadow:0 0 0 3px var(--gold)}
+.ice.rd{background:var(--ice)}
+.ice.fog{background:transparent;color:var(--paper);box-shadow:inset 0 0 0 2px rgba(242,245,250,.45)}
+.ice.fog .fx{color:var(--paper)}
+.ice .seal{position:absolute;right:6px;top:-22px;width:46px;height:38px}
+.ice .fd{display:inline-block;font-size:11px;padding:0 7px;border-radius:999px;background:var(--paper);color:var(--ink);justify-self:start}
+.gp{display:grid;place-items:center;position:relative}
+.gp::before{content:"";position:absolute;left:4px;right:4px;top:50%;border-top:3px dotted rgba(242,245,250,.7)}
+.gp svg{position:relative;width:26px;height:24px;color:var(--gold);fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round}
+.gp.v::before{left:50%;right:auto;top:4px;bottom:4px;border-top:0;border-left:3px dotted rgba(242,245,250,.7)}
+.gp.stop svg{color:var(--cheek)}
+.mpair{display:grid;place-items:center;position:relative}
+.mpair::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:4px;margin-left:-2px;background:var(--gold);border-radius:2px}
+.mpair span{position:relative;background:var(--gold);color:var(--gold-ink);font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.shelf{display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;padding-top:6px;border-top:3px solid rgba(242,245,250,.35)}
+.shelf span{background:var(--paper);color:var(--ink);border-radius:5px 5px 2px 2px;padding:5px 8px;font-family:var(--f-mono);font-size:11.5px}
+.shelf span.new{background:var(--gold-soft);color:var(--gold-ink)}
+.shelf em{font-style:normal;font-size:12px;margin-right:4px}
+@container frame (max-width:760px){
+  .mg{grid-template-columns:minmax(0,1fr);grid-template-rows:none}
+  .mg > *{grid-column:auto !important;grid-row:auto !important}
+  .gp,.mpair{min-height:30px}
+  .gp::before{left:50%;right:auto;top:2px;bottom:2px;border-top:0;border-left:3px dotted rgba(242,245,250,.7)}
+}
+
+/* 섬 — 펼친 섬은 오른쪽 칸 자리, 접힌 섬은 가장자리의 세로 알약(C-46) + 말풍선(C-55) */
+.isl.pi2{border-radius:36px}
+.isl .nc.warn{border-color:var(--cheek)}
+.isl .nc .mt b{color:var(--isl-ink)}
+.ppill{position:absolute;right:24px;bottom:28px;width:56px;padding:14px 0;border-radius:28px;background:var(--isl);display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 12px 30px rgba(20,24,50,.22)}
+.ppill .seal{width:44px;height:36px}
+.ppill span{writing-mode:vertical-rl;color:var(--isl-ink);font-size:13px;letter-spacing:.04em}
+.pbub{position:absolute;right:96px;bottom:24px;width:340px;background:var(--isl);color:var(--isl-ink);border-radius:18px 18px 6px 18px;padding:12px 14px;font-size:13.5px;display:grid;gap:8px;box-shadow:0 12px 30px rgba(20,24,50,.22)}
+.pbub small{color:var(--isl-sub);font-size:11.5px}
+.pbub .bt{display:flex;gap:6px;flex-wrap:wrap}
+.pbub .bt span{padding:6px 12px;border-radius:999px;font-weight:700;font-size:12.5px;box-shadow:inset 0 0 0 1px rgba(238,241,250,.4)}
+.pbub .bt span.p{background:var(--sky);color:var(--sky-ink);box-shadow:none}
+@container frame (max-width:1099px){
+  .ppill{position:static;width:auto;flex-direction:row;justify-content:flex-start;padding:8px 16px;border-radius:999px;justify-self:end}
+  .ppill span{writing-mode:horizontal-tb}
+  .pbub{position:static;width:auto;max-width:520px;justify-self:end}
+}
+
+@container pwin (max-width:560px){
+  .kr{grid-template-columns:minmax(0,1fr)} .kr .chipsrc{justify-self:start}
+  .side2{grid-template-columns:minmax(0,1fr)}
+  .qi{grid-template-columns:24px minmax(0,1fr)} .qi .qs{grid-column:2;justify-self:start}
+  .dtool .grow{display:none}
+}
+
+.tag.should{padding:1px 9px;border-radius:999px;font-size:12px}
+
 </style>
 
 </head>
@@ -416,6 +627,11 @@ footer p+p{margin-top:6px}
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11.5 12 4.5l8 7V20h-5.5v-5.5h-5V20H4z"/></symbol>
   <symbol id="i-shell" viewBox="0 0 24 24"><path d="M12 4c4.7 0 8 3.4 8 7.4L12 20l-8-8.6C4 7.4 7.3 4 12 4zM12 4v16M8.3 5.2 12 20M15.7 5.2 12 20"/></symbol>
   <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2.6M12 17.9v2.6M3.5 12h2.6M17.9 12h2.6M6 6l1.8 1.8M16.2 16.2 18 18M6 18l1.8-1.8M16.2 7.8 18 6"/></symbol>
+  <symbol id="i-fold" viewBox="0 0 24 24"><path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-foldo" viewBox="0 0 24 24"><path d="M3.5 16.5v-9a2 2 0 0 1 2-2h4l2 2.2h6a2 2 0 0 1 2 2v1"/><path d="M3.6 17.6 6 11.4a1.6 1.6 0 0 1 1.5-1h12.3a1 1 0 0 1 .9 1.4l-2.2 6a1.6 1.6 0 0 1-1.5 1.2H5a1.4 1.4 0 0 1-1.4-1.4z"/></symbol>
+  <symbol id="i-md" viewBox="0 0 24 24"><path d="M7.5 3.5H14l4.5 4.5v11a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1.5-1.5z"/><path d="M14 3.5V8h4.5M9 12.5h6M9 16h4"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="M7.5 3.5H14l4.5 4.5v11a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1.5-1.5z"/><path d="M10.5 12l-2 2 2 2M13.5 12l2 2-2 2"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M7.5 3.5H14l4.5 4.5v11a1.5 1.5 0 0 1-1.5 1.5H7.5A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1.5-1.5z"/><path d="M14 3.5V8h4.5"/></symbol>
   <symbol id="i-next" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></symbol>
   <symbol id="i-dtop" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17" stroke-width="3"/></symbol>
   <symbol id="i-dbot" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 14.5h17" stroke-width="3"/></symbol>
@@ -425,10 +641,11 @@ footer p+p{margin-top:6px}
 
 <header class="top">
   <div class="wrap">
-    <p class="eyebrow">FLOE · 디자인 첫 판 · 2026-10-26</p>
+    <p class="eyebrow">FLOE · 디자인 둘째 판 · 2026-10-28</p>
     <h1>0~8단계 스토리보드</h1>
-    <p class="lead">Floe로 무언가를 만들 때 시작부터 8단계까지 화면에서 무슨 일이 일어나는지, 이재엽이 Floe로 만든 test-1 저장소(나만의 프롬프트 관리 프로그램)를 따라가며 보여 줘요. 장면마다 test-1에 실제로 남은 문장과, 거기서 본 틈과, 이렇게 이어져야 할 모습을 함께 적었어요.</p>
+    <p class="lead">Floe로 무언가를 만들 때 시작부터 8단계까지 화면에서 무슨 일이 일어나는지, 이재엽이 Floe로 만든 test-1 저장소(나만의 프롬프트 관리 프로그램)를 따라가며 보여 줘요. 장면마다 test-1에 실제로 남은 문장과, 거기서 본 틈과, 이렇게 이어져야 할 모습을 함께 적었어요. <b>둘째 판(10/28)</b>에서는 장면마다 ⑥ 예정 칸을 더했어요 — 그 뒤에 만든 것과 만들 것(요구 C-38 ~ C-57 · 고칠 목록 F-60 ~ F-72)이 그 장면을 어떻게 바꾸는지 그림과 설명으로요. 색과 글꼴은 C-57(팀 웹사이트)로 다시 칠했고, ① 그림의 배치는 10/26 그대로예요.</p>
     <ul class="go">
+      <li><a href="#plan">예정된 요구 한눈에</a></li>
       <li><a href="https://github.com/gamercross/test-1">test-1 저장소 ↗</a></li>
       <li><a href="https://claude.ai/artifact/6FABoNXETGrPD9hiT8ungr">디자인 캔버스 ↗</a></li>
       <li><a href="https://github.com/2026-Codyssey-Final-Proj/Final-Proj/blob/main/01-docs/00-overview/%EA%B8%B0%EB%A1%9D/opus-handoff-2026-10-26-storyboard.md">기준 문서 ↗</a></li>
@@ -448,6 +665,7 @@ footer p+p{margin-top:6px}
           <li><b>② 다섯 칸</b> — 생각 → 행동 → 기록 → 저장 → 버전, 그리고 관문. 누가 무엇을 하는지(화면에서 어떻게 보이는지는 ① 그림).</li>
           <li><b>③ test-1에 남은 것</b> — 파일과 커밋 링크.</li>
           <li><b>④ 본 것 → 이렇게 이어져야</b> — 틈은 사람 탓이 아니라 Floe의 관문 · 판정이 막지 못한 것으로 적었어요.</li>
+          <li><b>⑥ 예정</b> — 10/26 뒤에 만든 것 · 만드는 것 · 다음 차례 · 결정 대기가 이 장면을 어떻게 바꾸는지. 예정 화면 그림과 요구마다 설명 · test-1에서 본 틈 · 근거 링크. <span class="st done">만듦</span> <span class="st wip">만드는 중</span> <span class="st next">다음 차례</span> <span class="st wait">결정 대기</span> <span class="st later">대회 뒤</span></li>
           <li><b>⑤ 관문 · 넘기는 재료</b> — 다음 장으로 가는 칸. <span class="tag thread">실</span>은 아래 '언제 성공' 실이에요.</li>
         </ol>
         <ul class="apps" aria-label="칸 이름 아래 표시 — 지금 앱에 있나">
@@ -487,6 +705,15 @@ footer p+p{margin-top:6px}
 </nav>
 
 <main>
+  <section class="sec" id="plan" aria-labelledby="plan-h">
+    <div class="wrap">
+      <h2 class="sh" id="plan-h">예정된 요구 — 이 스토리보드가 어떻게 바뀌나</h2>
+      <p class="sub">10/26 첫 판 뒤에 만든 것, 지금 만드는 것, 다음 차례, 결정을 기다리는 것을 단계마다 모았어요. 장면마다 ⑥ 예정 칸에 바뀐 화면 그림과 자세한 설명이 있어요. 기준: 2026-10-28 Final-Proj main f283abe · PR #232(열림) · 요구서 2-2 · 고칠 목록.</p>
+      <ul class="pcount" id="pcount" aria-label="상태마다 몇 개"></ul>
+      <div class="ptw"><table class="ptab" id="ptab"></table></div>
+      <p class="pnote">단계 칸의 동그라미를 누르면 그 장면의 ⑥으로 가요. '모든 장면'에 닿는 것(작업실 세 칸 · 알약 · 디자인 바탕)은 0 ~ 8에 모두 표시했어요. 상태는 요구서 · 고칠 목록 · PR에서 옮겼고, 정하는 사람이 바꾸면 그쪽이 맞아요.</p>
+    </div>
+  </section>
   <div id="scenes"></div>
 
   <section class="sec" id="thread" aria-labelledby="thread-h">
@@ -599,6 +826,7 @@ footer p+p{margin-top:6px}
   <div class="wrap">
     <p>디자인 첫 판 · 2026-10-26 · Claude가 이재엽의 요청으로 만들었어요. 구성 · 단계 번호 · 틈 보이기 · 캔버스 기준은 이재엽이 골랐고, 화면 그림은 이재엽이 준 디자인 캔버스 스크린샷을 기준으로 그렸어요.</p>
     <p>기준: Final-Proj main e6f4724 · 예시: gamercross/test-1 8e41922 · 화면: 디자인 캔버스의 DockPrototype · DockPositions · 플로로 그림: 앱의 floro.svg에서 바탕만 뺀 사본.</p>
+    <p>둘째 판 · 2026-10-28 — 이재엽 요청("지금 예정되어있는 요구사항들을 반영해서 … 설명들이랑 해서 자세하게", 버튼 "예정 화면도 그리기")으로 장면마다 ⑥ 예정(그림 + 요구 설명)과 맨 앞 한눈에 표를 더하고, 색 · 글꼴을 C-57로 다시 칠했어요. 기준: Final-Proj main f283abe · PR #232(열림) · 요구서 2-2 C-38 ~ C-57 · 고칠 목록 F-60 ~ F-72 · 페이블 넘김 문서 셋(questfit · output · design).</p>
     <p>2026-10-26 두승현이 다시 봤어요 — test-1의 커밋 아홉 · 시각 · 관문 줄 · 파일 목록을 저장소와 맞대어 확인했고(다 맞음), 눌러 보기를 브라우저에서 재서 열린 질문 6 ~ 8을 더했어요. 5번은 같은 날 결정으로 고쳤어요.</p>
   </div>
 </footer>
@@ -668,7 +896,7 @@ footer p+p{margin-top:6px}
       commits: [["595a8b6", "10/25 17:46 — 계획서 앞선 초안"], ["9927a6e", "10/26 00:03 — 지금 글 · 증빙 · 기획서 · 결정 기록"]], who: "그대로 4",
       fr: { now: "2단계 관문 — '안 됨'이 셋 남아 멈췄어요", cur: "gate", note: "관문에서 멈추는 모습은 이어져야 할 모습이에요 — test-1은 기준 1/4로 지나갔어요.",
         think: ["done", "언제 성공: 아직 모름"],
-        act: ["done", "Claude Code에 맡김 — 계획서 · 기획서 · 결정 기록", "✓ 끝"],
+        act: ["done", "Claude Code에 맡김 — 계획서 · 기획서 · 결정 기록", "끝"],
         rec: ["done", { k: "chk", title: "완료 기준 — 살펴본 결과", items: [["빈칸 채우기", "n", "안 됨"], ["왜 · 어디까지 · 언제 성공", "n", "안 됨"], ["한 문장 한 가지", "y", "됨"], ["남의 정보 · 밖으로", "n", "안 됨"]] }],
         save: ["later", ["plan.md", "PRD.md", "decisions.md"], "아직 — 관문 뒤에"],
         ver: "저장하면 책에 V.2", gate: ["gap now", "AI 확인 1/4 — 여기서 멈춰야"],
@@ -810,27 +1038,27 @@ footer p+p{margin-top:6px}
   var stageName = function (n) { return n === 0 ? "시작" : n + "단계"; };
   var who = function (w) { return w ? w.split(">").map(function (k) { return '<span class="r ' + k + '">' + ROLE[k] + "</span>"; }).join(" → ") : "—"; };
   var what = function (t) { var m = /^\[이어져야\] ?/.exec(t); return m ? '<span class="tag should">이어져야</span>' + esc(t.slice(m[0].length)) : esc(t); };
-  var STATE = { now: "● 지금", done: "✓ 끝", gap: "틈" };
+  var STATE = { now: "지금", done: "끝", gap: "틈" };
 
   // 작업실 창 — 파일 목록은 test-1 커밋 기준(그 단계 문서가 올라간 뒤의 모습). 지금 단계 문서는 굵게, 앞 단계 문서는 재료로 '읽음'
   function tree(n) {
     var t = ['<div class="t root"><span>test-1</span></div>', '<div class="t"><span>README.md</span></div>'];
     if (n >= 2) t.push('<div class="t"><span>CLAUDE.md</span></div>');
     if (n === 0) return t.join("");
-    t.push('<div class="t dir"><span>▾ docs</span>' + (n === 1 ? "<small>2단계 뒤 올림</small>" : "") + "</div>");
+    t.push('<div class="t dir">' + ic("foldo") + '<span>docs</span>' + (n === 1 ? "<small>2단계 뒤 올림</small>" : "") + "</div>");
     if (n >= 2) t.push('<div class="t in"><span>README.md</span></div>');
     for (var i = 0; i < Math.min(n, 8); i++) {
-      if (i === n - 1) t.push('<div class="t in dir"><span>▾ ' + DIRS[i] + '</span></div><div class="t in2 cur"><span>' + FILES[i] + "</span></div>");
-      else t.push('<div class="t in dir"><span>▸ ' + DIRS[i] + "</span><small>읽음</small></div>");
+      if (i === n - 1) t.push('<div class="t in dir">' + ic("foldo") + '<span>' + DIRS[i] + '</span></div><div class="t in2 cur"><span>' + FILES[i] + "</span></div>");
+      else t.push('<div class="t in dir">' + ic("fold") + "<span>" + DIRS[i] + "</span><small>읽음</small></div>");
     }
     if (n >= 2) t.push('<div class="t in"><span>PRD.md</span></div>', '<div class="t in"><span>decisions.md</span></div>');
-    if (n >= 5) t.push('<div class="t miss"><span>▸ src</span><small>없음</small></div>');
+    if (n >= 5) t.push('<div class="t miss">' + ic("fold") + "<span>src</span><small>없음</small></div>");
     return t.join("");
   }
   function stg(n) {
-    var c = ['<span class="' + (n === 0 ? "on" : "ok") + '">시작' + (n === 0 ? "" : " ✓") + "</span>"];
+    var c = ['<span class="' + (n === 0 ? "on" : "ok") + '">시작</span>'];
     for (var i = 1; i <= 8; i++) {
-      if (i < n) c.push('<span class="ok">' + i + " ✓ V." + i + "</span>");
+      if (i < n) c.push('<span class="ok">' + i + " · V." + i + "</span>");
       else if (i === n) c.push('<span class="on">' + i + " " + SHORTS[i] + "</span>");
     }
     if (n < 8) c.push("<span>" + (n + 1) + (n + 1 < 8 ? " ~ 8" : "") + "</span>");
@@ -838,7 +1066,7 @@ footer p+p{margin-top:6px}
   }
   function boards(n) {
     var prev = n === 0 ? '<div class="bd next">보드 · 처음이에요<b>지난 장 없음</b></div>'
-      : '<div class="bd">보드 · ✓ 지남' + (n > 1 ? " · V." + (n - 1) : "") + "<b>" + stageName(n - 1) + " · " + TITLES[n - 1] + '</b><span class="sw" aria-hidden="true"><i></i><i></i></span></div>';
+      : '<div class="bd">보드 · 지남' + (n > 1 ? " · V." + (n - 1) : "") + "<b>" + stageName(n - 1) + " · " + TITLES[n - 1] + '</b><span class="sw" aria-hidden="true"><i></i><i></i></span></div>';
     var next = n < 8 ? '<div class="bd next">보드 · 관문을 넘으면 열려요<b>' + (n + 1) + "단계 · " + TITLES[n + 1] + "</b></div>"
       : '<div class="bd next">보드 · 다 마치면<b>다음 프로젝트 — 배운 것을 들고 가요</b></div>';
     return '<div class="boards">' + prev + next + "</div>";
@@ -915,14 +1143,361 @@ footer p+p{margin-top:6px}
       '<section class="part"><h3><span class="pn">④</span>본 것 → 이렇게 이어져야</h3><div class="pair">' + seen + '<div class="should"><span class="lab">이렇게 이어져야</span><p>' + esc(d.should) + "</p>" + sl + "</div></div></section>" +
       '<section class="part"><h3><span class="pn">⑤</span>관문 · 다음 장으로 넘기는 재료</h3><p class="gate-l"><b>관문</b> — ' + esc(d.gate) + '</p><ul class="mats">' +
       d.mats.map(function (m) { return "<li" + (m[2] ? ' class="th"' : "") + "><span>" + esc(m[0]) + '</span><span class="arr" aria-hidden="true">→</span><span class="to">' + esc(m[1]) + "</span>" + (m[2] ? '<a class="tag thread" href="#thread">실</a>' : "") + "</li>"; }).join("") +
-      "</ul></section></div></div></section>";
+      "</ul></section></div></div>" + planPart(d) + "</section>";
+  }
+
+
+  // ───────── ⑥ 예정 — 2026-10-28 둘째 판 ─────────
+  // 10/26 첫 판 뒤에 만든 것(main f283abe), 만드는 중인 것(PR #232), 다음 차례(페이블 넘김), 결정 대기, 대회 뒤를 단계마다.
+  // 그림의 글은 test-1에서 왔고, test-1에 없는 말 · 이름은 예시로 표시한다. 상태는 요구서 2-2 · 고칠 목록 기준.
+  var RQ = FP + "01-docs/00-overview/requirements.md";
+  var FX = FP + "01-docs/07-maintenance/fix-map.md";
+  var PR = function (n) { return "https://github.com/2026-Codyssey-Final-Proj/Final-Proj/pull/" + n; };
+  var HO = function (f) { return FP + "01-docs/00-overview/%EA%B8%B0%EB%A1%9D/fable-handoff-" + f + ".md"; };
+  var MOCK_WS = "https://claude.ai/artifact/1To4aBVaPbF74QoBjy7Pf3", MOCK_QF = "https://claude.ai/artifact/UbhwLS5bcB2TWR2Pmcd3RX";
+  var STL = { done: "만듦", wip: "만드는 중", next: "다음 차례", wait: "결정 대기", later: "대회 뒤" };
+  var stp = function (k) { return '<span class="st ' + k + '">' + STL[k] + "</span>"; };
+  var EXT = '<span class="extag">예시</span>';
+  var ALL = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+  // 한눈에 — [묶음 이름, [요구, 이름, 상태, 무엇이 바뀌나, 닿는 단계, 근거]]
+  var RQS = [
+    ["10/26 첫 판 뒤에 만듦 — 지금 main", [
+      ["C-55", "켤 때 바로 작업실", "done", "켜면 작업실(지금 단계 퀘스트 보드)부터, 섬은 알약 + 말풍선", [0], PR(228)],
+      ["C-46", "접으면 알약 · 펼치면 비킴", "done", "작업실 안의 섬을 접으면 가장자리 알약, 펼치면 작업실이 비킴", ALL, PR(218)],
+      ["C-53", "작업실 세 칸", "done", "파일 칸 · 작업 칸 · 오른쪽 칸(이 문서 · 퀘스트)", ALL, PR(228)],
+      ["C-43 · C-44", "파일 보기 · 고치기 · 틀로 맡기기", "done", "문서를 열어 고치고 저장, 문서 일을 틀 열한 가지로 맡김", [3, 7], PR(220)],
+      ["C-54", "지도 · 준비된 퀘스트", "done", "도전과제 = 지도 · 흐름 · 상자, 2단계 끝에 3 ~ 8단계를 미리 준비", [2, 8], PR(228)],
+      ["F-60 · F-62", "관문에서 멈춤 · 넘긴 까닭", "done", "'안 됨' · 빈칸 · 증거 없음이면 멈춤, 넘긴 기준은 '넘김(까닭)'으로 문서에", [2, 7], PR(214)],
+      ["F-66 · F-67", "캔버스 끌기 · 폴더 모양", "done", "캔버스를 끌고 키우기, 파일 칸 폴더를 폴더처럼", ALL, PR(225)],
+      ["F-71 · F-72", "폴더 바꾸기 · 문서 지도 고침", "done", "메뉴로 폴더를 바꾸면 화면도 새 폴더로, 문서 지도의 검은 사각형을 없앰", [0, 3], PR(233)]
+    ]],
+    ["만드는 중 — PR #232 (페이블)", [
+      ["C-57", "디자인 바탕", "wip", "팀 웹사이트의 색 · 글꼴, 섬은 회남색 — 이 페이지도 같은 색 · 글꼴로", ALL, PR(232)],
+      ["F-68", "받은 글을 자르지 않음", "wip", "받은 글은 통째로 docs/00-source/에, 처음 말한 것은 줄로 가리킴", [0, 1], PR(232)],
+      ["C-56", "맞춤 퀘스트", "wip", "기준 카드 · 이 프로젝트의 이름 · 상태 넷 · 이미 있는 내용 · 작업을 따라", [1, 2, 3, 4, 6, 7], PR(232)],
+      ["C-54 ⑧ ⑨", "지도 가까이 · 짝 선", "wip", "지금 조각 가까이 보기, 1 ↔ 8 · 2 ↔ 7 · 3 ↔ 6 짝 선 (모자라면 대회 뒤)", [3, 8], PR(232)]
+    ]],
+    ["다음 차례 — 페이블 넘김 (PR #231)", [
+      ["F-70", "코드를 맡기는 퀘스트", "next", "5단계 뼈대 맡기기 · 6단계 줄마다 맡기기 · 6 · 7단계 돌려 보기", [5, 6, 7], HO("2026-10-28-output")],
+      ["F-69", "막힘을 막힘으로", "next", "허락을 못 받으면 '끝남' 대신 '막힘 — N번' · 다시 맡기기", [5, 6], HO("2026-10-28-output")]
+    ]],
+    ["결정 대기 — 이재엽", [
+      ["C-38", "다른 AI 도구로 넘기기", "wait", "웹 Claude · ChatGPT · VS Code에 지금 단계 · 할 일 · 기준을 넘김", [3], RQ],
+      ["C-47", "지식 퀘스트", "wait", "관문의 '배운 것 한 줄' · '처음 뜻 다시 보기'", [1, 8], RQ],
+      ["C-50", "맡긴 일이 멈추면", "wait", "까닭 · 다시 맡기기 · 보고 미리 판정 (11/4 ~ 7 시험 전 제안)", [5], RQ],
+      ["C-48", "다음 프로젝트로 가져가기", "wait", "돌아보기의 '가져갈 것'을 새 프로젝트에서 꺼냄 (대회 뒤 제안)", [8], RQ],
+      ["C-49 · C-51 · C-52", "기록의 원본 · 계획의 근거 · 보안", "wait", "장면 그림에는 없음 — 만드는 PR의 조건으로", [], RQ]
+    ]],
+    ["대회 뒤", [
+      ["C-23", "기록 · 저장 · 버전 칸", "later", "퀘스트마다 기록 한 장 · 한 커밋 · V.n", [8], RQ],
+      ["C-24 · C-27", "공부 묶음 · 관문 계획서", "later", "NotebookLM 공부 묶음, 목차가 있는 관문 계획서", [], RQ]
+    ]]
+  ];
+
+  // 단계마다 예정 화면과 요구 — isl: pill(접힌 알약) / open(펼친 섬), view: board / doc / map / card
+  var F0 = [[0, "foldo", "test-1", "dir"], [1, "md", "README.md"], [1, "foldo", "docs", "dir"]];
+  var PLAN = [
+    { title: "켜면 바로 작업실 — 받은 글은 통째로",
+      lead: "앱을 켜면 섬 알약만 뜨던 것이 작업실(지금 단계 퀘스트 보드)부터 열리고, 섬은 가장자리 알약으로 접힌 채 말풍선으로 인사해요. 미션 글을 붙여 넣으면 자르지 않고 작업 폴더의 docs/00-source/에 통째로 남겨요.",
+      sc: { isl: "pill", tab: 0, lv: "LV 0 · 조개 0",
+        bub: ["좋은 저녁이에요. 만들고 싶은 것을 붙여 넣으면 1단계 초안을 만들어 줄게요.", "알약 옆 말풍선 — 인사는 하루 한 번, 8초 뒤 사라져요", ["섬 펼치기", "나중에"]],
+        files: F0.concat([[2, "foldo", "00-source", "dir new", "새로"], [3, "md", "받은 글.md", "new", "통째로"]]),
+        view: { k: "board", head: ["1단계 · 무엇을 만들지 정하기", "퀘스트 보드 · 아직 시작 전"], fives: [["① 생각", "on"], ["② 행동", ""], ["③ 기록", ""], ["④ 저장", ""], ["⑤ 버전", ""], ["관문", "gt"]],
+          banner: "받은 글(미션 글 전부)을 docs/00-source/에 남겼어요. 처음 말한 것은 그 파일의 줄을 가리켜요.",
+          empty: ["원하는 것을 섬에 알려 주세요", "한 줄이 아니어도 돼요. 과제 글을 그대로 붙여 넣으면 플로로가 1단계 네 칸(불편 · 달라지는 것 · 누가 · 크기) 초안을 만들어요."] },
+        right: { k: "quest", h: "퀘스트 · 1단계", q: [["Ⅰ", "불편", "", "w", ""], ["Ⅱ", "달라지는 것", "", "w", ""], ["Ⅲ", "누가", "", "w", ""], ["Ⅳ", "크기", "", "w", ""]], gate: "관문 — 네 칸을 다 확인하면 열려요" } },
+      cap: "⑥ 예정 화면 — 켜자마자 보이는 작업실. 세 칸과 알약 · 말풍선은 지금 앱에 있어요(#218 · #228). 받은 글을 남기는 docs/00-source/는 PR #232가 만드는 중이에요. 파일 이름 '받은 글.md'와 섬의 말은 예시예요.",
+      mock: [["목업 ① 켤 때 바로 작업실", MOCK_WS]],
+      items: [
+        ["C-55", "done", "켤 때 바로 작업실", "켜면 작업실이 먼저 열리고 캔버스에는 지금 단계 퀘스트 보드가 보여요. 섬은 접힌 알약으로 가장자리에 있고, 알약 옆 말풍선이 시간대 인사(하루 한 번) · 멈춘 곳 · '섬 펼치기 / 나중에'를 보여 준 뒤 8초 뒤에 사라져요. 처음 설정이 필요하면 설정부터 열려요.", "", [["요구서 C-55", RQ], ["PR #228", PR(228)]]],
+        ["C-46", "done", "접으면 알약 · 펼치면 비킴", "작업실 안의 섬은 접으면 고른 가장자리의 알약(왼쪽 · 오른쪽은 세로)이 되고, 누르면 펼쳐지며 작업실이 그만큼 비켜요. 저절로 접히는 시간은 설정에서 골라요.", "", [["요구서 C-46", RQ], ["PR #218", PR(218)]]],
+        ["F-68", "wip", "받은 글을 자르지 않아요", "붙여 넣은 글은 통째로 작업 폴더 docs/00-source/에 남고, 처음 말한 것 · 초안 재료는 그 파일의 줄을 가리켜요. AI에 넘길 때의 길이 상한과 가림은 그대로이고, 잘리거나 나눠 넘기면 화면에 한 줄로 알려요.", "test-1의 미션 글은 앞 400자에서 문장 중간에 끊긴 채 idea.md의 '처음 말한 것'에 남았어요.", [["고칠 목록 F-68", FX], ["PR #232", PR(232)]]],
+        ["C-57", "wip", "팀 웹사이트의 색 · 글꼴", "앱 전체를 팀 웹사이트 초안의 색 · 글꼴로 바꿔요. 섬은 회남색, 제목은 Bagel Fat One, 글은 Gowun Dodum, 코드와 파일 이름은 Nanum Gothic Coding이에요. 이 페이지도 그 색 · 글꼴로 다시 칠했어요(① 그림의 배치는 10/26 그대로).", "", [["요구서 C-57", RQ], ["PR #232", PR(232)]]]
+      ] },
+
+    { title: "1단계 관문 — 이 프로젝트의 기준 카드",
+      lead: "1단계 네 칸을 확인하고 관문을 지나면, 플로로가 1단계 칸 · 받은 글 · 작업 폴더로 '이 프로젝트의 기준' 한 장을 만들어요. 받은 글에 이미 있던 것은 출처와 함께 옮겨 오고, 성공 숫자처럼 사람만 아는 것은 빈칸으로 남겨요. 다음 단계 퀘스트는 이 카드로 지어요.",
+      sc: { isl: "open", tab: 0, lv: "LV 1 · 조개 1",
+        files: F0.concat([[2, "fold", "00-source", "dir"], [2, "fold", "01-idea", "dir"], [2, "md", "기준.md", "cur new", "새로"]]),
+        view: { k: "card", h: "이 프로젝트의 기준", sub: "1단계 관문을 지나며 만들었어요 · docs/기준.md",
+          rows: [["만드는 것", "나만의 프롬프트 관리 프로그램 — 쓴 프롬프트를 한곳에 모아 바로 찾아요", "1단계 Ⅰ · Ⅱ"],
+            ["크기", "보통 — 번호로 메뉴를 고르는 목록 프로그램", "1단계 Ⅳ"],
+            ["이미 정해진 것", "파이썬으로 만든다", "받은 글"],
+            ["재료", "카테고리 셋 — 텍스트 지시문 · 이미지 키워드 · 페르소나", "받은 글"],
+            ["쓰는 사람", "나 혼자 써요", "ex"],
+            ["밖으로", "내보내지 않아요 — 내 컴퓨터 안에만", "ex"]],
+          blank: ["성공", "____ 초 안에 찾는다 · ____ 개가 쌓인다", ["바로 찾기 — 몇 초?", "쌓이는 수 — 몇 개?", "아직 모름"], "아직 모름으로 두면 3단계 숫자 칸이 빈칸으로 남고, 7단계 재기는 '먼저'가 돼요."] },
+        right: null,
+        isl2: { pill: "1단계 · 관문 뒤", mood: "같이 확인해요",
+          bub: [["fl", "1단계를 넘었어요! 받은 글과 네 칸으로 이 프로젝트의 기준을 한 장으로 만들었어요.", "ex"]],
+          nc: ["1단계 · 기준 카드", "기준 카드가 맞나요?", "받은 글에서 온 줄은 출처를 붙였어요. 성공은 직접 채워 주세요 — 비워 두면 3단계에서 다시 물어요.", ["맞아요", "고칠래요"]] } },
+      cap: "⑥ 예정 화면 — 1단계 관문을 지난 순간. 기준 카드는 PR #232가 만드는 중이에요(맞춤 퀘스트 C-56 R-1). '예시' 줄은 test-1에서 확인하지 않은 내용이에요.",
+      mock: [["맞춤 퀘스트 목업 ③ 기준 카드", MOCK_QF]],
+      items: [
+        ["C-56 R-1", "wip", "기준 카드", "1단계 관문을 지나면 만드는 것 · 쓰는 사람 · 크기 · 이미 정해진 것 · 재료 · 다룰 정보 · 밖으로 · 성공을 한 장으로 만들어요. 받은 글 · 지난 칸에서 온 줄은 출처 칩과 함께 '옮겨 옴', 사람만 아는 것은 빈칸이에요. docs/기준.md로 남고, 카드를 고치면 아직 안 한 단계의 퀘스트를 다시 지어요.", "test-1은 미션이 정한 파이썬을 4단계에서 '후보 2개 찾기'로, 받은 글의 카테고리 셋을 2단계에서 '이름 두세 개 떠올리기'로 다시 물었어요.", [["요구서 C-56", RQ], ["넘김 문서 ⓒ", HO("2026-10-28-questfit")]]],
+        ["C-56 R-2", "wip", "이 프로젝트의 말로 된 이름", "할 일 이름이 방법 이름 그대로(어느 프로젝트나 같은 줄)였던 것을, 이 프로젝트의 말로 된 이름 · 묻는 말 · 끝 조건으로 바꿔요. EARS 같은 방법 이름은 회색 꼬리표로만 남아요. 판정 · 관문은 지금 기준 그대로예요.", "test-1의 단계 문서에는 '프롬프트'라는 말이 할 일 이름에 한 번도 없어요.", [["요구서 C-56", RQ], ["넘김 문서 ⓓ", HO("2026-10-28-questfit")]]],
+        ["C-47", "wait", "관문에서 배운 것 한 줄", "관문마다 '배운 것 한 줄' · '처음 뜻 다시 보기'를 두자는 제안(지식 퀘스트)이에요. 11/1 전에는 이 둘만 하자는 안이고, 정하는 사람은 이재엽이에요.", "", [["요구서 C-47", RQ]]]
+      ] },
+
+    { title: "2단계 끝 — 지도에 3 ~ 8단계를 미리 그려요",
+      lead: "도전과제 탭이 지도가 됐어요. 2단계 칸을 다 채우면 '기획서로 3 ~ 8단계 그리기'가 기획서의 절에서 3 ~ 8단계 퀘스트를 미리 준비하고, 한 번에 '맞아요'로 확인해요. 관문에 '안 됨'이 남으면 멈추는 것도 이제 앱에 있어요.",
+      sc: { isl: "pill", tab: 2, lv: "LV 1 · 조개 1",
+        files: F0.concat([[2, "fold", "00-source", "dir"], [2, "fold", "01-idea", "dir"], [2, "foldo", "02-plan", "dir"], [3, "md", "plan.md", "cur"], [2, "md", "PRD.md"], [2, "md", "decisions.md"], [2, "md", "기준.md"]]),
+        view: { k: "map", h: ["2단계 끝 · 전체 그림", "기획서 3 ~ 8절로 준비했어요"], gates: ["ok", "stop"],
+          pieces: [[1, "ok", "끝 · V.1", "정하기"], [2, "on", "지금 · 관문 앞", "적어 두기"], [3, "rd", "준비됨 · 할 일 5", "옮겨 옴 1 · 건너뜀 1"], [4, "rd", "준비됨 · 할 일 5", "옮겨 옴 1"],
+            [5, "rd", "준비됨 · 할 일 4", "뼈대"], [6, "rd", "준비됨 · 할 일 4", "옮겨 옴 1"], [7, "rd", "준비됨 · 할 일 4", "건너뜀 1"], [8, "rd", "준비됨 · 할 일 5", "돌아보기"]],
+          shelf: [["README.md"], ["CLAUDE.md"], ["PRD.md"], ["decisions.md"], ["기준.md", "new"]] },
+        right: { k: "confirm", h: "준비된 퀘스트 — 3 ~ 8단계", rows: [["3 기능 정리", "기획서 3절"], ["4 방법 고르기", "기획서 4절"], ["5 뼈대", "기획서 5절"], ["6 만들기", "기획서 6절"], ["7 재 보기", "기획서 7절"], ["8 돌아보기", "기획서 8절"]],
+          gate: "2단계 관문 — 안 됨 3 · 채우러 가기 / 까닭 적고 넘기기", btn: ["맞아요 (한 번에)", "고칠래요"] } },
+      cap: "⑥ 예정 화면 — 2단계 칸을 다 채운 순간의 지도(바다 위 얼음 조각). 지도와 준비된 퀘스트, 관문 멈춤은 지금 앱에 있어요(#214 · #228). 조각마다 '옮겨 옴 · 건너뜀' 수는 맞춤 퀘스트(C-56) 규칙을 test-1에 대어 본 예상이에요.",
+      mock: [["목업 ④ ⑤ ⑥ 지도", MOCK_WS]],
+      items: [
+        ["C-54", "done", "지도 — 도전과제와 문서 지도를 한 탭에", "도전과제 탭이 지도(카드, 기본) · 흐름 · 상자 세 보기가 됐어요. 카드 하나가 그 단계의 퀘스트(다섯 칸 · 관문의 남은 기준)와 단계 문서예요. 2단계 칸을 다 채우면 '기획서로 3 ~ 8단계 그리기'가 3 ~ 8단계 퀘스트를 기획서의 절을 근거로 미리 채우고, 한 번에 '맞아요'로 확인해요.", "", [["요구서 C-54", RQ], ["PR #228", PR(228)]]],
+        ["F-60 · F-62", "done", "관문에서 멈춰요", "'안 됨' · 빈칸 · 증거 없음이 남으면 관문 앞에서 멈추고 '채우러 가기 / 까닭 적고 넘기기'를 골라요. 까닭은 결정 기록에, 넘긴 기준은 단계 문서에 '넘김(까닭)'으로 남아요.", "test-1은 AI 확인이 기준 1/4인데 '이해했어요(예)'로 지났어요 — 이 장면 ④의 틈이에요.", [["고칠 목록 F-60 · F-62", FX], ["PR #214", PR(214)], ["PR #228", PR(228)]]],
+        ["C-56 R-2 · R-3", "wip", "준비된 퀘스트도 이 프로젝트의 말로", "지금 준비된 퀘스트는 기획서의 절에서 규칙으로만 지어요. 맞춤 퀘스트가 들어오면 기준 카드 · 지난 칸 · 받은 글로 이름 · 묻는 말을 짓고, 상태 넷(쓰기 · 옮겨 옴 · 건너뜀 · 먼저)을 미리 붙여요. 두 번 만들지 않고 같은 함수로 지어요.", "'언제 성공: 아직 모름'은 기준 카드의 성공 빈칸으로 남아 3단계 숫자 칸에서 다시 채우게 해요.", [["요구서 C-56", RQ], ["넘김 문서 ⓓ", HO("2026-10-28-questfit")]]]
+      ] },
+
+    { title: "3단계 — 문서를 열고, 칸마다 상태를 보며",
+      lead: "작업실이 파일 칸 · 작업 칸 · 오른쪽 칸 세 칸이 됐어요. 파일 칸에서 requirements.md를 열면 Claude Code가 쓴 줄은 바다색, 내가 고친 줄은 금색으로 표시되고, 오른쪽 칸에는 이 단계 퀘스트가 상태와 함께 있어요. 2단계와 같은 글은 '옮겨 옴', 조건이 안 맞는 칸은 '건너뜀'이에요.",
+      sc: { isl: "pill", tab: 1, lv: "LV 2 · 조개 2",
+        files: F0.concat([[2, "fold", "01-idea", "dir"], [2, "fold", "02-plan", "dir"], [2, "foldo", "03-requirements", "dir"], [3, "md", "requirements.md", "cur"], [2, "md", "PRD.md"], [2, "md", "decisions.md"], [2, "md", "기준.md"]]),
+        view: { k: "doc", fname: "docs/03-requirements/requirements.md", tool: [["보기", "on"], ["원문", ""], ["서식", ""], ["틀로 맡기기", ""], ["저장 ⌘S", ""]],
+          lines: [[1, "h", "", "## 기능 문장"], [2, "", "cc", "- 프롬프트를 새로 넣으면, 앱은 목록에 저장한다"], [3, "", "cc", "- 카테고리를 고르면, 앱은 그 카테고리의 프롬프트만 보여 준다"], [4, "", "cc", "- 낱말을 검색하면, …"], [5, "", "cc", "- 즐겨찾기를 누르면, …"],
+            [7, "h", "", "## 숫자로"], [8, "", "me", "- 바로 찾을 수 있어요: {____ 초 안에}"], [9, "", "me", "- 수십 개 쌓여요: {____ 개}"]],
+          side: [["원문 · docs/02-plan/plan.md · 2단계 Ⅲ 한 문장 한 가지", "프롬프트를 새로 넣으면, 앱은 목록에 저장한다 …"], ["옮긴 글 · 3단계 Ⅰ 기능 문장", "같은 글이에요 — 확인만 하면 돼요. 누가 정했나: 옮김"]],
+          stat: [["바뀐 줄", "6"], ["Claude Code", "4"], ["나", "2"], ["빈칸", "2"]] },
+        right: { k: "quest", h: "퀘스트 · 3단계", q: [["Ⅰ", "프롬프트를 넣고 · 고르고 · 찾는 일을 문장으로", "기능 문장 · EARS", "c", "2단계 Ⅲ과 같은 글 — 확인만"],
+          ["Ⅱ", "바로 찾기 · 쌓이는 수를 숫자로", "숫자로", "w", "빈칸 둘 — 사람만 알아요"], ["Ⅲ", "꼭 할 기능 · 나중 기능 고르기", "꼭 / 있으면 좋음", "w", ""],
+          ["Ⅳ", "나온 곳 잇기", "나온 곳 잇기", "s", "기능 4개 — '5개 이상일 때'가 아니에요"], ["Ⅴ", "막을 일 한 줄", "막을 일", "w", ""]], gate: "관문 — 남은 기준 3" } },
+      cap: "⑥ 예정 화면 — 3단계에서 문서를 연 순간. 세 칸 · 파일 보기 · 바뀐 줄 표시는 지금 앱에 있어요(#220 · #228). 오른쪽 칸의 이 프로젝트의 이름 · 상태 넷과 원문 나란히는 PR #232가 만드는 중이고, 이름은 예시예요. 꼬리표는 지금의 할 일 이름이에요.",
+      mock: [["목업 ② 문서 열기", MOCK_WS], ["맞춤 퀘스트 목업 ④ ⑤", MOCK_QF]],
+      items: [
+        ["C-53", "done", "작업실 세 칸", "파일 칸(열어 둔 파일 · 찾기 · 목록) | 작업 칸(보기 고르기 · 문서 도구 줄 · 상태 줄) | 오른쪽 칸(이 문서의 목차 · 빈 절 · 재료, 또는 퀘스트 다섯 칸 · 관문). 섬을 펼치면 오른쪽 칸이 접히고, 900px보다 좁으면 숨어요.", "", [["요구서 C-53", RQ], ["PR #228", PR(228)]]],
+        ["C-43", "done", "파일 보기 · 고치기", "파일 칸에서 누르면 md는 보기 좋게 · 원문으로, 코드는 줄 번호와 git과 다른 줄로 열려요. 고쳐 저장(⌘S) · 되돌리기 20번, 비밀값 모양이면 멈추고 물어요. 저장마다 커밋은 그 파일만 Claude Code에 맡기고, 허락은 섬에서 해요.", "", [["요구서 C-43", RQ], ["PR #220", PR(220)]]],
+        ["C-44", "done", "틀로 맡기기", "연 파일 머리의 '틀로 맡기기'로 문서 일을 틀 열한 가지(칸 채우기 · 요구 줄 · 결정 기록 · README …) 중 하나로 맡겨요. 끝나면 기준마다 보고가 오고, 바뀐 줄을 다시 읽어요.", "", [["요구서 C-44", RQ], ["PR #220", PR(220)]]],
+        ["C-56 R-3", "wip", "상태 넷 — 쓰기 · 옮겨 옴 · 건너뜀 · 먼저", "지난 칸과 같은 글이면 '옮겨 옴'(확인만), 조건이 안 맞으면 '건너뜀'(까닭은 결정 기록에), 앞 칸이 비면 '먼저'(그 칸으로 데려가고 관문은 닫힘), 사람만 아는 것이 남으면 '쓰기'예요. '남은 칸 모두 맞아요'는 옮겨 온 칸에만 돼요.", "test-1은 3단계 Ⅰ이 2단계 Ⅲ과 글자까지 같았고, 기능이 4개인데 '5개 이상일 때'인 칸이 '됨'이었어요. 숫자 셋도 '아직 모름'인 채 '됨'이었어요.", [["요구서 C-56", RQ], ["넘김 문서 ⓑ", HO("2026-10-28-questfit")]]],
+        ["C-56 R-4", "wip", "이미 있는 내용은 원문과 나란히", "받은 글이나 작업 폴더에 그 칸의 답이 있으면 새로 묻지 않고 원문(파일 · 줄)과 칸의 꼴로 옮긴 글을 나란히 보여요. 원문끼리 다르면 고르게 하고, 누가 정했나에 '옮김'을 남겨요.", "", [["요구서 C-56", RQ], ["넘김 문서 ⓔ", HO("2026-10-28-questfit")]]],
+        ["C-54 ⑧", "wip", "지도에서 지금 조각 가까이", "지도에서 지금 단계 조각을 키우면 줄 하나가 '할 일 → 문서의 절 ← 재료'로 보이고, 줄을 누르면 누가 정했나 · 재료가 온 곳 · 이 줄을 쓰는 다음 단계가 오른쪽 칸에 나와요. 누르기와 확대 둘 다로 열려요. 11/1까지 모자라면 대회 뒤로 미뤄요.", "", [["넘김 문서 ⓔ+", HO("2026-10-28-design")], ["PR #232", PR(232)]]],
+        ["C-38", "wait", "다른 AI 도구로 넘기기", "Floe가 아는 것(지금 단계 · 할 일 · 기준)을 웹 Claude · ChatGPT · VS Code로 넘기는 카드예요. 길 1 '넘김 카드(복사 · 붙여 넣기)'를 11/1 전에 할지 이재엽이 정해요.", "", [["요구서 C-38", RQ]]]
+      ] },
+
+    { title: "4단계 — 이미 정해진 것은 묻지 않아요",
+      lead: "미션이 파이썬으로 정해 두었으니, 맞춤 퀘스트에서는 '후보 2개 찾기'를 묻지 않고 기준 카드에서 옮겨 와 확인만 해요. 남은 칸은 지금처럼 예시 셋 중에 고르거나 직접 적어요(C-40, 지금 앱에 있음).",
+      sc: { isl: "open", tab: 0, lv: "LV 3 · 조개 3",
+        files: F0.concat([[2, "fold", "03-requirements", "dir"], [2, "foldo", "04-design", "dir"], [3, "md", "design.md", "cur"], [2, "md", "PRD.md"], [2, "md", "기준.md"]]),
+        view: { k: "board", head: ["4단계 · 만드는 방법 고르기", "퀘스트 보드"], fives: [["① 생각", "on"], ["② 행동", ""], ["③ 기록", ""], ["④ 저장", ""], ["⑤ 버전", ""], ["관문", "gt"]],
+          q: [["Ⅰ", "파이썬으로 — 미션이 정했어요", "후보 찾기", "c", "기준 카드 · 이미 정해진 것"],
+            ["Ⅱ", "노션과 견주기", "견주기", "n", "", ["직접 만든 프로그램이 나은 점", "노션이 나은 점", "다른 예시"]],
+            ["Ⅲ", "파이썬을 고른 까닭 한 줄", "고른 까닭", "w", ""], ["Ⅳ", "지킬 약속", "약속", "w", ""],
+            ["Ⅴ", "둘 곳 — 내 컴퓨터 안에만", "둘 곳", "c", "기준 카드 · 밖으로"]] },
+        right: null,
+        isl2: { pill: "4단계 · 방법 고르기", task: [2, 5], mood: "같이 고르는 중",
+          bub: [["fl", "미션 글에 '파이썬으로'가 있었어요. 후보 찾기는 옮겨 왔어요 — 맞으면 견주기로 가요.", "ex"]],
+          nc: ["4단계 · ① 생각 · Ⅱ", "노션과 견줘 볼까요?", "셋 중에 고르거나 직접 적어요. 고른 칸은 누가 정했나에 '고름'으로 남아요.", ["이걸로 고르기", "다른 예시"]] } },
+      cap: "⑥ 예정 화면 — 4단계 첫 장면. 예시 셋 중 고르기는 지금 앱에 있어요(C-40). '옮겨 옴'과 이 프로젝트의 이름은 PR #232가 만드는 중이고, 이름과 섬의 말은 예시예요.",
+      mock: [["맞춤 퀘스트 목업 ④ ⑥", MOCK_QF]],
+      items: [
+        ["C-56 R-1 · R-3", "wip", "옮겨 옴 — 미션이 정한 파이썬", "기준 카드의 '이미 정해진 것'에 있는 답은 다시 묻지 않고 그 칸을 '옮겨 옴'으로 둬요. 출처 칩을 누르면 받은 글의 그 줄이 열려요. 확인만 하면 넘어가요.", "test-1은 미션이 정한 파이썬을 두고 '후보 2개 찾기'를 했고, 후보 칸에는 하나만 적혔는데 AI가 '후보 2개 이상 — 됨'으로 봤어요(F-60 ③, 아직 열림).", [["요구서 C-56", RQ], ["고칠 목록 F-60", FX]]],
+        ["C-56 R-2", "wip", "이름은 이 프로젝트의 말로", "'후보 찾기 · 견주기 · 고른 까닭'은 꼬리표로 내려가고, 할 일 이름은 '노션과 견주기'처럼 이 프로젝트의 말이 돼요.", "test-1의 4단계는 다섯 칸을 모두 사람이 직접 적은 단계예요 — 이름이 맞으면 덜 막혀요.", [["넘김 문서 ⓓ", HO("2026-10-28-questfit")]]]
+      ] },
+
+    { title: "5단계 — 뼈대를 Claude Code에 맡기고, 막히면 막혔다고",
+      lead: "5단계에 '뼈대 맡기기' 퀘스트가 생겨요. 단계 문서로 맡길 글을 만들고, 끝 조건은 'README에 실행 명령 · 예시 입력으로 끝까지 돈다 · 기획서의 결과물이 생긴다'예요. 허락을 못 받아 파일이 하나도 안 생겼으면 '끝남' 대신 '막힘'과 다시 맡기기를 보여요.",
+      sc: { isl: "open", tab: 0, lv: "LV 4 · 조개 4",
+        files: [[0, "foldo", "test-1", "dir"], [1, "md", "README.md"], [1, "fold", "src", "dir miss", "없음"], [1, "foldo", "docs", "dir"], [2, "fold", "04-design", "dir"], [2, "foldo", "05-skeleton", "dir"], [3, "md", "skeleton.md", "cur"], [2, "md", "PRD.md"]],
+        view: { k: "board", head: ["5단계 · 뼈대 먼저 이어 보기", "퀘스트 보드"], fives: [["① 생각", "ok"], ["② 행동", "on"], ["③ 기록", ""], ["④ 저장", ""], ["⑤ 버전", ""], ["관문", "gt"]],
+          q: [["Ⅰ", "넣기 → 저장 → 목록을 끝까지 잇기", "끝까지 잇기", "n", "Claude Code에 맡김 — 막힘 2"],
+            ["Ⅱ", "한 번 돌려 보기", "도는지 보기", "f", "Ⅰ이 끝나야 해요 — 관문 닫힘"],
+            ["Ⅲ", "작게 나누기", "작게 나누기", "w", ""], ["Ⅳ", "비밀값 검사", "비밀값 검사", "w", ""]],
+          banner: "끝 조건 — README에 실행 명령 · 예시 입력으로 끝까지 돈다 · 기획서의 결과물(프롬프트 목록)이 생긴다" },
+        right: null,
+        isl2: { pill: "5단계 · 뼈대", mood: "멈춰서 물어봐요",
+          bub: [["fl", "뼈대를 Claude Code에 맡겼어요. 끝 조건 셋을 같이 넘겼어요.", "ex"]],
+          nc: ["5단계 · ② 행동 · 보고", "막혔어요 — 파일 쓰기 2번이 허락을 못 받았어요", "만들어진 파일이 없어요. 섬이 접혀 있어 허락 카드를 못 누른 것 같아요. 다시 맡기면 허락 카드를 먼저 보여 줄게요.", ["다시 맡기기", "허락 카드 보기"], "warn"] } },
+      cap: "⑥ 예정 화면 — 뼈대를 맡겼는데 허락을 못 받아 막힌 순간. 둘 다 다음 차례예요(F-70 · F-69, 페이블 넘김 — PR #232 다음). '막힘 2'와 섬의 말은 예시예요.",
+      mock: [["넘김 문서 — 결과물이 나오게", HO("2026-10-28-output")]],
+      items: [
+        ["F-70 ⓑ", "next", "뼈대 맡기기 퀘스트", "5단계 '뼈대'가 문서 칸만 채우던 것을, Claude Code에 코드를 만들게 하는 퀘스트로 바꿔요. 맡길 글은 단계 문서로 만들고, 끝 조건은 README에 실행 명령 · 예시 입력으로 끝까지 돈다 · 기획서에 적힌 결과물이 생긴다예요. 같은 길(맡기기 + 끝 조건 + 섬 허락 + 보고)로 가요.", "test-1은 코드 파일 0개로 5 ~ 8단계를 지났어요 — 5단계 '도는지 보기'가 '…보이면 된다'는 계획 글로 '됨'이 됐어요.", [["고칠 목록 F-70", FX], ["넘김 문서 ⓑ", HO("2026-10-28-output")]]],
+        ["F-69", "next", "막힘을 막힘으로", "Claude Code(claude -p)는 파일 쓰기 · 명령을 거절당해도 정상으로 끝나서, 허락 카드를 못 눌렀거나(95초) · 폴더에 허락 훅이 없거나 · 서버에 닿지 않으면 파일 없이 '끝남'으로 보였어요. 이제 거절된 도구 이름 · 개수로 '막힘 — N번'과 다시 맡기기를 보이고, 맡기기 전에 그 폴더에 허락 훅이 있는지 봐요. 허락 카드는 섬이 접혀 있어도 보여요. 대신 허용해 주는 길은 만들지 않아요.", "", [["고칠 목록 F-69", FX], ["넘김 문서 ⓐ", HO("2026-10-28-output")]]],
+        ["C-56 R-3", "wip", "먼저 — 앞 칸이 끝나야", "'한 번 돌려 보기'는 뼈대가 생기기 전에는 '먼저'예요. 앞 칸으로 데려가고, 관문은 닫힌 채예요.", "", [["요구서 C-56", RQ]]],
+        ["C-50", "wait", "맡긴 일이 멈추면", "맡긴 일이 오래 멈추거나 실패하면 까닭 · 다시 맡기기 · 보고 미리 판정을 보이자는 제안이에요. 11/4 ~ 7 사용자 시험 전에 하자는 안이고, 정하는 사람은 이재엽이에요.", "", [["요구서 C-50", RQ]]]
+      ] },
+
+    { title: "6단계 — 요구 줄마다 맡기고, 한 일을 따라 퀘스트가 바뀌어요",
+      lead: "6단계에서는 3단계의 기능 문장 한 줄마다 '이 줄 맡기기'가 생기고, 끝 조건은 그 줄의 확인 방법이에요. Claude Code가 파일을 만들거나 고치면 몇 초 모아 지금 퀘스트를 다시 맞추고 '방금 바뀜' 띠로 알려요.",
+      sc: { isl: "pill", tab: 0, lv: "LV 5 · 조개 5",
+        files: [[0, "foldo", "test-1", "dir"], [1, "md", "README.md"], [1, "foldo", "src", "dir new", "새로"], [2, "code", "main.py", "new"], [2, "code", "storage.py", "cur new"], [1, "foldo", "tests", "dir new"], [2, "code", "test_storage.py", "new"], [1, "foldo", "docs", "dir"], [2, "fold", "06-build", "dir"]],
+        view: { k: "board", head: ["6단계 · 하나씩 만들고 확인하기", "퀘스트 보드 · 요구 줄마다"], fives: [["① 생각", "ok"], ["② 행동", "on"], ["③ 기록", ""], ["④ 저장", ""], ["⑤ 버전", ""], ["관문", "gt"]],
+          banner: "방금 바뀜 — Claude Code가 storage.py를 고쳤어요. '저장' 줄의 확인을 다시 맞췄어요. 사람이 적은 칸은 덮지 않았어요.",
+          q: [["1", "프롬프트를 새로 넣으면, 앱은 목록에 저장한다", "저장", "d", "확인 — 넣은 글이 목록에 있고 빈 글은 안 들어가요 · 통과"],
+            ["2", "카테고리를 고르면, 앱은 그 카테고리의 프롬프트만 보여 준다", "카테고리", "n", "Claude Code에 맡김 — 하는 중"],
+            ["3", "낱말을 검색하면, …", "검색", "w", "", null, "이 줄 맡기기"],
+            ["4", "즐겨찾기를 누르면, …", "즐겨찾기", "w", "", null, "이 줄 맡기기"]] },
+        right: { k: "quest", h: "퀘스트 · 6단계 칸", q: [["Ⅰ", "확인 먼저", "확인 먼저", "c", "build.md에 이미 있어요"], ["Ⅱ", "작은 확인", "작은 확인", "n", ""], ["Ⅲ", "써 보기", "써 보기", "w", ""], ["Ⅳ", "비밀값 검사", "비밀값", "c", "5단계와 거의 같아요 — 확인만"]], gate: "관문 — 남은 기준 3" } },
+      cap: "⑥ 예정 화면 — 요구 줄 하나를 맡겨 둔 6단계. '이 줄 맡기기'는 다음 차례(F-70 ⓒ), '방금 바뀜'과 상태는 PR #232가 만드는 중이에요. 파일 이름과 '통과'는 예시예요(test-1에는 코드가 없어요).",
+      mock: [["맞춤 퀘스트 목업 ⑦ 작업을 따라", MOCK_QF], ["넘김 문서 — 결과물이 나오게", HO("2026-10-28-output")]],
+      items: [
+        ["F-70 ⓒ", "next", "요구 줄마다 맡기기", "3단계의 기능 문장 한 줄마다 '이 줄 맡기기'가 생겨요. 끝 조건은 그 줄의 확인 방법(build.md의 작은 확인)이고, 허락은 섬에서, 끝에 기준마다 보고가 와요.", "test-1의 6단계는 확인 방법을 잘 적었지만(작은 확인 넷), 시험도 코드도 없이 '작은 부분마다 확인 통과하기'가 '됨'이었어요.", [["고칠 목록 F-70", FX], ["넘김 문서 ⓒ", HO("2026-10-28-output")]]],
+        ["C-56 R-5", "wip", "작업을 따라 바뀌는 퀘스트", "훅 알림(만들었어요 · 고쳤어요 · 실행했어요) 뒤 몇 초 모아 지금 단계 퀘스트를 다시 맞추고 '방금 바뀜' 띠 한 줄로 알려요. 시험 결과는 맡긴 일이 구조로 돌려준 보고에서 읽어요. 사람이 적은 칸은 덮지 않고 '다시 볼까요?'만 물어요. 다음 단계까지 미리 맞춰요(이재엽 버튼).", "", [["요구서 C-56", RQ], ["넘김 문서 ⓕ", HO("2026-10-28-questfit")]]],
+        ["C-56 R-3", "wip", "옮겨 옴 · 먼저", "5단계와 거의 같은 비밀값 검사는 '옮겨 옴 — 확인만'이에요. 코드 파일이 하나도 없으면 6단계는 '먼저 — 뼈대 코드부터'로 5단계로 데려가고, 관문은 닫힌 채예요.", "test-1의 5 · 6단계 비밀값 검사는 거의 같은 글이었어요.", [["넘김 문서 ⓑ", HO("2026-10-28-questfit")]]],
+        ["F-69", "next", "줄마다 맡긴 일도 막힘을 막힘으로", "줄 하나를 맡긴 일도 허락을 못 받으면 '막힘 — N번'과 다시 맡기기로 보여요.", "", [["고칠 목록 F-69", FX]]]
+      ] },
+
+    { title: "7단계 — 돌려 본 결과를 열고, 빈칸이면 먼저 채우러",
+      lead: "6 · 7단계의 '돌려 보기'는 결과 파일 경로를 보고 작업실 파일 칸에서 바로 열어요. 3단계에서 성공 숫자를 비워 두었다면 7단계 '재기'는 '먼저'가 되어 3단계 숫자 칸으로 데려가고, 공개하지 않는 프로그램이면 '아무나 못 들어오게'는 까닭과 함께 건너뛰어요.",
+      sc: { isl: "pill", tab: 1, lv: "LV 6 · 조개 6",
+        files: [[0, "foldo", "test-1", "dir"], [1, "md", "README.md"], [1, "fold", "src", "dir"], [1, "foldo", "out", "dir new"], [2, "file", "run-1.txt", "cur new"], [1, "foldo", "docs", "dir"], [2, "foldo", "07-measure", "dir"], [3, "md", "measure.md"]],
+        view: { k: "doc", fname: "out/run-1.txt", tool: [["결과 파일", "on"], ["돌려 보기 다시", ""]],
+          lines: [[1, "mono", "cc", "$ python main.py"], [2, "mono", "", "1) 넣기  2) 목록  3) 찾기  4) 즐겨찾기  0) 끝"], [3, "mono", "", "> 3"], [4, "mono", "", "찾을 낱말: 페르소나"], [5, "mono", "", "찾음 2개"]],
+          stat: [["돌려 본 결과", "1"], ["잰 값", "아직"]] },
+        right: { k: "quest", h: "퀘스트 · 7단계", q: [["Ⅰ", "바로 찾기 · 쌓이는 수 재기", "숫자 재기", "f", "3단계 Ⅱ 숫자가 빈칸 — 거기로 가요"], ["Ⅱ", "잰 값 적기", "잰 값", "w", ""], ["Ⅲ", "못 잰 것 적기", "못 잰 것", "w", ""], ["Ⅳ", "아무나 못 들어오게", "아무나 못 들어오게", "s", "공개하지 않음 — 까닭은 결정 기록에"]], gate: "관문 닫힘 — 먼저 1" } },
+      cap: "⑥ 예정 화면 — 돌려 본 결과 파일을 연 7단계. 결과 파일 열기는 다음 차례(F-70 ⓓ), '먼저' · '건너뜀'은 PR #232가 만드는 중이에요. 빈칸 표시에서 관문이 멈추는 것은 지금 앱에 있어요. 결과 파일의 이름과 내용은 예시예요.",
+      mock: [["넘김 문서 — 결과물이 나오게", HO("2026-10-28-output")], ["맞춤 퀘스트 목업 ⑦", MOCK_QF]],
+      items: [
+        ["F-70 ⓓ", "next", "돌려 보기 — 결과 파일을 연다", "6 · 7단계의 '돌려 보기'가 결과 파일 경로를 보고, 작업실 파일 칸에서 열어요(파일 보기 C-43 그대로). 잰 값은 그 결과에서 옮겨요.", "test-1의 7단계에는 잰 값이 없고 '무엇: (재고 적기) · 잰 날: (재고 적기)'가 남았어요.", [["고칠 목록 F-70", FX], ["넘김 문서 ⓓ", HO("2026-10-28-output")]]],
+        ["C-56 R-3", "wip", "먼저 · 건너뜀", "성공 숫자가 빈칸이면 7단계 Ⅰ은 '먼저'예요 — 3단계 Ⅱ 숫자 칸으로 데려가고 관문은 닫힌 채예요. 공개하지 않는 프로그램이면 Ⅳ '아무나 못 들어오게'는 '건너뜀'이 되고 까닭은 단계 문서 · 결정 기록에 남아요.", "test-1은 '언제 성공: 아직 모름'이 2 → 3 → 7 → 8단계로 이어졌고, 공개하지 않는데 '아무나 못 들어오게'가 '됨'이었어요.", [["요구서 C-56", RQ], ["넘김 문서 ⓑ", HO("2026-10-28-questfit")]]],
+        ["F-60", "done", "빈칸 표시면 멈춰요", "'(재고 적기)' 같은 빈칸 표시나 증거 없는 '됨'이 남으면 관문 앞에서 멈춰요 — 채우러 가기 / 까닭 적고 넘기기.", "", [["고칠 목록 F-60", FX], ["PR #214", PR(214)]]]
+      ] },
+
+    { title: "8단계 — 짝 선으로 정한 곳과 확인한 곳을 나란히",
+      lead: "지도의 '흐름 따라가기'에서 1 ↔ 8 · 2 ↔ 7 · 3 ↔ 6이 금색 짝 선으로 이어져요. 정한 곳과 확인하는 곳을 두 칸 나란히 보며 돌아봐요. 이 페이지의 '실'이 앱 안으로 들어가는 자리예요.",
+      sc: { isl: "pill", tab: 2, lv: "LV 7 · 조개 7",
+        files: [[0, "foldo", "test-1", "dir"], [1, "md", "README.md"], [1, "fold", "src", "dir"], [1, "foldo", "docs", "dir"], [2, "fold", "07-measure", "dir"], [2, "foldo", "08-retro", "dir"], [3, "md", "retro.md", "cur"], [2, "md", "decisions.md"]],
+        view: { k: "map", h: ["흐름 따라가기 · 짝 선", "정한 곳 → 확인하는 곳"], pairs: true, gates: ["ok", "ok", "ok", "ok", "ok", "ok", "ok"],
+          pieces: [[1, "ok", "끝 · V.1", "정하기"], [2, "ok", "끝 · V.2", "적어 두기"], [3, "ok", "끝 · V.3", "기능 정리"], [4, "ok", "끝 · V.4", "방법 고르기"], [5, "ok", "끝 · V.5", "뼈대"], [6, "ok", "끝 · V.6", "만들기"], [7, "ok", "끝 · V.7", "재 보기"], [8, "on", "지금", "돌아보기"]],
+          shelf: [["README.md"], ["CLAUDE.md"], ["PRD.md"], ["decisions.md"], ["기준.md"]] },
+        right: { k: "pairs", h: "두 칸 나란히 — 2 ↔ 7", rows: [["2단계 Ⅰ · 정한 곳", "언제 성공: 아직 모름"], ["7단계 Ⅰ · 확인하는 곳", "잰 값 — 3단계 숫자를 채운 뒤에 재요"]], more: [["1 ↔ 8", "처음 불편 → 배운 것"], ["3 ↔ 6", "기능 문장 → 줄마다 확인"]] } },
+      cap: "⑥ 예정 화면 — 다 돌고 지도에서 흐름을 따라가는 8단계. 짝 선은 PR #232의 마지막 묶음이고, 11/1까지 모자라면 대회 뒤로 미뤄요. V.n 표시는 대회 뒤(C-23)라 그림의 버전 줄은 예시예요.",
+      mock: [["목업 ⑨ 짝 선", MOCK_WS]],
+      items: [
+        ["C-54 ⑨", "wip", "짝 선 · 두 칸 나란히", "지도 도구 '흐름 따라가기'에서 1 ↔ 8 · 2 ↔ 7 · 3 ↔ 6 짝 선(정한 곳 → 확인하는 곳)과 '두 칸 나란히'를 보여요. 짝 선은 이 보기에서만 보여요(이재엽 버튼). 데이터는 이미 있어요 — 단계 결과의 칸 · 누가 · 재료와 문서 지도의 재료 선.", "test-1의 8단계 '왜 다섯 번'이 2단계 '언제 성공: 아직 모름'까지 거슬러 올라갔어요 — 짝 선이 그 길을 처음부터 보여 줘요.", [["넘김 문서 ⓔ+", HO("2026-10-28-design")], ["PR #232", PR(232)]]],
+        ["C-47", "wait", "지식 퀘스트", "돌아보기의 배운 것을 내 말로 남기고, 재료는 저절로 모으고, 한 장은 확인만 하자는 제안이에요. 11/1 전에는 관문의 '배운 것 한 줄' · '처음 뜻 다시 보기'만 하자는 안이에요.", "", [["요구서 C-47", RQ]]],
+        ["C-48", "wait", "다음 프로젝트로 가져가기", "돌아보기에서 '가져갈 것'을 고르고 새 프로젝트에서 꺼내자는 제안이에요. 제안 등급은 Could · 대회 뒤예요.", "", [["요구서 C-48", RQ]]],
+        ["C-23", "later", "기록 · 저장 · 버전 칸", "퀘스트마다 기록 한 장 · 한 커밋 · 버전 V.n은 10/25 중간점검에서 대회 뒤로 미뤘어요. 지금은 관문마다 단계 문서를 올려요.", "", [["요구서 C-23", RQ]]]
+      ] }
+  ];
+
+  // 예정 화면 그리기
+  var VIEWS = ["퀘스트 보드", "문서", "도전과제"];
+  function pFiles(list) {
+    return list.map(function (f) {
+      return '<div class="pf d' + Math.min(f[0], 3) + (f[3] ? " " + f[3] : "") + '">' + ic(f[1]) + "<span>" + esc(f[2]) + "</span>" + (f[4] ? "<small>" + esc(f[4]) + "</small>" : "") + "</div>";
+    }).join("");
+  }
+  function pFloes(n, k) {
+    var o = [];
+    for (var i = 1; i <= 8; i++) o.push('<i class="' + (i < n || (k === "map" && n === 8 && i < 8) ? "ok" : i === n ? "on" : n >= 2 && k === "map" ? "rd" : "") + '"></i>');
+    return '<span class="floes" aria-hidden="true">' + o.join("") + "</span>";
+  }
+  function qItem(x) {
+    var tag = { w: "쓰기", c: "옮겨 옴", s: "건너뜀", f: "먼저", d: "끝", n: "지금" }[x[3]];
+    return '<div class="qi' + (x[3] === "s" ? " dim" : "") + '"><span class="no">' + esc(x[0]) + '</span><span class="nm">' + esc(x[1]) + (x[2] ? '<span class="mt">' + esc(x[2]) + "</span>" : "") + '</span><span class="qs ' + x[3] + '">' + tag + "</span>" +
+      (x[4] ? '<span class="qw">' + esc(x[4]) + "</span>" : "") +
+      (x[5] ? '<span class="ex3">' + x[5].map(function (e, i) { return "<span" + (i === 0 ? ' class="on"' : "") + ">" + esc(e) + "</span>"; }).join("") + "</span>" : "") +
+      (x[6] ? '<span class="go1">' + esc(x[6]) + "</span>" : "") + "</div>";
+  }
+  function pBoard(v) {
+    return '<div class="qhead"><b>' + esc(v.head[0]) + "</b><span>" + esc(v.head[1]) + "</span></div>" +
+      '<div class="fives">' + v.fives.map(function (f) { return '<span class="' + f[1] + '">' + esc(f[0]) + "</span>"; }).join("") + "</div>" +
+      (v.banner ? '<div class="banner">' + esc(v.banner) + "</div>" : "") +
+      (v.empty ? '<div class="empty"><b>' + esc(v.empty[0]) + "</b><p>" + esc(v.empty[1]) + "</p></div>" : "") +
+      (v.q ? '<div class="ql">' + v.q.map(qItem).join("") + "</div>" : "");
+  }
+  function pDoc(v) {
+    var line = function (l) {
+      var tx = esc(l[3]).replace(/\{([^}]*)\}/g, '<span class="blank">$1</span>');
+      return '<div class="dl' + (l[1] ? " " + l[1] : "") + '"><i class="' + l[2] + '"></i><span class="ln">' + l[0] + '</span><span class="tx">' + tx + "</span></div>";
+    };
+    return '<div class="dtool"><span class="fname">' + esc(v.fname) + '</span><span class="grow"></span>' + v.tool.map(function (t) { return '<span class="' + t[1] + '">' + esc(t[0]) + "</span>"; }).join("") + "</div>" +
+      '<div class="dpage">' + v.lines.map(line).join("") + "</div>" +
+      (v.side ? '<div class="side2">' + v.side.map(function (s, i) { return '<div class="' + (i ? "to" : "") + '"><b>' + esc(s[0]) + "</b>" + esc(s[1]) + "</div>"; }).join("") + "</div>" : "") +
+      '<div class="pstat">' + v.stat.map(function (s) { return "<span>" + esc(s[0]) + " <b>" + esc(s[1]) + "</b></span>"; }).join("") + "</div>";
+  }
+  var ARCH = '<svg viewBox="0 0 26 24" aria-hidden="true"><path d="M5 22V11.5a8 8 0 0 1 16 0V22M2.5 22h21"/></svg>';
+  function pMap(v) {
+    var pc = {}; v.pieces.forEach(function (p) { pc[p[0]] = p; });
+    var cell = function (n, col, row) {
+      var p = pc[n];
+      return '<div class="ice ' + p[1] + '" style="grid-column:' + col + ";grid-row:" + row + '">' + (p[1] === "on" ? '<span class="seal" aria-hidden="true"></span>' : "") +
+        '<span class="fn">' + n + '</span><span class="fs">' + esc(p[2]) + '</span><span class="fx">' + esc(p[3]) + "</span></div>";
+    };
+    var g = function (i, col, row, v2) { var s = v.gates[i - 1] || ""; return '<div class="gp' + (v2 ? " v" : "") + (s === "stop" ? " stop" : "") + '" style="grid-column:' + col + ";grid-row:" + row + '" aria-hidden="true">' + (s ? ARCH : "") + "</div>"; };
+    var pr = function (col, a, b) { return v.pairs ? '<div class="mpair" style="grid-column:' + col + ';grid-row:2"><span>' + a + " ↔ " + b + "</span></div>" : ""; };
+    var h = '<div class="map"><div class="map-h"><b>' + esc(v.h[0]) + "</b><span>" + esc(v.h[1]) + "</span></div>" +
+      '<div class="mg" role="img" aria-label="지도 — 1에서 4단계는 위 줄, 5에서 8단계는 아래 줄(오른쪽에서 왼쪽)">' +
+      cell(1, 1, 1) + g(1, 2, 1) + cell(2, 3, 1) + g(2, 4, 1) + cell(3, 5, 1) + g(3, 6, 1) + cell(4, 7, 1) +
+      pr(1, 1, 8) + pr(3, 2, 7) + pr(5, 3, 6) + g(4, 7, 2, true) +
+      cell(8, 1, 3) + g(7, 2, 3) + cell(7, 3, 3) + g(6, 4, 3) + cell(6, 5, 3) + g(5, 6, 3) + cell(5, 7, 3) + "</div>" +
+      '<div class="shelf"><em>책장</em>' + v.shelf.map(function (s) { return '<span class="' + (s[1] || "") + '">' + esc(s[0]) + "</span>"; }).join("") + "</div></div>";
+    return h;
+  }
+  function pCard(v) {
+    var src = function (s) { return s === "ex" ? '<span class="chipsrc ex">예시</span>' : '<span class="chipsrc">' + esc(s) + "</span>"; };
+    return '<div class="kcard"><h4>' + esc(v.h) + '</h4><p class="kl">' + esc(v.sub) + "</p>" +
+      v.rows.map(function (r) { return '<div class="kr"><span class="k">' + esc(r[0]) + '</span><span class="v">' + esc(r[1]) + "</span>" + src(r[2]) + "</div>"; }).join("") +
+      '<div class="kr blank"><span class="k">' + esc(v.blank[0]) + '</span><span class="v">' + esc(v.blank[1]) + '<span class="pick">' + v.blank[2].map(function (x) { return "<span>" + esc(x) + "</span>"; }).join("") + '</span><span style="display:block;margin-top:6px;font-size:12.5px">' + esc(v.blank[3]) + "</span></span><span></span></div></div>";
+  }
+  function pRight(r) {
+    if (!r) return '<aside class="pright fold" aria-label="오른쪽 칸 — 섬을 펼쳐 접힘"><span>오른쪽 칸 · 접힘</span></aside>';
+    var h = '<aside class="pright"><h5>' + esc(r.h) + "</h5>";
+    if (r.k === "quest") h += '<div class="ql">' + r.q.map(qItem).join("") + "</div>" + (r.gate ? '<div class="rgate">' + esc(r.gate) + "</div>" : "");
+    if (r.k === "confirm") h += '<div class="ro">' + r.rows.map(function (x) { return "<div><span>" + esc(x[0]) + '</span><span class="chipsrc">' + esc(x[1]) + "</span></div>"; }).join("") + '</div><div class="rbtn"><span class="p">' + esc(r.btn[0]) + "</span><span>" + esc(r.btn[1]) + '</span></div><div class="rgate">' + esc(r.gate) + "</div>";
+    if (r.k === "pairs") h += '<div class="ro">' + r.rows.map(function (x, i) { return '<div class="' + (i ? "cur" : "") + '"><span>' + esc(x[0]) + "</span></div><p style=\"margin:0 0 4px 8px\">" + esc(x[1]) + "</p>"; }).join("") + '</div><h5>다른 짝</h5><div class="ro">' + r.more.map(function (x) { return "<div><span>" + esc(x[0]) + '</span><span class="chipsrc">' + esc(x[1]) + "</span></div>"; }).join("") + "</div>";
+    return h + "</aside>";
+  }
+  function pIsl(n, s) {
+    var t = s.task, task = !t ? "" : t[1] + "개 중 " + t[0] + '번째 할 일 <span class="dots" aria-hidden="true">' + Array.apply(null, Array(t[1])).map(function (_, i) { return "<i" + (i < t[0] ? ' class="on"' : "") + "></i>"; }).join("") + "</span>";
+    var nc = s.nc;
+    return '<div class="isl pi2" aria-hidden="true"><div class="itop"><div class="ih"><span class="hm">' + ic("home") + '</span><span class="pill"><b>' + esc(s.pill) + "</b>" + task + "</span></div>" +
+      '<div class="ib"><span class="q">퀘스트</span><span class="sh">' + ic("shell") + Math.max(0, n - 1) + '</span><span class="grow"></span>' + ic("gear") + ic("next") + "</div></div>" +
+      '<div class="ibody"><div class="fhead"><span class="seal"></span><span>' + esc(s.mood) + "</span></div>" +
+      '<div class="chat2">' + s.bub.map(function (b) { return '<div class="bub ' + b[0] + '">' + esc(b[1]) + (b[2] === "ex" ? ' <span class="ex">예시</span>' : "") + "</div>"; }).join("") +
+      '<div class="nc' + (nc[4] ? " " + nc[4] : "") + '"><div class="mt"><span>' + esc(nc[0]) + '</span><span class="ex">예시</span></div><div class="tt">' + esc(nc[1]) + '</div><div class="sb">' + esc(nc[2]) + '</div><div class="bt"><span class="p">' + esc(nc[3][0]) + '</span><span class="s">' + esc(nc[3][1]) + "</span></div></div></div>" +
+      '<div class="ifoot"><div class="iin"><span>원하는 것을 적거나 붙여 넣어요</span><span class="send">보내기</span></div></div></div></div>';
+  }
+  function pScreen(d) {
+    var p = PLAN[d.n], c = p.sc, v = c.view;
+    var main = v.k === "board" ? pBoard(v) : v.k === "doc" ? pDoc(v) : v.k === "map" ? pMap(v) : pCard(v);
+    var win = '<div class="pwin"><div class="pw-top"><span class="an">Floe · test-1</span><span class="as">' + stageName(d.n) + " · " + esc(d.short) + "</span>" + pFloes(d.n, v.k) +
+      '<span class="vt" aria-hidden="true">' + VIEWS.map(function (x, i) { return "<span" + (i === c.tab ? ' class="on"' : "") + ">" + x + "</span>"; }).join("") + '</span><span class="lv">' + esc(c.lv) + "</span></div>" +
+      '<div class="pw-body' + (c.right ? "" : " nr") + '"><nav class="pfiles" aria-label="파일 칸">' + pFiles(c.files) + '</nav><div class="pmain">' + main + "</div>" + pRight(c.right) + "</div></div>";
+    if (c.isl === "open") return '<div class="screen ps">' + win + pIsl(d.n, c.isl2) + "</div>";
+    var b = c.bub;
+    return '<div class="screen ps pill">' + win + '<div class="ppill" aria-hidden="true"><span class="seal"></span><span>' + stageName(d.n) + "</span></div>" +
+      (b ? '<div class="pbub" aria-hidden="true"><span>' + esc(b[0]) + ' <span class="ex">예시</span></span><small>' + esc(b[1]) + '</small><span class="bt"><span class="p">' + esc(b[2][0]) + "</span><span>" + esc(b[2][1]) + "</span></span></div>" : "") + "</div>";
+  }
+  function planPart(d) {
+    var p = PLAN[d.n];
+    var items = p.items.map(function (x) {
+      return '<li><div class="h"><span class="rid">' + esc(x[0]) + "</span>" + stp(x[1]) + "<b>" + esc(x[2]) + "</b></div><p>" + esc(x[3]) + "</p>" +
+        (x[4] ? '<p class="t1">test-1에서 본 것 — ' + esc(x[4]) + "</p>" : "") +
+        '<p class="src">' + x[5].map(function (l) { return '<a href="' + l[1] + '">' + esc(l[0]) + " ↗</a>"; }).join("") + "</p></li>";
+    }).join("");
+    return '<div class="wrap"><section class="part pp" id="pl' + d.n + '" aria-labelledby="plh' + d.n + '"><h3 id="plh' + d.n + '"><span class="pn">⑥</span>예정 — ' + esc(p.title) + '</h3><p class="pp-lead">' + esc(p.lead) + "</p></section></div>" +
+      '<div class="wrap wide"><figure class="frame" aria-label="' + stageName(d.n) + ' 예정 화면 그림">' + pScreen(d) + "</figure></div>" +
+      '<div class="wrap"><p class="capn">' + esc(p.cap) + " " + p.mock.map(function (m) { return '<a href="' + m[1] + '">' + esc(m[0]) + " ↗</a>"; }).join(" · ") + '</p><ul class="preq">' + items + "</ul></div>";
+  }
+  function planTable() {
+    var cnt = { done: 0, wip: 0, next: 0, wait: 0, later: 0 };
+    var head = '<thead><tr><th scope="col">요구</th><th scope="col">무엇이 바뀌나</th><th scope="col">상태</th>' + ALL.map(function (n) { return '<th scope="col" style="text-align:center">' + n + "</th>"; }).join("") + "</tr></thead>";
+    var body = RQS.map(function (g) {
+      return '<tr class="grp"><th colspan="12" scope="rowgroup">' + esc(g[0]) + "</th></tr>" + g[1].map(function (r) {
+        cnt[r[2]]++;
+        return '<tr><th scope="row"><a class="rid" href="' + r[5] + '">' + esc(r[0]) + '</a><span class="nm" style="display:block">' + esc(r[1]) + '</span></th><td class="wh">' + esc(r[3]) + "</td><td>" + stp(r[2]) + "</td>" +
+          ALL.map(function (n) { return '<td class="sg">' + (r[4].indexOf(n) >= 0 ? '<a class="' + r[2] + '" href="#pl' + n + '" aria-label="' + stageName(n) + ' 예정으로">' + n + "</a>" : "") + "</td>"; }).join("") + "</tr>";
+      }).join("");
+    }).join("");
+    document.getElementById("ptab").innerHTML = head + "<tbody>" + body + "</tbody>";
+    document.getElementById("pcount").innerHTML = ["done", "wip", "next", "wait", "later"].map(function (k) { return "<li><b>" + cnt[k] + "</b>" + stp(k) + "</li>"; }).join("");
   }
 
   // 그리기
   document.getElementById("scenes").innerHTML = S.map(scene).join("");
-  var RAIL = S.map(function (d) { return ["s" + d.n, "<b>" + d.n + "</b>" + (d.n === 0 ? "시작" : d.short)]; }).concat([["thread", "실"], ["try", "눌러 보기"], ["rules", "기준"], ["open", "질문"]]);
+  planTable();
+  var RAIL = [["plan", "예정"]].concat(S.map(function (d) { return ["s" + d.n, "<b>" + d.n + "</b>" + (d.n === 0 ? "시작" : d.short)]; })).concat([["thread", "실"], ["try", "눌러 보기"], ["rules", "기준"], ["open", "질문"]]);
   var rail = document.getElementById("rail");
-  rail.innerHTML = RAIL.map(function (r, i) { return (i === 9 ? '<span class="sep" aria-hidden="true"></span>' : "") + '<a href="#' + r[0] + '">' + r[1] + "</a>"; }).join("");
+  rail.innerHTML = RAIL.map(function (r, i) { return (i === 1 || i === 10 ? '<span class="sep" aria-hidden="true"></span>' : "") + '<a href="#' + r[0] + '">' + r[1] + "</a>"; }).join("");
 
   // 장면 그림 — 넓으면 1500px 화면을 줄여서, 좁으면 다시 배치해서
   var frames = Array.prototype.slice.call(document.querySelectorAll(".frame"));

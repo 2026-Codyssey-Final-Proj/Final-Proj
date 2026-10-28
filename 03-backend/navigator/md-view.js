@@ -78,11 +78,11 @@
     return { text: t, start: a, end: b };
   }
   // 목차 — 제목 줄(# ~ ###, 코드 울타리 밖)을 차례로. empty: 다음 제목(또는 끝)까지 글이 없는 절 — 오른쪽 칸 '이 문서'의 칸 채움(C-53)
-  // 비었나: 다음 같은 깊이(또는 더 얕은) 제목까지 글이 없으면 — 더 깊은 절(###)은 그 절의 내용으로 친다
+  // 비었나: 다음 같은 깊이(또는 더 얕은) 제목까지 글이 없으면 — 더 깊은 절(###)은 그 절의 내용으로 친다. 코드 블록도 내용이다(울타리 안의 #만 제목이 아니다, 2026-10-28)
   function outline(text) {
     const out = [], open = []; let fence = false;
     String(text).split("\n").forEach((l, i) => {
-      if (/^```/.test(l)) { fence = !fence; return; }
+      if (/^```/.test(l)) { fence = !fence; for (const o of open) o.empty = false; return; }
       if (fence) return;
       const m = l.match(/^(#{1,3})\s+(.+?)\s*$/);
       if (m) {

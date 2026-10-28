@@ -235,7 +235,8 @@ function addStep(body, tool) {
   return { seq: stepSeq };
 }
 // 화면이 묻는 모양 — since보다 뒤의 한 일만, 세션은 최근 쓴 순
-const stepsSince = (since) => ({ latest: stepSeq, sessions: [...work.values()].reverse().map(({ dir, ...s }) => ({ ...s, steps: s.steps.filter((st) => st.seq > since) })) });
+// here: 그 세션이 앱이 고른 폴더(또는 그 안)에서 도나 — 아니면 화면은 판정의 '일한 증거' · 작업실 파일 카드 · '일하고 있어요'에 쓰지 않는다(F-73, 새 맥락 리뷰). 연결을 뺀 폴더(dir 비움)는 그 자리가 아니다
+const stepsSince = (since) => ({ latest: stepSeq, sessions: [...work.values()].reverse().map(({ dir, ...s }) => ({ ...s, here: appProject ? !!dir && inAppProject(dir) : true, steps: s.steps.filter((st) => st.seq > since) })) });
 
 // ── FR-17 섬에서 허용 · 거절 — claude-drafted: 2026-10-20 (이재엽 버튼 "섬에서 진짜 승인", 넘김 문서 c4-views 2절 ② · 3절) ──
 // 훅(approve-hook.js)이 POST /api/approval로 승인 카드를 보내고 **답을 기다린다**(길게 여는 요청). 섬은 GET /api/approvals로 보고 POST /api/approvals/decide로 누른다.
@@ -300,6 +301,14 @@ function dropProject(dir) {
   return hit;
 }
 const projectNow = () => appProject || [...work.values()].reverse().find((x) => x.dir && path.isAbsolute(x.dir)) || null;
+// 이 알림이 앱이 고른 폴더(또는 그 안)에서 왔나 — 훅은 연결했던 폴더마다 남아서, 플로로가 A를 보는 동안 B에서 쓴 Claude Code의 알림도 온다(임유정 2026-10-28
+//   "폴더를 바꿔 열기 전까지는 그냥 폴더 A를 띄워야지"). 앱이 고른 폴더가 없으면 전처럼 모두 그 자리. 바로 가기(심볼릭 링크)는 실제 경로로 맞춘다 — Claude Code는 실제 경로를 보낸다(새 맥락 리뷰)
+const realDir = (p) => { try { return fs.realpathSync.native(String(p)); } catch { return path.resolve(String(p)); } };
+const inAppProject = (cwd) => {
+  if (!appProject || !cwd) return true;
+  const rel = path.relative(realDir(appProject.dir), realDir(cwd));   // Windows의 path.relative는 대소문자를 가리지 않는다
+  return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel));   // A 안의 '..cache' 같은 폴더는 A
+};
 
 // ── FR-17 대화로 일 넘기기 — 허락하면 연결한 폴더에서 claude를 연다(셸 없이, -p, 글은 표준 입력으로). 권한 건너뛰기 옵션은 쓰지 않는다 — 허락은 섬의 승인 카드(위)로 ──
 // 폴더는 projectNow(앱이 고른 작업 폴더, 없으면 훅 알림의 cwd)에서만 고른다(화면이 보낸 경로는 받지 않는다). 한 번에 하나. 여는 법은 provider.js startTask(셸 없음 · -p · 표준 입력 · 권한 건너뛰기 없음)
@@ -626,7 +635,7 @@ function addEvent(body) {
   while (log.length > 20) log.shift();   // 한 알림에 두 말이 오면 둘 다 넘칠 수 있다
   sessions.delete(id); sessions.set(id, log);   // 최근에 쓴 세션을 맨 뒤로
   if (sessions.size > 10) sessions.delete(sessions.keys().next().value);
-  const ev = { seq: ++seq, at: Date.now(), kind, tool, project: Sensitive.redact(path.basename(String(body.cwd || ""))), work: recent(log) };
+  const ev = { seq: ++seq, at: Date.now(), kind, tool, project: Sensitive.redact(path.basename(String(body.cwd || ""))), here: inAppProject(body.cwd), work: recent(log) };
   events.push(ev);
   if (events.length > 20) events.shift();
   return ev;
@@ -678,7 +687,7 @@ async function handle(req, res) {
   if (TOKEN_ROUTES.includes(route) && !hasToken(req.headers)) return refuse(res, "확인 값이 없거나 맞지 않음 — 화면은 서버 주소로 다시 열고, 훅은 서버를 켠 뒤 다시 보내요", 403);   // S3: 본문을 읽기 전에
   if (req.method === "GET" && route === "/api/events") {
     const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
-    return send(res, 200, { ok: true, latest: seq, events: events.filter((e) => e.seq > since) });
+    return send(res, 200, { ok: true, latest: seq, project: appProject ? appProject.project : "", events: events.filter((e) => e.seq > since) });   // project: 앱이 고른 폴더 이름 — 화면의 이름은 이것만 따른다(없으면 전처럼 알림의 폴더)
   }
   if (req.method === "GET" && route === "/api/steps") {   // C-12 AI 진행(API.md 3-12) — 섬의 AI 진행 판이 쿠키로 묻는다
     const since = Number(new URL(req.url, "http://localhost").searchParams.get("since")) || 0;
