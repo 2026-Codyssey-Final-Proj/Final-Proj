@@ -37,9 +37,9 @@ const Presets = require("./presets.js");   // C-44 맡기기 틀 — 번호로 �
 const RB = require("./readme-book.js");   // C-26 내 작업 책 — README를 책으로 나눈다(읽기만) — claude-drafted: 2026-10-23
 const PublicOk = require("./publicok.js");   // C-52 공개 저장소면 저장소마다 처음 한 번 묻는다(2026-10-29)
 const GH = require("./github.js");   // 설정의 GitHub 칸(C-25, 2026-10-24) — git · gh에게 읽기만 묻는다 — claude-drafted: 2026-10-24
-const Carry = require("./carry.js");
+const Carry = require("./carry.js");   // 지식 퀘스트 C-48 가져갈 것 — 기준 다섯 · 장부의 규칙(순수, 2026-10-29)
 const Plan = require("./plan.js");   // C-51 앞의 결정과 다름(규칙) — 계획판 규칙(순수)과 같은 파일
-const Quest = require("./quest.js");   // 지식 퀘스트 C-48 가져갈 것 — 기준 다섯 · 장부의 규칙(순수, 2026-10-29)
+const Quest = require("./quest.js");   // C-51 근거 줄의 칸 이름(짧은 이름)
 const Docs = require("./docs.js");   // C-37 단계 문서 — 단계 결과로 사용자 저장소에 둘 파일(순수 함수) — claude-drafted: 2026-10-25
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 const Mcp = require("./mcp.js");   // C-38 시험판 — MCP(웹 GPT · 웹 Claude · Claude Desktop)의 규칙. 이 컴퓨터 안에서는 늘, 밖(터널)에서는 NAV_MCP=1일 때만 /mcp/<토큰>을 받는다 — claude-drafted: 2026-10-25
@@ -576,25 +576,30 @@ function planAsk(res, body) {
   if (!Array.isArray(carry) || carry.length > 3 || !carry.every((x) => strOk(x, Carry.TEXT_MAX) && Nav.filled(x))) return refuse(res, "가져온 것의 모양이 맞지 않음");
   const s = body.readme === false ? null : projectNow(), r = s && readmeText(s.dir);
   const readme = r ? r.text.slice(0, PLAN_README_MAX) : "", files = s ? topFiles(s.dir) : [];
-  const here = projectNow(), decisions = here ? decisionsText(here.dir) : "", basis = planBasis(here, decisions, carry), D = Plan.decisionsOf(decisions);
+  // C-51: 근거 — 폴더를 읽어도 될 때만(readme false면 넣은 글 · 가져온 것만) 단계 문서에서 정한 줄을 읽는다. 규칙은 그 줄 전부(오래된 것부터 — 뒤가 앞을 덮는다), AI에는 가린 뒤 4,000자(새 것부터)
+  const decided = s ? decidedLines(s.dir) : [], basis = planBasis(decided, carry), D = Plan.decisionsOf(decided.map((x) => x.text).join("\n"));
   // C-51: 근거가 있으면 줄마다 근거(없으면 '새로 정함')와 앞의 결정과 다름(규칙 — plan.js differs)을 붙인다
   const read = (d) => { const p = Nav.parsePlan(d); if (!p) return null; if (basis) p.items = p.items.map((x) => { const diff = Plan.differs(`${x.need} ${x.check}`, D); return { ...x, basis: x.basis || "새로 정함", ...(diff ? { diff } : {}) }; }); return { plan: p }; };
   return ask(res, Nav.planPrompt({ text: body.text, readme, files, prev, notes: notes.map((n) => ({ need: n.need, check: n.check, note: n.note })), answers: answers.map((a) => ({ q: a.q, a: a.a })), general, ...(basis ? { basis } : {}) }),
     basis ? Nav.PLAN_BASIS_SCHEMA : Nav.PLAN_SCHEMA, read, "계획");
 }
-// ── 지식 퀘스트 C-51(2026-10-29 — PRD 6절 · 9절 9번 "근거는 가린 뒤 4,000자까지"): 계획의 근거 — 가져온 것 · 앞 단계에서 정한 것(폴더의 단계 문서) · 결정 기록 ──
-//   이 차례로 모아 가린 뒤 4,000자까지(넘치면 뒤 — 결정 기록의 오래된 줄부터 잘린다). 폴더를 모르고 가져온 것도 없으면 ""
-function planBasis(s, decisions, carry) {
-  const notes = [];
-  if (s) Docs.SLUGS.forEach((_, n) => {
-    const t = docTargets(s.dir, [{ path: Docs.stagePath(n) }]);
+// ── 지식 퀘스트 C-51(2026-10-29 — PRD 6절 · 9절 9번 "근거는 가린 뒤 4,000자까지"): 계획의 근거 ──
+// 사람이 정한 줄 — 폴더의 단계 문서(원본, C-49)에서 칸마다 '정한 것'(결정 기록의 '정한 것' 칸과 같은 줄 — docs.js가 같은 기록으로 둘을 쓴다). 단계 순서(오래된 것부터)
+function decidedLines(dir) {
+  const out = [];
+  Docs.SLUGS.forEach((_, n) => {
+    const t = docTargets(dir, [{ path: Docs.stagePath(n) }]);
     if (t.why) return;
     let text; try { const st = fs.lstatSync(t.list[0].file); if (!st.isFile() || st.size > DOC_READ_MAX) return; text = fs.readFileSync(t.list[0].file, "utf8"); } catch { return; }
     const p = Docs.parseStage(text);
-    if (p && p.n === n) for (const it of p.result.items) if (it.lines.length) notes.push(`${n + 1}단계 ${Quest.shortOf(it.name)}: ${it.lines.join(" / ")}`.slice(0, 200));
+    if (p && p.n === n) for (const it of p.result.items) for (const line of it.lines) if (line.trim()) out.push({ n, text: line, label: `${n + 1}단계 ${Quest.shortOf(it.name)}` });
   });
+  return out;
+}
+// 근거 글 — 가져온 것 → 정한 줄(새 단계부터)을 가린 뒤 4,000자까지(넘치면 오래된 단계의 줄이 잘린다). 둘 다 없으면 ""
+function planBasis(notes, carry) {
   const parts = [...(carry.length ? ["[가져온 것 — 지난 프로젝트에서 이번에 쓰기로 고른 것]", ...carry.map((x) => `- ${x}`)] : []),
-    ...(notes.length ? ["[앞 단계에서 정한 것]", ...notes.map((x) => `- ${x}`)] : []), ...(decisions ? ["[결정 기록]", decisions] : [])];
+    ...(notes.length ? ["[앞에서 정한 것 — 새 단계부터]", ...[...notes].reverse().map((x) => `- ${x.label}: ${x.text}`.slice(0, 200))] : [])];
   return parts.length ? Sensitive.redact(parts.join("\n")).slice(0, Nav.PLAN_BASIS_MAX) : "";
 }
 

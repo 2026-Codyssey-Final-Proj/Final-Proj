@@ -70,7 +70,7 @@ test("계획의 근거 — 고른 가져온 것을 보내고, 줄마다 근거 �
     assert.deepEqual(sent[0].carry, ["화면 하나를 먼저 그린다"], "이번 단계에 고른 가져온 것");
     const now = await page.evaluate(() => document.querySelector(".msg.now")?.textContent || "");
     assert.match(now, /근거 — 2단계: 신청 화면 하나/); assert.match(now, /근거 — 새로 정함/);
-    assert.match(now, /앞의 결정과 다름 — 결정 기록은 '웹', 이 줄은 '앱'/);
+    assert.match(now, /앞의 결정과 다름 — 앞에서 정한 것은 '웹', 이 줄은 '앱'/);
     await page.click('.msg.now [data-act=plan-follow][data-id="p1"]'); await wait(300);
     const plan = await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).plan);
     assert.equal(plan.marks.p1, "fix"); assert.match(plan.notes.p1, /앞의 결정\('웹'\)에 맞춰 고쳐 주세요/);

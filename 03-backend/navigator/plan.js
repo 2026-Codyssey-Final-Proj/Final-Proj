@@ -83,37 +83,45 @@
     return { items, easy: "예시예요. 신청하는 종이를 화면으로 만들었어요.", ask: "", done: items.filter((x) => x.done).length, total: items.length };
   };
 
-  // ── 지식 퀘스트 C-51(2026-10-29 — PRD 6절 · 9절 9번 "규칙으로(결정 기록의 낱말), 근거는 가린 뒤 4,000자까지"): 앞의 결정과 다름 ──
-  //   갈래(만들 곳 · 언어 · 저장)마다 낱말 — 결정 기록에서 'X(으)로'로 정한 낱말과 같은 갈래의 다른 낱말을 계획 줄이 쓰면 '앞의 결정과 다름'.
-  //   갈래 밖 낱말(기능을 문장으로 …)은 견주지 않는다 — 규칙이 모르는 것은 다르다고 하지 않는다. 같은 뜻 낱말은 하나로(웹사이트 → 웹)
+  // ── 지식 퀘스트 C-51(2026-10-29 — PRD 6절 · 9절 9번 "규칙으로(결정 기록의 낱말)"): 앞의 결정과 다름 ──
+  //   사람이 정한 줄(단계 문서의 칸 — 결정 기록의 '정한 것'과 같은 줄)에서 갈래(만들 곳 · 언어 · 저장)마다 한 낱말만 나오면 그 줄의 결정, 뒤 줄이 앞 줄을 덮는다.
+  //   계획 줄이 같은 갈래의 다른 낱말만 쓰면 '앞의 결정과 다름'. 규칙이 모르는 것은 다르다고 하지 않는다 —
+  //   갈래 밖 낱말은 보지 않고, 한 줄에 같은 갈래 낱말이 둘이면(후보 · 견주기) 결정이 아니고, 낱말 안쪽(웹훅 · MongoDB)은 낱말로 치지 않는다.
+  //   '앱' 하나만은 넣지 않는다 — '신청하면, 앱은 받는다'처럼 만드는 것을 두루 가리키는 말이라(모바일 앱 · 휴대폰 앱만)
   const KINDS = [
-    { kind: "만들 곳", words: { 웹: ["웹사이트", "웹앱", "홈페이지", "웹"], 앱: ["모바일 앱", "모바일앱", "휴대폰 앱", "스마트폰 앱", "앱"], 데스크톱: ["데스크톱 앱", "데스크톱", "PC 프로그램"], 터미널: ["명령줄", "터미널"] } },
-    { kind: "언어", words: { 파이썬: ["파이썬", "Python"], 자바스크립트: ["자바스크립트", "JavaScript"], 타입스크립트: ["타입스크립트", "TypeScript"], 자바: ["자바", "Java"] } },
-    { kind: "저장", words: { 엑셀: ["엑셀", "Excel"], 데이터베이스: ["데이터베이스", "DB", "디비"], "구글 시트": ["구글 시트", "스프레드시트"], 노션: ["노션", "Notion"], 파일: ["텍스트 파일", "CSV 파일", "CSV"] } },
+    { kind: "만들 곳", words: { 웹: ["웹 페이지", "웹페이지", "웹사이트", "웹앱", "홈페이지", "웹"], 앱: ["모바일 앱", "모바일앱", "휴대폰 앱", "스마트폰 앱"], 데스크톱: ["데스크톱 앱", "데스크톱", "PC 프로그램"], 터미널: ["명령줄", "터미널"] } },
+    { kind: "언어", words: { 파이썬: ["파이썬", "python"], 자바스크립트: ["자바스크립트", "javascript"], 타입스크립트: ["타입스크립트", "typescript"], 자바: ["자바", "java"] } },
+    { kind: "저장", words: { 엑셀: ["엑셀", "excel"], 데이터베이스: ["데이터베이스", "db", "디비"], "구글 시트": ["구글 시트", "스프레드시트"], 노션: ["노션", "notion"], 파일: ["텍스트 파일", "csv 파일", "csv"] } },
   ];
-  // 글에 나온 갈래 낱말 — [{ kind, word, at }]. 긴 것부터 맞춰 '데스크톱 앱'이 '앱'이 되지 않게. withRo면 바로 뒤에 (으)로가 올 때만(결정 모양)
-  function kindWords(text, withRo = false) {
-    const t = String(text || ""), taken = new Array(t.length).fill(false), out = [];
-    const all = KINDS.flatMap((k) => Object.entries(k.words).flatMap(([word, forms]) => forms.map((f) => ({ kind: k.kind, word, f })))).sort((a, b) => b.f.length - a.f.length);
-    for (const { kind, word, f } of all) {
-      let i = t.indexOf(f);
-      while (i >= 0) {
-        const end = i + f.length;
-        if (!taken.slice(i, end).some(Boolean) && (!withRo || /^(으로|로)/.test(t.slice(end)))) { for (let k = i; k < end; k++) taken[k] = true; out.push({ kind, word, at: i }); }
-        i = t.indexOf(f, end);
+  const FORMS = KINDS.flatMap((k) => Object.entries(k.words).flatMap(([word, forms]) => forms.map((f) => ({ kind: k.kind, word, f: f.toLowerCase() })))).sort((a, b) => b.f.length - a.f.length);
+  const LETTER = /[가-힣A-Za-z0-9]/, PARTICLE = /^(으로|로|에서|에게|에|을|를|이나|이|가|은|는|과|와|도|만|의|처럼|하고|까지|부터|보다|나)/;
+  const NOT_DECIDED = /(않|말고|아니|빼고|내려받|내보내|다운로드|뽑아)/;   // 뒤 열두 글자 안 — 'X로 하지 않고' · 'X로 내려받기'(내보내기 기능)는 그 갈래의 결정이 아니다
+  // 글에 나온 갈래 낱말 — 긴 것부터, 낱말 앞뒤가 다른 글자에 붙어 있으면(웹훅 · MongoDB) 치지 않는다. 라틴 글자는 대소문자를 가리지 않는다
+  function kindWords(text) {
+    const t = String(text || ""), low = t.toLowerCase(), taken = new Array(t.length).fill(false), out = [];
+    for (const { kind, word, f } of FORMS) {
+      for (let i = low.indexOf(f); i >= 0; i = low.indexOf(f, i + f.length)) {
+        const end = i + f.length, after = t.slice(end);
+        if (taken.slice(i, end).some(Boolean) || (i > 0 && LETTER.test(t[i - 1])) || (after && LETTER.test(after[0]) && !PARTICLE.test(after))) continue;
+        for (let k = i; k < end; k++) taken[k] = true;
+        out.push({ kind, word, at: i, neg: NOT_DECIDED.test(after.slice(0, 12)) });
       }
     }
     return out.sort((a, b) => a.at - b.at);
   }
-  // 결정 기록에서 정한 것 — 갈래마다 마지막으로 'X(으)로' 정한 낱말(나중 결정이 앞 결정을 덮는다)
+  // 정한 줄들 → 갈래마다 결정 낱말([{ kind, word }]). 한 줄에 같은 갈래 낱말이 하나일 때만, 뒤 줄이 앞 줄을 덮는다
   function decisionsOf(text) {
     const last = {};
-    for (const w of kindWords(text, true)) last[w.kind] = w.word;
+    for (const line of String(text || "").split("\n")) {
+      const by = {};
+      for (const w of kindWords(line)) (by[w.kind] = by[w.kind] || []).push(w);
+      for (const [kind, ws] of Object.entries(by)) { const words = [...new Set(ws.map((w) => w.word))]; if (words.length === 1 && !ws.some((w) => w.neg)) last[kind] = words[0]; }
+    }
     return Object.entries(last).map(([kind, word]) => ({ kind, word }));
   }
   // 계획 줄 하나 — 같은 갈래의 다른 낱말만 쓰고 정한 낱말은 없으면 { kind, was, now }, 아니면 null
   function differs(line, decisions) {
-    const mine = kindWords(line);
+    const mine = kindWords(line).filter((w) => !w.neg);
     for (const d of decisions) {
       const same = mine.filter((w) => w.kind === d.kind);
       if (same.length && !same.some((w) => w.word === d.word)) return { kind: d.kind, was: d.word, now: same[0].word };

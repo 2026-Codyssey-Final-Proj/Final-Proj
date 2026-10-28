@@ -2350,8 +2350,8 @@
         title: has ? "받은 글로 계획을 세울까요?" : "만들고 싶은 것 · 요구 · 문제 글을 한 번에 붙여 넣어요",
         sub: has ? `글 ${st.planDraft.length.toLocaleString()}자 — 더 붙여 넣으면 이어 붙여요.` : "아래 칸에 붙여 넣고 보내요. 여러 번 나눠 보내도 하나로 모아요.",
         body: `${has ? `<blockquote class="pl-draft">${esc(st.planDraft.length > 400 ? `${st.planDraft.slice(0, 400)}…` : st.planDraft)}</blockquote>` : ""}${
-          canLive ? `<label class="chk"><input type="checkbox" data-act="plan-readme" ${st.planReadme ? "checked" : ""}>작업 폴더의 README와 파일 이름도 같이 읽어요</label>` : ""}<p class="mc-fine">${
-          planLive() ? "계획 세우기를 누르면 AI를 한 번 불러요 — 넣은 글과 README · 파일 이름만 보내고, 파일을 고치지 않아요." : "연습이라 예시 계획을 보여 줘요(AI를 부르지 않아요)."}</p>`,
+          canLive ? `<label class="chk"><input type="checkbox" data-act="plan-readme" ${st.planReadme ? "checked" : ""}>작업 폴더의 README · 파일 이름 · 단계 문서에서 정한 것도 같이 읽어요</label>` : ""}<p class="mc-fine">${
+          planLive() ? "계획 세우기를 누르면 AI를 한 번 불러요 — 넣은 글(같이 읽기를 켜면 README · 파일 이름 · 단계 문서에서 정한 것도)과 이번에 고른 가져온 것만 보내고, 파일을 고치지 않아요." : "연습이라 예시 계획을 보여 줘요(AI를 부르지 않아요)."}</p>`,
         acts: [...(has ? [{ label: "계획 세우기", act: "plan-make", key: "c-Enter", pri: true }, { label: "글 비우기", act: "plan-clear" }] : []), { label: "한 줄만 적어 맡기기", act: "plan-direct" }] };
     }
     if (!b.confirmed) {
@@ -2377,8 +2377,8 @@
       acts: [{ label: w.note ? "다시 맡기기" : "맡기기", act: "plan-hand", key: "Enter", pri: true }, { label: "새 계획 적기", act: "plan-reset", kind: "ghost" }] };
   }
   // 지식 퀘스트 C-51(2026-10-29 — PRD 6절 · 9절 9번): 줄마다 근거 한 줄(없으면 '새로 정함'), 앞의 결정과 다르면 그 표시와 어느 쪽을 따를지(이 줄대로 = 맞아요 · 앞의 결정대로 = 고칠래요 + 의견)
-  const planBasisHTML = (x) => `${x.basis ? `<span class="meta">근거 — ${esc(x.basis)}</span>` : ""}${x.diff ? `<span class="meta pl-diff">앞의 결정과 다름 — 결정 기록은 '${esc(x.diff.was)}', 이 줄은 '${esc(x.diff.now)}'. 어느 쪽을 따를까요?
-    <button type="button" class="btn" data-act="plan-ok" data-id="${esc(x.id)}">이 줄대로</button><button type="button" class="btn" data-act="plan-follow" data-id="${esc(x.id)}">앞의 결정대로</button></span>` : ""}`;
+  const planBasisHTML = (x) => `${x.basis ? `<span class="meta">근거 — ${esc(x.basis)}</span>` : ""}${x.diff ? `<span class="meta pl-diff"><b>앞의 결정과 다름</b> — 앞에서 정한 것은 '${esc(x.diff.was)}', 이 줄은 '${esc(x.diff.now)}'. 어느 쪽을 따를까요?
+    <button type="button" class="btn" data-act="plan-ok" data-id="${esc(x.id)}" aria-pressed="${(st.plan && st.plan.marks[x.id]) === "ok"}">이 줄대로</button><button type="button" class="btn" data-act="plan-follow" data-id="${esc(x.id)}">앞의 결정대로</button></span>` : ""}`;
   // 확인하는 중 — 이해한 것 셋 · 줄마다 맞아요 / 고칠래요(+ 의견) · 준비할 것 · 물을 것(답) · 전체 의견(채팅 칸에 적어도 여기로)
   function planReviewBody(b) {
     const p = b.plan;
@@ -2445,12 +2445,13 @@
   const planId = (el) => (el && el.dataset && el.dataset.id) || (st.plan ? FP.next(st.plan) : "");   // 보고 안의 단추는 data-id, 채팅의 칩은 지금 줄
   const planCall = async (kind, url, body) => { st.planBusy = kind; try { return await callAI(url, body); } finally { st.planBusy = ""; } };
   const carryTexts = () => (((st.carryUse || {})[st.j ? st.j.stage : 0]) || []).map((x) => x && x.text).filter(Boolean).slice(0, 3);   // C-51
+  const carryBody = () => { const c = carryTexts(); return c.length ? { carry: c } : {}; };   // 고른 것이 없으면 보내지 않는다(전과 같은 본문)
   async function makePlan(skipCheck) {
     const text = st.planDraft.trim(); if (!text) return;
     if (!planLive()) { st.plan = FP.board(FP.EXAMPLE_PLAN, null, { example: true }); save(); render(); return say("연습이라 예시 계획이에요. 줄마다 맞는지 봐 주세요."); }
     if (!skipCheck && guard(text, "plan")) return;
     st.warn = null;
-    const r = await planCall("make", "/api/plan", { text, readme: st.planReadme, carry: carryTexts() });   // carry — C-51 이번 단계에 쓰기로 고른 가져온 것(C-48)
+    const r = await planCall("make", "/api/plan", { text, readme: st.planReadme, ...carryBody() });   // carry — C-51 이번 단계에 쓰기로 고른 가져온 것(C-48)
     if (r.ok) { st.plan = FP.board(r.plan); save(); render(); fetchUsage(); return say(r.plan.say); }
     render(); say(r.reason || "계획을 세우지 못했어요");
   }
@@ -2460,7 +2461,7 @@
     const fb = FP.feedback(b);
     if (!skipCheck && guard([...fb.notes.map((n) => n.note), ...fb.answers.map((x) => x.a), fb.general].join("\n"), "planAgain")) return;
     st.warn = null;
-    const r = await planCall("make", "/api/plan", { text: st.planDraft.trim() || b.plan.problem, readme: st.planReadme, prev: b.plan, ...fb, carry: carryTexts() });
+    const r = await planCall("make", "/api/plan", { text: st.planDraft.trim() || b.plan.problem, readme: st.planReadme, prev: b.plan, ...fb, ...carryBody() });
     if (r.ok) { st.plan = FP.board(r.plan, b); save(); render(); fetchUsage(); return say(r.plan.say); }
     render(); say(r.reason || "다시 세우지 못했어요");
   }
@@ -3551,8 +3552,9 @@
     "plan-make": () => makePlan(false),
     "plan-ok": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "ok"); save(); render(); },
     "plan-follow": (i, el) => {   // C-51 앞의 결정대로 — 그 줄을 고칠래요로 두고 의견을 채운다(다시 세우기에서 고친다)
-      const id = el && el.dataset.id, x = st.plan && st.plan.plan.items.find((y) => y.id === id); if (!x || !x.diff) return;
-      st.plan = FP.note(FP.mark(st.plan, id, "fix"), id, `앞의 결정('${x.diff.was}')에 맞춰 고쳐 주세요`); save(); render();
+      const id = el && el.dataset.id, x = st.plan && st.plan.plan.items.find((y) => y.id === id); if (!x || !x.diff || st.plan.confirmed) return;
+      const old = (st.plan.notes[id] || "").trim(), add = `앞의 결정('${x.diff.was}')에 맞춰 고쳐 주세요`;   // 이미 적은 의견은 지우지 않고 뒤에 붙인다
+      st.plan = FP.note(FP.mark(st.plan, id, "fix"), id, old.includes(add) ? old : old ? `${old} / ${add}` : add); save(); render();
     },
     "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); requestAnimationFrame(() => { const t = $nav.querySelector(`[data-act=plan-note][data-id="${el && el.dataset.id}"]`); if (t) t.focus(); }); },
     "plan-confirm": () => { if (!FP.canConfirm(st.plan)) return; st.plan = FP.confirm(st.plan); st.qfocus = "plan"; st.planSel = ""; if (qauto) openQwin("quest"); save(); render(); say("확정했어요! 퀘스트 창에 맡길 일이 생겼어요"); },
