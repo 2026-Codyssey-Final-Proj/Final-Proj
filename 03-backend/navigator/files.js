@@ -15,7 +15,7 @@ function listFiles(dir, { depth = DEPTH, max = MAX, redact = (s) => s } = {}) {
   const files = []; let cut = false, unread = 0;   // unread: 읽지 못한 폴더 수(권한 등) — 빈 폴더와 구분해 알린다(security-records 6-1, 새 맥락 리뷰 2026-10-27)
   const walk = (d, lvl, rel) => {
     let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { unread++; return; }
-    ents = ents.filter((e) => !skip(e)).sort((a, b) => Number(a.isDirectory()) - Number(b.isDirectory()) || a.name.localeCompare(b.name));
+    ents = ents.filter((e) => !skip(e)).sort((a, b) => Number(a.isDirectory()) - Number(b.isDirectory()) || a.name.localeCompare(b.name, "en"));   // F-78: 언어를 고정 — 컴퓨터 언어(ko-KR)를 따르면 한글이 영문 앞에 와 팀마다 순서가 달랐다(2026-10-29)
     for (const e of ents) {
       if (files.length >= max) { cut = true; return; }
       const isDir = e.isDirectory(), p = rel ? `${rel}/${e.name}` : e.name;
