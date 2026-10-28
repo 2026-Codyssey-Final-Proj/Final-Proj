@@ -85,6 +85,16 @@ test("decisions · stageDoc — 넘긴 기준(skipped)은 '됨' 수에 들지 �
   assert.match(doc, /\| 2단계에서 정한 숫자를 실제로 재 보기 \| 됨 \|/);
 });
 
+// F-70(2026-10-28, 결정 모음 A-04): 6단계에서 '코드 파일을 만드시겠습니까?'에 아니요 — 결정 기록의 관문 줄에 '코드 없이 지남'
+test("decisions — 6단계를 코드 없이 지났으면(nocode) 관문 줄에 '코드 없이 지남'", () => {
+  const D = require("../../03-backend/navigator/docs.js");
+  const r = { chap: 5, title: "만들기", at: "2026-10-28", passed: "2026-10-28", nocode: true, items: [{ name: "확인 방법을 먼저 정하고 만들기", lines: ["목차 문서로 확인"], by: "me" }], check: [{ text: "확인 방법을 먼저 정하고 만들기", met: true, evidence: "e" }] };
+  const dec = D.files({ topic: "t", idea: "", results: { 5: r }, redact: (x) => x }).find((f) => f.path === "docs/decisions.md").text;
+  assert.match(dec, /\| 2026-10-28 \| 6단계 \| 관문 \| — \| 이해했어요\(예\) · 기준 1\/1 · 코드 없이 지남 \| 관문 \|/);
+  const dec2 = D.files({ topic: "t", idea: "", results: { 5: { ...r, nocode: undefined } }, redact: (x) => x }).find((f) => f.path === "docs/decisions.md").text;
+  assert.ok(!dec2.includes("코드 없이 지남"));
+});
+
 // F-68(2026-10-28, 이재엽 버튼 "통째로 파일에"): 받은 글은 자르지 않고 docs/00-source/idea.md에 통째로(줄 번호와 함께), 1단계 문서 · 기획서의 '처음 말한 것'은 앞 400자 + 그 파일을 줄로 가리킨다
 test("source — 받은 글 전부를 docs/00-source/idea.md에(줄 번호 · 가림), 1단계 문서와 기획서는 앞 400자 뒤에 '… 통째로: 00-source/idea.md 1 ~ N줄'", () => {
   const long = Array.from({ length: 30 }, (_, i) => `${i + 1}번째 줄 — 동아리 행사 신청 앱 이야기 ${"가".repeat(20)}`).join("\n");

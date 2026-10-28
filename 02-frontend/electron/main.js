@@ -220,8 +220,13 @@ function dropFolder(dir) {
   if (c.ok && savedProject() && path.resolve(savedProject()) === path.resolve(dir)) { try { fs.rmSync(projectFile(), { force: true }); } catch {} }
   return c;
 }
-// 다시 켜면(서버를 켠 뒤) 지난번 폴더를 서버에 다시 알린다 — 폴더가 없어졌으면 조용히 넘어간다(useProject가 false)
-function restoreProject() { const dir = savedProject(); if (dir && Server) Server.useProject(dir); }
+// 다시 켜면(서버를 켠 뒤) 지난번 폴더를 서버에 다시 알린다 — 폴더가 없어졌으면 조용히 넘어간다(useProject가 false).
+// 그 폴더의 훅이 옛 앱 자리를 가리키면 지금 자리로 다시 단다(F-69 — 같으면 아무것도 쓰지 않는다, lib.js refreshDir)
+function restoreProject() {
+  const dir = savedProject(); if (!dir || !Server) return;
+  try { if (fs.statSync(dir).isDirectory()) L.refreshDir(dir, P.backend); } catch {}
+  Server.useProject(dir);
+}
 const afterPick = (r) => (r.ok ? { ...useFolder(r.dir), made: r.made, repo: r.repo || "", config: !!r.config || Project.hasClaudeConfig(r.dir) } : r);   // 가져온 직후에 본 config(커밋돼 온 settings.local.json 포함)를 버리지 않는다   // 만들거나 가져왔으면 같은 길로
 // 섬 창을 앞으로(없으면 만든다) — 메뉴 '창 다시 열기' · 트레이 클릭 · Mac Dock 클릭이 같이 쓴다. 따로 뜨던 모아 보기 창은 2026-10-23에 뺐다
 // 섬 창을 앞으로 — 작업실이 열려 있으면 섬은 그 안에 있으니 작업실을 앞으로(C-41 ⑤). 내려가 있으면 올린다. 트레이 · Dock · 메뉴 '창 다시 열기' · 두 번째 실행이 같이 쓴다

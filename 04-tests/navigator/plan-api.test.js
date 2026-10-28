@@ -28,7 +28,7 @@ fs.writeFileSync(STUB, `const fs = require("node:fs"); let i = ""; process.stdin
   if (argv.includes("--json-schema")) out.structured_output = ${JSON.stringify(REPORT)};
   process.stdout.write(JSON.stringify(out)); setTimeout(() => process.exit(0), 100); });`);
 
-Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "event-token"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: STUB });
+Object.assign(process.env, { CLAUDE_CONFIG_DIR: require("./hook-home.js")(TMP), NAV_EVENT_TOKEN_FILE: path.join(TMP, "event-token"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: STUB });
 for (const k of ["NAV_RECORD", "NAV_TOKENS_FILE", "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"]) delete process.env[k];
 
 const TEXT = "동아리 행사 신청 앱을 만들고 싶어요. 회원이 신청하고 운영진이 목록을 봐요.";
