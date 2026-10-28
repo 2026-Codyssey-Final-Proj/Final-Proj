@@ -68,9 +68,13 @@
   });
   window.addEventListener("resize", layoutCol);
   const data = (t) => ({ ...t.dataset });
+  // C-53 서식 단추(제목 · 굵게 · 목록 · 넣기 · 머리말): 글 칸은 이 창 안에 있어 고른 자리를 섬이 모른다 — 여기서 같은 함수(md-view.js format)로 넣고 input으로 보낸다(섬은 ftext로 받는다)
+  const fmtHere = (t) => { const ta = root.querySelector(`.fv-edit[data-v="${t.dataset.v}"]`); if (!ta || !window.FloeMd) return false;
+    const r = window.FloeMd.format(ta.value, ta.selectionStart, ta.selectionEnd, t.dataset.fmt); ta.value = r.text; ta.focus(); ta.setSelectionRange(r.start, r.end); ta.dispatchEvent(new Event("input", { bubbles: true })); return true; };
   root.addEventListener("click", (e) => {
     const t = e.target.closest("[data-act], [data-bv]");
     if (!t) return;
+    if (t.dataset.act === "ffmt" && fmtHere(t)) return;
     F.winEvent({ type: "click", act: t.dataset.act || "", bv: t.dataset.bv || "", data: data(t), label: t.dataset.label || "", ghost: t.classList.contains("ghost"), tag: t.tagName });
   });
   root.addEventListener("change", (e) => { const t = e.target; if (!t.dataset || (!t.dataset.act && !t.dataset.bv)) return; F.winEvent({ type: "change", act: t.dataset.act || "", bv: t.dataset.bv || "", data: data(t), value: t.value, checked: !!t.checked }); });
@@ -80,6 +84,10 @@
   root.addEventListener("mouseleave", () => { if (colHover) { colHover = false; F.winEvent({ type: "col", hover: false }); } });
   root.addEventListener("focusin", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: true }); });
   root.addEventListener("focusout", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: false }); });
+  // 글 칸의 줄 위치(C-53 상태 줄) — 바뀔 때만 보낸다
+  let caretAt = 0;
+  const caret = (e) => { const t = e.target; if (!t || !t.classList || !t.classList.contains("fv-edit")) return; const line = t.value.slice(0, t.selectionStart).split("\n").length; if (line !== caretAt) { caretAt = line; F.winEvent({ type: "caret", line }); } };
+  root.addEventListener("keyup", caret); root.addEventListener("click", caret); root.addEventListener("select", caret);
   root.addEventListener("input", (e) => { const t = e.target; if (!t.dataset || !t.dataset.act) return; F.winEvent({ type: "input", act: t.dataset.act, data: data(t), value: t.value }); });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); return F.winEvent({ type: "key", key: "Escape", kind }); }

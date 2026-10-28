@@ -791,6 +791,50 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li.now small{color:var(--acc)}.wnav .fn li.new small{color:var(--ok)}.wnav .fn li.fix small{color:#7A3F1F}
 .wnav .fn-ft{margin:auto 0 0;padding:8px 6px 0;border-top:1px solid var(--line);font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);line-height:1.5}
 /* 좁은 작업실(760 아래 — 옆에 섬 칸이 붙은 보통 화면)에서는 파일 칸 · 단계 이름을 숨겨 판에 자리를 준다. 창(.qwin)의 너비로 — 브라우저의 S 판(720)도 같다 */
+/* claude-drafted: 2026-10-28 — C-53 작업실 세 칸(이재엽 버튼 "오른쪽 칸은 섬을 펼치면 접힘" · "서식 단추는 만든다", 목업 ②): 파일 칸 | 작업 칸 | 오른쪽 칸(.wside 280). 머리 줄의 칸 접기 단추(44px, 줄 높이는 그대로), 문서 도구 줄 · 상태 줄, 열어 둔 파일 묶음 */
+.wh .wtgs{display:inline-flex;gap:2px;margin:-7px 0}
+.wh .wtg{min-width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:var(--mute);display:inline-grid;place-items:center;cursor:pointer}
+.wh .wtg svg{width:18px;height:18px}
+.wh .wtg[aria-pressed=true]{color:var(--acc)}
+.wh .wtg:hover{background:var(--acc-soft)}
+.wh .wtg:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.wside{width:280px;flex:none;box-sizing:border-box;padding:12px 14px;background:var(--soft);overflow:auto;display:flex;flex-direction:column;gap:14px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);border-left:1px solid var(--line)}
+.wside h4{margin:0 0 6px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub);text-transform:none;letter-spacing:.02em}
+.wside .ws-sum{margin:0;line-height:1.55}
+.wside .ws-sum b{color:var(--ink)}
+.wside .ws-h{margin:10px 0 4px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.wside ul,.wside ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.wside .ws-toc button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;min-height:36px;padding:0 8px;border-radius:8px;color:var(--ink)}
+.wside .ws-toc button:hover{background:var(--card)}
+.wside .ws-toc button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.wside .ws-toc li.l2 button{padding-left:18px}.wside .ws-toc li.l3 button{padding-left:30px}
+.wside .ws-toc li.empty button{color:var(--sub)}
+.wside .ws-toc small{margin-left:auto;padding:1px 7px;border-radius:999px;background:var(--badbg);color:var(--bad);font-size:calc(11px * var(--ui-scale,1))}
+.wside .ws-mat li{padding:4px 8px;border-radius:8px;background:var(--card);font-size:calc(12px * var(--ui-scale,1))}
+.wside .ws-cells li{padding:6px 8px;border-radius:8px;background:var(--card);color:var(--sub)}
+.wside .ws-cells li.y{color:var(--ink);text-decoration:line-through;text-decoration-color:var(--ok)}
+.wside .ws-cells li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--acc-mid)}
+.wside .ws-unmet li{padding:4px 8px;border-radius:8px;background:var(--warnbg);color:var(--warn);font-size:calc(12px * var(--ui-scale,1))}
+.wnav .fn-h2{margin:0 0 4px;padding:0 6px;font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);font-weight:700}
+.wnav .fn-open{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.wnav .fn-open li.dirty .fn-file{color:var(--warn)}
+.wnav .fn-open .fn-opened{min-height:40px}
+.fv-tools{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:4px 0}
+.fv-tools button{min-height:44px;padding:0 12px;border:0;border-radius:10px;background:var(--soft);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
+.fv-tools button:hover{background:var(--acc-soft)}
+.fv-tools button[aria-pressed=true]{color:var(--acc)}
+.fv-tools button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.fv-tools .fv-sz{display:inline-flex;align-items:center;gap:2px;margin-left:4px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.fv-tools .fv-sz button{min-width:44px;padding:0}
+.fv-tools .fv-find{margin-left:auto;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));width:180px}
+.fv-md,.fv-code,.fv-edit{font-size:calc(13px * var(--fz,1) * var(--ui-scale,1))}
+.fv-md{font-size:calc(14px * var(--fz,1) * var(--ui-scale,1))}
+.fv-code li.hit{background:var(--warnbg)}
+.fv-code li.hit::marker{color:var(--warn)}
+.fv-st{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 10px;border-top:1px solid var(--line);font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.fv-st .st-ai{color:var(--acc)}
+.fv-st .st-me{color:var(--warn)}
+@container (max-width:899px){.wside{display:none}}   /* 브라우저 판(920)에서는 보이고, 그보다 좁으면 숨는다 */
 .qwin{min-width:260px;container-type:inline-size}
 @container (max-width:760px){.wnav,.wh .wst{display:none}}
 .nav.side{width:min(1800px,calc(100vw - 32px))}

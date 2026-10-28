@@ -57,6 +57,8 @@
 | 같은 것, 위 — 가운데 가로 알약 | ⑦ | [col-top-folded.png](col-top-folded.png) |
 | 같은 것, 아래 | ⑦ | [col-bottom-folded.png](col-bottom-folded.png) |
 | 켤 때(주소 없이, 1440 × 900, 브라우저 판) — 작업실(캔버스)이 바로 열리고 섬은 접힌 알약, 알약 옆 말풍선(시간대 인사 · 멈춘 곳 · 섬 펼치기 / 나중에) (C-55) | ① 켤 때 바로 작업실 | [boot-workspace.png](boot-workspace.png) |
+| 작업실 세 칸(앱 창 재현 1440 × 900 — 파일 칸 · 작업 칸 · 오른쪽 칸, 섬은 오른쪽 접힌 알약) (C-53) | ② 문서 열고 고치기 | [ws-app-1440.png](ws-app-1440.png) · [1280](ws-app-1280.png) · [1728](ws-app-1728.png) |
+| 문서를 열어 고치는 중(브라우저 판 920) — 도구 줄(서식 · 글 크기 · 목차 · 찾기) · 상태 줄 · 오른쪽 칸의 목차와 빈 절 (C-53) | ② | [ws-doc.png](ws-doc.png) |
 
 네 가장자리 모두 e2e [pill-overlay.test.js](../../../../04-tests/e2e/pill-overlay.test.js) R-2가 접힌 칸의 바탕이 비치는지(`rgba(0, 0, 0, 0)`)와 알약만 색이 있는지를 잰다. 위 C-46 절의 `pill-col-*-folded.png`가 고치기 전 모습이다.
 F-62(넘긴 기준의 까닭)는 화면이 아니라 문서 — [flow-api.test.js](../../../../04-tests/navigator/flow-api.test.js)가 단계 문서의 '넘김(까닭: …)'과 결정 기록의 '넘김 n — 까닭'을 본다.

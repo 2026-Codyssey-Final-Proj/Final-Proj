@@ -52,7 +52,7 @@ test("C-43 — 파일 칸에서 누르면 작업실에 열린다(md 보기 좋�
     const rows = await page.$$eval(".wnav .fn li", (ls) => ls.map((l) => l.textContent.trim()));
     assert.ok(rows.includes("README.md") && !rows.some((r) => r.includes(".env")), `진짜 목록: ${rows.join(" | ")}`);
     // md 열기 → 보기 좋게 → 원문
-    await page.click('.wnav .fn-file[data-v="' + (await page.$$eval(".wnav .fn-file", (bs) => bs.findIndex((b) => b.textContent.trim() === "README.md"))) + '"]'); await wait(500);
+    await page.click('.wnav .fn-file[data-v="' + (await page.$$eval(".wnav .fn-file:not(.fn-opened)", (bs) => bs.findIndex((b) => b.textContent.trim() === "README.md"))) + '"]'); await wait(500);
     let s = await page.evaluate(() => ({ tab: document.querySelector('.wtabs .ftab button[role=tab][aria-selected="true"]')?.textContent, h1: document.querySelector(".fv-md h1")?.textContent, b: document.querySelector(".fv-md li b")?.textContent, table: !!document.querySelector(".fv-md table"), head: document.querySelector(".fv-h b")?.textContent }));
     assert.deepEqual(s, { tab: "README.md", h1: "동아리 앱", b: "신청", table: true, head: "README.md" });
     if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, "file-md.png") }); }
@@ -60,9 +60,9 @@ test("C-43 — 파일 칸에서 누르면 작업실에 열린다(md 보기 좋�
     assert.ok(await page.$(".fv-code"), "원문은 줄 번호로"); assert.equal(await page.$eval(".fv-code li:first-child span", (e) => e.textContent), "# 동아리 앱");
     // 코드 열기 — 줄 번호, git이 아니라 바뀐 줄 없음
     await page.type(".fn-find", "app"); await wait(400);
-    const found = await page.$$eval(".wnav .fn-file", (bs) => bs.map((b) => b.textContent.trim()));
+    const found = await page.$$eval(".wnav .fn-file:not(.fn-opened)", (bs) => bs.map((b) => b.textContent.trim()));
     assert.deepEqual(found, ["src/app.js"], `찾기: ${found.join(",")}`);
-    await page.click(".wnav .fn-file"); await wait(500);
+    await page.click(".wnav .fn-file:not(.fn-opened)"); await wait(500);
     assert.equal((await page.$$eval(".wtabs .ftab button[role=tab]", (bs) => bs.map((b) => b.textContent))).join(","), "README.md,app.js", "열린 파일 탭 둘");
     assert.equal(await page.$$eval(".fv-code li", (ls) => ls.length), 2); assert.equal(await page.$$eval(".fv-code li.chg", (ls) => ls.length), 0, "git이 아니면 바뀐 줄 없음");
     // 고치기 → 저장(⌘S) → 파일에 쓰임 · 되돌리기

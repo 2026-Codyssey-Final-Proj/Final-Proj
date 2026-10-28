@@ -46,3 +46,18 @@ test("app.js — 연 파일 머리의 '틀로 맡기기' 고르기 · 채팅의 
   assert.match(read("navigator/docmap.html"), /\.\.\/\.\.\/03-backend\/navigator\/board\/board\.js/, "엔진은 앱 안의 사본 — 밖으로 요청하지 않는다");
   assert.ok(fs.existsSync(path.join(__dirname, "../../03-backend/navigator/board/LICENSE")), "MIT 라이선스 사본");
 });
+
+// C-53(2026-10-28 이재엽 버튼: 오른쪽 칸은 섬을 펼치면 접힘 · 서식 단추는 만든다): 작업실 세 칸 — 파일 칸(.wnav: 열어 둔 파일 묶음 · 찾기 · 목록) | 작업 칸(.wbody: 보기 고르기 · 문서 도구 줄 · 상태 줄) | 오른쪽 칸(.wside: 이 문서 — 목차 · 칸 채움 · 재료 / 퀘스트 — 다섯 칸 · 관문)
+test("app.js · win.js · app.css — 작업실 세 칸(파일 · 작업 · 오른쪽), 칸 접기 단추, 섬을 펼치면 오른쪽 칸이 접힘, 문서 도구 줄(서식 · 글 크기 · 목차 · 찾기) · 상태 줄(저장 수 · 바뀐 줄 · 줄 위치 · 줄 끝)", () => {
+  const a = read("navigator/app.js"), w = read("navigator/win.js"), c = read("navigator/app.css");
+  assert.match(a, /<aside class="wside"/, "오른쪽 칸"); assert.match(a, /data-act="wnav-toggle"/, "파일 칸 접기"); assert.match(a, /data-act="wside-toggle"/, "오른쪽 칸 접기");
+  assert.match(a, /const sideOn = \(\) => wsideOpen && \(!WINS \|\| colFolded\(\)\);/, "앱에서 섬을 펼치면(접힌 알약이 아니면) 오른쪽 칸이 접힌다 — 이재엽 버튼");
+  assert.match(a, /class="fn fn-open"/, "파일 칸 맨 위 '열어 둔 파일' 묶음");
+  for (const k of ["h2", "bold", "list", "link", "front"]) assert.match(a, new RegExp(`\\["${k}", "`), `서식 단추 ${k}`); assert.match(a, /data-act="ffmt" data-fmt="\$\{id\}"/, "서식 단추는 ffmt + 종류");
+  assert.match(a, /data-act="fsize" data-v="[-+]"/, "글 크기"); assert.match(a, /data-act="ffind"/, "문서 안 찾기"); assert.match(a, /data-act="ftoc"/, "목차(오른쪽 칸으로)");
+  assert.match(a, /class="fv-st"/, "상태 줄"); assert.match(a, /eol === "crlf" \? "CRLF" : "LF"/, "줄 끝");
+  assert.match(a, /MDV\.format\(/, "서식은 md-view.js format 하나로(브라우저 판)"); assert.match(w, /FloeMd\.format\(/, "앱의 작업실 창도 같은 함수로(글 칸은 창 안에 있다)");
+  assert.match(w, /F\.winEvent\(\{ type: "caret"/, "글 칸의 줄 위치를 섬으로 보낸다");
+  assert.match(c, /\.wside\{/, "오른쪽 칸 모양"); assert.match(c, /@container \(max-width:899px\)\{[^}]*\.wside/, "좁으면(900 아래) 오른쪽 칸은 숨는다");
+  assert.match(c, /\.fv-tools button\{[^}]*min-height:44px/, "도구 줄 단추 44px");
+});
