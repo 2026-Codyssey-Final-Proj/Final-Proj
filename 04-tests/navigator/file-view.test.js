@@ -23,7 +23,7 @@ test("app.js — 파일 칸의 파일은 단추(번호로 연다), 찾기 칸, �
   assert.match(read("navigator/win.js"), /if \(\(e\.metaKey \|\| e\.ctrlKey\) && e\.key\.toLowerCase\(\) === "s"\) \{ e\.preventDefault\(\); return F\.winEvent\(\{ type: "key", key: "s", mod: true, kind \}\); \}/);
   assert.match(read("navigator/index.html"), /<script src="\.\.\/\.\.\/03-backend\/navigator\/md-view\.js" onerror="this\.remove\(\)"><\/script>/);
   const c = read("navigator/app.css");
-  assert.match(c, /\.wnav \.fn li \.fn-file\{all:unset;cursor:pointer;flex:1;min-height:44px;/, "파일 행도 44px"); assert.match(c, /\.wtabs \.ftab \.fx\{[^}]*width:44px;height:44px/, "닫기 단추 44px"); assert.match(c, /\.fpreset\{min-height:44px;/); assert.match(c, /\.fv-code li::before\{content:counter\(ln\)/, "줄 번호"); assert.match(c, /\.fv-code li\.chg\{background:var\(--okbg\)\}/, "바뀐 줄");
+  assert.match(c, /\.wnav \.fn li \.fn-file\{all:unset;cursor:pointer;flex:1;min-height:44px;/, "파일 행도 44px"); assert.match(c, /\.wtabs \.ftab \.ftab-x\{position:absolute;top:-7px;right:-5px;[^}]*width:16px;height:16px/, "닫기 ×는 탭 오른쪽 위 작은 배지"); assert.match(c, /\.wtabs \.ftab \.ftab-x::after\{[^}]*inset:-4px/, "누르는 곳은 24px — 탭 이름을 덮지 않게"); assert.doesNotMatch(c, /\.ftab \.fx\b/, "닫기 단추가 반짝이 효과(.fx — position:fixed)와 이름을 나누면 ×가 왼쪽 위로 밀린다"); assert.match(c, /\.fpreset\{min-height:44px;/); assert.match(c, /\.fv-code li::before\{content:counter\(ln\)/, "줄 번호"); assert.match(c, /\.fv-code li\.chg\{background:var\(--okbg\)\}/, "바뀐 줄");
 });
 
 test("server.js — /api/file은 확인 값(BOOK_ROUTES) · POST_ROUTES, 열기는 목록 번호로만(경로 없음), 저장 본문은 파일 크기만큼, md-view.js는 서버가 내준다", () => {
@@ -73,4 +73,26 @@ test("app.js — 도전과제 탭의 보기 셋(지도 · 흐름 · 상자), 카
   assert.match(a, /prepThink/, "준비된 ① 생각은 캔버스 ① 생각의 초안 자리에");
   assert.ok(!a.includes('["map", "문서 지도"]'), "문서 지도 탭은 도전과제 안의 '상자' 보기로");
   assert.match(read("navigator/index.html"), /03-backend\/navigator\/stagemap\.js/); assert.match(read("../03-backend/navigator/server.js"), /"stagemap\.js"/, "서버가 내준다");
+});
+
+test("목차를 누르면 그 제목 줄로 옮겨 간다 — 줄 번호를 실어 보내고, 섬 · 앱 창 둘 다 한 번만 스크롤(임유정 2026-10-28 '하이라이팅은 되는데 이동은 안 함')", () => {
+  const a = read("navigator/app.js"), w = read("navigator/win.js");
+  assert.match(a, /data-act="ftoc-go" data-v="\$\{esc\(h\.text\)\}" data-line="\$\{h\.line\}"/, "목차 단추에 제목 줄 번호");
+  assert.match(a, /f\.go = f\.edit \? null : \{ line: Number\(el && el\.dataset\.line\) \|\| 0, seq: \+\+tocGo \}/, "누를 때마다 새 차례 번호 — 고치는 중엔 남기지 않는다(끝내면 옛 제목으로 끌려갔다)");
+  assert.match(a, /f\.go && f\.go\.seq === tocGo && f\.go\.line === j \+ 1 \? ` data-go="\$\{f\.go\.seq\}"`/, "마지막으로 누른 것만 표시 — 다른 파일로 갔다 오면 옛 제목으로 끌려가지 않게");
+  for (const [name, s] of [["섬(브라우저 판)", a], ["앱 창", w]]) assert.ok(s.includes('if (go && go.dataset.go !== goShown) { goShown = go.dataset.go; const p = go.closest(".fv-code"); if (p) p.scrollTop = go.offsetTop - (p.clientHeight - go.offsetHeight) / 2; }'), `${name} — 같은 번호로는 다시 끌어가지 않고, 글 칸만 옮긴다`);
+  assert.match(read("navigator/app.css"), /\.fv-code\{position:relative;/, "줄의 offsetTop이 글 칸 기준이 되게");
+});
+
+test("파일 보기의 글 칸 스크롤은 다시 그려도 그 자리 — 같은 파일 · 같은 보기일 때만(섬 · 앱 창 둘 다)", () => {
+  const a = read("navigator/app.js"), w = read("navigator/win.js");
+  assert.match(a, /<div class="fv" data-f="\$\{esc\(f\.path\)\}"/, "어느 파일인지 표시");
+  for (const [name, s] of [["섬(브라우저 판)", a], ["앱 창", w]]) assert.ok(s.includes('if (b && b.className === was.c && fv.dataset.f === was.f) { b.scrollTop = was.top; b.scrollLeft = was.left; }'), `${name} — 같은 파일 · 보기일 때만 되돌린다`);
+  assert.ok(a.indexOf('fvScroll($nav.querySelector(".qwin .fv"), fvWas);') < a.indexOf('const go = $nav.querySelector(".qwin [data-go]")'), "되돌린 뒤에 목차 스크롤 — 목차로 고른 줄이 이긴다");
+  assert.ok(w.indexOf('fvScroll(root.querySelector(".fv"), fvWas);') < w.indexOf('const go = root.querySelector("[data-go]")'), "앱 창도 같은 차례");
+});
+
+test("파일 칸 · 오른쪽 칸의 스크롤도 다시 그려도 그 자리 — 아래쪽 목차를 누르면 맨 위로 올라갔다(임유정 2026-10-28)", () => {
+  const a = read("navigator/app.js"), w = read("navigator/win.js");
+  for (const [name, s] of [["섬(브라우저 판)", a], ["앱 창", w]]) { assert.ok(s.includes('const WS_PANES = [".wnav", ".wside"];'), `${name} — 지키는 칸`); assert.match(s, /WS_PANES\.forEach\(\(c, j\) => \{ const e = [^;]+; if \(e && sideWas\[j\] != null\) e\.scrollTop = sideWas\[j\]; \}\);/, `${name} — 되돌린다`); }
 });
