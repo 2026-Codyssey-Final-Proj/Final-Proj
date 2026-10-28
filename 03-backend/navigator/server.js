@@ -30,6 +30,7 @@ const Steps = require("./steps.js");   // AI 진행(C-12) — 한 일의 말 · 
 const AP = require("./approve.js");    // FR-17 승인 카드의 모양(2026-10-20)
 const { callClaude, usage, claudeVersion, startTask: openClaude, ledger } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
 const Files = require("./files.js");
+const FindLines = require("./findlines.js");   // C-56 R-4 — 폴더의 글 파일에서 칸의 답 후보 줄(2026-10-28)
 const Project = require("./project.js");   // runCommand — 바뀐 줄을 git diff로(C-43, 읽기만)
 const Docmap = require("./docmap.js");
 const Presets = require("./presets.js");   // C-44 맡기기 틀 — 번호로 받은 파일을 raw 경로로 바꿔 Claude Code에 넘긴다(화면은 경로를 보내지 않는다) — claude-drafted: 2026-10-27   // C-45 문서 지도 — 문서와 링크를 보드 데이터로(읽기만) — claude-drafted: 2026-10-27   // C-42 R-8 작업실 파일 칸 — 연결한 폴더의 이름만(읽기만, 2026-10-27) — claude-drafted: 2026-10-27
@@ -64,7 +65,7 @@ const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/a
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
-const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs"];   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
+const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs"];   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide", "/api/apps/link"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다 · Claude Desktop 설정 파일에 잇는다. 밖(터널)에서는 받지 않는다(allowed)
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
@@ -397,6 +398,21 @@ async function readFileNow(i) {
   const changed = await gitChanged(lastFiles.dir, f.rel), text = buf.toString("utf8");
   return [200, { ok: true, i: Number(i), name: f.entry.name, path: f.entry.path, kind: Files.kindOf(f.rel), text, size: st.size, mtime: st.mtimeMs, changed, eol: /\r\n/.test(text) ? "crlf" : "lf" }];   // kind는 가리지 않은 이름으로(가린 이름은 확장자가 사라질 수 있다) · eol은 저장 때 되돌리려고
 }
+// ── C-56 R-4 이미 있는 내용 옮겨 적기(API.md 3-30, 2026-10-28 — 이재엽 버튼 "'옮김' 새 값"): 마지막 목록(3-25)의 글 파일(md · txt, 64KB까지, 20개까지)에서 그 칸의 답 후보 줄을 찾는다 ──
+//   답은 가린 경로 · 줄 번호 · 원문(가린 것) · 목록 번호(파일 보기로 열 수 있게). 경로를 요청에서 받지 않는다(C-43과 같은 규칙). 읽기만
+const FIND_FILES_MAX = 20, FIND_FILE_MAX = 64 * 1024;
+function findNow(q) {
+  const s = projectNow();
+  if (!lastFiles || !s || path.resolve(s.dir) !== path.resolve(lastFiles.dir)) return { ok: true, found: [], why: "folder", reason: "파일 목록을 먼저 받아야 해요(작업실을 다시 열어요)" };
+  const docs = [];
+  for (let i = 0; i < lastFiles.list.length && docs.length < FIND_FILES_MAX; i++) {
+    const e = lastFiles.list[i]; if (e.dir || !["md", "text"].includes(Files.kindOf(e.raw))) continue;
+    const file = Files.safePath(lastFiles.dir, e.raw); if (!file) continue;
+    try { const st = fs.statSync(file); if (!st.isFile() || st.size > FIND_FILE_MAX) continue; const buf = fs.readFileSync(file); if (!Files.isText(buf)) continue; docs.push({ i, path: e.path, text: buf.toString("utf8") }); } catch { /* 못 읽는 파일은 건너뛴다 */ }
+  }
+  const found = FindLines.find(docs, { name: q }).map((x) => ({ ...x, text: Sensitive.redact(x.text) }));
+  return { ok: true, found, files: docs.length, why: "" };
+}
 // C-45 문서 지도(API.md 3-27): 연결한 폴더의 md(docs/** · README.md · CLAUDE.md — 3-25의 목록 안에서)를 읽어(64KB까지, 링크만 보려고) 보드 데이터로. 지금 장 문서는 part, git에서 바뀐 문서는 cand. 경로는 폴더 안 상대 경로만
 const DOCMAP_READ = 64 * 1024, DOCMAP_MAX = 100;   // 문서 100개까지(새 맥락 리뷰 — 200 × 64KB를 한 번에 읽지 않게), 비동기로
 async function docmapNow(nowPath) {
@@ -676,6 +692,7 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/readme") return send(res, 200, readmeBook());   // C-26 내 작업 책(API.md 3-18) — 읽기만
   if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
   if (req.method === "GET" && route === "/api/docmap") { const [code, out] = await docmapNow(new URL(req.url, "http://localhost").searchParams.get("now") || ""); return send(res, code, out); }   // C-45 문서 지도(API.md 3-27) — 읽기만
+  if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만
   if (req.method === "GET" && route === "/api/file") { const [code, out] = await readFileNow(new URL(req.url, "http://localhost").searchParams.get("i")); return send(res, code, out); }   // C-43 파일 열기(API.md 3-26)
   if (req.method === "POST" && route === "/api/preset") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = presetStart(body); return send(res, code, out); }   // C-44 틀로 맡기기(API.md 3-28)
   if (req.method === "POST" && route === "/api/file") { const body = await readJson(req, Files.FILE_MAX * 2 + 1000); if (body === TOO_BIG) return refuse(res, `너무 커요 — ${Math.round(Files.FILE_MAX / 1024)}KB까지만 써요`, 413); const [code, out] = writeFileNow(body); return send(res, code, out); }   // C-43 파일 저장

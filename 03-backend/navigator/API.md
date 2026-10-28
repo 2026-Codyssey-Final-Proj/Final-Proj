@@ -38,6 +38,7 @@
 | `POST /api/quest` | 섬 — 퀘스트를 만들 때(C-22, 2026-10-21) | 출처 · 확인 값(쿠키) | `{ok, quest:{desc, why, qa[]}, tokens}` | 403 · 413 · 400 · 502 |
 | `GET /api/files` | 섬 — 작업실을 열 때(C-42 R-8, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, files:[{name, path, dir, depth}], total, cut, unread, depth, max, why}` — 연결한 폴더의 이름만, 깊이 3 · 200개 | 403 |
 | `GET /api/file?i=N` | 섬 — 파일 칸에서 파일을 누를 때(C-43, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, i, name, path, kind, text, size, mtime, changed}` — 목록의 N번 파일(글 파일 · 512KB까지), 바뀐 줄은 git과 다른 [시작, 개수]. `ok:false`면 `why`(big · binary) | 403 · 400 · 404 |
+| `GET /api/find?q=<할 일 이름>` | 섬 — 묻는 카드 · 확인 카드의 '폴더에서 찾기' 칩(C-56 R-4, 2026-10-28) | 출처 · 확인 값(쿠키) | `{ok, found:[{i, path, line, text, hits}], files}` — 마지막 목록의 글 파일(md · txt, 64KB · 20개까지)에서 그 칸의 답 후보 줄 셋(원문 그대로, 가림). 목록을 모르면 `why:"folder"` | 403 · 400 |
 | `GET /api/docmap?now=<경로>` | 작업실의 문서 지도 탭(C-45, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, board}` — 문서(docs/** · README · CLAUDE.md)를 상자로, md 링크를 선으로 이은 archi-board 보드 데이터 | 403 |
 | `POST /api/file` | 섬 — 연 파일을 저장할 때(C-43) | 출처 · 확인 값(쿠키) | `{i, path, text, mtime, eol?, force?, overwrite?, ignoreBusy?, commit?}` → `{ok, mtime, task, note}` — 그 파일에만 쓰고 commit이면 그 파일만 커밋 · 푸시를 Claude Code에 | 403 · 400 · 404 · 409(moved · sensitive · changed · busy) · 413 · 500 |
 | `POST /api/preset` | 섬 — 연 파일 머리의 '틀로 맡기기' · 채팅 '문서 틀'(C-44, 2026-10-27) | 출처 · 확인 값(쿠키) | `{i 또는 path(docs/…md), preset, stage?, note?}` → 3-16과 같은 `{ok, task, preset, name}` — presets.js의 글 · 끝 조건으로 Claude Code에 | 403 · 400 · 404 · 409 · 502 |
@@ -640,3 +641,11 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 본문 `{ tier?, idea, prev, base? }` — `idea` 받은 글(400자), `prev` 1 · 2단계 결과(`[{ stage, items }]`, 3-22와 같은 모양), `base` 기준 카드를 '칸: 내용' 줄로(1,500자까지, 3-22의 `base`와 같다 — 초안 요청에도 같이 간다).
 - 답 `{ ok, prepare: { cards: { "2": { title, think, act, from }, … "7": … }, say }, tokens }` — 코드 2 ~ 7(앱 3 ~ 8단계)이 다 있어야 한다(빠지면 502). `title`은 이 프로젝트의 말로 된 이름(40자 — 전문 용어가 들면 비워 화면이 할 일 이름으로), `think` ① 생각, `act` ② 행동(맡길 일), `from` 근거(기획서 n절 / 없으면 '새로 정함'). ③ 기록 · ④ 저장 · ⑤ 버전은 화면이 규칙(stagemap.js)으로 더한다.
 - 받은 글 · 기준 · 지난 단계 결과에 없는 숫자 · 사람 · 날짜는 지어내지 않는다(요청문). 빠른 모델. 연습 모드는 부르지 않는다 — 규칙으로만.
+
+
+### 3-30. `GET /api/find?q=<할 일 이름>` — 이미 있는 내용 옮겨 적기: 폴더의 글 파일에서 칸의 답 후보 줄 (C-56 R-4, 2026-10-28)
+
+<!-- claude-drafted: 2026-10-28 — questfit 넘김 ⓔ(이재엽 버튼 "'옮김' 새 값"). 기획서 · README에 이미 있는 답을 다시 적게 하지 않고, 그 줄을 보여 고르게 한다 -->
+- `q`는 그 칸의 할 일 이름(+ 묻는 말), 200자까지. 없으면 400.
+- 답 `{ ok, found: [{ i, path, line, text, hits }], files, why }` — 3-25의 마지막 목록 안에서 글 파일(md · txt — 내용이 글이고 64KB까지, 앞에서 20개)만 읽어 낱말이 겹치는 줄 셋(`findlines.js`: 조사를 떼고 틀 말을 뺀 낱말, 제목 줄이 맞으면 그 아래 첫 글 줄, 코드 · 표 · 200자 넘는 줄은 뺀다). `text`는 원문 그대로(목록 표시만 떼고, 비밀값 · 전화 · 이메일은 가림), `i`는 목록 번호(3-26으로 열 수 있다), `path`는 가린 상대 경로. 목록을 아직 안 받았거나 폴더가 바뀌었으면 `found:[]`에 `why:"folder"`.
+- 화면: 묻는 카드 · 확인 카드에 '폴더에서 찾기' 칩 → 후보 줄 카드(파일 · 줄 · 원문) → '이 줄로'를 누르면 그 줄이 그대로 그 칸에 들어가고 누가 = **옮김**(quest.js BY `moved`), '원문 보기'는 파일 보기(3-26)로 연다. 원문끼리 다르면 셋 다 보여 사람이 고른다 — 서버는 합치거나 지어내지 않는다. 연습 모드 · 서버 없이는 칩이 없다.

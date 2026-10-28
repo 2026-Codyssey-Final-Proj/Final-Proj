@@ -211,3 +211,11 @@ test("app.js — 이름은 nameOf로(공책 · 확인 카드 · 캔버스 ③ ·
   assert.match(a, /callAI\("\/api\/prepare", \{ tier: st\.tier, idea: ideaNow\(\), prev: prevOf\(2\), base: baseText\(\) \}\)/, "준비 요청은 AI 한 번"); assert.match(a, /mergePrepared\(/, "규칙 카드와 합침");
   assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /POST \/api\/prepare/, "API.md");
 });
+
+// C-56 R-4(2026-10-28): 묻는 카드 · 확인 카드에 '폴더에서 찾기' 칩 — /api/find로 후보 줄을 받아 원문(파일 · 줄)과 나란히, '이 줄로'를 누르면 그 줄 그대로 '옮김'(by moved), 원문은 파일 보기로 연다. 서버 없이 · 연습은 칩이 없다
+test("app.js — 폴더에서 찾기: 칩 → /api/find → 후보 줄 카드(파일 · 줄 · 원문) → '이 줄로' = fillNow(text, 'moved')", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /act: "find-lines"/, "칩"); assert.match(a, /fetch\(`\/api\/find\?q=\$\{encodeURIComponent\(/, "서버에서 찾는다"); assert.match(a, /"find-use": /, "이 줄로");
+  assert.match(a, /fillNow\(x\.text, "moved"\)/, "그 줄 그대로 옮김"); assert.match(a, /class="found"/, "후보 줄 카드"); assert.match(a, /canLive && st\.mode !== "fixture"/, "연습 · 서버 없이는 없다");
+  assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /GET \/api\/find/, "API.md");
+});

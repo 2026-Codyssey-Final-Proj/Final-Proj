@@ -120,7 +120,7 @@ test("app.js canvasPane — R-9 단계 칩: '시작 ✓' · 지난 장 'n ✓ V.
   assert.ok(cv.includes("const curItem = ") && cv.includes("맡긴 일 ${pg.done}/${pg.total}"), "② 행동 — 지금 맡긴 일의 이름과 진행");
   assert.ok(cv.includes('class="cv-files"') && cv.includes("`docs/${slug}/${slug.slice(3)}.md`") && cv.includes("FDOCS.MAIN_DOC, FDOCS.LOG_DOC"), "④ 저장 — 올라갈 파일 이름(단계 문서 · 기획서 · 결정 기록)");
   assert.ok(cv.includes("const unmet = ") && cv.includes("남은 기준 ${left()}") && cv.includes('class="cv-unmet"'), "관문 — 남은 기준 수와 '안 됨'인 기준 이름");
-  assert.ok(cv.includes("정한 줄 ${") && cv.includes("QU.filled(q, i) && ln ? ln : QU.shortOf(o.name)"), "③ 기록 — 적은 칸은 그 줄(정한 것)을 보인다");
+  assert.ok(cv.includes("정한 줄 ${") && cv.includes("QU.filled(q, i) && ln ? ln : QU.nameOf(q, i)"), "③ 기록 — 적은 칸은 그 줄(정한 것), 빈 칸은 이 프로젝트의 말로 된 이름(C-56 R-2)을 보인다");
   assert.match(c, /\.cv-files,\.cv-unmet\{list-style:none;padding:0;/); assert.match(c, /\.cv-unmet li\{color:var\(--bad\)/);
   assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{[\s\S]*\.cv-stg\{left:calc\(672 \* var\(--u\)\);top:calc\(8 \* var\(--u\)\);width:calc\(412 \* var\(--u\)\);flex-wrap:wrap\}/, "줌에서는 칩이 판 오른쪽 끝 안에서 줄 바꿈(이름이 붙어 길어진다)");
 });
