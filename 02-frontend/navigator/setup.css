@@ -34,7 +34,7 @@ html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투�
 .su-steps li.ok .su-ck{background:var(--acc-btn);border-color:var(--acc-btn);color:var(--acc-ink)}
 .su-steps li.ok b{color:var(--sub)}
 .su-code{display:flex;align-items:center;gap:6px;max-width:100%;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px 4px 4px 12px}
-.su-code code{font:calc(12.5px * var(--ui-scale,1))/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace;color:var(--ink);overflow-x:auto;white-space:nowrap;min-width:0}
+.su-code code{font:calc(12.5px * var(--ui-scale,1))/1.5 var(--font-code);color:var(--ink);overflow-x:auto;white-space:nowrap;min-width:0}
 .su-copy{min-height:32px!important;flex:none}
 .su-link{font-size:calc(13px * var(--ui-scale,1));color:var(--acc);font-weight:600}
 .su-key{display:flex;flex-direction:column;gap:8px;width:100%;max-width:460px}
@@ -85,5 +85,5 @@ html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투�
   .su-pick{background:rgba(255,255,255,.06)}
   .su-key input,.su-card input{background:rgba(255,255,255,.08)}
 }
-@media (min-width:601px) and (prefers-reduced-transparency:reduce){#floe-setup .su{background:#1A2766;-webkit-backdrop-filter:none;backdrop-filter:none}}
+@media (min-width:601px) and (prefers-reduced-transparency:reduce){#floe-setup .su{background:#363E62;-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (prefers-reduced-motion:reduce){#floe-setup .su{animation:none}.su-pick{transition:none}}

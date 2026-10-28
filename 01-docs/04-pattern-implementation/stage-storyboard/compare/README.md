@@ -64,3 +64,13 @@
 
 네 가장자리 모두 e2e [pill-overlay.test.js](../../../../04-tests/e2e/pill-overlay.test.js) R-2가 접힌 칸의 바탕이 비치는지(`rgba(0, 0, 0, 0)`)와 알약만 색이 있는지를 잰다. 위 C-46 절의 `pill-col-*-folded.png`가 고치기 전 모습이다.
 F-62(넘긴 기준의 까닭)는 화면이 아니라 문서 — [flow-api.test.js](../../../../04-tests/navigator/flow-api.test.js)가 단계 문서의 '넘김(까닭: …)'과 결정 기록의 '넘김 n — 까닭'을 본다.
+
+## 디자인 바탕 · 맞춤 퀘스트 · 지도 보강 (2026-10-28, 브랜치 `v2/design-questfit`) <!-- claude-drafted: 2026-10-28 -->
+
+[디자인 넘김](../../../00-overview/기록/fable-handoff-2026-10-28-design.md) ⓐ+ · ⓔ+, [questfit 넘김](../../../00-overview/기록/fable-handoff-2026-10-28-questfit.md) ⓐ ~ ⓕ. 목업은 [캔버스 v10](https://claude.ai/artifact/1To4aBVaPbF74QoBjy7Pf3)과 [맞춤 퀘스트 캔버스](https://claude.ai/artifact/UbhwLS5bcB2TWR2Pmcd3RX)(이재엽 계정).
+
+| 장면 | 목업 보드 | 사진 |
+|---|---|---|
+| 1440 × 900 — 섬(#363E62) + 작업실(종이 #F2F5FA), 글 Gowun Dodum · 제목 Bagel Fat One (C-57) | ① ③ | [design-1440.png](design-1440.png) |
+| 1280 × 900 — 같은 것 | ① ③ | [design-1280.png](design-1280.png) |
+| 앱의 섬(in-app) + 설정 (C-57) | ③ | [design-settings.png](design-settings.png) |

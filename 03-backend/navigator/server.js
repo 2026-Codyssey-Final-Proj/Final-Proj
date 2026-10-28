@@ -121,7 +121,7 @@ function hasToken(headers) {
 //   /                 내비게이터        /index.html         시연 입구(02-frontend/index.html)
 //   /library/…  /navigator/…   02-frontend의 화면들   /03-backend/…   규칙
 const ROOT = "../../";
-const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
+const TYPES = { html: "text/html", css: "text/css", js: "text/javascript", woff: "font/woff", txt: "text/plain; charset=utf-8" };   // woff — 글꼴 셋(C-57)
 const STATIC = {
   // dive.js·dive.css — 내비게이터(`dive.js` → /dive.js)와 서고(`../navigator/dive.js` → /navigator/dive.js)가 같이 쓴다. 2026-10-18까지 빠져 있었다
   // notes.js — 실사용의 '느낀 점 남기기'(2026-10-19)
@@ -129,7 +129,7 @@ const STATIC = {
   // greet.js — 켤 때 인사의 시간표(C-10, 2026-10-20)
   // canvas-pan.js — 작업실 캔버스를 끌어서 옮기고 크게 · 작게(F-66, 2026-10-27)
   // morph.js — 섬의 움직임 규칙(C-14, 2026-10-20). 내비게이터는 hub.js(순수 함수) · steps.js도 부른다(C-13 기본 화면)
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js", "greet.js", "morph.js", "win.html", "win.js", "docmap.html", "canvas-pan.js"],   // docmap.html — 문서 지도(C-45, 2026-10-27)
+  "02-frontend/navigator": ["fonts.css", "index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js", "greet.js", "morph.js", "win.html", "win.js", "docmap.html", "canvas-pan.js"],   // docmap.html — 문서 지도(C-45, 2026-10-27)
   "03-backend/navigator/board": ["board.js", "board.css"],   // archi-board 엔진 v1 사본(C-45) — docmap.html이 부른다   // win.html · win.js — 앱의 설정 창 · 퀘스트 창(C-22, 2026-10-21)
   // 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다. 2026-10-19(이재엽): learn.js · skills.js를 지우고, 지식 은하(sky.*)는 내주지 않는다(길을 막음 — 파일은 남김)
   // my-books.js — 내 책 · 예시 책 지우기(2026-10-19 실사용). 내비게이터(`../library/my-books.js`)와 서고가 같이 쓴다
@@ -138,6 +138,8 @@ const STATIC = {
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "my-books.js", "book-view.js", "book-view.css", "shelves.js", "schedule.js", "search.js", "spotlight.js"],
   // hub.js — 섬의 알림 · AI 진행 판이 쓰는 순수 함수. 따로 뜨던 모아 보기 창(index.html · hub.css)은 2026-10-23에 뺐다
   "02-frontend/hub": ["hub.js"],
+  // 글꼴 셋(C-57, 2026-10-28) — fonts.css가 부른다. 앱 안 파일이라 밖으로 나가는 요청이 없다
+  "02-frontend/assets/fonts": ["BagelFatOne-Regular.woff", "GowunDodum-Regular.woff", "NanumGothicCoding-Regular.woff", "NanumGothicCoding-Bold.woff"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다

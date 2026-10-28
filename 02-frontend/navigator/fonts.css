@@ -1,0 +1,6 @@
+/* claude-drafted: 2026-10-28 — C-57 글꼴 셋(이재엽 버튼 "자주 쓰는 한글만 남겨 작게"): 제목 · 단계 숫자 Bagel Fat One, 글 Gowun Dodum, 코드 · 파일 이름 Nanum Gothic Coding.
+   파일은 앱 안(../assets/fonts/, SIL OFL)에 — 인터넷 없이도 같은 화면이고 밖으로 요청하지 않는다(security-records 3절). 자주 쓰는 한글 2,350자(KS X 1001) + 영문 · 숫자 · 기호만 남겼다(pyftsubset) — 드문 글자는 다음 글꼴로 */
+@font-face{font-family:"Gowun Dodum";src:url("../assets/fonts/GowunDodum-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Bagel Fat One";src:url("../assets/fonts/BagelFatOne-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Nanum Gothic Coding";src:url("../assets/fonts/NanumGothicCoding-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Nanum Gothic Coding";src:url("../assets/fonts/NanumGothicCoding-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
