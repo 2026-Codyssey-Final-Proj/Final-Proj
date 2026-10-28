@@ -135,7 +135,7 @@ test("F-76 — 작업실 캔버스 칸 · 섬 말풍선 · 알약의 word-break�
     await new Promise((r) => setTimeout(r, 400));
     if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await new Promise((r) => setTimeout(r, 300)); }
     await page.click("[data-act=qtab][data-tab=canvas]"); await new Promise((r) => setTimeout(r, 300));
-    const got = await page.evaluate(() => Object.fromEntries([".cv-c .ch", ".cv-c p", ".isl .msg > .b", ".isl .say", ".wnav .fn-ft"].map((s) => { const el = document.querySelector(s); return [s, el ? getComputedStyle(el).wordBreak : "없음"]; })));
+    const got = await page.evaluate(() => Object.fromEntries([".cv-c .ch", ".cv-c p", ".isl .msg > .b, .isl .hello-q", ".isl .say", ".wnav .fn-ft"].map((s) => { const el = document.querySelector(s); return [s, el ? getComputedStyle(el).wordBreak : "없음"]; })));
     assert.deepEqual(got, Object.fromEntries(Object.keys(got).map((k) => [k, "keep-all"])), JSON.stringify(got));
   } finally { await browser.close(); }
 });

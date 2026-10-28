@@ -117,11 +117,11 @@ test("창 화면(win.html · win.js) — 섬이 보낸 내용을 보이고, 누�
 test("섬(app.js) — 앱이 창을 열 수 있으면(WINS) 섬 옆의 판 대신 퀘스트 창(설정은 2026-10-25부터 섬 안의 판): 열림 · 닫힘 · 내용이 바뀐 것만 보낸다, 자리를 바꾸면 닫았다 다시 연다, 창의 누름은 섬의 같은 손잡이로, 서고로 가면 닫는다", () => {
   const app = read("navigator/app.js");
   assert.match(app, /const WINS = !!\(window\.floeApp && window\.floeApp\.openWin\);/);
-  assert.match(app, /if \(WINS\) return isl;   \/\/ 앱: 퀘스트 창은 따로 뜬다\(syncWins\)/);
+  assert.match(app, /if \(WINS \|\| !st\.qwin \|\| inCol\) return isl;   \/\/ 앱: 작업실은 따로 뜬다\(syncWins\)/);   // 작업실 개편 PR ②(2026-10-29, C-58 ~ C-62)로 바뀜
   assert.match(app, /for \(const \[kind, on, html\] of \[\["quest", st\.qwin, st\.qwin \? qwinHTML\(\) \+ islCol\(\) : ""\]\]\)/, "따로 뜨는 창은 작업실 하나 — 작업실 판 + 섬의 옆 칸(C-41 ⑤)");
   assert.match(app, /if \(on && !winOpen\[kind\]\) \{ winOpen\[kind\] = true; winHtml\[kind\] = html; window\.floeApp\.openWin\(kind, \{ side, size: winSize\(kind\), html, place: true \}\); \}/);
   assert.match(app, /else if \(on && html !== winHtml\[kind\]\) \{ winHtml\[kind\] = html; window\.floeApp\.sendWin\(kind, html\); \}/, "바뀐 것만");
-  assert.match(app, /side = QU\.sideOf\(el\.dataset\.v\); writeLS\(SIDE_KEY, side\); render\(\);/, "자리를 바꾸면 다시 그릴 뿐 — 작업실 안 옆 칸의 자리는 class로 간다(C-41 ⑤ 2026-10-27)");
+  assert.match(app, /const side = "right";/, "섬은 작업실 오른쪽만 — 자리 단추는 2026-10-28 합의로 뺐다(PR ②)");
   assert.match(app, /if \(winClosing\[kind\]\) \{ winClosing\[kind\] = false; return; \}/, "내가 닫은 것은 상태를 끄지 않는다");
   assert.match(app, /if \(p\.type === "click"\) \{ if \(p\.bv\) return bvClick\(el\); return clickAct\(el\); \}/);
   assert.match(app, /if \(p\.type === "change"\) return onChange\(el\);/); assert.match(app, /if \(p\.type === "input"\) \{ if \(st\.ui === "home" && timer\) \{ clearIdle\(\); scheduleIdle\(\); \} return onInput\(el\); \}/, "글을 치면 접히는 시계를 되돌린다(C-46)");
