@@ -21,11 +21,10 @@ html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
 html.in-win.win-quest #root>.wh{background:#E2E9F4}   /* 머리 줄은 작업실 바탕(눈색) — 판과 옆 칸 위에 하나 */
 /* 창 = 머리 줄(.wh, 창 전체 폭) + 작업실 판(.win) + 섬 옆 칸(.isl-col, C-41 ⑤) — C-62 머리 줄 하나(2026-10-29): 격자 "wh wh" / "win isl". 옆 칸은 오른쪽만(2026-10-28 합의 — 위 · 아래 · 왼쪽 자리를 뺐다),
    너비는 --col-w(win.js, 접히면 56). 0.3초(기준 8), 움직임 줄이기면 바로 */
-#root{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) var(--col-w,420px);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"wh wh" "win isl";transition:grid-template-columns .3s cubic-bezier(.2,.8,.2,1)}
+#root{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) var(--col-w,420px);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"wh wh" "win isl";transition:--col-w .3s cubic-bezier(.2,.8,.2,1)}   /* --col-w는 app.css @property — 가운데(C-61)도 같은 변수로 0.3초 */
 #root>.wh{grid-area:wh}
 #root>.win{grid-area:win;min-width:0;min-height:0;width:auto!important;height:auto!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}
 #root>.isl-col{grid-area:isl;min-width:0;min-height:0}
-#root:has(>.isl-col.center){grid-template-columns:auto minmax(0,1fr)}   /* C-61 섬이 가운데(작업 칸 전체) — app.css와 같은 규칙, 창 격자에도 */
 html.hd-drag #root{transition:none}
 @media (prefers-reduced-motion:reduce){#root{transition:none}}
 #root .wh{-webkit-app-region:drag;cursor:grab}

@@ -44,7 +44,7 @@ test("win.js · win.html — 옆 칸의 자리는 html[data-side], 크기는 --c
   assert.match(j, /const ls = \(k\) => \{ try \{ return \+localStorage\.getItem\(k\) \|\| 0; \} catch \{ return 0; \} \};/, "저장소가 막혀도 창은 돈다");
   assert.match(j, /lg2\.scrollTop = lgTop === null \|\| lgEnd \? lg2\.scrollHeight : lgTop;/, "대화 기록 — 맨 아래를 보고 있었으면 새 말도 맨 아래");
   assert.match(j, /layoutCol\(\);\n  \}\);/, "다시 그릴 때마다 칸을 다시 잰다");
-  assert.match(h, /#root\{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:minmax\(0,1fr\) var\(--col-w,420px\);grid-template-rows:auto minmax\(0,1fr\);grid-template-areas:"wh wh" "win isl";transition:grid-template-columns \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/, "격자 — 머리 줄 하나 아래 판 · 옆 칸(오른쪽만), 0.3초(기준 8)");
+  assert.match(h, /#root\{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:minmax\(0,1fr\) var\(--col-w,420px\);grid-template-rows:auto minmax\(0,1fr\);grid-template-areas:"wh wh" "win isl";transition:--col-w \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/, "격자 — 머리 줄 하나 아래 판 · 옆 칸(오른쪽만), 0.3초(기준 8)");
   assert.ok(!h.includes("data-side"), "위 · 아래 · 왼쪽 자리 규칙은 뺐다(2026-10-28 합의)");
   assert.match(h, /@media \(prefers-reduced-motion:reduce\)\{#root\{transition:none\}\}/);
   assert.ok(!j.includes("onDock") && !j.includes("dock-size"), "창 간 통신은 없다");

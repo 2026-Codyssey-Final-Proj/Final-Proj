@@ -693,7 +693,8 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 /* claude-drafted: 2026-10-27 두승현 — C-41 ⑥ 작업실의 펼쳐진 환경(목업 DockPrototype): 머리 한 줄(프로젝트 · 단계 · 탭 · LV · 조개 · 크기 · 닫기) + 왼쪽 파일 칸(.wnav, 200px — 지금은 예시 데이터) + 판(.wbody). 좁으면(760 아래) 파일 칸 · 단계 이름은 숨긴다 */
 .wh{flex-wrap:wrap}
 /* C-62 머리 줄 하나(2026-10-29): 작업실 머리(.wh)가 창 전체 폭의 첫 줄 — 작업실 판(.win)과 섬 옆 칸(.isl-col)이 그 아래 나란히. 섬 단추 묶음(.hisl)은 오른쪽 끝(섬 쪽). 앱 창은 win.html #root가 같은 격자 */
-.wsx{display:grid;grid-template-columns:minmax(0,1fr) 420px;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"wh wh" "win isl"}
+@property --col-w{syntax:"<length-percentage>";inherits:true;initial-value:420px}   /* 옆 칸 너비 — 등록해야 transition이 돈다(C-61 가운데 ↔ 옆 0.3초) */
+.wsx{display:grid;grid-template-columns:minmax(0,1fr) var(--col-w,420px);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"wh wh" "win isl"}
 .wsx>.wh,#root>.wh{grid-area:wh;border-radius:20px 20px 0 0}
 .wsx>.win,#root>.win{grid-area:win;border-radius:0 0 0 20px;border-top:0}
 .wsx>.win{width:auto!important;max-width:100%}   /* 브라우저 판의 inline width(920)보다 격자 칸이 먼저 — 1372 아래에서 옆 칸 밑으로 들어갔다(새 맥락 리뷰) */
@@ -701,9 +702,10 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wsx{max-height:calc(100vh - 28px)}   /* 브라우저 판: 창보다 크지 않게 — 옆 칸의 섬은 안에서 스크롤(입력 칸이 화면 밖으로 나가지 않게) */
 .wsx>.isl-col{height:auto}
 /* C-61 섬 자리(작업실 개편 PR ③, 2026-10-29): 칸이 하나도 적히지 않은 동안 섬은 작업 칸 전체의 둥근 카드(center) — 머리 줄 · 왼쪽 칸은 그대로. 사람이 [칸 n개에 적기]를 누르면 옆 칸(420)으로 0.3초(기준 8), 움직임 줄이기면 바로 */
-.wsx{transition:grid-template-columns .3s cubic-bezier(.2,.8,.2,1)}
+.wsx{transition:--col-w .3s cubic-bezier(.2,.8,.2,1)}
 @media (prefers-reduced-motion:reduce){.wsx{transition:none}}
-.wsx:has(>.isl-col.center),#root:has(>.isl-col.center){grid-template-columns:auto minmax(0,1fr)}
+.wsx:has(>.isl-col.center){--col-w:calc(100% - 200px)}   /* 왼쪽 파일 칸(200)만 남기고 섬 — 트랙 종류를 바꾸지 않아 0.3초가 보간된다. 앱 창은 win.js가 같은 값을 --col-w에 */
+.wsx:not(:has(.wnav)):has(>.isl-col.center){--col-w:100%}
 .wsx:has(>.isl-col.center) .wbody,.wsx:has(>.isl-col.center) .wside,#root:has(>.isl-col.center) .wbody,#root:has(>.isl-col.center) .wside{display:none}
 .isl-col.center{align-items:center;padding:24px}
 .isl-col.center .isl{width:min(760px,100%);border-radius:28px}

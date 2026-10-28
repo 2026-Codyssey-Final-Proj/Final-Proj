@@ -315,15 +315,14 @@
   //   적는 것은 사람이 [칸 n개에 적기]를 누를 때 — 여기서는 제안만. 보낸 말 2,000자 · 최근 말 12줄(300자) · 칸에 적을 줄 400자 ──
   const CHAT_MAX = 2000, CHAT_HISTORY_MAX = 12, CHAT_LINE_MAX = 300, CHAT_REPLY_MAX = 400, CHAT_FILL_MAX = 400, CHAT_FILLS_MAX = 8;
   const CHAT_SCHEMA = obj({ reply: str, fills: list(obj({ i: { type: "integer", minimum: 0, maximum: 7 }, text: str }), 0, CHAT_FILLS_MAX) });
-  function chatPrompt(stage, tier, { text = "", cells = [], history = [], idea = "" } = {}) {
+  function chatPrompt(stage, { text = "", cells = [], history = [], idea = "" } = {}) {
     const s = STAGES[stage];
-    return prompt([`사용자가 ${s.n + 1}단계 "${s.title}"(${s.does})를 하면서 플로로와 이야기한다(보낸말). 묻는 말이면 답하고, 이야기 속에 이 단계의 칸(지금칸)에 적을 만한 윤곽이 나오면 그 칸에 적을 한 줄을 fills로 정리한다. 적는 것은 사용자가 누를 때 — 플로로는 제안만 한다.`,
-      `지금칸: ${cells.map((c, i) => `(${i + 1}) ${c.name}${c.line ? ` — 적은 줄: ${c.line}` : " — 비었음"}`).join(" ")}`], [
+    return prompt([`사용자가 ${s.n + 1}단계 "${s.title}"(${s.does})를 하면서 플로로와 이야기한다(보낸말). 묻는 말이면 답하고, 이야기 속에 이 단계의 칸(지금칸)에 적을 만한 윤곽이 나오면 그 칸에 적을 한 줄을 fills로 정리한다. 적는 것은 사용자가 누를 때 — 플로로는 제안만 한다.`], [
       FLORO_VOICE,
       `reply는 사용자에게 할 말 ${SHORT}. 묻는 말에는 답하고, 윤곽이 보이면 "칸 n개에 적을 수 있어요"처럼 알린다.`,
       `fills는 이번 말로 채울 수 있는 칸만 — i는 지금칸의 번호에서 1을 뺀 값(0부터), text는 그 칸에 적을 한 줄(${CHAT_FILL_MAX}자 안쪽, 사용자가 한 말을 그대로 살려서). 윤곽이 없으면 빈 배열.`,
       "이미 적은 줄이 있는 칸은 사용자가 바꾸자고 했을 때만 넣는다. 글에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다.",
-    ], tag("처음말한것", idea), tag("최근대화", history.map((h) => `${h.who === "me" ? "사용자" : "플로로"}: ${h.text}`).join("\n")), tag("보낸말", String(text).trim()));
+    ], tag("지금칸", cells.map((c, i) => `(${i + 1}) ${c.name}${c.line ? ` — 적은 줄: ${c.line}` : " — 비었음"}`).join("\n")), tag("처음말한것", idea), tag("최근대화", history.map((h) => `${h.who === "me" ? "사용자" : "플로로"}: ${h.text}`).join("\n")), tag("보낸말", String(text).trim()));   // 칸 이름 · 적은 줄도 tag 안(다른 요청문과 같이 — 주입 면)
   }
   // 답의 모양 — reply는 400자, fills는 지금 칸 안의 번호만 · 한 칸에 하나 · 빈 글은 버림. 틀리면 null
   function parseChat(o, n) {

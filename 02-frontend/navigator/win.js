@@ -50,8 +50,8 @@
     h.dataset.side = side; hd.hidden = !side || folded || center;   // 접힌 칸(C-46 R-2)은 손잡이 없이 두께 FOLD — 작업실이 그만큼 넓어진다(0.3초, win.html)
     if (!side) return;
     const axis = axisOf(side), v = (col[axis] = clamp(axis, col[axis]));
-    h.style.setProperty("--col-w", `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);
-    if (folded) return;
+    h.style.setProperty("--col-w", center ? (root.querySelector(".wnav") ? "calc(100% - 200px)" : "100%") : `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);   // center — 왼쪽 파일 칸만 남기고 섬(C-61)
+    if (folded || center) return;
     hd.className = axis === "w" ? "v" : "h";
     const whH = (root.querySelector(".wh") || {}).offsetHeight || 0;   // 머리 줄(C-62 — 창 전체 폭)은 손잡이가 덮지 않는다(새 맥락 리뷰 2026-10-29)
     hd.style.cssText = axis === "w" ? `left:${side === "left" ? v - 7 : innerWidth - v - 7}px;top:${whH}px;width:14px;height:calc(100% - ${whH}px)` : `top:${side === "top" ? v - 7 : innerHeight - v - 7}px;left:0;height:14px;width:100%`;

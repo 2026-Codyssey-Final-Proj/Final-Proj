@@ -1040,8 +1040,8 @@
   const sayHint = () => (planNow() ? (!st.plan ? "만들고 싶은 것 · 요구 · 문제 글을 붙여 넣어요" : !st.plan.confirmed ? "전체 의견을 적어도 돼요" : "보고에 대해 묻거나 답해요") : !st.j && !st.quest ? "원하는 것을 적거나 붙여 넣어요" : st.quest && st.quest.phase === "quest" && !QU.isDone(st.quest) ? (st.quest.draft ? "다르면 고쳐 적어 주세요" : "한 줄로 적어 주세요") : st.screen === "gate" && st.step === "question" ? "궁금한 걸 적어 주세요" : "플로로에게 말하기");
   // 채팅 카드 — v는 momentToday()/momentGate()가 준 것(글은 이미 esc 한 것)
   function chatCard(v) {
-    // C-61: 섬이 가운데이고 이 단계의 대화가 아직 비어 있으면 플로로 · 질문 하나 · 입력 상자 하나만(칩 없음). 질문은 셋 중 하나 — 문구는 예시(PRD)
-    if (islBig() && st.chat.length <= (st.chatMark || 0) && !st.pane && !st.settings && st.quest && !st.tidy) { const qs = ["어떤 프로젝트를 구상하고 있나요?", "어떤 미션을 수행하고 계시나요?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"];
+    // C-61: 섬이 가운데이고 이 단계의 대화가 아직 비어 있으면 플로로 · 질문 하나 · 입력 상자 하나만(칩 없음). 질문은 셋 중 하나 — 문구는 예시(기획안)
+    if (islBig() && chatSeq <= (st.chatMark || 0) && !st.pane && !st.settings && st.quest && !st.quest.draft && !st.tidy) { /* chatSeq — 기록 상한(60)에 닿아도 늘 느는 번호(새 맥락 리뷰) */ const qs = ["어떤 프로젝트를 구상하고 있나요?", "어떤 미션을 수행하고 계시나요?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"];
       return `<section class="mc chat hello tone-blue"><div class="who">${petCat("happy", 150)}</div><div class="main"><b class="say hello-q">${qs[st.quest.chap % 3]}</b><div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`; }
     for (const a of v.acts) if (a.key && !a.disabled) deskKeys[a.key] = a;
     const live = `${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}<b class="say">${v.title}</b>${v.sub ? `<span class="mc-sub">${v.sub}</span>` : ""}`;
@@ -1112,13 +1112,13 @@
   const textOf = (html) => { const d = document.createElement("div"); d.innerHTML = html; return (d.textContent || "").trim(); };
   const CHAT_HISTORY = 12;
   let chatText = "";
-  const questStarted = () => { st.islBig = null; st.chatMark = st.chat.length; st.tidy = null; };   // 새 단계 — 섬은 저절로 가운데(칸이 비었으니), 대화 표시는 처음부터
+  const questStarted = () => { st.islBig = null; st.chatMark = chatSeq; st.tidy = null; };   // 새 단계 — 섬은 저절로 가운데(칸이 비었으니), 대화 표시는 처음부터. islBig은 저장하지 않는다 — 다시 켜면 칸 상태대로 저절로
   async function chatSend(t, skipCheck) {
     const q = st.quest; st.tidy = null;
     if (st.mode !== "live" || !canLive) { st.tidy = { fills: [{ i: QU.curIdx(q), text: t }], reply: "연습이라 AI 없이 — 보낸 말을 지금 칸에 이렇게 적을 수 있어요" }; return render(); }
     if (!skipCheck && guard(t, "chat")) return;
     chatText = t;
-    const r = await callAI("/api/chat", { text: t, stage: q.chap, tier: st.tier, quest: { objs: q.objs.map((o) => ({ name: o.name })), lines: q.lines }, history: st.chat.slice(-CHAT_HISTORY).map((m) => ({ who: m.who === "me" ? "me" : "floro", text: textOf(m.html).slice(0, 300) })), idea: ideaNow() });
+    const r = await callAI("/api/chat", { text: t, stage: q.chap, quest: { objs: q.objs.map((o) => ({ name: o.name })), lines: q.lines }, history: st.chat.slice(-CHAT_HISTORY).map((m) => ({ who: m.who === "me" ? "me" : "floro", text: textOf(m.html).slice(0, 300) })), idea: ideaNow() });
     if (!st.quest || st.quest.chap !== q.chap) return render();
     if (r.ok && r.chat) { st.tokens = r.tokens || 0; fetchUsage(); if (r.chat.fills.length) st.tidy = { fills: r.chat.fills, reply: r.chat.reply }; else say(r.chat.reply); return render(); }
     render(); say(`답을 받지 못했어요 — ${r.reason || "AI에 연결하지 못했어요"}`);
@@ -2383,7 +2383,7 @@
   //   알약을 누르면(ACT pill) 펼쳐지고 작업실이 비킨다. 알릴 일(허락 카드 · 보고 · 질문 · 오류)은 peek · alert로 저절로 펼친다(peek는 앱의 작업실 안이면 home으로). 저절로 접히기는 설정 '접히기까지' 그대로(pinned에서 st.qwin을 앱에서는 빼서) — 단 옆 칸에 마우스가 있거나 글을 쓰는 중(colHover · colTyping)이면 안 접히고, 접힌 알약은 더 접히지 않는다
   const colFolded = () => st.ui === "petit" || st.ui === "hidden";
   // C-61 섬 자리(2026-10-29): 그 단계의 칸이 하나도 적히지 않았거나 관문에서 물을 때, 섬이 펼쳐져 있으면 작업 칸 전체(center). 사람이 [칸 n개에 적기]를 누르면 옆 칸으로 — AI의 판단으로는 옮기지 않는다. 머리 줄의 '크게 · 옆으로'로 직접도
-  const bigAuto = () => !!(QU && ((st.quest && st.quest.phase === "quest" && !st.quest.draft && !st.quest.objs.some((_, i) => QU.filled(st.quest, i))) || st.screen === "gate"));
+  const bigAuto = () => !!(QU && st.quest && st.quest.phase === "quest" && !st.quest.draft && !st.quest.objs.some((_, i) => QU.filled(st.quest, i)));   // 관문 · 새 단계 시작의 '다시 가운데'는 기획안 9절 미정 — 사람이 머리 줄 단추로
   const islBig = () => (st.islBig == null ? bigAuto() : !!st.islBig);
   const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${!colFolded() && islBig() ? " center" : ""}${colFolded() ? " folded" : ""}${colFolded() && st.boot ? " has-bub" : ""}">${colFolded() ? pillHTML() + bootBubble() : islandHTML("", true)}</div>`;
   // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선"): 켤 때 알약 옆 말풍선 — 시간대 인사 한 줄(하루 한 번) · 멈춘 곳(단계 · 지금 칸) · 섬 펼치기 / 나중에. 몇 초 뒤(greet.js BUBBLE_MS) 사라진다
@@ -3113,9 +3113,9 @@
     "quest-ok": () => { const q = st.quest; if (!q || q.phase !== "draft") return; st.quest = { ...q, phase: "quest", edit: false, sel: 0 }; st.qtab = "quest"; render(); say("받았어요! 퀘스트 창이 공책으로 바뀌었어요"); if (st.sound) C.chime("pop"); },
     "quest-fix": () => { if (!st.quest) return; st.quest = { ...st.quest, edit: true }; openQwin("quest"); render(); say("퀘스트 창에서 이름과 할 일 수를 고친 뒤 '이대로 받기'를 눌러요"); },
     "quest-later": () => { set({ qwin: false }); say("그럼 쉬어요. 다시 오면 여기서 이어서 해요"); },
-    "quest-example": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.example(q, i) : null; if (ex === null) return; st.say = ex; send(); },
+    "quest-example": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.example(q, i) : null; if (ex === null) return; if (q.draft) { st.say = ex; return send(); } logMe(ex); fillNow(ex, "ok"); },   // 예시는 플로로가 낸 것 그대로(ok) — C-61 뒤로 send()는 대화라 여기서 바로 적는다
     "quest-report": () => questReport(),
-    "tidy-fill": () => { const t = st.tidy; if (!t || !st.quest) return; st.tidy = null; st.islBig = false; let q = st.quest; for (const f of t.fills) q = QU.fill(q, f.i, f.text, "chat"); st.quest = q; afterFill(); },   // C-61 — 누가 정했나 '대화', 섬은 옆 칸으로(사람이 눌렀을 때만)
+    "tidy-fill": () => { const t = st.tidy; if (!t || !st.quest) return; st.tidy = null; st.islBig = false; let q = st.quest; for (const f of t.fills) q = QU.fill({ ...q, lines: q.lines.map((l, k) => (k === f.i ? [] : l)) }, f.i, f.text, "chat"); st.quest = q; afterFill(); },   // 이미 적힌 칸은 바꾼다(AI는 바꾸자고 했을 때만 넣는다)   // C-61 — 누가 정했나 '대화', 섬은 옆 칸으로(사람이 눌렀을 때만)
     "tidy-more": () => set({ tidy: null }),
     "isl-big": () => set({ islBig: !islBig() }),   // 머리 줄의 크게 · 옆으로 단추
     // 준비 계획 · 맡길 일(C-34 · C-32 → C-35, 2026-10-24): 채팅의 지금 말로 연다 — 계획이 없으면 한 번에 넣기(처음 말한 것이 있으면 넣는 글에 미리), 있으면 확인 · 지금 줄

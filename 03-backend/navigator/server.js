@@ -766,7 +766,6 @@ async function handle(req, res) {
     if (!body || !Nav.filled(body.text)) return refuse(res, "보낸 말이 비어 있음");
     if (body.text.length > Nav.CHAT_MAX) return refuse(res, `보낸 말이 너무 김 — ${Nav.CHAT_MAX.toLocaleString()}자까지`);
     if (!stageOf(body.stage)) return refuse(res, "지금 단계가 없음");
-    if (body.tier != null && !Nav.TIERS.includes(body.tier)) return refuse(res, "모르는 등급");
     const qo = body.quest && typeof body.quest === "object" ? body.quest : null, objs = qo && Array.isArray(qo.objs) ? qo.objs : null;
     if (!objs || !objs.length || objs.length > 8 || !objs.every((o) => o && strOk(o.name, ITEM_NAME_MAX) && Nav.filled(o.name))) return refuse(res, "지금 칸의 모양이 맞지 않음 — objs 1 ~ 8개, 이름 200자까지");
     const lines = qo.lines == null ? [] : qo.lines;
@@ -776,7 +775,7 @@ async function handle(req, res) {
     if (body.idea != null && !strOk(body.idea, Nav.IDEA_MAX)) return refuse(res, `처음 말한 것은 ${Nav.IDEA_MAX}자까지`);
     const mask = (x) => Sensitive.redact(String(x));   // 비밀값처럼 보이면 가려서 보낸다 — 상태(3-24) · 받은 글과 같은 규칙
     const cells = objs.map((o, i) => ({ name: o.name, line: mask((lines[i] || [])[0] || "") }));
-    return ask(res, Nav.chatPrompt(body.stage, body.tier, { text: mask(body.text), cells, history: hist.map((h2) => ({ who: h2.who, text: mask(h2.text) })), idea: mask(body.idea || "") }), Nav.CHAT_SCHEMA, as("chat", (d) => Nav.parseChat(d, objs.length)), "대화", { fast: true });
+    return ask(res, Nav.chatPrompt(body.stage, { text: mask(body.text), cells, history: hist.map((h2) => ({ who: h2.who, text: mask(h2.text) })), idea: mask(body.idea || "") }), Nav.CHAT_SCHEMA, as("chat", (d) => Nav.parseChat(d, objs.length)), "대화", { fast: true });
   }
   if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
   if (route === "/api/task/start") {   // FR-17 허락하고 넘기기(3-16) — checks를 주면 기준과 함께 넘기고 끝에 보고를 받는다(C-32, 2026-10-24)

@@ -35,7 +35,7 @@ test("C-62 — 머리 줄 하나: 작업실 머리(.wh)가 창 전체 폭(격자
   assert.ok(a.indexOf('const wh = `<div class="wh">') > 0 && a.indexOf("${hisl()}") > a.indexOf('const wh = `<div class="wh">') && a.indexOf("${hisl()}") < a.indexOf("return `${wh}<div class=\"win qwin"), "머리 줄 안에");
   assert.match(a, /return `\$\{wh\}<div class="win qwin/, "머리 줄은 작업실 판 밖(형제) — 창 전체 폭으로 펼 수 있게");
   assert.match(h, /#root\{[^}]*display:grid;grid-template-columns:minmax\(0,1fr\) var\(--col-w,420px\);grid-template-rows:auto minmax\(0,1fr\);grid-template-areas:"wh wh" "win isl"/, "앱 창: 머리 줄이 첫 줄 전체");
-  assert.match(c, /\.wsx\{display:grid;grid-template-columns:minmax\(0,1fr\) 420px;grid-template-rows:auto minmax\(0,1fr\);grid-template-areas:"wh wh" "win isl"\}/, "브라우저 판도 같은 격자");
+  assert.match(c, /\.wsx\{display:grid;grid-template-columns:minmax\(0,1fr\) var\(--col-w,420px\);grid-template-rows:auto minmax\(0,1fr\);grid-template-areas:"wh wh" "win isl"\}/, "브라우저 판도 같은 격자(옆 칸 너비는 --col-w — C-61 PR ③부터)");
   assert.ok(!a.includes("const dockBtns") && !a.includes('data-act="side"') && !a.includes("SIDE_UI"), "섬 자리 단추 · 설정 줄 없음(2026-10-28 합의 — 섬은 오른쪽만)");
   assert.ok(!h.includes('html[data-side="left"]') && !h.includes("flex-direction:row-reverse"), "위 · 아래 · 왼쪽 자리 규칙 없음");
 });
