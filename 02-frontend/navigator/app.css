@@ -836,6 +836,8 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 @container (max-width:760px){.wnav,.wh .cv-stg{display:none}}
 .nav.side{width:min(1800px,calc(100vw - 32px))}
 .nav.side>.win,.nav.side>.wsx{margin-top:0;align-self:flex-start;max-width:100%}
+.nav.side>.wsx{flex:1 1 auto;min-width:0;width:100%}
+@media (max-width:1380px){.wsx{grid-template-columns:minmax(0,1fr) 320px}}   /* 1280 노트북: 옆 칸을 320(손잡이의 최소)으로 — 작업실 세 칸(C-53)이 1280에서도 다 보인다 */   /* 격자가 섬 판의 너비를 다 쓴다 — 옛 inline width(920) 대신. 안 그러면 작업실 판이 내용 너비(513)로 줄어 파일 칸 · 오른쪽 칸이 숨었다(e2e workspace-md · file-view, 2026-10-29) */
 @media (max-width:1180px){.nav.side>.win{align-self:center;margin-top:8px}html.in-app .nav.side>.win{align-self:flex-start;margin-top:0}}
 /* 설정 창 — 작업실 카드 · 묶음 셋 · 서재로 · 고르기 단추 */
 .bands{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:calc(13px * var(--ui-scale,1));color:var(--mute);font-weight:700;flex-wrap:wrap}

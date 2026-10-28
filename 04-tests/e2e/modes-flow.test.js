@@ -49,7 +49,7 @@ async function fresh(browser, reduced = false) {
 // 2026-10-21 C-22(게임식 디자인 1차 뼈대): 기본 화면의 단추 넷 · 탭 넷은 없고 채팅 중심 섬(.mc.chat)이다. 서재는 설정 창의 '서재로 가기' · 퀘스트 창(.qwin)의 서고 탭, 탭은 퀘스트 창의 것(quest · tree · lib)
 const placeOf = (page) => page.evaluate(() => ({
   chat: !!document.querySelector(".mc.chat") && !document.querySelector(".mc.base"), home: document.querySelector(".ti.home")?.getAttribute("aria-pressed") || "",
-  qwin: !!document.querySelector(".qwin"), qtab: document.querySelector('.wsx .wtabs [aria-selected="true"]')?.dataset.tab || "", place: sessionStorage.getItem("floe:place"), hash: location.hash }));
+  qwin: !!document.querySelector(".qwin"), qtab: document.querySelector('.wsx > .wh .wtabs [aria-selected="true"]')?.dataset.tab || "", place: sessionStorage.getItem("floe:place"), hash: location.hash }));
 // 서재로 — 보이는 '서재로 가기'(설정 창 · 퀘스트 창 서고 탭)가 없으면 설정 창을 열어서
 async function toLibraryAndBack(page) {
   if (!(await page.$("[data-act=lib-enter]"))) { await page.click("[data-act=settings]"); await wait(300); }
@@ -196,7 +196,7 @@ test("C-16: 퀘스트 창의 탭은 셋(퀘스트 · 도전과제 · 책 — 배
   try {
     const page = await fresh(browser);
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tab=doc"), { waitUntil: "load" }); await wait(400);
-    const s = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".wsx .wtabs [role=tab]")].map((t) => t.dataset.tab), head: document.querySelector(".bdoc-head b")?.textContent || "", draft: !!document.querySelector("[data-act=draft]") }));
+    const s = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.dataset.tab), head: document.querySelector(".bdoc-head b")?.textContent || "", draft: !!document.querySelector("[data-act=draft]") }));
     assert.deepEqual(s.tabs, ["canvas", "quest", "tree", "lib"]);   // C-54(2026-10-28): 문서 지도 탭(map)은 도전과제 안의 '상자' 보기로   // C-41 ①(2026-10-26)부터 캔버스가 먼저 — 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다(2026-10-27 고침) · C-45(2026-10-27) 문서 지도 탭이 끝에
     assert.ok(s.head.includes("2단계") && s.draft, `단계 번호는 1~8로(코드 1 = 2단계): ${JSON.stringify(s)}`);
     await page.click("[data-act=draft]"); await wait(400);
@@ -503,7 +503,7 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]")?.textContent.trim()), "퀘스트", "위 줄의 '퀘스트' 단추(이재엽 그림 2026-10-24)");
     // 퀘스트 단추 → 작업실 창(탭 다섯 — C-41 ① 2026-10-26: 캔버스 · 노트북(옛 퀘스트) · 도전과제 · 책, C-45 2026-10-27: 문서 지도). 한 번 더 누르면 닫힌다
     await page.click(".tb [data-act=qwin-toggle]"); await wait(300);
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "노트북", "도전과제", "책"]);   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "노트북", "도전과제", "책"]);   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]").getAttribute("aria-pressed")), "true");
     // 책: 서버 없이 열었으니 연습 예시 README
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(400);

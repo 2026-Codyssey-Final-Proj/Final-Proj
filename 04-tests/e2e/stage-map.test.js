@@ -42,7 +42,7 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await wait(400);
     if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(300);
-    const tabs = await page.$$eval(".wsx .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent));
+    const tabs = await page.$$eval(".wsx > .wh .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent));
     assert.ok(!tabs.includes("문서 지도") && tabs.includes("도전과제"), `문서 지도 탭은 도전과제 안으로: ${tabs.join(",")}`);
     const cards = () => page.$$eval(".sm-grid .sm-card", (cs) => cs.map((c) => ({ n: c.dataset.i, state: [...c.classList].find((k) => ["done", "now", "later", "pending", "ready"].includes(k)), text: c.textContent.replace(/\s+/g, " ").trim() })));
     let cs = await cards();
