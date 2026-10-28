@@ -62,7 +62,7 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare"];   // /api/prepare — C-56 R-2 준비된 퀘스트(새 맥락 리뷰 2026-10-28 막힘: 토큰 없이 불렸다)   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat"];   // /api/chat — 작업실 개편 C-61 플로로와 자유 대화(2026-10-29)   // /api/prepare — C-56 R-2 준비된 퀘스트(새 맥락 리뷰 2026-10-28 막힘: 토큰 없이 불렸다)   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start", "/api/task/retry", "/api/task/stop"];   // /api/task/retry — F-69 막힌 일을 다시 · 직접 하기 글, /api/task/stop — C-50 사람이 고르면 멈추기(2026-10-28)
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
@@ -70,7 +70,7 @@ const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/ap
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide", "/api/apps/link"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다 · Claude Desktop 설정 파일에 잇는다. 밖(터널)에서는 받지 않는다(allowed)
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
-const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/task/retry", "/api/task/stop", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/task/retry", "/api/task/stop", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -183,6 +183,12 @@ function readJson(req, limit = MAX_BODY) {   // limit — 파일 저장(/api/fil
 const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); };
 const refuse = (res, reason, code = 400) => send(res, code, { ok: false, reason });
 const as = (key, read) => (d) => { const v = read(d); return v && { [key]: v }; };   // 확인한 결과를 화면이 읽는 칸 이름으로
+// 작업실 개편 C-61(2026-10-29, API.md 3-31) — 대화 모양이 틀린 까닭(navigator.js talkOf) → 거절 말, 대화의 말마다 비밀값 가림
+const TALK_WHY = { empty: "대화가 비어 있음 — 마지막은 사람의 말", shape: "대화 모양이 맞지 않음 — [{ who: me | floro, text }]",
+  long: `대화가 너무 김 — ${Nav.CHAT_TURNS_MAX}줄 · 줄 ${Nav.CHAT_LINE_MAX.toLocaleString()}자 · 합 ${Nav.CHAT_TOTAL_MAX.toLocaleString()}자까지` };
+const redactTalk = (talk) => talk.map((m) => ({ ...m, text: Sensitive.redact(m.text) }));
+const redactPrev = (prev) => prev.map((p) => ({ stage: p.stage, items: p.items.map((x) => ({ ...x, name: Sensitive.redact(x.name), lines: (x.lines || []).map((l) => Sensitive.redact(l)) })) }));   // 지난 단계 결과도 가린 뒤 AI에(새 맥락 리뷰 2026-10-29 막힘)
+const none = (v) => v == null || (Array.isArray(v) && !v.length);   // 빈 목록은 '없음'과 같다 — 화면이 [ ]을 보내도 거절하지 않게
 const stageOf = (v) => (Number.isInteger(v) ? Nav.STAGES[v] : undefined);   // 단계는 정수 0~7만 — "2"·"length" 같은 글자는 단계가 아니다
 
 // Claude에게 묻고, 답의 모양을 확인한 것만 돌려준다. read: 확인해서 화면에 줄 칸들을 만든다(모양이 틀리면 null)
@@ -813,8 +819,27 @@ async function handle(req, res) {
       return refuse(res, "다른 예시 요청의 모양이 맞지 않음 — { i: 칸 자리, texts: 이미 본 예시 1~3개 }");
     if (body.base != null && !strOk(body.base, BASE_MAX)) return refuse(res, `기준 카드 글은 ${BASE_MAX}자까지`);   // C-56 R-2 — 기준 카드(한 줄씩 '칸: 내용')
     if (body.work != null && !strOk(body.work, Nav.WORK_MAX)) return refuse(res, `방금 한 일 글은 ${Nav.WORK_MAX}자까지`);   // C-56 R-5 — 작업을 따라 다시 맞추기(훅 알림의 작업 글)
-    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev, base: body.base || "", work: body.work || "", ...(avoid ? { avoid: { i: avoid.i, texts: avoid.texts } } : {}) }), Nav.STAGE_DRAFT_SCHEMA,
+    const tk = none(body.talk) ? { talk: [] } : Nav.talkOf(body.talk, { lastMe: false });   // 작업실 개편 C-61 — 그 단계의 대화(받은 글처럼, 가린 뒤)
+    if (!tk.talk) return refuse(res, TALK_WHY[tk.why]);
+    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev, base: body.base || "", work: body.work || "", ...(avoid ? { avoid: { i: avoid.i, texts: avoid.texts } } : {}), ...(tk.talk.length ? { talk: redactTalk(tk.talk) } : {}) }), Nav.STAGE_DRAFT_SCHEMA,
       as("draft", (d) => Nav.parseStageDraft(d, body.stage, body.tier, prev)), "단계 초안", { fast: true, maxTokens: 4096 });
+  }
+  if (route === "/api/chat") {   // 작업실 개편 C-61(API.md 3-31, 2026-10-29) — AI 한 번. 플로로와 자유 대화: 답 + 이 대화로 채울 수 있는 칸(제안만 — 칸에 적지 않는다, 섬 자리도 바꾸지 않는다)
+    if (!body || !stageOf(body.stage)) return refuse(res, "지금 단계가 없음");
+    if (body.tier != null && !Nav.TIERS.includes(body.tier)) return refuse(res, "모르는 등급");
+    const tk = Nav.talkOf(body.talk);
+    if (!tk.talk) return refuse(res, TALK_WHY[tk.why]);
+    if (body.idea != null && !strOk(body.idea, Nav.IDEA_MAX)) return refuse(res, `처음 말한 것은 ${Nav.IDEA_MAX}자까지`);
+    const n = Nav.criteriaFor(body.stage, body.tier).length;   // 적은 줄 — 그 등급의 칸 수와 같은 길이, 칸마다 줄 5개 · 줄 400자(없거나 빈 목록이면 모두 빈칸)
+    const lines = none(body.lines) ? [] : body.lines;
+    if (lines.length && !(lines.length === n && lines.every((l) => Array.isArray(l) && l.length <= 5 && l.every((x) => strOk(x, LINE_MAX)))))
+      return refuse(res, `적은 줄의 모양이 맞지 않음 — 그 등급의 칸 ${n}개, 칸마다 줄 5개 · 줄 ${LINE_MAX}자까지`);
+    const prev = none(body.prev) ? [] : prevStagesOf(body.prev, body.stage);
+    if (!prev) return refuse(res, `지난 단계 결과의 모양이 맞지 않음 — [{ stage, items }], 바로 앞 단계는 꼭 · 할 일 8개 · 줄 5개 · 줄 ${LINE_MAX}자까지`);
+    // 비밀값처럼 보이는 글은 가린 뒤 AI에 넘긴다(sensitive.js) — 화면도 보내기 전에 묻지만 서버가 한 번 더(API.md 3-31)
+    const safeLines = lines.map((l) => l.map((x) => Sensitive.redact(x)));
+    return ask(res, Nav.chatPrompt(body.stage, body.tier, { idea: Sensitive.redact(body.idea || ""), talk: redactTalk(tk.talk), lines: safeLines, prev: redactPrev(prev) }), Nav.CHAT_SCHEMA,
+      (d) => Nav.parseChat(d, body.stage, body.tier, safeLines), "대화", { fast: true, maxTokens: 4096 });   // 답 400자 + 칸 한 줄 400자 × 여러 칸 — 기본 길이에서 잘리지 않게
   }
   if (route === "/api/start") {   // C-36 처음 한 바퀴(API.md 3-21, 2026-10-25) — AI 한 번. 받은 글 전체로 1단계 초안(제목 · 불편 · 달라지는 것 · 누가 · 크기). 도구 없이, 글만
     if (!body || !Nav.filled(body.text)) return refuse(res, "받은 글이 비어 있음");

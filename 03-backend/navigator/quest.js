@@ -80,8 +80,8 @@
   // 한 줄 적기 — 원본은 안 바꾼다. 빈 줄은 적지 않는다. 한 줄은 400자까지(서버가 단계 결과 · 문서에서 받는 길이 — 2026-10-25 리뷰)
   // by(C-39) — 누가 정했나: 넘겨주면 그것(고르는 칸은 pick), 아니면 플로로가 낸 것과 맞대어 그대로(ok) · 고침(edit) · 직접(me)
   const LINE_MAX = 400;
-  const BY = ["ok", "edit", "me", "pick", "moved", "skip"];   // moved · skip — C-56(2026-10-28 이재엽 버튼 "'옮김' 새 값"): 지난 칸 · 파일에서 옮겨 적은 칸, 조건이 안 맞아 건너뛴 칸(queststate.js)
-  const BY_WORD = { ok: "그대로", edit: "고침", me: "직접", pick: "고름", moved: "옮김", skip: "건너뜀" };
+  const BY = ["ok", "edit", "me", "pick", "moved", "skip", "chat"];   // chat — 작업실 개편 C-61(2026-10-29): 플로로와 나눈 대화를 정리 카드로 적은 칸(API.md 3-31)   // moved · skip — C-56(2026-10-28 이재엽 버튼 "'옮김' 새 값"): 지난 칸 · 파일에서 옮겨 적은 칸, 조건이 안 맞아 건너뛴 칸(queststate.js)
+  const BY_WORD = { ok: "그대로", edit: "고침", me: "직접", pick: "고름", moved: "옮김", skip: "건너뜀", chat: "대화" };
   const byFor = (q, i, t, by) => (BY.includes(by) ? by : proposalOf(q, i) ? (t === proposalOf(q, i) ? "ok" : "edit") : "me");
   const withBy = (q, i, b) => ({ ...q, by: q.objs.map((_, k) => (k === i ? b : (q.by || [])[k] || null)) });
   function fill(q, i, text, by) {

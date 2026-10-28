@@ -29,6 +29,7 @@
       if (it.by === "edit") return `- 어떻게: 고침${it.draft ? ` — 플로로 초안: “${red(it.draft)}”` : ""}`;
       if (it.by === "me") return "- 어떻게: 직접 적음(초안 없이)";
       if (it.by === "pick") return `- 어떻게: 고름${it.draft ? ` — 플로로가 권한 것: “${red(it.draft)}”` : ""}`;
+      if (it.by === "chat") return "- 어떻게: 플로로와 나눈 대화를 정리해 적음(작업실 개편 C-61)";
       return "";
     };
     const items = r.items.map((it) => {
@@ -71,7 +72,7 @@
       if (r.passed) { const c = r.check || [], sk = c.filter((x) => x.skipped).length; rows.push(`| ${cell(r.passed)} | ${label(n)} | 관문 | — | 이해했어요(예)${c.length ? ` · 기준 ${c.filter((x) => x.met && !x.skipped).length}/${c.length}` : ""}${sk ? ` · 넘김 ${sk} — 까닭: ${cell(red((r.skip && r.skip.reason) || ""))}` : ""}${r.nocode ? " · 코드 없이 지남" : ""} | 관문 |`); }   // nocode — 6단계에서 '코드 파일을 만드시겠습니까?'에 아니요(A-04, F-70)
     }
     return [MARK_START, `# 결정 기록${name ? ` — ${name}` : ""}`, "",
-      "플로로가 초안을 내고 사람이 정했어요 — 그대로(초안 그대로) · 고침(초안을 고침) · 직접(초안 없이 적음) · 고름(셋 중에서 고름). 관문은 사람이 '이해했어요(예)'로 지나요.",
+      "플로로가 초안을 내고 사람이 정했어요 — 그대로(초안 그대로) · 고침(초안을 고침) · 직접(초안 없이 적음) · 고름(셋 중에서 고름) · 대화(플로로와 나눈 말을 정리해 적음). 관문은 사람이 '이해했어요(예)'로 지나요.",
       "날짜 · 누가 정했나는 Floe 화면이 남긴 기록이에요(이 컴퓨터의 시간).", "",
       "| 날짜 | 단계 | 할 일 | 플로로 초안 | 정한 것 | 어떻게 |", "|---|---|---|---|---|---|", ...rows, MARK_END, ""].join("\n");
   }
