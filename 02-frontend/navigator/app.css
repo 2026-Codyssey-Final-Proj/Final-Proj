@@ -717,6 +717,27 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .tidy{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px;text-align:left}
 .tidy li{display:grid;gap:2px;padding:8px 12px;border-radius:12px;background:var(--soft);font-size:calc(13.5px * var(--ui-scale,1))}
 .tidy li b{font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+/* C-63 대화는 하나, 단계는 바로가기(작업실 개편 PR ④, 2026-10-29): 대화의 단계 구분선 · 가져온 것 카드, 왼쪽 대화 목록, 맨 아래 '전체 파일' */
+.msg.stage{max-width:100%;align-self:stretch;margin:6px 0 2px}
+.msg.stage > .b{display:flex;justify-content:center;align-items:baseline;gap:8px;width:100%;padding:8px 0 2px;background:transparent;border:0;border-top:1px solid var(--line);border-radius:0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.msg.stage > .b b{color:var(--ink)}
+.msg.stage.hl > .b{background:var(--acc-soft);border-radius:10px}
+.msg.carry > .b{border-style:dashed}
+.cn-list .cn{display:block;padding:0;border-radius:8px}
+.cn-list .cn>button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:6px;width:100%;min-height:44px;padding:0 6px;cursor:pointer;color:inherit}
+.cn-list .cn>button:focus-visible{outline:2px solid var(--acc);outline-offset:1px;border-radius:5px}
+.cn-list .cn>button>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.cn-list .cn>button>small{flex:none;font-size:calc(11px * var(--ui-scale,1));color:var(--sub)}
+.cn-list .cn.st-now>button>small{color:#EEF1FA}
+.cn-files{list-style:none;margin:0;padding:0 0 6px 26px;display:grid;gap:2px}
+.cn-files li{display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0;font-size:calc(12px * var(--ui-scale,1))}
+.cn-files li>span,.cn-files li>button{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.cn-files li>button{all:unset;cursor:pointer;color:var(--ink);min-height:32px}
+.cn-files li>small{flex:none;color:var(--sub);font-size:calc(11px * var(--ui-scale,1))}
+.fn-all{margin-top:8px}
+.fn-all>summary{cursor:pointer;min-height:36px;display:flex;align-items:center;padding:0 6px;font-weight:700;color:var(--sub)}
+.fn-all .fn-h{display:none}
+.fn-all .fn{padding-left:12px}
 #root>.wh{border-radius:0}
 .wsx>.wh,#root>.wh{flex-wrap:nowrap;min-width:0}   /* 한 줄로 — 좁으면 아래 media가 칩 · 프로젝트 이름을 숨긴다(둘째 줄로 꺾이면 섬 단추가 왼쪽으로 갔다) */
 .wh .tb-stage{flex:0 1 auto;max-width:240px;padding:4px 10px;margin:0}

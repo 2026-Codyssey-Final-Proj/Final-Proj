@@ -144,7 +144,7 @@ test("접힌 섬의 표시 — 진짜 AI 모드면 '진짜 AI' 대신 이 컴퓨
 
 // ── C-37(2026-10-25, 이재엽 "1단계에서 플로로 채팅이 너무 많이 올라오는 문제 … 한곳에서 보이는 것들 … 도전과제 … 다이어그램 … 2단계에서도 초안 … docs … 깃허브") ──
 test("app.js — C-37: 내 말보다 먼저 지금 보이는 플로로의 말을 기록에(질문 → 답 순서) · 초안 확인은 지나는 말(passing) · 칩은 내 말로 쌓지 않는다(quiet) · 끝나면 한 줄로 정리", () => {
-  assert.match(app, /const logMe = \(text\) => \{ settleLive\(\); logMsg\("me", esc\(text\)\); \};/, "내 말을 남기기 전에 지금 말부터");
+  assert.match(app, /const logMe = \(text\) => \{ settleLive\(\); logMsg\("me", esc\(window\.NavSensitive \? window\.NavSensitive\.redact\(text\) : text\)\); \};/, "내 말을 남기기 전에 지금 말부터");
   assert.match(app, /function settleLive\(\) \{/);
   assert.match(app, /const chip = \(a\) => btn\(\{ \.\.\.a, chip: !a\.quiet \}\);/, "quiet 칩은 내 말로 쌓지 않는다");
   assert.match(app, /passing: true, \/\/ 초안 확인은 카드 하나/, "초안 확인 말은 지나는 말");

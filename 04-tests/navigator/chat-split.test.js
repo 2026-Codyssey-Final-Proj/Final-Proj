@@ -42,11 +42,11 @@ test("섬 자리 — 칸이 하나도 적히지 않았고(또는 관문에서 �
 });
 
 test("대화가 비어 있으면 플로로 · 질문 하나 · 입력 상자 하나만(칩 줄 없음) — 질문은 셋 중 하나(문구는 예시). 가운데 대화에는 늘 있는 칩 줄이 없다", () => {
-  assert.match(a, /if \(islBig\(\) && chatSeq <= \(st\.chatMark \|\| 0\) && !st\.pane && !st\.settings && st\.quest && !st\.quest\.draft && !st\.tidy\)/, "빈 대화 + 가운데(초안 확인 중에는 아님) — 기록 상한에 걸리지 않는 번호로");
+  assert.match(a, /if \(islBig\(\) && st\.chat\.length <= \(st\.chatMark \|\| 0\) && !st\.pane && !st\.settings && st\.quest && !st\.quest\.draft && !st\.tidy\)/, "빈 대화 + 가운데(초안 확인 중에는 아님) — 구분선 뒤에 말이 없다(C-63 저장된 대화에도 맞게)");
   assert.match(a, /const qs = \["어떤 프로젝트를 구상하고 있나요\?", "어떤 미션을 수행하고 계시나요\?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"\];/);
   assert.match(a, /<section class="mc chat hello tone-blue"><div class="who">\$\{petCat\("happy", 150\)\}<\/div><div class="main"><b class="say hello-q">/, "플로로 · 질문 · 입력 상자");
   assert.match(a, /const more = islBig\(\) \? \[\] : \[/, "가운데 대화에는 칩 줄 없음(C-60)");
-  assert.match(a, /const questStarted = \(\) => \{ st\.islBig = null; st\.chatMark = chatSeq; st\.tidy = null; \};/, "새 단계를 시작하면 가운데로 · 대화 표시 처음부터");
+  assert.match(a, /const questStarted = \(\) => \{[\s\S]*?st\.islBig = null; st\.chatMark = st\.chat\.length; st\.tidy = null; \};/, "새 단계를 시작하면 가운데로 · 대화 표시는 구분선 뒤부터(C-63)");
   assert.ok((a.match(/questStarted\(\);/g) || []).length >= 2, "퀘스트를 만드는 곳마다");
 });
 
