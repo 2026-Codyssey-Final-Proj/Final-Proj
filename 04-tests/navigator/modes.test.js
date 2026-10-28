@@ -152,7 +152,7 @@ test("app.js — C-37: 단계 결과(results)를 남기고 도전과제의 기�
   assert.ok(keep.includes('"results"'), "단계 결과는 다시 켜도 남는다");
   assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: \{ \.\.\.QU\.resultOf\(st\.quest\), at: ymd\(\), check: checkOf\(j\)/, "보고가 된 퀘스트의 결과 + 확인한 날 · 완료 기준(C-39 — R-10부터 checkOf: why · skipped도)");
   assert.match(app, /function treeMap\(cur\)/); assert.match(app, /"jmap-fill": /);
-  assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
+  assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev, base: baseText\(\) \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
   assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", source: st\.source \|\| "", results: shipResults\(\), card: st\.card \|\| null \}\)/, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
   assert.match(read("navigator/index.html"), /docs\.js/, "미리 보기도 같은 docs.js");
 });
@@ -201,4 +201,13 @@ test("app.js — 기준 카드: 1단계 관문에 보이고(basecard.js), 성공
   assert.match(a, /st\.card = BC\.withEdits\(BC\.build\(\{ results: st\.results, source: st\.source \}\), st\.cardEdits\)/, "지날 때 카드를 기록에");
   assert.match(a, /card: st\.card \|\| null/, "/api/docs에 card"); assert.match(a, /"card-edit": /, "고치면 다시 짓는다");
   assert.match(read("navigator/index.html"), /basecard\.js/); assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8"), /"basecard\.js"/);
+});
+
+// C-56 R-2(2026-10-28): 화면은 이름을 크게(nameOf) · 방법 이름은 회색 꼬리표, 초안 요청에 기준 카드(base)를, 2단계 끝 그리기는 진짜 AI면 /api/prepare(한 번)로 — 못 받으면 규칙(stagemap)으로
+test("app.js — 이름은 nameOf로(공책 · 확인 카드 · 캔버스 ③ · 오른쪽 칸), 초안 요청에 base, prep-draw는 live면 /api/prepare → 규칙 카드와 합침", () => {
+  const a = read("navigator/app.js");
+  assert.ok((a.match(/QU\.nameOf\(q, i\)/g) || []).length >= 4, "이름은 nameOf"); assert.match(a, /class="method"/, "방법 이름 꼬리표");
+  assert.match(a, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev, base: baseText\(\) \}\)/, "초안 요청에 기준 카드");
+  assert.match(a, /callAI\("\/api\/prepare", \{ tier: st\.tier, idea: ideaNow\(\), prev: prevOf\(2\), base: baseText\(\) \}\)/, "준비 요청은 AI 한 번"); assert.match(a, /mergePrepared\(/, "규칙 카드와 합침");
+  assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /POST \/api\/prepare/, "API.md");
 });

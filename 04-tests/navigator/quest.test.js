@@ -159,3 +159,13 @@ test("퀘스트 제작 요청문(navigator.js questPrompt): 말한 것 · 번호
   assert.ok(Nav.parseQuest({ ...good, qa: Nav.criteriaFor(0, "Lite").map(() => ({ question: "q", examples: ["e"] })) }, 0, "Lite"), "등급의 개수로");
   assert.equal(Nav.IDEA_MAX, 400); assert.ok(Nav.QUEST_SCHEMA.required.includes("qa"));
 });
+
+// C-56 R-2(2026-10-28): 칸의 이름 — 초안에 이 프로젝트의 말로 된 이름(title)이 있으면 그것, 없으면 짧은 이름. 방법 이름은 꼬리표(termOf)
+test("nameOf · askOf · doneOf — 초안의 title · ask · done이 있으면 그것, 없으면 짧은 이름 · 질문 · 빈 글", () => {
+  const N = require("../../03-backend/navigator/navigator.js");
+  const stage = N.STAGES[2], crit = N.criteriaFor(2, "Xpress"), q0 = Q.makeQuest(stage, crit);
+  assert.equal(Q.nameOf(q0, 0), Q.shortOf(crit[0].text), "초안 전엔 짧은 이름");
+  const q = Q.withStageDraft(q0, { items: crit.map((c, i) => ({ text: "글", title: i === 0 ? "프롬프트 저장하기 요구 문장" : undefined, ask: i === 0 ? "무엇을 저장하나요?" : undefined, done: i === 0 ? "문장 셋" : undefined })), prep: [] });
+  assert.equal(Q.nameOf(q, 0), "프롬프트 저장하기 요구 문장"); assert.equal(Q.nameOf(q, 1), Q.shortOf(crit[1].text));
+  assert.equal(Q.askOf(q, 0), "무엇을 저장하나요?"); assert.equal(Q.askOf(q, 1), Q.question(q, 1)); assert.equal(Q.doneOf(q, 0), "문장 셋"); assert.equal(Q.doneOf(q, 1), "");
+});

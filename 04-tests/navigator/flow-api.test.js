@@ -36,7 +36,9 @@ const PREV4 = [...PREV3, { stage: 2, items: [{ name: "기능을 '~하면, 앱은
 const ANSWER4 = { items: Nav.criteriaFor(3, "Xpress").map((c, i) => ({ text: `${c.text} — 권함`, alts: [`${i} 다른 가`, `${i} 다른 나`], from: ["3-1"] })), prep: ["후보 떠올리기"], say: "4단계 초안이에요" };
 const AVOID = { i: 1, texts: ["이미 본 예시"] };
 const ANSWER = { items: Nav.criteriaFor(1, "Xpress").map((c) => ({ text: `${c.text}의 초안` })), say: "2단계 초안이에요" };
+const PREP_ANSWER = { items: [2, 3, 4, 5, 6, 7].map((n) => ({ stage: n + 1, title: n === 2 ? "행사 신청 기능 여섯을 문장으로" : "", think: `생각 ${n}`, act: `맡길 일 ${n}`, from: n === 2 ? "기획서 3절 '한 문장에 한 가지'" : "" })), say: "준비했어요" };   // C-56 R-2 /api/prepare
 REC.save(process.env.NAV_REPLAY, {
+  [REC.keyOf(Nav.preparePrompt("Xpress", { idea: IDEA, prev: PREV3, base: "" }), Nav.PREPARE_SCHEMA)]: PREP_ANSWER,
   [REC.keyOf(Nav.stageDraftPrompt(1, "Xpress", { idea: IDEA, prev: PREV }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER,
   [REC.keyOf(Nav.stageDraftPrompt(1, "Full", { idea: IDEA, prev: PREV }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER,   // Full인데 기획서 칸이 없는 답 — 502
   [REC.keyOf(Nav.stageDraftPrompt(2, "Xpress", { idea: IDEA, prev: PREV3 }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER3,   // 3단계(C-39) — 1 · 2단계 결과로
@@ -117,6 +119,15 @@ test("POST /api/stagedraft 거절: 초안을 만들지 않는 단계 · 빈 글 
   }
   const bad = await call("POST", "/api/stagedraft", { body: { stage: 1, tier: "Full", idea: IDEA, prev: PREV } });
   assert.equal(bad.status, 502); assert.match(bad.json.reason, /초안/);
+});
+
+// C-56 R-2(2026-10-28): 2단계 끝 준비된 퀘스트 — AI 한 번(재생), 1 · 2단계 결과가 다 있어야, 전문 용어 이름은 비움 · 근거 없으면 새로 정함
+test("POST /api/prepare: 1 · 2단계 결과 · 받은 글(· 기준)로 3 ~ 8단계 카드 여섯 — 이름 · 생각 · 행동 · 근거; 1단계만 있으면 400", async () => {
+  const r = await call("POST", "/api/prepare", { body: { tier: "Xpress", idea: IDEA, prev: PREV3 } });
+  assert.equal(r.status, 200, r.text); assert.deepEqual(Object.keys(r.json.prepare.cards), ["2", "3", "4", "5", "6", "7"]);
+  assert.equal(r.json.prepare.cards["2"].title, "행사 신청 기능 여섯을 문장으로"); assert.equal(r.json.prepare.cards["3"].from, "새로 정함");
+  assert.equal((await call("POST", "/api/prepare", { body: { tier: "Xpress", idea: IDEA, prev: PREV } })).status, 400, "2단계 결과가 없으면");
+  assert.equal((await call("POST", "/api/prepare", { body: { tier: "Xpress", idea: IDEA, prev: PREV3, base: "가".repeat(2000) } })).status, 400, "기준 카드 글은 1,500자까지");
 });
 
 test("POST /api/docs: 확인 값이 있어야 — 없으면 403 · 작업 폴더를 모르면 400(아무것도 쓰지 않는다)", async () => {

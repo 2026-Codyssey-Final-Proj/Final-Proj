@@ -963,7 +963,7 @@
       acts: [{ label: `${LB(fx.go.s)} ${ROMAN(fx.go.i)} 보기`, act: "first-go", kind: "soft" }, { label: "아직 못 함으로 적기", act: "first-notyet", kind: "ghost" }, { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
     if (q.draft) return momentConfirm(q, i, meta);   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
-    return { tone: "blue", mood: f[0], badge: "?", meta, title: `${ROMAN(i)}. ${esc(o.name)}`, sub: `${esc(QU.question(q, i))}${o.term ? ` ${termTag(o.term)}` : ""}`,
+    return { tone: "blue", mood: f[0], badge: "?", meta, title: `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}`, sub: `${esc(QU.askOf(q, i))}${QU.doneOf(q, i) ? ` <small class="done-when">끝: ${esc(QU.doneOf(q, i))}</small>` : ""}${o.term ? ` ${termTag(o.term)}` : ""}`,
       foot: "아래 칸에 한 줄 적고 보내기를 눌러요", acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
   }
   // 1단계 초안 확인(C-36, 2026-10-25 — 이재엽 "불편한게 맞는 내용은 이게 플로로가 생각한 내용인데 맞나요 … 누가 쓰는 내용은 … 사람에 대한 내용이 있으면 이 내용이 맞는지 요청을 보내고
@@ -979,7 +979,7 @@
     const prep = d.prep && d.prep.length ? `<div class="dprep"><b>이 단계 전에 준비할 것</b><ul>${d.prep.map((x) => `<li>${esc(x)}</li>`).join("")}</ul></div>` : "";
     const from = QU.fromOf(q, i), mat = from.length ? `재료 — ${from.map((x) => esc(refLabel(x))).join(" · ")}` : "";
     // C-40(2026-10-26 — 버튼 "짧은 이름 + 쉬운 한 줄"): 제목은 짧은 이름 — 쉬운 한 줄(긴 할 일 문장은 퀘스트 창의 '자세히')
-    const easy = QU.easyOf(o.name), title = `${ROMAN(i)}. ${esc(QU.shortOf(o.name))}${easy ? ` — ${esc(easy)}` : ""}`;
+    const easy = QU.easyOf(o.name), title = `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}${easy && !QU.nameOf(q, i).includes(easy) ? ` — ${esc(easy)}` : ""}${o.term ? ` <small class="method">${esc(o.term)}</small>` : ""}`;
     const ex = QU.examplesOf(q, i), left = q.objs.filter((_, k) => !QU.filled(q, k)).length;
     const opts = ex.length > 1 ? `<ol class="dalt" aria-label="플로로의 예시">${ex.map((t, k) => `<li><button type="button" data-act="draft-alt" data-i="${k}"${k ? "" : ' class="rec"'}>${k ? "" : "<small>플로로가 권해요</small>"}${esc(t)}</button></li>`).join("")}</ol>` : "";
     const head = { tone: "blue", mood: "look", badge: "?", meta: `${meta}${d.example ? `<span class="note">예시예요 · 연습</span>` : ""}`, title,
@@ -1077,7 +1077,7 @@
     prefetch(st.quest);
     if (st.quest.draft) {   // 초안을 다 확인했다 — 한 줄로 정리해 남기고(칸마다 쌓지 않은 대신) 저절로 완료 보고
       const q = st.quest;
-      logMsg("floro", `<b>${LB(q.chap)} 초안을 확인했어요</b><br>${q.objs.map((o, k) => `${ROMAN(k)} ${esc(QU.shortOf(o.name))} — ${esc((q.lines[k] || [])[0] || "")}`).join("<br>")}`);
+      logMsg("floro", `<b>${LB(q.chap)} 초안을 확인했어요</b><br>${q.objs.map((o, k) => `${ROMAN(k)} ${esc(QU.nameOf(q, k))} — ${esc((q.lines[k] || [])[0] || "")}`).join("<br>")}`);
       return questReport();
     }
     render(); celebrate("done");
@@ -1101,6 +1101,8 @@
     }
     return { ...out, states };
   }
+  // C-56 R-2(2026-10-28): 기준 카드를 초안 · 준비 요청에 '칸: 내용' 줄로 — 빈칸은 넘기지 않는다(지어내지 않게)
+  const baseText = () => (BC && st.card ? BC.FIELDS.map((f) => { const x = st.card[f.key]; return x && x.text ? `${f.label}: ${x.text}` : ""; }).filter(Boolean).join("\n").slice(0, 1500) : "");
   const prevOf = (n, extra) => { const all = { ...st.results, ...(extra ? { [extra.chap]: extra } : {}) };
     return Object.keys(all).map(Number).filter((k) => k < n).sort((a, b) => a - b).map((k) => ({ stage: k, items: all[k].items.map((x) => ({ name: x.name, lines: x.lines })) })); };
   const preKey = (n, prev, tier = st.tier) => JSON.stringify([n, tier, ideaNow(), prev]);
@@ -1112,7 +1114,7 @@
     const prev = prevOf(n, r), key = preKey(n, prev, tier);
     if ((pre && pre.key === key) || sensitive([ideaNow(), ...prev.flatMap((x) => x.items.flatMap((y) => y.lines))].join("\n")).length) return;
     const mine = { key, r: null };
-    mine.p = fetch("/api/stagedraft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage: n, tier, idea: ideaNow(), prev }) })
+    mine.p = fetch("/api/stagedraft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage: n, tier, idea: ideaNow(), prev, base: baseText() }) })
       .then((x) => x.json()).catch(() => ({ ok: false })).then((x) => { mine.r = x; return x; });
     pre = mine;
   }
@@ -1152,7 +1154,7 @@
     const hit = pre && pre.key === preKey(n, prev) ? pre : null; pre = null;
     let r = hit && hit.r && hit.r.ok ? hit.r : null;
     if (hit && !hit.r) { r = await callAI(null, null, hit.p); if (!r || !r.ok) r = null; }   // 미리 부른 것을 받는 중 — 같은 기다림 화면으로 기다린다
-    if (!r) r = await callAI("/api/stagedraft", { stage: n, tier: st.tier, idea, prev });
+    if (!r) r = await callAI("/api/stagedraft", { stage: n, tier: st.tier, idea, prev, base: baseText() });
     st.planBusy = "";
     if (r.ok && r.draft && st.quest && st.quest.chap === n) { st.quest = applyStates(QU.withStageDraft(st.quest, r.draft)); st.tokens = r.tokens || 0; fetchUsage(); prefetch(st.quest); render(); return say(r.draft.say); }
     render(); say(`${LB(n)} 초안은 만들지 못했어요 — ${r.reason || "AI에 연결하지 못했어요"}. 받기 화면에서 한 줄씩 해요`); questText();
@@ -1265,7 +1267,7 @@
     const act = run ? cell("c2", "now", "②", "행동", `${itemName ? `${itemName} — ` : ""}Claude Code가 하는 중 · 맡긴 일 ${pg.done}/${pg.total}`, "다 되면 채팅에 보고가 와요") : b && b.confirmed ? cell("c2", pg.done === pg.total ? "done" : "later", "②", "행동", `${itemName ? `다음: ${itemName} · ` : ""}맡긴 일 ${pg.done}/${pg.total}`, "채팅의 '맡기기'로 다음 줄을") : cell("c2", "later", "②", "행동", "Claude Code에 맡김", "준비 계획을 확정하면 맡겨요");
     const ck = r && r.check;
     // R-5 ③ 기록(C-42): 적은 칸은 카드에 그 줄(정한 것)을 보인다 — 아직인 칸은 짧은 이름. 3단계의 '꼭 / 있으면 좋음'은 한 칸(Ⅲ)에 적는다 [해석: 스토리보드의 두 칸 → 한 줄]
-    const cards = q ? `<div class="cv-cards">${q.objs.map((o, i) => { const ln = (q.lines[i] || [])[0] || ""; return `<span class="${QU.filled(q, i) ? "y" : ""}" title="${ROMAN(i)} ${esc(QU.shortOf(o.name))}">${ROMAN(i)} ${esc(QU.filled(q, i) && ln ? ln : QU.shortOf(o.name))}</span>`; }).join("")}</div>` : "";
+    const cards = q ? `<div class="cv-cards">${q.objs.map((o, i) => { const ln = (q.lines[i] || [])[0] || ""; return `<span class="${QU.filled(q, i) ? "y" : ""}" title="${ROMAN(i)} ${esc(QU.nameOf(q, i))}">${ROMAN(i)} ${esc(QU.filled(q, i) && ln ? ln : QU.nameOf(q, i))}</span>`; }).join("")}</div>` : "";
     const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, "도전과제 탭에서 칸마다 누가 정했는지") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
     // R-5 ④ 저장(C-42): 올라갈 파일 이름 — 이 장의 단계 문서 · 기획서 · 결정 기록(docs.js가 만드는 것과 같은 이름)
     const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
@@ -1475,7 +1477,7 @@
     const base = st.card && BC ? `<section class="ws-card"><h4>이 프로젝트의 기준</h4>${baseCardHTML(BC.withEdits(st.card, st.cardEdits), true)}<button type="button" class="b sm" data-act="card-edit">고친 것 적용</button></section>` : "";   // C-56 R-1 — 고치면 아직 안 한 퀘스트를 다시
     const q = st.quest && st.quest.chap === n ? st.quest : null, p = q ? QU.progress(q) : null, s = N.STAGES[n];
     const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met) : [];
-    const cells = q ? `<ol class="ws-cells">${q.objs.map((o, i) => `<li class="${QU.filled(q, i) ? "y" : i === QU.curIdx(q) ? "now" : ""}">${ROMAN(i)} ${esc(QU.shortOf(o.name))}</li>`).join("")}</ol>` : `<p class="ws-sum">${st.j ? "퀘스트를 받기 전이에요 — 노트북 탭에서 받아요" : "채팅에서 원하는 것을 말하면 1단계 퀘스트가 생겨요"}</p>`;
+    const cells = q ? `<ol class="ws-cells">${q.objs.map((o, i) => `<li class="${QU.filled(q, i) ? "y" : i === QU.curIdx(q) ? "now" : ""}">${ROMAN(i)} ${esc(QU.nameOf(q, i))}</li>`).join("")}</ol>` : `<p class="ws-sum">${st.j ? "퀘스트를 받기 전이에요 — 노트북 탭에서 받아요" : "채팅에서 원하는 것을 말하면 1단계 퀘스트가 생겨요"}</p>`;
     const quest = `<section class="ws-q"><h4>퀘스트</h4><p class="ws-sum"><b>${LB(n)} · ${esc(s.title)}</b>${p ? ` — 다섯 칸 중 ${p.k}번째, 정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}` : ""}</p>${cells}
       <p class="ws-h">관문</p><p class="ws-sum">${st.finished ? "모든 장을 마쳤어요" : st.results[n] && st.results[n].passed ? `지났어요 ${esc(st.results[n].passed.slice(5))}` : st.j && st.j.stage === n ? (unmet.length ? `남은 기준 ${unmet.length}개` : "기준을 다 채웠어요 — 섬에서 넘어가기 전 확인") : "아직 — 칸을 다 채우면"}</p>${
       unmet.length ? `<ul class="ws-unmet">${unmet.slice(0, 4).map((x) => `<li>${esc(QU.shortOf(x.text))}</li>`).join("")}${unmet.length > 4 ? `<li>+${unmet.length - 4}</li>` : ""}</ul>` : ""}</section>`;
@@ -1517,11 +1519,11 @@
         <button type="button" class="join" data-act="${ed ? "quest-save" : "quest-ok"}">${ed ? "이대로 받기" : "퀘스트 받기"}</button>
         <div class="sub"><button type="button" data-act="${ed ? "quest-cancel" : "quest-fix"}">${ed ? "고치기 취소" : "고쳐 주세요"}</button><button type="button" data-act="quest-later">나중에</button></div></div>`;
     const toc = q.objs.map((o, i) => { const cls = metOf(i) || QU.filled(q, i) ? "done" : i === ci ? "" : "lock";
-      return `<button type="button" data-act="quest-sel" data-i="${i}" aria-pressed="${q.sel === i}" class="${cls}" data-tt="${esc(QU.shortOf(o.name))}|${esc(QU.easyOf(o.name))}">${ROMAN(i)}. ${esc(QU.shortOf(o.name))}<small>${cls === "done" ? (metOf(i) ? "끝냄 ✓" : "적음") : cls === "lock" ? "★ 아직" : "지금"}</small></button>`; }).join("")
+      return `<button type="button" data-act="quest-sel" data-i="${i}" aria-pressed="${q.sel === i}" class="${cls}" data-tt="${esc(QU.nameOf(q, i))}|${esc(QU.easyOf(o.name))}">${ROMAN(i)}. ${esc(QU.nameOf(q, i))}<small>${cls === "done" ? (metOf(i) ? "끝냄 ✓" : "적음") : cls === "lock" ? "★ 아직" : "지금"}</small></button>`; }).join("")
       + ((q.side || []).length ? `<div class="side-h">곁 퀘스트 — 안 해도 돼요</div>${q.side.map((s) => `<button type="button" class="lock" disabled title="만드는 크기를 키우면 할 일이 돼요">${s.icon} ${esc(s.name)}<small>★ 더 크게 만들 때</small></button>`).join("")}` : "");
     const sts = qstates(q), badge = (i) => { const x = sts[i]; if (!x || x.state === "write") return ""; const w = QS.STATE_WORD[x.state]; return `<small class="qs qs-${x.state}" title="${esc(x.why || "")}">${w}${x.from ? ` · ${LB(x.from.s)} ${ROMAN(x.from.i)}` : ""}</small>`; };   // C-56 상태 넷
     const lines = q.objs.map((o, i) => { const ls = q.lines[i] || [], ok = metOf(i);
-      return `<div class="ln${ok ? " done" : ""}${q.sel === i ? " sel" : ""}"><span class="ck">${ok ? OK_ICON : ""}</span><span class="lt">${ed ? `<input data-act="quest-name" data-i="${i}" value="${esc(o.name)}" aria-label="할 일 이름" maxlength="60">` : `<b>${esc(QU.shortOf(o.name))}</b>${badge(i)}${QU.easyOf(o.name) ? `<span class="easy">${esc(QU.easyOf(o.name))}</span>` : ""}${qmore ? `<span class="full">${esc(o.name)}${o.term ? ` ${termTag(o.term)}` : ""}</span>` : ""}`}${
+      return `<div class="ln${ok ? " done" : ""}${q.sel === i ? " sel" : ""}"><span class="ck">${ok ? OK_ICON : ""}</span><span class="lt">${ed ? `<input data-act="quest-name" data-i="${i}" value="${esc(o.name)}" aria-label="할 일 이름" maxlength="60">` : `<b>${esc(QU.nameOf(q, i))}</b>${o.term ? `<small class="method">${esc(o.term)}</small>` : ""}${badge(i)}${QU.easyOf(o.name) ? `<span class="easy">${esc(QU.easyOf(o.name))}</span>` : ""}${qmore ? `<span class="full">${esc(o.name)}${o.term ? ` ${termTag(o.term)}` : ""}</span>` : ""}`}${
         ls.map((l, k) => (ed ? `<input data-act="quest-line" data-i="${i}" data-k="${k}" value="${esc(l)}" aria-label="적은 줄" maxlength="200">` : `<span class="lw">${esc(l)}</span>`)).join("")}${!ls.length && !ed ? `<span class="lw empty">${q.draft ? "아직 — 채팅에서 맞는지 봐요" : "아직 — 채팅에서 한 줄 적어요"}</span>` : ""}</span><span class="n">${ed ? `${ls.length} / <input type="number" min="1" max="5" value="${o.need}" data-act="quest-need" data-i="${i}" aria-label="개수">` : o.need > 1 ? `${ls.length} / ${o.need}` : ls.length ? "✓" : ""}</span></div>`; }).join("");
     return `<div class="book"><div class="page l"><h4>목차 · ${LB(q.chap)}</h4><div class="toc">${toc}</div></div>
       <div class="page r"><h3>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</h3><div class="meta">${LB(q.chap)}${q.title !== N.STAGES[q.chap].title ? ` ${esc(N.STAGES[q.chap].title)}` : ""} · 플로로가 만들었어요 · ${done ? "다 적음" : "하는 중"}</div>
@@ -1537,6 +1539,8 @@
   const haveDocs = () => { const h = new Set(); if (st.files && st.files.src === "mine" && st.files.list) for (const x of st.files.list) if (!x.dir) h.add(x.path); for (const d of st.docs) if (FDOCS && FDOCS.SLUGS[d.stage]) h.add(nowDocPath(d.stage)); return h; };
   const stageMap = () => (SM ? SM.build({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], results: st.results, j: st.j, quest: st.quest, finished: st.finished, have: haveDocs(), prep: st.prep }) : null);
   const STATE_WORD = { done: "끝남", now: "지금", ready: "준비됨", pending: "준비됨 — 확인 전", later: "2단계에서 그려져요" };
+  // 규칙 카드(stagemap.prepare) + AI 카드(/api/prepare) — AI가 낸 이름 · ① 생각 · ② 행동 · 근거만 덮고, ③ 기록 · ④ 저장 · ⑤ 버전은 규칙 그대로(C-56 R-2)
+  const mergePrepared = (rule, ai) => Object.fromEntries(Object.entries(rule).map(([n, c]) => { const x = ai && ai[n]; return [n, x ? { ...c, think: x.think || c.think, act: x.act || c.act, from: x.from || c.from, ...(x.title ? { title: x.title } : {}) } : c]; }));
   function cardsMap(cur) {
     const m = stageMap(); if (!m) return treeMap(cur);
     const fix = st.prep && !st.prep.ok && st.prep.fix;
@@ -2960,7 +2964,7 @@
       const swap = (it) => ({ ...st.quest, draft: { ...st.quest.draft, items: st.quest.draft.items.map((x, k) => (k === i ? it : x)) } });
       if (st.mode !== "live" || !canLive) { st.quest = swap({ ...q.draft.items[i], text: ex[1], alts: [...ex.slice(2), ex[0]] }); render(); return say("연습이라 예시 순서만 바꿨어요 — 진짜 AI면 새 예시를 만들어요"); }
       Object.assign(st, { warn: null, error: "", planBusy: "again" });
-      const r = await callAI("/api/stagedraft", { stage: q.chap, tier: st.tier, idea: ideaNow(), prev: prevOf(q.chap), avoid: { i, texts: ex.slice(0, 3) } });
+      const r = await callAI("/api/stagedraft", { stage: q.chap, tier: st.tier, idea: ideaNow(), prev: prevOf(q.chap), base: baseText(), avoid: { i, texts: ex.slice(0, 3) } });
       st.planBusy = "";
       const it = r.ok && r.draft && r.draft.items[i];
       if (it && st.quest && st.quest.chap === q.chap && QU.curIdx(st.quest) === i) { st.quest = swap(it); st.tokens = r.tokens || 0; fetchUsage(); return render(); }   // 다음 장은 이 장을 다 적은 뒤에 미리(다른 예시를 누른 사람은 권한 것을 그대로 고르지 않을 때가 많다 — 2026-10-26 리뷰)
@@ -3069,7 +3073,11 @@
     "tree-map": () => { treeChap = null; render(); },   // 도전과제의 한눈에 보기(C-37)
     // C-54 지도 — 보기 셋 · 기획서로 그리기 · 맞아요(한 번에) · 고칠래요 · 카드 누름(오른쪽 칸 + 문서가 있으면 파일 보기)
     "tree-view": (i, el) => { const v = el && el.dataset.v; if (["cards", "flow", "box"].includes(v)) treeView = v; render(); },
-    "prep-draw": () => { if (!SM || !st.results[1] || st.prep) return; st.prep = { ...SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits }), ok: false, fix: false, at: ymd() }; save(); render(); say("기획서로 3단계부터 8단계까지 그렸어요 — 카드마다 어느 절에서 왔는지 적었어요. 맞으면 '맞아요'로 한 번에 넘어가요"); },
+    "prep-draw": async () => { if (!SM || !st.results[1] || st.prep) return;
+      const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits });
+      let ai = null;   // C-56 R-2(2026-10-28): 진짜 AI면 한 번에 이 프로젝트의 말로(/api/prepare) — 못 받으면 규칙(기획서의 절)으로만, 연습은 규칙
+      if (st.mode === "live" && canLive) { const r = await callAI("/api/prepare", { tier: st.tier, idea: ideaNow(), prev: prevOf(2), base: baseText() }); if (r.ok && r.prepare) { ai = r.prepare.cards; st.tokens = r.tokens || 0; fetchUsage(); } else say(`AI가 맞춰 짓지는 못했어요 — ${r.reason || "연결하지 못했어요"}. 기획서의 절에서 규칙으로 그렸어요`); }
+      st.prep = { cards: mergePrepared(rule.cards, ai), ok: false, fix: false, at: ymd(), ...(ai ? { ai: true } : {}) }; save(); render(); say(ai ? "이 프로젝트의 말로 3단계부터 8단계까지 그렸어요 — 카드마다 근거 절을 적었어요. 맞으면 '맞아요'로 한 번에 넘어가요" : "기획서로 3단계부터 8단계까지 그렸어요 — 카드마다 어느 절에서 왔는지 적었어요. 맞으면 '맞아요'로 한 번에 넘어가요"); },
     "prep-ok": () => { if (!st.prep) return; st.prep = { ...st.prep, ok: true, fix: false }; save(); render(); say("준비된 퀘스트로 가요 — 그 단계에 들어서면 준비한 칸으로 시작해요"); },
     "prep-fix": () => { if (!st.prep) return; st.prep = { ...st.prep, fix: true }; render(); },
     "map-card": (i) => { const m = stageMap(), c = m && m.cards[i]; if (!c) return; st.mapSel = st.mapSel === i ? null : i; if (st.mapSel != null && !wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); if (st.mapSel != null && c.doc.has) ACT["map-open"](null, { dataset: { act: "map-open", v: c.doc.path } }); },

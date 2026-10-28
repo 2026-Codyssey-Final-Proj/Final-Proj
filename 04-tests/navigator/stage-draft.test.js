@@ -77,3 +77,31 @@ test("연습(서버 없이)의 2단계 예시 초안 — 등급마다 그 할 �
   const words = JSON.stringify([Q.exampleStageDraft(1, N.criteriaFor(1, "Full")), Q.DOC_PICKS]);
   for (const j of N.JARGON) assert.ok(!words.includes(j), j);
 });
+
+// C-56 R-2(2026-10-28, 이재엽 버튼 "이 프로젝트의 말 + 방법 이름 꼬리표"): 초안 요청문에 기준 카드(<기준>)를 재료로 주고 칸마다 이 프로젝트의 말로 된 이름(title) · 묻는 말(ask) · 끝 조건(done)을 함께 받는다.
+//   방법 이름(EARS · Planguage …)은 꼬리표로만 — 이름에 전문 용어가 섞이면 버리고 할 일 이름으로 둔다(지어낸 숫자 · 사람은 그대로 안 받는다)
+test("C-56 R-2 — 초안 요청문: 기준 카드가 있으면 <기준>으로 싸서 넘기고(없으면 요청문이 전과 같다), 칸마다 title · ask · done을 묻는다; 읽기: title 40자 · ask · done 120자, 전문 용어가 든 title은 버린다", () => {
+  const IDEA = "동아리 행사 신청 앱을 만들고 싶어요", PREV3 = [{ stage: 0, items: PREV }, { stage: 1, items: N.criteriaFor(1, "Xpress").map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) }];
+  const base = "만드는 것: 신청이 한곳에 모여요\n쓰는 사람: 운영진 3명 · 회원 40명\n성공: 신청 40건";
+  const p0 = N.stageDraftPrompt(2, "Xpress", { idea: IDEA, prev: PREV3 }), p1 = N.stageDraftPrompt(2, "Xpress", { idea: IDEA, prev: PREV3, base });
+  assert.ok(!p0.includes("<기준>") && p1.includes("<기준>\n" + base + "\n</기준>"), "기준 카드는 있을 때만"); assert.ok(/title/.test(p1) && /ask/.test(p1) && /done/.test(p1), "이름 · 묻는 말 · 끝 조건을 묻는다");
+  assert.match(p1, /이 프로젝트의 말/); assert.match(p1, /방법 이름[^\n]*(쓰지|넣지) ?않/);
+  const schema = N.STAGE_DRAFT_SCHEMA.properties.items.items.properties; assert.ok(schema.title && schema.ask && schema.done, "모양에 title · ask · done");
+  const todo = N.criteriaFor(2, "Xpress");
+  const d = N.parseStageDraft({ say: "네", prep: [], items: todo.map((c, i) => ({ text: `${i} 글`, alts: [], from: [], title: i === 0 ? "프롬프트 저장하기 요구 문장 세 줄" : i === 1 ? "EARS로 쓰기" : "", ask: "어떤 프롬프트를 저장하나요?", done: "문장 셋이 '~하면, 앱은 ~한다' 꼴" })) }, 2, "Xpress", PREV3);
+  assert.ok(d, "읽힌다"); assert.equal(d.items[0].title, "프롬프트 저장하기 요구 문장 세 줄"); assert.equal(d.items[0].ask, "어떤 프롬프트를 저장하나요?"); assert.equal(d.items[0].done, "문장 셋이 '~하면, 앱은 ~한다' 꼴");
+  assert.equal(d.items[1].title, undefined, "전문 용어(EARS)가 든 이름은 버린다"); assert.equal(d.items[2].title, undefined, "빈 이름은 없다");
+  assert.equal(N.parseStageDraft({ say: "네", prep: [], items: todo.map((c, i) => ({ text: `${i} 글`, alts: [], from: [], title: "가".repeat(80) })) }, 2, "Xpress", PREV3).items[0].title.length, 40, "40자까지");
+});
+
+// C-56 R-2 + C-54(2026-10-28): 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 AI 한 번으로 — 받은 글 · 기준 카드 · 1 · 2단계 결과로 단계마다 이 프로젝트의 말로 된 이름 · ① 생각 · ② 행동 · 근거 절. 숫자 · 사람 · 날짜는 지어내지 않는다(#228이 규칙으로만 두었던 것)
+test("C-56 — 준비 요청문(preparePrompt) · 모양(PREPARE_SCHEMA) · 읽기(parsePrepare): 3 ~ 8단계(코드 2 ~ 7)마다 title · think · act · from, 빠진 단계 · 틀린 모양은 null, 전문 용어 이름은 할 일 이름으로", () => {
+  const IDEA = "동아리 행사 신청 앱을 만들고 싶어요", PREV3 = [{ stage: 0, items: PREV }, { stage: 1, items: N.criteriaFor(1, "Xpress").map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) }];
+  const p = N.preparePrompt("Xpress", { idea: IDEA, prev: PREV3, base: "만드는 것: 신청" });
+  assert.match(p, /3단계/); assert.match(p, /8단계/); assert.match(p, /<기준>/); assert.match(p, /지어내지 않는다/);
+  const items = [2, 3, 4, 5, 6, 7].map((n) => ({ stage: n + 1, title: n === 2 ? "기능 여섯을 문장으로" : `${n + 1}단계 일`, think: `생각 ${n}`, act: `맡길 일 ${n}`, from: n === 2 ? "기획서 3절" : "" }));
+  const r = N.parsePrepare({ items, say: "준비했어요" });
+  assert.ok(r && Object.keys(r.cards).join(",") === "2,3,4,5,6,7", "코드 2 ~ 7"); assert.equal(r.cards[2].title, "기능 여섯을 문장으로"); assert.equal(r.cards[2].from, "기획서 3절"); assert.equal(r.cards[3].from, "새로 정함", "근거가 없으면 새로 정함");
+  assert.equal(N.parsePrepare({ items: items.slice(1), say: "x" }), null, "빠진 단계면 null");
+  assert.equal(N.parsePrepare({ items: items.map((x) => ({ ...x, title: "EARS 요구 명세" })), say: "x" }).cards[2].title, "", "전문 용어 이름은 비워 할 일 이름으로");
+});

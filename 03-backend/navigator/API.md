@@ -41,6 +41,7 @@
 | `GET /api/docmap?now=<경로>` | 작업실의 문서 지도 탭(C-45, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, board}` — 문서(docs/** · README · CLAUDE.md)를 상자로, md 링크를 선으로 이은 archi-board 보드 데이터 | 403 |
 | `POST /api/file` | 섬 — 연 파일을 저장할 때(C-43) | 출처 · 확인 값(쿠키) | `{i, path, text, mtime, eol?, force?, overwrite?, ignoreBusy?, commit?}` → `{ok, mtime, task, note}` — 그 파일에만 쓰고 commit이면 그 파일만 커밋 · 푸시를 Claude Code에 | 403 · 400 · 404 · 409(moved · sensitive · changed · busy) · 413 · 500 |
 | `POST /api/preset` | 섬 — 연 파일 머리의 '틀로 맡기기' · 채팅 '문서 틀'(C-44, 2026-10-27) | 출처 · 확인 값(쿠키) | `{i 또는 path(docs/…md), preset, stage?, note?}` → 3-16과 같은 `{ok, task, preset, name}` — presets.js의 글 · 끝 조건으로 Claude Code에 | 403 · 400 · 404 · 409 · 502 |
+| `POST /api/prepare` | 섬 — 2단계 끝 '기획서로 3 ~ 8단계 그리기'(C-56 R-2 · C-54, 2026-10-28), 진짜 AI 모드만 | 출처 · 확인 값(쿠키) | `{tier?, idea, prev[{stage, items}], base?}` → `{ok, prepare:{cards:{2..7:{title, think, act, from}}, say}, tokens}` — 빠른 모델 한 번 | 403 · 400 · 502 |
 | `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/stagedraft` | 섬 — 1단계 관문을 지났을 때(C-37, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, draft:{items[{text} 또는 {pick, why}], say}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/docs` | 섬 — 2단계를 마치고 '올리기'를 눌렀을 때(C-37) | 출처 · 확인 값(쿠키) | `{ok, project, files[], task}` | 403 · 413 · 400 · 409 · 500 |
@@ -632,3 +633,10 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 확인하는 것: 주소마다 성공 모양(칸 이름·타입·개수), 거절마다 상태 코드와 이유, 등급(안 보냄·`null`·`Full`이 같음, Xpress·Lite는 그 등급의 개수), 확인 값(머리글·쿠키·머리글 먼저), 크기(40,000자 경계), 화면 파일 목록, 키·글이 사용량·녹화에 남지 않는 것.
 - 처음 설정(3-10 · 3-11)은 [`setup-api.test.js`](../../04-tests/navigator/setup-api.test.js) — 칸과 값이 새지 않는 것, 확인 값, 재생 중 확인, 스크립트 · 스타일의 `no-cache`(2026-10-19).
 - AI 진행(3-2-1 · 3-12, 2026-10-20)은 `api-contract.test.js`(403 · 모양 · since · 가림 · 50줄 · 비우기 · 상태)와 [`hook-steps.test.js`](../../04-tests/navigator/hook-steps.test.js)(hook.js를 실제로 돌려 — 본문에 내용이 없고, 서버가 꺼져 있을 때 600ms 안에 끝남).
+
+### 3-29. `POST /api/prepare` — 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 이 프로젝트의 말로 (C-56 R-2 · C-54, 2026-10-28)
+
+<!-- claude-drafted: 2026-10-28 — questfit 넘김 ⓓ(이재엽 버튼 "이 프로젝트의 말 + 방법 이름 꼬리표"). #228이 규칙(stagemap.js)으로만 두었던 '준비된 퀘스트'를 AI 한 번으로 맞춘다 -->
+- 본문 `{ tier?, idea, prev, base? }` — `idea` 받은 글(400자), `prev` 1 · 2단계 결과(`[{ stage, items }]`, 3-22와 같은 모양), `base` 기준 카드를 '칸: 내용' 줄로(1,500자까지, 3-22의 `base`와 같다 — 초안 요청에도 같이 간다).
+- 답 `{ ok, prepare: { cards: { "2": { title, think, act, from }, … "7": … }, say }, tokens }` — 코드 2 ~ 7(앱 3 ~ 8단계)이 다 있어야 한다(빠지면 502). `title`은 이 프로젝트의 말로 된 이름(40자 — 전문 용어가 들면 비워 화면이 할 일 이름으로), `think` ① 생각, `act` ② 행동(맡길 일), `from` 근거(기획서 n절 / 없으면 '새로 정함'). ③ 기록 · ④ 저장 · ⑤ 버전은 화면이 규칙(stagemap.js)으로 더한다.
+- 받은 글 · 기준 · 지난 단계 결과에 없는 숫자 · 사람 · 날짜는 지어내지 않는다(요청문). 빠른 모델. 연습 모드는 부르지 않는다 — 규칙으로만.

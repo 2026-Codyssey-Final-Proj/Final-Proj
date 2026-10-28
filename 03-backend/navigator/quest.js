@@ -190,6 +190,11 @@
     "마친 작업을 저장소에 올려 두기": "다 한 것을 저장소에 올려요",
   };
   const easyOf = (name) => EASY[name] || "";
+  // C-56 R-2(2026-10-28): 칸의 이름 · 묻는 말 · 끝 조건 — 초안에 이 프로젝트의 말(title · ask · done)이 있으면 그것, 없으면 짧은 이름 · 질문 · 빈 글. 방법 이름(term)은 화면이 꼬리표로
+  const wordOf = (q, i, k) => { const it = q && q.draft && q.draft.items && q.draft.items[i]; return it && typeof it[k] === "string" && it[k].trim() ? it[k].trim() : ""; };
+  const nameOf = (q, i) => wordOf(q, i, "title") || (q && q.objs[i] ? shortOf(q.objs[i].name) : "");
+  const askOf = (q, i) => wordOf(q, i, "ask") || question(q, i);
+  const doneOf = (q, i) => wordOf(q, i, "done");
   // 플로로가 이 칸에 낸 것(C-39) — 초안 글 · 권한 크기 · 권한 기획서. 고르는 칸도 무엇을 권했는지 남긴다(문서의 '플로로 초안' · 도전과제 흐름). 없으면 빈 글
   function proposalOf(q, i) {
     const d = q && q.draft; if (!d) return "";
@@ -312,7 +317,7 @@
   // 위 줄의 진행 — "M개 중 k번째 할 일"(다 했으면 M)
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
-  const api = { BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, SHELL_COST, ITEMS, draw, oddsOk,
+  const api = { nameOf, askOf, doneOf, BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, SHELL_COST, ITEMS, draw, oddsOk,
     itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT,
     pickOf, withStageDraft, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;

@@ -68,7 +68,7 @@ const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/docmap", "/
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide", "/api/apps/link"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다 · Claude Desktop 설정 파일에 잇는다. 밖(터널)에서는 받지 않는다(allowed)
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
-const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -549,7 +549,7 @@ function docTargets(dir, files) {
   }
   return { list: out };
 }
-const SOURCE_MAX = 64 * 1024;
+const SOURCE_MAX = 64 * 1024, BASE_MAX = 1500;
 const CARD_KEYS = ["what", "who", "size", "fixed", "materials", "data", "out", "success"];
 const cardFieldOk = (f) => f && typeof f === "object" && strOk(f.text || "", 200) && (f.by == null || f.by === "moved" || f.by === "me") && (f.note == null || strOk(f.note, 120))
   && (f.lines == null || (Array.isArray(f.lines) && f.lines.length <= 8 && f.lines.every((x) => x && strOk(x.text, 200) && Number.isInteger(x.line)))) && (f.from == null || (Array.isArray(f.from) && f.from.length <= 4));
@@ -706,6 +706,15 @@ async function handle(req, res) {
   if (route === "/api/proposals/decide") { const k = proposals.findIndex((x) => body && x.id === body.id); if (k < 0) return refuse(res, "기다리는 제안이 아님", 404); proposals.splice(k, 1); return send(res, 200, { ok: true }); }   // 맞아요 · 아니요 — 적는 일은 화면이
   if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
   if (route === "/api/docs") { const [code, out] = shipDocs(body); return send(res, code, out); }   // C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(API.md 3-23)
+  if (route === "/api/prepare") {   // C-56 R-2 + C-54(API.md 3-29, 2026-10-28) — 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 AI 한 번으로(빠른 모델). 받은 글 · 기준 카드 · 1 · 2단계 결과
+    if (!body || !Nav.filled(body.idea)) return refuse(res, "받은 글이 비어 있음");
+    if (body.idea.length > Nav.IDEA_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.IDEA_MAX}자까지`);
+    if (body.tier != null && !Nav.TIERS.includes(body.tier)) return refuse(res, "모르는 등급");
+    if (body.base != null && !strOk(body.base, BASE_MAX)) return refuse(res, `기준 카드 글은 ${BASE_MAX}자까지`);
+    const prev = prevStagesOf(body.prev, 2);
+    if (!prev || !prev.some((p) => p.stage === 0)) return refuse(res, "1 · 2단계 결과가 다 있어야 해요 — [{ stage, items }]");
+    return ask(res, Nav.preparePrompt(body.tier, { idea: body.idea, prev, base: body.base || "" }), Nav.PREPARE_SCHEMA, as("prepare", (d) => Nav.parsePrepare(d)), "준비된 퀘스트", { fast: true, maxTokens: 4096 });
+  }
   if (route === "/api/stagedraft") {   // C-37 2단계 · C-39 3단계 초안(API.md 3-22, 2026-10-25) — AI 한 번. 받은 글 · 지난 단계 결과들로 그 등급의 할 일마다 글 · 재료(기획서 칸은 고르기) · 준비할 것
     if (!body || !Nav.DRAFT_STAGES.includes(body.stage)) return refuse(res, `초안을 만드는 단계가 아님 — 지금은 ${Nav.DRAFT_STAGES.map((n) => n + 1).join(" · ")}단계만`);
     if (body.tier != null && !Nav.TIERS.includes(body.tier)) return refuse(res, "모르는 등급");
@@ -717,7 +726,8 @@ async function handle(req, res) {
     const avoid = body.avoid;
     if (avoid && !(typeof avoid === "object" && Number.isInteger(avoid.i) && avoid.i >= 0 && avoid.i < 8 && Array.isArray(avoid.texts) && avoid.texts.length >= 1 && avoid.texts.length <= 3 && avoid.texts.every((t) => strOk(t, 300) && Nav.filled(t))))
       return refuse(res, "다른 예시 요청의 모양이 맞지 않음 — { i: 칸 자리, texts: 이미 본 예시 1~3개 }");
-    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev, ...(avoid ? { avoid: { i: avoid.i, texts: avoid.texts } } : {}) }), Nav.STAGE_DRAFT_SCHEMA,
+    if (body.base != null && !strOk(body.base, BASE_MAX)) return refuse(res, `기준 카드 글은 ${BASE_MAX}자까지`);   // C-56 R-2 — 기준 카드(한 줄씩 '칸: 내용')
+    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev, base: body.base || "", ...(avoid ? { avoid: { i: avoid.i, texts: avoid.texts } } : {}) }), Nav.STAGE_DRAFT_SCHEMA,
       as("draft", (d) => Nav.parseStageDraft(d, body.stage, body.tier, prev)), "단계 초안", { fast: true, maxTokens: 4096 });
   }
   if (route === "/api/start") {   // C-36 처음 한 바퀴(API.md 3-21, 2026-10-25) — AI 한 번. 받은 글 전체로 1단계 초안(제목 · 불편 · 달라지는 것 · 누가 · 크기). 도구 없이, 글만
