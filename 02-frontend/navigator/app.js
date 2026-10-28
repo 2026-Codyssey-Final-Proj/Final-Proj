@@ -2437,7 +2437,7 @@
     const k = items.findIndex((x) => x.id === sel), x = items[k], w = b.work[sel] || {};
     return `<div class="book"><div class="page l"><h4>목차 · 맡길 일</h4><div class="toc">${toc}</div></div>
       <div class="page r"><h3>${esc(x.need)}</h3><div class="meta">맡길 일 · ${items.length}개 중 ${k + 1}번째 · ${word(sel)}${planPractice(b) ? " · 예시예요" : ""}</div>
-        <p><b>다 됐는지 보는 기준</b> — ${esc(x.check)}</p>${x.basis ? `<p><b>근거</b> — ${esc(x.basis)}</p>` : ""}${w.note ? `<p><b>지난번 의견</b> — ${esc(w.note)}</p>` : ""}${w.report ? `<div class="pl-rep"><p>${esc(w.report.easy)}</p>${repChecks(w.report)}</div>` : ""}
+        <p><b>다 됐는지 보는 기준</b> — ${esc(x.check)}</p>${w.note ? `<p><b>지난번 의견</b> — ${esc(w.note)}</p>` : ""}${w.report ? `<div class="pl-rep"><p>${esc(w.report.easy)}</p>${repChecks(w.report)}</div>` : ""}
         <p class="meta">${sel === cur ? "맡기기 · 보고 확인은 채팅에서 해요." : FP.stateOf(b, sel) === "done" ? "끝낸 줄이에요." : "앞 줄을 끝내면 열려요."}</p>
         <p><b>풀려는 문제</b> — ${esc(b.plan.problem)}</p></div></div>`;
   }

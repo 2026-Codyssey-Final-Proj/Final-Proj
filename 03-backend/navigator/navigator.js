@@ -645,8 +645,8 @@
     PREPARE_STAGES, PREPARE_SCHEMA, preparePrompt, parsePrepare, TITLE_MAX, ASK_MAX, hasJargon, WORK_MAX,   // C-56 R-2 준비된 퀘스트 · 이 프로젝트의 말(2026-10-28)   // C-37 2단계 초안 · C-39 3단계 초안 · 재료 · 준비할 것(2026-10-25)
     PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport,   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)
     CHAT_TURNS_MAX, CHAT_LINE_MAX, CHAT_TOTAL_MAX, CHAT_SCHEMA, talkOf, chatPrompt, parseChat };   // 작업실 개편 C-61 플로로와 자유 대화(2026-10-29, API.md 3-31)
-  // 지식 퀘스트(2026-10-29) — 따로 더해 둔다(다른 갈래가 고치는 위 내보내기 줄과 부딪치지 않게). C-48 가져갈 것
-  Object.assign(api, { CARRY_SCHEMA, CARRY_DECISIONS_MAX, carryPrompt, parseCarry, PLAN_BASIS_SCHEMA, PLAN_BASIS_MAX });   // C-51 계획의 근거
+  // 지식 퀘스트(2026-10-29) — 따로 더해 둔다(다른 갈래가 고치는 위 내보내기 줄과 부딪치지 않게). C-48 가져갈 것 · C-51 계획의 근거
+  Object.assign(api, { CARRY_SCHEMA, CARRY_DECISIONS_MAX, carryPrompt, parseCarry, PLAN_BASIS_SCHEMA, PLAN_BASIS_MAX });
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;
 })(typeof window !== "undefined" ? window : globalThis);
