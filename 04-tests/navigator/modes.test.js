@@ -157,14 +157,14 @@ test("app.js — C-37: 단계 결과(results)를 남기고 도전과제의 기�
   assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: \{ \.\.\.QU\.resultOf\(st\.quest\), at: ymd\(\), check: checkOf\(j\)/, "보고가 된 퀘스트의 결과 + 확인한 날 · 완료 기준(C-39 — R-10부터 checkOf: why · skipped도)");
   assert.match(app, /function treeMap\(cur\)/); assert.match(app, /"jmap-fill": /);
   assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev, base: baseText\(\) \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
-  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", source: st\.source \|\| "", results: shipResults\(\), card: st\.card \|\| null \}\)/, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
+  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", source: st\.source \|\| "", results: shipResults\(\), card: st\.card \|\| null, /, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
   assert.match(read("navigator/index.html"), /docs\.js/, "미리 보기도 같은 docs.js");
 });
 
 // ── C-39(2026-10-25, 이재엽 "3단계에서 … 초안들 보여줘 · PRD처럼 공식문서들로 … 증빙 · 도전과제에서 … 어떻게 넣고 어떤 부분을 했는지 이어져서") ──
 test("app.js — C-39: 고르는 칩은 누가 정했나 = 고름(pick) · 관문을 지난 날(passed) · 2단계부터 관문마다 문서 올리기 · 3단계 초안은 지난 단계 전부 · 도전과제는 네 칸 흐름과 재료", () => {
   for (const a of ["draft-who", "draft-pick", "draft-size"]) assert.match(app.slice(app.indexOf(`"${a}": `), app.indexOf(`"${a}": `) + 400), /"pick"\)/, `${a}는 고름`);
-  assert.match(app, /\[s\.n\]: \{ \.\.\.st\.results\[s\.n\], passed: ymd\(\) \}/, "관문을 지난 날");
+  assert.match(app, /\[s\.n\]: \{ \.\.\.st\.results\[s\.n\], passed: ymd\(\), learned/, "관문을 지난 날");
   assert.match(app, /FDOCS && s\.n >= 1 && st\.results\[0\] && st\.results\[1\]\) \{ st\.ship = \{ phase: "offer" \}/, "2단계부터 관문마다 — 마지막(8단계) 관문도(다음 단계가 없어도)");
   assert.match(app, /filter\(\(k\) => k < n\)\.sort\(\(a, b\) => a - b\)\.map\(\(k\) => \(\{ stage: k, items:/, "초안에는 지난 단계 결과 전부");
   for (const k of ["넣은 것", "플로로가 한 것", "내가 정한 것", "관문", "jm-ref", "이 단계 전에 준비할 것"]) assert.ok(app.includes(k), k);
@@ -200,7 +200,7 @@ test("app.js — 상태 넷: applyStates가 초안 뒤에 붙고, gateApply가 �
 test("app.js — 기준 카드: 1단계 관문에 보이고(basecard.js), 성공 칸을 적으면 '직접', 지나면 기록 · 문서로, 고치면 준비된 퀘스트 다시", () => {
   const a = read("navigator/app.js");
   assert.match(a, /const BC = window\.NavBaseCard/); assert.match(a, /"prep", "source", "card"\]/, "기록(KEEP)에");
-  assert.match(a, /s\.n === 0 && BC \? \{ body: baseCardHTML\(/, "1단계 관문 카드의 몸통"); assert.match(a, /data-act="card-field"/, "사람이 채우는 칸");
+  assert.match(a, /s\.n === 0 && BC \? baseCardHTML\(/, "1단계 관문 카드의 몸통"); assert.match(a, /data-act="card-field"/, "사람이 채우는 칸");
   assert.match(a, /st\.card = BC\.withEdits\(BC\.build\(\{ results: st\.results, source: st\.source \}\), st\.cardEdits\)/, "지날 때 카드를 기록에");
   assert.match(a, /card: st\.card \|\| null/, "/api/docs에 card"); assert.match(a, /"card-edit": /, "고치면 다시 짓는다");
   assert.match(read("navigator/index.html"), /basecard\.js/); assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8"), /"basecard\.js"/);

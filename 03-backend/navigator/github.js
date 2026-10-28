@@ -7,6 +7,7 @@
 // AI를 부르지 않는다 — navigator.test.js "provider.js 한 곳에서만"이 이 파일에 AI 말이 없는지 따로 본다.
 "use strict";
 const { spawnSync } = require("node:child_process");
+const crypto = require("node:crypto");
 
 const TIMEOUT_MS = 4000;
 // 셸 없이 · 창 없이 · 비밀번호를 묻지 않게(GIT_TERMINAL_PROMPT=0, GH_PROMPT_DISABLED) · 시간 제한. 끝 코드와 첫 줄만 쓴다
@@ -68,4 +69,15 @@ function createRequest(project, visibility = "private") {
   ].join("\n");
 }
 
-module.exports = { parseRemote, status, runner, createRequest, VIS, TIMEOUT_MS };
+// 지식 퀘스트 C-52(2026-10-29, PRD 6절 · 9절 10번 '저장소마다 처음 한 번'): 기록(단계 문서 · 배운 것)을 올리기 전에 이 폴더의 원격 저장소가 비공개인지 gh에게 묻는다(읽기만).
+//   답: 원격이 없으면 null, 있으면 { key, vis } — vis는 private · public · ""(gh가 없거나 로그인 전 · GitHub가 아님 — 모름). key는 원격 주소(비밀번호 · 토큰 칸을 뗀 것)의 sha256 앞 16자 — 주소를 내지 않는다
+function visibility(dir, run = runner()) {
+  if (!dir) return null;
+  const r = run("git", ["remote", "get-url", "origin"], dir);
+  if (r.code !== 0 || !r.out) return null;
+  const key = crypto.createHash("sha256").update(r.out.replace(/^([a-z+]+:\/\/)[^@/]*@/i, "$1").replace(/\/+$/, "").replace(/\.git$/, "")).digest("hex").slice(0, 16);
+  const v = run("gh", ["repo", "view", "--json", "isPrivate", "-q", ".isPrivate"], dir);
+  return { key, vis: v.code === 0 && v.out === "true" ? "private" : v.code === 0 && v.out === "false" ? "public" : "" };
+}
+
+module.exports = { parseRemote, status, runner, createRequest, visibility, VIS, TIMEOUT_MS };

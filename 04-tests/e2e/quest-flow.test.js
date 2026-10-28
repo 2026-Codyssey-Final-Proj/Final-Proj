@@ -106,10 +106,13 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     await click(page, "[data-act=gate]");
     const bc = await page.evaluate(() => ({ rows: document.querySelectorAll(".mc.chat .bc .bc-row").length, who: document.querySelector(".mc.chat .bc .bc-row:nth-child(2) dd")?.textContent.replace(/\s+/g, " ").trim(), blank: !!document.querySelector('.mc.chat .bc input[data-act=card-field][data-v="success"]') }));
     assert.equal(bc.rows, 8, "기준 카드 칸 여덟"); assert.match(bc.who || "", /옮겨 옴 · 1단계 Ⅲ/, `쓰는 사람은 1단계 Ⅲ에서: ${bc.who}`); assert.ok(bc.blank, "성공은 빈칸(입력)");
+    // 지식 퀘스트 C-47(2026-10-29): 관문 카드에 '배운 것' 칸(사람이 적음) — 1단계는 처음 뜻을 적는 단계라 '아직 같은가요'는 없다. 비우고 지나면 ''(문서에 '비어 있음', A-13 막지 않음)
+    assert.ok(await page.$(".mc.chat .learn textarea[data-act=learned]"), "배운 것 칸"); assert.equal(await page.$(".mc.chat [data-act=goal-same]"), null, "1단계 관문에는 처음 뜻 다시 보기가 없다");
     await page.type('.mc.chat .bc input[data-v="success"]', "신청 40건이 한곳에 모이면");
     await click(page, "[data-act=yes]");   // 관문 카드는 이미 열려 있다 — passGate의 나머지만
     if (await page.$("[data-act=check-pick]")) { await click(page, "[data-act=check-pick]"); if (await page.$("[data-act=check-go]")) await click(page, "[data-act=check-go]"); }
     await wait(600);
+    assert.equal((await saved(page)).results["0"].learned, "", "비우고 지나면 빈 글(막지 않는다)");
     const card = (await saved(page)).card;
     assert.ok(card && card.success.by === "me" && card.success.text === "신청 40건이 한곳에 모이면" && card.who.by === "moved", `기준 카드가 기록에: ${JSON.stringify(card && card.success)}`);
     // 2단계 — 1단계 결과로 만든 초안(연습 예시), 제목은 주제, 받기 화면 없이 확인
@@ -124,11 +127,25 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.dataset.act), "say", "채우기 — 채팅 칸으로");
     await confirmAll(page); await wait(600);   // C-56: 칸마다 — 옮겨 온 칸은 이미 채워져 카드가 없다
     assert.match(await nowSay(page), /모두 했어요/);
-    await passGate(page);
+    // C-47: 2단계 관문 — 배운 것을 내 말로 · 1단계에서 적은 원하는 결과가 아직 같은지(바뀌었어요 → 새 말). 고른 뒤 다시 그려도 적은 글이 남는다
+    await click(page, "[data-act=gate]");
+    const want = s1.results["0"].items.find((x) => x.name === "다 만들면 무엇이 달라지는지 쓰기").lines.join(" / ");
+    assert.ok((await page.$eval(".mc.chat .learn", (e) => e.textContent)).includes(`처음 원한 결과: “${want}”`), "처음 원한 결과를 다시 보인다");
+    await page.type(".mc.chat [data-act=learned]", "칸을 먼저 채우니 빠진 기능이 보였어요");
+    await click(page, ".mc.chat [data-act=goal-changed]");
+    assert.equal(await page.$eval(".mc.chat [data-act=learned]", (e) => e.value), "칸을 먼저 채우니 빠진 기능이 보였어요", "다시 그려도 적은 글이 남는다");
+    await page.type(".mc.chat [data-act=goal-new]", "신청과 출석까지 한곳에");
+    await click(page, "[data-act=yes]");
+    if (await page.$("[data-act=check-pick]")) { await click(page, "[data-act=check-pick]"); if (await page.$("[data-act=check-go]")) await click(page, "[data-act=check-go]"); }
+    await wait(600);
+    const s1b = (await saved(page)).results["1"];
+    assert.equal(s1b.learned, "칸을 먼저 채우니 빠진 기능이 보였어요"); assert.deepEqual(s1b.goal, { changed: "신청과 출석까지 한곳에" });
     // 2단계가 끝나면 문서로 묶어 올릴지 묻는다 — 파일 목록 · 미리 보기, 연습은 올리지 않는다
     assert.match(await nowSay(page), /GitHub에 올릴까요/);
     const files = await page.evaluate(() => [...document.querySelectorAll(".msg.now .ship-files li")].map((li) => li.textContent));
     for (const f of ["docs/01-idea/idea.md", "docs/02-plan/plan.md", "CLAUDE.md", "README.md"]) assert.ok(files.some((x) => x.includes(f)), f);
+    await click(page, '.msg.now [data-act=ship-peek][data-i="0"]');
+    assert.match(await page.$eval(".msg.now .ship-peek pre", (e) => e.textContent), /바뀐 뜻 — 2단계 관문\(\d{4}-\d{2}-\d{2}\): “신청과 출석까지 한곳에”/, "C-47 기획서의 처음 말한 것 아래에 바뀐 뜻");
     await click(page, ".mc.chat [data-act=ship-go]");
     assert.match(await page.evaluate(() => document.querySelector(".mc.chat .log")?.textContent || ""), /연습이라 올리지 않았어요/);
     // C-39 — 3단계도 1 · 2단계 결과로 만든 초안: 맨 위에 준비할 것, 칸마다 재료

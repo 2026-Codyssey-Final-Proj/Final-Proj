@@ -46,8 +46,13 @@
     const proof = ["## 증빙", "", "| 무엇 | 내용 |", "|---|---|", `| 칸을 다 확인한 날 | ${r.at ? cell(r.at) : NONE} |`, `| 관문을 지난 날 | ${gate} |`, `| 누가 정했나 | ${count} |`].join("\n");
     // checkBy confirm(C-40) — 초안을 칸마다 확인한 단계는 AI가 다시 살펴보지 않았다. 그렇다고 적는다(증빙이 무엇에 기대는지)
     const check = r.check && r.check.length ? `\n\n### 완료 기준 — ${r.checkBy === "confirm" ? "확인한 대로(AI가 다시 살펴보지 않고, 칸마다 사람이 확인)" : "살펴본 결과"}\n\n| 기준 | 됐나 | 근거 |\n|---|---|---|\n${r.check.map((c) => `| ${cell(red(c.text))} | ${c.skipped ? `넘김(까닭: ${cell(red((r.skip && r.skip.reason) || ""))})` : c.met ? "됨" : "안 됨"} | ${cell(red(c.evidence))} |`).join("\n")}` : "";
+    // 지식 퀘스트 C-47(2026-10-29, PRD 6절 · A-13): 배운 것 — 관문에서 사람이 적은 말 그대로(플로로 · AI는 이 칸을 쓰지 않는다). 비우면 '비어 있음', 칸을 만들기 전에 지난 관문은 '남아 있지 않아요'.
+    //   줄머리 #은 \#로 — 사람 글이 절 제목이 되어 문서 모양(C-49가 다시 읽는 '## ' 경계)을 깨지 않게
+    const learned = typeof r.learned === "string" ? (r.learned.trim() ? red(r.learned.trim()).replace(/\r\n?/g, "\n").replace(/^(\s*)#/gm, "$1\\#") : "비어 있음 — 관문에서 적지 않았어요")
+      : r.passed || R(n + 1) ? "남아 있지 않아요(배운 것 칸을 만들기 전에 지난 관문)" : "아직 — 관문에서 적어요";
+    const goal = r.goal ? `\n\n## 처음 뜻 다시 보기\n\n${r.goal.changed ? `바뀌었어요 — “${red(String(r.goal.changed).replace(/\r?\n/g, " "))}”(처음 말은 [기획서](../PRD.md)의 '처음 말한 것'에 그대로)` : "아직 같아요 — 1단계에서 적은 원하는 결과 그대로"}` : "";
     const plan = n === 1 ? "\n\n이 문서가 이 프로젝트의 **계획서**예요. 일을 시작하기 전에 먼저 읽어요. 단계를 모은 기획서 한 장은 [../PRD.md](../PRD.md)에 있어요." : "";
-    return `# ${label(n)} · ${s.title}${topic ? ` — ${topic}` : ""}\n\n${meta(s)}${plan}\n\n## 재료\n\n${mat}${prep}\n\n${items}\n\n${proof}${check}\n\n---\nFloe가 단계를 지나며 정리했어요. 누가 무엇을 정했는지는 [../decisions.md](../decisions.md)에 모았어요.\n`;
+    return `# ${label(n)} · ${s.title}${topic ? ` — ${topic}` : ""}\n\n${meta(s)}${plan}\n\n## 재료\n\n${mat}${prep}\n\n${items}\n\n## 배운 것\n\n${learned}${goal}\n\n${proof}${check}\n\n---\nFloe가 단계를 지나며 정리했어요. 누가 무엇을 정했는지는 [../decisions.md](../decisions.md)에 모았어요.\n`;
   }
   const placeholder = (n) => { const s = N.STAGES[n]; return `# ${label(n)} · ${s.title}\n\n아직 — 이 단계를 지나면 Floe가 채워요.\n\n${meta(s)}\n`; };
 
@@ -57,10 +62,12 @@
     const state = (n) => (!R(n) ? "아직" : R(n).passed ? `끝냄 — 관문 ${cell(R(n).passed)}` : R(n + 1) ? "끝냄" : `확인함${R(n).at ? ` ${cell(R(n).at)}` : ""} — 관문 아직`);
     const rows = SLUGS.map((_, n) => `| ${label(n)} · ${N.STAGES[n].title} | ${state(n)} | ${R(n) ? `[${ctx.docOf(n).slice(5)}](${ctx.docOf(n).slice(5)})` : "—"} |`).join("\n");
     const parts = done.map((n, k) => `## ${k + 1}. ${PRD_PART[n]} — ${label(n)}\n\n${R(n).items.map((it) => `- **${red(Q.shortOf(it.name))}** — ${it.lines.length ? red(joined(it)) : "아직 적지 않았어요"}`).join("\n")}`).join("\n\n");
+    // C-47 처음 뜻 다시 보기 — 관문에서 '바뀌었어요'면 처음 말 아래에 덧붙인다(처음 말은 지우지 않는다)
+    const changed = done.filter((n) => R(n).goal && R(n).goal.changed).map((n) => `\n>\n> 바뀐 뜻 — ${label(n)} 관문${R(n).passed ? `(${cell(R(n).passed)})` : ""}: “${red(String(R(n).goal.changed).replace(/\r?\n/g, " "))}”`).join("");
     const later = SLUGS.map((_, n) => n).filter((n) => !R(n)).map((n) => `- ${label(n)} · ${N.STAGES[n].title} — 아직(이 단계를 지나면 '${PRD_PART[n]}' 절이 생겨요)`).join("\n");
     return [MARK_START, `# 기획서${name ? ` — ${name}` : ""}`, "",
       "Floe의 단계를 지나며 정한 것을 한 장으로 묶었어요. 칸마다 누가 어떻게 정했는지는 [결정 기록](decisions.md)에, 단계마다의 근거는 각 단계 문서의 '증빙'에 있어요.", "",
-      "| 단계 | 상태 | 문서 |", "|---|---|---|", rows, "", "## 처음 말한 것", "", `> ${ctx.idea || "남아 있지 않아요"}${ctx.srcLines ? `\n>\n> 통째로: [00-source/idea.md](00-source/idea.md) 1 ~ ${ctx.srcLines}줄` : ""}`, "", parts, ...(later ? ["", "## 다음에 채울 것", "", later] : []), MARK_END, ""].join("\n");
+      "| 단계 | 상태 | 문서 |", "|---|---|---|", rows, "", "## 처음 말한 것", "", `> ${ctx.idea || "남아 있지 않아요"}${ctx.srcLines ? `\n>\n> 통째로: [00-source/idea.md](00-source/idea.md) 1 ~ ${ctx.srcLines}줄` : ""}${changed}`, "", parts, ...(later ? ["", "## 다음에 채울 것", "", later] : []), MARK_END, ""].join("\n");
   }
   // 결정 기록 — 칸마다 한 줄 + 지난 관문마다 한 줄
   function decisionsDoc(name, ctx) {

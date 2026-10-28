@@ -210,6 +210,41 @@ test("POST /api/docs(F-70): 6단계를 코드 없이 지났으면(nocode) 결정
   assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1, 5: { ...R5, nocode: "yes" } } } })).status, 400, "nocode는 true만");
 });
 
+// 지식 퀘스트 C-47(2026-10-29): 관문에서 적은 배운 것(learned — 400자, 빈 글이면 '비어 있음')과 처음 뜻(goal — { same: true } | { changed })을 받는다
+test("POST /api/docs(C-47): learned · goal을 받아 단계 문서의 '배운 것' · 기획서의 바뀐 뜻에 쓴다, 모양이 틀리면 400", async () => {
+  assert.equal(Srv.useProject(DIR), true);
+  const E0 = { ...R0, at: "2026-10-29", passed: "2026-10-29", learned: "기준을 먼저 적으니 쉬웠다" }, E1 = { ...R1, at: "2026-10-29", passed: "2026-10-29", learned: "", goal: { changed: "출석까지" } };
+  const r = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: E1 } } });
+  assert.equal(r.status, 200, r.text);
+  assert.match(fs.readFileSync(path.join(DIR, "docs/01-idea/idea.md"), "utf8"), /기준을 먼저 적으니 쉬웠다/);
+  assert.match(fs.readFileSync(path.join(DIR, "docs/02-plan/plan.md"), "utf8"), /비어 있음 — 관문에서 적지 않았어요/);
+  assert.match(fs.readFileSync(path.join(DIR, "docs/PRD.md"), "utf8"), /바뀐 뜻 — 2단계 관문/);
+  await untilDone();
+  for (const bad of [{ ...E0, learned: "가".repeat(401) }, { ...E0, learned: 3 }, { ...E0, goal: { same: "yes" } }, { ...E0, goal: { changed: "" } }, { ...E0, goal: { same: true, changed: "x" } }])
+    assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: bad, 1: E1 } } })).status, 400, JSON.stringify(bad.goal || bad.learned).slice(0, 40));
+});
+
+// 지식 퀘스트 C-52(2026-10-29, PRD 9절 10번): 공개인지 모르는 저장소(원격이 GitHub가 아님 — gh가 답하지 못한다, 밖으로 묻지 않는다)면 쓰기 전에 409 why public,
+//   publicOk와 다시 보내면 쓰고, 그 저장소는 다음부터 묻지 않는다(열쇠는 NAV_USAGE_FILE 옆 파일)
+const HAS_GIT = require("node:child_process").spawnSync("git", ["--version"]).status === 0;
+test("POST /api/docs(C-52): 공개이거나 공개인지 모르는 저장소면 쓰기 전에 한 번 묻는다 — publicOk면 쓰고 다음부터 묻지 않는다", { skip: !HAS_GIT && "git 없음" }, async () => {
+  const { spawnSync } = require("node:child_process"), REPO = path.join(TMP, "pub-repo");
+  fs.mkdirSync(REPO); spawnSync("git", ["init", "-q"], { cwd: REPO }); spawnSync("git", ["remote", "add", "origin", path.join(TMP, "elsewhere.git")], { cwd: REPO });
+  assert.equal(Srv.useProject(REPO), true);
+  const body = { topic: "앱", results: { 0: R0, 1: R1 } };
+  const r1 = await call("POST", "/api/docs", { body });
+  assert.equal(r1.status, 409, r1.text); assert.equal(r1.json.why, "public"); assert.match(r1.json.reason, /공개인지 확인하지 못했어요/);
+  assert.ok(!fs.existsSync(path.join(REPO, "docs")), "묻는 동안은 아무것도 쓰지 않는다");
+  const r2 = await call("POST", "/api/docs", { body: { ...body, publicOk: true } });
+  assert.equal(r2.status, 200, r2.text); assert.ok(fs.existsSync(path.join(REPO, "docs/PRD.md")));
+  await untilDone();
+  const saved = JSON.parse(fs.readFileSync(path.join(TMP, "usage-public-ok.json"), "utf8"));
+  assert.equal(saved.keys.length, 1); assert.ok(!JSON.stringify(saved).includes("elsewhere"), "주소는 남기지 않는다");
+  assert.equal((await call("POST", "/api/docs", { body })).status, 200, "같은 저장소는 다시 묻지 않는다");
+  await untilDone();
+  assert.equal(Srv.useProject(DIR), true);
+});
+
 // F-68(2026-10-28): 받은 글 전부(source)를 받아 docs/00-source/idea.md에 쓴다 — 64KB까지, 넘으면 400(잘라 쓰지 않는다 — 화면이 알린다)
 test("POST /api/docs(F-68): source(받은 글 전부)를 docs/00-source/idea.md에 통째로, 1단계 문서는 줄로 가리킨다, 64KB 넘으면 400", async () => {
   assert.equal(Srv.useProject(DIR), true);
