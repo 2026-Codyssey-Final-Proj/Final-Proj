@@ -237,7 +237,8 @@
   const BOUND_KEY = "floe-demo:bound";
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
-  const KEEP = ["chat", "chatMark", "chatOpen", "mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
+  const CHAT_KEY = `${KEY}:chat`;   // C-63 — 연습 모드의 대화는 따로 저장(넘쳐도 다른 저장을 막지 않게 — 새 맥락 리뷰)
+  const KEEP = ["chatMark", "chatOpen", "mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
     "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "codeless", "linesDone", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   function load() {
@@ -246,6 +247,7 @@
     if (!s || typeof s !== "object") return;
     if (s.j && !(N.STAGES[s.j.stage] && Array.isArray(s.j.criteria))) delete s.j;   // 고장 난 기록은 버린다
     for (const k of KEEP) if (k in s) st[k] = s[k];
+    try { st.chat = JSON.parse(localStorage.getItem(CHAT_KEY) || "[]"); } catch { st.chat = []; }
     if (!Array.isArray(st.chat)) st.chat = [];   // C-63 — 저장된 대화. 고장 난 기록은 버린다
     st.chat = st.chat.filter((m) => m && typeof m.html === "string" && ["me", "floro", "sys"].includes(m.who));   // who는 class에 들어간다 — 셋만
     if (st.mode === "live" && !canLive) st.mode = "fixture";
@@ -280,6 +282,7 @@
     const o = { at: Date.now() };
     for (const k of KEEP) o[k] = st[k];
     try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify(st.chat)); } catch { st.chat = st.chat.slice(-100); }   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로
     postState();
   }
   // C-38 시험판(2026-10-25, 두승현) — 서버에 지금 상태를 알린다: MCP로 이은 AI(Claude Desktop · 터널을 연 웹 GPT · 웹 Claude)가 floe_now로 읽는다. 바뀌었을 때만 보낸다

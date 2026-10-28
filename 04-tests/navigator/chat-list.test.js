@@ -10,7 +10,8 @@ const a = read("02-frontend/navigator/app.js"), c = read("02-frontend/navigator/
 
 test("T23 대화 저장 — 진짜 AI 모드는 서버(API.md 3-32 /api/chatlog — 이재엽 쪽 #247, A-20 '이 컴퓨터의 앱 저장 곳')에: 켤 때 GET으로 이어서, logMsg가 add로(20개씩). 연습 · 서버 없이는 이 브라우저(localStorage)에만. 400줄 상한, 내 말은 가려서", () => {
   const keep = (a.match(/const KEEP = \[[^\]]*\]/) || [""])[0];
-  for (const k of ['"chat"', '"chatMark"', '"chatOpen"']) assert.ok(keep.includes(k), `${k}는 이 브라우저에도(KEEP)`);
+  for (const k of ['"chatMark"', '"chatOpen"']) assert.ok(keep.includes(k), `${k}는 이 브라우저에도(KEEP)`);
+  assert.ok(!keep.includes('"chat"') && a.includes("const CHAT_KEY = `${KEY}:chat`;") && a.includes('localStorage.setItem(CHAT_KEY, JSON.stringify(st.chat)); } catch { st.chat = st.chat.slice(-100); }'), "대화는 따로 저장 — 넘치면 대화만 줄이고 다른 저장은 막지 않는다");
   assert.ok(!keep.includes("stageFiles"), "바뀐 파일은 서버가 쌓는다(3-32 changes) — 저장하지 않는다");
   assert.match(a, /const CHAT_CAP = 400;/);
   assert.match(a, /const logMsg = \(who, html, extra = \{\}\) => \{ const m = \{ who, html, at: Date\.now\(\), n: st\.quest \? st\.quest\.chap : atStage\(\), \.\.\.extra \}; st\.chat = \[\.\.\.st\.chat, m\]; const over = st\.chat\.length - CHAT_CAP; if \(over > 0\) \{ st\.chat = st\.chat\.slice\(over\); st\.chatMark = Math\.max\(0, \(st\.chatMark \|\| 0\) - over\); \} chatSeq \+= 1; chatlogAdd\(m\); \};/, "말마다 단계 번호 · 서버에 쌓기, 상한을 넘기면 오래된 것부터(단계 표시 자리도 같이)");
