@@ -1197,7 +1197,7 @@ table.ptab{min-width:880px;font-size:13.5px}
 
   // 단계마다 예정 화면과 요구 — isl: pill(접힌 알약) / open(펼친 섬), view: board / doc / map / card
   var F0 = [[0, "foldo", "test-1", "dir"], [1, "md", "README.md"], [1, "foldo", "docs", "dir"]];
-  var P = [
+  var PLAN = [
     { title: "켜면 바로 작업실 — 받은 글은 통째로",
       lead: "앱을 켜면 섬 알약만 뜨던 것이 작업실(지금 단계 퀘스트 보드)부터 열리고, 섬은 가장자리 알약으로 접힌 채 말풍선으로 인사해요. 미션 글을 붙여 넣으면 자르지 않고 작업 폴더의 docs/00-source/에 통째로 남겨요.",
       sc: { isl: "pill", tab: 0, lv: "LV 0 · 조개 0",
@@ -1457,7 +1457,7 @@ table.ptab{min-width:880px;font-size:13.5px}
       '<div class="ifoot"><div class="iin"><span>원하는 것을 적거나 붙여 넣어요</span><span class="send">보내기</span></div></div></div></div>';
   }
   function pScreen(d) {
-    var p = P[d.n], c = p.sc, v = c.view;
+    var p = PLAN[d.n], c = p.sc, v = c.view;
     var main = v.k === "board" ? pBoard(v) : v.k === "doc" ? pDoc(v) : v.k === "map" ? pMap(v) : pCard(v);
     var win = '<div class="pwin"><div class="pw-top"><span class="an">Floe · test-1</span><span class="as">' + stageName(d.n) + " · " + esc(d.short) + "</span>" + pFloes(d.n, v.k) +
       '<span class="vt" aria-hidden="true">' + VIEWS.map(function (x, i) { return "<span" + (i === c.tab ? ' class="on"' : "") + ">" + x + "</span>"; }).join("") + '</span><span class="lv">' + esc(c.lv) + "</span></div>" +
@@ -1468,7 +1468,7 @@ table.ptab{min-width:880px;font-size:13.5px}
       (b ? '<div class="pbub" aria-hidden="true"><span>' + esc(b[0]) + ' <span class="ex">예시</span></span><small>' + esc(b[1]) + '</small><span class="bt"><span class="p">' + esc(b[2][0]) + "</span><span>" + esc(b[2][1]) + "</span></span></div>" : "") + "</div>";
   }
   function planPart(d) {
-    var p = P[d.n];
+    var p = PLAN[d.n];
     var items = p.items.map(function (x) {
       return '<li><div class="h"><span class="rid">' + esc(x[0]) + "</span>" + stp(x[1]) + "<b>" + esc(x[2]) + "</b></div><p>" + esc(x[3]) + "</p>" +
         (x[4] ? '<p class="t1">test-1에서 본 것 — ' + esc(x[4]) + "</p>" : "") +
