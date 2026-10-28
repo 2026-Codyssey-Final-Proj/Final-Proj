@@ -24,7 +24,7 @@ fs.writeFileSync(STUB, `const fs = require("node:fs"); let i = ""; process.stdin
   fs.writeFileSync(${JSON.stringify(STUB_OUT)}, JSON.stringify({ argv: process.argv.slice(2), stdin: i }));
   process.stdout.write(JSON.stringify({ type: "result", is_error: false, result: "끝", total_cost_usd: 0.01, usage: { input_tokens: 10, output_tokens: 20 } }));
   setTimeout(() => process.exit(0), fs.existsSync(${JSON.stringify(SLOW)}) ? 1500 : 50); });`);
-Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "event-token"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: STUB });
+Object.assign(process.env, { CLAUDE_CONFIG_DIR: require("./hook-home.js")(TMP), NAV_EVENT_TOKEN_FILE: path.join(TMP, "event-token"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: STUB });
 for (const k of ["NAV_RECORD", "NAV_TOKENS_FILE", "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"]) delete process.env[k];
 
 const IDEA = "동아리 행사 신청 앱을 만들고 싶어요";
@@ -197,6 +197,17 @@ test("POST /api/docs(F-62): 넘긴 기준의 까닭이 단계 문서 · 결정 �
   await untilDone();
   assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: { ...E1, skip: { reason: "가".repeat(300), items: [] } } } } })).status, 400, "까닭은 200자까지");
   assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: { ...E1, check: c1.map((c) => ({ ...c, skipped: "yes" })) } } } })).status, 400, "skipped는 참 · 거짓만");
+});
+
+// F-70(2026-10-28, 결정 모음 A-04): 6단계에서 '코드 파일을 만드시겠습니까?'에 아니요 — 서버는 결과의 nocode(true만)를 받아 결정 기록 관문 줄에 남긴다
+test("POST /api/docs(F-70): 6단계를 코드 없이 지났으면(nocode) 결정 기록 관문 줄에 '코드 없이 지남', nocode는 true만", async () => {
+  assert.equal(Srv.useProject(DIR), true);
+  const R5 = { items: [{ name: "확인 방법을 먼저 정하고 만들기", lines: ["목차 문서로 확인"] }], at: "2026-10-28", passed: "2026-10-28", nocode: true };
+  const r = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1, 5: R5 } } });
+  assert.equal(r.status, 200, r.text);
+  assert.match(fs.readFileSync(path.join(DIR, "docs/decisions.md"), "utf8"), /6단계 \| 관문 \|[^\n]*코드 없이 지남/);
+  await untilDone();
+  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1, 5: { ...R5, nocode: "yes" } } } })).status, 400, "nocode는 true만");
 });
 
 // F-68(2026-10-28): 받은 글 전부(source)를 받아 docs/00-source/idea.md에 쓴다 — 64KB까지, 넘으면 400(잘라 쓰지 않는다 — 화면이 알린다)

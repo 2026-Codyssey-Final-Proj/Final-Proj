@@ -33,7 +33,7 @@ const freePort = () => new Promise((resolve) => { const s = net.createServer(); 
 test("C-45 · C-44 — 문서 지도 탭에 보드(문서 상자 · 재료 선), 밖으로 요청 없음, 상자 → '파일 보기에서 열기' → 파일이 열린다; 연 파일 머리에 '틀로 맡기기', 채팅에 '문서 틀' 칩", { skip }, async () => {
   const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "floe-dm-")), PROJ = path.join(TMP, "my-club-app");
   fs.writeFileSync(path.join(TMP, "claude-stub.js"), `process.stdin.resume(); process.stdin.on("end", () => setTimeout(() => { process.stdout.write(JSON.stringify({ type: "result", result: "ok" })); process.exit(0); }, 300));`);   // 가짜 claude — 저장마다 커밋을 맡기므로, 진짜 Claude Code가 시험 폴더에서 돌지 않게(NAV_CLAUDE_BIN)
-  Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "tok"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: path.join(TMP, "claude-stub.js") });
+  Object.assign(process.env, { CLAUDE_CONFIG_DIR: require("../navigator/hook-home.js")(TMP), NAV_EVENT_TOKEN_FILE: path.join(TMP, "tok"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: path.join(TMP, "claude-stub.js") });
   fs.writeFileSync(process.env.NAV_REPLAY, "{}");
   const w = (p, s) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, s); };
   w(path.join(PROJ, "README.md"), "# 앱\n[문서 목차](docs/README.md)\n"); w(path.join(PROJ, "docs/README.md"), "- [1단계](01-idea/idea.md)\n- [2단계](02-plan/plan.md)\n- [기획서](PRD.md)\n");

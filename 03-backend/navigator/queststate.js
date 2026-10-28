@@ -16,7 +16,7 @@
   const stageOf = (results, n) => (results && (results[n] || results[String(n)])) || null;
 
   // 사실 — 결과(단계마다 { items: [{ name, lines }] }) · 파일 목록(/api/files의 { path, dir })에서. 모르면 null
-  function factsFrom({ results = {}, files = null } = {}) {
+  function factsFrom({ results = {}, files = null, codeless = false } = {}) {
     const feat = lineOf(stageOf(results, 2), FEATURE_LINE), succ = lineOf(stageOf(results, 1), SUCCESS_LINE), out = lineOf(stageOf(results, 1), OUT_LINE);
     const outText = out ? norm(out.join(" ")) : "";
     return {
@@ -24,6 +24,7 @@
       publish: !outText ? null : /공개\s*(안|하지)|공개하지|비공개|공개는\s*안/.test(outText) ? false : /공개/.test(outText) ? true : null,
       success: !succ || !succ.length ? null : succ.some((l) => /\d/.test(l) && !UNMEASURED.test(l)),
       codeFiles: Array.isArray(files) ? files.filter((f) => f && !f.dir && CODE_RE.test(String(f.path || ""))).length : null,
+      codeless: !!codeless,   // 6단계에서 '코드 파일을 만드시겠습니까?'에 아니요(결정 모음 A-04 — 문서만 만드는 일일 수 있다, F-70) — 코드 0개여도 막지 않는다
     };
   }
 
@@ -35,7 +36,7 @@
     if (stage === 2 && is(TRACE_LINE, 3) && facts.features != null && facts.features < 5) return { state: "skip", why: `기능이 ${facts.features}개 — 5개 이상일 때만 해요` };
     if (stage === 6 && is(PUBLIC_LINE, 3) && facts.publish === false) return { state: "skip", why: "앱을 공개하지 않아요 — 공개할 때만 해요" };
     if (stage === 6 && is(MEASURE_LINE, 0) && facts.success === false) return { state: "first", go: { s: 1, i: 1 }, why: "2단계 '언제 성공'의 숫자가 비어 있어요 — 그것부터 적어요" };
-    if (stage === 5 && facts.codeFiles === 0) return { state: "first", go: { s: 4, i: 0 }, why: "코드 파일이 없어요 — 5단계 뼈대 코드부터" };
+    if (stage === 5 && facts.codeFiles === 0 && !facts.codeless) return { state: "first", go: { s: 4, i: 0 }, code: true, why: "코드 파일이 없어요 — 5단계 뼈대 코드부터" };   // code — 화면이 '코드 파일을 만드시겠습니까?'로 묻는다(A-04)
     return { state: "write" };
   }
   // 퀘스트의 칸마다 — 글은 적은 줄이 있으면 그것, 아니면 초안(draft.items[i].text · 1단계는 pain · change · who)
