@@ -79,6 +79,27 @@ test("폴더 연결: 훅을 더하고(connect.js와 같은 모양 · 백업) 빼
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+// F-69(2026-10-28): 다시 켤 때 그 폴더의 훅이 지금 앱 자리를 가리키지 않으면(앱을 옮김 · 새로 깖) 다시 단다 — 같으면 아무것도 쓰지 않는다(백업도 안 만든다)
+test("다시 켤 때(refreshDir): 훅이 지금 자리면 그대로(파일 · 백업 없음), 옛 자리면 다시 달아 허락 훅이 지금 approve-hook.js를 가리킨다, JSON이 아니면 건드리지 않는다", () => {
+  const C = require(path.join(BACK, "connect.js"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "floe-refresh-")), dir = path.join(tmp, ".claude"), file = path.join(dir, "settings.local.json");
+  assert.equal(L.connectDir(tmp, BACK, true).ok, true);
+  const before = fs.readFileSync(file, "utf8"), n = fs.readdirSync(dir).length;
+  assert.deepEqual(L.refreshDir(tmp, BACK), { ok: true, same: true });
+  assert.equal(fs.readFileSync(file, "utf8"), before); assert.equal(fs.readdirSync(dir).length, n, "백업을 만들지 않는다");
+  fs.writeFileSync(file, JSON.stringify(C.addHooks({ permissions: { allow: ["Read"] } }, 'node "/옛/자리/03-backend/navigator/hook.js"')));
+  assert.equal(C.hookReady(tmp, { configDir: tmp }).why, "moved");
+  const r = L.refreshDir(tmp, BACK);
+  assert.equal(r.ok, true); assert.notEqual(r.same, true);
+  assert.deepEqual(C.hookReady(tmp, { configDir: tmp }), { ok: true }, "지금 자리의 허락 훅");
+  const s = JSON.parse(fs.readFileSync(file, "utf8"));
+  assert.deepEqual(s.permissions, { allow: ["Read"] }, "다른 설정은 그대로");
+  assert.equal(s.hooks.PermissionRequest.length, 1, "옛 훅을 바꿨다(둘이 되지 않는다)");
+  fs.writeFileSync(file, "{ 깨진 json");
+  assert.equal(L.refreshDir(tmp, BACK).ok, false); assert.equal(fs.readFileSync(file, "utf8"), "{ 깨진 json");
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
 test("앱 껍데기는 AI를 부르지 않는다 — 외부 호출은 provider.js 하나", () => {
   const dir = path.join(__dirname, "../../02-frontend/electron");
   for (const f of ["main.js", "preload.js", "lib.js", "prebuild.js"]) {

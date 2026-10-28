@@ -1260,6 +1260,14 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .found li small{color:var(--sub);font-size:calc(11px * var(--ui-scale,1))}
 .found-acts{display:flex;gap:6px;flex-wrap:wrap}
 .found-none{margin:6px 0 0;font-size:calc(12.5px * var(--ui-scale,1));color:var(--sub)}
+/* F-70 코드 맡기기(2026-10-28) — 6단계 기능 줄 고르기 · 돌려 본 결과 파일, F-69 직접 하기 글. 색은 C-57 토큰만 */
+.lines-pick,.run-out{list-style:none;margin:6px 0;padding:0;display:grid;gap:6px;text-align:left}
+.lines-pick li,.run-out li{padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:calc(13px * var(--ui-scale,1));line-height:1.45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;overflow-wrap:anywhere;word-break:keep-all}
+.lines-pick li>span,.run-out li>code{flex:1 1 220px;min-width:0}
+.lines-pick li.y{border-color:var(--okbg)}
+.lines-pick li small{color:var(--sub);font-size:calc(11.5px * var(--ui-scale,1));display:inline-flex;align-items:center;gap:4px}
+.run-out code{font-family:var(--font-code);font-size:calc(12.5px * var(--ui-scale,1))}
+.msg.now textarea.brief{width:100%;min-height:120px;font-family:var(--font-code);font-size:calc(12.5px * var(--ui-scale,1));resize:vertical}
 .dalt{list-style:none;margin:6px 0;padding:0;display:grid;gap:6px;text-align:left}
 .dalt button{width:100%;text-align:left;padding:8px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);color:var(--ink);font-size:calc(13px * var(--ui-scale,1));line-height:1.45;cursor:pointer;overflow-wrap:anywhere}
 .dalt button:hover,.dalt button:focus-visible{border-color:var(--acc);outline:none;box-shadow:0 0 0 3px rgba(47,123,214,.18)}

@@ -62,7 +62,7 @@ test("누가 정했나(by): 초안 그대로 = ok · 초안을 고침 = edit · 
   let plain = Q.makeQuest(N.STAGES[2], N.criteriaFor(2, "Xpress")); plain = Q.fill(plain, 0, "직접 쓴 줄"); assert.equal(plain.by[0], "me");
   let one = Q.withDraft(Q.makeQuest(N.STAGES[0], N.criteriaFor(0, "Full")), Q.EXAMPLE_DRAFT);
   one = Q.fill(one, Q.SIZE_AT, "크기: 보통", "pick"); assert.equal(one.by[Q.SIZE_AT], "pick");
-  assert.deepEqual(Q.BY, ["ok", "edit", "me", "pick", "moved", "skip"]); assert.deepEqual(Object.keys(Q.BY_WORD), Q.BY);   // moved · skip — C-56(2026-10-28)
+  assert.deepEqual(Q.BY, ["ok", "edit", "me", "pick", "moved", "skip", "chat"]); assert.deepEqual(Object.keys(Q.BY_WORD), Q.BY);   // moved · skip — C-56(2026-10-28)
 });
 
 test("플로로가 낸 것(proposalOf): 초안 글 · 권한 크기 · 권한 기획서 — 고르는 칸도 무엇을 권했는지 남는다", () => {

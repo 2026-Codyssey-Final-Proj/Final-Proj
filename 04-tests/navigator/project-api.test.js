@@ -21,6 +21,7 @@ fs.writeFileSync(STUB, `const fs = require("node:fs"); let i = ""; process.stdin
   setTimeout(() => process.exit(0), 150); });`);
 
 Object.assign(process.env, {
+  CLAUDE_CONFIG_DIR: require("./hook-home.js")(TMP),   // F-69 — 맡기기 전에 서버가 허락 훅을 본다(가짜 사용자 설정에 단다, hook-home.js)
   NAV_EVENT_TOKEN_FILE: path.join(TMP, "event-token"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: STUB,
 });
 for (const k of ["NAV_RECORD", "NAV_TOKENS_FILE", "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"]) delete process.env[k];
