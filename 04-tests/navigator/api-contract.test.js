@@ -283,16 +283,18 @@ test("POST /api/event: 훅 알림을 받으면 {ok, seq} — seq는 하나씩 �
   for (const name of ["PreToolUse", "", undefined]) refused(await postEvent(hookEvent("seq", { hook_event_name: name })), 400, "알 수 없는 알림", String(name));
 });
 
-test("GET /api/events: {ok, latest, events[]} — 알림은 seq·at·kind·tool·project·work, since보다 뒤의 것만", async () => {
+test("GET /api/events: {ok, latest, project, events[]} — 알림은 seq·at·kind·tool·project·here·work, since보다 뒤의 것만", async () => {
   const { latest } = (await getEvents()).json;
   await postEvent(hookEvent("shape", { cwd: "/Users/me/club-app" }));
   await postEvent(hookEvent("shape", { hook_event_name: "Stop", prompt: undefined, last_assistant_message: "행사 목록을 날짜순으로 보여 줘요.", tool: "codex" }));
   const r = await getEvents(latest);
-  succeeded(r, ["latest", "events"]);
+  succeeded(r, ["latest", "project", "events"]);
+  assert.equal(r.json.project, "", "앱이 고른 폴더가 없으면 빈 이름");
   assert.equal(r.json.latest, latest + 2);
   assert.equal(r.json.events.length, 2, "since 뒤의 두 개만");
   for (const e of r.json.events) {
-    assert.deepEqual(Object.keys(e).sort(), ["at", "kind", "project", "seq", "tool", "work"]);
+    assert.deepEqual(Object.keys(e).sort(), ["at", "here", "kind", "project", "seq", "tool", "work"]);
+    assert.equal(e.here, true, "앱이 고른 폴더가 없으면 모두 그 자리");
     assert.ok(Number.isInteger(e.seq) && e.seq > latest);
     assert.ok(Number.isFinite(e.at) && Math.abs(Date.now() - e.at) < 60_000, "밀리초 시각");
     assert.equal(e.project, "club-app", "작업 폴더 이름만");
@@ -331,7 +333,7 @@ test("POST /api/events/clear: {ok, cleared} — 비운 뒤 events는 비고, lat
 // hook.js가 PostToolUse에 보내는 모양 — step만, tool_input · tool_response는 없다
 const stepEvent = (session, step, over = {}) => ({ hook_event_name: "PostToolUse", session_id: session, cwd: "/Users/me/club-app", tool: "claude", tool_name: "Edit", step: { verb: "고쳤어요", what: "src/app.js", add: 3, del: 1, ...step }, ...over });
 const getSteps = (since = 0, headers = withToken()) => call("GET", `/api/steps?since=${since}`, { headers });
-const STEP_KEYS = ["add", "at", "del", "seq", "verb", "what"], SESSION_KEYS = ["at", "id", "project", "state", "steps", "tool"];
+const STEP_KEYS = ["add", "at", "del", "seq", "verb", "what"], SESSION_KEYS = ["at", "here", "id", "project", "state", "steps", "tool"];   // here — 연결한 폴더의 세션인가(F-73, 2026-10-28)
 
 test("GET /api/steps: 확인 값이 없거나 틀리면 403, 쿠키로도 된다, GET이 아니면 404", async () => {
   const no = /^확인 값이 없거나 맞지 않음/;

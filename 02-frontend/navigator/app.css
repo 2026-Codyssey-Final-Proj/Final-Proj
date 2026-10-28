@@ -1349,7 +1349,8 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.wide .mc.chat .log{max-height:max(110px,calc(var(--col-h,360px) - 250px))}
 /* 접힌 옆 칸(C-46 R-2, 2026-10-27) — 그 가장자리의 알약 하나. 왼쪽 · 오른쪽은 세로 알약(이재엽 버튼 "세로 알약"): 플로로 얼굴은 바로, 글은 세로쓰기. 칸의 두께(56)는 win.js FOLD */
 .isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden;background:transparent}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이. 바탕은 비친다(작업실 바탕) — 남색은 알약 하나만(F-65 파란 줄, 2026-10-28) */
-.isl-col.folded .pill{max-width:100%;flex:none}
+.isl-col.folded .pill{max-width:100%;flex:none;background:#1A2766;-webkit-backdrop-filter:none;backdrop-filter:none}   /* 남색 판 — 작업실 창에는 앱 창의 .in-app 규칙이 없어 유리(반투명)로 그려져, F-65로 칸이 비친 뒤 파스텔이 비쳐 글자가 흐렸다(임유정 2026-10-28) */
+.isl-col.folded .pill:not(.ping){box-shadow:inset 1px 1px 0 rgba(255,255,255,.6),inset -1px -1px 0 rgba(255,255,255,.2),inset 0 0 0 .5px rgba(255,255,255,.14),0 1px 2px rgba(0,4,30,.35)}   /* 큰 그림자(0 24px 60px)는 칸(overflow:hidden · 여백 3px)에서 잘려 각진 띠로 보였다 — 1+2 = 3px 안에 */
 .isl-col.folded .pill:hover{transform:none}   /* 올리면 커지는 움직임은 접힌 칸에서는 잘린다 — 하지 않는다 */
 .isl-col.folded.side-left .pill,.isl-col.folded.side-right .pill{height:auto;max-height:100%;width:48px;flex-direction:column;align-items:center;padding:6px 0 16px;gap:8px}
 .isl-col.folded.side-left .pill .pet,.isl-col.folded.side-right .pill .pet{margin:0}

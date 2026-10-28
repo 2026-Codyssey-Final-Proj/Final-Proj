@@ -49,7 +49,7 @@
     for (const inc of incoming || []) {
       if (!inc || !inc.id) continue;
       const cur = out.find((s) => s.id === inc.id);
-      if (cur) Object.assign(cur, { project: inc.project, tool: inc.tool, state: inc.state, at: inc.at, steps: mergeSteps(cur.steps, inc.steps) });
+      if (cur) Object.assign(cur, { project: inc.project, tool: inc.tool, state: inc.state, at: inc.at, here: inc.here, steps: mergeSteps(cur.steps, inc.steps) });   // here — 연결한 폴더의 세션인가(F-73)
       else out.push({ ...inc, steps: mergeSteps([], inc.steps) });
     }
     return out;

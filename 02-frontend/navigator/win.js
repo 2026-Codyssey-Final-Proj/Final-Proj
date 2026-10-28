@@ -90,6 +90,10 @@
   let colHover = false;
   root.addEventListener("mouseover", (e) => { const on = !!(e.target.closest && e.target.closest(".isl-col")); if (on !== colHover) { colHover = on; F.winEvent({ type: "col", hover: on }); } });
   root.addEventListener("mouseleave", () => { if (colHover) { colHover = false; F.winEvent({ type: "col", hover: false }); } });
+  // 작업실에서 움직이거나 누르면 접히기 전의 흰 줄(.glow)을 처음부터 — 섬에도 알려 접히는 시계를 되돌린다(1초에 한 번까지, 흰 줄이 돌 때만. 임유정 2026-10-28 "움직이거나 클릭을 하면 시간 지나가는게 멈춰야")
+  let pokeAt = 0;
+  const poke = () => { const t = Date.now(); if (t - pokeAt < 1000) return; const g = root.querySelector(".isl .glow"); if (!g) return; pokeAt = t; g.style.animationDelay = "0ms"; g.style.animationName = "none"; void g.offsetWidth; g.style.animationName = ""; F.winEvent({ type: "poke" }); };
+  for (const n of ["pointermove", "pointerdown", "keydown", "wheel"]) root.addEventListener(n, poke, { passive: true });
   root.addEventListener("focusin", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: true }); });
   root.addEventListener("focusout", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: false }); });
   // 글 칸의 줄 위치(C-53 상태 줄) — 바뀔 때만 보낸다
