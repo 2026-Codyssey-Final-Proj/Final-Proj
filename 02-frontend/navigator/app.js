@@ -2376,11 +2376,14 @@
       foot: planPractice(b) ? "연습이라 Claude Code에 보내지 않고 예시 보고를 받아요" : "맡기면 Claude Code가 이 폴더에서 일하고, 끝나면 기준마다 해냈는지 알려 줘요",
       acts: [{ label: w.note ? "다시 맡기기" : "맡기기", act: "plan-hand", key: "Enter", pri: true }, { label: "새 계획 적기", act: "plan-reset", kind: "ghost" }] };
   }
+  // 지식 퀘스트 C-51(2026-10-29 — PRD 6절 · 9절 9번): 줄마다 근거 한 줄(없으면 '새로 정함'), 앞의 결정과 다르면 그 표시와 어느 쪽을 따를지(이 줄대로 = 맞아요 · 앞의 결정대로 = 고칠래요 + 의견)
+  const planBasisHTML = (x) => `${x.basis ? `<span class="meta">근거 — ${esc(x.basis)}</span>` : ""}${x.diff ? `<span class="meta pl-diff">앞의 결정과 다름 — 결정 기록은 '${esc(x.diff.was)}', 이 줄은 '${esc(x.diff.now)}'. 어느 쪽을 따를까요?
+    <button type="button" class="btn" data-act="plan-ok" data-id="${esc(x.id)}">이 줄대로</button><button type="button" class="btn" data-act="plan-follow" data-id="${esc(x.id)}">앞의 결정대로</button></span>` : ""}`;
   // 확인하는 중 — 이해한 것 셋 · 줄마다 맞아요 / 고칠래요(+ 의견) · 준비할 것 · 물을 것(답) · 전체 의견(채팅 칸에 적어도 여기로)
   function planReviewBody(b) {
     const p = b.plan;
     const sum = `<dl class="pl-sum"><div><dt>풀려는 문제</dt><dd>${esc(p.problem)}</dd></div><div><dt>이미 있는 것</dt><dd>${esc(p.have)}</dd></div><div><dt>아직 없는 것</dt><dd>${esc(p.missing)}</dd></div></dl>`;
-    const items = `<ol class="pl-items">${p.items.map((x) => { const m = b.marks[x.id] || ""; return `<li class="pl-it ${m}"><div class="pl-txt"><b>${esc(x.need)}</b><span class="meta">기준 — ${esc(x.check)}</span></div>
+    const items = `<ol class="pl-items">${p.items.map((x) => { const m = b.marks[x.id] || ""; return `<li class="pl-it ${m}"><div class="pl-txt"><b>${esc(x.need)}</b><span class="meta">기준 — ${esc(x.check)}</span>${planBasisHTML(x)}</div>
       <div class="pl-btns" role="group" aria-label="이 줄이 맞나요"><button type="button" class="btn" data-act="plan-ok" data-id="${esc(x.id)}" aria-pressed="${m === "ok"}">맞아요</button><button type="button" class="btn" data-act="plan-fix" data-id="${esc(x.id)}" aria-pressed="${m === "fix"}">고칠래요</button></div>${
       m === "fix" ? `<textarea class="mc-input" data-act="plan-note" data-id="${esc(x.id)}" rows="2" aria-label="어떻게 고칠까요" placeholder="어떻게 고칠까요? 예) 연락처 칸은 빼요">${esc(b.notes[x.id] || "")}</textarea>` : ""}</li>`; }).join("")}</ol>`;
     const prep = p.prep.length ? `<p class="kicker">준비할 것</p><ul class="pl-prep">${p.prep.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "";
@@ -2434,19 +2437,20 @@
     const k = items.findIndex((x) => x.id === sel), x = items[k], w = b.work[sel] || {};
     return `<div class="book"><div class="page l"><h4>목차 · 맡길 일</h4><div class="toc">${toc}</div></div>
       <div class="page r"><h3>${esc(x.need)}</h3><div class="meta">맡길 일 · ${items.length}개 중 ${k + 1}번째 · ${word(sel)}${planPractice(b) ? " · 예시예요" : ""}</div>
-        <p><b>다 됐는지 보는 기준</b> — ${esc(x.check)}</p>${w.note ? `<p><b>지난번 의견</b> — ${esc(w.note)}</p>` : ""}${w.report ? `<div class="pl-rep"><p>${esc(w.report.easy)}</p>${repChecks(w.report)}</div>` : ""}
+        <p><b>다 됐는지 보는 기준</b> — ${esc(x.check)}</p>${x.basis ? `<p><b>근거</b> — ${esc(x.basis)}</p>` : ""}${w.note ? `<p><b>지난번 의견</b> — ${esc(w.note)}</p>` : ""}${w.report ? `<div class="pl-rep"><p>${esc(w.report.easy)}</p>${repChecks(w.report)}</div>` : ""}
         <p class="meta">${sel === cur ? "맡기기 · 보고 확인은 채팅에서 해요." : FP.stateOf(b, sel) === "done" ? "끝낸 줄이에요." : "앞 줄을 끝내면 열려요."}</p>
         <p><b>풀려는 문제</b> — ${esc(b.plan.problem)}</p></div></div>`;
   }
   // AI에게 묻는 것들 — 무엇을 기다리는지(planBusy)를 같이 보인다
   const planId = (el) => (el && el.dataset && el.dataset.id) || (st.plan ? FP.next(st.plan) : "");   // 보고 안의 단추는 data-id, 채팅의 칩은 지금 줄
   const planCall = async (kind, url, body) => { st.planBusy = kind; try { return await callAI(url, body); } finally { st.planBusy = ""; } };
+  const carryTexts = () => (((st.carryUse || {})[st.j ? st.j.stage : 0]) || []).map((x) => x && x.text).filter(Boolean).slice(0, 3);   // C-51
   async function makePlan(skipCheck) {
     const text = st.planDraft.trim(); if (!text) return;
     if (!planLive()) { st.plan = FP.board(FP.EXAMPLE_PLAN, null, { example: true }); save(); render(); return say("연습이라 예시 계획이에요. 줄마다 맞는지 봐 주세요."); }
     if (!skipCheck && guard(text, "plan")) return;
     st.warn = null;
-    const r = await planCall("make", "/api/plan", { text, readme: st.planReadme });
+    const r = await planCall("make", "/api/plan", { text, readme: st.planReadme, carry: carryTexts() });   // carry — C-51 이번 단계에 쓰기로 고른 가져온 것(C-48)
     if (r.ok) { st.plan = FP.board(r.plan); save(); render(); fetchUsage(); return say(r.plan.say); }
     render(); say(r.reason || "계획을 세우지 못했어요");
   }
@@ -2456,7 +2460,7 @@
     const fb = FP.feedback(b);
     if (!skipCheck && guard([...fb.notes.map((n) => n.note), ...fb.answers.map((x) => x.a), fb.general].join("\n"), "planAgain")) return;
     st.warn = null;
-    const r = await planCall("make", "/api/plan", { text: st.planDraft.trim() || b.plan.problem, readme: st.planReadme, prev: b.plan, ...fb });
+    const r = await planCall("make", "/api/plan", { text: st.planDraft.trim() || b.plan.problem, readme: st.planReadme, prev: b.plan, ...fb, carry: carryTexts() });
     if (r.ok) { st.plan = FP.board(r.plan, b); save(); render(); fetchUsage(); return say(r.plan.say); }
     render(); say(r.reason || "다시 세우지 못했어요");
   }
@@ -3546,6 +3550,10 @@
     },
     "plan-make": () => makePlan(false),
     "plan-ok": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "ok"); save(); render(); },
+    "plan-follow": (i, el) => {   // C-51 앞의 결정대로 — 그 줄을 고칠래요로 두고 의견을 채운다(다시 세우기에서 고친다)
+      const id = el && el.dataset.id, x = st.plan && st.plan.plan.items.find((y) => y.id === id); if (!x || !x.diff) return;
+      st.plan = FP.note(FP.mark(st.plan, id, "fix"), id, `앞의 결정('${x.diff.was}')에 맞춰 고쳐 주세요`); save(); render();
+    },
     "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); requestAnimationFrame(() => { const t = $nav.querySelector(`[data-act=plan-note][data-id="${el && el.dataset.id}"]`); if (t) t.focus(); }); },
     "plan-confirm": () => { if (!FP.canConfirm(st.plan)) return; st.plan = FP.confirm(st.plan); st.qfocus = "plan"; st.planSel = ""; if (qauto) openQwin("quest"); save(); render(); say("확정했어요! 퀘스트 창에 맡길 일이 생겼어요"); },
     "plan-again": () => revisePlan(),
