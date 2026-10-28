@@ -36,7 +36,7 @@ test("server.js — /api/file은 확인 값(BOOK_ROUTES) · POST_ROUTES, 열기�
 // C-44 맡기기 틀(이재엽 버튼 "지금 자리에 더한다") · C-45 문서 지도(버튼 "작업실의 새 탭" · "앱에 한 벌 넣기")
 test("app.js — 연 파일 머리의 '틀로 맡기기' 고르기 · 채팅의 '문서 틀' 칩 → presets.js의 글 · 끝 조건으로 /api/task/start, 보고가 오면 파일을 다시 읽는다; '문서 지도' 탭은 docmap.html iframe, 상자의 열기는 map-open", () => {
   const a = read("navigator/app.js"), s = fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8");
-  assert.match(a, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "노트북"\], \["tree", "도전과제"\], \["lib", SHELF_ON \? "서고" : "책"\], \["map", "문서 지도"\]\];/);
+  assert.match(a, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "노트북"\], \["tree", "도전과제"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/);
   assert.match(a, /<iframe class="docmap" src="\/navigator\/docmap\.html#now=\$\{encodeURIComponent\(nowDocPath\(n\)\)\}"/, "지금 장 문서는 주소 끝(#)으로 — 물음표 뒤가 붙으면 화면 파일을 못 찾는다");
   assert.match(a, /"map-open": \(i, el\) => \{/, "상자의 '파일 보기에서 열기' → 목록의 번호로 연다"); assert.match(a, /window\.addEventListener\("message", \(e\) => \{ if \(e\.origin !== location\.origin\) return; const d = e\.data; if \(d && d\.floe === "open"/);
   assert.match(a, /const PR = window\.FloePresets \|\| null;/); assert.match(a, /data-act="preset-pick"/, "연 파일 머리의 틀 고르기"); assert.match(a, /\{ label: "문서 틀", act: "preset-open", kind: "ghost" \}/, "채팅 칩");
@@ -45,4 +45,32 @@ test("app.js — 연 파일 머리의 '틀로 맡기기' 고르기 · 채팅의 
   assert.match(s, /"03-backend\/navigator\/board": \["board\.js", "board\.css"\]/, "엔진 사본을 서버가 내준다"); assert.match(s, /route === "\/api\/docmap"/);
   assert.match(read("navigator/docmap.html"), /\.\.\/\.\.\/03-backend\/navigator\/board\/board\.js/, "엔진은 앱 안의 사본 — 밖으로 요청하지 않는다");
   assert.ok(fs.existsSync(path.join(__dirname, "../../03-backend/navigator/board/LICENSE")), "MIT 라이선스 사본");
+});
+
+// C-53(2026-10-28 이재엽 버튼: 오른쪽 칸은 섬을 펼치면 접힘 · 서식 단추는 만든다): 작업실 세 칸 — 파일 칸(.wnav: 열어 둔 파일 묶음 · 찾기 · 목록) | 작업 칸(.wbody: 보기 고르기 · 문서 도구 줄 · 상태 줄) | 오른쪽 칸(.wside: 이 문서 — 목차 · 칸 채움 · 재료 / 퀘스트 — 다섯 칸 · 관문)
+test("app.js · win.js · app.css — 작업실 세 칸(파일 · 작업 · 오른쪽), 칸 접기 단추, 섬을 펼치면 오른쪽 칸이 접힘, 문서 도구 줄(서식 · 글 크기 · 목차 · 찾기) · 상태 줄(저장 수 · 바뀐 줄 · 줄 위치 · 줄 끝)", () => {
+  const a = read("navigator/app.js"), w = read("navigator/win.js"), c = read("navigator/app.css");
+  assert.match(a, /<aside class="wside"/, "오른쪽 칸"); assert.match(a, /data-act="wnav-toggle"/, "파일 칸 접기"); assert.match(a, /data-act="wside-toggle"/, "오른쪽 칸 접기");
+  assert.match(a, /const sideOn = \(\) => wsideOpen && \(!WINS \|\| colFolded\(\)\);/, "앱에서 섬을 펼치면(접힌 알약이 아니면) 오른쪽 칸이 접힌다 — 이재엽 버튼");
+  assert.match(a, /class="fn fn-open"/, "파일 칸 맨 위 '열어 둔 파일' 묶음");
+  for (const k of ["h2", "bold", "list", "link", "front"]) assert.match(a, new RegExp(`\\["${k}", "`), `서식 단추 ${k}`); assert.match(a, /data-act="ffmt" data-fmt="\$\{id\}"/, "서식 단추는 ffmt + 종류");
+  assert.match(a, /data-act="fsize" data-v="[-+]"/, "글 크기"); assert.match(a, /data-act="ffind"/, "문서 안 찾기"); assert.match(a, /data-act="ftoc"/, "목차(오른쪽 칸으로)");
+  assert.match(a, /class="fv-st"/, "상태 줄"); assert.match(a, /eol === "crlf" \? "CRLF" : "LF"/, "줄 끝");
+  assert.match(a, /MDV\.format\(/, "서식은 md-view.js format 하나로(브라우저 판)"); assert.match(w, /FloeMd\.format\(/, "앱의 작업실 창도 같은 함수로(글 칸은 창 안에 있다)");
+  assert.match(w, /F\.winEvent\(\{ type: "caret"/, "글 칸의 줄 위치를 섬으로 보낸다");
+  assert.match(c, /\.wside\{/, "오른쪽 칸 모양"); assert.match(c, /@container \(max-width:899px\)\{[^}]*\.wside/, "좁으면(900 아래) 오른쪽 칸은 숨는다");
+  assert.match(c, /\.fv-tools button\{[^}]*min-height:44px/, "도구 줄 단추 44px");
+});
+
+// C-54(2026-10-28, 이재엽 버튼 "탭 이름은 '도전과제' 그대로" · "준비된 퀘스트 확인은 한 번에"): 도전과제 탭 = 카드 지도(stagemap.js) + 흐름(C-39 jmap) + 상자(C-45 문서 지도 iframe) — 보기 셋. 2단계 칸을 다 채우면 '기획서로 3 ~ 8단계 그리기' → 준비된 퀘스트 → 맞아요(한 번에) / 고칠래요
+test("app.js — 도전과제 탭의 보기 셋(지도 · 흐름 · 상자), 카드 지도는 stagemap.js, 그리기 · 맞아요 · 고칠래요, 카드를 누르면 오른쪽 칸에 그 퀘스트 · 문서, 준비된 ① 생각은 캔버스의 초안으로", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const SM = window\.NavStageMap/, "규칙은 stagemap.js"); assert.match(a, /"prep"\]/, "준비된 퀘스트는 기록(KEEP)에");
+  assert.match(a, /const views = \[\["cards", "지도"\], \["flow", "흐름"\], \["box", "상자"\]\]/, "보기 셋"); assert.match(a, /data-act="tree-view" data-v="\$\{v\}"/);
+  for (const act of ["prep-draw", "prep-ok", "prep-fix", "map-card"]) assert.match(a, new RegExp(`"${act}": `), act);
+  assert.match(a, /SM\.build\(\{/); assert.match(a, /SM\.prepare\(\{/);
+  assert.match(a, /st\.qtab === "tree" && st\.mapSel != null/, "오른쪽 칸 — 누른 카드의 퀘스트 · 문서");
+  assert.match(a, /prepThink/, "준비된 ① 생각은 캔버스 ① 생각의 초안 자리에");
+  assert.ok(!a.includes('["map", "문서 지도"]'), "문서 지도 탭은 도전과제 안의 '상자' 보기로");
+  assert.match(read("navigator/index.html"), /03-backend\/navigator\/stagemap\.js/); assert.match(read("../03-backend/navigator/server.js"), /"stagemap\.js"/, "서버가 내준다");
 });

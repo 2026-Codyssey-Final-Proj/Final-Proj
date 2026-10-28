@@ -54,6 +54,7 @@
   const SHELF_ON = false;          // 서재(서고 · 책장) 잠시 뺌 — 이재엽 2026-10-23 "서재는 지금은 못들어가고 버튼을 지우고 나중에 이 대회가 끝나면 열어서 작업". 대회 뒤 true로 다시 연다
   // 앱(Electron)이 옆 창 둘(설정 창 · 퀘스트 창)을 열 수 있으면(preload.js openWin, 2026-10-21 이재엽 "창 셋") 그 창으로, 아니면(브라우저 · 옛 앱) 섬 옆의 판으로
   const WINS = !!(window.floeApp && window.floeApp.openWin);
+  const SM = window.NavStageMap;   // C-54 지도(stagemap.js, 2026-10-28) — 도전과제 탭의 카드 지도 · 준비된 퀘스트. 없으면 흐름(한눈에 보기)만
   const FDOCS = window.FloeDocs;   // 단계 문서(C-37, 2026-10-25 — 03-backend/navigator/docs.js). 없으면 문서 올리기 없이
   const FP = window.FloePlan;   // 준비 계획 · 맡길 일 규칙(C-34 · C-32 · C-35, 2026-10-24 — 03-backend/navigator/plan.js). 없으면 채팅에 계획 칩이 없고 할 일 적기(AI 진행 판)만
   const AP = window.NavApprove;   // FR-17 승인 카드(2026-10-20) — 서버 없이 보일 예시 카드   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
@@ -88,6 +89,8 @@
   const writeLS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch {} };
   const SIDE_UI = { top: ["위", "▲"], bottom: ["아래", "▼"], left: ["왼쪽", "◀"], right: ["오른쪽", "▶"] };   // 섬 자리(C-41 ②) — [말, 단추 글자]
   let side = QU ? QU.sideOf(readLS(SIDE_KEY, "right")) : "right", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
+  // C-53(2026-10-28): 작업실 세 칸 — 파일 칸 · 오른쪽 칸을 접었는지(이 컴퓨터에 기억), 글 칸의 줄 위치(상태 줄 — 다시 그릴 때만 보인다, 치는 동안은 그리지 않는다)
+  let wnavOpen = readLS("floe:ws-nav", "1") !== "0", wsideOpen = readLS("floe:ws-side", "1") !== "0", caretLine = 0;
   const GR = window.FloeGreet;   // 켤 때 인사의 시간표 · 규칙(greet.js, C-10 2026-10-20). 없으면 인사 움직임 없이 카드만
   let greetSkip = null;         // 인사 움직임이 도는 동안만 — 누름 · Esc로 바로 끝낸다
   const PHONE = matchMedia("(max-width: 600px)");
@@ -129,7 +132,7 @@
     results: {}, ship: null,                       // C-37(2026-10-25): 단계마다 보고한 결과(quest.js resultOf — 한곳에서 보기 · 도전과제 지도 · 문서) · 2단계를 마친 뒤 문서 올리기({phase: offer|sent, at}, 이 켜짐 동안만)
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
-    qwin: false, qtab: "canvas", chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
+    qwin: false, qtab: "canvas", boot: null, prep: null, mapSel: null, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
     gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
     plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {},   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
     qfocus: "stage", planSel: "",                   // C-35: 지금 할 퀘스트(stage 단계 퀘스트 · plan 준비 계획과 맡길 일 — 채팅의 지금 말이 이쪽을 따른다) · 퀘스트 창에서 고른 맡길 일(이 켜짐 동안만)
@@ -221,7 +224,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results"];
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   function load() {
     let s;
@@ -1191,7 +1194,7 @@
   // 퀘스트 창(C-22) — 머리띠(제목 · 프로젝트 · 크기 S/M/L · 닫기) · 탭(퀘스트 · 도전과제 · 책) · 판. 위 줄의 '퀘스트' 단추로 켜고 끈다(C-35). 끌어 옮기기는 Electron 창으로 만들 때(다음 판, 정할 것 10)
   let qpop = false;
   const openQwin = (tab) => { if (!st.qwin) { qpop = true; loadFiles(); } st.qwin = true; st.qtab = tab || st.qtab; };   // 열 때 파일 칸의 목록도(R-8)
-  const QTABS = [["canvas", "캔버스"], ["quest", "노트북"], ["tree", "도전과제"], ["lib", SHELF_ON ? "서고" : "책"], ["map", "문서 지도"]];   // 문서 지도 — C-45(2026-10-27, 이재엽 버튼 "작업실의 새 탭")   // 작업실 창(C-41, 2026-10-26): 캔버스가 먼저, 옛 퀘스트 탭은 노트북. 책 — C-26(2026-10-23). 배우기 탭은 2026-10-24 C-35로 도전과제의 장마다
+  const QTABS = [["canvas", "캔버스"], ["quest", "노트북"], ["tree", "도전과제"], ["lib", SHELF_ON ? "서고" : "책"]];   // 문서 지도 탭(C-45)은 2026-10-28 C-54로 도전과제 안의 '상자' 보기가 됐다(이재엽 버튼 "'도전과제' 그대로")   // 문서 지도 — C-45(2026-10-27, 이재엽 버튼 "작업실의 새 탭")   // 작업실 창(C-41, 2026-10-26): 캔버스가 먼저, 옛 퀘스트 탭은 노트북. 책 — C-26(2026-10-23). 배우기 탭은 2026-10-24 C-35로 도전과제의 장마다
   // 캔버스 판 — 작업실 창의 첫 탭(C-41 ① 2026-10-26 · ⑥ 2026-10-27 두승현 "의도했던 것은 첨부한 이미지처럼 펼쳐져 있는 환경" — 디자인 캔버스 DockPrototype의 판 그대로):
   //   1100×640 판을 칸(.cv)에 맞춰 줌한다(app.css .cvb의 --u — 컨테이너 단위라 스크립트 없이, 앱의 창이든 브라우저의 판이든). 2026-10-27 C-42 R-11(이재엽 "줌 + 모자라면 다시 배치"): 0.85배 아래로 줄어야 하면
   //   줌하지 않고 격자로 다시 배치한다 — 두 줄(① ② ③ / ④ ⑤ 관문) · 640 미만은 세로 한 줄, 글자 크기는 설정 그대로(app.css @container). 지금 하는 일 · 단계 칩 · 왼쪽에 지난 장 / 다음 장 보드 ·
@@ -1222,7 +1225,8 @@
     const prev = n > 0 ? `<div class="cv-bd prev">보드 · ✓ 지남${pr && pr.passed ? ` · ${esc(pr.passed.slice(5))}` : ""}<b>${LB(n - 1)} · ${esc(N.STAGES[n - 1].title)}</b></div>` : `<div class="cv-bd prev later">보드 · 처음이에요<b>지난 장 없음</b></div>`;
     const next = n + 1 < N.STAGES.length ? `<div class="cv-bd next later">보드 · 관문을 넘으면 열려요<b>${LB(n + 1)} · ${esc(N.STAGES[n + 1].title)}</b></div>` : `<div class="cv-bd next later">보드 · 다 마치면<b>다음 프로젝트 — 배운 것을 들고 가요</b></div>`;
     const line = q && ci >= 0 ? (q.lines[ci] || [])[0] : "", draft = q && ci >= 0 ? QU.proposalOf(q, ci) : "";
-    const think = q && ci >= 0 ? cell("c1", "now", "①", "생각", line || draft || "비었어요 — 채팅에서 같이 적어요", !line && draft ? "플로로 초안 — 채팅에서 맞는지 봐요" : "")
+    const prepC = st.prep && st.prep.ok && st.prep.cards ? st.prep.cards[n] : null, prepThink = prepC ? prepC.think : "";   // C-54 준비된 퀘스트 — 그 장에 들어서면 ① 생각의 초안 자리에
+    const think = q && ci >= 0 ? cell("c1", "now", "①", "생각", line || draft || prepThink || "비었어요 — 채팅에서 같이 적어요", !line && draft ? "플로로 초안 — 채팅에서 맞는지 봐요" : !line && prepThink ? `준비된 퀘스트 — ${prepC.from}` : "")
       : q || r ? cell("c1", "done", "①", "생각", "칸을 다 적었어요") : cell("c1", st.idea ? "done" : "now", "①", "생각", st.idea ? st.idea.slice(0, 80) : "무엇을 만들고 싶은지 말해요");
     const b = FP && st.plan, run = b && FP.running(b), pg = b ? FP.progress(b) : null;
     // R-5 ② 행동(C-42, 2026-10-27): 지금 맡긴(또는 다음에 맡길) 일의 이름과 진행 n/m — 상태 글 대신 내용
@@ -1289,9 +1293,11 @@
     } catch { st.files = { src: "example", why: "서버에 닿지 않았어요" }; }
     render();
   }
+  // C-53 파일 칸 맨 위 — 열어 둔 파일(탭과 같은 것, 바뀐 것은 •). 목업 ① "열어 둔 파일"
+  const openGroup = () => (st.openFiles.length ? `<p class="fn-h2">열어 둔 파일</p><ul class="fn fn-open">${st.openFiles.map((x, k) => `<li class="fnrow${st.qtab === "file" && st.fileSel === k ? " sel" : ""}${x.dirty ? " dirty" : ""}"><button type="button" class="fn-file fn-opened" data-act="ftab" data-v="${k}" title="${esc(x.path)}">${fIcon(x.kind === "code" ? "code" : x.kind === "md" ? "md" : "file")}<span>${esc(x.name)}</span>${x.dirty ? "<small>•</small>" : ""}</button></li>`).join("")}</ul>` : "");
   function fileNav() {
     const f = st.files, mine = f && f.src === "mine" && f.list;
-    if (!mine) return `<p class="fn-h"><b>${fIcon("open")}<span>${esc(project() || "예시 프로젝트")}</span></b><em title="${esc(f && f.why ? `${f.why} — 폴더를 연결하면 진짜 목록이 와요` : "폴더를 연결하면 진짜 목록이 와요")}">예시</em></p><ul class="fn">${FILES_DUMMY.map(exRow).join("")}</ul><p class="fn-ft">폴더를 연결하면 그 폴더의 진짜 파일 이름이 여기에 와요 — Claude Code가 고친 파일은 캔버스의 파일 카드에</p>`;
+    if (!mine) return openGroup() + `<p class="fn-h"><b>${fIcon("open")}<span>${esc(project() || "예시 프로젝트")}</span></b><em title="${esc(f && f.why ? `${f.why} — 폴더를 연결하면 진짜 목록이 와요` : "폴더를 연결하면 진짜 목록이 와요")}">예시</em></p><ul class="fn">${FILES_DUMMY.map(exRow).join("")}</ul><p class="fn-ft">폴더를 연결하면 그 폴더의 진짜 파일 이름이 여기에 와요 — Claude Code가 고친 파일은 캔버스의 파일 카드에</p>`;
     const n = st.finished ? N.STAGES.length - 1 : atStage(), slugs = FDOCS ? FDOCS.SLUGS : [], nowDir = slugs[n] ? `docs/${slugs[n]}/` : "";
     const tagOf = (x) => { if (x.dir) return ""; if (nowDir && x.path.startsWith(nowDir)) return "● 지금"; const k = slugs.findIndex((s, i) => i < n && x.path.startsWith(`docs/${s}/`)); return k >= 0 && st.results[k] ? "읽음" : ""; };
     const kids = {}, up = [];   // 폴더마다 바로 아래의 수(F-67) — 목록은 깊이 순서라 쌓아 가며 센다
@@ -1306,7 +1312,7 @@
       return `<li class="${x.dir ? "dir" : tag === "● 지금" ? "now" : ""}${sel ? " sel" : ""} ${q ? "d1" : `d${x.depth}`}">${x.dir ? `<button type="button" data-act="fn-dir" data-v="${i}" aria-expanded="${isOpen}"><i class="chev-w${isOpen ? " on" : ""}">${FN_CHEV}</i>${fIcon(isOpen ? "open" : "dir")}<span>${esc(x.name)}</span>${kids[i] ? `<small class="fn-n">${kids[i]}</small>` : ""}</button>` : `<button type="button" class="fn-file" data-act="fn-open" data-v="${i}" aria-current="${sel ? "true" : "false"}"><i class="chev-w"></i>${fIcon(fKind(x.name))}<span>${esc(q ? x.path : x.name)}</span></button>`}${tag ? `<small>${tag}</small>` : ""}</li>`;
     }).join("");
     const ft = f.total ? `${f.total}개 · 깊이 ${f.depth}까지 · 이름만 봐요${f.cut ? " · 더 있어요(200개까지만)" : ""}${f.unread ? ` · 읽지 못한 폴더 ${f.unread}` : ""}` : "비어 있어요 — 이 폴더에 보일 파일이 없어요";
-    return `<p class="fn-h"><b>${fIcon("open")}<span>${esc(f.project || project() || "")}</span></b></p><input class="fn-find" type="search" data-act="fn-find" value="${esc(st.fnFind)}" placeholder="파일 이름 찾기" aria-label="파일 이름 찾기"><ul class="fn">${rows || (q ? `<li class="d1"><span>'${esc(st.fnFind)}'이 든 파일이 없어요</span></li>` : "")}</ul><p class="fn-ft">${ft}</p>`;
+    return openGroup() + `<p class="fn-h"><b>${fIcon("open")}<span>${esc(f.project || project() || "")}</span></b></p><input class="fn-find" type="search" data-act="fn-find" value="${esc(st.fnFind)}" placeholder="파일 이름 찾기" aria-label="파일 이름 찾기"><ul class="fn">${rows || (q ? `<li class="d1"><span>'${esc(st.fnFind)}'이 든 파일이 없어요</span></li>` : "")}</ul><p class="fn-ft">${ft}</p>`;
   }
   // ── 파일 보기 · 고치기(C-43, 2026-10-27 이재엽 "orca를 인용해서 코드나 md 파일을 확인" · 버튼 "읽기 + 고치기" · "바로 저장 + 되돌리기" · "저장마다 커밋 맡기기" · "512KB · 내용으로 판단") ──
   //   파일 칸에서 누르면 서버가 목록의 번호로 연다(GET /api/file?i — API.md 3-26, 경로를 보내지 않는다). md는 보기 좋게(md-view.js) · 원문으로, 코드 · 글은 줄 번호와 함께, git과 다른 줄은 표시.
@@ -1366,11 +1372,21 @@
       ${f.hist.length ? `<button type="button" class="lnk" data-act="fundo" data-v="${k}" title="마지막으로 저장하기 전 글로">되돌리기</button>` : ""}
       ${PR && canLive && st.mode !== "fixture" ? presetOpts(k) : ""}
       <button type="button" class="b pri sm" data-act="fsave" data-v="${k}" ${f.dirty ? "" : "disabled"} title="⌘/Ctrl+S">저장</button></div>`;
+    // C-53 문서 도구 줄(목업 ②): 서식(제목 · 굵게 · 목록 · 넣기 · 머리말 — 고치는 중에만, 원문에 기호를 넣는다 md-view.js format) · 글 크기 · 목차(오른쪽 칸) · 찾기(그 글이 든 줄 표시 — 원문 · 코드 보기에서)
+    const FMT = [["h2", "제목", "이 줄을 ## 제목으로"], ["bold", "굵게", "고른 글을 **로"], ["list", "목록", "고른 줄마다 '- '"], ["link", "넣기", "[글](주소)"], ["front", "머리말", "맨 위에 title · date"]];
+    const tools = `<div class="fv-tools" role="toolbar" aria-label="문서 도구">${f.edit && f.kind !== "code" ? FMT.map(([id, l, tip]) => `<button type="button" data-act="ffmt" data-fmt="${id}" data-v="${k}" title="${tip}">${l}</button>`).join("") : ""}
+      <span class="fv-sz"><button type="button" data-act="fsize" data-v="-" data-i="${k}" aria-label="글 작게">−</button><span>${Math.round((f.zoom || 1) * 100)}%</span><button type="button" data-act="fsize" data-v="+" data-i="${k}" aria-label="글 크게">+</button></span>
+      <button type="button" data-act="ftoc" data-v="${k}" aria-pressed="${sideOn()}" title="오른쪽 칸의 목차">목차</button>
+      <input class="fv-find" type="search" data-act="ffind" data-v="${k}" value="${esc(f.find || "")}" placeholder="이 문서에서 찾기" aria-label="이 문서에서 찾기"></div>`;
+    const q = (f.find || "").trim().toLowerCase(), hit = (l) => !!q && l.toLowerCase().includes(q);
     let body;
     if (f.edit) body = `<textarea class="fv-edit" data-act="ftext" data-v="${k}" spellcheck="false" aria-label="${esc(f.name)} 고치기">${esc(f.text)}</textarea>`;
     else if (f.kind === "md" && !f.raw && MDV) body = `<div class="fv-md mdv">${MDV.toHtml(f.text)}</div>`;
-    else body = `<pre class="fv-code"><ol>${f.text.replace(/\n$/, "").split("\n").map((l, j) => `<li${chg === null || (chg && chg.has(j + 1)) ? ' class="chg"' : ""}><span>${esc(l) || " "}</span></li>`).join("")}</ol></pre>`;
-    return `<div class="fv">${head}${note}${body}</div>`;
+    else body = `<pre class="fv-code"><ol>${f.text.replace(/\n$/, "").split("\n").map((l, j) => { const cls = [chg === null || (chg && chg.has(j + 1)) ? "chg" : "", hit(l) ? "hit" : ""].filter(Boolean).join(" "); return `<li${cls ? ` class="${cls}"` : ""}><span>${esc(l) || " "}</span></li>`; }).join("")}</ol></pre>`;
+    // 상태 줄(C-53): 저장 수 · Claude Code가 바꾼 줄(git과 다른 줄) / 내가 바꾼 줄(저장한 글과 다른 줄 — 색으로 나눔) · 줄 수 · 줄 위치 · 줄 끝
+    const mineChg = (() => { if (!f.dirty) return 0; const A = f.saved.split("\n"), B = f.text.split("\n"); let p = 0; while (p < A.length && p < B.length && A[p] === B[p]) p++; let q = 0; while (q < A.length - p && q < B.length - p && A[A.length - 1 - q] === B[B.length - 1 - q]) q++; return Math.max(A.length, B.length) - p - q; })();   // 앞뒤 공통 줄을 뺀 나머지 — 맨 위에 한 줄 넣어도 전체가 '바꾼 줄'이 되지 않게(새 맥락 리뷰)
+    const stl = `<div class="fv-st" aria-label="문서 상태">${f.hist.length ? `<span>저장 ${f.hist.length}번</span>` : ""}${f.changed === "new" ? `<span class="st-ai">새 파일</span>` : chg && chg.size ? `<span class="st-ai">Claude Code가 바꾼 줄 ${chg.size}</span>` : ""}${mineChg ? `<span class="st-me">내가 바꾼 줄 ${mineChg}</span>` : ""}<span class="grow"></span><span>${f.text.split("\n").length}줄<span data-pos>${f.edit && caretLine ? ` · 줄 ${caretLine}` : ""}</span></span><span>UTF-8</span><span>${f.eol === "crlf" ? "CRLF" : "LF"}</span></div>`;
+    return `<div class="fv" style="--fz:${f.zoom || 1}">${head}${tools}${note}${body}${stl}</div>`;
   }
   // ── 문서 지도(C-45, 2026-10-27 이재엽 "아치보드로 문서들이 이어지고 확인" · 버튼 "작업실의 새 탭" · "앱에 한 벌 넣기"): docmap.html을 iframe으로 — 서버 GET /api/docmap(API.md 3-27)이 보드 데이터를, 엔진은 앱 안의 archi-board v1 사본.
   //   상자의 '파일 보기에서 열기'는 postMessage → win.js · 아래 message 듣기 → ACT map-open(경로로 목록의 번호를 찾아 파일 보기로). 서버 없이 · 연습 모드는 지도가 없다(까닭을 쓴다)
@@ -1403,6 +1419,37 @@
   }
   const BROWSER_WIN = [920, 640];   // 브라우저 판(섬 옆)의 크기 — 앱의 창 크기는 main.js(R-1)
   const FULL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5"/></svg>';
+  // ── C-53 작업실 세 칸(2026-10-28, 이재엽 버튼 "오른쪽 칸은 섬을 펼치면 접힘" · "서식 단추는 만든다", 목업 캔버스 ②): 파일 칸 | 작업 칸 | 오른쪽 칸(위: 이 문서 — 목차 · 칸 채움 · 재료, 아래: 퀘스트 — 지금 단계 · 다섯 칸 · 관문 남은 기준).
+  //   파일 칸 · 오른쪽 칸은 머리 줄 단추로 접는다(이 컴퓨터에 기억). 앱에서 섬을 펼치면(접힌 알약이 아니면) 오른쪽 칸이 접혀 작업실이 비킬 자리를 만든다 — 섬을 접으면 다시 보인다
+  const sideOn = () => wsideOpen && (!WINS || colFolded());
+  const PANE_L = '<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="4" width="15" height="12" rx="2.5"/><path d="M7.5 4v12"/></svg>', PANE_R = '<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="4" width="15" height="12" rx="2.5"/><path d="M12.5 4v12"/></svg>';
+  function wsideHTML(n) {
+    const f = st.qtab === "file" ? st.openFiles[st.fileSel] : null;
+    let doc = "", head = "이 문서";
+    if (st.qtab === "tree" && st.mapSel != null && SM) { const m0 = stageMap(), c0 = m0 && m0.cards[st.mapSel]; if (c0) head = `${LB(c0.n)} · ${esc(c0.title)} — ${STATE_WORD[c0.state]}`; }
+    if (f) {
+      const toc = f.kind === "md" && MDV ? MDV.outline(f.text) : [], empty = toc.filter((h) => h.empty).length;
+      const mats = [n > 0 ? `${LB(n - 1)} 문서 — ${nowDocPath(n - 1)}` : "", st.idea ? "처음 말한 것(01-idea/idea.md)" : ""].filter(Boolean);
+      doc = `<section class="ws-doc"><h4>${head}</h4><p class="ws-sum">${esc(f.name)}${toc.length ? ` · 절 ${toc.length}개${empty ? ` · <b>빈 절 ${empty}</b> — 비었어요` : " · 다 채웠어요"}` : f.kind === "md" ? " · 제목 줄이 없어요" : ` · ${f.text.split("\n").length}줄`}</p>${
+        toc.length ? `<p class="ws-h">목차</p><ul class="ws-toc">${toc.map((h) => `<li class="l${h.level}${h.empty ? " empty" : ""}"><button type="button" data-act="ftoc-go" data-v="${esc(h.text)}" title="${h.empty ? "비었어요 — 눌러서 이 절을 찾기" : "눌러서 이 절을 찾기"}">${esc(h.text)}${h.empty ? "<small>비었어요</small>" : ""}</button></li>`).join("")}</ul>` : ""}${
+        mats.length ? `<p class="ws-h">재료가 온 곳</p><ul class="ws-mat">${mats.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}</section>`;
+    } else doc = `<section class="ws-doc"><h4>${head}</h4><p class="ws-sum">파일을 열면 목차와 빈 절이 여기에 와요</p></section>`;
+    // C-54: 도전과제의 카드를 눌렀으면 그 카드의 퀘스트(준비된 다섯 칸) · 문서 · 재료
+    if (st.qtab === "tree" && st.mapSel != null && SM) {
+      const m = stageMap(), c = m && m.cards[st.mapSel]; if (c) {
+        const p = c.prepared, cells = p ? [["① 생각", p.think], ["② 행동", p.act], ["③ 기록", p.record.map((x) => QU.shortOf(x)).join(" · ")], ["④ 저장", p.save], ["⑤ 버전", p.ver]] : null;
+        return `${doc}<section class="ws-q"><h4>퀘스트</h4>${cells ? `<ol class="ws-cells">${cells.map(([k, v]) => `<li><b>${k}</b> ${esc(v || "—")}</li>`).join("")}</ol><p class="ws-h">재료</p><p class="ws-sum">${esc(p.from)}</p>` : `<p class="ws-sum">${c.state === "later" ? "2단계에서 그려져요" : c.q ? `다섯 칸 ${c.q.k}/${c.q.n}` : "아직"}</p>`}
+          <p class="ws-h">문서</p><p class="ws-sum"><code>${esc(c.doc.path)}</code> ${c.doc.has ? `<button type="button" class="lnk" data-act="map-open" data-v="${esc(c.doc.path)}">파일 보기로 열기</button>` : "아직 없어요"}</p></section>`;
+      }
+    }
+    const q = st.quest && st.quest.chap === n ? st.quest : null, p = q ? QU.progress(q) : null, s = N.STAGES[n];
+    const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met) : [];
+    const cells = q ? `<ol class="ws-cells">${q.objs.map((o, i) => `<li class="${QU.filled(q, i) ? "y" : i === QU.curIdx(q) ? "now" : ""}">${ROMAN(i)} ${esc(QU.shortOf(o.name))}</li>`).join("")}</ol>` : `<p class="ws-sum">${st.j ? "퀘스트를 받기 전이에요 — 노트북 탭에서 받아요" : "채팅에서 원하는 것을 말하면 1단계 퀘스트가 생겨요"}</p>`;
+    const quest = `<section class="ws-q"><h4>퀘스트</h4><p class="ws-sum"><b>${LB(n)} · ${esc(s.title)}</b>${p ? ` — 다섯 칸 중 ${p.k}번째, 정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}` : ""}</p>${cells}
+      <p class="ws-h">관문</p><p class="ws-sum">${st.finished ? "모든 장을 마쳤어요" : st.results[n] && st.results[n].passed ? `지났어요 ${esc(st.results[n].passed.slice(5))}` : st.j && st.j.stage === n ? (unmet.length ? `남은 기준 ${unmet.length}개` : "기준을 다 채웠어요 — 섬에서 넘어가기 전 확인") : "아직 — 칸을 다 채우면"}</p>${
+      unmet.length ? `<ul class="ws-unmet">${unmet.slice(0, 4).map((x) => `<li>${esc(QU.shortOf(x.text))}</li>`).join("")}${unmet.length > 4 ? `<li>+${unmet.length - 4}</li>` : ""}</ul>` : ""}</section>`;
+    return doc + quest;
+  }
   function qwinHTML() {
     if (!st.qwin || !QU) return "";
     const pop = qpop ? " winpop" : ""; qpop = false;   // 처음 열 때 한 번의 움직임. 이름은 winpop — "pop"은 말풍선 판(.pop — 14px 안쪽 여백 · 아래 정렬)의 이름이라 작업실 창이 처음 열릴 때 그 모양을 뒤집어썼다(⑥ 2026-10-27, 앱에서 처음 열면 창이 아래에 148px로 붙었다)
@@ -1411,11 +1458,12 @@
     // 머리 한 줄(⑥, 목업): 프로젝트 · 단계 이름 · 탭 · LV · 조개 · 크기 · 닫기. 왼쪽 파일 칸(.wnav)은 탭에 상관없이 — 펼쳐진 환경
     // 크기(R-1, 2026-10-27 이재엽 버튼 "'화면 가득' 하나로"): 앱에서는 창이 작업 영역 가득 · 사람이 바꾼 크기를 기억(main.js) — 아래 style은 브라우저 판에서만 쓰인다(win.html은 auto!important로 덮는다). S/M/L은 뺐다
     return `<div class="win qwin${pop}" role="dialog" aria-label="작업실 창" style="width:${BROWSER_WIN[0]}px;height:${BROWSER_WIN[1]}px"><div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="wst">${LB(n)} · ${esc(N.STAGES[n].title)}</span>
-        <div class="wtabs" role="tablist" aria-label="작업실 창">${QTABS.map(([id, label]) => `<button type="button" role="tab" data-act="qtab" data-tab="${id}" aria-selected="${st.qtab === id}">${label}</button>`).join("")}${fileTabs()}</div><span class="grow"></span>
+        <div class="wtabs" role="tablist" aria-label="작업실 창">${QTABS.map(([id, label]) => `<button type="button" role="tab" data-act="qtab" data-tab="${id}" aria-selected="${st.qtab === id}">${label}</button>`).join("")}${fileTabs()}</div>
+        <span class="wtgs"><button type="button" class="wtg" data-act="wnav-toggle" aria-pressed="${wnavOpen}" aria-label="파일 칸 ${wnavOpen ? "접기" : "펼치기"}" title="파일 칸 ${wnavOpen ? "접기" : "펼치기"}">${PANE_L}</button><button type="button" class="wtg" data-act="wside-toggle" aria-pressed="${wsideOpen}" aria-label="오른쪽 칸 ${wsideOpen ? "접기" : "펼치기"}" title="오른쪽 칸 ${wsideOpen ? "접기" : "펼치기"}${WINS && !colFolded() ? " — 섬을 펼친 동안은 접혀요" : ""}">${PANE_R}</button></span><span class="grow"></span>
         <span class="wlv" title="칭호 · ${esc(QU.rankOf(Math.min(level, 7)))}">LV ${level} · ${coin()}${st.shells}</span>
         ${WINS ? `<button type="button" class="ti wfull" data-act="qfull" aria-label="작업실을 화면 가득" title="화면 가득">${FULL_ICON}</button>` : ""}
         <button type="button" class="ti" data-act="qwin" aria-label="작업실 창 닫기" title="닫기">${X_ICON}</button></div>
-      <div class="wmain"><nav class="wnav" aria-label="파일">${fileNav()}</nav><div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : st.qtab === "file" ? `${st.fileSel}|${(st.openFiles[st.fileSel] || {}).edit ? "e" : "v"}` : ""}`)}">${pane}</div></div></div>`;
+      <div class="wmain">${wnavOpen ? `<nav class="wnav" aria-label="파일">${fileNav()}</nav>` : ""}<div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : st.qtab === "file" ? `${st.fileSel}|${(st.openFiles[st.fileSel] || {}).edit ? "e" : "v"}` : ""}`)}">${pane}</div>${sideOn() ? `<aside class="wside" aria-label="이 문서 · 퀘스트">${wsideHTML(n)}</aside>` : ""}</div></div>`;
   }
   // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 고한결 [정할 것 2 · 5]
   const PIC = `<svg viewBox="0 0 320 140" aria-hidden="true"><defs><linearGradient id="q-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1550"></stop><stop offset="1" stop-color="#2A4AC8"></stop></linearGradient><linearGradient id="q-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3BA6"></stop><stop offset="1" stop-color="#0E1A4F"></stop></linearGradient></defs><rect width="320" height="140" fill="url(#q-sky)"></rect><g fill="#fff"><circle cx="30" cy="22" r="1.4"></circle><circle cx="80" cy="40" r="1"></circle><circle cx="140" cy="18" r="1.6"></circle><circle cx="200" cy="34" r="1"></circle><circle cx="260" cy="16" r="1.3"></circle><circle cx="300" cy="46" r="1"></circle></g><circle cx="262" cy="36" r="16" fill="#FFF3C4"></circle><circle cx="268" cy="31" r="14" fill="url(#q-sky)"></circle><path d="M0 95 Q 80 80 160 95 T 320 95 V140 H0z" fill="url(#q-sea)"></path><path d="M70 100 L 110 78 L 200 76 L 250 100 Z" fill="#E6F6FF"></path><path d="M70 100 L 250 100 L 240 112 L 85 112 Z" fill="#A9DDFF"></path><rect x="130" y="52" width="60" height="30" rx="4" fill="#F3EBD8" stroke="#6B5B3E" stroke-width="2"></rect><path d="M138 60h44M138 67h36M138 74h40" stroke="#B99A4F" stroke-width="2" stroke-linecap="round"></path></svg>`;
@@ -1452,12 +1500,40 @@
   // 도전과제 판(C-22) — 세로 탭 = 장(여덟), 그림만 크게, 마우스를 올리면 설명(data-tt). 상태는 지금 단계(st.j)와 퀘스트(적은 줄)에서 — 단계 · 할 일 · 판정 규칙은 그대로
   //   나무 위에 그 장의 '관문 전에 알아 둘 것'(C-35, 2026-10-24 — 옛 배우기 탭): 그 장에서 처음 쓰는 기능의 튜토리얼(tutorial.js forChap) · 이 장에서 쓰는 말(용어 풀이)
   let treeChap = null;   // null — 한눈에 보기(C-37, 기본), 숫자 — 그 장
+  let treeView = "cards";   // 한눈에 보기의 보기(C-54): cards 지도 · flow 흐름 · box 상자
+  // ── C-54 카드 지도(stagemap.js) — 카드 = 그 단계의 퀘스트(다섯 칸 · 관문)와 문서, 2단계 칸을 다 채우면 기획서로 3 ~ 8단계를 그리고 준비된 퀘스트를 미리 채운다(맞아요 한 번에 / 고칠래요) ──
+  const haveDocs = () => { const h = new Set(); if (st.files && st.files.src === "mine" && st.files.list) for (const x of st.files.list) if (!x.dir) h.add(x.path); for (const d of st.docs) if (FDOCS && FDOCS.SLUGS[d.stage]) h.add(nowDocPath(d.stage)); return h; };
+  const stageMap = () => (SM ? SM.build({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], results: st.results, j: st.j, quest: st.quest, finished: st.finished, have: haveDocs(), prep: st.prep }) : null);
+  const STATE_WORD = { done: "끝남", now: "지금", ready: "준비됨", pending: "준비됨 — 확인 전", later: "2단계에서 그려져요" };
+  function cardsMap(cur) {
+    const m = stageMap(); if (!m) return treeMap(cur);
+    const fix = st.prep && !st.prep.ok && st.prep.fix;
+    const card = (c) => { const p = c.prepared, sel = st.mapSel === c.n;
+      const body = c.state === "later" ? `<span class="sm-note">2단계에서 그려져요</span>`
+        : c.state === "done" ? `<span class="sm-line">${c.q ? `퀘스트 ${c.q.k}/${c.q.n}` : "지났어요"}</span>`
+        : c.state === "now" ? `<span class="sm-line">${c.q ? `다섯 칸 중 ${Math.min(c.q.k + 1, c.q.n)}번째 · ${c.q.k}/${c.q.n}` : "퀘스트 받기 전"}${c.gateLeft ? ` · 관문 남은 ${c.gateLeft}` : ""}</span>`
+        : `<span class="sm-line">${p ? esc(p.think.length > 48 ? `${p.think.slice(0, 47)}…` : p.think) : ""}</span><span class="sm-from">${p ? esc(p.from) : ""}</span>`;
+      const docLine = `<span class="sm-doc"><code>${esc(c.doc.path.replace(/^docs\//, ""))}</code> ${c.doc.has ? "있음" : c.state === "done" || c.state === "now" ? "아직" : ""}</span>`;
+      const input = fix && p ? `<input type="text" data-act="prep-think" data-i="${c.n}" value="${esc(p.think)}" aria-label="${LB(c.n)} ① 생각" maxlength="120">` : "";
+      return `<div class="sm-cell"><button type="button" class="sm-card ${c.state}${sel ? " sel" : ""}" data-act="map-card" data-i="${c.n}" aria-pressed="${sel}" aria-label="${LB(c.n)} ${esc(c.title)} — ${STATE_WORD[c.state]}">
+        <span class="sm-no">${c.label}</span><span class="sm-t">${esc(c.title)}</span>${body}${docLine}${c.state === "now" ? `<span class="sm-flo" aria-hidden="true">${cat("idle", 30, { face: true })}</span>` : ""}</button>${input}</div>`; };
+    const row1 = m.cards.slice(0, 4).map(card).join(""), row2 = m.cards.slice(4).reverse().map(card).join("");
+    const ban = m.canDraw ? `<div class="sm-ban"><b>2단계 칸을 다 채웠어요</b><span>기획서(2단계에서 정한 것)로 3 ~ 8단계의 퀘스트와 문서를 한 번에 그려요</span><button type="button" class="b" data-act="prep-draw">기획서로 3 ~ 8단계 그리기</button></div>`
+      : m.drawn && !m.confirmed ? `<div class="sm-ban"><b>퀘스트 ${Object.keys(st.prep.cards).length}개를 준비했어요</b><span>${fix ? "카드마다 ① 생각을 고친 뒤 '맞아요'를 눌러요" : "카드마다 어느 절에서 왔는지 적었어요 — 맞으면 한 번에 넘어가요"}</span><button type="button" class="b" data-act="prep-ok">맞아요 — 이대로 준비해요</button>${fix ? "" : `<button type="button" class="b ghost" data-act="prep-fix">고칠래요</button>`}</div>`
+      : m.cur < 2 ? `<div class="sm-ban soft"><span>1단계에서는 길이 한 칸만 보여요. 2단계 칸을 다 채우면 3단계부터 8단계까지의 퀘스트와 문서가 한 번에 그려져요</span></div>` : "";
+    const legend = `<p class="sm-legend"><span class="done">끝남</span><span class="now">지금</span><span class="ready">준비된 퀘스트</span><span class="later">아직 안 그려짐</span><small>카드를 누르면 오른쪽 칸에 그 퀘스트와 문서</small></p>`;
+    const docs = `<ul class="sm-docs">${m.docs.map((d) => `<li class="${d.has ? "has" : ""}"><code>${esc(d.path)}</code><span>${esc(d.what)}</span><small>${d.has ? "있음" : "아직"}</small></li>`).join("")}</ul>`;
+    const ship = FDOCS && st.results[0] && st.results[1] ? `<p class="sm-ship"><button type="button" class="b" data-act="ship-open">문서로 묶어 GitHub에</button><small>지금까지 정한 것을 단계 문서 · 기획서 · 결정 기록으로</small></p>` : "";   // 흐름 보기(jmap)와 같은 단추
+    return `<div class="sm">${ban}<div class="sm-grid">${row1}</div><div class="sm-grid back">${row2}</div>${docs}${legend}${ship}</div>`;
+  }
   function treePane() {
     const cur = st.finished ? N.STAGES.length : st.j ? st.j.stage : st.quest ? st.quest.chap : 0;
     const mapTab = `<button type="button" role="tab" aria-selected="${treeChap === null}" class="map" data-act="tree-map" data-tt="한눈에 보기|단계마다 정한 것이 이어지는 지도 — 빈 칸을 채워요" aria-label="한눈에 보기">🗺</button>`;
     const chapTabs = () => N.STAGES.map((x) => { const k = x.n < cur ? "done" : x.n === cur ? "cur" : "lock";
       return `<button type="button" role="tab" aria-selected="${x.n === treeChap}" class="${k}" data-act="tree-chap" data-i="${x.n}" data-tt="${LB(x.n)} · ${esc(x.title)}|${k === "done" ? "끝낸 장 — 도장을 받았어요" : k === "cur" ? "지금 하는 장" : "아직 — 앞 장을 끝내면 열려요"}" aria-label="${LB(x.n)} ${esc(x.title)}">${QU.chapIcon(x.n)}</button>`; }).join("");
-    if (treeChap === null) return `<div class="adv"><div class="vtabs" role="tablist" aria-label="장">${mapTab}${chapTabs()}</div><div class="board">${treeMap(cur)}</div></div>`;
+    // C-54(2026-10-28): 한눈에 보기 = 보기 셋 — 지도(카드, 기본) · 흐름(C-39 jmap) · 상자(C-45 문서 지도)
+    const views = [["cards", "지도"], ["flow", "흐름"], ["box", "상자"]], viewBar = `<div class="sm-views" role="tablist" aria-label="보기">${views.map(([v, l]) => `<button type="button" role="tab" data-act="tree-view" data-v="${v}" aria-selected="${treeView === v}">${l}</button>`).join("")}</div>`;
+    if (treeChap === null) return `<div class="adv"><div class="vtabs" role="tablist" aria-label="장">${mapTab}${chapTabs()}</div><div class="board${treeView === "cards" ? " sea" : ""}">${viewBar}${treeView === "flow" ? treeMap(cur) : treeView === "box" ? mapPane(Math.min(cur, N.STAGES.length - 1)) : cardsMap(cur)}</div></div>`;
     const n = treeChap, s = N.STAGES[n], q = st.quest && st.quest.chap === n ? st.quest : null;
     const state = n < cur ? "done" : n === cur ? "cur" : "lock";
     const list = n === cur && st.j ? st.j.criteria.map((c) => ({ text: c.text, met: c.met })) : crits(n).map((c) => ({ text: c.text, met: n < cur }));
@@ -2175,7 +2251,15 @@
   // C-46 R-2(2026-10-27 이재엽 버튼 "펼치면 비킴 · 접으면 알약" · "고른 가장자리에" · 세로 알약 · 설정의 시간대로): 섬이 접혀 있으면(petit · hidden) 옆 칸은 그 가장자리의 알약(folded — 왼쪽 · 오른쪽은 세로)이고 작업실이 넓어진다(win.js · win.html).
   //   알약을 누르면(ACT pill) 펼쳐지고 작업실이 비킨다. 알릴 일(허락 카드 · 보고 · 질문 · 오류)은 peek · alert로 저절로 펼친다(peek는 앱의 작업실 안이면 home으로). 저절로 접히기는 설정 '접히기까지' 그대로(pinned에서 st.qwin을 앱에서는 빼서) — 단 옆 칸에 마우스가 있거나 글을 쓰는 중(colHover · colTyping)이면 안 접히고, 접힌 알약은 더 접히지 않는다
   const colFolded = () => st.ui === "petit" || st.ui === "hidden";
-  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${colFolded() ? " folded" : ""}">${colFolded() ? pillHTML() : islandHTML("")}</div>`;
+  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${colFolded() ? " folded" : ""}${colFolded() && st.boot ? " has-bub" : ""}">${colFolded() ? pillHTML() + bootBubble() : islandHTML("")}</div>`;
+  // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선"): 켤 때 알약 옆 말풍선 — 시간대 인사 한 줄(하루 한 번) · 멈춘 곳(단계 · 지금 칸) · 섬 펼치기 / 나중에. 몇 초 뒤(greet.js BUBBLE_MS) 사라진다
+  const bootBubble = () => {
+    if (!st.boot || !colFolded()) return "";
+    const s = st.j && stage();
+    const now = s ? `멈춘 곳: ${LB(s.n)} ${esc(s.title)} · 지금: ${esc(tick().now)}` : "시작 전이에요 — 무엇을 만들지부터 같이 정해요";
+    return `<div class="hello-bub" role="status" aria-live="polite">${st.boot.greet ? `<b class="hb-hi">${esc(C.greeting(new Date().getHours()))}</b>` : ""}<span class="hb-now">${now}</span>
+      <div class="hb-acts"><button type="button" data-act="pill">섬 펼치기</button><button type="button" class="ghost" data-act="boot-later">나중에</button></div></div>`;
+  };
   function syncWins() {
     if (!WINS || !QU) return;
     for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() : ""]]) {
@@ -2202,6 +2286,7 @@
     if (p.type === "input") { if (st.ui === "home" && timer) { clearIdle(); scheduleIdle(); } return onInput(el); }   // 글을 치는 동안 접히는 시계를 되돌린다(C-46)
     if (p.type === "key" && p.key === "Enter" && p.act === "say") return send();   // 작업실 옆 칸의 채팅 입력에서 Enter(C-41 ⑤) — 섬의 채팅 칸과 같이 보내기
     if (p.type === "key" && p.key === "s" && p.mod) { if (st.qtab === "file") ACT.fsave(); return; }   // 작업실 창의 ⌘/Ctrl+S(C-43)
+    if (p.type === "caret") { caretLine = Number(p.line) || 0; return; }   // 글 칸의 줄 위치(C-53 상태 줄) — 다시 그리지 않는다(치는 동안 글 칸이 흔들리지 않게), 다음 그릴 때 보인다
     // 옆 칸에 마우스를 올리거나 글을 쓰는 동안은 접히지 않는다(C-46) — 떠나면 접히는 시계를 다시 센다
     if (p.type === "col") { if (typeof p.hover === "boolean") { colHover = p.hover; if (p.hover) clearIdle(); else scheduleIdle(); } if (typeof p.typing === "boolean") { colTyping = p.typing; if (!p.typing) scheduleIdle(); } return; }
     // Esc — 옆 칸이 펼쳐져 있으면 먼저 접고(알약), 접혀 있으면 작업실을 닫는다(C-46, 새 맥락 리뷰 — 접기 단추의 '(Esc)'와 맞춤)
@@ -2262,7 +2347,7 @@
     placeFrom = st.place; paneFrom = st.pane;
     deskKeys = {};
     if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); }
-    else if (st.ui === "petit") $nav.innerHTML = `<div class="${enter.trim()}">${pillHTML()}</div>`;
+    else if (st.ui === "petit") $nav.innerHTML = `${!WINS && st.qwin ? qwinHTML() : ""}<div class="${enter.trim()}">${pillHTML()}${bootBubble()}</div>`;   // 브라우저 판(C-55): 켤 때 작업실이 열린 채 알약이면 작업실 판도 함께(앱은 창으로 — syncWins)
     else $nav.innerHTML = islandHTML(enter);
     $nav.classList.toggle("side", !!$nav.querySelector(":scope > .win"));   // 창(설정 · 퀘스트)이 열리면 섬 옆에 나란히(C-22) — 아래에 열리면 글자를 키웠을 때 바로 안 보였다(6.2.0)
     $nav.classList.toggle("peekroom", !!window.floeApp && (st.ui === "hidden" || st.ui === "petit"));   // 접힌 창의 여유 — 올리면 커질 자리(C-14)
@@ -2776,6 +2861,16 @@
     pin: () => { clearIdle(); set({ userPin: !st.userPin }); say(st.userPin ? "여기 열어 둘게요" : "이제 잠시 뒤 작게 접힐게요"); },
     pill: () => (st.ui === "hidden" ? go("home") : view("click")),   // 접힌 알약은 어느 상태든 누르면 펼침(C-46, 새 맥락 리뷰)
     fold: () => go("petit"),
+    "boot-later": () => { st.boot = null; render(); },   // C-55 말풍선의 '나중에' — 말풍선만 사라진다(작업실 · 알약은 그대로)
+    // C-53 작업실 세 칸 — 칸 접기(이 컴퓨터에 기억), 글 크기, 목차(오른쪽 칸 펼치기), 서식(브라우저 판 — 글 칸의 고른 자리에; 앱은 win.js가 창 안에서 같은 함수로 넣고 input으로 보낸다)
+    "wnav-toggle": () => { wnavOpen = !wnavOpen; writeLS("floe:ws-nav", wnavOpen ? "1" : "0"); render(); },
+    "wside-toggle": () => { wsideOpen = !wsideOpen; writeLS("floe:ws-side", wsideOpen ? "1" : "0"); render(); },
+    fsize: (i, el) => { const f = st.openFiles[Number(el && el.dataset.i)]; if (!f) return; f.zoom = Math.round(Math.min(1.6, Math.max(0.8, (f.zoom || 1) + (el.dataset.v === "+" ? 0.1 : -0.1))) * 10) / 10; render(); },
+    ftoc: () => { if (!wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); },
+    "ftoc-go": (i, el) => { const f = st.openFiles[st.fileSel]; if (!f) return; f.find = String((el && el.dataset.v) || "").slice(0, 60); if (f.kind === "md" && !f.edit) f.raw = true; render(); },   // 그 절의 제목을 찾기 칸에 — 원문 보기에서 그 줄이 표시된다
+    ffmt: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k], ta = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (!f || !ta || !MDV) return;
+      const r = MDV.format(ta.value, ta.selectionStart, ta.selectionEnd, el.dataset.fmt); ta.value = r.text; f.text = r.text; f.dirty = f.text !== f.saved; render();
+      const t2 = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (t2) { t2.focus(); t2.setSelectionRange(r.start, r.end); } },
     pet: () => pet("tap"),
     // 연습용은 바로 살펴보고, 진짜 AI 모드에서는 글만 넣어 둔다(보내는 건 사용자가 '어디쯤인지 보기'를 누를 때)
     ex: (i) => {
@@ -2785,7 +2880,7 @@
     },
     judge: () => { if (refuse(mealWhy())) return; st.notice = ""; judge(false); },
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
-    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, ship: null, topic: "" }); ACT.ex(S.examples.indexOf(S.first)); },
+    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, ship: null, topic: "", prep: null, mapSel: null }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => RETRY[st.warn.then](),
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
@@ -2934,6 +3029,12 @@
     "quest-hint": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1; say(i >= 0 ? `힌트: ${QU.question(q, i)}` : "힌트: 다 적었으면 완료 보고를 눌러요"); },
     "tree-chap": (i) => { treeChap = i; render(); },
     "tree-map": () => { treeChap = null; render(); },   // 도전과제의 한눈에 보기(C-37)
+    // C-54 지도 — 보기 셋 · 기획서로 그리기 · 맞아요(한 번에) · 고칠래요 · 카드 누름(오른쪽 칸 + 문서가 있으면 파일 보기)
+    "tree-view": (i, el) => { const v = el && el.dataset.v; if (["cards", "flow", "box"].includes(v)) treeView = v; render(); },
+    "prep-draw": () => { if (!SM || !st.results[1] || st.prep) return; st.prep = { ...SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits }), ok: false, fix: false, at: ymd() }; save(); render(); say("기획서로 3단계부터 8단계까지 그렸어요 — 카드마다 어느 절에서 왔는지 적었어요. 맞으면 '맞아요'로 한 번에 넘어가요"); },
+    "prep-ok": () => { if (!st.prep) return; st.prep = { ...st.prep, ok: true, fix: false }; save(); render(); say("준비된 퀘스트로 가요 — 그 단계에 들어서면 준비한 칸으로 시작해요"); },
+    "prep-fix": () => { if (!st.prep) return; st.prep = { ...st.prep, fix: true }; render(); },
+    "map-card": (i) => { const m = stageMap(), c = m && m.cards[i]; if (!c) return; st.mapSel = st.mapSel === i ? null : i; if (st.mapSel != null && !wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); if (st.mapSel != null && c.doc.has) ACT["map-open"](null, { dataset: { act: "map-open", v: c.doc.path } }); },
     // 빈 칸 채우기 — 지금 장의 칸은 채팅에서 차례로. 받기 전이면 퀘스트 탭(받기 화면)으로, 섬이 접혀 있으면 펼친다(앱의 옆 창에서 눌러도 섬에서 이어진다)
     "jmap-fill": () => {
       if (st.qfocus === "plan") st.qfocus = "stage";
@@ -3200,7 +3301,9 @@
     if (a === "question") st.question = t.value;
     if (a === "skip-reason") { st.skip = { ...(st.skip || {}), reason: t.value.slice(0, 200) }; return; }
     if (a === "ftext") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.text = t.value; const d = f.text !== f.saved; if (d !== f.dirty) { f.dirty = d; render(); } return; }   // 파일 고치기(C-43) — 바뀜 표시만 다시 그린다(글 칸이 흔들리지 않게)
-    if (a === "fn-find") { st.fnFind = t.value.slice(0, 60); render(); return; }   // R-10 넘기는 까닭 — 다시 그리지 않는다(글 칸이 흔들리지 않게)
+    if (a === "fn-find") { st.fnFind = t.value.slice(0, 60); render(); return; }
+    if (a === "prep-think") { const c = st.prep && st.prep.cards && st.prep.cards[Number(t.dataset.i)]; if (c) c.think = t.value.slice(0, 120); return; }   // C-54 고칠래요 — ① 생각(다시 그리지 않는다, '맞아요'에서 저장)
+    if (a === "ffind") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.find = t.value.slice(0, 60); if (f.kind === "md" && !f.edit && !f.raw && f.find) f.raw = true; render(); return; }   // C-53 문서 안 찾기 — 그 글이 든 줄 표시(원문 · 코드 보기)   // R-10 넘기는 까닭 — 다시 그리지 않는다(글 칸이 흔들리지 않게)
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다
     if (a === "task-text") { st.task.text = t.value; const b = $nav.querySelector("[data-act=task-tidy]"); if (b) b.disabled = !st.task.text.trim(); }
     if (a === "task-lines") st.task.lines = t.value.split("\n");
@@ -3381,7 +3484,7 @@
     if (q.approve && AP) { approvals = AP.EXAMPLE.map((a) => ({ ...a, at: Date.now() })); apMode = "example"; st.task = { text: "", lines: null, say: "", sent: "" }; st.apSure = ""; }   // &approve=1 — 예시 승인 카드(FR-17, 녹화 · 시험용)
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
-    if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, ship: null });
+    if (q.start) Object.assign(st, { j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, ship: null, prep: null, mapSel: null });
     // #feed — 먹이 주기의 정리 장면(예시 먹이, C-15 — 녹화 · 시험용)
     if (q.feed && FD) Object.assign(st, { j: null, finished: false, todos: null, tab: "today", hold: null, text: FD.EXAMPLE, meal: feedState(FD.EXAMPLE, true) });
     if (q.ex !== undefined) {
@@ -3426,8 +3529,13 @@
   // C-46 R-1(2026-10-27 이재엽 "플로가 켜지면 … 알약" · 버튼 "알약 안에서 인사" · "하루에 한 번"): 켜면 큰 인사 카드 없이 알약(petit)으로, 인사는 알약 안에서(startGreeting — greet.js PILL_TIMELINE).
   //   같은 날 다시 켜면 인사 없이 알약만(floe:greet-day). 주소 끝 장면(시험 · 녹화)은 전처럼 기본 화면. 움직임 줄이기 · 휴대폰은 알약만
   const GREET_DAY = "floe:greet-day";
-  const greetNow = !!GR && st.ui === "greet" && GR.shouldGreet({ hash: location.hash, still: STILL, phone: isPhone(), lastDay: readLS(GREET_DAY, ""), today: ymd() }).greet;
-  if (greetNow) { document.documentElement.classList.add("greeting"); st.ui = "petit"; }
+  // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선" · "켤 때마다"): 켜면 바로 작업실(캔버스 = 지금 단계의 퀘스트 보드) + 접힌 알약 + 알약 옆 말풍선(greet.js bootPlan). 처음 설정이 필요하면 전처럼(알약 안 인사 → 설정)
+  const bootArgs = { hash: location.hash, still: STILL, phone: isPhone(), lastDay: readLS(GREET_DAY, ""), today: ymd(),
+    setupNeeded: !!(window.FloeSetup && window.FloeSetup.shouldOpen(window.FloeSetup.readSaved(localStorage), location.hash)) };
+  const boot = GR && st.ui === "greet" ? GR.bootPlan(bootArgs) : { workspace: false, bubble: false, greet: false };
+  const greetNow = !!GR && st.ui === "greet" && !boot.workspace && GR.shouldGreet(bootArgs).greet;
+  if (boot.workspace) { openQwin("canvas"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); }
+  else if (greetNow) { document.documentElement.classList.add("greeting"); st.ui = "petit"; }
   else if (st.ui === "greet") st.ui = location.hash && location.hash !== "#" ? "home" : "petit";
   function startGreeting() {
     const h = document.documentElement;
@@ -3459,6 +3567,9 @@
   // 처음 설정(setup.js)이 끝나면 — 고른 길에 맞춰 보기 방식을 두고, '시작하기'를 눌렀으면 바로 보여 주기 화면으로 (2026-10-19)
   // 처음 설정을 닫은 뒤에 가져오기 · 새로 만들기가 끝났다(C-31) — 작업 폴더가 바뀌었으니 알린다
   window.addEventListener("message", (e) => { if (e.origin !== location.origin) return; const d = e.data; if (d && d.floe === "open" && typeof d.path === "string") clickAct({ dataset: { act: "map-open", v: d.path.slice(0, 500) } }); });   // 문서 지도의 '파일 보기에서 열기'(C-45) — 브라우저 판
+  // C-53 상태 줄의 줄 위치 — 브라우저 판은 글 칸이 섬 안에 있어 여기서(앱의 작업실 창은 win.js가 같은 일을) 상태 줄 글만 바꾼다(전체 render 없이 — 치는 동안 글 칸이 흔들리지 않게)
+  const caretHere = (e) => { const t = e.target; if (!t || !t.classList || !t.classList.contains("fv-edit")) return; caretLine = t.value.slice(0, t.selectionStart).split("\n").length; const pos = $nav.querySelector(".fv-st [data-pos]"); if (pos) pos.textContent = ` · 줄 ${caretLine}`; };
+  $nav.addEventListener("keyup", caretHere); $nav.addEventListener("click", caretHere);
   document.addEventListener("floe:project-picked", (e) => {
     const d = (e && e.detail) || {}, n = String(d.name || "");
     st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "canvas";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)

@@ -67,7 +67,7 @@ test("건너뛰기(누름 · Esc) — 남은 단계를 지우고 바로 done 한
 
 test("app.js — 인사는 greet.js 규칙으로 켤 때(하루에 한 번) 알약 안에서, 단계는 html[data-greet], 누름 · 키로 건너뛰고, 끝나면 알약 그대로 · floe:greet-done · 접힘 타이머 시작(C-46 R-1)", () => {
   const app = read("navigator/app.js");
-  assert.match(app, /GR\.shouldGreet\(\{ hash: location\.hash, still: STILL, phone: isPhone\(\), lastDay: readLS\(GREET_DAY, ""\), today: ymd\(\) \}\)\.greet/);
+  assert.match(app, /GR\.shouldGreet\(bootArgs\)\.greet/);
   assert.match(app, /if \(greetNow\) \{ document\.documentElement\.classList\.add\("greeting"\); st\.ui = "petit"; \}/, "켜면 알약");
   assert.match(app, /else if \(st\.ui === "greet"\) st\.ui = location\.hash && location\.hash !== "#" \? "home" : "petit";/, "인사가 없어도 알약 — 주소 끝 장면(시험 · 녹화)은 기본 화면");
   assert.match(app, /writeLS\(GREET_DAY, ymd\(\)\);/, "오늘 인사했다"); assert.match(app, /go\("petit"\);   \/\/ 인사가 끝나도 알약 그대로/, "끝나도 알약");
@@ -94,4 +94,25 @@ test("app.css — 단계마다 모양이 있고 움직임 줄이기면 바로 �
   assert.match(css, /@keyframes fin-wave/, "지느러미 흔들기");
   assert.ok(!css.includes(".greet-wl") && !css.includes(".isl.greet"), "띠의 물결 선 · 큰 인사 카드 모양은 뺐다(C-46)");
   assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{html\.greeting \.pill\.greet \.pet,html\.greeting \.pill\.greet \.pl-hello\{opacity:1;animation:none\}/);
+});
+
+// C-55(2026-10-28, 이재엽 버튼 "접힌 알약 + 말풍선" · "켤 때마다"): 켜면 바로 작업실(지금 단계의 퀘스트 보드) + 고른 가장자리의 접힌 알약 + 알약 옆 말풍선(시간대 인사 한 줄 · 멈춘 곳 · 섬 펼치기 / 나중에).
+//   처음 설정이 필요하면 설정부터(작업실 · 말풍선 없음). 주소 끝 장면 · 휴대폰은 전처럼. 시간대 인사 줄은 하루에 한 번(C-46 버튼) — 말풍선 자체는 켤 때마다
+test("greet.js bootPlan — 켤 때 무엇을 여나: 작업실 · 말풍선 · 인사 줄", () => {
+  const base = { hash: "", still: false, phone: false, lastDay: "", today: "2026-10-28", setupNeeded: false };
+  assert.deepEqual(G.bootPlan(base), { workspace: true, bubble: true, greet: true, why: "" }, "보통 켬 — 작업실 · 말풍선 · 인사");
+  assert.deepEqual(G.bootPlan({ ...base, lastDay: "2026-10-28" }), { workspace: true, bubble: true, greet: false, why: "오늘 이미 인사했어요" }, "같은 날 — 말풍선은 뜨되 인사 줄은 없음");
+  assert.equal(G.bootPlan({ ...base, setupNeeded: true }).workspace, false, "처음 설정이 필요하면 설정부터"); assert.equal(G.bootPlan({ ...base, setupNeeded: true }).bubble, false);
+  assert.deepEqual(G.bootPlan({ ...base, hash: "#ex=2" }), { workspace: false, bubble: false, greet: false, why: "주소 끝 장면" });
+  assert.equal(G.bootPlan({ ...base, phone: true }).workspace, false, "휴대폰은 따로");
+  const still = G.bootPlan({ ...base, still: true }); assert.ok(still.workspace && still.bubble && !still.greet, "움직임 줄이기 — 작업실 · 말풍선은 열고 인사 움직임만 없음");
+  assert.ok(G.BUBBLE_MS >= 5000 && G.BUBBLE_MS <= 15000, "말풍선은 몇 초 뒤 사라진다(시간 미정 — 5 ~ 15초 사이로 둠)");
+});
+test("app.js — 켤 때 bootPlan대로 작업실을 열고(캔버스 = 지금 단계의 퀘스트 보드) 섬은 접힌 알약, 말풍선에 인사 · 멈춘 곳 · 섬 펼치기 / 나중에", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /GR\.bootPlan\(bootArgs\)/, "규칙은 greet.js bootPlan 하나"); assert.match(a, /const bootArgs = \{ hash: location\.hash, still: STILL, phone: isPhone\(\), lastDay: readLS\(GREET_DAY, ""\), today: ymd\(\),/);
+  assert.match(a, /setupNeeded: !!\(window\.FloeSetup && window\.FloeSetup\.shouldOpen\(/, "처음 설정이 필요한지는 setup.js의 규칙으로");
+  assert.match(a, /if \(boot\.workspace\) \{ openQwin\("canvas"\); st\.ui = "petit";/, "작업실(캔버스) + 접힌 알약");
+  assert.match(a, /data-act="boot-later"/, "나중에"); assert.match(a, /class="hello-bub/, "말풍선");
+  assert.match(a, /"boot-later": \(\) => \{ st\.boot = null;/, "나중에 → 말풍선만 사라진다");
 });

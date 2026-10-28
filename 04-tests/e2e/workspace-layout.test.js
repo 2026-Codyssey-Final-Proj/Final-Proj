@@ -129,7 +129,7 @@ test("R-9 · R-5 — 3단계 장면: 칩은 '시작 ✓ · 1 ✓ V.1 · 2 ✓ V.
 test("F-66 · F-67 — 캔버스: 끌면 옮겨지고 · ⌘/Ctrl+휠은 커서 자리에서 1.2배 · 섬이 다시 보내도 그 자리 · '맞춤'으로 처음처럼 · 키 + 0. 파일 칸: 폴더는 그림 · 꺾쇠 · 굵게", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
-    const h = await islandHTML(browser), html = `${h.qwin}<div class="isl-col side-right narrow">${h.isl}</div>`;
+    const h = await islandHTML(browser), html = `${h.qwin.replace(/<aside class="wside"[\s\S]*?<\/aside>/, "")}<div class="isl-col side-right narrow">${h.isl}</div>`;   // 오른쪽 칸(C-53)은 접은 채 — 끌 자리가 있어야 끈 만큼 옮겨진다(판이 밖으로 나가지 않게 막는 keepIn)
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => { window.floeApp = { onWinHtml: (f) => { window.__h = f; }, onDock() {}, winEvent() {} }; });
     await page.setViewport({ width: 1728, height: 1000 });

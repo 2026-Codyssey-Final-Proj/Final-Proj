@@ -59,7 +59,7 @@ test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · �
   const a = read("navigator/app.js"), c = read("navigator/app.css");
   assert.match(a, /<span class="wst">\$\{LB\(n\)\} · \$\{esc\(N\.STAGES\[n\]\.title\)\}<\/span>/, "머리에 단계 이름");
   assert.match(a, /<span class="wlv" title="칭호 · \$\{esc\(QU\.rankOf\(Math\.min\(level, 7\)\)\)\}">LV \$\{level\} · \$\{coin\(\)\}\$\{st\.shells\}<\/span>/, "머리에 LV · 조개");
-  assert.match(a, /<div class="wmain"><nav class="wnav" aria-label="파일">\$\{fileNav\(\)\}<\/nav><div class="wbody"/, "파일 칸은 탭에 상관없이 판 왼쪽");
+  assert.match(a, /<div class="wmain">\$\{wnavOpen \? `<nav class="wnav" aria-label="파일">\$\{fileNav\(\)\}<\/nav>` : ""\}<div class="wbody"/, "파일 칸은 탭에 상관없이 판 왼쪽(접기 단추로 숨길 수 있다 — C-53, 2026-10-28)");
   assert.match(a, /const FILES_DUMMY = \[\["README\.md", 0, "고침 · 책", "fix"\]/, "예시 데이터 — API가 생기면 지운다"); assert.match(a, /\$\{esc\(project\(\) \|\| "예시 프로젝트"\)\}/, "더미 이름이 진짜 프로젝트처럼 보이지 않게(새 맥락 리뷰 2026-10-27)");
   assert.match(a, /폴더를 연결하면 진짜 목록이 와요"\)\}">예시<\/em>/, "서버 없이 · 연습 · 폴더를 모르면 화면에 예시 표시(R-8)");
   const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("function fileCard"));

@@ -10,7 +10,7 @@ const read = (f) => fs.readFileSync(path.join(__dirname, "../../02-frontend", f)
 test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(folded), 아니면 섬 그대로. 앱의 작업실은 열려 있어도 저절로 접힌다(pinned에서 뺌), 알약을 누르면 펼친다", () => {
   const a = read("navigator/app.js");
   assert.match(a, /const colFolded = \(\) => st\.ui === "petit" \|\| st\.ui === "hidden";/);
-  assert.match(a, /\$\{colFolded\(\) \? " folded" : ""\}">\$\{colFolded\(\) \? pillHTML\(\) : islandHTML\(""\)\}<\/div>`;/, "접힘이면 알약 하나");
+  assert.match(a, /\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\(""\)\}<\/div>`;/, "접힘이면 알약 하나(+ 켤 때 말풍선 C-55)");
   assert.match(a, /\|\| st\.settings \|\| \(st\.qwin && !WINS\) \|\| !!st\.gacha/, "앱의 작업실은 섬을 붙들지 않는다(설정의 시간대로) — 브라우저의 옆 판은 전처럼");
   assert.match(a, /pill: \(\) => \(st\.ui === "hidden" \? go\("home"\) : view\("click"\)\)/, "알약 누름 = 펼침(hidden이어도)"); assert.match(a, /fold: \(\) => go\("petit"\)/, "접기 단추");
   // 새 맥락 리뷰(2026-10-27) 막힘 둘 · 보완: 접힌 알약은 더 접히지 않는다, 옆 칸에 마우스 · 글 쓰는 중에는 안 접힌다, 알릴 일이 오면 펼친다, Esc는 먼저 접기

@@ -169,6 +169,23 @@ test("POST /api/docs(C-39): 누가 정했나 · 플로로 초안 · 재료 · �
   assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", idea: "가".repeat(1000), results: { 0: E0, 1: E1 } } })).status, 400, "처음 말한 것은 400자까지");
 });
 
+// F-62(2026-10-28): 관문에서 까닭을 적고 넘긴 기준(check[].skipped · skip{reason, items})이 단계 문서의 완료 기준 표에 '넘김(까닭: …)', 결정 기록의 관문 줄에 '넘김 n — 까닭: …'으로 남는다 — 서버가 버리지 않게
+test("POST /api/docs(F-62): 넘긴 기준의 까닭이 단계 문서 · 결정 기록에 남는다, 까닭이 너무 길면 400", async () => {
+  assert.equal(Srv.useProject(DIR), true);
+  const check = (r) => r.items.map((x) => ({ text: x.name, met: true, evidence: `${x.name}: 적음` }));
+  const E0 = { ...R0, at: "2026-10-28", passed: "2026-10-28", check: check(R0) };
+  const c1 = check(R1); c1[1] = { text: c1[1].text, met: true, skipped: true, evidence: "" };
+  const E1 = { ...R1, at: "2026-10-28", passed: "2026-10-28", check: c1, skip: { reason: "이번 미션은 공개하지 않아요", items: [c1[1].text] } };
+  const r = await call("POST", "/api/docs", { body: { topic: "동아리 행사 신청 앱", results: { 0: E0, 1: E1 } } });
+  assert.equal(r.status, 200, r.text);
+  const plan = fs.readFileSync(path.join(DIR, "docs/02-plan/plan.md"), "utf8"), dec = fs.readFileSync(path.join(DIR, "docs/decisions.md"), "utf8");
+  assert.match(plan, /넘김\(까닭: 이번 미션은 공개하지 않아요\)/, "단계 문서의 완료 기준 표"); assert.ok(!plan.includes(`| ${c1[1].text} | 됨 |`), "넘긴 기준이 '됨'으로 적히지 않는다");
+  assert.match(dec, /기준 \d+\/\d+ · 넘김 1 — 까닭: 이번 미션은 공개하지 않아요/, "결정 기록 관문 줄");
+  await untilDone();
+  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: { ...E1, skip: { reason: "가".repeat(300), items: [] } } } } })).status, 400, "까닭은 200자까지");
+  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: { ...E1, check: c1.map((c) => ({ ...c, skipped: "yes" })) } } } })).status, 400, "skipped는 참 · 거짓만");
+});
+
 test("POST /api/docs: 맡긴 일이 진행 중이면 409 — 파일을 하나도 쓰지 않는다(쓰고 나서 못 맡기지 않게)", async () => {
   assert.equal(Srv.useProject(DIR), true);
   fs.writeFileSync(SLOW, "1");

@@ -791,6 +791,50 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li.now small{color:var(--acc)}.wnav .fn li.new small{color:var(--ok)}.wnav .fn li.fix small{color:#7A3F1F}
 .wnav .fn-ft{margin:auto 0 0;padding:8px 6px 0;border-top:1px solid var(--line);font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);line-height:1.5}
 /* 좁은 작업실(760 아래 — 옆에 섬 칸이 붙은 보통 화면)에서는 파일 칸 · 단계 이름을 숨겨 판에 자리를 준다. 창(.qwin)의 너비로 — 브라우저의 S 판(720)도 같다 */
+/* claude-drafted: 2026-10-28 — C-53 작업실 세 칸(이재엽 버튼 "오른쪽 칸은 섬을 펼치면 접힘" · "서식 단추는 만든다", 목업 ②): 파일 칸 | 작업 칸 | 오른쪽 칸(.wside 280). 머리 줄의 칸 접기 단추(44px, 줄 높이는 그대로), 문서 도구 줄 · 상태 줄, 열어 둔 파일 묶음 */
+.wh .wtgs{display:inline-flex;gap:2px;margin:-7px 0}
+.wh .wtg{min-width:44px;height:44px;border:0;border-radius:10px;background:transparent;color:var(--mute);display:inline-grid;place-items:center;cursor:pointer}
+.wh .wtg svg{width:18px;height:18px}
+.wh .wtg[aria-pressed=true]{color:var(--acc)}
+.wh .wtg:hover{background:var(--acc-soft)}
+.wh .wtg:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.wside{width:280px;flex:none;box-sizing:border-box;padding:12px 14px;background:var(--soft);overflow:auto;display:flex;flex-direction:column;gap:14px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);border-left:1px solid var(--line)}
+.wside h4{margin:0 0 6px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub);text-transform:none;letter-spacing:.02em}
+.wside .ws-sum{margin:0;line-height:1.55}
+.wside .ws-sum b{color:var(--ink)}
+.wside .ws-h{margin:10px 0 4px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.wside ul,.wside ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+.wside .ws-toc button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;min-height:44px;padding:0 8px;border-radius:8px;color:var(--ink)}
+.wside .ws-toc button:hover{background:var(--card)}
+.wside .ws-toc button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.wside .ws-toc li.l2 button{padding-left:18px}.wside .ws-toc li.l3 button{padding-left:30px}
+.wside .ws-toc li.empty button{color:var(--sub)}
+.wside .ws-toc small{margin-left:auto;padding:1px 7px;border-radius:999px;background:var(--badbg);color:var(--bad);font-size:calc(11px * var(--ui-scale,1))}
+.wside .ws-mat li{padding:4px 8px;border-radius:8px;background:var(--card);font-size:calc(12px * var(--ui-scale,1))}
+.wside .ws-cells li{padding:6px 8px;border-radius:8px;background:var(--card);color:var(--sub)}
+.wside .ws-cells li.y{color:var(--ink);text-decoration:line-through;text-decoration-color:var(--ok)}
+.wside .ws-cells li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--acc-mid)}
+.wside .ws-unmet li{padding:4px 8px;border-radius:8px;background:var(--warnbg);color:var(--warn);font-size:calc(12px * var(--ui-scale,1))}
+.wnav .fn-h2{margin:0 0 4px;padding:0 6px;font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);font-weight:700}
+.wnav .fn-open{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.wnav .fn-open li.dirty .fn-file{color:var(--warn)}
+.wnav .fn-open .fn-opened{min-height:40px}
+.fv-tools{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:4px 0}
+.fv-tools button{min-height:44px;padding:0 12px;border:0;border-radius:10px;background:var(--soft);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
+.fv-tools button:hover{background:var(--acc-soft)}
+.fv-tools button[aria-pressed=true]{color:var(--acc)}
+.fv-tools button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.fv-tools .fv-sz{display:inline-flex;align-items:center;gap:2px;margin-left:4px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.fv-tools .fv-sz button{min-width:44px;padding:0}
+.fv-tools .fv-find{margin-left:auto;min-height:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));width:180px}
+.fv-md,.fv-code,.fv-edit{font-size:calc(13px * var(--fz,1) * var(--ui-scale,1))}
+.fv-md{font-size:calc(14px * var(--fz,1) * var(--ui-scale,1))}
+.fv-code li.hit{background:var(--warnbg)}
+.fv-code li.hit::marker{color:var(--warn)}
+.fv-st{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 10px;border-top:1px solid var(--line);font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.fv-st .st-ai{color:var(--acc)}
+.fv-st .st-me{color:var(--warn)}
+@container (max-width:899px){.wside{display:none}}   /* 브라우저 판(920)에서는 보이고, 그보다 좁으면 숨는다 */
 .qwin{min-width:260px;container-type:inline-size}
 @container (max-width:760px){.wnav,.wh .wst{display:none}}
 .nav.side{width:min(1800px,calc(100vw - 32px))}
@@ -1072,6 +1116,53 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .jm-h{display:flex;align-items:center;gap:8px}
 .jm-h b{flex:1 1 auto;font-size:calc(13.5px * var(--ui-scale,1))}
 .jm-count{font-size:calc(12px * var(--ui-scale,1));font-weight:800;padding:1px 8px;border-radius:999px;background:#E9E0CB;color:#5A4A33}
+/* claude-drafted: 2026-10-28 — C-54 지도(도전과제 탭의 카드 지도, 목업 캔버스 ④ ~ ⑥): 바다 위 얼음 조각 — 파스텔 토큰(웹사이트 초안과 같은 값), 카드 4열 두 줄(둘째 줄은 돌아온다), 아래 줄 문서, 보기 셋 */
+.board.sea{background:#E2E9F4 repeating-radial-gradient(ellipse at 12% 18%,rgba(77,102,181,0) 0 46px,rgba(77,102,181,.07) 46px 47.5px);color:#2B3463}
+.sm-views{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:rgba(43,52,99,.08);margin:0 0 10px}
+.sm-views button{min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#5B6491;font:inherit;font-size:calc(13px * var(--ui-scale,1));font-weight:700;cursor:pointer}
+.sm-views button[aria-selected=true]{background:#F2F5FA;color:#2B3463;box-shadow:0 1px 0 #C5CEE2}
+.sm{display:grid;gap:12px}
+.sm-ban{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:14px;background:#EFE3C0;color:#2B3463;font-size:calc(13px * var(--ui-scale,1));line-height:1.5}
+.sm-ban.soft{background:#F2F5FA}
+.sm-ban b{font-size:calc(14px * var(--ui-scale,1))}
+.sm-ban span{flex:1 1 240px}
+.sm-ban .b{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#B8C9F0;color:#263066;font-weight:800;font-size:calc(13px * var(--ui-scale,1))}
+.sm-ban .b.ghost{background:transparent;box-shadow:inset 0 0 0 1.5px #C5CEE2;color:#2B3463}
+.sm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.sm-cell{display:grid;gap:6px;min-width:0}
+.sm-cell input{min-height:44px;border:1.5px solid #C5CEE2;border-radius:10px;padding:0 10px;font:inherit;font-size:calc(12.5px * var(--ui-scale,1));color:#2B3463;background:#fff}
+.sm-card{position:relative;display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;min-height:118px;padding:12px 14px;border:0;border-radius:30px 38px 26px 34px / 34px 26px 36px 28px;background:#F2F5FA;color:#2B3463;font:inherit;cursor:pointer;box-shadow:0 9px 0 -2px #C6D5EE,0 20px 28px -14px rgba(54,62,98,.35);min-width:0}
+.sm-card .sm-no{font-size:calc(22px * var(--ui-scale,1));font-weight:800;color:#4D66B5;line-height:1}
+.sm-card .sm-t{font-size:calc(14px * var(--ui-scale,1));font-weight:700}
+.sm-card .sm-line,.sm-card .sm-note,.sm-card .sm-from,.sm-card .sm-doc{font-size:calc(12px * var(--ui-scale,1));color:#5B6491;line-height:1.45;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.sm-card .sm-doc{margin-top:auto}
+.sm-card code{font-size:calc(11.5px * var(--ui-scale,1));color:#2B3463}
+.sm-card.now{box-shadow:0 0 0 3px #4D66B5,0 9px 0 -2px #C6D5EE,0 20px 28px -14px rgba(54,62,98,.4)}
+.sm-card.ready{background:rgba(242,245,250,.62);box-shadow:inset 0 0 0 1.5px #C6D5EE}
+.sm-card.pending{background:rgba(242,245,250,.62);box-shadow:inset 0 0 0 1.5px #E6CB86}
+.sm-card.later{background:rgba(226,233,244,.7);box-shadow:inset 0 0 0 1.5px rgba(198,213,238,.7);color:#5B6491}
+.sm-card.later .sm-no{color:#5B6491}
+.sm-card.sel{outline:3px solid #4D66B5;outline-offset:3px}
+.sm-card:focus-visible{outline:3px solid #4D66B5;outline-offset:3px}
+.sm-card .sm-flo{position:absolute;right:-6px;top:-14px;width:36px;height:36px;border-radius:50%;background:#F2F5FA;box-shadow:0 0 0 3px #F2F5FA,0 8px 16px -6px rgba(54,62,98,.5);display:grid;place-items:center}
+.sm-grid.back{direction:rtl}
+.sm-grid.back .sm-cell{direction:ltr}
+.sm-docs{list-style:none;margin:0;padding:10px 0 0;border-top:3px solid #C6D5EE;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sm-docs li{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border-radius:12px;background:#F2F5FA;box-shadow:0 4px 0 -1px #C6D5EE;font-size:calc(12.5px * var(--ui-scale,1));color:#2B3463;min-width:0}
+.sm-docs li code{font-size:calc(12px * var(--ui-scale,1));overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sm-docs li span{color:#5B6491}
+.sm-docs li small{margin-left:auto;color:#5B6491}
+.sm-docs li.has small{color:#2B3463}
+.sm-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0;font-size:calc(12px * var(--ui-scale,1));color:#5B6491}
+.sm-legend span{display:inline-flex;align-items:center;gap:6px}
+.sm-legend span::before{content:"";width:22px;height:14px;border-radius:9px 11px 8px 10px;background:#F2F5FA;box-shadow:0 3px 0 -1px #C6D5EE}
+.sm-legend span.now::before{box-shadow:inset 0 0 0 2px #4D66B5}
+.sm-legend span.ready::before{background:rgba(242,245,250,.62);box-shadow:inset 0 0 0 1.5px #C6D5EE}
+.sm-legend span.later::before{background:rgba(226,233,244,.7);box-shadow:inset 0 0 0 1px #C6D5EE}
+.sm-legend small{flex:1 1 100%}
+.sm-ship{display:flex;align-items:center;gap:10px;margin:0;font-size:calc(12px * var(--ui-scale,1));color:#5B6491}
+.sm-ship .b{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#B8C9F0;color:#263066;font-weight:800;font-size:calc(13px * var(--ui-scale,1))}
+@container (max-width:760px){.sm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sm-docs{grid-template-columns:1fr}}
 /* C-39 도전과제 흐름 — 넣은 것 → 플로로가 한 것 → 내가 정한 것 → 관문, 칸마다 누가 정했나(by) · 재료 */
 .by-ok{--by:#4E8F5E}.by-edit{--by:#B87A1E}.by-me{--by:#5B6CB8}.by-pick{--by:#9A5FAE}
 .jm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:0;padding:2px 4px;font-size:calc(12px * var(--ui-scale,1));color:#5A4A33}
@@ -1256,13 +1347,31 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.narrow .mc.chat .log{max-height:max(120px,calc(100vh - 340px))}
 .isl-col.wide .mc.chat .log{max-height:max(110px,calc(var(--col-h,360px) - 250px))}
 /* 접힌 옆 칸(C-46 R-2, 2026-10-27) — 그 가장자리의 알약 하나. 왼쪽 · 오른쪽은 세로 알약(이재엽 버튼 "세로 알약"): 플로로 얼굴은 바로, 글은 세로쓰기. 칸의 두께(56)는 win.js FOLD */
-.isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이 */
+.isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden;background:transparent}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이. 바탕은 비친다(작업실 바탕) — 남색은 알약 하나만(F-65 파란 줄, 2026-10-28) */
 .isl-col.folded .pill{max-width:100%;flex:none}
 .isl-col.folded .pill:hover{transform:none}   /* 올리면 커지는 움직임은 접힌 칸에서는 잘린다 — 하지 않는다 */
 .isl-col.folded.side-left .pill,.isl-col.folded.side-right .pill{height:auto;max-height:100%;width:48px;flex-direction:column;align-items:center;padding:6px 0 16px;gap:8px}
 .isl-col.folded.side-left .pill .pet,.isl-col.folded.side-right .pill .pet{margin:0}
 .isl-col.folded.side-left .pill b,.isl-col.folded.side-left .pill .pl-now,.isl-col.folded.side-left .pill .pl-cta,.isl-col.folded.side-left .pill .pl-mode,.isl-col.folded.side-left .pill .mini,
 .isl-col.folded.side-right .pill b,.isl-col.folded.side-right .pill .pl-now,.isl-col.folded.side-right .pill .pl-cta,.isl-col.folded.side-right .pill .pl-mode,.isl-col.folded.side-right .pill .mini{writing-mode:vertical-rl;max-width:none;max-height:240px}
+/* claude-drafted: 2026-10-28 — C-55 켤 때 알약 옆 말풍선(.hello-bub, 이재엽 버튼 "접힌 알약 + 말풍선"). 파스텔 종이 + 남색 글씨(대비 4.5:1 이상), 단추 44px. 접힌 칸(56) 밖으로 나와 작업실 위에 뜬다 — 그 가장자리의 반대쪽으로 */
+.hello-bub{box-sizing:border-box;width:300px;max-width:calc(100vw - 32px);padding:14px 16px;border-radius:16px;background:#F2F5FA;color:#2B3463;box-shadow:0 10px 28px -12px rgba(43,52,99,.45),0 0 0 1px #C5CEE2;display:grid;gap:8px;font-size:14px;line-height:1.5;text-align:left;animation:bub-in .3s cubic-bezier(.2,.8,.2,1)}
+.hello-bub .hb-hi{font-size:16px}
+.hello-bub .hb-now{color:#2B3463}
+.hello-bub .hb-acts{display:flex;gap:8px;flex-wrap:wrap}
+.hello-bub .hb-acts button{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#B8C9F0;color:#263066;font:inherit;font-size:14px;cursor:pointer}
+.hello-bub .hb-acts button.ghost{background:transparent;color:#2B3463;box-shadow:inset 0 0 0 1.5px #C5CEE2}
+.hello-bub .hb-acts button:focus-visible{outline:2px solid #4D66B5;outline-offset:2px}
+@keyframes bub-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.hello-bub{animation:none}}
+.nav>div>.hello-bub{margin-top:8px}   /* 브라우저 판 — 알약 아래 */
+.isl-col.folded.has-bub{overflow:visible;position:relative}   /* 말풍선이 있는 동안만 칸 밖으로 나온다(알약은 그대로 칸 안) */
+.isl-col.folded .hello-bub{position:absolute;z-index:3}
+.isl-col.folded.side-right .hello-bub{right:62px;top:12px}
+.isl-col.folded.side-left .hello-bub{left:62px;top:12px}
+.isl-col.folded.side-top .hello-bub{top:62px;left:50%;transform:translateX(-50%)}
+.isl-col.folded.side-bottom .hello-bub{bottom:62px;left:50%;transform:translateX(-50%)}
+.isl-col.folded.side-top .hello-bub,.isl-col.folded.side-bottom .hello-bub{animation:none}   /* translateX와 겹치는 움직임은 두지 않는다 */
 /* 섬 머리의 자리 네 칸(▲ ▼ ◀ ▶) */
 .dk{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:var(--soft);flex:none}
 .dk button{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--mute);font-size:calc(11px * var(--ui-scale,1));cursor:pointer}

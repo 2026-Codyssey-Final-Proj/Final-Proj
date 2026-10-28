@@ -141,7 +141,7 @@ const STATIC = {
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -493,10 +493,14 @@ const BY = require("./quest.js").BY, DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const refsOk = (a) => Array.isArray(a) && a.length <= Nav.FROM_MAX && a.every((x) => x && Number.isInteger(x.s) && Number.isInteger(x.i) && x.s >= 0 && x.s < Nav.STAGES.length && x.i >= 0 && x.i < 8);
 const extraOk = (x) => (x.by == null || BY.includes(x.by)) && (x.draft == null || strOk(x.draft, LINE_MAX)) && (x.from == null || refsOk(x.from));
 const extraOf = (x) => ({ ...(x.by != null ? { by: x.by } : {}), ...(x.draft != null && x.draft !== "" ? { draft: x.draft } : {}), ...(x.from && x.from.length ? { from: x.from.map((r) => ({ s: r.s, i: r.i })) } : {}) });
-const checkOk = (a) => Array.isArray(a) && a.length <= 8 && a.every((c) => c && strOk(c.text, ITEM_NAME_MAX) && Nav.filled(c.text) && typeof c.met === "boolean" && (c.evidence == null || strOk(c.evidence, 300)));
+const checkOk = (a) => Array.isArray(a) && a.length <= 8 && a.every((c) => c && strOk(c.text, ITEM_NAME_MAX) && Nav.filled(c.text) && typeof c.met === "boolean" && (c.evidence == null || strOk(c.evidence, 300)) && (c.skipped == null || typeof c.skipped === "boolean"));   // skipped — 관문에서 까닭을 적고 넘긴 기준(F-62, 2026-10-28)
+// F-62(2026-10-28): 넘긴 기준의 까닭 — 화면이 보내는 skip { reason(관문에서 사람이 적은 한 줄 · 200자), items(넘긴 기준 글) }. docs.js가 단계 문서 · 결정 기록에 '넘김(까닭)'으로 쓴다
+//   items는 화면이 같이 보내는 값이라 모양만 검사해 넘긴다 — 지금 docs.js는 reason과 check[].skipped만 읽는다(새 맥락 리뷰 2026-10-28: 읽는 곳이 생기기 전까지는 쓰지 않는 값)
+const skipOk = (k) => k && typeof k === "object" && !Array.isArray(k) && strOk(k.reason, CHECK_LINE_MAX) && (k.items == null || (Array.isArray(k.items) && k.items.length <= 8 && k.items.every((x) => strOk(x, ITEM_NAME_MAX))));
 const stageExtraOk = (v) => (v.prep == null || (Array.isArray(v.prep) && v.prep.length <= Nav.PREP_MAX && v.prep.every((x) => strOk(x, Nav.PREP_LINE))))
   && (v.at == null || (typeof v.at === "string" && DATE_RE.test(v.at))) && (v.passed == null || (typeof v.passed === "string" && DATE_RE.test(v.passed))) && (v.check == null || checkOk(v.check))
-  && (v.checkBy == null || v.checkBy === "confirm");   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
+  && (v.checkBy == null || v.checkBy === "confirm")
+  && (v.skip == null || skipOk(v.skip));   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
 // 화면이 보낸 단계 결과들 — { "0": {title, items, …}, "1": … }. 1 · 2단계(0 · 1)가 다 있어야. 단계 번호 0~7만. 모르는 칸은 버린다
 // 답: { results } 또는 { why } — 무엇이 틀렸는지 그대로 말한다(2026-10-25 리뷰)
 function resultsOf(r) {
@@ -509,7 +513,8 @@ function resultsOf(r) {
       return { why: `${n + 1}단계 결과의 모양이 맞지 않음 — 할 일 8개 · 줄 5개 · 줄 ${LINE_MAX}자까지, 준비할 것 ${Nav.PREP_MAX}줄, 날짜는 YYYY-MM-DD` };
     out[n] = { items: items.map((x, i) => ({ ...x, ...extraOf(v.items[i]) })),
       ...(v.prep && v.prep.length ? { prep: [...v.prep] } : {}), ...(v.at ? { at: v.at } : {}), ...(v.passed ? { passed: v.passed } : {}),
-      ...(v.check && v.check.length ? { check: v.check.map((c) => ({ text: c.text, met: c.met, evidence: c.evidence || "" })) } : {}), ...(v.checkBy ? { checkBy: v.checkBy } : {}) };
+      ...(v.check && v.check.length ? { check: v.check.map((c) => ({ text: c.text, met: c.met, evidence: c.evidence || "", ...(c.skipped ? { skipped: true } : {}) })) } : {}), ...(v.checkBy ? { checkBy: v.checkBy } : {}),
+      ...(v.skip ? { skip: { reason: v.skip.reason, items: Array.isArray(v.skip.items) ? [...v.skip.items] : [] } } : {}) };
   }
   return { results: out };
 }
