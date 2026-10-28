@@ -25,6 +25,7 @@ html.in-win.win-quest #root>.wh{background:#E2E9F4}   /* 머리 줄은 작업실
 #root>.wh{grid-area:wh}
 #root>.win{grid-area:win;min-width:0;min-height:0;width:auto!important;height:auto!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}
 #root>.isl-col{grid-area:isl;min-width:0;min-height:0}
+#root:has(>.isl-col.center){grid-template-columns:auto minmax(0,1fr)}   /* C-61 섬이 가운데(작업 칸 전체) — app.css와 같은 규칙, 창 격자에도 */
 html.hd-drag #root{transition:none}
 @media (prefers-reduced-motion:reduce){#root{transition:none}}
 #root .wh{-webkit-app-region:drag;cursor:grab}

@@ -40,6 +40,7 @@ async function islandHTML(browser) {
   await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" }); await wait(400);
   if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
   await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
+  if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(400); }   // C-61(PR ③): 칸이 비어 섬이 가운데면 '옆으로' — 이 시험은 옆 칸의 섬을 잰다
   const h = await page.evaluate(() => ({ wh: document.querySelector(".wsx > .wh").outerHTML, qwin: document.querySelector(".qwin").outerHTML, isl: document.querySelector(".isl").outerHTML }));
   await page.click("[data-act=fold]"); await wait(400);
   h.pill = await page.evaluate(() => document.querySelector(".pill")?.outerHTML || "");

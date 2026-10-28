@@ -311,6 +311,27 @@
   //   화면은 칸마다 '맞나요?'로 확인만 한다(quest.js withDraft · draftOf). 판정 · 관문은 그대로
   const START_MAX = 8000, TOPIC_MAX = 30, START_SIZES = ["short", "medium", "long"];
   const START_SCHEMA = obj({ topic: str, pain: str, change: str, who: { type: "string" }, size: { type: "string", enum: START_SIZES }, sizeWhy: str });
+  // ── C-61 플로로와 자유 대화 → 칸으로 정리(2026-10-29, 작업실 개편 PR ③ — 두승현 PRD · 이재엽 승인 "2차는 대회 뒤"): 보낸 말에 답하고, 윤곽이 보이면 '칸 n개를 채울 수 있다'를 fills로 같이 돌려준다.
+  //   적는 것은 사람이 [칸 n개에 적기]를 누를 때 — 여기서는 제안만. 보낸 말 2,000자 · 최근 말 12줄(300자) · 칸에 적을 줄 400자 ──
+  const CHAT_MAX = 2000, CHAT_HISTORY_MAX = 12, CHAT_LINE_MAX = 300, CHAT_REPLY_MAX = 400, CHAT_FILL_MAX = 400, CHAT_FILLS_MAX = 8;
+  const CHAT_SCHEMA = obj({ reply: str, fills: list(obj({ i: { type: "integer", minimum: 0, maximum: 7 }, text: str }), 0, CHAT_FILLS_MAX) });
+  function chatPrompt(stage, tier, { text = "", cells = [], history = [], idea = "" } = {}) {
+    const s = STAGES[stage];
+    return prompt([`사용자가 ${s.n + 1}단계 "${s.title}"(${s.does})를 하면서 플로로와 이야기한다(보낸말). 묻는 말이면 답하고, 이야기 속에 이 단계의 칸(지금칸)에 적을 만한 윤곽이 나오면 그 칸에 적을 한 줄을 fills로 정리한다. 적는 것은 사용자가 누를 때 — 플로로는 제안만 한다.`,
+      `지금칸: ${cells.map((c, i) => `(${i + 1}) ${c.name}${c.line ? ` — 적은 줄: ${c.line}` : " — 비었음"}`).join(" ")}`], [
+      FLORO_VOICE,
+      `reply는 사용자에게 할 말 ${SHORT}. 묻는 말에는 답하고, 윤곽이 보이면 "칸 n개에 적을 수 있어요"처럼 알린다.`,
+      `fills는 이번 말로 채울 수 있는 칸만 — i는 지금칸의 번호에서 1을 뺀 값(0부터), text는 그 칸에 적을 한 줄(${CHAT_FILL_MAX}자 안쪽, 사용자가 한 말을 그대로 살려서). 윤곽이 없으면 빈 배열.`,
+      "이미 적은 줄이 있는 칸은 사용자가 바꾸자고 했을 때만 넣는다. 글에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다.",
+    ], tag("처음말한것", idea), tag("최근대화", history.map((h) => `${h.who === "me" ? "사용자" : "플로로"}: ${h.text}`).join("\n")), tag("보낸말", String(text).trim()));
+  }
+  // 답의 모양 — reply는 400자, fills는 지금 칸 안의 번호만 · 한 칸에 하나 · 빈 글은 버림. 틀리면 null
+  function parseChat(o, n) {
+    if (!o || !filled(o.reply) || !Array.isArray(o.fills)) return null;
+    const seen = new Set(), fills = [];
+    for (const f of o.fills) { if (!f || !Number.isInteger(f.i) || f.i < 0 || f.i >= n || seen.has(f.i) || !filled(f.text)) continue; seen.add(f.i); fills.push({ i: f.i, text: String(f.text).trim().slice(0, CHAT_FILL_MAX) }); }
+    return { reply: String(o.reply).trim().slice(0, CHAT_REPLY_MAX), fills };
+  }
   function startPrompt(text) {
     const s = STAGES[0];
     return prompt([`사용자가 만들고 싶은 것을 플로로에게 말했다(넣은글). 글 전체를 읽고 무엇을 만들려는지 파악해서, ${s.n + 1}단계 "${s.title}"(${s.does})의 할 일 넷의 초안을 만든다. 사용자는 초안을 보고 맞는지만 고른다.`,
@@ -561,6 +582,7 @@
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
     FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest,   // C-22 퀘스트 제작(2026-10-21)
     START_MAX, START_SCHEMA, startPrompt, parseStart,   // C-36 처음 한 바퀴 — 1단계 초안(2026-10-25)
+    CHAT_MAX, CHAT_HISTORY_MAX, CHAT_LINE_MAX, CHAT_SCHEMA, chatPrompt, parseChat,   // C-61 대화 → 칸으로 정리(2026-10-29)
     DRAFT_STAGES, ALT_STAGES, STAGE_HINT, STAGE_DRAFT_SCHEMA, stageDraftPrompt, parseStageDraft, PREP_MAX, PREP_LINE, FROM_MAX, ALT_MAX, ALT_LINE,
     PREPARE_STAGES, PREPARE_SCHEMA, preparePrompt, parsePrepare, TITLE_MAX, ASK_MAX, hasJargon, WORK_MAX,   // C-56 R-2 준비된 퀘스트 · 이 프로젝트의 말(2026-10-28)   // C-37 2단계 초안 · C-39 3단계 초안 · 재료 · 준비할 것(2026-10-25)
     PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport };   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)

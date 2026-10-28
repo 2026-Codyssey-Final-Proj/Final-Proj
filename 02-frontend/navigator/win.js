@@ -46,8 +46,8 @@
   const hd = document.createElement("div"); hd.id = "hd"; hd.setAttribute("role", "separator"); hd.tabIndex = 0; hd.hidden = true; hd.innerHTML = "<span></span>"; document.body.appendChild(hd);
   const foldedCol = () => { const c = root.querySelector(".isl-col"); return !!c && c.classList.contains("folded"); };
   function layoutCol() {
-    const side = sideOf(), h = document.documentElement, folded = foldedCol();
-    h.dataset.side = side; hd.hidden = !side || folded;   // 접힌 칸(C-46 R-2)은 손잡이 없이 두께 FOLD — 작업실이 그만큼 넓어진다(0.3초, win.html)
+    const side = sideOf(), h = document.documentElement, folded = foldedCol(), center = !!root.querySelector(".isl-col.center");   // center — C-61 섬이 작업 칸 전체(2026-10-29): 손잡이 없음
+    h.dataset.side = side; hd.hidden = !side || folded || center;   // 접힌 칸(C-46 R-2)은 손잡이 없이 두께 FOLD — 작업실이 그만큼 넓어진다(0.3초, win.html)
     if (!side) return;
     const axis = axisOf(side), v = (col[axis] = clamp(axis, col[axis]));
     h.style.setProperty("--col-w", `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);

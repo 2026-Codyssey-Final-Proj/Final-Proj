@@ -145,7 +145,7 @@
     results: {}, ship: null,                       // C-37(2026-10-25): 단계마다 보고한 결과(quest.js resultOf — 한곳에서 보기 · 도전과제 지도 · 문서) · 2단계를 마친 뒤 문서 올리기({phase: offer|sent, at}, 이 켜짐 동안만)
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
-    qwin: false, qtab: "canvas", boot: null, prep: null, mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
+    qwin: false, qtab: "canvas", boot: null, prep: null, islBig: null, tidy: null, chatMark: 0, /* islBig · tidy · chatMark — C-61(2026-10-29): 섬을 크게(null이면 저절로) · 정리 카드 · 이 단계 대화가 시작된 자리 */ mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
     gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
     plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {},   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
     qfocus: "stage", planSel: "",                   // C-35: 지금 할 퀘스트(stage 단계 퀘스트 · plan 준비 계획과 맡길 일 — 채팅의 지금 말이 이쪽을 따른다) · 퀘스트 창에서 고른 맡길 일(이 켜짐 동안만)
@@ -980,6 +980,9 @@
       sub: `적어 둔 줄 “${esc((q.lines[rv.i] || [])[0] || "")}” · ${esc(st.refit.tool)}가 한 일로 본 새 줄 “${esc(rv.text)}”`, foot: "새 줄로 바꾸거나 적어 둔 줄을 그대로 둬요 — 플로로는 적은 줄을 덮지 않아요",
       acts: [{ label: "새 줄로", act: "refit-use", i: rv.i, key: "Enter", pri: true }, { label: "그대로 둘래요", act: "refit-keep", i: rv.i, key: "Escape" }] };
     if (q.draft) return { ...momentConfirm(q, i, meta), ...refitBanner(q) };   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
+    if (st.tidy && st.tidy.fills.length) { const n = st.tidy.fills.length; return { tone: "green", mood: "happy", badge: OK_ICON, meta, title: `칸 ${n}개로 정리했어요`, sub: esc(st.tidy.reply),
+      body: `<ol class="tidy">${st.tidy.fills.map((f) => `<li><b>${ROMAN(f.i)} ${esc(QU.nameOf(q, f.i))}</b><span>${esc(f.text)}</span></li>`).join("")}</ol>`, foot: "맞으면 적고, 아니면 더 이야기해요 — 플로로가 먼저 적지 않아요",
+      acts: [{ label: `칸 ${n}개에 적기`, act: "tidy-fill", key: "Enter", pri: true }, { label: "더 이야기하기", act: "tidy-more", key: "Escape", kind: "ghost" }] }; }   // C-61 정리 카드
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
     return { tone: "blue", mood: f[0], badge: "?", meta, ...refitBanner(q), title: `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}`, sub: `${esc(QU.askOf(q, i))}${QU.doneOf(q, i) ? ` <small class="done-when">끝: ${esc(QU.doneOf(q, i))}</small>` : ""}${o.term ? ` ${termTag(o.term)}` : ""}`,
       body: foundHTML(q, i), foot: "아래 칸에 한 줄 적고 보내기를 눌러요", acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
@@ -1037,6 +1040,9 @@
   const sayHint = () => (planNow() ? (!st.plan ? "만들고 싶은 것 · 요구 · 문제 글을 붙여 넣어요" : !st.plan.confirmed ? "전체 의견을 적어도 돼요" : "보고에 대해 묻거나 답해요") : !st.j && !st.quest ? "원하는 것을 적거나 붙여 넣어요" : st.quest && st.quest.phase === "quest" && !QU.isDone(st.quest) ? (st.quest.draft ? "다르면 고쳐 적어 주세요" : "한 줄로 적어 주세요") : st.screen === "gate" && st.step === "question" ? "궁금한 걸 적어 주세요" : "플로로에게 말하기");
   // 채팅 카드 — v는 momentToday()/momentGate()가 준 것(글은 이미 esc 한 것)
   function chatCard(v) {
+    // C-61: 섬이 가운데이고 이 단계의 대화가 아직 비어 있으면 플로로 · 질문 하나 · 입력 상자 하나만(칩 없음). 질문은 셋 중 하나 — 문구는 예시(PRD)
+    if (islBig() && st.chat.length <= (st.chatMark || 0) && !st.pane && !st.settings && st.quest && !st.tidy) { const qs = ["어떤 프로젝트를 구상하고 있나요?", "어떤 미션을 수행하고 계시나요?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"];
+      return `<section class="mc chat hello tone-blue"><div class="who">${petCat("happy", 150)}</div><div class="main"><b class="say hello-q">${qs[st.quest.chap % 3]}</b><div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`; }
     for (const a of v.acts) if (a.key && !a.disabled) deskKeys[a.key] = a;
     const live = `${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}<b class="say">${v.title}</b>${v.sub ? `<span class="mc-sub">${v.sub}</span>` : ""}`;
     const key = `${v.title}|${v.sub || ""}`;
@@ -1048,7 +1054,7 @@
     // '공책 보기'(퀘스트 창 열기)는 답이 아니라 늘 있는 칩과 같은 길이라, 나올 때는 아랫줄 맨 앞에 둔다(임유정 2026-10-22). 단축키(deskKeys)는 위에서 v.acts로 그대로
     const FIXED_ACTS = ["qwin-quest"];
     const answers = v.acts.filter((a) => !FIXED_ACTS.includes(a.act));
-    const more = [...v.acts.filter((a) => FIXED_ACTS.includes(a.act)), ...(st.screen === "gate" || st.busy || st.warn || st.error || st.ping ? [] : moreActs(v))];
+    const more = islBig() ? [] : [...v.acts.filter((a) => FIXED_ACTS.includes(a.act)), ...(st.screen === "gate" || st.busy || st.warn || st.error || st.ping ? [] : moreActs(v))];   // 가운데 대화에는 늘 있는 칩 줄이 없다(C-60 · C-61)
     const chip = (a) => btn({ ...a, chip: !a.quiet });   // quiet — 눌러도 내 말로 쌓지 않는 칩(초안 확인 — 결과는 끝나면 한 줄로, C-37)
     // 플로로 아래 칭호 · 기분 글은 뺐다(2026-10-25 두승현) — 칭호는 설정 창 머리에 있다
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}</div>
@@ -1076,7 +1082,7 @@
       if (k < 0) { render(); return say("짧음 · 보통 · 긺 중에서 골라 주세요"); }
       return ACT["draft-size"](k);
     }
-    if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (!q.draft) say("적었어요!"); return fillNow(t); }
+    if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (q.draft) return fillNow(t); return chatSend(t); }   // C-61(2026-10-29): 보내기는 칸에 적지 않는다 — 플로로가 정리 카드로 돌려주고 사람이 [칸 n개에 적기]를 누른다. 초안 확인(draft)은 C-36대로 그 줄 고쳐 적기
     if (st.screen === "gate" && st.step === "question") { st.question = t; return answer(); }
     if (st.j && st.j.next && st.screen !== "gate" && !st.todos) { st.ownText = t; return decide(t); }
     if (st.j && st.mode === "live") { st.text = `${st.text.trim()}\n${t}`; return judge(false); }
@@ -1099,6 +1105,23 @@
       return questReport();
     }
     render(); celebrate("done");
+  }
+  // ── C-61 대화 → 칸으로 정리(2026-10-29, 두승현 PRD 2026-10-28 · 이재엽 승인 — 작업실 개편 PR ③) ──
+  //   보낸 말은 칸에 적지 않는다. 진짜 AI면 POST /api/chat(API.md 3-31)에 지금 칸 · 최근 말을 주고 답 + '칸 n개를 채울 수 있나'(fills)를 받아 정리 카드(st.tidy)로.
+  //   연습 · 서버 없음은 보낸 말을 지금 칸의 후보로(AI 없이). 적는 것 · 섬 자리를 옆으로 옮기는 것은 사람이 [칸 n개에 적기]를 누를 때뿐(FR-17과 같은 방향)
+  const textOf = (html) => { const d = document.createElement("div"); d.innerHTML = html; return (d.textContent || "").trim(); };
+  const CHAT_HISTORY = 12;
+  let chatText = "";
+  const questStarted = () => { st.islBig = null; st.chatMark = st.chat.length; st.tidy = null; };   // 새 단계 — 섬은 저절로 가운데(칸이 비었으니), 대화 표시는 처음부터
+  async function chatSend(t, skipCheck) {
+    const q = st.quest; st.tidy = null;
+    if (st.mode !== "live" || !canLive) { st.tidy = { fills: [{ i: QU.curIdx(q), text: t }], reply: "연습이라 AI 없이 — 보낸 말을 지금 칸에 이렇게 적을 수 있어요" }; return render(); }
+    if (!skipCheck && guard(t, "chat")) return;
+    chatText = t;
+    const r = await callAI("/api/chat", { text: t, stage: q.chap, tier: st.tier, quest: { objs: q.objs.map((o) => ({ name: o.name })), lines: q.lines }, history: st.chat.slice(-CHAT_HISTORY).map((m) => ({ who: m.who === "me" ? "me" : "floro", text: textOf(m.html).slice(0, 300) })), idea: ideaNow() });
+    if (!st.quest || st.quest.chap !== q.chap) return render();
+    if (r.ok && r.chat) { st.tokens = r.tokens || 0; fetchUsage(); if (r.chat.fills.length) st.tidy = { fills: r.chat.fills, reply: r.chat.reply }; else say(r.chat.reply); return render(); }
+    render(); say(`답을 받지 못했어요 — ${r.reason || "AI에 연결하지 못했어요"}`);
   }
   // ── 다음 단계 초안 미리(C-40, 2026-10-26 — 이재엽 "보통길이이고 작업들을 하나씩 하는건데 왜 그냥 넣었을때 보다 너무 느려" · 버튼 "다음 단계 초안 미리") ──
   //   지금 장 초안을 받자마자 '모두 맞아요라면' 결과(expectedResult)로, 지금 장을 다 적으면 실제 결과로 다음 장 초안을 뒤에서 부른다(화면을 막지 않는다).
@@ -1177,13 +1200,13 @@
     const r = await callAI("/api/start", { text });
     if (r.ok && r.start) { st.tokens = r.tokens || 0; fetchUsage(); return beginQuest(r.start); }
     st.idea = text.slice(0, N.IDEA_MAX);
-    st.quest = { ...QU.makeQuest(N.STAGES[0], crits(0)), phase: "quest" };
+    st.quest = { ...QU.makeQuest(N.STAGES[0], crits(0)), phase: "quest" }; questStarted();
     if (qauto) openQwin("quest");
     render(); say(`초안은 만들지 못했어요 — ${r.reason || "AI에 연결하지 못했어요"}. 한 줄씩 같이 적어요`); questText();
   }
   function beginQuest(d) {
     st.topic = d.topic; st.idea = startText.slice(0, N.IDEA_MAX);   // 처음 말한 것은 받은 글 그대로(앞 400자) — 다음 장 퀘스트 글 · 계획 세우기가 쓴다
-    st.quest = applyStates(QU.withDraft(QU.makeQuest(N.STAGES[0], crits(0)), d));
+    st.quest = applyStates(QU.withDraft(QU.makeQuest(N.STAGES[0], crits(0)), d)); questStarted();
     if (qauto) openQwin("quest");
     prefetch(st.quest);   // 2단계 초안을 뒤에서 미리(C-40)
     render(); if (st.sound) C.chime("pop");
@@ -1972,7 +1995,7 @@
   // 오른쪽 — 연결 표시 · 프로젝트 · 조개 · 설정 창 · 열어 두기 · 접기. 퀘스트 창 단추 · 모아 보기 단추는 2026-10-23에 뺐다(이재엽) — 퀘스트 창은 명령 칸의 책 · 배우기와 '공책 보기'로 연다
   // 섬 자리 네 칸(C-41 ②, 2026-10-27 — 스토리보드 기준 4): 작업실 창이 열려 있을 때만, 앱에서만
   // 작업실 머리 줄의 섬 단추 묶음(C-62): 옆 칸의 섬에는 위 줄이 없으니 집 · 설정 · 열어 두기 · 접기 · 연결 표시를 여기에 — 같은 ACT
-  const hisl = () => `<span class="hisl" role="group" aria-label="섬">${homeBtn(!st.pane)}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>` : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 소식 ${ago(st.feed.at)}"></span>` : ""}<button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 작업실 · 보기 방식 · 연결 · 기록">${I.gear}</button><button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button><button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></span>`;
+  const hisl = () => `<span class="hisl" role="group" aria-label="섬">${homeBtn(!st.pane)}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>` : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 소식 ${ago(st.feed.at)}"></span>` : ""}<button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 작업실 · 보기 방식 · 연결 · 기록">${I.gear}</button><button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button><button class="ti" data-act="isl-big" aria-pressed="${islBig()}" aria-label="섬을 크게 · 옆으로" title="${islBig() ? "섬을 옆으로" : "섬을 크게 — 작업 칸 전체에서 이야기해요"}">${FULL_ICON}</button><button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></span>`;
   const tbRight = () => `${QU ? `<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="${st.qwin}" title="작업실 켜기 · 끄기 — 캔버스 · 노트북(퀘스트 · 맡길 일) · 도전과제 · 책">퀘스트</button>` : ""}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 소식 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
@@ -2349,7 +2372,7 @@
     const body = st.settings && QU ? settingsPane() : st.pane ? basePane(st.pane) : chatCard(momentToday());
     const isl = `<div class="isl${enter}">${inCol ? "" : topbar()}<div class="isl-body">${body}</div>${countdown()}${gachaHTML()}</div>`;
     if (WINS || !st.qwin || inCol) return isl;   // 앱: 작업실은 따로 뜬다(syncWins). inCol이면 섬만(아래 격자가 부른다)
-    return `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow">${islandHTML(enter, true)}</div></div>`;   // 브라우저 판: 앱 창(win.html #root)과 같은 격자 — 머리 줄 한 줄 아래 작업실 판 · 섬 옆 칸
+    return `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow${islBig() ? " center" : ""}">${islandHTML(enter, true)}</div></div>`;   // 브라우저 판: 앱 창(win.html #root)과 같은 격자 — 머리 줄 한 줄 아래 작업실 판 · 섬 옆 칸
   }
   // ── 앱의 옆 창 둘(C-22): 섬이 창의 내용을 그려 보내고, 창의 누름은 돌아온다(win.js). 열림 · 닫힘 · 내용이 바뀐 것만 보낸다 ──
   const winOpen = { settings: false, quest: false }, winHtml = { settings: "", quest: "" };
@@ -2359,7 +2382,10 @@
   // C-46 R-2(2026-10-27 이재엽 버튼 "펼치면 비킴 · 접으면 알약" · "고른 가장자리에" · 세로 알약 · 설정의 시간대로): 섬이 접혀 있으면(petit · hidden) 옆 칸은 그 가장자리의 알약(folded — 왼쪽 · 오른쪽은 세로)이고 작업실이 넓어진다(win.js · win.html).
   //   알약을 누르면(ACT pill) 펼쳐지고 작업실이 비킨다. 알릴 일(허락 카드 · 보고 · 질문 · 오류)은 peek · alert로 저절로 펼친다(peek는 앱의 작업실 안이면 home으로). 저절로 접히기는 설정 '접히기까지' 그대로(pinned에서 st.qwin을 앱에서는 빼서) — 단 옆 칸에 마우스가 있거나 글을 쓰는 중(colHover · colTyping)이면 안 접히고, 접힌 알약은 더 접히지 않는다
   const colFolded = () => st.ui === "petit" || st.ui === "hidden";
-  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${colFolded() ? " folded" : ""}${colFolded() && st.boot ? " has-bub" : ""}">${colFolded() ? pillHTML() + bootBubble() : islandHTML("", true)}</div>`;
+  // C-61 섬 자리(2026-10-29): 그 단계의 칸이 하나도 적히지 않았거나 관문에서 물을 때, 섬이 펼쳐져 있으면 작업 칸 전체(center). 사람이 [칸 n개에 적기]를 누르면 옆 칸으로 — AI의 판단으로는 옮기지 않는다. 머리 줄의 '크게 · 옆으로'로 직접도
+  const bigAuto = () => !!(QU && ((st.quest && st.quest.phase === "quest" && !st.quest.draft && !st.quest.objs.some((_, i) => QU.filled(st.quest, i))) || st.screen === "gate"));
+  const islBig = () => (st.islBig == null ? bigAuto() : !!st.islBig);
+  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${!colFolded() && islBig() ? " center" : ""}${colFolded() ? " folded" : ""}${colFolded() && st.boot ? " has-bub" : ""}">${colFolded() ? pillHTML() + bootBubble() : islandHTML("", true)}</div>`;
   // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선"): 켤 때 알약 옆 말풍선 — 시간대 인사 한 줄(하루 한 번) · 멈춘 곳(단계 · 지금 칸) · 섬 펼치기 / 나중에. 몇 초 뒤(greet.js BUBBLE_MS) 사라진다
   const bootBubble = () => {
     if (!st.boot || !colFolded()) return "";
@@ -2817,7 +2843,7 @@
     st.warn = { w, then }; render();
     return true;
   }
-  const RETRY = { start: () => startDraft(startText, true), stage: () => stageDraft(st.quest ? st.quest.chap : atStage(), true), judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk); } };   // plan* — 준비 계획판(C-34)
+  const RETRY = { chat: () => chatSend(chatText, true), start: () => startDraft(startText, true), stage: () => stageDraft(st.quest ? st.quest.chap : atStage(), true), judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk); } };   // plan* — 준비 계획판(C-34)
   // 새로 배운 말을 모은다. 돌려주는 것: 이번에 처음 배운 말들
   function learn(j) {
     const fresh = [];
@@ -2959,6 +2985,7 @@
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;
     // 퀘스트(C-22): 장을 지나면 무지개 조개 하나, 다음 장 퀘스트(받기 화면)를 만들고 퀘스트 창이 바로 뜬다(설정 '바로 뜨기'). 마지막이면 퀘스트 없이 마무리
+    questStarted();   // C-61 — 새 단계: 섬은 가운데부터
     if (QU) { st.shells += 1; level = QU.levelUp(level); if (st.mode !== "fixture") writeLS(LEVEL_KEY, level); st.quest = nx ? QU.retitle(QU.makeQuest(nx, crits(nx.n)), st.topic) : null; if (nx && qauto) openQwin("quest"); }   // 다음 장도 주제를 제목으로(C-36)
     if (st.results[s.n]) st.results = { ...st.results, [s.n]: { ...st.results[s.n], passed: ymd() } };   // 관문을 지난 날(C-39 — 문서의 증빙 · 결정 기록)
     if (st.qwin) loadFiles();   // 작업실 파일 칸 — 장이 바뀌면 '● 지금' · 펼친 폴더도 바뀐다(R-8, 새 맥락 리뷰)
@@ -3088,6 +3115,9 @@
     "quest-later": () => { set({ qwin: false }); say("그럼 쉬어요. 다시 오면 여기서 이어서 해요"); },
     "quest-example": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.example(q, i) : null; if (ex === null) return; st.say = ex; send(); },
     "quest-report": () => questReport(),
+    "tidy-fill": () => { const t = st.tidy; if (!t || !st.quest) return; st.tidy = null; st.islBig = false; let q = st.quest; for (const f of t.fills) q = QU.fill(q, f.i, f.text, "chat"); st.quest = q; afterFill(); },   // C-61 — 누가 정했나 '대화', 섬은 옆 칸으로(사람이 눌렀을 때만)
+    "tidy-more": () => set({ tidy: null }),
+    "isl-big": () => set({ islBig: !islBig() }),   // 머리 줄의 크게 · 옆으로 단추
     // 준비 계획 · 맡길 일(C-34 · C-32 → C-35, 2026-10-24): 채팅의 지금 말로 연다 — 계획이 없으면 한 번에 넣기(처음 말한 것이 있으면 넣는 글에 미리), 있으면 확인 · 지금 줄
     "plan-open": () => {
       if (!FP) return ACT["plan-direct"]();

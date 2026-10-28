@@ -27,7 +27,7 @@ test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(fold
 test("win.js · win.html · app.css — 접힌 칸은 두께 56(손잡이 없음), 왼쪽 · 오른쪽은 세로 알약(글은 세로쓰기), 0.3초로 넓어진다", () => {
   const w = read("navigator/win.js"), h = read("navigator/win.html"), c = read("navigator/app.css");
   assert.match(w, /FOLD = 56;/); assert.match(w, /const foldedCol = \(\) => \{ const c = root\.querySelector\("\.isl-col"\); return !!c && c\.classList\.contains\("folded"\); \};/);
-  assert.match(w, /hd\.hidden = !side \|\| folded;/, "접히면 손잡이 없음");
+  assert.match(w, /hd\.hidden = !side \|\| folded \|\| center;/, "접히면 손잡이 없음");
   assert.match(w, /h\.style\.setProperty\("--col-w", `\$\{folded \? FOLD : col\.w\}px`\); h\.style\.setProperty\("--col-h", `\$\{folded \? FOLD : col\.h\}px`\);/);
   assert.match(h, /#root\{[^}]*grid-template-columns:minmax\(0,1fr\) var\(--col-w,420px\);[^}]*transition:grid-template-columns \.3s/, "0.3초 — 격자 칸 너비로(C-62 머리 줄 하나)");
   assert.match(c, /\.isl-col\.folded\.side-left \.pill,\.isl-col\.folded\.side-right \.pill\{height:auto;max-height:100%;width:48px;flex-direction:column/, "세로 알약");

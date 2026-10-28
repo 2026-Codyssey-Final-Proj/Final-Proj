@@ -61,7 +61,7 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare"];   // /api/prepare — C-56 R-2 준비된 퀘스트(새 맥락 리뷰 2026-10-28 막힘: 토큰 없이 불렸다)   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat"];   // /api/chat — C-61 대화 → 칸으로 정리(2026-10-29, API.md 3-31)   // /api/prepare — C-56 R-2 준비된 퀘스트(새 맥락 리뷰 2026-10-28 막힘: 토큰 없이 불렸다)   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
@@ -69,7 +69,7 @@ const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/ap
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide", "/api/apps/link"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다 · Claude Desktop 설정 파일에 잇는다. 밖(터널)에서는 받지 않는다(allowed)
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
-const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -761,6 +761,22 @@ async function handle(req, res) {
     if (!body || !Nav.filled(body.text)) return refuse(res, "받은 글이 비어 있음");
     if (body.text.length > Nav.START_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.START_MAX.toLocaleString()}자까지`);
     return ask(res, Nav.startPrompt(body.text), Nav.START_SCHEMA, as("start", Nav.parseStart), "1단계 초안", { fast: true });   // 초안은 빠른 모델로(C-40)
+  }
+  if (route === "/api/chat") {   // C-61 플로로와 자유 대화 → 칸으로 정리(API.md 3-31, 2026-10-29) — AI 한 번. 받은 글과 같은 규칙: 확인 값(AI_ROUTES) · 길이 상한 · 비밀값 가림 · 토큰 장부
+    if (!body || !Nav.filled(body.text)) return refuse(res, "보낸 말이 비어 있음");
+    if (body.text.length > Nav.CHAT_MAX) return refuse(res, `보낸 말이 너무 김 — ${Nav.CHAT_MAX.toLocaleString()}자까지`);
+    if (!stageOf(body.stage)) return refuse(res, "지금 단계가 없음");
+    if (body.tier != null && !Nav.TIERS.includes(body.tier)) return refuse(res, "모르는 등급");
+    const qo = body.quest && typeof body.quest === "object" ? body.quest : null, objs = qo && Array.isArray(qo.objs) ? qo.objs : null;
+    if (!objs || !objs.length || objs.length > 8 || !objs.every((o) => o && strOk(o.name, ITEM_NAME_MAX) && Nav.filled(o.name))) return refuse(res, "지금 칸의 모양이 맞지 않음 — objs 1 ~ 8개, 이름 200자까지");
+    const lines = qo.lines == null ? [] : qo.lines;
+    if (!Array.isArray(lines) || lines.length > objs.length || !lines.every((l) => Array.isArray(l) && l.length <= 5 && l.every((x) => strOk(x, LINE_MAX)))) return refuse(res, `적은 줄의 모양이 맞지 않음 — 칸마다 줄 5개 · ${LINE_MAX}자까지`);
+    const hist = body.history == null ? [] : body.history;
+    if (!Array.isArray(hist) || hist.length > Nav.CHAT_HISTORY_MAX || !hist.every((h) => h && (h.who === "me" || h.who === "floro") && strOk(h.text, Nav.CHAT_LINE_MAX))) return refuse(res, `최근 대화의 모양이 맞지 않음 — ${Nav.CHAT_HISTORY_MAX}줄 · 한 줄 ${Nav.CHAT_LINE_MAX}자까지`);
+    if (body.idea != null && !strOk(body.idea, Nav.IDEA_MAX)) return refuse(res, `처음 말한 것은 ${Nav.IDEA_MAX}자까지`);
+    const mask = (x) => Sensitive.redact(String(x));   // 비밀값처럼 보이면 가려서 보낸다 — 상태(3-24) · 받은 글과 같은 규칙
+    const cells = objs.map((o, i) => ({ name: o.name, line: mask((lines[i] || [])[0] || "") }));
+    return ask(res, Nav.chatPrompt(body.stage, body.tier, { text: mask(body.text), cells, history: hist.map((h2) => ({ who: h2.who, text: mask(h2.text) })), idea: mask(body.idea || "") }), Nav.CHAT_SCHEMA, as("chat", (d) => Nav.parseChat(d, objs.length)), "대화", { fast: true });
   }
   if (!body || !Nav.filled(body.text)) return refuse(res, "작업 내용이 비어 있음");
   if (route === "/api/task/start") {   // FR-17 허락하고 넘기기(3-16) — checks를 주면 기준과 함께 넘기고 끝에 보고를 받는다(C-32, 2026-10-24)

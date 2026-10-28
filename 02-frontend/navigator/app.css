@@ -700,6 +700,21 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wsx>.isl-col,#root>.isl-col{grid-area:isl;min-height:0}
 .wsx{max-height:calc(100vh - 28px)}   /* 브라우저 판: 창보다 크지 않게 — 옆 칸의 섬은 안에서 스크롤(입력 칸이 화면 밖으로 나가지 않게) */
 .wsx>.isl-col{height:auto}
+/* C-61 섬 자리(작업실 개편 PR ③, 2026-10-29): 칸이 하나도 적히지 않은 동안 섬은 작업 칸 전체의 둥근 카드(center) — 머리 줄 · 왼쪽 칸은 그대로. 사람이 [칸 n개에 적기]를 누르면 옆 칸(420)으로 0.3초(기준 8), 움직임 줄이기면 바로 */
+.wsx{transition:grid-template-columns .3s cubic-bezier(.2,.8,.2,1)}
+@media (prefers-reduced-motion:reduce){.wsx{transition:none}}
+.wsx:has(>.isl-col.center),#root:has(>.isl-col.center){grid-template-columns:auto minmax(0,1fr)}
+.wsx:has(>.isl-col.center) .wbody,.wsx:has(>.isl-col.center) .wside,#root:has(>.isl-col.center) .wbody,#root:has(>.isl-col.center) .wside{display:none}
+.isl-col.center{align-items:center;padding:24px}
+.isl-col.center .isl{width:min(760px,100%);border-radius:28px}
+.isl-col.center .mc.chat{grid-template-columns:minmax(0,1fr)}
+.isl-col.center .mc.chat:not(.hello) .who{display:none}
+.mc.chat.hello{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:16px;padding:28px 24px}
+.mc.chat.hello .main{width:100%;max-width:560px;gap:14px}
+.mc.chat.hello .hello-q{font-family:var(--font-disp);font-size:calc(22px * var(--ui-scale,1));font-weight:400;text-wrap:balance}
+.tidy{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px;text-align:left}
+.tidy li{display:grid;gap:2px;padding:8px 12px;border-radius:12px;background:var(--soft);font-size:calc(13.5px * var(--ui-scale,1))}
+.tidy li b{font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
 #root>.wh{border-radius:0}
 .wsx>.wh,#root>.wh{flex-wrap:nowrap;min-width:0}   /* 한 줄로 — 좁으면 아래 media가 칩 · 프로젝트 이름을 숨긴다(둘째 줄로 꺾이면 섬 단추가 왼쪽으로 갔다) */
 .wh .tb-stage{flex:0 1 auto;max-width:240px;padding:4px 10px;margin:0}
