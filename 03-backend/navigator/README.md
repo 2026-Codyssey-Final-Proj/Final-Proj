@@ -67,6 +67,7 @@ node --env-file=.env server.js   # 화면 켜기
 | `NAV_MAX_TOKENS` | 한 번에 받을 답의 최대 토큰 | `2048` |
 | `NAV_FALLBACK` | `off`로 두면 거절 때 대체 모델로 다시 시도하는 기능을 끈다 | 켜짐 |
 | `NAV_USAGE_FILE` | 사용량을 적는 파일 | `~/.navigator-usage.json` |
+| `NAV_CHAT_DIR` | 대화 저장 · 바뀐 파일을 두는 폴더(작업실 개편 C-63, API.md 3-32 — 프로젝트마다 `<경로 sha256 16자>.json`, 나만 읽기). 지우려면 이 폴더를 지우거나 화면의 '대화 지우기'(`POST /api/chatlog {clear: true}`) <!-- claude-drafted: 2026-10-29 --> | 앱은 앱 저장 곳의 `chats`(Mac `~/Library/Application Support/<앱 이름>/chats`), 서버만 켜면 `~/.navigator-chats` |
 
 - 사용량은 **토큰 수만** 홈 폴더 파일에 남긴다(글 내용은 남기지 않는다). 키를 바꾸거나 새 한도로 시작하려면 그 파일을 지운다.
 - 판정 한 번에 평균 4,729토큰이다 — Claude Code 로그인으로 연습 예시 9개를 잰 값(2026-10-24, [기록](../../01-docs/verification/live-check-2026-10-24.md)). API 키로 부를 때는 아직 재지 않았다 — 시작 로그와 `smoke.js`가 실제 값을 보여 준다.

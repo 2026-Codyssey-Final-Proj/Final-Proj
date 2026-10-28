@@ -33,7 +33,7 @@ process.stdin.on("end", () => {
   const cut = (t) => (typeof t === "string" ? t.slice(0, 16000) : t);
   const body = JSON.stringify(isStep
     // 도구를 쓴 뒤(PostToolUse): 이름 · 첫 줄 · 줄 수만. 입력 · 결과 · 대화는 싣지 않는다
-    ? { hook_event_name: ev.hook_event_name, session_id: ev.session_id, cwd: ev.cwd, tool: TOOL, tool_name: ev.tool_name, step: Steps.fromHook(ev) }
+    ? { hook_event_name: ev.hook_event_name, session_id: ev.session_id, cwd: ev.cwd, tool: TOOL, tool_name: ev.tool_name, step: Steps.fromHook(ev), file: Steps.fileOf(ev) }   // file — 바뀐 파일의 세션 폴더 안 상대 경로(밖이면 ""), 작업실 개편 C-63
     : { hook_event_name: ev.hook_event_name, session_id: ev.session_id, cwd: ev.cwd, prompt: cut(ev.prompt), last_assistant_message: cut(ev.last_assistant_message), tool: TOOL });
   let token = "";
   try { token = fs.readFileSync(TOKEN_FILE, "utf8").trim(); } catch {}

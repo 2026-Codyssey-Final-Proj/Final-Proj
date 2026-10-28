@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v42.0 | 2026-10-29 | 이재엽 | 작업실 개편 2차 백엔드 ④ — 대화 저장 GET · POST /api/chatlog(프로젝트마다 하나, 이 컴퓨터의 앱 저장 곳 · 가림 · 2,000개 · 60개 상한 없음 · 지우기)와 훅 알림으로 그 폴더의 바뀐 파일 모으기(new · edit), 앱은 userData/chats(T22 · T23 · T26 서버 쪽) (#247) | `03-backend/navigator/`(chatlog.js 새로 · server · API.md · README) · `02-frontend/electron/main.js` · `04-tests/navigator/` |
 | v41.0 | 2026-10-29 | 이재엽 | 작업실 개편 2차 백엔드 ③ — 플로로와 자유 대화 길 POST /api/chat(답 + 이 대화로 채울 수 있는 칸 제안 · 윤곽 신호 n, 칸에 적지 않음 · 가림 · 상한 · 토큰 장부 '대화'), /api/stagedraft의 talk 칸, 누가 정했나 '대화', 보안 기록 한 줄(T16 · T17 · T18 · T21) (#246) | `03-backend/navigator/`(server · navigator · quest) · `.claude/rules/security-records.md` · `04-tests/navigator/` |
 | v40.5 | 2026-10-29 | 이재엽 | knowledge-work-plugins 다시 봄 — 더 가져올 것 없음, 우리에게 없던 것 둘만 후보로(요구 C-64 오류에 막혔을 때 묻는 순서 · 장부 W-39 앱을 내기 전 되돌릴 조건), W-36 출처 하나 더 (#245) | `01-docs/catalog/external-tools.md`, `01-docs/catalog/reference-candidates.md`, `01-docs/00-overview/requirements.md` 2-2 |
 | v40.4 | 2026-10-29 | 이재엽 | 작업실 개편 2차 백엔드의 약속을 먼저 — 플로로와 자유 대화 길(/api/chat, 윤곽 신호 n · 칸에 적지 않음 · 누가 정했나 '대화')과 대화 저장 · 단계별 바뀐 파일(/api/chatlog, 이 컴퓨터의 앱 저장 곳)의 모양을 API.md 3-31 · 3-32에(만들기 전, 화면 쪽은 이 모양으로 가짜 답 시험) (#244) | `03-backend/navigator/API.md` |

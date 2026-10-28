@@ -54,6 +54,12 @@ test("main.js: 다시 켜면 지난번 폴더를 서버에 다시 알린다(서�
   assert.match(rp, /L\.refreshDir\(dir, P\.backend\)/, "다시 켤 때 그 폴더의 훅이 지금 앱 자리를 가리키게(F-69 — 옛 자리 훅이면 맡긴 일이 모두 막힌다)");
 });
 
+test("main.js: 대화 저장 곳은 이 컴퓨터의 앱 저장 곳 — 서버를 읽기 전에 NAV_CHAT_DIR을 userData/chats로(작업실 개편 C-63, 결정 모음 A-20)", () => {
+  const st = main.slice(main.indexOf("async function startServer()"), main.indexOf("async function startServer()") + 600);
+  const at = st.indexOf('process.env.NAV_CHAT_DIR = path.join(app.getPath("userData"), "chats")'), req = st.indexOf('require(path.join(P.backend, "server.js"))');
+  assert.ok(at > 0 && req > at, "서버를 읽기 전에");
+});
+
 test("서버에는 폴더를 받는 HTTP 주소가 없다 — useProject는 내보내기로만(앱만 부른다)", () => {
   assert.doesNotMatch(server, /route === "\/api\/project/);
   assert.match(server, /module\.exports = \{[^}]*useProject/);
