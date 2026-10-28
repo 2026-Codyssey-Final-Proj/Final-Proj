@@ -48,3 +48,17 @@ test("prepare — 기획서(2단계 결과)의 절에서 3 ~ 8단계의 준비�
   assert.deepEqual(ok.cards.map((c) => c.state).slice(3), ["ready", "ready", "ready", "ready", "ready"], "맞아요 — 준비됨"); assert.ok(ok.confirmed);
   assert.equal(SM.build({ ...base, prep: { ...p, ok: true }, j: { stage: 4, criteria: [] }, quest: null }).cards[4].state, "now", "들어선 장은 준비됨이 아니라 지금");
 });
+
+// C-54 ⑨ 짝 선(2026-10-28, 이재엽 버튼 "'흐름 따라가기'에서만"): 정한 곳 → 확인하는 곳 — 1↔8 · 2↔7 · 3↔6(코드 0↔7 · 1↔6 · 2↔5). ⑧ 가까이: 이 줄을 쓰는 다음 단계(재료 from이 이 칸을 가리키는 뒤 단계 칸)
+test("PAIRS · pairOf — 1↔8 · 2↔7 · 3↔6, 정한 곳(decide) · 확인하는 곳(check), 4 · 5단계는 짝이 없다", () => {
+  assert.deepEqual(SM.PAIRS.map(([k, a, b]) => `${k}:${a}-${b}`), ["a:0-7", "b:1-6", "c:2-5"]);
+  assert.deepEqual(SM.pairOf(0), { key: "a", from: 0, to: 7, role: "decide" }); assert.deepEqual(SM.pairOf(6), { key: "b", from: 1, to: 6, role: "check" });
+  assert.equal(SM.pairOf(3), null); assert.equal(SM.pairOf(4), null);
+});
+test("usedBy — 이 칸을 재료로 쓴 뒤 단계의 칸(결과 · 하는 중인 퀘스트), 없으면 빈 목록", () => {
+  const results = { 0: { items: [{ name: "불편", lines: ["a"] }] }, 1: { items: [{ name: "빈칸", lines: ["b"], from: [{ s: 0, i: 0 }] }, { name: "왜", lines: ["c"], from: [{ s: 0, i: 0 }, { s: 9, i: 0 }] }] } };
+  const quest = { chap: 2, objs: [{ name: "기능 문장" }], draft: { items: [{ text: "x", from: [{ s: 1, i: 0 }] }] } };
+  assert.deepEqual(SM.usedBy({ s: 0, i: 0 }, results, quest), [{ s: 1, i: 0, name: "빈칸" }, { s: 1, i: 1, name: "왜" }]);
+  assert.deepEqual(SM.usedBy({ s: 1, i: 0 }, results, quest), [{ s: 2, i: 0, name: "기능 문장" }], "하는 중인 퀘스트의 초안 재료도");
+  assert.deepEqual(SM.usedBy({ s: 1, i: 1 }, results, quest), []); assert.deepEqual(SM.usedBy({ s: 0, i: 0 }, {}, null), []);
+});

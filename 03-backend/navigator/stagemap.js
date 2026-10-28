@@ -35,6 +35,16 @@
     return { cur, cards, docs: OUTSIDE.map(([path, what]) => ({ path, what, has: have.has(path) })), canDraw: !!results[1] && !prep, drawn: !!prep, confirmed: !!(prep && prep.ok) };
   }
 
-  const api = { PLAN_OF, prepare, build };
+  // C-54 ⑨ 짝 선(2026-10-28 — 이재엽 버튼 "'흐름 따라가기'에서만"): 정한 곳 → 확인하는 곳. 1↔8(무엇을 만들지 ↔ 돌아보기) · 2↔7(아이디어 · 요구 ↔ 써 보고 재 보기) · 3↔6(기능 정리 ↔ 하나씩 만들고 확인). 코드 번호(0 ~ 7)
+  const PAIRS = [["a", 0, 7], ["b", 1, 6], ["c", 2, 5]];
+  const pairOf = (n) => { const p = PAIRS.find(([, a, b]) => a === n || b === n); return p ? { key: p[0], from: p[1], to: p[2], role: n === p[1] ? "decide" : "check" } : null; };
+  // C-54 ⑧ 가까이: 이 칸({ s, i })을 재료(from)로 쓴 뒤 단계의 칸 — 결과(results[n].items[].from)와 하는 중인 퀘스트의 초안(quest.draft.items[].from)에서
+  function usedBy(cell, results = {}, quest = null) {
+    const out = [], hit = (from) => Array.isArray(from) && from.some((f) => f && f.s === cell.s && f.i === cell.i);
+    for (const k of Object.keys(results || {}).map(Number).filter((n) => n > cell.s).sort((a, b) => a - b)) (results[k].items || []).forEach((it, i) => { if (hit(it.from)) out.push({ s: k, i, name: it.name }); });
+    if (quest && quest.chap > cell.s && quest.draft && Array.isArray(quest.draft.items)) quest.draft.items.forEach((it, i) => { if (hit(it && it.from) && quest.objs[i]) out.push({ s: quest.chap, i, name: quest.objs[i].name }); });
+    return out;
+  }
+  const api = { PLAN_OF, prepare, build, PAIRS, pairOf, usedBy };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.NavStageMap = api;
 })(typeof window !== "undefined" ? window : globalThis);

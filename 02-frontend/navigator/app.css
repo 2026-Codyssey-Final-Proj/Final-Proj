@@ -1147,6 +1147,47 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .sm-card.later .sm-no{color:#5B6491}
 .sm-card.sel{outline:3px solid #4D66B5;outline-offset:3px}
 .sm-card:focus-visible{outline:3px solid #4D66B5;outline-offset:3px}
+/* C-54 ⑧ 얼음 조각 가까이(2026-10-28 버튼 "둘다 할것" — 누르기 + 확대): 고른 카드가 한 줄 전체로 커지고 줄마다 할 일 → 문서 ← 재료 */
+@keyframes sm-zoom{from{transform:scale(.86);opacity:.5}to{transform:none;opacity:1}}
+.sm-cell.big{grid-column:1/-1;animation:sm-zoom .28s cubic-bezier(.2,.8,.2,1);transform-origin:center top}
+.sm-card.big{min-height:0;flex-direction:row;align-items:baseline;gap:10px;padding:10px 16px;border-radius:22px}
+.sm-card.big .sm-line{margin-left:auto}
+.sm-rows{list-style:none;margin:0;padding:0 4px;display:grid;gap:4px}
+.sm-row button{width:100%;display:grid;grid-template-columns:auto minmax(0,.9fr) minmax(0,1.6fr);gap:2px 10px;align-items:baseline;text-align:left;min-height:44px;padding:6px 12px;border:1.5px solid #C5CEE2;border-left-width:5px;border-radius:12px;background:#F2F5FA;color:#2B3463;font:inherit;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
+.sm-row button b{color:#5B6491;font-weight:800}
+.sm-row button .sm-rn{font-weight:700;overflow-wrap:anywhere}
+.sm-row button .sm-rl{color:#2B3463;overflow-wrap:anywhere}
+.sm-row button small{grid-column:2/-1;color:#5B6491;font-size:calc(11px * var(--ui-scale,1))}
+.sm-row.miss button .sm-rl{color:#5B6491;font-style:italic}
+.sm-row.by-ok button{border-left-color:#7FC9A6}.sm-row.by-edit button{border-left-color:#E6CB86}.sm-row.by-me button{border-left-color:#4D66B5}.sm-row.by-pick button{border-left-color:#B8C9F0}.sm-row.by-moved button{border-left-color:#A9E2C4}.sm-row.by-skip button{border-left-color:#C5CEE2}
+.sm-row.sel button,.sm-row button:focus-visible{outline:3px solid #4D66B5;outline-offset:1px}
+.ws-line h4{margin:0 0 4px}
+.ws-line .b.sm{min-height:34px;padding:0 12px;font-size:calc(12.5px * var(--ui-scale,1));margin:2px 6px 2px 0}
+@media (prefers-reduced-motion:reduce){.sm-cell.big{animation:none}}
+/* C-54 ⑨ 짝 선(버튼 "'흐름 따라가기'에서만") — 흐름 보기 오른쪽의 세로 길 셋: a 1↔8 · b 2↔7 · c 3↔6. 정한 곳(s)에서 시작해 확인하는 곳(e)에서 끝난다, 사이 단계는 지나간다 */
+.jmap{padding-right:30px}
+.jm-stage{position:relative}
+.jm-rails{position:absolute;right:-26px;top:-10px;bottom:-10px;width:20px;pointer-events:none;font-size:0;line-height:0}
+.jm-rails i{position:absolute;top:0;bottom:0;width:4px;margin:0;padding:0;border:0;border-radius:0;background:transparent}
+.jm-rails i:nth-child(1){left:0}.jm-rails i:nth-child(2){left:8px}.jm-rails i:nth-child(3){left:16px}
+.jm-rails i.a{background:#D4B45A}.jm-rails i.b{background:#7FC9A6}.jm-rails i.c{background:#D98C9D}
+.jm-rails i.s{top:50%}.jm-rails i.e{bottom:50%}
+.jm-rails i.s::before,.jm-rails i.e::after{content:"";position:absolute;left:-4px;width:12px;height:12px;border-radius:50%;background:inherit;box-shadow:0 0 0 2px #F2F5FA}
+.jm-rails i.s::before{top:-6px}.jm-rails i.e::after{bottom:-6px}
+.jm-h{flex-wrap:wrap}
+.jm-pair{flex:0 0 auto;margin-left:auto;min-height:34px;padding:0 10px;border-radius:999px;border:1.5px solid #C5CEE2;background:#fff;color:#2B3463;font:inherit;font-size:calc(11.5px * var(--ui-scale,1));font-weight:700;white-space:nowrap;cursor:pointer}
+.jm-pair.a{border-color:#D4B45A}.jm-pair.b{border-color:#7FC9A6}.jm-pair.c{border-color:#D98C9D}
+.jm-pair[aria-pressed=true]{background:#2B3463;color:#F2F5FA}
+.jm-side{border-radius:12px;border:2px solid #C5CEE2;background:#F2F5FA;padding:10px 12px;display:grid;gap:8px}
+.jm-side.a{border-color:#D4B45A}.jm-side.b{border-color:#7FC9A6}.jm-side.c{border-color:#D98C9D}
+.jm-sh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.jm-sh b{flex:1 1 auto;font-size:calc(13px * var(--ui-scale,1))}
+.jm-sg{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:start}
+.jm-sl{font-size:calc(20px * var(--ui-scale,1));color:#5B6491;align-self:center}
+.jm-sc b{display:block;font-size:calc(12.5px * var(--ui-scale,1))}.jm-sc small{display:block;color:#5B6491;font-size:calc(11px * var(--ui-scale,1));margin-bottom:4px}
+.jm-sc ul{list-style:none;margin:0;padding:0;display:grid;gap:3px}
+.jm-sc li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 6px;padding:4px 8px;border-radius:8px;background:#fff;font-size:calc(12px * var(--ui-scale,1));color:#2B3463}
+.jm-sc li span{grid-column:2;color:#5B6491;overflow-wrap:anywhere}.jm-sc li.miss span{font-style:italic}
+@container (max-width:560px){.jm-sg{grid-template-columns:1fr}.jm-sl{transform:rotate(90deg);justify-self:center}}
 .sm-card .sm-flo{position:absolute;right:-6px;top:-14px;width:36px;height:36px;border-radius:50%;background:#F2F5FA;box-shadow:0 0 0 3px #F2F5FA,0 8px 16px -6px rgba(54,62,98,.5);display:grid;place-items:center}
 .sm-grid.back{direction:rtl}
 .sm-grid.back .sm-cell{direction:ltr}
