@@ -153,7 +153,7 @@ test("app.js — C-37: 단계 결과(results)를 남기고 도전과제의 기�
   assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: \{ \.\.\.QU\.resultOf\(st\.quest\), at: ymd\(\), check: checkOf\(j\)/, "보고가 된 퀘스트의 결과 + 확인한 날 · 완료 기준(C-39 — R-10부터 checkOf: why · skipped도)");
   assert.match(app, /function treeMap\(cur\)/); assert.match(app, /"jmap-fill": /);
   assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
-  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", results: shipResults\(\) \}\)/, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
+  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", source: st\.source \|\| "", results: shipResults\(\) \}\)/, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
   assert.match(read("navigator/index.html"), /docs\.js/, "미리 보기도 같은 docs.js");
 });
 
@@ -172,4 +172,13 @@ test("app.js — C-40: 1단계 '남은 칸 모두 맞아요'는 만드는 크기
   assert.match(all, /setTier\(QU\.SIZE_TIER\[q\.draft\.size\]\)/, "크기 칩과 같게");
   assert.match(app, /async function callAI\(url, body, pending = null\)/); assert.match(app, /callAI\(null, null, hit\.p\)/);
   assert.match(app, /function landed\(j0, tokens, sent = st\.text, checkBy = ""\)/);   // R-10(2026-10-27): 들어온 판정 j0에 코드 규칙(gateRules)을 거친 j를 쓴다 assert.ok(!app.includes("checkByNext"), "전역 값 없음");
+});
+
+// F-68(2026-10-28, 이재엽 버튼 "통째로 파일에"): 받은 글은 자르지 않고 기록(source)에 두고 문서로 묶을 때 docs/00-source/idea.md로. AI에 넘기는 앞 400자(idea)는 그대로 — 잘라 넘기면 화면에 한 줄
+test("app.js — 받은 글 전부(source)를 기록에 두고 /api/docs에 보낸다, 400자를 넘으면 '앞 400자만 넘겨요' 한 줄, API.md 3-23에 source", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /"results", "prep", "source"\]/, "source는 기록(KEEP)에");
+  assert.match(a, /st\.source = text;/, "처음 말한 글 전부"); assert.match(a, /source: st\.source \|\| ""/, "/api/docs에 source");
+  assert.match(a, /앞 \$\{N\.IDEA_MAX\}자만/, "잘라 넘기면 화면에 한 줄");
+  assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /`source`[^\n]*64KB/, "API.md 3-23");
 });

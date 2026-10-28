@@ -549,16 +549,19 @@ function docTargets(dir, files) {
   }
   return { list: out };
 }
+const SOURCE_MAX = 64 * 1024;
 function shipDocs(body) {
   const got = resultsOf(body && body.results), topic = body && body.topic != null ? body.topic : "", idea = body && body.idea != null ? body.idea : "";
   if (got.why) return [400, { ok: false, reason: got.why }];
   if (!strOk(topic, 60)) return [400, { ok: false, reason: "주제는 60자까지" }];
   if (!strOk(idea, Nav.IDEA_MAX)) return [400, { ok: false, reason: `처음 말한 것은 ${Nav.IDEA_MAX}자까지` }];
+  const source = body && body.source != null ? body.source : "";   // F-68 — 받은 글 전부(docs/00-source/idea.md에 통째로). 64KB까지 — 넘으면 잘라 쓰지 않고 거절한다(화면이 알린다)
+  if (!strOk(source, SOURCE_MAX)) return [400, { ok: false, reason: `받은 글 전부는 ${SOURCE_MAX / 1024}KB까지` }];
   const results = got.results;
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];   // 쓰기 전에(쓰고 나서 못 맡기지 않게)
-  const files = Docs.files({ topic, idea, results, redact: Sensitive.redact });
+  const files = Docs.files({ topic, idea, source, results, redact: Sensitive.redact });
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
   try {

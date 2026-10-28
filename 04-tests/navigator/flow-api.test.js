@@ -186,6 +186,18 @@ test("POST /api/docs(F-62): 넘긴 기준의 까닭이 단계 문서 · 결정 �
   assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: { ...E1, check: c1.map((c) => ({ ...c, skipped: "yes" })) } } } })).status, 400, "skipped는 참 · 거짓만");
 });
 
+// F-68(2026-10-28): 받은 글 전부(source)를 받아 docs/00-source/idea.md에 쓴다 — 64KB까지, 넘으면 400(잘라 쓰지 않는다 — 화면이 알린다)
+test("POST /api/docs(F-68): source(받은 글 전부)를 docs/00-source/idea.md에 통째로, 1단계 문서는 줄로 가리킨다, 64KB 넘으면 400", async () => {
+  assert.equal(Srv.useProject(DIR), true);
+  const long = Array.from({ length: 40 }, (_, i) => `${i + 1}줄 ${"나".repeat(15)}`).join("\n");
+  const r = await call("POST", "/api/docs", { body: { topic: "앱", idea: long.slice(0, 400), source: long, results: { 0: R0, 1: R1 } } });
+  assert.equal(r.status, 200, r.text); assert.ok(r.json.files.includes("docs/00-source/idea.md"), r.json.files.join(","));
+  assert.match(fs.readFileSync(path.join(DIR, "docs/00-source/idea.md"), "utf8"), /40 \| 40줄/);
+  assert.match(fs.readFileSync(path.join(DIR, "docs/01-idea/idea.md"), "utf8"), /1 ~ 40줄/);
+  await untilDone();
+  const big = await call("POST", "/api/docs", { body: { topic: "앱", idea: "x", source: "z".repeat(64 * 1024 + 1), results: { 0: R0, 1: R1 } } }); assert.ok([400, 413].includes(big.status), `64KB까지 — 거절(본문 자체가 크면 413): ${big.status}`); assert.ok(!fs.existsSync(path.join(DIR, "docs/00-source/idea.md")) || !fs.readFileSync(path.join(DIR, "docs/00-source/idea.md"), "utf8").includes("zzzz"), "잘라 쓰지 않는다");
+});
+
 test("POST /api/docs: 맡긴 일이 진행 중이면 409 — 파일을 하나도 쓰지 않는다(쓰고 나서 못 맡기지 않게)", async () => {
   assert.equal(Srv.useProject(DIR), true);
   fs.writeFileSync(SLOW, "1");
