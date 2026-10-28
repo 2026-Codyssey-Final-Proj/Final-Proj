@@ -169,3 +169,16 @@ test("nameOf · askOf · doneOf — 초안의 title · ask · done이 있으면 
   assert.equal(Q.nameOf(q, 0), "프롬프트 저장하기 요구 문장"); assert.equal(Q.nameOf(q, 1), Q.shortOf(crit[1].text));
   assert.equal(Q.askOf(q, 0), "무엇을 저장하나요?"); assert.equal(Q.askOf(q, 1), Q.question(q, 1)); assert.equal(Q.doneOf(q, 0), "문장 셋"); assert.equal(Q.doneOf(q, 1), "");
 });
+
+// C-56 R-5(2026-10-28): 다시 맞춘 초안을 지금 퀘스트에 — 사람이 적은 칸은 덮지 않고(review에 새 글만), 아직 안 적은 칸만 바꾼다(changed). 같은 글이면 아무것도 없고, 개수가 다르면 그대로
+test("refit — 아직 안 적은 칸은 새 초안으로(changed), 적은 칸은 덮지 않고 다른 글만 review에, 같은 글은 빼고, 개수가 다르면 그대로", () => {
+  const crit = Nav.criteriaFor(1, "Xpress"), q0 = Q.makeQuest(Nav.STAGES[1], crit);
+  const q1 = Q.withStageDraft(q0, { items: crit.map((c, i) => ({ text: `글 ${i}`, from: [] })), prep: ["준비"] });
+  const q2 = Q.fill(q1, 0, "글 0", "ok");   // 0번은 사람이 확인했다
+  const r = Q.refit(q2, { items: crit.map((c, i) => ({ text: i === 0 ? "새 글 0" : i === 1 ? "새 글 1" : `글 ${i}`, from: [] })), prep: ["준비 둘"], say: "다시 맞췄어요" });
+  assert.deepEqual(r.changed, [1], "안 적은 칸 중 글이 달라진 것만"); assert.deepEqual(r.review, [{ i: 0, text: "새 글 0" }], "적은 칸은 덮지 않고 새 글만");
+  assert.equal(Q.draftOf(r.q, 1), "새 글 1"); assert.equal(Q.draftOf(r.q, 0), "글 0", "적은 칸의 초안은 그대로"); assert.deepEqual(r.q.lines[0], ["글 0"], "적은 줄 그대로");
+  assert.deepEqual(r.q.draft.prep, ["준비 둘"]); assert.equal(r.q.phase, "quest"); assert.equal(r.q.sel, q2.sel, "고른 칸은 안 움직인다");
+  const same = Q.refit(q2, { items: crit.map((c, i) => ({ text: `글 ${i}`, from: [] })), prep: [] }); assert.deepEqual([same.changed, same.review], [[], []]); assert.equal(same.q, q2, "같으면 그 객체 그대로");
+  assert.equal(Q.refit(q2, { items: [{ text: "x" }] }).q, q2, "개수가 다르면 그대로"); assert.equal(Q.refit(q0, { items: crit.map(() => ({ text: "x" })) }).q, q0, "초안이 없던 퀘스트는 그대로");
+});

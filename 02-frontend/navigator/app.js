@@ -971,10 +971,14 @@
     const fx = QS ? qstates(q)[i] : null;   // C-56 먼저 — 앞 칸이 비어 할 수 없다: 갈 곳을 말하고, 관문은 닫힌 채(적지 않으면 완료 보고가 안 된다)
     if (fx && fx.state === "first") return { tone: "amber", mood: "think", badge: "!", meta, title: `먼저 — ${esc(QU.shortOf(q.objs[i].name))}은 아직 할 수 없어요`, sub: `${esc(fx.why)}. 그 칸을 채운 뒤에 돌아와요 — 지금 적어도 관문은 닫혀 있어요.`,
       acts: [{ label: `${LB(fx.go.s)} ${ROMAN(fx.go.i)} 보기`, act: "first-go", kind: "soft" }, { label: "아직 못 함으로 적기", act: "first-notyet", kind: "ghost" }, { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
-    if (q.draft) return momentConfirm(q, i, meta);   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
+    const rv = st.refit && st.refit.chap === q.chap && st.refit.review.find((x) => x.i === st.refitPick);   // C-56 R-5 — 적어 둔 칸이 방금 한 일과 달라졌다: 두 줄을 보이고 사람이 고른다
+    if (rv) return { tone: "amber", mood: "think", badge: "?", meta, title: `${ROMAN(rv.i)}. ${esc(QU.nameOf(q, rv.i))} — 적어 둔 줄과 달라요`,
+      sub: `적어 둔 줄 “${esc((q.lines[rv.i] || [])[0] || "")}” · ${esc(st.refit.tool)}가 한 일로 본 새 줄 “${esc(rv.text)}”`, foot: "새 줄로 바꾸거나 적어 둔 줄을 그대로 둬요 — 플로로는 적은 줄을 덮지 않아요",
+      acts: [{ label: "새 줄로", act: "refit-use", i: rv.i, key: "Enter", pri: true }, { label: "그대로 둘래요", act: "refit-keep", i: rv.i, key: "Escape" }] };
+    if (q.draft) return { ...momentConfirm(q, i, meta), ...refitBanner(q) };   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
-    return { tone: "blue", mood: f[0], badge: "?", meta, title: `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}`, sub: `${esc(QU.askOf(q, i))}${QU.doneOf(q, i) ? ` <small class="done-when">끝: ${esc(QU.doneOf(q, i))}</small>` : ""}${o.term ? ` ${termTag(o.term)}` : ""}`,
-      body: foundHTML(q, i), foot: "아래 칸에 한 줄 적고 보내기를 눌러요", acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), ...findChip(q, i), { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
+    return { tone: "blue", mood: f[0], badge: "?", meta, ...refitBanner(q), title: `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}`, sub: `${esc(QU.askOf(q, i))}${QU.doneOf(q, i) ? ` <small class="done-when">끝: ${esc(QU.doneOf(q, i))}</small>` : ""}${o.term ? ` ${termTag(o.term)}` : ""}`,
+      body: foundHTML(q, i), foot: "아래 칸에 한 줄 적고 보내기를 눌러요", acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), { label: "공책 보기", act: "qwin-quest", kind: "ghost" }] };
   }
   // 1단계 초안 확인(C-36, 2026-10-25 — 이재엽 "불편한게 맞는 내용은 이게 플로로가 생각한 내용인데 맞나요 … 누가 쓰는 내용은 … 사람에 대한 내용이 있으면 이 내용이 맞는지 요청을 보내고
   //   없다면 본인 / 소수 / 불특정다수 … 얼마 크게도 … 짧음 / 보통 / 긺"): Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가(글에 사람이 있으면) — 맞나요, Ⅲ 사람이 없으면 셋 중 고르기, Ⅳ 플로로가 본 크기 + 셋 중 고르기.
@@ -1010,7 +1014,7 @@
         acts: quiet([...QU.DOC_PICKS.map(([k, label], n) => ({ label, act: "draft-pick", i: n, key: String(n + 1), kind: k === pk.pick ? "opt pri" : "opt" })), ...all]) }; }
     if (!text) return { ...head, sub: "이 칸은 초안이 없어요 — 아래 칸에 한 줄 적어 주세요", acts: quiet(findChip(q, i)) };
     return { ...head, sub: `${first && i === QU.WHO_AT ? "글에서 쓰는 사람을 이렇게 봤어요 — 맞나요?" : "플로로가 생각한 내용인데 맞나요?"} “${esc(text)}”`, ...(mat ? { foot: mat } : {}),
-      acts: quiet([{ label: "맞아요", act: "draft-ok", key: "Enter", pri: true }, { label: "고칠래요", act: "draft-fix" }, ...all, ...findChip(q, i)]) };
+      acts: quiet([{ label: "맞아요", act: "draft-ok", key: "Enter", pri: true }, { label: "고칠래요", act: "draft-fix" }, ...all, ...findChip(q, i), ...refitChips(q)]) };
   }
   // 늘 있는 칩 — 지금 결정할 것 밑에 작게: 먹이 주기 · 바뀐 작업 보여 주기 · 계획(맡길 일) · 알림. 상황에 맞는 것만
   //   어디쯤인지 보기는 위 줄(단계 띠 · '퀘스트' 단추)과 완료 보고 칩, 도전과제 · 책은 퀘스트 창의 탭(C-35, 2026-10-24 — 명령 네 칸을 뺐다)
@@ -1116,6 +1120,35 @@
   const prevOf = (n, extra) => { const all = { ...st.results, ...(extra ? { [extra.chap]: extra } : {}) };
     return Object.keys(all).map(Number).filter((k) => k < n).sort((a, b) => a - b).map((k) => ({ stage: k, items: all[k].items.map((x) => ({ name: x.name, lines: x.lines })) })); };
   const preKey = (n, prev, tier = st.tier) => JSON.stringify([n, tier, ideaNow(), prev]);
+  // ── C-56 R-5 작업을 따라(2026-10-28 — 이재엽 버튼 "다음 단계 미리까지"): 코딩 도구가 일을 마쳤어요 알림 뒤 몇 초 모아, 지금 단계 초안을 방금 한 일로 다시 받는다(/api/stagedraft work, 화면을 막지 않는다).
+  //   사람이 적은 칸은 덮지 않고 '다시 볼까요?'만(quest.js refit), 안 적은 칸만 바뀐다. '방금 바뀜' 띠 한 줄. 다음 단계 초안도 다시 미리 부른다. 진짜 AI 모드 · 초안이 있는 2 ~ 8단계 퀘스트에서만
+  const REFIT_MS = 4000;
+  let refitTimer = null, refitWork = [], refitTool = "";
+  const refitOk = () => canLive && st.mode === "live" && !!(st.quest && QU && st.quest.phase === "quest" && st.quest.draft && st.quest.chap >= 1 && !QU.isDone(st.quest));
+  function scheduleRefit(ev) {
+    if (ev.sim || st.mode !== "live" || !refitOk() || !ev.work) return;
+    refitWork.push(String(ev.work).trim()); refitTool = toolName(ev.tool);
+    clearTimeout(refitTimer); refitTimer = setTimeout(refitNow, REFIT_MS);
+  }
+  async function refitNow() {
+    refitTimer = null;
+    const q = st.quest, work = refitWork.join("\n").slice(-(N.WORK_MAX || 600)); refitWork = [];
+    if (!work || !refitOk() || st.busy) return;
+    const idea = ideaNow(), prev = prevOf(q.chap);
+    if (sensitive([idea, work].join("\n")).length) return;   // 비밀값처럼 보이면 밖에 보내지 않는다(관문의 guard와 같은 생각)
+    try {
+      const r = await (await fetch("/api/stagedraft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage: q.chap, tier: st.tier, idea, prev, base: baseText(), work }) })).json();
+      if (!r || !r.ok || !r.draft || !st.quest || st.quest.chap !== q.chap || st.quest.phase !== "quest") return;
+      const f = QU.refit(st.quest, r.draft);
+      if (!f.changed.length && !f.review.length) return;
+      st.quest = applyStates(f.q); st.tokens = r.tokens || 0; fetchUsage();
+      st.refit = { chap: q.chap, tool: refitTool, at: Date.now(), changed: f.changed, review: f.review };
+      pre = null; prefetch(st.quest);   // 다음 단계 초안도 다시 미리(버튼 "다음 단계 미리까지")
+      render();
+    } catch { /* 다시 맞추기는 덤 — 못 받으면 조용히(다음 알림에 다시) */ }
+  }
+  const refitBanner = (q) => (st.refit && q && st.refit.chap === q.chap ? { banner: `방금 바뀜 — ${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요${st.refit.changed.length ? ` · 바뀐 칸 ${st.refit.changed.map(ROMAN).join(" · ")}` : ""}${st.refit.review.length ? ` · 적어 둔 칸 ${st.refit.review.map((x) => ROMAN(x.i)).join(" · ")}은 다시 볼까요?` : ""}` } : {});
+  const refitChips = (q) => (st.refit && q && st.refit.chap === q.chap ? st.refit.review.map((x) => ({ label: `${ROMAN(x.i)} 다시 볼까요?`, act: "refit-review", i: x.i, kind: "soft" })) : []);
   function prefetch(q) {
     if (!q || !QU || st.mode !== "live" || !canLive) return;
     const n = q.chap + 1, r = N.DRAFT_STAGES.includes(n) ? (QU.isDone(q) ? QU.resultOf(q) : QU.expectedResult(q)) : null; if (!r) return;
@@ -2980,6 +3013,10 @@
       if (it && st.quest && st.quest.chap === q.chap && QU.curIdx(st.quest) === i) { st.quest = swap(it); st.tokens = r.tokens || 0; fetchUsage(); return render(); }   // 다음 장은 이 장을 다 적은 뒤에 미리(다른 예시를 누른 사람은 권한 것을 그대로 고르지 않을 때가 많다 — 2026-10-26 리뷰)
       render(); say(`다른 예시를 만들지 못했어요 — ${r.reason || "AI에 연결하지 못했어요"}`);
     },
+    "refit-review": (i) => { st.refitPick = Number(i); render(); },   // C-56 R-5 — 적어 둔 칸의 두 줄 보기
+    "refit-use": (i) => { const q = st.quest, x = st.refit && q && st.refit.chap === q.chap && st.refit.review.find((r) => r.i === Number(i)); if (!x) return;
+      st.quest = QU.setLine(q, x.i, 0, x.text); st.refit = { ...st.refit, review: st.refit.review.filter((r) => r.i !== x.i) }; st.refitPick = null; logMsg("floro", `<b>${ROMAN(x.i)} 새 줄로 바꿨어요</b> — ${esc(x.text)}`); pre = null; prefetch(st.quest); render(); },
+    "refit-keep": (i) => { if (!st.refit) return; st.refit = { ...st.refit, review: st.refit.review.filter((r) => r.i !== Number(i)) }; st.refitPick = null; render(); },
     "find-lines": async () => {   // C-56 R-4 — 폴더의 글 파일에서 이 칸의 답 후보 줄(API.md 3-30)
       const q = st.quest, i = q ? QU.curIdx(q) : -1; if (i < 0 || !canFind()) return;
       found = { chap: q.chap, i, busy: true, list: [], why: "" }; render();
@@ -3470,6 +3507,7 @@
     if (st.settings && !ev.sim) fetchUsage();   // 일을 마쳤다 — 열려 있는 토큰 칸을 새 값으로(2026-10-24)
     if (!ev.sim && st.plan && FP && FP.running(st.plan)) checkPlanTask();   // 맡긴 계획 줄이 끝났을 수 있다 — 3초를 기다리지 않고 바로 묻는다(C-32)
     st.alerts = A.add(st.alerts, ev, (t) => sensitive(t).length > 0);
+    scheduleRefit(ev);   // C-56 R-5 — 몇 초 모아 지금 단계 초안을 다시 맞춘다
     if (st.busy) return render();
     if (ev.work) st.text = ev.work;
     activity();

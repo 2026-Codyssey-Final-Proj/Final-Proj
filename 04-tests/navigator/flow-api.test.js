@@ -40,6 +40,7 @@ const PREP_ANSWER = { items: [2, 3, 4, 5, 6, 7].map((n) => ({ stage: n + 1, titl
 REC.save(process.env.NAV_REPLAY, {
   [REC.keyOf(Nav.preparePrompt("Xpress", { idea: IDEA, prev: PREV3, base: "" }), Nav.PREPARE_SCHEMA)]: PREP_ANSWER,
   [REC.keyOf(Nav.stageDraftPrompt(1, "Xpress", { idea: IDEA, prev: PREV }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER,
+  [REC.keyOf(Nav.stageDraftPrompt(1, "Xpress", { idea: IDEA, prev: PREV, work: "src/apply.js를 만들었어요" }), Nav.STAGE_DRAFT_SCHEMA)]: { ...ANSWER, say: "다시 맞췄어요" },   // C-56 R-5 방금 한 일
   [REC.keyOf(Nav.stageDraftPrompt(1, "Full", { idea: IDEA, prev: PREV }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER,   // Full인데 기획서 칸이 없는 답 — 502
   [REC.keyOf(Nav.stageDraftPrompt(2, "Xpress", { idea: IDEA, prev: PREV3 }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER3,   // 3단계(C-39) — 1 · 2단계 결과로
   [REC.keyOf(Nav.stageDraftPrompt(3, "Xpress", { idea: IDEA, prev: PREV4 }), Nav.STAGE_DRAFT_SCHEMA)]: ANSWER4,   // 4단계(C-40) — 예시 셋
@@ -246,4 +247,11 @@ test("POST /api/docs 거절: 1 · 2단계 결과가 다 있어야 · 모양이 �
   const r = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1 } } });
   assert.equal(r.status, 400, r.text); assert.match(r.json.reason, /바로가기/);
   assert.deepEqual(fs.readdirSync(OUTSIDE), [], "폴더 밖에는 아무것도 쓰지 않았다");
+});
+
+// C-56 R-5(2026-10-28): 작업을 따라 — 본문 work(방금 한 일, WORK_MAX까지)를 주면 요청문에 들어가 다시 맞춘 초안이 온다. 너무 길면 400
+test("POST /api/stagedraft work(C-56 R-5): 방금 한 일을 넣으면 그 요청문으로(재생 답 '다시 맞췄어요'), WORK_MAX를 넘으면 400", async () => {
+  const r = await call("POST", "/api/stagedraft", { body: { stage: 1, tier: "Xpress", idea: IDEA, prev: PREV, work: "src/apply.js를 만들었어요" } });
+  assert.equal(r.status, 200, r.text); assert.equal(r.json.draft.say, "다시 맞췄어요");
+  assert.equal((await call("POST", "/api/stagedraft", { body: { stage: 1, tier: "Xpress", idea: IDEA, prev: PREV, work: "x".repeat(Nav.WORK_MAX + 1) } })).status, 400);
 });

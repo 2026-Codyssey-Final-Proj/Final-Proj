@@ -144,6 +144,21 @@
     if (!q || !d || !Array.isArray(d.items) || d.items.length !== q.objs.length) return q;
     return { ...q, draft: { stage: q.chap, items: d.items, prep: Array.isArray(d.prep) ? d.prep : [], example: !!d.example }, phase: "quest", sel: 0, desc: "플로로가 지난 장에서 정한 것으로 이 장의 초안을 만들었어요. 칸마다 맞는지만 봐 주세요 — 다르면 고쳐 적으면 돼요." };
   }
+  // C-56 R-5(2026-10-28 — 이재엽 버튼 "다음 단계 미리까지"): 코딩 도구가 일을 마친 뒤 다시 맞춘 초안(d)을 지금 퀘스트에.
+  //   아직 안 적은 칸만 새 글로 바꾼다(changed). 사람이 적은 칸은 덮지 않고 글이 달라졋으면 review에 새 글만(화면이 '다시 볼까요?'로 묻는다). 개수가 다르거나 초안이 없던 퀘스트면 그대로
+  function refit(q, d) {
+    const none = { q, changed: [], review: [] };
+    if (!q || !q.draft || !d || !Array.isArray(d.items) || d.items.length !== q.objs.length) return none;
+    const changed = [], review = [];
+    const items = q.draft.items.map((it, i) => {
+      const nx = d.items[i], was = it && !it.pick ? String(it.text || "") : "", now = nx && !nx.pick ? String(nx.text || "").trim() : "";
+      if (!now || now === was || (nx.pick && it && it.pick)) return it;   // 빈 글 · 같은 글 · 고르는 칸은 그대로
+      if (filled(q, i)) { review.push({ i, text: now }); return it; }
+      changed.push(i); return { ...it, ...nx };
+    });
+    if (!changed.length && !review.length) return none;
+    return { q: { ...q, draft: { ...q.draft, items, prep: Array.isArray(d.prep) ? d.prep : q.draft.prep } }, changed, review };
+  }
   // 기획서로 키울지(PRD) — 고르는 칸의 셋. 고른 것이 그 줄이 된다
   const DOC_PICKS = [["light", "경량 기획서로"], ["full", "상세 기획서로"], ["none", "키우지 않아요"]];
   // 할 일의 짧은 이름 — 확인 카드 · 도전과제 지도 · 문서가 쓴다. 모르는 할 일은 그 이름 그대로
@@ -319,7 +334,7 @@
 
   const api = { nameOf, askOf, doneOf, BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, SHELL_COST, ITEMS, draw, oddsOk,
     itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT,
-    pickOf, withStageDraft, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
+    pickOf, withStageDraft, refit, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

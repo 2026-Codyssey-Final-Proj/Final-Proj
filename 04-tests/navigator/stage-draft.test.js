@@ -105,3 +105,12 @@ test("C-56 — 준비 요청문(preparePrompt) · 모양(PREPARE_SCHEMA) · 읽�
   assert.equal(N.parsePrepare({ items: items.slice(1), say: "x" }), null, "빠진 단계면 null");
   assert.equal(N.parsePrepare({ items: items.map((x) => ({ ...x, title: "EARS 요구 명세" })), say: "x" }).cards[2].title, "", "전문 용어 이름은 비워 할 일 이름으로");
 });
+
+// C-56 R-5(2026-10-28, 이재엽 버튼 "다음 단계 미리까지"): 코딩 도구가 일을 마친 뒤 지금 단계 초안을 다시 맞춘다 — 방금 한 일을 요청문에 넣고, 그 일로 달라지는 칸만 바꾸라고 한다. 없으면 요청문은 전과 같다
+test("C-56 R-5 — stageDraftPrompt에 work(방금 한 일)를 주면 <방금한일> 묶음과 '달라지는 칸만' 지시가 들어가고, 없으면 들어가지 않는다. WORK_MAX", () => {
+  const base = { idea: "동아리 행사 신청 앱을 만들고 싶어요", prev: [{ stage: 0, items: PREV }] };
+  const p0 = N.stageDraftPrompt(1, "Xpress", base), p1 = N.stageDraftPrompt(1, "Xpress", { ...base, work: "src/apply.js를 만들었어요 — 신청 단추" });
+  assert.ok(!p0.includes("<방금한일>") && !/달라지는 칸만/.test(p0), "없으면 전과 같다");
+  assert.match(p1, /<방금한일>\nsrc\/apply\.js를 만들었어요 — 신청 단추\n<\/방금한일>/); assert.match(p1, /달라지는 칸만/);
+  assert.ok(Number.isInteger(N.WORK_MAX) && N.WORK_MAX >= 300 && N.WORK_MAX <= 2000, "방금 한 일 글자 상한");
+});

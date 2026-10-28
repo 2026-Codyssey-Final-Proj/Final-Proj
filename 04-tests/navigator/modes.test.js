@@ -219,3 +219,12 @@ test("app.js — 폴더에서 찾기: 칩 → /api/find → 후보 줄 카드(�
   assert.match(a, /fillNow\(x\.text, "moved"\)/, "그 줄 그대로 옮김"); assert.match(a, /class="found"/, "후보 줄 카드"); assert.match(a, /canLive && st\.mode !== "fixture"/, "연습 · 서버 없이는 없다");
   assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /GET \/api\/find/, "API.md");
 });
+
+// C-56 R-5(2026-10-28, 이재엽 버튼 "다음 단계 미리까지"): 훅 알림(일을 마쳤어요) 뒤 몇 초 모아 지금 단계 초안을 방금 한 일로 다시 맞추고(/api/stagedraft work), 다음 단계 초안도 다시 미리 부른다. '방금 바뀜' 띠 한 줄, 사람이 적은 칸은 덮지 않고 '다시 볼까요?'
+test("app.js — 작업을 따라: onEvent → scheduleRefit(몇 초 모음) → /api/stagedraft에 work → QU.refit → 띠 + 다시 볼까요 칩 → 다음 단계 미리(prefetch). 진짜 AI 모드만", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const REFIT_MS = \d+/, "모으는 시간"); assert.match(a, /scheduleRefit\(ev\)/, "알림에서"); assert.match(a, /QU\.refit\(/, "덮지 않는 규칙은 quest.js");
+  assert.match(a, /body: JSON\.stringify\(\{ stage: q\.chap, [^}]*work[^}]*\}\)/, "방금 한 일을 보낸다"); assert.match(a, /방금 바뀜/, "띠"); assert.match(a, /"refit-use": /, "새 줄로"); assert.match(a, /"refit-keep": /, "그대로");
+  assert.ok(/pre = null;\s*prefetch\(st\.quest\)/.test(a.slice(a.indexOf("function refitNow"))), "다음 단계 초안도 다시 미리(버튼 '다음 단계 미리까지')");
+  assert.match(a.slice(a.indexOf("function scheduleRefit")), /st\.mode !== "live"/, "연습은 하지 않는다");
+});
