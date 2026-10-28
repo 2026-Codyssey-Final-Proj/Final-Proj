@@ -48,8 +48,9 @@ const Nav = require("../../03-backend/navigator/navigator.js");
 const it = (name, lines) => ({ name, lines, by: "ok" });
 const RESULTS = Object.fromEntries([0, 1, 2, 3, 4, 5, 6].map((n) => [n, { chap: n, title: "동아리 앱", at: "2026-10-29", passed: "2026-10-29", learned: n === 1 ? "칸을 먼저 채우니 빠진 기능이 보였다" : n === 3 ? "예시 셋을 보고 고르니 빨랐다" : "", items: Nav.criteriaFor(n, "Xpress").map((c) => it(c.text, ["줄"])) }]));
 const DRAFTS = [
-  { text: "3단계 전에 화면 하나를 먼저 그린다", why: "2단계 계획과 3단계 요구가 달랐다", stage: 2, review: "2027-01-10", from: [1, 2], measure: { from: true, why: true, text: true, stage: true, review: true }, ok: true },
-  { text: "예시 셋을 먼저 본다", why: "", stage: 3, review: "2027-01-10", from: [3], measure: { from: false, why: false, text: true, stage: true, review: true }, ok: false },
+  { text: "3단계 전에 화면 하나를 먼저 그린다", why: "2단계 계획과 3단계 요구가 달랐다", stage: 2, review: "2027-01-10", from: [1, 2] },
+  { text: "예시 셋을 먼저 본다", why: "", stage: 3, review: "2027-01-10", from: [3] },
+  { text: "버릴 초안", why: "왜", stage: 1, review: "2027-01-10", from: [0, 1] },
 ];
 
 async function open(browser, seedState, { carry = { items: [], held: [] } } = {}) {
@@ -90,15 +91,22 @@ test("① 8단계 — 가져갈 것 초안(배운 것을 보낸다) → 기준 �
     // 첫째 — 고쳐서 채택
     await page.evaluate(() => { const el = document.querySelector('.mc.chat [data-act=carry-text][data-i="0"]'); el.value = "3단계 전에 화면 그림 하나"; el.dispatchEvent(new Event("input", { bubbles: true })); });
     await click(page, '.mc.chat [data-act=carry-adopt][data-i="0"]');
-    assert.equal(seen.post[0].action, "adopt"); assert.equal(seen.post[0].item.text, "3단계 전에 화면 그림 하나", "고친 글로 채택");
-    // 둘째 — 반려는 까닭이 있어야(지우지 않고 남긴다)
-    await click(page, '.mc.chat [data-act=carry-reject][data-i="1"]');
-    await click(page, '.mc.chat [data-act=carry-reject][data-i="1"]');
-    assert.equal(seen.post.length, 1, "까닭 없이는 보내지 않는다");
-    await page.type('.mc.chat [data-act=carry-reason][data-i="1"]', "이번 일에만 맞아요");
-    await click(page, '.mc.chat [data-act=carry-reject][data-i="1"]');
-    assert.deepEqual([seen.post[1].action, seen.post[1].reason], ["reject", "이번 일에만 맞아요"]);
+    assert.equal(seen.post[0].action, "adopt"); assert.equal(seen.post[0].item.text, "3단계 전에 화면 그림 하나", "고친 글로 채택"); assert.match(seen.post[0].id, /^c[0-9a-z]+$/, "초안마다 id — 두 번 눌러도 한 줄");
+    // 둘째 — 못 채운 기준(왜 · 근거 단계)을 고쳐서 채택
+    await page.type('.mc.chat [data-act=carry-why][data-i="1"]', "예시를 먼저 보니 빨랐다");
+    await click(page, '.mc.chat [data-act=carry-from][data-i="1"][data-v="2"]');
+    assert.ok(!(await nowSay(page)).includes("못 채운 기준"), "고치면 기준 다섯을 다 채운다");
+    await click(page, '.mc.chat [data-act=carry-adopt][data-i="1"]');
+    assert.deepEqual([seen.post[1].item.why, seen.post[1].item.from], ["예시를 먼저 보니 빨랐다", [2, 3]]);
+    // 셋째 — 반려는 까닭이 있어야(지우지 않고 남긴다)
+    await click(page, '.mc.chat [data-act=carry-reject][data-i="2"]');
+    await click(page, '.mc.chat [data-act=carry-reject][data-i="2"]');
+    assert.equal(seen.post.length, 2, "까닭 없이는 보내지 않는다");
+    await page.type('.mc.chat [data-act=carry-reason][data-i="2"]', "이번 일에만 맞아요");
+    await click(page, '.mc.chat [data-act=carry-reject][data-i="2"]');
+    assert.deepEqual([seen.post[2].action, seen.post[2].reason], ["reject", "이번 일에만 맞아요"]);
     assert.match(await nowSay(page), /가져갈 것을 다 정했어요/);
+    assert.equal((await saved(page)).carryDone, true, "다 정했다 — 다음에 열어도 다시 묻지 않는다");
     await click(page, ".mc.chat [data-act=carry-later]");
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
@@ -107,14 +115,32 @@ test("① 8단계 — 가져갈 것 초안(배운 것을 보낸다) → 기준 �
 test("② 새 프로젝트 — 지난 프로젝트에서 그 단계에 채택한 것 · 보류한 것 → 이번에 쓸 것 고르기 → carryUse(계획의 근거)", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
   try {
-    const carry = { items: [{ id: "ca", text: "불편을 숫자로 적는다", stage: 0 }, { id: "cb", text: "누가 쓰는지 먼저 묻는다", stage: 0 }], held: [{ id: "ch", text: "보류한 것", stage: 0 }] };
+    const carry = { items: [{ id: "ca", text: "불편을 숫자로 적는다", stage: 0, why: "불편이 막연했다", project: "club-app", from: [0, 1] }, { id: "cb", text: "누가 쓰는지 먼저 묻는다", stage: 0 }], held: [{ id: "ch", text: "보류한 것", stage: 0 }] };
     const { page, seen } = await open(browser, { mode: "live" }, { carry });
     await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("지난 프로젝트에서 가져온 것이 있어요"), { timeout: 10000 });
+    assert.match(await nowSay(page), /왜: 불편이 막연했다 · club-app · 근거 1단계 · 2단계 문서/, "근거 단계 문서를 잇는다");
     await click(page, '.mc.chat [data-act=carry-use][data-i="1"]');   // 둘째는 이번엔 안 쓴다
     await click(page, '.mc.chat [data-act=carry-held-adopt][data-i="0"]');
     assert.deepEqual([seen.post[0].action, seen.post[0].id], ["adopt", "ch"], "보류한 것을 채택");
     await click(page, ".mc.chat [data-act=carry-use-done]");
     assert.deepEqual((await saved(page)).carryUse, { 0: [{ id: "ca", text: "불편을 숫자로 적는다" }] });
+    assert.deepEqual(seen.errors, []);
+  } finally { await browser.close(); }
+});
+
+test("③ 남은 것은 보류하기 — 정하지 않은 초안을 보류로 남기고(지우지 않음), 다시 열어도 8단계 카드를 다시 띄우지 않는다", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
+  try {
+    const j = { stage: 7, reason: "", criteria: Nav.criteriaFor(7, "Xpress").map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
+    const { page, seen } = await open(browser, { mode: "live", tier: "Xpress", topic: "동아리 앱", j, results: RESULTS });
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("가져갈 것을 정리해 볼까요"), { timeout: 10000 });
+    await click(page, ".mc.chat [data-act=carry-draft]");
+    await click(page, ".mc.chat [data-act=carry-hold-rest]");
+    await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("가져갈 것을 다 정했어요"), { timeout: 5000 });
+    assert.deepEqual(seen.post.map((p) => p.action), ["hold", "hold", "hold"], "미루면 보류(PRD 9절 2번)");
+    assert.equal((await saved(page)).carryDone, true);
+    await page.reload({ waitUntil: "load" }); await wait(3500);
+    assert.ok(!(await nowSay(page)).includes("가져갈 것을 정리해 볼까요"), "다 정했으면 다시 묻지 않는다");
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });

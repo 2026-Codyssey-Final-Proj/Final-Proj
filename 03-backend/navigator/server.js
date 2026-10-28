@@ -754,38 +754,40 @@ async function carryDraft(res, body) {
   if (!Array.isArray(lessons) || lessons.length > Nav.STAGES.length || !lessons.every((x) => x && Number.isInteger(x.stage) && x.stage >= 0 && x.stage < Nav.STAGES.length && strOk(x.text, LEARNED_MAX)))
     return refuse(res, "배운 것의 모양이 맞지 않음 — 단계마다 400자까지");
   if (!strOk(topic, 60)) return refuse(res, "주제는 60자까지");
-  if (!lessons.some((x) => Nav.filled(x.text))) return refuse(res, "배운 것이 하나도 없어요 — 관문에서 적은 배운 것으로 초안을 만들어요");
-  const s = projectNow(), today = Carry.today();
-  const args = { topic: Sensitive.redact(topic), lessons: lessons.map((x) => ({ stage: x.stage, text: Sensitive.redact(x.text) })), decisions: s ? decisionsText(s.dir) : "", today };
+  const s = projectNow(), today = Carry.today(), decisions = s ? decisionsText(s.dir) : "";
+  if (!lessons.some((x) => Nav.filled(x.text)) && !decisions) return refuse(res, "배운 것도 결정 기록도 없어요 — 관문에서 적은 배운 것이나 결정 기록으로 초안을 만들어요");
+  const args = { topic: Sensitive.redact(topic), lessons: lessons.map((x) => ({ stage: x.stage, text: Sensitive.redact(x.text) })), decisions, today };
   const r = await callClaude(Nav.carryPrompt(args), Nav.CARRY_SCHEMA, { label: "가져갈 것" });
   let got = r.data && Nav.parseCarry(r.data), tokens = r.tokens || 0;
   if (!got) return refuse(res, r.error || "가져갈 것 형식이 맞지 않음", 502);
   const fix = got.items.map((d, i) => ({ i, missing: Carry.missing(Carry.measure(d, today)) })).filter((f) => f.missing.length);
-  if (fix.length) {   // 한 번만 다시(PRD 6절) — 그래도 못 채우면 그대로 보이고 사람이 고친다
-    const r2 = await callClaude(Nav.carryPrompt({ ...args, fix }), Nav.CARRY_SCHEMA, { label: "가져갈 것" });
+  if (fix.length) {   // 한 번만 다시(PRD 6절) — 지난 초안을 같이 보이고, 초안마다 기준을 더 채운 쪽을 남긴다. 그래도 못 채우면 그대로 보이고 사람이 고친다
+    const r2 = await callClaude(Nav.carryPrompt({ ...args, fix, prev: got.items }), Nav.CARRY_SCHEMA, { label: "가져갈 것" });
     const again = r2.data && Nav.parseCarry(r2.data);
     tokens += r2.tokens || 0;
-    if (again) got = again;
+    if (again) got = { say: again.say, items: got.items.map((d, i) => (again.items[i] && Carry.score(again.items[i], today) > Carry.score(d, today) ? again.items[i] : d)) };
   }
-  return send(res, 200, { ok: true, drafts: got.items.map((d) => { const m = Carry.measure(d, today); return { ...d, measure: m, ok: Carry.passes(m) }; }), say: got.say, tokens, retried: fix.length > 0 });
+  return send(res, 200, { ok: true, drafts: got.items, say: got.say, tokens, retried: fix.length > 0 });
 }
 // GET /api/carry?stage=n — 다른 프로젝트에서 채택한 것 중 그 단계에 닿는 것(최대 3개) · 보류한 것
 function carryGet(q) {
   const stage = Number(q);
   if (q == null || q === "" || !Number.isInteger(stage) || stage < 0 || stage >= Nav.STAGES.length) return { ok: false, why: "stage", reason: "단계 번호(0 ~ 7)가 필요해요" };
-  const s = projectNow(), project = s ? s.project : "", book = carryBook();
-  return { ok: true, items: Carry.forStage(book, stage, project), held: Carry.held(book, project) };
+  const s = projectNow(), key = s ? folderKey(s.dir) : "", book = carryBook();
+  return { ok: true, items: Carry.forStage(book, stage, key), held: Carry.held(book, key) };
 }
 // POST /api/carry { action: adopt | reject | hold, item, reason?, id? } — 사람이 고른 것을 장부에. 반려는 까닭과 함께, 지우지 않는다. 글은 가린 뒤
 function carryPost(body) {
   const state = { adopt: "adopted", reject: "rejected", hold: "held" }[body.action];
   if (!state) return [400, { ok: false, reason: "action은 adopt · reject · hold 중 하나" }];
   const it = body.item, reason = body.reason != null ? body.reason : "", id = body.id != null ? body.id : "";
-  if (!it || typeof it !== "object" || !strOk(it.text, Carry.TEXT_MAX) || (it.why != null && !strOk(it.why, Carry.WHY_MAX)) || !strOk(reason, Carry.REASON_MAX) || !(id === "" || (typeof id === "string" && /^c[0-9a-z]{1,30}$/.test(id))))
+  if (!it || typeof it !== "object" || !strOk(it.text, Carry.TEXT_MAX) || (it.why != null && !strOk(it.why, Carry.WHY_MAX)) || !strOk(reason, Carry.REASON_MAX) || !(id === "" || (typeof id === "string" && /^c[0-9a-z]{1,30}$/.test(id)))
+    || (it.stage != null && !Number.isInteger(it.stage)) || (it.review != null && !strOk(it.review, 10)) || (it.from != null && !(Array.isArray(it.from) && it.from.length <= Nav.STAGES.length)))
     return [400, { ok: false, reason: "가져갈 것의 모양이 맞지 않음" }];
-  const s = projectNow(), book = carryBook();
-  const next = Carry.decide(book, { ...it, text: Sensitive.redact(it.text), why: Sensitive.redact(String(it.why || "")) }, state, { reason: Sensitive.redact(reason), project: s ? s.project : "", at: Carry.today(), id });
-  if (!next) return [400, { ok: false, reason: state === "rejected" ? "반려는 까닭을 한 줄 적어야 해요 — 반려도 지우지 않고 남겨요" : "가져갈 것의 모양이 맞지 않음" }];
+  const s = projectNow(), book = carryBook(), from = (Carry.clean(it) || { from: [] }).from;
+  const next = Carry.decide(book, { ...it, text: Sensitive.redact(it.text), why: Sensitive.redact(String(it.why || "")) }, state,
+    { reason: Sensitive.redact(reason), project: s ? s.project : "", key: s ? folderKey(s.dir) : "", docs: from.map((n) => Docs.stagePath(n)), at: Carry.today(), id });   // docs — 근거 단계 문서를 잇는다(그 프로젝트 안의 경로)
+  if (!next) return [400, { ok: false, reason: state === "rejected" ? "반려는 까닭을 한 줄 적어야 해요 — 반려도 지우지 않고 남겨요(이미 반려한 것은 다시 고르지 않아요)" : state === "adopted" ? "언제 쓰는지(단계)를 골라야 채택할 수 있어요" : "가져갈 것의 모양이 맞지 않음" }];
   try { carrySave(next); } catch { return [500, { ok: false, reason: "이 컴퓨터에 남기지 못했어요 — 다시 해 주세요" }]; }
   return [200, { ok: true, id: next.items[next.items.length - 1].id }];
 }
@@ -919,8 +921,8 @@ async function handle(req, res) {
   if (route === "/api/state") { const s = Mcp.cleanState(body); if (!s) return refuse(res, "상태의 모양이 맞지 않음"); floeState = s; return send(res, 200, { ok: true }); }   // C-38 시험판 — 메모리에만
   if (route === "/api/apps/link") { if (!body || body.app !== "claude-desktop") return refuse(res, "모르는 앱"); mcpToken(); const r = AppLink.link(AppLink.desktopConfig(), AppLink.entry({ port: PORT, tokenFile: MCP_TOKEN_FILE })); return r.ok ? send(res, 200, { ok: true }) : refuse(res, r.message, 409); }   // 같이 쓸 앱 — 토큰 파일을 먼저 만든다(값은 설정 파일에 넣지 않는다)
   if (route === "/api/proposals/decide") { const k = proposals.findIndex((x) => body && x.id === body.id); if (k < 0) return refuse(res, "기다리는 제안이 아님", 404); proposals.splice(k, 1); return send(res, 200, { ok: true }); }   // 맞아요 · 아니요 — 적는 일은 화면이
-  if (route === "/api/plan") return planAsk(res, body || {});
-  if (route === "/api/carry/draft") return carryDraft(res, body || {});   // 지식 퀘스트 C-48(API.md 3-33) — AI 한 번(기준을 못 채운 초안이 있으면 한 번만 다시)   // C-34 준비 계획판(API.md 3-20) — AI 한 번
+  if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
+  if (route === "/api/carry/draft") return carryDraft(res, body || {});   // 지식 퀘스트 C-48(API.md 3-33) — AI 한 번(기준을 못 채운 초안이 있으면 한 번만 다시)
   if (route === "/api/docs") { const [code, out] = shipDocs(body); return send(res, code, out); }   // C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(API.md 3-23)
   if (route === "/api/prepare") {   // C-56 R-2 + C-54(API.md 3-29, 2026-10-28) — 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 AI 한 번으로(빠른 모델). 받은 글 · 기준 카드 · 1 · 2단계 결과
     if (!body || !Nav.filled(body.idea)) return refuse(res, "받은 글이 비어 있음");

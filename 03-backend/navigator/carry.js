@@ -28,11 +28,12 @@
   }
   const passes = (m) => CRITERIA.every(([k]) => m[k]);
   const missing = (m) => CRITERIA.filter(([k]) => !m[k]).map(([, w]) => w);
-  // AI의 초안 하나를 다듬는다 — 모양이 틀리면 null. 긴 글은 잘라 쓴다
+  // 초안 하나를 다듬는다 — 모양이 틀리면 null. 긴 글은 잘라 쓰고, 단계는 0 ~ 7만(아니면 -1 — 정하지 않음), 날짜는 YYYY-MM-DD만(아니면 ""), 근거 단계는 겹치지 않게
   function clean(d) {
     if (!d || typeof d !== "object") return null;
     const from = Array.isArray(d.from) ? [...new Set(d.from.filter((n) => Number.isInteger(n) && n >= 0 && n < STAGES))].sort((a, b) => a - b) : [];
-    return { text: String(d.text || "").trim().slice(0, TEXT_MAX), why: String(d.why || "").trim().slice(0, WHY_MAX), stage: Number.isInteger(d.stage) ? d.stage : -1, review: typeof d.review === "string" ? d.review.trim() : "", from };
+    const review = typeof d.review === "string" && DATE.test(d.review.trim()) ? d.review.trim() : "";
+    return { text: String(d.text || "").trim().slice(0, TEXT_MAX), why: String(d.why || "").trim().slice(0, WHY_MAX), stage: Number.isInteger(d.stage) && d.stage >= 0 && d.stage < STAGES ? d.stage : -1, review, from };
   }
   // 장부(이 컴퓨터의 Floe 폴더 파일 하나) — { v: 1, items: [{ id, text, why, stage, review, from, project, state, reason?, at }] }. state: adopted · rejected · held. 깨졌으면 빈 장부
   const blank = () => ({ v: 1, items: [] });
@@ -42,24 +43,31 @@
     return { v: 1, items: j.items.filter((x) => x && typeof x.id === "string" && STATES.includes(x.state) && filled(x.text)).slice(-ITEMS_MAX) };
   }
   // 사람이 고른 것을 장부에 — 반려 · 보류도 지우지 않고 남긴다(C-52 보관). 같은 id면 고쳐 쓴다
-  function decide(book, item, state, { reason = "", project = "", at = "", id = "" } = {}) {
+  //   key — 어느 프로젝트에서 왔나(폴더 열쇠 — 이름이 같은 다른 폴더와 가른다), project — 보일 이름, docs — 근거 단계 문서(그 프로젝트 안의 경로)
+  function decide(book, item, state, { reason = "", project = "", key = "", docs = [], at = "", id = "" } = {}) {
     if (!STATES.includes(state)) return null;
     const c = clean(item);
     if (!c || !filled(c.text)) return null;
     if (state === "rejected" && !filled(reason)) return null;   // 반려는 까닭과 함께
-    const key = id || `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, was = book.items.find((x) => x.id === key);
-    // 다시 고르면(보류 → 채택) 온 프로젝트는 그대로
-    const row = { id: key, ...c, project: was ? was.project : String(project).slice(0, 60), state, ...(filled(reason) ? { reason: reason.trim().slice(0, REASON_MAX) } : {}), at };
-    return { v: 1, items: [...book.items.filter((x) => x.id !== key), row].slice(-ITEMS_MAX) };
+    if (state === "adopted" && c.stage < 0) return null;   // 언제 쓰나(단계)가 없으면 어느 프로젝트에서도 보이지 않는다 — 채택하지 않는다
+    const rid = id || `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, was = book.items.find((x) => x.id === rid);
+    if (was && was.state === "rejected") return null;   // 반려 기록은 덮지 않는다(까닭이 지워지지 않게 — C-52 보관)
+    // 다시 고르면(보류 → 채택) 온 프로젝트 · 근거 문서는 그대로
+    const row = { id: rid, ...c, project: was ? was.project : String(project).slice(0, 60), key: was ? was.key : String(key || project).slice(0, 60),
+      docs: was && Array.isArray(was.docs) ? was.docs : docs.filter((x) => typeof x === "string").slice(0, STAGES), state, ...(filled(reason) ? { reason: reason.trim().slice(0, REASON_MAX) } : {}), at };
+    return { v: 1, items: [...book.items.filter((x) => x.id !== rid), row].slice(-ITEMS_MAX) };
   }
-  // 다음 프로젝트의 그 단계에 보일 것 — 채택한 것 중 그 단계에 닿는 것, 다른 프로젝트에서 온 것, 최근 것부터 최대 3개
-  const forStage = (book, stage, project = "") => book.items.filter((x) => x.state === "adopted" && x.stage === stage && x.project !== project).slice(-SHOW_MAX).reverse();
+  // 다음 프로젝트의 그 단계에 보일 것 — 채택한 것 중 그 단계에 닿는 것, 다른 프로젝트(열쇠)에서 온 것, 최근 것부터 최대 3개
+  const other = (x, key) => (x.key || x.project) !== key;
+  const forStage = (book, stage, key = "") => book.items.filter((x) => x.state === "adopted" && x.stage === stage && other(x, key)).slice(-SHOW_MAX).reverse();
   // 보류한 것 — 다음 프로젝트를 시작할 때 다시 묻는다
-  const held = (book, project = "") => book.items.filter((x) => x.state === "held" && x.project !== project);
+  const held = (book, key = "") => book.items.filter((x) => x.state === "held" && other(x, key));
+  // 초안이 기준을 몇 개 채웠나 — 한 번 다시 물은 뒤 초안마다 더 나은 쪽을 고른다
+  const score = (d, today) => { const m = measure(d, today); return CRITERIA.filter(([k]) => m[k]).length; };
 
   // 오늘 날짜(이 컴퓨터의 시간대) — '언제 다시 볼까'는 오늘 뒤
   const today = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const api = { today, CRITERIA, DRAFT_MAX, SHOW_MAX, TEXT_MAX, WHY_MAX, REASON_MAX, measure, passes, missing, clean, blank, revive, decide, forStage, held };
+  const api = { today, score, CRITERIA, DRAFT_MAX, SHOW_MAX, TEXT_MAX, WHY_MAX, REASON_MAX, measure, passes, missing, clean, blank, revive, decide, forStage, held };
   if (node) module.exports = api;
   else root.FloeCarry = api;
 })(typeof window !== "undefined" ? window : globalThis);

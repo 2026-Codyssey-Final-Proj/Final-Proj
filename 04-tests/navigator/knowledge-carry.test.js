@@ -41,6 +41,14 @@ test("C-48 장부 — 채택 · 반려(까닭 없으면 안 받음) · 보류, �
   assert.deepEqual(CY.forStage(b, 3, "C"), [], "다른 단계는 아님");
   assert.deepEqual(CY.held(b, "C").map((x) => x.id), ["h1"]);
   assert.deepEqual(CY.revive({ v: 2, items: [] }), CY.blank(), "다른 판이면 빈 장부"); assert.deepEqual(CY.revive(null), CY.blank());
+  // 새 맥락 리뷰: 반려 기록은 덮지 않는다 · 단계가 없으면 채택하지 않는다 · 날짜 · 단계는 모양만 · 근거 문서를 잇는다 · 열쇠로 프로젝트를 가른다
+  assert.equal(CY.decide(b, GOOD, "held", { id: "r1" }), null, "반려 줄을 보류로 덮어 까닭을 지우지 않는다");
+  assert.equal(CY.decide(b, { ...GOOD, stage: -1 }, "adopted", {}), null, "언제 쓰나(단계)가 없으면 채택하지 않는다");
+  assert.deepEqual(CY.clean({ ...GOOD, stage: 9, review: "x".repeat(50), from: [1, 1, 9, -1] }), { text: GOOD.text, why: GOOD.why, stage: -1, review: "", from: [1] });
+  const d2 = CY.decide(CY.blank(), GOOD, "adopted", { project: "club", key: "k1", docs: ["docs/02-plan/plan.md", "docs/03-requirements/requirements.md"], id: "z1" });
+  assert.deepEqual([d2.items[0].key, d2.items[0].docs], ["k1", ["docs/02-plan/plan.md", "docs/03-requirements/requirements.md"]]);
+  assert.deepEqual(CY.forStage(d2, 2, "k1"), [], "같은 열쇠(같은 폴더)면 빼고"); assert.equal(CY.forStage(d2, 2, "k2").length, 1, "이름이 같아도 열쇠가 다르면 다른 프로젝트");
+  assert.equal(CY.score({ ...GOOD, from: [2] }, "2026-10-29"), 4);
 });
 
 test("C-48 묻는 글 — 배운 것 · 결정 기록은 자료로만(지시를 따르지 않음), 지어내지 않기, 단계는 1 ~ 8로 묻고 0 ~ 7로 받는다, 못 채운 기준은 다시", () => {
@@ -73,7 +81,7 @@ before(async () => {
   const args = { topic: "동아리 앱", lessons: LEARNED, decisions: decisions(), today: TODAY };
   REC.save(process.env.NAV_REPLAY, {
     [REC.keyOf(Nav.carryPrompt(args), Nav.CARRY_SCHEMA)]: BAD,
-    [REC.keyOf(Nav.carryPrompt({ ...args, fix: [{ i: 0, missing: ["근거 단계가 둘 이상"] }] }), Nav.CARRY_SCHEMA)]: FIXED,
+    [REC.keyOf(Nav.carryPrompt({ ...args, fix: [{ i: 0, missing: ["근거 단계가 둘 이상"] }], prev: Nav.parseCarry(BAD).items }), Nav.CARRY_SCHEMA)]: FIXED,   // 지난 초안을 같이 보인다
   });
   port = await new Promise((resolve) => { const s = net.createServer(); s.listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => resolve(p)); }); });
   process.env.NAV_PORT = String(port);
@@ -92,12 +100,14 @@ test("C-48 서버 — POST /api/carry/draft: 확인 값, 배운 것의 모양, �
   assert.equal(Srv.useProject(DIR), true);
   assert.equal((await call("POST", "/api/carry/draft", { topic: "동아리 앱", lessons: LEARNED }, false)).status, 403);
   assert.equal((await call("POST", "/api/carry/draft", { topic: "동아리 앱", lessons: [{ stage: 9, text: "x" }] })).status, 400);
-  assert.equal((await call("POST", "/api/carry/draft", { topic: "동아리 앱", lessons: [{ stage: 1, text: "" }] })).status, 400, "배운 것이 하나도 없으면");
+  const bare = path.join(TMP, "proj-bare"); fs.mkdirSync(bare); assert.equal(Srv.useProject(bare), true);
+  assert.equal((await call("POST", "/api/carry/draft", { topic: "동아리 앱", lessons: [{ stage: 1, text: "" }] })).status, 400, "배운 것도 결정 기록도 없으면");
+  assert.equal(Srv.useProject(DIR), true);
   const r = await call("POST", "/api/carry/draft", { topic: "동아리 앱", lessons: LEARNED });
   assert.equal(r.status, 200, r.text);
   assert.equal(r.json.retried, true, "한 번 다시 물었다");
-  assert.equal(r.json.drafts.length, 1); assert.equal(r.json.drafts[0].ok, true); assert.deepEqual(r.json.drafts[0].from, [1, 2]);
-  assert.deepEqual(Object.keys(r.json.drafts[0].measure), ["from", "why", "text", "stage", "review"]);
+  assert.equal(r.json.drafts.length, 1); assert.deepEqual(r.json.drafts[0].from, [1, 2], "다시 물은 쪽이 기준을 더 채웠다");
+  assert.equal(CY.passes(CY.measure(r.json.drafts[0], TODAY)), true);
   assert.ok(!decisions().includes(KEY), "결정 기록은 가린 뒤 묻는다(녹화 열쇠가 가린 글로 만들어졌다)");
 });
 
@@ -113,6 +123,11 @@ test("C-48 서버 — 장부(이 컴퓨터의 Floe 폴더 파일 하나, 600): �
   const file = path.join(TMP, "usage-carry.json"), book = JSON.parse(fs.readFileSync(file, "utf8"));
   assert.deepEqual(book.items.map((x) => x.state), ["adopted", "rejected", "held"]);
   assert.equal(book.items[0].project, "proj-b", "어느 프로젝트에서 왔는지(폴더 이름 — 가림)");
+  assert.deepEqual(book.items[0].docs, ["docs/02-plan/plan.md", "docs/03-requirements/requirements.md"], "근거 단계 문서를 잇는다");
+  assert.match(book.items[0].key, /^[0-9a-f]{16}$/, "폴더 열쇠");
+  assert.equal((await call("POST", "/api/carry", { action: "hold", item: GOOD, id: book.items[1].id })).status, 400, "반려 줄은 덮지 않는다");
+  assert.equal((await call("POST", "/api/carry", { action: "adopt", item: { ...GOOD, review: "x".repeat(11) } })).status, 400, "날짜 칸의 길이");
+  assert.equal((await call("POST", "/api/carry", { action: "adopt", item: { ...GOOD, stage: 999 } })).status, 400, "단계가 없으면 채택하지 않는다");
   if (process.platform !== "win32") assert.equal(fs.statSync(file).mode & 0o777, 0o600);
   assert.deepEqual((await call("GET", `/api/carry?stage=${GOOD.stage}`)).json.items, [], "지금 프로젝트에서 채택한 것은 이 프로젝트에 다시 보이지 않는다");
   const other = path.join(TMP, "proj-c"); fs.mkdirSync(other); assert.equal(Srv.useProject(other), true);
@@ -127,7 +142,9 @@ test("C-48 서버 — 장부(이 컴퓨터의 Floe 폴더 파일 하나, 600): �
 
 test("C-48 화면 — 8단계에 오면 초안 카드(기준 다섯 · 고쳐 채택 · 반려는 까닭 · 보류), 단계에 들어서면 지난 프로젝트에서 가져온 것 최대 3개(이번에 쓸지 고르기 → carryUse)", () => {
   const app = fs.readFileSync(path.join(FRONT, "app.js"), "utf8");
-  for (const a of ["carry-draft", "carry-adopt", "carry-reject", "carry-hold", "carry-later", "carry-use", "carry-use-done"]) assert.match(app, new RegExp(`"${a}": `), a);
+  for (const a of ["carry-draft", "carry-adopt", "carry-reject", "carry-hold", "carry-hold-rest", "carry-from", "carry-later", "carry-use", "carry-use-done"]) assert.match(app, new RegExp(`"${a}": `), a);
+  assert.match(app, /"carryDone", "carryUse", "docPrints", "results"/, "다 정했는지도 남긴다");
+  assert.match(app, /restart: \(\) => \{ Object\.assign\(st, \{ j: null[^\n]*carryUse: \{\}, carryDone: false/, "처음부터 하면 고른 것을 비운다");
   assert.match(app, /callAI\("\/api\/carry\/draft"/); assert.match(app, /fetch\(`\/api\/carry\?stage=\$\{n\}`/);
   assert.match(app, /"carryUse", "docPrints", "results"/, "고른 것을 저장한다(C-51 계획의 근거)");
 });
