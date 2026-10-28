@@ -13,6 +13,7 @@ const net = require("node:net");
 
 const BACK = path.join(__dirname, "../../03-backend/navigator");
 const CL = require(path.join(BACK, "chatlog.js"));
+const Steps = require(path.join(BACK, "steps.js"));
 
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "floe-chatstore-"));
 const CHATS = path.join(TMP, "app-data", "chats");
@@ -30,14 +31,15 @@ test("자리 — NAV_CHAT_DIR, 없으면 NAV_USAGE_FILE 옆(시험이 홈에 쓰
 
 test("파일 이름 — 작업 폴더 실제 경로의 sha256 앞 16자. 폴더 이름이 드러나지 않고, 같은 폴더(바로가기 포함)는 같은 파일", () => {
   const proj = fs.mkdtempSync(path.join(TMP, "my-club-app-")), link = path.join(TMP, "club-link");
-  fs.symlinkSync(proj, link);
+  fs.symlinkSync(proj, link, "junction");   // Windows는 권한 없이 심볼릭 링크를 못 만든다 — junction(flow-api.test.js와 같다)
   const f = CL.fileOf(CHATS, proj);
   assert.match(path.basename(f), /^[0-9a-f]{16}\.json$/); assert.ok(!f.includes("my-club-app"), "폴더 이름이 파일 이름에 없다");
   assert.equal(CL.fileOf(CHATS, link), f, "바로가기도 같은 파일");
   assert.notEqual(CL.fileOf(CHATS, TMP), f);
 });
 
-test("말 모양 — 말(me · floro · sys + text) · 구분선(mark + title) · 가져온 것(carry), stage 0 ~ 7. 틀리면 null", () => {
+test("말 모양 — 말(me · floro · sys + text) · 구분선(mark + title) · 가져온 것(carry), stage 0 ~ 7. 틀리면 null, 맞으면 가린 것", () => {
+  assert.ok(!CL.cleanTurn({ stage: 1, who: "me", text: `키 ${FAKE_KEY}` }).text.includes(FAKE_KEY), "검사하며 가린다");
   assert.deepEqual(CL.cleanTurn({ stage: 2, who: "me", text: " 신청부터 " }), { stage: 2, who: "me", text: "신청부터" });
   assert.deepEqual(CL.cleanTurn({ stage: 3, mark: true, title: "4단계 · 방법 고르기" }), { stage: 3, mark: true, title: "4단계 · 방법 고르기" });
   assert.deepEqual(CL.cleanTurn({ stage: 3, carry: "정한 칸: 신청 · 알림" }), { stage: 3, carry: "정한 칸: 신청 · 알림" });
@@ -46,14 +48,17 @@ test("말 모양 — 말(me · floro · sys + text) · 구분선(mark + title) �
     assert.equal(CL.cleanTurn(bad), null, JSON.stringify(bad));
 });
 
-test("쌓기 — at은 서버 시각, 저장 전에 가리고, 2,000개를 넘으면 앞에서 덜고 맨 앞에 sys 한 줄", () => {
-  let d = CL.blank("club");
-  d = CL.addTurns(d, [{ stage: 1, who: "me", text: `키는 ${FAKE_KEY}` }], { now: () => 7 });
-  assert.equal(d.turns[0].at, 7); assert.ok(!d.turns[0].text.includes(FAKE_KEY), "가린다");
-  d = CL.addTurns(d, Array.from({ length: 20 }, (_, i) => ({ stage: 1, who: "floro", text: `말 ${i}` })), { now: () => 8 });
-  for (let k = 0; k < 100; k++) d = CL.addTurns(d, Array.from({ length: 20 }, (_, i) => ({ stage: 2, who: "me", text: `${k}-${i}` })), { now: () => 9 });
-  assert.equal(d.turns.length, CL.TURNS_MAX); assert.equal(d.turns[0].who, "sys"); assert.match(d.turns[0].text, /앞 대화 \d+개를 덜어냈어요/);
+test("쌓기 — at은 서버 시각, 2,000개를 넘으면 앞에서 덜고 덜어낸 수(dropped)를 센다. 화면에 줄 때(publicOf) 맨 앞 한 줄", () => {
+  const add = (d, list, at) => CL.addTurns(d, list.map((t) => CL.cleanTurn(t)), { now: () => at });
+  let d = add(CL.blank("club"), [{ stage: 1, who: "me", text: "처음" }], 7);
+  assert.equal(d.turns[0].at, 7);
+  d = add(d, Array.from({ length: 20 }, (_, i) => ({ stage: 1, who: "floro", text: `말 ${i}` })), 8);
+  for (let k = 0; k < 100; k++) d = add(d, Array.from({ length: 20 }, (_, i) => ({ stage: 2, who: "me", text: `${k}-${i}` })), 9);
+  assert.equal(d.turns.length, CL.TURNS_MAX); assert.equal(d.dropped, 21, "1 + 20 + 2,000 = 2,021 — 21개를 덜었다");
   assert.equal(d.turns.at(-1).text, "99-19", "새 말은 뒤에 남는다");
+  const pub = CL.publicOf(d);
+  assert.equal(pub.turns.length, CL.TURNS_MAX + 1); assert.deepEqual({ who: pub.turns[0].who, text: pub.turns[0].text }, { who: "sys", text: "앞 대화 21개를 덜어냈어요" });
+  assert.ok(!("dropped" in pub), "덜어낸 수 칸은 화면에 주지 않는다");
 });
 
 test("바뀐 파일 — 이 기록에서 처음 보는 Write는 new, 아니면 edit. 2,000개까지", () => {
@@ -67,14 +72,18 @@ test("바뀐 파일 — 이 기록에서 처음 보는 Write는 new, 아니면 e
   assert.equal(d.changes.length, CL.CHANGES_MAX);
 });
 
-test("읽기 · 쓰기 — 없으면 빈 기록, 깨진 파일도 빈 기록. 폴더는 700 · 파일은 600", () => {
+test("읽기 · 쓰기 — 없으면 빈 기록, 깨진 · 다른 판 파일은 .bak으로 남기고 빈 기록(덮어쓰지 않는다). 덜어낸 수도 저장된다. 폴더는 700 · 파일은 600", () => {
   const dir = path.join(TMP, "store-unit"), f = path.join(dir, "x.json");
   assert.deepEqual(CL.load(f, "club"), CL.blank("club"));
-  CL.save(f, CL.addTurns(CL.blank("club"), [{ stage: 0, who: "me", text: "안녕" }], { now: () => 1 }));
-  assert.equal(CL.load(f, "club").turns.length, 1);
+  CL.save(f, { ...CL.addTurns(CL.blank("club"), [CL.cleanTurn({ stage: 0, who: "me", text: "안녕" })], { now: () => 1 }), dropped: 5 });
+  assert.equal(CL.load(f, "club").turns.length, 1); assert.equal(CL.load(f, "club").dropped, 5);
   if (process.platform !== "win32") { assert.equal(fs.statSync(dir).mode & 0o777, 0o700); assert.equal(fs.statSync(f).mode & 0o777, 0o600); }
-  fs.writeFileSync(f, "{ 깨진");
+  fs.writeFileSync(f, JSON.stringify({ v: 2, turns: [{ at: 1, stage: 0, who: "me", text: "새 판의 말" }], changes: [] }));
   assert.deepEqual(CL.load(f, "club"), CL.blank("club"));
+  const bak = fs.readdirSync(dir).filter((x) => x.startsWith("x.json.bak-"));
+  assert.equal(bak.length, 1, "다른 판은 .bak으로"); assert.match(fs.readFileSync(path.join(dir, bak[0]), "utf8"), /새 판의 말/, "내용을 잃지 않는다");
+  fs.writeFileSync(f, "{ 깨진");
+  assert.deepEqual(CL.load(f, "club"), CL.blank("club")); assert.equal(fs.readdirSync(dir).filter((x) => x.startsWith("x.json.bak-")).length, 2);
 });
 
 // ════════ server.js ════════
@@ -105,11 +114,13 @@ test("확인 값이 없으면 403 — 대화 글이 오간다", async () => {
   assert.equal((await call("POST", "/api/chatlog", { add: [] }, { withTok: false })).status, 403);
 });
 
-test("폴더를 모르면 GET은 빈 기록 · why folder, POST는 400", async () => {
+test("앱이 고른 작업 폴더가 없으면 GET은 빈 기록 · why folder, POST는 400 — 훅 알림으로 안 폴더로 대신하지 않는다(대화가 섞이지 않게)", async () => {
+  await call("POST", "/api/event", { hook_event_name: "UserPromptSubmit", session_id: "s-x", cwd: fs.mkdtempSync(path.join(TMP, "hookonly-")), prompt: "안녕" });
   const g = await call("GET", "/api/chatlog");
   assert.equal(g.status, 200); assert.deepEqual(g.json, { ok: true, project: "", turns: [], changes: [], why: "folder" });
   const p = await call("POST", "/api/chatlog", { add: [{ stage: 0, who: "me", text: "안녕" }] });
   assert.equal(p.status, 400); assert.match(p.json.reason, /폴더/);
+  assert.ok(!fs.existsSync(CHATS) || !fs.readdirSync(CHATS).length, "아무 파일도 만들지 않았다");
 });
 
 let PROJ;
@@ -135,22 +146,40 @@ test("POST 모양 — add는 1 ~ 20개 · 말 모양, 아니면 400 '대화 모�
   assert.equal((await call("GET", "/api/chatlog")).json.turns.length, before);
 });
 
-test("훅 알림(PostToolUse)으로 그 폴더 안 파일이 바뀌면 changes에 — 작업 폴더 기준 경로, 처음 Write는 new · 그다음 edit. 다른 폴더 · 읽기는 넣지 않는다", async () => {
+test("훅 알림(PostToolUse)으로 그 폴더 안 파일이 바뀌면 changes에 — 훅이 보내는 모양 그대로(steps.js fromHook · fileOf), 작업 폴더 기준 경로, 처음 Write는 new · 그다음 edit. 세션 폴더 밖 · 다른 폴더 · 읽기는 넣지 않는다", async () => {
   fs.mkdirSync(path.join(PROJ, "src"));
-  const step = (cwd, tool_name, what) => call("POST", "/api/event", { hook_event_name: "PostToolUse", session_id: "s-c", cwd, tool: "claude", tool_name, step: { verb: "만들었어요", what, add: 3, del: 0 } });
-  assert.equal((await step(path.join(PROJ, "src"), "Write", "app.js")).status, 200);
-  await step(PROJ, "Edit", "src/app.js");
-  await step(PROJ, "Read", "README.md");
-  await step(fs.mkdtempSync(path.join(TMP, "other-")), "Write", "x.js");
-  await step(PROJ, "Write", "../outside.js");
+  // hook.js와 같은 본문 — step(이름 · 첫 줄 · 줄 수)과 file(세션 폴더 안의 상대 경로, 밖이면 "")
+  const hook = (cwd, tool_name, tool_input) => { const ev = { hook_event_name: "PostToolUse", session_id: "s-c", cwd, tool_name, tool_input };
+    return call("POST", "/api/event", { hook_event_name: "PostToolUse", session_id: "s-c", cwd, tool: "claude", tool_name, step: Steps.fromHook(ev), file: Steps.fileOf(ev) }); };
+  const src = path.join(PROJ, "src");
+  assert.equal((await hook(src, "Write", { file_path: path.join(src, "app.js"), content: "a" })).status, 200);
+  await hook(PROJ, "Edit", { file_path: path.join(PROJ, "src", "app.js"), old_string: "a", new_string: "b" });
+  await hook(src, "Write", { file_path: path.join(PROJ, "README.md"), content: "x" });   // 세션 폴더(src) 밖 — 이름만 오던 때에는 src/README.md로 잘못 쌓였다
+  await hook(PROJ, "Write", { file_path: path.join(os.homedir(), ".claude", "projects", "x", "memory", "MEMORY.md"), content: "m" });   // 자동 메모리 — 밖
+  await hook(PROJ, "NotebookEdit", { notebook_path: path.join(PROJ, "analysis.ipynb"), new_source: "print(1)" });
+  await hook(PROJ, "Read", { file_path: path.join(PROJ, "README.md") });
+  await hook(fs.mkdtempSync(path.join(TMP, "other-")), "Write", { file_path: "x.js", content: "y" });
+  await hook(PROJ, "Write", { file_path: "../outside.js", content: "z" });
+  await hook("relative/dir", "Write", { file_path: "rel.js", content: "z" });   // 상대 경로 cwd는 버린다
   const c = (await call("GET", "/api/chatlog")).json.changes;
-  assert.deepEqual(c.map((x) => [x.path, x.how]), [["src/app.js", "new"], ["src/app.js", "edit"]]);
+  assert.deepEqual(c.map((x) => [x.path, x.how]), [["src/app.js", "new"], ["src/app.js", "edit"], ["analysis.ipynb", "edit"]]);
   assert.ok(c.every((x) => Number.isFinite(x.at)));
 });
 
-test("앱을 껐다 켜도 남는다 — 서버는 기억하지 않고 파일에서 읽는다. clear는 그 프로젝트 파일을 지운다", async () => {
+test("약속한 최대(20개 × 2,000자)는 받는다 — 본문 한도에 걸리지 않게", async () => {
+  const r = await call("POST", "/api/chatlog", { add: Array.from({ length: 20 }, () => ({ stage: 1, who: "me", text: "가".repeat(2000) })) });
+  assert.equal(r.status, 200, r.text.slice(0, 200)); assert.equal(r.json.n, 102);
+});
+
+test("앱을 껐다 켜도 남는다 — 서버는 기억하지 않고 파일에서 읽는다. 못 지우면 500(지웠다고 하지 않는다), clear는 그 프로젝트 파일을 지운다", async () => {
+  if (process.platform !== "win32") {
+    fs.chmodSync(CHATS, 0o500);
+    const bad = await call("POST", "/api/chatlog", { clear: true });
+    fs.chmodSync(CHATS, 0o700);
+    assert.equal(bad.status, 500, bad.text); assert.match(bad.json.reason, /지우지 못했어요/);
+  }
   const f = CL.fileOf(CHATS, PROJ), saved = JSON.parse(fs.readFileSync(f, "utf8"));
-  assert.equal(saved.v, 1); assert.equal(saved.turns.length, 82);
+  assert.equal(saved.v, 1); assert.equal(saved.turns.length, 102);
   const r = await call("POST", "/api/chatlog", { clear: true });
   assert.equal(r.status, 200); assert.deepEqual(r.json, { ok: true, n: 0 });
   assert.ok(!fs.existsSync(f)); assert.deepEqual((await call("GET", "/api/chatlog")).json.turns, []);

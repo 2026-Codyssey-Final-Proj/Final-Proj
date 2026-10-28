@@ -240,32 +240,38 @@ function addStep(body, tool) {
   const what = typeof raw.what === "string" && raw.what.trim() ? raw.what.trim() : typeof body.tool_name === "string" ? body.tool_name.trim() : "";
   s.steps.push({ seq: ++stepSeq, at: Date.now(), verb: VERB_OK.has(raw.verb) ? raw.verb : Steps.OTHER, what: cut(Sensitive.redact(what)), add: count(raw.add), del: count(raw.del) });
   while (s.steps.length > MAX_STEPS) s.steps.shift();
-  chatChange(body.cwd, body.tool_name, raw.what);
+  chatChange(body.cwd, body.tool_name, body.file);
   return { seq: stepSeq };
 }
 // ── 작업실 개편 C-63 대화 저장 · 바뀐 파일(2026-10-29 — API.md 3-32, 결정 모음 A-20 · A-21 이재엽 쪽 세션) ──
 //   프로젝트마다 대화 하나와 그 폴더에서 바뀐 파일을 이 컴퓨터의 앱 저장 곳에(chatlog.js — 작업 폴더에는 쓰지 않는다). 폴더는 projectNow(3-16 폴더 고르기). 서버는 기억하지 않고 파일에서 읽는다
 const CHAT_DIR = ChatLog.dirOf(process.env);
-// 훅 알림(PostToolUse — Write · Edit · MultiEdit · NotebookEdit)으로 그 작업 폴더 안 파일이 바뀌면 쌓는다. what은 그 세션 폴더(cwd) 기준(steps.js) — 작업 폴더 기준으로 바꾸고, 밖이면 버린다
-//   한계: 세션 폴더 밖 파일은 훅이 이름만 보내 세션 폴더의 파일로 보일 수 있다(드물다 — steps.js where)
-function chatChange(cwd, tool, what) {
-  const s = projectNow(); if (!s || !ChatLog.CHANGE_TOOLS.has(tool)) return;
-  const p = ChatLog.projectPath(s.dir, cwd, typeof what === "string" ? what.trim() : ""); if (!p) return;
-  const file = ChatLog.fileOf(CHAT_DIR, s.dir);
-  try { ChatLog.save(file, ChatLog.addChange(ChatLog.load(file, s.project), { path: Sensitive.redact(p), tool })); } catch { /* 못 써도 알림은 계속 */ }
+const CHAT_NO_FOLDER = "앱에서 고른 작업 폴더가 아직 없어요 — 처음 설정의 '프로젝트'나 앱 메뉴의 '프로젝트 폴더 연결…'로 골라요";
+// 폴더는 앱이 고른 작업 폴더만(appProject) — 훅 알림으로 안 폴더(projectNow의 대신)는 세션마다 달라 대화가 다른 프로젝트 파일에 섞였다(새 맥락 리뷰 2026-10-29)
+// 훅 알림(PostToolUse — Write · Edit · MultiEdit · NotebookEdit)으로 그 작업 폴더 안 파일이 바뀌면 쌓는다. file은 세션 폴더 안의 상대 경로(steps.js fileOf — 밖이면 ""), 작업 폴더 기준으로 바꾸고 밖이면 버린다
+function chatChange(cwd, tool, file) {
+  const s = appProject; if (!s || !ChatLog.CHANGE_TOOLS.has(tool)) return;
+  const p = ChatLog.projectPath(s.dir, cwd, file); if (!p) return;
+  const f = ChatLog.fileOf(CHAT_DIR, s.dir);
+  try { ChatLog.save(f, ChatLog.addChange(ChatLog.load(f, s.project), { path: Sensitive.redact(p), tool })); } catch { /* 못 써도 알림은 계속 */ }
 }
 function chatlogGet() {
-  const s = projectNow();
+  const s = appProject;
   if (!s) return { ok: true, project: "", turns: [], changes: [], why: "folder" };
   return { ok: true, ...ChatLog.publicOf(ChatLog.load(ChatLog.fileOf(CHAT_DIR, s.dir), s.project)), why: "" };
 }
 function chatlogPost(body) {
-  const b = body && typeof body === "object" ? body : {}, s = projectNow();
-  if (b.clear === true && Object.keys(b).length === 1) { if (!s) return [400, { ok: false, reason: NO_FOLDER }]; ChatLog.clear(ChatLog.fileOf(CHAT_DIR, s.dir)); return [200, { ok: true, n: 0 }]; }
-  if (!Array.isArray(b.add) || b.add.length < 1 || b.add.length > ChatLog.ADD_MAX || b.add.some((t) => !ChatLog.cleanTurn(t)))
+  const b = body && typeof body === "object" ? body : {}, s = appProject;
+  if (b.clear === true && Object.keys(b).length === 1) {
+    if (!s) return [400, { ok: false, reason: CHAT_NO_FOLDER }];
+    try { ChatLog.clear(ChatLog.fileOf(CHAT_DIR, s.dir)); } catch { return [500, { ok: false, reason: "대화를 지우지 못했어요 — 앱 저장 곳의 권한을 봐 주세요" }]; }
+    return [200, { ok: true, n: 0 }];
+  }
+  const cleaned = Array.isArray(b.add) ? b.add.map((t) => ChatLog.cleanTurn(t)) : [];
+  if (!cleaned.length || cleaned.length > ChatLog.ADD_MAX || cleaned.some((t) => !t))
     return [400, { ok: false, reason: `대화 모양이 맞지 않음 — add는 1 ~ ${ChatLog.ADD_MAX}개, 말 { stage, who: me | floro | sys, text(${ChatLog.TEXT_MAX}자) } · 구분선 { stage, mark: true, title(${ChatLog.TITLE_MAX}자) } · 가져온 것 { stage, carry }` }];
-  if (!s) return [400, { ok: false, reason: NO_FOLDER }];
-  const file = ChatLog.fileOf(CHAT_DIR, s.dir), data = ChatLog.addTurns(ChatLog.load(file, s.project), b.add);
+  if (!s) return [400, { ok: false, reason: CHAT_NO_FOLDER }];
+  const file = ChatLog.fileOf(CHAT_DIR, s.dir), data = ChatLog.addTurns(ChatLog.load(file, s.project), cleaned);
   try { ChatLog.save(file, data); } catch { return [500, { ok: false, reason: "대화를 저장하지 못했어요 — 앱 저장 곳의 쓰기 권한을 봐 주세요" }]; }
   return [200, { ok: true, n: data.turns.length }];
 }
@@ -795,6 +801,7 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만
   if (req.method === "GET" && route === "/api/file") { const [code, out] = await readFileNow(new URL(req.url, "http://localhost").searchParams.get("i")); return send(res, code, out); }   // C-43 파일 열기(API.md 3-26)
   if (req.method === "POST" && route === "/api/preset") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = presetStart(body); return send(res, code, out); }   // C-44 틀로 맡기기(API.md 3-28)
+  if (req.method === "POST" && route === "/api/chatlog") { const body = await readJson(req, ChatLog.ADD_MAX * (ChatLog.TEXT_MAX + 120) + 2000); if (body === TOO_BIG) return refuse(res, `너무 커요 — 한 번에 ${ChatLog.ADD_MAX}개 · 한 개 ${ChatLog.TEXT_MAX.toLocaleString()}자까지`, 413); const [code, out] = chatlogPost(body); return send(res, code, out); }   // 작업실 개편 C-63 대화 쌓기 · 지우기(API.md 3-32) — 약속한 최대(20개 × 2,000자)가 들게
   if (req.method === "POST" && route === "/api/file") { const body = await readJson(req, Files.FILE_MAX * 2 + 1000); if (body === TOO_BIG) return refuse(res, `너무 커요 — ${Math.round(Files.FILE_MAX / 1024)}KB까지만 써요`, 413); const [code, out] = writeFileNow(body); return send(res, code, out); }   // C-43 파일 저장
   if (req.method === "GET" && route === "/api/github") return send(res, 200, githubNow());   // 설정의 GitHub 칸(API.md 3-19) — 읽기만
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage(), ledger: ledger.snapshot() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다. ledger: 토큰 장부(숫자 · 이름만, 2026-10-24)
@@ -812,7 +819,6 @@ async function handle(req, res) {
   if (route === "/api/approval") { const why = holdApproval(body, req, res); return why ? refuse(res, why, why.includes("너무 많") ? 429 : 400) : undefined; }   // FR-17 훅 — 답은 결정이 오거나 시간이 지나면(3-13)
   if (route === "/api/github/create") { const [code, out] = githubCreate(body); return send(res, code, out); }   // 저장소 만들기를 Claude Code에 맡기기(3-19)
   if (route === "/api/approvals/decide") { const [code, out] = decideApproval(body); return send(res, code, out); }
-  if (route === "/api/chatlog") { const [code, out] = chatlogPost(body); return send(res, code, out); }   // 작업실 개편 C-63 대화 쌓기 · 지우기(API.md 3-32)
   if (route === "/api/task/retry") { const [code, out] = retryTask(body); return send(res, code, out); }
   if (route === "/api/task/stop") { const [code, out] = stopTask(body); return send(res, code, out); }   // C-50 사람이 고르면 멈추기(API.md 3-16)   // F-69 막힌 일을 다시 · 명령 없이 · 직접 하기 글(API.md 3-16)   // FR-17 섬의 결정(3-15)
   if (route === "/api/quest") {   // C-22 퀘스트 제작(API.md 3-17, 2026-10-21) — AI 한 번. 할 일 이름 · 개수는 코드, AI는 설명 · 질문 · 예시만(navigator.js questPrompt · parseQuest)
