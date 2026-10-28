@@ -1,13 +1,13 @@
 <!-- claude-drafted: 2026-10-28 — 이재엽 요청("이걸 페이블 세션에 줄 수 있도록 준비해")으로 Claude가 기본 내용만 썼다(계획만 — 만들지 않았다). 코드 위치 · 설계 · 시험은 페이블 세션이 찾아 정한다. -->
 
-# 넘김(페이블) — 목업을 다시 그린 디자인 바탕 · 지도 보강 (C-56 · C-54 ⑧ ⑨)
+# 넘김(페이블) — 목업을 다시 그린 디자인 바탕 · 지도 보강 (C-57 · C-54 ⑧ ⑨)
 
-> **기록 문서.** 2026-10-28 `main` cf2dbcd(#225 병합 뒤) 기준이다. **[fable-handoff-2026-10-27-mdlayout.md](fable-handoff-2026-10-27-mdlayout.md)(ⓐ ~ ⓔ)에 덧붙이는 문서다** — 같은 브랜치 `v2/workspace-md`, 같은 PR에서 한다. 요구는 [requirements.md](../requirements.md) 2-2 **C-56**(새로) · **C-54**(⑧ ⑨ 보강), 한 말 그대로는 13-1.
+> **기록 문서.** 2026-10-28 `main` cf2dbcd(#225 병합 뒤) 기준이다. **[fable-handoff-2026-10-27-mdlayout.md](fable-handoff-2026-10-27-mdlayout.md)(ⓐ ~ ⓔ)에 덧붙이는 문서다** — 같은 브랜치 `v2/workspace-md`, 같은 PR에서 한다. 요구는 [requirements.md](../requirements.md) 2-2 **C-57**(새로) · **C-54**(⑧ ⑨ 보강), 한 말 그대로는 13-1.
 > **기준은 목업 캔버스 v10이다:** <https://claude.ai/artifact/1To4aBVaPbF74QoBjy7Pf3> (10번째 판, 2026-10-28) — 아홉 장(① ~ ⑦은 같은 화면을 새 모양으로, ⑧ 얼음 조각 가까이 · ⑨ 짝 선은 새로)과 쪽지 '색과 글꼴'. 이재엽 계정에서 열린다. 세션에서는 Artifact `read`로 `project/canvas.json`과 `project/*.dc.html`을 받아 읽는다.
 
 ## 0. 먼저
 
-1. 이름 확인(CLAUDE.md "처음 세션이면") → [mdlayout 넘김](fable-handoff-2026-10-27-mdlayout.md) → **이 문서** → 요구서 C-53 ~ C-56 행 → 목업 캔버스 v10(쪽지 '색과 글꼴' 먼저).
+1. 이름 확인(CLAUDE.md "처음 세션이면") → [mdlayout 넘김](fable-handoff-2026-10-27-mdlayout.md) → **이 문서** → 요구서 C-53 ~ C-57 행 → 목업 캔버스 v10(쪽지 '색과 글꼴' 먼저).
 2. 목업은 **모양의 기준**이다. `.dc.html`을 앱에 옮겨 붙이지 않는다 — 앱의 구조(`app.js`가 그리는 글 · `app.css` 토큰)에 맞춰 만든다.
 3. 시험을 먼저 써서 실패를 본 뒤 만든다(code.md 1번). 앱 버전은 올리지 않는다.
 
@@ -48,7 +48,7 @@
 | 묶음 | 요구 | 끝 조건 |
 |---|---|---|
 | ⓐ 파란 줄 | F-65 (mdlayout 그대로) | 알약 색은 **#363E62**(버튼) — 목업 ⑦ |
-| **ⓐ+ 디자인 바탕** | **C-56** | 앱 전체(섬 · 작업실 · 설정 · 퀘스트 · 처음 설정)의 색 토큰을 2절 값으로, 섬 남색을 #363E62로(`app.css` · `main.js` backgroundColor · `win.html` · `setup.css`에 흩어져 있다). 글꼴 셋을 **앱에 파일로 넣고**(`02-frontend/assets/fonts/` + 라이선스 · 출처 한 줄) 글 · 제목 · 코드에 쓴다. 보이는 글자 기호 아이콘을 선 아이콘으로. 색을 글로 맞대는 시험(`electron-side` · `workspace-col` · `workspace` — #16225E)을 같이 고친다. 1280 · 1440에서 섬 · 작업실 · 설정 사진을 목업 ① ③과 나란히 |
+| **ⓐ+ 디자인 바탕** | **C-57** | 앱 전체(섬 · 작업실 · 설정 · 퀘스트 · 처음 설정)의 색 토큰을 2절 값으로, 섬 남색을 #363E62로(`app.css` · `main.js` backgroundColor · `win.html` · `setup.css`에 흩어져 있다). 글꼴 셋을 **앱에 파일로 넣고**(`02-frontend/assets/fonts/` + 라이선스 · 출처 한 줄) 글 · 제목 · 코드에 쓴다. 보이는 글자 기호 아이콘을 선 아이콘으로. 색을 글로 맞대는 시험(`electron-side` · `workspace-col` · `workspace` — #16225E)을 같이 고친다. 1280 · 1440에서 섬 · 작업실 · 설정 사진을 목업 ① ③과 나란히 |
 | ⓑ 넘긴 기준의 까닭 | F-62 (그대로) | mdlayout과 같다 |
 | ⓒ 켤 때 바로 작업실 | C-55 | mdlayout 끝 조건 + 목업 ① 모양(말풍선은 섬 색, 제목 글꼴) |
 | ⓓ 작업실 세 칸 | C-53 | mdlayout 끝 조건 + 목업 ② ③ 모양(파일 칸 그림 · 문서 도구 줄 · 바뀐 줄 표시: Claude Code는 바다색, 내가 고친 줄은 금색) |
@@ -77,7 +77,7 @@
 ## 6. 끝나면
 
 - 이재엽에게 짧게: PR 번호 · 사진(목업 v10 보드와 나란히) · 정한 것(버튼) · 남은 것.
-- 요구서 C-56 · C-54 등급 칸 '만듦', 이 문서와 mdlayout 머리에 "끝남" 한 줄.
+- 요구서 C-57 · C-54 등급 칸 '만듦', 이 문서와 mdlayout 머리에 "끝남" 한 줄.
 
 ## 7. 페이블 세션에 붙여 넣을 말
 
@@ -87,13 +87,13 @@ mdlayout 6절 대신 이것을 붙여 넣는다(둘을 함께 가리킨다).
 이재엽이에요. Floe 레포(Final-Proj)에서 이어서 해 주세요.
 
 목표: 목업 캔버스 v10(https://claude.ai/artifact/1To4aBVaPbF74QoBjy7Pf3)대로 —
-파란 줄(F-65) → 앱 전체 디자인 바탕(C-56: 팀 웹사이트 색 · 글꼴, 섬 #363E62) → 넘긴 기준의 까닭(F-62)
+파란 줄(F-65) → 앱 전체 디자인 바탕(C-57: 팀 웹사이트 색 · 글꼴, 섬 #363E62) → 넘긴 기준의 까닭(F-62)
 → 켤 때 바로 작업실(C-55) → 작업실 세 칸(C-53) → 지도(C-54) → 지도 보강 ⑧ 얼음 조각 가까이 · ⑨ 짝 선.
 
 먼저 읽기:
 1. 01-docs/00-overview/기록/fable-handoff-2026-10-27-mdlayout.md — 차례 ⓐ ~ ⓔ · 정할 것 여섯 · 꼭 지킬 것
 2. 01-docs/00-overview/기록/fable-handoff-2026-10-28-design.md — 색 · 글꼴 표, ⓐ+ · ⓔ+, 정할 것 넷
-3. 01-docs/00-overview/requirements.md 2-2의 C-53 ~ C-56 행
+3. 01-docs/00-overview/requirements.md 2-2의 C-53 ~ C-57 행
 4. 목업 캔버스 — Artifact read로 project/canvas.json과 project/*.dc.html (쪽지 '색과 글꼴' 먼저). 목업 코드를 옮겨 붙이지 말고 앱 구조에 맞춰 만들어요.
 
 브랜치 v2/workspace-md 하나(base=main), 묶음마다 커밋, ⓐ 끝에 초안 PR, 묶음마다 사진(목업 보드와 나란히). 끝에 새 맥락 리뷰.
