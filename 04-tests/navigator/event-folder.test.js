@@ -86,5 +86,5 @@ test("어떤 형태든 이 컴퓨터의 폴더 이름이 먼저 — 설정의 �
   const a = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
   assert.ok(a.includes('와 연결됨 · ${esc(wsFull() || st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}${st.feed.project && wsFull() && st.feed.project !== wsFull() ? `(${esc(st.feed.project)}에서)` : ""}'), "설정의 연결 줄 — 알약과 같은 이름(wsFull)");
   assert.ok(a.includes('const proj = wsFull() || (kind === "ai" && last ? last.project : "");'), "AI 진행 판 머리도 연결한 폴더 이름 먼저(A 안의 backend에서 열어도 A)");
-  assert.ok(a.includes('esc(wsFull() || s.project || "")'), "작업실 파일 카드도");
+  assert.ok(!a.includes("function fileCard"), "작업실 파일 카드는 C-58(2026-10-29)로 뺐다 — 바뀐 파일은 왼쪽 대화 목록(C-63)에서");
 });

@@ -86,18 +86,18 @@
   let foldSec = readFold();
   const foldDelay = () => foldSec * 1000;
   // 창 자리 · 퀘스트 창 크기 · 받으면 바로 뜨기 · 이름(설정 창의 '○○ 님의 작업실') — 이 컴퓨터에만(C-22, 2026-10-21). 기록(KEY)에는 넣지 않는다
-  const SIDE_KEY = "floe:win-side", QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level";
+  const QAUTO_KEY = "floe:qwin-auto", NAME_KEY = "floe:name", LEVEL_KEY = "floe:level";
   const readLS = (k, d = "") => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
   const writeLS = (k, v) => { try { localStorage.setItem(k, String(v)); } catch {} };
   // 섬 자리(C-41 ②) — [말, 단추 그림]. 글자 기호(▲ ▼ ◀ ▶) 대신 선 아이콘(C-57, 2026-10-28)
   const CHEV = (deg) => `<svg class="ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform:rotate(${deg}deg)"><path d="M5 12.5l5-5 5 5"/></svg>`;
-  const SIDE_UI = { top: ["위", CHEV(0)], bottom: ["아래", CHEV(180)], left: ["왼쪽", CHEV(-90)], right: ["오른쪽", CHEV(90)] };
   // 확인 · 빈 동그라미 · 지도 · 관문 아이콘 — 글자 기호(체크 · 동그라미 · 지도 · 문 모양 이모지) 대신 선 아이콘(C-57)
   const OK_ICON = '<svg class="ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5l4 4 8-9"/></svg>';
   const CIRCLE = '<svg class="ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="10" cy="10" r="6"/></svg>';
   const MAP_ICON = '<svg class="ic lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
   const GATE_ICON = '<svg class="ic lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 20v-8.5a6 6 0 0 1 12 0V20"/><path d="M4 20h16"/><path d="M9.5 20v-7.5a2.5 2.5 0 0 1 5 0V20"/></svg>';
-  let side = QU ? QU.sideOf(readLS(SIDE_KEY, "right")) : "right", qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
+  const side = "right";   // 섬은 작업실 오른쪽만(2026-10-28 합의 — 위 · 아래 · 왼쪽 단추를 뺐다, C-62). quest.js SIDES는 저장값 호환용으로 남아 있다
+  let qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
   // C-53(2026-10-28): 작업실 세 칸 — 파일 칸 · 오른쪽 칸을 접었는지(이 컴퓨터에 기억), 글 칸의 줄 위치(상태 줄 — 다시 그릴 때만 보인다, 치는 동안은 그리지 않는다)
   let wnavOpen = readLS("floe:ws-nav", "1") !== "0", wsideOpen = readLS("floe:ws-side", "1") !== "0", caretLine = 0;
   const GR = window.FloeGreet;   // 켤 때 인사의 시간표 · 규칙(greet.js, C-10 2026-10-20). 없으면 인사 움직임 없이 카드만
@@ -1069,7 +1069,7 @@
       <div class="main"><div class="log" data-log>${st.chat.map((m) => `<div class="msg ${m.who}"><div class="b">${m.html}</div></div>`).join("")}${
         working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast(mine()) ? ` — ${esc(stepLine(aiLast(mine())))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
         ${proposalsHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
-        ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts fixed">${more.map(chip).join("")}</div>` : ""}
+        ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts more" id="more-chips">${moreOpen ? more.map(chip).join("") : ""}<button type="button" class="b ghost mtg" data-act="more-toggle" aria-expanded="${moreOpen}" aria-controls="more-chips">${moreOpen ? "접기" : `더 보기${unreadN() ? ` · 알림 ${unreadN()}` : ""}`}</button></div>` : ""}
         <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`;
   }
   // 채팅 입력(C-22) — 상황에 따라: 준비 계획 · 맡길 일(C-35, planSay) / 처음 — 원하는 것(C-36, startDraft) / 퀘스트 한 줄 적기 · 고쳐 적기 / 궁금한 것 / 직접 쓴 답 / 바뀐 작업(진짜 AI)
@@ -1295,22 +1295,24 @@
   //   처음은 '맞춤'(줌 · 다시 배치, R-11). 가운데 단추의 글(맞춤 · n%)은 canvas-pan.js가 바꾼다
   const CV_HINT = "캔버스 — 끌어서 옮겨요. ⌘ 또는 Ctrl을 누른 채 휠(트랙패드는 두 손가락 오므리기)로 크게 · 작게, 키보드는 + − 0과 화살표";
   const CV_TOOLS = `<div class="cv-tools" role="group" aria-label="캔버스 크기"><button type="button" data-cv="out" aria-label="작게" title="작게 (−)">−</button><button type="button" class="cv-z" data-cv="fit" aria-pressed="true" aria-label="화면에 맞춤 (지금 맞춤)" title="화면에 맞춤 (0)">맞춤</button><button type="button" data-cv="in" aria-label="크게" title="크게 (+)">+</button></div>`;
-  function canvasPane(n) {
-    const s = N.STAGES[n], q = st.quest && st.quest.chap === n ? st.quest : null, r = st.results[n], ci = q ? QU.curIdx(q) : -1;
-    let floAt = "";
-    const cell = (pos, k, no, name, body, ft, extra) => { if (k === "now" && !floAt) floAt = pos; return `<div class="cv-c ${pos} ${k}"><p class="ch">${no ? `${no} ` : ""}${name}<em>${{ now: "지금", done: "끝" }[k] || ""}</em></p><p>${esc(body)}</p>${extra || ""}${ft ? `<p class="ft">${esc(ft)}</p>` : ""}</div>`; };
-    const p = q ? QU.progress(q) : null;
-    const now = st.busy ? "플로로가 살펴보는 중" : st.finished ? "모든 장을 끝냈어요" : !q && !st.j ? "채팅에서 원하는 것을 말하면 1단계 초안을 만들어요" : q && q.phase === "draft" ? "퀘스트를 받기 전 — 노트북 탭에서 받아요" : q && q.phase === "done" ? "보고했어요 — 넘어가기 전 확인은 섬에서" : q && ci >= 0 ? `${p.n}개 중 ${p.k}번째 칸 — ${QU.shortOf(q.objs[ci].name)}` : q ? "칸을 다 적었어요 — 완료 보고" : progress();
+  // 단계 칩(R-9 → C-58, 2026-10-29): 캔버스에서 머리 줄로. '시작 (확인) · 1 (확인) V.1 · 2 (확인) V.2 · 3 · 4 ~ 8' — 지금 칩은 번호만(이름은 옆의 단계 띠에 한 번), 모양은 C-59 st-*
+  function stageChips(n) {
+    const q = st.quest && st.quest.chap === n ? st.quest : null;
     const chipCls = (x) => (st.finished ? "done" : stepClass(x.n));   // 다 마치면 마지막 장도 ✓(stepClass는 finished를 모른다 — 새 맥락 리뷰 2026-10-26)
     const ks = N.STAGES.map((x) => chipCls(x) || (x.n === n ? "cur" : "")), last = N.STAGES.length - 1, i0 = ks.findIndex((k, i) => k !== "done" && k !== "cur" && i > ks.lastIndexOf("cur"));   // 아직인 장은 하나로 묶는다(목업 "3 ~ 7"). 아직 시작 전(st.j 없음)이어도 지금 장은 따로
     // R-9(C-42, 2026-10-27): 칩은 머리와 같은 앱 번호(1~8 — 코드 n + 1). '시작 (확인 아이콘)' · 지난 장 'n (확인 아이콘) V.n'(V.n은 스토리보드대로 관문마다 하나 — C-23 ①이 정해지면 그 규칙으로) · 지금 장 'n 짧은 이름' · 뒤 장 'n+1 ~ 8'.
     //   줌에서는 칩 줄이 판 오른쪽 끝 안에서 줄 바꿈(app.css) — 이름이 붙어 길어진다
     const dn = (x) => x.n + 1, started = !!(st.j || st.idea || q);
-    const chip = (x, k) => `<span class="${k}" title="${LB(x.n)} · ${esc(x.title)}">${k === "done" ? `${dn(x)} ${OK_ICON} V.${dn(x)}` : k === "cur" ? `${dn(x)} ${esc(x.short)}` : dn(x)}</span>`;
-    const chips = `<span class="${started ? "done" : "cur"}" title="시작 — 무엇을 만들지 말하기">${started ? `시작 ${OK_ICON}` : "시작"}</span>` + (i0 < 0 || i0 === last ? N.STAGES.map((x, i) => chip(x, ks[i])) : [...N.STAGES.slice(0, i0).map((x, i) => chip(x, ks[i])), `<span title="${LB(N.STAGES[i0].n)} ~ ${LB(N.STAGES[last].n)}">${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}</span>`]).join("");
-    const pr = n > 0 ? st.results[n - 1] : null;
-    const prev = n > 0 ? `<div class="cv-bd prev">보드 · ${OK_ICON} 지남${pr && pr.passed ? ` · ${esc(pr.passed.slice(5))}` : ""}<b>${LB(n - 1)} · ${esc(N.STAGES[n - 1].title)}</b></div>` : `<div class="cv-bd prev later">보드 · 처음이에요<b>지난 장 없음</b></div>`;
-    const next = n + 1 < N.STAGES.length ? `<div class="cv-bd next later">보드 · 관문을 넘으면 열려요<b>${LB(n + 1)} · ${esc(N.STAGES[n + 1].title)}</b></div>` : `<div class="cv-bd next later">보드 · 다 마치면<b>다음 프로젝트 — 배운 것을 들고 가요</b></div>`;
+    const chip = (x, k) => `<span class="${k} st-${k === "cur" ? "now" : k === "done" ? "done" : "later"}" title="${LB(x.n)} · ${esc(x.title)}">${k === "done" ? `${dn(x)} ${OK_ICON} V.${dn(x)}` : dn(x)}</span>`;
+    const chips = `<span class="${started ? "done st-done" : "cur st-now"}" title="시작 — 무엇을 만들지 말하기">${started ? `시작 ${OK_ICON}` : "시작"}</span>` + (i0 < 0 || i0 === last ? N.STAGES.map((x, i) => chip(x, ks[i])) : [...N.STAGES.slice(0, i0).map((x, i) => chip(x, ks[i])), `<span class="st-later" title="${LB(N.STAGES[i0].n)} ~ ${LB(N.STAGES[last].n)}">${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}</span>`]).join("");
+    return `<div class="cv-stg" aria-label="단계">${chips}</div>`;
+  }
+  function canvasPane(n) {
+    const q = st.quest && st.quest.chap === n ? st.quest : null, r = st.results[n], ci = q ? QU.curIdx(q) : -1;
+    let floAt = "";
+    const cell = (pos, k, no, name, body, ft, extra) => { if (k === "now" && !floAt) floAt = pos; return `<div class="cv-c ${pos} ${k} st-${k}${pos === "c6" ? " st-gate" : ""}"><p class="ch">${no ? `${no} ` : ""}${name}<em>${{ now: "지금", done: "끝" }[k] || ""}</em></p><p>${esc(body)}</p>${extra || ""}${ft ? `<p class="ft">${esc(ft)}</p>` : ""}</div>`; };
+    const p = q ? QU.progress(q) : null;
+    const now = st.busy ? "플로로가 살펴보는 중" : st.finished ? "모든 장을 끝냈어요" : !q && !st.j ? "채팅에서 원하는 것을 말하면 1단계 초안을 만들어요" : q && q.phase === "draft" ? "퀘스트를 받기 전 — 노트북 탭에서 받아요" : q && q.phase === "done" ? "보고했어요 — 넘어가기 전 확인은 섬에서" : q && ci >= 0 ? `${p.n}개 중 ${p.k}번째 칸 — ${QU.shortOf(q.objs[ci].name)}` : q ? "칸을 다 적었어요 — 완료 보고" : progress();
     const line = q && ci >= 0 ? (q.lines[ci] || [])[0] : "", draft = q && ci >= 0 ? QU.proposalOf(q, ci) : "";
     const prepC = st.prep && st.prep.ok && st.prep.cards ? st.prep.cards[n] : null, prepThink = prepC ? prepC.think : "";   // C-54 준비된 퀘스트 — 그 장에 들어서면 ① 생각의 초안 자리에
     const think = q && ci >= 0 ? cell("c1", "now", "①", "생각", line || draft || prepThink || "비었어요 — 채팅에서 같이 적어요", !line && draft ? "플로로 초안 — 채팅에서 맞는지 봐요" : !line && prepThink ? `준비된 퀘스트 — ${prepC.from}` : "")
@@ -1331,24 +1333,12 @@
     const ver = cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 책에 V.${n + 1}`, "대회 뒤 (C-23)");
     // R-5 관문(C-42): 남은 기준 수와 '안 됨'인 기준 이름(짧은 이름) — 셋까지, 나머지는 +n
     const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met).map((x) => QU.shortOf(x.text)) : [];
-    const ul = unmet.length ? `<ul class="cv-unmet">${unmet.slice(0, 3).map((x) => `<li>안 됨 · ${esc(x)}</li>`).join("")}${unmet.length > 3 ? `<li>+${unmet.length - 3}</li>` : ""}</ul>` : "";
-    const gate = r && r.passed ? cell("c6", "done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : holding() ? cell("c6", "later", "", "관문", "멈춰 둔 단계 — 섬에서 다시 열어요") : allDone() ? cell("c6", "now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("c6", "later", "", "관문", st.j ? `남은 기준 ${left()}` : "할 일을 다 하면 열려요", "", ul);
-    const terms = [...new Set(crits(n).map((c) => c.term).filter(Boolean))], tl = terms[0] && G ? G.explain(terms[0]) : "";   // 배울 말 — 이 장의 용어 첫 것과 풀이(glossary.js)
-    const learn = `<div class="cv-learn"><b>배울 말${terms[0] ? ` · ${esc(terms[0])}` : ""}</b>${terms[0] ? esc(tl || "도전과제 탭 '이 장에서 쓰는 말'에서") : "이 장은 새 말이 없어요"}${terms.length > 1 ? ` <small>+${terms.length - 1}</small>` : ""}</div>`;
+    const ul = unmet.length ? `<details class="cv-unmet-d"><summary>남은 기준 ${unmet.length}</summary><ul class="cv-unmet">${unmet.slice(0, 3).map((x) => `<li>안 됨 · ${esc(x)}</li>`).join("")}${unmet.length > 3 ? `<li>+${unmet.length - 3}</li>` : ""}</ul></details>` : "";   // C-60: 처음엔 접혀 있다
+    const gate = r && r.passed ? cell("c6", "done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : holding() ? cell("c6", "later", "", "관문", "멈춰 둔 단계 — 섬에서 다시 열어요") : allDone() ? cell("c6", "now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("c6", "later", "", "관문", st.j ? (unmet.length ? "넘어가기 전 확인" : `남은 기준 ${left()}`) : "할 일을 다 하면 열려요", "", ul);   // 남은 기준 수는 접힌 줄(details)에 한 번만
     const [fx, fy] = FLO_AT[floAt || "c1"];
-    return `<div class="cvw"><div class="cv" tabindex="0" role="region" aria-label="${CV_HINT}"><div class="cvp"><div class="cvb" style="--fa:${floAt || "c1"}"><div class="cv-now">지금 하는 일 <b>${esc(now)}</b></div><div class="cv-stg" aria-label="단계">${chips}</div>${prev}${next}<div class="cv-frame"></div><div class="cv-bh"><b>${LB(n)} · ${esc(s.title)}</b><span>퀘스트 한 바퀴 — 다섯 칸</span></div>
-      ${think}${fileCard()}${learn}${ARROWS}${act}${rec}${save}${ver}${gate}<div class="cv-flo" style="--fx:${fx};--fy:${fy}" title="플로로 — 지금 칸 옆에">${FLO_MINI}</div></div></div></div>${CV_TOOLS}</div>`;
-  }
-  // 파일 카드(C-41 ④, 두승현 결정 2026-10-27 "이름과 줄 수만"): Claude Code가 고친 · 만든 파일 — 가장 최근 세션에서 이름과 +/− 줄 수만(AI 진행의 훅이 이미 보내는 것, API.md 3-2-1). 줄 내용은 서버가 받지 않는다. 자리는 ① 생각 아래(목업)
-  function fileCard() {
-    const s = latestSession(), seen = new Map();
-    for (const x of ((s && s.steps) || []).slice().reverse()) {
-      if (!x.what || !(x.add || x.del)) continue;
-      if (!seen.has(x.what)) { if (seen.size >= 5) continue; seen.set(x.what, { add: 0, del: 0 }); }   // 다섯 파일만 — 더 오래된 걸음도 그 다섯의 줄 수에는 더한다(세션은 50걸음까지, API.md 3-12)
-      const f = seen.get(x.what); f.add += x.add || 0; f.del += x.del || 0;
-    }
-    const rows = [...seen].map(([name, f]) => `<li><span>${esc(name)}</span><small>${f.add ? `+${f.add}` : ""}${f.add && f.del ? " " : ""}${f.del ? `−${f.del}` : ""}</small></li>`).join("");
-    return `<div class="cv-file"><p class="ch">파일 · 바뀐 줄 수<em>${s && aiMode === "example" ? "예시" : s ? esc(wsFull() || s.project || "") : ""}</em></p>${rows ? `<ul>${rows}</ul>` : `<p class="ft">아직 — Claude Code가 파일을 고치면 이름과 줄 수가 여기에 와요</p>`}</div>`;
+    // C-58(2026-10-29): 정보마다 집 하나 — 단계 이름 · 칩은 머리 줄(stageChips), '지금 하는 일' · 작은 플로로는 섬 카드가 보이는 동안 그리지 않는다(섬이 접혔을 때만), 보드 · 배울 말 · 파일 카드는 뺐다
+    return `<div class="cvw"><div class="cv" tabindex="0" role="region" aria-label="${CV_HINT}"><div class="cvp"><div class="cvb" style="--fa:${floAt || "c1"}">${colFolded() ? `<div class="cv-now">지금 하는 일 <b>${esc(now)}</b></div>` : ""}<div class="cv-frame"></div><div class="cv-bh"><span>퀘스트 한 바퀴 — 다섯 칸</span></div>
+      ${think}${ARROWS}${act}${rec}${save}${ver}${gate}${colFolded() ? `<div class="cv-flo" style="--fx:${fx};--fy:${fy}" title="플로로 — 지금 칸 옆에">${FLO_MINI}</div>` : ""}</div></div></div>${CV_TOOLS}</div>`;
   }
   // 파일 칸(C-41 ⑥ → C-42 R-8, 2026-10-27 이재엽 버튼 "전부" · "깊이 3 · 200개"): 작업실 왼쪽의 폴더 트리. 서버로 연 화면은 GET /api/files(API.md 3-25 — 연결한 폴더의 이름만, 읽기만)로 진짜 목록을,
   //   서버 없이 · 연습 모드 · 폴더를 모르면 아래 예시 그대로(목업의 예시 — [이름, 안쪽인가, 상태 글, 모양])에 '예시' 표시. 지금 장 문서는 '● 지금', 지난 장 문서는 '읽음', 폴더는 눌러 접고 펼친다
@@ -1366,7 +1356,7 @@
   const fIcon = (k) => `<i class="fi" aria-hidden="true">${FN_ICON[k] || FN_ICON.file}</i>`;
   const fKind = (name) => (/\.(md|mdx|markdown|txt)$/i.test(name) ? "md" : /\.(m?[jt]sx?|cjs|py|java|kt|go|rb|rs|c|h|cc|cpp|cs|php|swift|html?|css|scss|json|ya?ml|toml|sh|sql|vue|svelte)$/i.test(name) ? "code" : "file");
   const exRow = ([name, inner, tag, k, open]) => { const dir = k === "dir";
-    return `<li class="${k} d${inner ? 2 : 1}"><span class="fn-x">${dir ? `<i class="chev-w${open ? " on" : ""}" aria-hidden="true">${FN_CHEV}</i>${fIcon(open ? "open" : "dir")}` : `<i class="chev-w"></i>${fIcon(fKind(name))}`}<span>${esc(name)}</span></span>${tag ? `<small>${esc(tag)}</small>` : ""}</li>`; };
+    return `<li class="${k === "now" ? "st-now" : k} d${inner ? 2 : 1}"><span class="fn-x">${dir ? `<i class="chev-w${open ? " on" : ""}" aria-hidden="true">${FN_CHEV}</i>${fIcon(open ? "open" : "dir")}` : `<i class="chev-w"></i>${fIcon(fKind(name))}`}<span>${esc(name)}</span></span>${tag ? `<small>${esc(tag)}</small>` : ""}</li>`; };
   async function loadFiles() {
     if (!canLive || st.mode === "fixture") { st.files = { src: "example", why: canLive ? "연습 모드예요" : "서버 없이 열었어요" }; return; }   // 연습 모드는 진짜 폴더를 섞지 않는다(README와 같이)
     try {
@@ -1396,7 +1386,7 @@
       else { if (closedAt && x.depth > closedAt) return ""; closedAt = 0; }
       const isOpen = x.dir && open.has(String(i)); if (x.dir && !isOpen) closedAt = x.depth;
       const tag = tagOf(x), sel = !!cur && cur.path === x.path && st.qtab === "file";
-      return `<li class="${x.dir ? "dir" : tag === "지금" ? "now" : ""}${sel ? " sel" : ""} ${q ? "d1" : `d${x.depth}`}">${x.dir ? `<button type="button" data-act="fn-dir" data-v="${i}" aria-expanded="${isOpen}"><i class="chev-w${isOpen ? " on" : ""}">${FN_CHEV}</i>${fIcon(isOpen ? "open" : "dir")}<span>${esc(x.name)}</span>${kids[i] ? `<small class="fn-n">${kids[i]}</small>` : ""}</button>` : `<button type="button" class="fn-file" data-act="fn-open" data-v="${i}" aria-current="${sel ? "true" : "false"}"><i class="chev-w"></i>${fIcon(fKind(x.name))}<span>${esc(q ? x.path : x.name)}</span></button>`}${tag ? `<small>${tag}</small>` : ""}</li>`;
+      return `<li class="${x.dir ? "dir" : tag === "지금" ? "st-now" : ""}${sel ? " sel" : ""} ${q ? "d1" : `d${x.depth}`}">${x.dir ? `<button type="button" data-act="fn-dir" data-v="${i}" aria-expanded="${isOpen}"><i class="chev-w${isOpen ? " on" : ""}">${FN_CHEV}</i>${fIcon(isOpen ? "open" : "dir")}<span>${esc(x.name)}</span>${kids[i] ? `<small class="fn-n">${kids[i]}</small>` : ""}</button>` : `<button type="button" class="fn-file" data-act="fn-open" data-v="${i}" aria-current="${sel ? "true" : "false"}"><i class="chev-w"></i>${fIcon(fKind(x.name))}<span>${esc(q ? x.path : x.name)}</span></button>`}${tag ? `<small>${tag}</small>` : ""}</li>`;
     }).join("");
     const ft = f.total ? `${f.total}개 · 깊이 ${f.depth}까지 · 이름만 봐요${f.cut ? " · 더 있어요(200개까지만)" : ""}${f.unread ? ` · 읽지 못한 폴더 ${f.unread}` : ""}` : "비어 있어요 — 이 폴더에 보일 파일이 없어요";
     return openGroup() + `<p class="fn-h"><b>${fIcon("open")}<span>${esc(f.project || project() || "")}</span></b></p><input class="fn-find" type="search" data-act="fn-find" value="${esc(st.fnFind)}" placeholder="파일 이름 찾기" aria-label="파일 이름 찾기"><ul class="fn">${rows || (q ? `<li class="d1"><span>'${esc(st.fnFind)}'이 든 파일이 없어요</span></li>` : "")}</ul><p class="fn-ft">${ft}</p>`;
@@ -1622,12 +1612,14 @@
     const pane = st.qtab === "canvas" ? canvasPane(n) : st.qtab === "tree" ? treePane() : st.qtab === "lib" ? bookPane() : st.qtab === "file" ? filePane() : st.qtab === "map" ? mapPane(n) : questTab();
     // 머리 한 줄(⑥, 목업): 프로젝트 · 단계 이름 · 탭 · LV · 조개 · 크기 · 닫기. 왼쪽 파일 칸(.wnav)은 탭에 상관없이 — 펼쳐진 환경
     // 크기(R-1, 2026-10-27 이재엽 버튼 "'화면 가득' 하나로"): 앱에서는 창이 작업 영역 가득 · 사람이 바꾼 크기를 기억(main.js) — 아래 style은 브라우저 판에서만 쓰인다(win.html은 auto!important로 덮는다). S/M/L은 뺐다
-    return `<div class="win qwin${pop}" role="dialog" aria-label="작업실 창" style="width:${BROWSER_WIN[0]}px;height:${BROWSER_WIN[1]}px"><div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="wst">${LB(n)} · ${esc(N.STAGES[n].title)}</span>
+    // C-62 머리 줄 하나(2026-10-29): 머리(.wh)는 판(.win) 밖의 형제 — 창 전체 폭의 첫 줄(win.html #root · 브라우저 .wsx 격자). 단계 이름 한 번 + 단계 칩(C-58), 탭, LV · 조개, 섬 단추 묶음(hisl — 집 · 설정 · 열어 두기 · 접기)은 섬 쪽(오른쪽) 끝
+    const wh = `<div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="tb-stage" aria-live="polite">${stageHead()}</span>${stageChips(n)}
         <div class="wtabs" role="tablist" aria-label="작업실 창">${QTABS.map(([id, label]) => `<button type="button" role="tab" data-act="qtab" data-tab="${id}" aria-selected="${st.qtab === id}">${label}</button>`).join("")}${fileTabs()}</div>
         <span class="wtgs"><button type="button" class="wtg" data-act="wnav-toggle" aria-pressed="${wnavOpen}" aria-label="파일 칸 ${wnavOpen ? "접기" : "펼치기"}" title="파일 칸 ${wnavOpen ? "접기" : "펼치기"}">${PANE_L}</button><button type="button" class="wtg" data-act="wside-toggle" aria-pressed="${wsideOpen}" aria-label="오른쪽 칸 ${wsideOpen ? "접기" : "펼치기"}" title="오른쪽 칸 ${wsideOpen ? "접기" : "펼치기"}${WINS && !colFolded() ? " — 섬을 펼친 동안은 접혀요" : ""}">${PANE_R}</button></span><span class="grow"></span>
-        <span class="wlv" title="칭호 · ${esc(QU.rankOf(Math.min(level, 7)))}">LV ${level} · ${coin()}${st.shells}</span>
+        <span class="wlv" title="칭호 · ${esc(QU.rankOf(Math.min(level, 7)))}">LV ${level} · <button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개">${coin()}<span>${st.shells}</span></button></span>${hisl()}
         ${WINS ? `<button type="button" class="ti wfull" data-act="qfull" aria-label="작업실을 화면 가득" title="화면 가득">${FULL_ICON}</button>` : ""}
-        <button type="button" class="ti" data-act="qwin" aria-label="작업실 창 닫기" title="닫기">${X_ICON}</button></div>
+        <button type="button" class="ti" data-act="qwin" aria-label="작업실 창 닫기" title="닫기">${X_ICON}</button></div>`;
+    return `${wh}<div class="win qwin${pop}" role="dialog" aria-label="작업실 창" style="width:${BROWSER_WIN[0]}px;height:${BROWSER_WIN[1]}px">
       <div class="wmain">${wnavOpen ? `<nav class="wnav" aria-label="파일">${fileNav()}</nav>` : ""}<div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : st.qtab === "file" ? `${st.fileSel}|${(st.openFiles[st.fileSel] || {}).edit ? "e" : "v"}` : ""}`)}">${pane}</div>${sideOn() ? `<aside class="wside" aria-label="이 문서 · 퀘스트">${wsideHTML(n)}</aside>` : ""}</div></div>`;
   }
   // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 고한결 [정할 것 2 · 5]
@@ -1635,7 +1627,7 @@
   const rewardSlots = (q) => `<i class="has" tabindex="0" aria-label="무지개 조개 ×1" data-tt="무지개 조개 ×1|장을 지나면 하나. 셋이면 열어요(뽑기는 다음 판)">${coin()}</i><i class="has" tabindex="0" data-tt="책갈피|직접 쓴 말은 책에 남아요">▮</i><i class="has" tabindex="0" data-tt="칭호 '${esc(QU.rankOf(Math.min(7, q.chap + 1)))}'|이 장을 지나면 칭호가 바뀌어요">🏅</i><i></i><i></i><i></i><i></i>`;
   // 퀘스트 판 — 없음 · 받기 화면(이벤트 창 짜임: 제목 띠 + ? · 그림 · 참여 조건 · 할 일 · 기간 · REWARD · 큰 받기 단추) · 공책(왼쪽 목차 · 오른쪽 줄 — 여기서 고친다)
   // 퀘스트 창 쉬운 말(C-40, 2026-10-26 — 이재엽 "퀘스트에서도 자세히 보이지만 어렵게 보이고 있어" · 버튼 "짧은 이름 + 쉬운 한 줄"): 목차 · 공책은 짧은 이름과 쉬운 한 줄, 원래 할 일 문장 · 용어는 '자세히 보기'에서
-  let qmore = false;
+  let qmore = false, moreOpen = false;   // moreOpen — 늘 있는 칩 줄을 펼쳤나(C-60, 2026-10-29: 주 단추는 '보내기' 하나, 칩은 '더 보기' 뒤에)
   function questPane() {
     const q = st.quest;
     if (!q || q.phase === "done") return `<div class="qempty"><b>${st.finished ? "모든 장을 끝냈어요" : q ? `${LB(q.chap)} 퀘스트를 보고했어요` : st.j ? "다음 퀘스트는 넘어가기 전 확인을 지나면 받아요" : "아직 퀘스트가 없어요"}</b>${
@@ -1651,7 +1643,7 @@
         <button type="button" class="join" data-act="${ed ? "quest-save" : "quest-ok"}">${ed ? "이대로 받기" : "퀘스트 받기"}</button>
         <div class="sub"><button type="button" data-act="${ed ? "quest-cancel" : "quest-fix"}">${ed ? "고치기 취소" : "고쳐 주세요"}</button><button type="button" data-act="quest-later">나중에</button></div></div>`;
     const toc = q.objs.map((o, i) => { const cls = metOf(i) || QU.filled(q, i) ? "done" : i === ci ? "" : "lock";
-      return `<button type="button" data-act="quest-sel" data-i="${i}" aria-pressed="${q.sel === i}" class="${cls}" data-tt="${esc(QU.nameOf(q, i))}|${esc(QU.easyOf(o.name))}">${ROMAN(i)}. ${esc(QU.nameOf(q, i))}<small>${cls === "done" ? (metOf(i) ? "끝냄 ✓" : "적음") : cls === "lock" ? "★ 아직" : "지금"}</small></button>`; }).join("")
+      return `<button type="button" data-act="quest-sel" data-i="${i}" aria-pressed="${q.sel === i}" class="st-${cls === "done" ? "done" : cls === "lock" ? "later" : "now"}" data-tt="${esc(QU.nameOf(q, i))}|${esc(QU.easyOf(o.name))}">${ROMAN(i)}. ${esc(QU.nameOf(q, i))}<small>${cls === "done" ? (metOf(i) ? "끝냄 ✓" : "적음") : cls === "lock" ? "★ 아직" : "지금"}</small></button>`; }).join("")
       + ((q.side || []).length ? `<div class="side-h">곁 퀘스트 — 안 해도 돼요</div>${q.side.map((s) => `<button type="button" class="lock" disabled title="만드는 크기를 키우면 할 일이 돼요">${s.icon} ${esc(s.name)}<small>★ 더 크게 만들 때</small></button>`).join("")}` : "");
     const sts = qstates(q), badge = (i) => { const x = sts[i]; if (!x || x.state === "write") return ""; const w = QS.STATE_WORD[x.state]; return `<small class="qs qs-${x.state}" title="${esc(x.why || "")}">${w}${x.from ? ` · ${LB(x.from.s)} ${ROMAN(x.from.i)}` : ""}</small>`; };   // C-56 상태 넷
     const lines = q.objs.map((o, i) => { const ls = q.lines[i] || [], ok = metOf(i);
@@ -1659,9 +1651,9 @@
         ls.map((l, k) => (ed ? `<input data-act="quest-line" data-i="${i}" data-k="${k}" value="${esc(l)}" aria-label="적은 줄" maxlength="200">` : `<span class="lw">${esc(l)}</span>`)).join("")}${!ls.length && !ed ? `<span class="lw empty">${q.draft ? "아직 — 채팅에서 맞는지 봐요" : "아직 — 채팅에서 한 줄 적어요"}</span>` : ""}</span><span class="n">${ed ? `${ls.length} / <input type="number" min="1" max="5" value="${o.need}" data-act="quest-need" data-i="${i}" aria-label="개수">` : o.need > 1 ? `${ls.length} / ${o.need}` : ls.length ? "✓" : ""}</span></div>`; }).join("");
     return `<div class="book"><div class="page l"><h4>목차 · ${LB(q.chap)}</h4><div class="toc">${toc}</div></div>
       <div class="page r"><h3>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</h3><div class="meta">${LB(q.chap)}${q.title !== N.STAGES[q.chap].title ? ` ${esc(N.STAGES[q.chap].title)}` : ""} · 플로로가 만들었어요 · ${done ? "다 적음" : "하는 중"}</div>
-        <div class="lines">${lines}</div><button type="button" class="lnk qmore" data-act="qmore" aria-expanded="${qmore}">${qmore ? "간단히 보기" : "자세히 보기 — 원래 할 일 문장 · 용어"}</button><p>${esc(q.desc)}</p><p><b>왜 하나요</b> — ${esc(q.why)}</p>
+        <div class="lines">${lines}</div><details class="qdesc"><summary>자세히 보기 · 왜 하나요</summary><p>${esc(q.desc)}</p><p><b>왜 하나요</b> — ${esc(q.why)}</p><button type="button" class="lnk qmore" data-act="qmore" aria-expanded="${qmore}">${qmore ? "간단히 보기" : "원래 할 일 문장 · 용어 보기"}</button></details>
         <div class="rw"><span>보상</span><span class="piece">${coin()}무지개 조개 ×1</span><span class="piece">🏅 ${esc(QU.rankOf(Math.min(7, q.chap + 1)))}</span></div>
-        <div class="pacts">${ed ? `<button type="button" class="pri" data-act="quest-save">저장</button><button type="button" data-act="quest-cancel">취소</button><span></span>` : `<button type="button" class="pri" data-act="quest-report" ${done ? "" : "disabled"}>완료 보고</button><button type="button" data-act="quest-hint">힌트</button><button type="button" data-act="quest-edit">고치기</button>`}</div></div></div>`;
+        <div class="pacts">${ed ? `<button type="button" class="pri" data-act="quest-save">저장</button><button type="button" data-act="quest-cancel">취소</button><span></span>` : `<button type="button" class="${done ? "pri" : ""}" data-act="quest-report" ${done ? "" : "disabled"}>완료 보고</button><button type="button" data-act="quest-hint">힌트</button><button type="button" data-act="quest-edit">고치기</button>`}</div></div></div>`;
   }
   // 도전과제 판(C-22) — 세로 탭 = 장(여덟), 그림만 크게, 마우스를 올리면 설명(data-tt). 상태는 지금 단계(st.j)와 퀘스트(적은 줄)에서 — 단계 · 할 일 · 판정 규칙은 그대로
   //   나무 위에 그 장의 '관문 전에 알아 둘 것'(C-35, 2026-10-24 — 옛 배우기 탭): 그 장에서 처음 쓰는 기능의 튜토리얼(tutorial.js forChap) · 이 장에서 쓰는 말(용어 풀이)
@@ -1687,7 +1679,7 @@
     // ⑧ 고른 끝난 · 지금 카드는 그 자리에서 커진다 — 줄 하나 = 할 일 → 문서의 절 ← 재료. 줄을 누르면 오른쪽 칸(wsideHTML .ws-line)
     const big = (c) => { const cells = stageCells(c.n), doc = c.doc.path.replace(/^docs\//, "");
       const rows = cells.map((x, k) => `<li class="sm-row${x.line ? "" : " miss"}${x.by ? ` by-${x.by}` : ""}${st.mapLine && st.mapLine.n === c.n && st.mapLine.k === k ? " sel" : ""}"><button type="button" data-act="map-line" data-i="${c.n}" data-k="${k}" aria-pressed="${!!(st.mapLine && st.mapLine.n === c.n && st.mapLine.k === k)}"><b>${ROMAN(k)}</b><span class="sm-rn">${esc(QU.shortOf(x.name))}</span><span class="sm-rl">${x.line ? esc(x.line) : x.draft ? `플로로 초안: ${esc(x.draft)}` : "비었어요"}</span><small>→ ${esc(doc)} ${esc(QU.shortOf(x.name))} 절${x.from.length ? ` · ← ${x.from.map((f) => esc(refLabel(f))).join(" · ")}` : ""}</small></button></li>`).join("");
-      return `<div class="sm-cell big"><button type="button" class="sm-card ${c.state} sel big" data-act="map-card" data-i="${c.n}" aria-pressed="true" aria-label="${LB(c.n)} ${esc(c.title)} — 가까이 보고 있어요. 다시 누르면 작아져요"><span class="sm-no">${c.label}</span><span class="sm-t">${esc(c.title)}</span><span class="sm-line">${c.state === "done" ? "지났어요" : "지금"} · 줄을 누르면 오른쪽 칸에 누가 정했나 · 재료 · 다음 단계</span></button><ol class="sm-rows" aria-label="${LB(c.n)}의 칸">${rows}</ol></div>`; };
+      return `<div class="sm-cell big"><button type="button" class="sm-card st-${c.state} sel big" data-act="map-card" data-i="${c.n}" aria-pressed="true" aria-label="${LB(c.n)} ${esc(c.title)} — 가까이 보고 있어요. 다시 누르면 작아져요"><span class="sm-no">${c.label}</span><span class="sm-t">${esc(c.title)}</span><span class="sm-line">${c.state === "done" ? "지났어요" : "지금"} · 줄을 누르면 오른쪽 칸에 누가 정했나 · 재료 · 다음 단계</span></button><ol class="sm-rows" aria-label="${LB(c.n)}의 칸">${rows}</ol></div>`; };
     const card = (c) => { const p = c.prepared, sel = st.mapSel === c.n;
       if (sel && (c.state === "done" || c.state === "now")) return big(c);
       const body = c.state === "later" ? `<span class="sm-note">2단계에서 그려져요</span>`
@@ -1696,13 +1688,13 @@
         : `<span class="sm-line">${p ? esc(p.think.length > 48 ? `${p.think.slice(0, 47)}…` : p.think) : ""}</span><span class="sm-from">${p ? esc(p.from) : ""}</span>`;
       const docLine = `<span class="sm-doc"><code>${esc(c.doc.path.replace(/^docs\//, ""))}</code> ${c.doc.has ? "있음" : c.state === "done" || c.state === "now" ? "아직" : ""}</span>`;
       const input = fix && p ? `<input type="text" data-act="prep-think" data-i="${c.n}" value="${esc(p.think)}" aria-label="${LB(c.n)} ① 생각" maxlength="120">` : "";
-      return `<div class="sm-cell"><button type="button" class="sm-card ${c.state}${sel ? " sel" : ""}" data-act="map-card" data-i="${c.n}" aria-pressed="${sel}" aria-label="${LB(c.n)} ${esc(c.title)} — ${STATE_WORD[c.state]}">
+      return `<div class="sm-cell"><button type="button" class="sm-card st-${c.state}${sel ? " sel" : ""}${c.state === "pending" ? " pending" : ""}" data-act="map-card" data-i="${c.n}" aria-pressed="${sel}" aria-label="${LB(c.n)} ${esc(c.title)} — ${STATE_WORD[c.state]}">
         <span class="sm-no">${c.label}</span><span class="sm-t">${esc(c.title)}</span>${body}${docLine}${c.state === "now" ? `<span class="sm-flo" aria-hidden="true">${cat("idle", 30, { face: true })}</span>` : ""}</button>${input}</div>`; };
     const row1 = m.cards.slice(0, 4).map(card).join(""), row2 = m.cards.slice(4).reverse().map(card).join("");
     const ban = m.canDraw ? `<div class="sm-ban"><b>2단계 칸을 다 채웠어요</b><span>기획서(2단계에서 정한 것)로 3 ~ 8단계의 퀘스트와 문서를 한 번에 그려요</span><button type="button" class="b" data-act="prep-draw">기획서로 3 ~ 8단계 그리기</button></div>`
       : m.drawn && !m.confirmed ? `<div class="sm-ban"><b>퀘스트 ${Object.keys(st.prep.cards).length}개를 준비했어요</b><span>${fix ? "카드마다 ① 생각을 고친 뒤 '맞아요'를 눌러요" : "카드마다 어느 절에서 왔는지 적었어요 — 맞으면 한 번에 넘어가요"}</span><button type="button" class="b" data-act="prep-ok">맞아요 — 이대로 준비해요</button>${fix ? "" : `<button type="button" class="b ghost" data-act="prep-fix">고칠래요</button>`}</div>`
       : m.cur < 2 ? `<div class="sm-ban soft"><span>1단계에서는 길이 한 칸만 보여요. 2단계 칸을 다 채우면 3단계부터 8단계까지의 퀘스트와 문서가 한 번에 그려져요</span></div>` : "";
-    const legend = `<p class="sm-legend"><span class="done">끝남</span><span class="now">지금</span><span class="ready">준비된 퀘스트</span><span class="later">아직 안 그려짐</span><small>카드를 누르면 오른쪽 칸에 그 퀘스트와 문서 — 끝난 · 지금 카드는 커져서 줄마다 보여요</small></p>`;
+    const legend = `<p class="sm-legend">${["done", "now", "ready", "later"].map((k) => `<span><i class="st-${k}" aria-hidden="true"></i>${STATE_WORD[k]}</span>`).join("")}<small>카드를 누르면 오른쪽 칸에 그 퀘스트와 문서 — 끝난 · 지금 카드는 커져서 줄마다 보여요</small></p>`;
     const docs = `<ul class="sm-docs">${m.docs.map((d) => `<li class="${d.has ? "has" : ""}"><code>${esc(d.path)}</code><span>${esc(d.what)}</span><small>${d.has ? "있음" : "아직"}</small></li>`).join("")}</ul>`;
     const ship = FDOCS && st.results[0] && st.results[1] ? `<p class="sm-ship"><button type="button" class="b" data-act="ship-open">문서로 묶어 GitHub에</button><small>지금까지 정한 것을 단계 문서 · 기획서 · 결정 기록으로</small></p>` : "";   // 흐름 보기(jmap)와 같은 단추
     return `<div class="sm">${ban}<div class="sm-grid">${row1}</div><div class="sm-grid back">${row2}</div>${docs}${legend}${ship}</div>`;
@@ -1752,7 +1744,7 @@
       const pr = SM ? SM.pairOf(n) : null, rails = SM ? `<span class="jm-rails" aria-hidden="true">${SM.PAIRS.map(([k, a, b]) => (n >= a && n <= b ? `<i class="${k}${n === a ? " s" : ""}${n === b ? " e" : ""}"></i>` : "<i></i>")).join("")}</span>` : "";
       const pairBtn = pr ? `<button type="button" class="jm-pair ${pr.key}" data-act="pair-sel" data-v="${pr.key}" aria-pressed="${st.pair === pr.key}" title="두 칸 나란히 보기">${pr.role === "decide" ? `정한 것 → ${LB(pr.to)}에서 확인` : `← ${LB(pr.from)}에서 정한 것 확인`}</button>` : "";
       const head = `<div class="jm-h"><b>${LB(n)} · ${esc(s.title)}</b>${date}<span class="jm-count">${got}/${names.length}</span>${pairBtn}</div>`;
-      if (state === "lock") return `<section class="jm-stage lock" data-n="${n}">${rails}${head}${n > cur + 1 ? "" : `<ul class="jm-cells">${names.map((name) => `<li class="jm-lock"><b>${esc(QU.shortOf(name))}</b></li>`).join("")}</ul>`}</section>`;
+      if (state === "lock") return `<section class="jm-stage lock" data-n="${n}">${rails}${head}${n > cur + 1 ? "" : `<details class="jm-peek"><summary>할 일 미리 보기</summary><ul class="jm-cells">${names.map((name) => `<li class="jm-lock"><b>${esc(QU.shortOf(name))}</b></li>`).join("")}</ul></details>`}</section>`;
       const before = Object.keys(st.results).map(Number).filter((k) => k < n).sort((x, y) => x - y);
       const input = n === 0 ? `처음 말한 것${st.idea ? ` “${esc(st.idea.length > 90 ? `${st.idea.slice(0, 90)}…` : st.idea)}”` : ""}`
         : before.length ? before.map((k) => `<span class="jm-pill">${LB(k)}에서 정한 것 ${st.results[k].items.length}칸</span>`).join("") : "지난 단계에서 정한 것";
@@ -1832,7 +1824,6 @@
   function roomGroup() {
     return `${SHELF_ON ? `<button type="button" class="golib" data-act="lib-enter"><span class="bk">${I.lib}</span><span>서재로 가기<small>끝낸 책 · 서고 — 지금 책은 퀘스트 창의 서고 탭에</small></span></button>` : ""}
       ${sgrp(I.scroll, "작업실 · 퀘스트 창", `${srow("이름", `<input class="name-in" data-act="name" value="${esc(userName)}" maxlength="20" placeholder="이름" aria-label="이름">`, "작업실 이름에 보여요 · 이 컴퓨터에만")}
-        ${srow("섬 자리", pick("섬 자리", [["top", "위"], ["bottom", "아래"], ["left", "왼쪽"], ["right", "오른쪽"]], side, "side"), "작업실 창의 가장자리에 붙어요 — 섬 머리의 네 칸 단추로도")}
         <label class="chk"><input type="checkbox" data-act="qauto" ${qauto ? "checked" : ""}>퀘스트를 받으면 작업실이 바로 뜨기</label>`)}
       ${sgrp(coin(), "꾸미기", `<span class="closet">${st.owned.map(QU.itemOf).filter(Boolean).map((it) => `<button type="button" data-act="wear" data-v="${it.id}" aria-pressed="${st.wear[it.slot] === it.id}">${it.emoji} ${esc(it.name)}</button>`).join("")}<button type="button" data-act="gacha">조개 열기 <span class="shells">${coin()}${st.shells}</span></button></span>
         <span class="meta">뽑기로 얻은 것 · 조개 ${st.shells}개</span>`)}`;
@@ -2056,8 +2047,9 @@
   const homeBtn = (on) => `<button class="ti home" data-act="base" aria-pressed="${on}" aria-label="처음으로" title="처음으로 — 플로로와 대화">${I.home}</button>`;
   // 오른쪽 — 연결 표시 · 프로젝트 · 조개 · 설정 창 · 열어 두기 · 접기. 퀘스트 창 단추 · 모아 보기 단추는 2026-10-23에 뺐다(이재엽) — 퀘스트 창은 명령 칸의 책 · 배우기와 '공책 보기'로 연다
   // 섬 자리 네 칸(C-41 ②, 2026-10-27 — 스토리보드 기준 4): 작업실 창이 열려 있을 때만, 앱에서만
-  const dockBtns = () => (WINS && QU && st.qwin ? `<span class="dk" role="group" aria-label="섬 자리">${QU.SIDES.map((s) => `<button type="button" data-act="side" data-v="${s}" aria-pressed="${side === s}" aria-label="섬을 작업실 ${SIDE_UI[s][0]}에" title="섬을 작업실 ${SIDE_UI[s][0]}에">${SIDE_UI[s][1]}</button>`).join("")}</span>` : "");
-  const tbRight = () => `${QU ? `<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="${st.qwin}" title="작업실 켜기 · 끄기 — 캔버스 · 노트북(퀘스트 · 맡길 일) · 도전과제 · 책">퀘스트</button>` : ""}${dockBtns()}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
+  // 작업실 머리 줄의 섬 단추 묶음(C-62): 옆 칸의 섬에는 위 줄이 없으니 집 · 설정 · 열어 두기 · 접기 · 연결 표시를 여기에 — 같은 ACT
+  const hisl = () => `<span class="hisl" role="group" aria-label="섬">${homeBtn(!st.pane)}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>` : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 소식 ${ago(st.feed.at)}"></span>` : ""}<button class="ti" data-act="settings" aria-pressed="${st.settings}" aria-label="설정" title="설정 — 작업실 · 보기 방식 · 연결 · 기록">${I.gear}</button><button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button><button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></span>`;
+  const tbRight = () => `${QU ? `<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="${st.qwin}" title="작업실 켜기 · 끄기 — 캔버스 · 노트북(퀘스트 · 맡길 일) · 도전과제 · 책">퀘스트</button>` : ""}${st.unplug && canLive ? `<span class="led off" title="연결 끊음 — 작업 알림을 받지 않아요. 설정에서 다시 연결해요"></span>`
         : st.feed.at ? `<span class="led on" title="${toolName(st.feed.tool)}와 연결됨 · 마지막 소식 ${ago(st.feed.at)}"></span>` : ""}
       ${project() ? `<span class="tb-proj" title="지금 보고 있는 프로젝트">${esc(project())}</span>` : ""}
       ${QU ? `<button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개">${coin()}<span>${st.shells}</span></button>` : ""}
@@ -2065,6 +2057,7 @@
       <button class="ti" data-act="pin" aria-pressed="${st.userPin}" aria-label="열어 두기" title="열어 두기 — 저절로 접히지 않아요">${I.pin}</button>
       <button class="ti" data-act="fold" aria-label="접기" title="접기 (Esc)">${I.up}</button></div>`;
   // 단계 띠 — 퀘스트를 받는 중이면 퀘스트(적은 줄), 아니면 살펴본 결과(st.j). 둘 다 없으면 시작 전
+  const stageHead = () => stageBand().replace(/<span[\s\S]*$/, "");   // 단계 이름(<b>)만 — 진행은 섬 카드가 보인다(C-58)
   function stageBand() {
     const s = st.j && stage(), q = st.quest;
     if (planNow()) {   // 준비 계획 · 맡길 일(C-35) — 지금 할 퀘스트로 고른 쪽
@@ -2524,11 +2517,12 @@
   if (canLive) setInterval(pollApprovals, 2000);
   if (st.plan && FP && FP.running(st.plan)) setTimeout(() => { const id = FP.running(st.plan), w = st.plan.work && st.plan.work[id]; if (planLive() && w && Number.isFinite(w.at)) watchTask({ at: w.at }, "plan"); else st.plan = FP.failed(st.plan, id); }, 0);   // 다시 켰는데 맡김 중인 줄이 있으면 서버에 다시 묻는다(연습이면 다시 맡길 수 있게)
   // 섬(C-22): 위 줄 + [설정 판 | 알림 · AI 진행 판 | 채팅]. 퀘스트 창은 섬 옆에(.nav.side — 가로로 나란히): side의 반대쪽
-  function islandHTML(enter) {
+  // inCol — 작업실 옆 칸 안의 섬(C-62, 2026-10-29): 위 줄(.tb)은 그리지 않는다 — 집 · 설정 · 열어 두기 · 접기는 작업실 머리 줄의 섬 단추 묶음(hisl)에
+  function islandHTML(enter, inCol = false) {
     const body = st.settings && QU ? settingsPane() : st.pane ? basePane(st.pane) : chatCard(momentToday());
-    const isl = `<div class="isl${enter}">${topbar()}<div class="isl-body">${body}</div>${countdown()}${gachaHTML()}</div>`;
-    if (WINS) return isl;   // 앱: 퀘스트 창은 따로 뜬다(syncWins)
-    return side === "left" ? `${isl}${qwinHTML()}` : `${qwinHTML()}${isl}`;   // 퀘스트 창은 side의 반대쪽(설정이 섬 안으로 들어온 뒤에도 같은 값)
+    const isl = `<div class="isl${enter}">${inCol ? "" : topbar()}<div class="isl-body">${body}</div>${countdown()}${gachaHTML()}</div>`;
+    if (WINS || !st.qwin || inCol) return isl;   // 앱: 작업실은 따로 뜬다(syncWins). inCol이면 섬만(아래 격자가 부른다)
+    return `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow">${islandHTML(enter, true)}</div></div>`;   // 브라우저 판: 앱 창(win.html #root)과 같은 격자 — 머리 줄 한 줄 아래 작업실 판 · 섬 옆 칸
   }
   // ── 앱의 옆 창 둘(C-22): 섬이 창의 내용을 그려 보내고, 창의 누름은 돌아온다(win.js). 열림 · 닫힘 · 내용이 바뀐 것만 보낸다 ──
   const winOpen = { settings: false, quest: false }, winHtml = { settings: "", quest: "" };
@@ -2538,7 +2532,7 @@
   // C-46 R-2(2026-10-27 이재엽 버튼 "펼치면 비킴 · 접으면 알약" · "고른 가장자리에" · 세로 알약 · 설정의 시간대로): 섬이 접혀 있으면(petit · hidden) 옆 칸은 그 가장자리의 알약(folded — 왼쪽 · 오른쪽은 세로)이고 작업실이 넓어진다(win.js · win.html).
   //   알약을 누르면(ACT pill) 펼쳐지고 작업실이 비킨다. 알릴 일(허락 카드 · 보고 · 질문 · 오류)은 peek · alert로 저절로 펼친다(peek는 앱의 작업실 안이면 home으로). 저절로 접히기는 설정 '접히기까지' 그대로(pinned에서 st.qwin을 앱에서는 빼서) — 단 옆 칸에 마우스가 있거나 글을 쓰는 중(colHover · colTyping)이면 안 접히고, 접힌 알약은 더 접히지 않는다
   const colFolded = () => st.ui === "petit" || st.ui === "hidden";
-  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${colFolded() ? " folded" : ""}${colFolded() && st.boot ? " has-bub" : ""}">${colFolded() ? pillHTML() + bootBubble() : islandHTML("")}</div>`;
+  const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${colFolded() ? " folded" : ""}${colFolded() && st.boot ? " has-bub" : ""}">${colFolded() ? pillHTML() + bootBubble() : islandHTML("", true)}</div>`;
   // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선"): 켤 때 알약 옆 말풍선 — 시간대 인사 한 줄(하루 한 번) · 멈춘 곳(단계 · 지금 칸) · 섬 펼치기 / 나중에. 몇 초 뒤(greet.js BUBBLE_MS) 사라진다
   const bootBubble = () => {
     if (!st.boot || !colFolded()) return "";
@@ -2584,7 +2578,7 @@
   }
   // ── 섬의 움직임(C-14, 2026-10-20 — 규칙 · 숫자는 morph.js) ──
   // 바탕(배경 · 그림자)을 가진 요소 — 섬(.isl) · 한 줄(.pill) · 띠(.strip — 바탕 없음)
-  const shapeEl = () => { const el = $nav.querySelector(":scope > .isl") || $nav.querySelector(":scope > :not(.shell):not(.win)"); return el ? (el.classList.contains("isl") ? el : el.querySelector(".pill, .strip") || el) : null; };
+  const shapeEl = () => { const el = $nav.querySelector(":scope > .isl, :scope > .wsx .isl") || $nav.querySelector(":scope > :not(.shell):not(.win):not(.wsx)"); return el ? (el.classList.contains("isl") ? el : el.querySelector(".pill, .strip") || el) : null; };
   const opaque = (c) => !!c && c !== "transparent" && !/^rgba\([^)]*,\s*0\)$/.test(c);
   // 갈아 끼우기 전의 상자 — 자리 · 크기 · 바탕색 · 모서리 · 그림자
   function snapShape() {
@@ -2637,9 +2631,9 @@
     placeFrom = st.place; paneFrom = st.pane;
     deskKeys = {};
     if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); }
-    else if (st.ui === "petit") $nav.innerHTML = `${!WINS && st.qwin ? qwinHTML() : ""}<div class="${enter.trim()}">${pillHTML()}${bootBubble()}</div>`;   // 브라우저 판(C-55): 켤 때 작업실이 열린 채 알약이면 작업실 판도 함께(앱은 창으로 — syncWins)
+    else if (st.ui === "petit") $nav.innerHTML = !WINS && st.qwin ? `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow folded${st.boot ? " has-bub" : ""}">${pillHTML()}${bootBubble()}</div></div>` : `<div class="${enter.trim()}">${pillHTML()}${bootBubble()}</div>`;   // 브라우저 판(C-55): 켤 때 작업실이 열린 채 알약이면 작업실 판도 함께(앱은 창으로 — syncWins)
     else $nav.innerHTML = islandHTML(enter);
-    $nav.classList.toggle("side", !!$nav.querySelector(":scope > .win"));   // 창(설정 · 퀘스트)이 열리면 섬 옆에 나란히(C-22) — 아래에 열리면 글자를 키웠을 때 바로 안 보였다(6.2.0)
+    $nav.classList.toggle("side", !!$nav.querySelector(":scope > .win, :scope > .wsx"));   // 창(설정 · 퀘스트)이 열리면 섬 옆에 나란히(C-22) — 아래에 열리면 글자를 키웠을 때 바로 안 보였다(6.2.0)
     $nav.classList.toggle("peekroom", !!window.floeApp && (st.ui === "hidden" || st.ui === "petit"));   // 접힌 창의 여유 — 올리면 커질 자리(C-14)
     if (prev) morphFrom(prev);
     peekReady();
@@ -3211,6 +3205,7 @@
     "idea-example": () => { st.say = S.first.text.split("\n")[0]; send(); },   // 연습 — 연습 첫 글의 첫 줄을 말한 것으로
     // 1단계 초안 확인(C-36) — 맞아요(초안 그대로) · 고칠래요(채팅 칸에 고쳐 적기) · 누가 고르기 · 크기 고르기(만드는 크기도 그 등급으로)
     qmore: () => { qmore = !qmore; render(); },
+    "more-toggle": () => { moreOpen = !moreOpen; render(); },
     "draft-ok": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, t = i >= 0 ? QU.draftOf(q, i) : ""; if (t) fillNow(t); },
     // C-40 — 예시 셋 중 고르기(누가 = 고름) · 남은 칸 모두 맞아요(누가 = 그대로) · 다른 예시(그 칸만 다시 — 진짜 AI는 이미 본 예시를 피해 다시, 연습은 순서만)
     "draft-alt": (k) => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex[k]) fillNow(ex[k], "pick"); },
@@ -3409,7 +3404,6 @@
     "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     qfull: () => { if (WINS && winOpen.quest) window.floeApp.sizeWin("quest", "full"); },   // 작업실을 다시 작업 영역 가득(R-1) — 브라우저 판에서는 단추가 없다
-    side: (i, el) => { if (!QU || !el) return; side = QU.sideOf(el.dataset.v); writeLS(SIDE_KEY, side); render(); say(`섬은 작업실 ${SIDE_UI[side][0]}에 붙어요`); },   // C-41 ⑤(2026-10-27): 작업실 안 옆 칸의 자리 넷 — 작업실이 class(side-…)로 받아 배치한다
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
     // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기
     base: () => { setPlace("home"); set({ settings: false, pane: "" }); },   // 집 — 기본 화면으로, 열어 둔 판도 닫는다
@@ -3862,7 +3856,6 @@
     if (q.tab && TABS.some((t) => t[0] === q.tab)) st.tab = q.tab;
     // 퀘스트 창(C-22, 2026-10-21): &tab=map · lib는 PC에서 퀘스트 창의 도전과제 · 서고 탭, &q=draft|quest|done은 퀘스트 장면(시험 · 녹화용), &set=1 설정 창, &side=right
     if ((q.tab === "map" || q.tab === "lib") && !q.back) { st.qwin = true; st.qtab = q.tab === "map" ? "tree" : "lib"; }   // 서고에서 돌아올 때(&back)는 창을 열지 않는다 — 떠난 모습 그대로(F-36)
-    if (q.side && QU) side = QU.sideOf(q.side);
     if (q.set) st.settings = true;
     if (q.shells !== undefined) st.shells = Math.max(0, Number(q.shells) || 0);   // 시험 · 녹화용 — 조개 수
     if (q.q && QU) {

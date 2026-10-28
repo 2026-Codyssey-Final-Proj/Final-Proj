@@ -49,7 +49,7 @@ async function fresh(browser, reduced = false) {
 // 2026-10-21 C-22(게임식 디자인 1차 뼈대): 기본 화면의 단추 넷 · 탭 넷은 없고 채팅 중심 섬(.mc.chat)이다. 서재는 설정 창의 '서재로 가기' · 퀘스트 창(.qwin)의 서고 탭, 탭은 퀘스트 창의 것(quest · tree · lib)
 const placeOf = (page) => page.evaluate(() => ({
   chat: !!document.querySelector(".mc.chat") && !document.querySelector(".mc.base"), home: document.querySelector(".ti.home")?.getAttribute("aria-pressed") || "",
-  qwin: !!document.querySelector(".qwin"), qtab: document.querySelector('.qwin .wtabs [aria-selected="true"]')?.dataset.tab || "", place: sessionStorage.getItem("floe:place"), hash: location.hash }));
+  qwin: !!document.querySelector(".qwin"), qtab: document.querySelector('.wsx > .wh .wtabs [aria-selected="true"]')?.dataset.tab || "", place: sessionStorage.getItem("floe:place"), hash: location.hash }));
 // 서재로 — 보이는 '서재로 가기'(설정 창 · 퀘스트 창 서고 탭)가 없으면 설정 창을 열어서
 async function toLibraryAndBack(page) {
   if (!(await page.$("[data-act=lib-enter]"))) { await page.click("[data-act=settings]"); await wait(300); }
@@ -196,7 +196,7 @@ test("C-16: 퀘스트 창의 탭은 셋(퀘스트 · 도전과제 · 책 — 배
   try {
     const page = await fresh(browser);
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tab=doc"), { waitUntil: "load" }); await wait(400);
-    const s = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".qwin .wtabs [role=tab]")].map((t) => t.dataset.tab), head: document.querySelector(".bdoc-head b")?.textContent || "", draft: !!document.querySelector("[data-act=draft]") }));
+    const s = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.dataset.tab), head: document.querySelector(".bdoc-head b")?.textContent || "", draft: !!document.querySelector("[data-act=draft]") }));
     assert.deepEqual(s.tabs, ["canvas", "quest", "tree", "lib"]);   // C-54(2026-10-28): 문서 지도 탭(map)은 도전과제 안의 '상자' 보기로   // C-41 ①(2026-10-26)부터 캔버스가 먼저 — 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다(2026-10-27 고침) · C-45(2026-10-27) 문서 지도 탭이 끝에
     assert.ok(s.head.includes("2단계") && s.draft, `단계 번호는 1~8로(코드 1 = 2단계): ${JSON.stringify(s)}`);
     await page.click("[data-act=draft]"); await wait(400);
@@ -461,7 +461,7 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     await page.click("[data-act=gate]"); await wait(300); await page.click("[data-act=yes]"); await wait(400);
     if (await page.$("[data-act=check-pick]")) { await page.click("[data-act=check-pick]"); await wait(400); if (await page.$("[data-act=check-go]")) { await page.click("[data-act=check-go]"); await wait(400); } }
     // 2단계는 1단계 결과로 만든 초안을 받기 화면 없이 바로 확인(C-37, 2026-10-25 — 연습은 예시 초안)
-    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".tb .shells span")?.textContent, book: !!document.querySelector(".qwin .book"), ev: !!document.querySelector(".qwin .ev") }));
+    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".shells span")?.textContent, book: !!document.querySelector(".qwin .book"), ev: !!document.querySelector(".qwin .ev") }));
     assert.ok(after.band.startsWith("2단계 · 동아리 행사 신청 앱") && after.shells === "1" && after.book && !after.ev, JSON.stringify(after));
     assert.match(await say(), /^Ⅰ\./, "2단계도 칸마다 확인");
     assert.equal(await page.evaluate(() => localStorage.getItem("floe:level")), null, "연습 모드의 관문은 영구 레벨에 남기지 않는다(C-28 — 이 켜짐 동안만 오른다, 칭호는 위처럼 바뀐다)");
@@ -479,11 +479,9 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     assert.ok(await page.$(".isl .setp") && !(await page.$("#nav > .win.setwin")) && !(await page.$(".isl .mc.chat")), "설정은 섬 안 — 채팅 자리에");
     // 칭호는 섬의 플로로 아래에서 뺐고(2026-10-25) 설정 판 왼쪽 칸에 있다 — 관문을 넘으면 바뀐다
     assert.ok((await page.evaluate(() => document.querySelector(".setp .who")?.textContent || "")).includes("적어 두는 사람"), "설정 판의 칭호가 바뀐다");
-    const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > *")].filter((x) => !x.classList.contains("shell")).map((x) => (x.classList.contains("qwin") ? "quest" : "isl")));
-    assert.deepEqual(await order(), ["quest", "isl"], "처음은 섬이 오른쪽(C-41 ② 2026-10-27 — side는 섬 자리, 작업실은 그 반대쪽. 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다)");
-    await page.click("[data-act=side][data-v=left]"); await wait(300);   // 설정의 '왼쪽' — 섬이 왼쪽으로
-    assert.deepEqual(await order(), ["isl", "quest"]);
-    assert.equal(await page.evaluate(() => localStorage.getItem("floe:win-side")), "left");
+    const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > .wsx > *")].map((x) => (x.classList.contains("wh") ? "wh" : x.classList.contains("qwin") ? "quest" : x.classList.contains("isl-col") ? "isl" : x.className)));
+    assert.deepEqual(await order(), ["wh", "quest", "isl"], "머리 줄 하나 아래 작업실 판 · 섬 옆 칸(오른쪽) — C-62(PR ② 2026-10-29). 자리 바꾸기 단추는 2026-10-28 합의로 뺐다");
+    assert.ok(!(await page.$("[data-act=side]")), "섬 자리 단추 없음");
     // 탭 — 하나씩 보인다
     await page.click("[data-act=set-tab][data-tab=view]"); await wait(200);
     assert.ok(await page.$(".set-body [data-act=mode]") && !(await page.$(".set-body [data-act=name]")), "보기 탭에는 보기 칸만");
@@ -505,7 +503,7 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]")?.textContent.trim()), "퀘스트", "위 줄의 '퀘스트' 단추(이재엽 그림 2026-10-24)");
     // 퀘스트 단추 → 작업실 창(탭 다섯 — C-41 ① 2026-10-26: 캔버스 · 노트북(옛 퀘스트) · 도전과제 · 책, C-45 2026-10-27: 문서 지도). 한 번 더 누르면 닫힌다
     await page.click(".tb [data-act=qwin-toggle]"); await wait(300);
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "노트북", "도전과제", "책"]);   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "노트북", "도전과제", "책"]);   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]").getAttribute("aria-pressed")), "true");
     // 책: 서버 없이 열었으니 연습 예시 README
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(400);
@@ -549,14 +547,14 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     await page.evaluate(() => localStorage.removeItem("navigator-prototype:v1"));
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&shells=3"), { waitUntil: "load" }); await wait(400);
     // 위 줄의 조개 그림이 단추 앞에 보인다 — 2026-10-23 전에는 class 'shell'이 바탕 껍데기(.nav .shell, z-index -1)와 겹쳐 숨고 수만 보였다
-    const coinSeen = await page.evaluate(() => { const c = document.querySelector(".tb .shells .coin"); if (!c) return "none"; const r = c.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return r.width >= 16 && c.contains(hit) ? "ok" : `hidden ${r.width} ${hit && hit.tagName}`; });
+    const coinSeen = await page.evaluate(() => { const c = document.querySelector(".shells .coin"); if (!c) return "none"; const r = c.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return r.width >= 16 && c.contains(hit) ? "ok" : `hidden ${r.width} ${hit && hit.tagName}`; });
     assert.equal(coinSeen, "ok", "위 줄의 무지개 조개 그림이 보인다");
-    await page.click(".tb .shells"); await wait(300);
+    await page.click(".shells"); await wait(300);   // 작업실이 열려 있으면 조개는 머리 줄(C-62)
     assert.ok(await page.evaluate(() => { const b = document.querySelector(".gacha .bigshell"); const r = b && b.getBoundingClientRect(); return !!r && r.width >= 100 && b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); }), "뽑기 창의 큰 조개 그림이 보인다");
     assert.ok(await page.$(".gacha-layer") && !(await page.evaluate(() => document.querySelector("[data-act=gacha-roll]").disabled)), "뽑기 창 · 열 수 있다");
     assert.equal(await page.evaluate(() => document.querySelectorAll(".odds span").length), 4, "확률표 넷");
     await page.click("[data-act=gacha-roll]"); await wait(1800);
-    const s = await page.evaluate(() => { const r = JSON.parse(localStorage.getItem("navigator-prototype:v1")); return { got: document.querySelector(".gacha .got")?.textContent || "", deco: !!document.querySelector(".pet .deco"), shells: document.querySelector(".tb .shells span")?.textContent, owned: r.owned, wear: r.wear }; });
+    const s = await page.evaluate(() => { const r = JSON.parse(localStorage.getItem("navigator-prototype:v1")); return { got: document.querySelector(".gacha .got")?.textContent || "", deco: !!document.querySelector(".pet .deco"), shells: document.querySelector(".shells span")?.textContent, owned: r.owned, wear: r.wear }; });
     assert.ok(s.got.includes("나왔어요") && s.deco && s.shells === "0" && s.owned.length === 1 && Object.values(s.wear)[0] === s.owned[0], JSON.stringify(s));
     await page.keyboard.press("Escape"); await wait(200);
     assert.ok(!(await page.$(".gacha-layer")), "Esc로 닫힌다");

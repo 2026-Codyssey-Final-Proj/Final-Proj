@@ -18,16 +18,15 @@ html.in-win,html.in-win body{margin:0;background:#363E62;overflow:hidden;height:
 html.in-win.win-quest,html.in-win.win-quest body{background:#E9EEF6}   /* 작업실(C-41, 2026-10-26) — 파스텔. main.js backgroundColor · app.css html.win-quest와 같은 값 */
 html.in-win.win-quest .win-empty{color:#4A5678}
 html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
-/* 창 = 작업실 판(.win) + 섬 옆 칸(.isl-col, C-41 ⑤). 옆 칸의 자리는 html[data-side](win.js가 섬이 보낸 class에서 읽음), 크기는 --col-w · --col-h. 0.3초(기준 8), 움직임 줄이기면 바로 */
-#root{height:100vh;box-sizing:border-box;display:flex;flex-direction:row}
-html[data-side="left"] #root{flex-direction:row-reverse}
-html[data-side="bottom"] #root{flex-direction:column}
-html[data-side="top"] #root{flex-direction:column-reverse}
-#root>.win{flex:1 1 auto;min-width:0;min-height:0;width:auto!important;height:auto!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}
-#root>.isl-col{flex:0 0 var(--col-w,420px);transition:flex-basis .3s cubic-bezier(.2,.8,.2,1)}
-html[data-side="top"] #root>.isl-col,html[data-side="bottom"] #root>.isl-col{flex-basis:var(--col-h,360px)}
-html.hd-drag #root>.isl-col{transition:none}
-@media (prefers-reduced-motion:reduce){#root>.isl-col{transition:none}}
+html.in-win.win-quest #root>.wh{background:#E2E9F4}   /* 머리 줄은 작업실 바탕(눈색) — 판과 옆 칸 위에 하나 */
+/* 창 = 머리 줄(.wh, 창 전체 폭) + 작업실 판(.win) + 섬 옆 칸(.isl-col, C-41 ⑤) — C-62 머리 줄 하나(2026-10-29): 격자 "wh wh" / "win isl". 옆 칸은 오른쪽만(2026-10-28 합의 — 위 · 아래 · 왼쪽 자리를 뺐다),
+   너비는 --col-w(win.js, 접히면 56). 0.3초(기준 8), 움직임 줄이기면 바로 */
+#root{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) var(--col-w,420px);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"wh wh" "win isl";transition:grid-template-columns .3s cubic-bezier(.2,.8,.2,1)}
+#root>.wh{grid-area:wh}
+#root>.win{grid-area:win;min-width:0;min-height:0;width:auto!important;height:auto!important;max-height:none;border:0;border-radius:0;box-shadow:none;animation:none}
+#root>.isl-col{grid-area:isl;min-width:0;min-height:0}
+html.hd-drag #root{transition:none}
+@media (prefers-reduced-motion:reduce){#root{transition:none}}
 #root .wh{-webkit-app-region:drag;cursor:grab}
 #root .wh button,#root .wh select{-webkit-app-region:no-drag}
 /* 옆 칸 크기 손잡이(win.js, C-41 ③ · ⑤) — 옆 칸의 안쪽 가장자리에 14px 띠, 가운데 작은 막대. 끄는 동안은 칸 · 손잡이가 바로 따라온다(transition 없이) */
