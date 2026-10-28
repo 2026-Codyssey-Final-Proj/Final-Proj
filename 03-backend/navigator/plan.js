@@ -45,12 +45,13 @@
   function taskFor(b, id) {
     const x = item(b, id), w = b.work[id] || {};
     // C-50(2026-10-29): 다시 맡기면 지난번 보고 한 줄도 붙인다 — 앞에서 한 일을 다시 하지 않게(지식 퀘스트 PRD 9절 7번 '새로 맡기며 앞 보고만')
-    return { text: [x.need, ...(w.note ? [`지난번에 사용자가 다르게 본 점: ${w.note}`] : []), ...(w.prev ? [`지난번 보고: ${w.prev}`] : [])].join("\n"), checks: [x.check] };
+    return { text: [x.need, ...(w.note ? [`지난번에 사용자가 다르게 본 점: ${w.note}`] : []), ...(w.prev ? [`지난번 보고: ${w.prev}`] : []), ...(w.fail ? [`지난번에 끝까지 못 했어요: ${w.fail.why} — 이미 끝낸 일은 다시 하지 말고 이어서`] : [])].join("\n"), checks: [x.check] };
   }
   const setWork = (b, id, w) => { const n = clone(b); n.work[id] = { ...(n.work[id] || {}), ...w }; return n; };
   // at — 서버가 알려 준 그 일의 시작 때(/api/task의 at). 끝났는지 물을 때 다른 일의 결과를 이 줄의 것으로 받지 않게
   const start = (b, id, at = null) => (!b.confirmed || !has(b, id) || running(b) || id !== next(b) ? b : setWork(b, id, { state: "running", at }));
-  const report = (b, id, rep) => (stateOf(b, id) === "running" ? setWork(b, id, { state: "report", report: rep || null, fail: undefined }) : b);
+  // verdict — 서버가 기준을 세어 준 미리 보기(/api/task의 verdict). 화면은 이 값을 쓰고 다시 만들지 않는다(없던 옛 기록만 화면이 센다)
+  const report = (b, id, rep, verdict = null) => (stateOf(b, id) === "running" ? setWork(b, id, { state: "report", report: rep || null, verdict: verdict || undefined, fail: undefined }) : b);
   const accept = (b, id) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "done" }) : b);
   const prevOf = (r) => (r && r.easy ? `${String(r.easy).slice(0, 160)} (끝 조건 ${r.done}/${r.total})` : "");
   const reject = (b, id, why) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "todo", note: String(why || "").trim().slice(0, 300), prev: prevOf((b.work[id] || {}).report), report: null }) : b);

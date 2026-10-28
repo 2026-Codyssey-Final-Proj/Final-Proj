@@ -358,13 +358,16 @@ const RETRY_MAX = 2;
 // 앞에서 한 일 — 보고 한 줄 · 그 일 동안 그 폴더에서 만든 · 고친 파일 이름(훅 알림) · 막힌 것. 이름 · 한 줄 · 수만, 가린 뒤, 700자까지
 function prevNote(t) {
   const files = [];
-  for (const s of work.values()) if (s.dir && inDir(t.dir, s.dir)) for (const x of s.steps) if (x.at >= t.at && (x.verb === "만들었어요" || x.verb === "고쳤어요") && x.what && !files.includes(x.what)) files.push(x.what);
+  const end = t.endAt || Date.now();   // 그 일이 도는 동안만 — 끝난 뒤 사람이 같은 폴더에서 고친 파일은 넣지 않는다
+  for (const s of work.values()) if (s.dir && inDir(t.dir, s.dir)) for (const x of s.steps) if (x.at >= t.at && x.at <= end && (x.verb === "만들었어요" || x.verb === "고쳤어요") && x.what && !files.includes(x.what)) files.push(x.what);
   const b = t.state === "blocked" ? blockedOf(t) : null;
   const parts = [t.report ? `보고: ${t.report.easy} (끝 조건 ${t.report.done}/${t.report.total})` : "보고: 받지 못했어요",
-    ...(files.length ? [`바뀐 파일: ${files.slice(0, 10).join(", ")}`] : []), ...(b && b.kinds.length ? [`막힌 것: ${b.kinds.map((k) => `${k.what} ${k.n}`).join(" · ")}`] : []),
+    ...(files.length ? [`바뀐 파일: ${files.slice(0, 10).join(", ")}`] : []), ...(b && b.kinds.length ? [`허락을 못 받았던 것: ${b.kinds.map((k) => `${k.what} ${k.n}`).join(" · ")}`] : []),
     ...(t.state === "failed" ? ["끝까지 가지 못했어요"] : t.state === "stopped" ? ["사람이 멈췄어요"] : [])];
-  const s = `\n\n[앞에서 한 일] ${parts.join(" · ")} — 이미 한 일은 다시 하지 말고 이어서 해 주세요.`;
-  return hide(s.length > 700 ? `${s.slice(0, 699)}…` : s, t.dir);
+  // 안내 문장은 늘 남기고 앞부분만 자른다(가린 뒤에) — 허락을 못 받았던 일은 다시 하면 카드가 뜬다고 적는다(①의 목적 — 카드를 다시 띄우기, 새 맥락 리뷰 2026-10-29)
+  const tail = " — 이미 끝낸 일은 다시 하지 말고 못 한 것부터 이어서 해 주세요. 허락을 못 받았던 일은 다시 하면 허락 카드가 떠요.";
+  const head = hide(`[앞에서 한 일] ${parts.join(" · ")}`, t.dir);
+  return `\n\n${head.length > 600 ? `${head.slice(0, 599)}…` : head}${tail}`;
 }
 const FILES_ONLY = "\n\n[다시 맡김 — 명령 없이] 터미널 명령(Bash)은 쓰지 말고 파일만 만들거나 고쳐 주세요. 실행 · 설치 명령이 필요하면 README의 '실행하는 법'에 적기만 해요.";
 // opts.at · opts.try — 다시 맡기기는 같은 번호(at)로(지켜보던 화면 — 계획 줄 · 문서 올리기 — 이 그대로 따라간다), opts.note — 글 끝에 더할 한 줄(길이 제한 밖)
@@ -392,7 +395,7 @@ function startTask(text, label = "맡긴 일", checks = null, opts = {}) {
   // 막힘은 기계 신호로만 — 거절 수가 그 일 동안 섬에서 사람이 누른 '거절' 수보다 많으면(답이 없었거나 카드가 안 뜬 거절이 있으면) blocked.
   //   사람이 고른 거절뿐이면 done(denied에 수 — 화면이 한 줄로 말한다). 모델의 보고(해냄)는 믿지 않는다(진짜 Claude Code로 본 일 · 새 맥락 리뷰 2026-10-28)
   const unasked = () => (task.denied ? task.denied.count : 0) > (task.asks ? task.asks.deny : 0);
-  child.on("close", (code) => { if (task && task.child === child) { task.state = task.stopped ? "stopped" : code !== 0 || task.isError ? "failed" : unasked() ? "blocked" : "done"; task.code = code; } });
+  child.on("close", (code) => { if (task && task.child === child) { task.endAt = Date.now(); task.state = task.stopped ? "stopped" : code !== 0 || task.isError ? "failed" : unasked() ? "blocked" : "done"; task.code = code; } });
   return [200, { ok: true, project: s.project, task: publicTask() }];
 }
 // C-50 멈추기 — 본문 { at }. 사람이 선택창에서 '다시 맡기기' · '그만두기'를 고를 때만 부른다(서버는 저절로 끄지 않는다). 그 번호의 도는 일만, 끝나면 state stopped
@@ -417,7 +420,7 @@ function retryTask(body) {
   if (task.state === "done") return [409, { ok: false, reason: "이미 끝난 일이에요 — 새로 맡겨요" }];
   if (b.way !== "again" && b.way !== "files-only") return [400, { ok: false, reason: "way는 again · files-only · brief 중 하나" }];
   const auto = b.auto === true;
-  if (auto && !(task.state === "blocked" && !task.try)) return [409, { ok: false, reason: "카드 다시 띄우기는 처음 막혔을 때 한 번만이에요" }];
+  if (auto && !(task.state === "blocked" && !task.try && task.asks && task.asks.none > 0 && !task.asks.deny)) return [409, { ok: false, reason: "카드 다시 띄우기는 처음 막혔고 카드에 답이 없었을 때 한 번만이에요" }];
   if (!auto && (task.retries || 0) >= RETRY_MAX) return [409, { ok: false, why: "cap", reason: `다시 맡기기는 ${RETRY_MAX}번까지예요 — 직접 하기로 이어 가요` }];
   return startTask(task.req.text, task.req.label, task.req.checks, { at: task.at, try: (task.try || 0) + 1, retries: (task.retries || 0) + (auto ? 0 : 1), note: prevNote(task) + (b.way === "files-only" ? FILES_ONLY : "") });
 }

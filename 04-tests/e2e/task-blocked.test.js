@@ -153,6 +153,12 @@ test("직접 하기 — 맡길 글과 복사 · 다 했어요, 그만두기 — 
     await click(page, ".mc.chat [data-act=blocked-done]");
     assert.ok(!(await page.$(".mc.chat [data-act=blocked-copy]")), "다 했어요 → 카드가 닫힌다");
     assert.ok(await page.$(".mc.chat [data-act=plan-hand]"), "그 줄을 다시 맡길 수 있다");
+    // C-50: 실패는 까닭과 함께 남고(조용히 '남음'이 아니다), 다시 맡기면 같은 일로(서버가 앞에서 한 일을 붙이고 상한을 센다)
+    assert.match(await nowSay(page), /지난번에 끝까지 못 했어요/); assert.match(await nowSay(page), /직접 하기로 했어요/);
+    assert.match(await page.$eval(".mc.chat [data-act=plan-hand]", (e) => e.textContent.trim()), /^다시 맡기기/);
+    await click(page, ".mc.chat [data-act=plan-hand]");
+    assert.deepEqual(seen.retry.at(-1), { at: AT, way: "again" }, "같은 일이면 새로 시작하지 않고 retry로");
+    assert.equal(seen.start.length, 1);
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });
@@ -200,5 +206,12 @@ test("C-50 미리 판정 '덜 됨'이면 '맞아요'는 작은 단추 · 상한�
     assert.ok(await capped.page.$(".mc.chat [data-act=blocked-self]") && await capped.page.$(".mc.chat [data-act=blocked-stop]"));
     assert.ok(!(await capped.page.$(".mc.chat [data-act=blocked-again]")) && !(await capped.page.$(".mc.chat [data-act=blocked-files]")), "다시 맡기기 단추는 없다");
     assert.deepEqual(capped.seen.errors, []);
+    await capped.page.close();
+    // 상한에 닿은 일이 멈춘 것 같으면 — '멈추고 다시 맡기기'는 없다(멈추기만 하고 다시 맡기지 못하는 일이 없게)
+    const quiet = await openLive(browser, [{ state: "running", at: AT, try: 2, retries: 2, retryMax: 2, report: null, blocked: null, quiet: 320 }]);
+    await handFirst(quiet.page);
+    await quiet.page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("멈춘 것 같아요"), { timeout: 12000 });
+    assert.ok(!(await quiet.page.$(".mc.chat [data-act=stall-again]")), "상한이면 멈추고 다시 맡기기 없음");
+    assert.ok(await quiet.page.$(".mc.chat [data-act=stall-self]") && await quiet.page.$(".mc.chat [data-act=stall-stop]"));
   } finally { await browser.close(); }
 });

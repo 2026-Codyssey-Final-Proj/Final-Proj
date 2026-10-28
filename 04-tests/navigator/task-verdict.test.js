@@ -14,6 +14,8 @@ const net = require("node:net");
 const BACK = path.join(__dirname, "../../03-backend/navigator");
 const N = require(path.join(BACK, "navigator.js"));
 const B = require(path.join(BACK, "plan.js"));
+const AP = require(path.join(BACK, "approve.js"));
+const FAKE_KEY = "sk-" + "Vr9d".repeat(6);   // secret-check: allow — 시험 안에서만, 가려져야 한다
 
 const rep = (dones, easy = "했어요") => ({ items: dones.map((d, i) => ({ check: `기준 ${i + 1}`, done: d, evidence: d ? "src/app.py" : "" })), easy, ask: "", done: dones.filter(Boolean).length, total: dones.length });
 
@@ -39,8 +41,9 @@ test("plan.failed — 남음(todo)으로 두되 실패 까닭 · 횟수를 남�
   b = B.failed(B.start(b, "p1", 6), "p1");
   assert.deepEqual(b.work.p1.fail, { why: "보고를 받지 못했어요", n: 2 }, "까닭이 없으면 기본 말, 횟수는 쌓인다");
   assert.ok(B.revive(JSON.parse(JSON.stringify(b))), "저장했다 다시 읽어도 된다");
-  b = B.report(B.start(b, "p1", 7), "p1", rep([true]));
-  assert.equal(b.work.p1.fail, undefined, "보고가 오면 실패 표시는 지운다");
+  assert.match(B.taskFor(b, "p1").text, /지난번에 끝까지 못 했어요: 보고를 받지 못했어요 — 이미 끝낸 일은 다시 하지 말고 이어서/, "새로 맡겨도 실패 까닭을 붙인다");
+  b = B.report(B.start(b, "p1", 7), "p1", rep([true]), { kind: "done", word: "다 됨" });
+  assert.equal(b.work.p1.fail, undefined, "보고가 오면 실패 표시는 지운다"); assert.deepEqual(b.work.p1.verdict, { kind: "done", word: "다 됨" }, "서버가 센 미리 보기를 남긴다");
 });
 test("plan.taskFor — 다르게 봐요로 다시 맡기면 의견과 지난번 보고 한 줄을 붙인다", () => {
   let b = B.report(B.start(B.confirm(B.mark(B.board(PLAN), "p1", "ok")), "p1"), "p1", rep([false], "신청 칸만 만들었어요."));
@@ -98,14 +101,18 @@ test("다시 맡기면 앞에서 한 일(보고 · 바뀐 파일 이름 · 막�
   assert.equal(r.status, 200, r.text);
   // 그 일이 도는 동안 그 폴더에서 파일을 만들었다는 훅 알림
   await call("POST", "/api/event", { hook_event_name: "PostToolUse", session_id: "s-v", cwd: dir, tool: "claude", tool_name: "Write", step: { verb: "만들었어요", what: "README.md", add: 3, del: 0 } });
+  // 그동안 허락 카드 하나가 답 없이 지났다(none) — ①(auto)은 이때만
+  const ev = { hook_event_name: "PermissionRequest", session_id: "s-v", cwd: dir, tool_name: "Bash", tool_input: { command: "python3 app.py" } };
+  assert.equal((await call("POST", "/api/approval", { id: "req-verdict-0001", sig: AP.sig(ev), session_id: "s-v", cwd: dir, tool: "claude", tool_name: "Bash", card: AP.card(ev) })).json.decision, "none");
   let t = await settled();
-  assert.equal(t.state, "blocked"); assert.equal(t.verdict.kind, "blocked");
+  assert.equal(t.state, "blocked"); assert.equal(t.verdict.kind, "blocked"); assert.equal(t.blocked.asks.none, 1);
   stubPlan({ delay: 100, denials: [{ tool_name: "Bash", tool_input: {} }] });
   const a = await call("POST", "/api/task/retry", { at: t.at, way: "again", auto: true });
   assert.equal(a.status, 200, a.text); assert.equal(a.json.task.retries, 0, "①의 카드 다시는 세지 않는다");
   let sent = "";   // 가짜 claude가 받은 글을 적을 때까지(맡긴 직후에는 아직 지난 글일 수 있다)
   for (let k = 0; k < 40 && !sent.includes("[앞에서 한 일]"); k++) { await wait(25); try { sent = JSON.parse(fs.readFileSync(STUB_OUT, "utf8")).stdin; } catch {} }
-  assert.match(sent, /\[앞에서 한 일\]/); assert.match(sent, /README만 썼어요/); assert.match(sent, /README\.md/); assert.match(sent, /명령/);
+  assert.match(sent, /\[앞에서 한 일\]/); assert.match(sent, /README만 썼어요/); assert.match(sent, /바뀐 파일: README\.md/); assert.match(sent, /허락을 못 받았던 것: 명령 1/);
+  assert.match(sent, /허락을 못 받았던 일은 다시 하면 허락 카드가 떠요/, "①의 목적 — 카드를 다시 띄우기와 부딪치지 않는 안내");
   assert.equal((sent.match(/뼈대 코드를 만들어 주세요/g) || []).length, 1, "처음 글은 한 번");
   t = await settled();
   assert.equal((await call("POST", "/api/task/retry", { at: t.at, way: "again", auto: true })).status, 409, "auto는 처음 막혔을 때 한 번만");
@@ -119,4 +126,28 @@ test("다시 맡기면 앞에서 한 일(보고 · 바뀐 파일 이름 · 막�
   assert.equal(over.status, 409); assert.equal(over.json.why, "cap"); assert.match(over.json.reason, /2번까지/);
   const brief = await call("POST", "/api/task/retry", { at: t.at, way: "brief" });
   assert.equal(brief.status, 200, "직접 하기 글은 상한이 없다");
+});
+
+test("auto는 카드에 답이 없었을 때만 — 사람이 거절했거나 카드가 안 떴으면 409(상한을 피하는 길이 아니다)", async () => {
+  stubPlan({ delay: 150, denials: [{ tool_name: "Write", tool_input: {} }] });
+  assert.equal((await call("POST", "/api/task/start", { text: "카드 없이 막힘" })).status, 200);
+  const t = await settled(); assert.equal(t.state, "blocked"); assert.equal(t.blocked.asks.none, 0);
+  const r = await call("POST", "/api/task/retry", { at: t.at, way: "again", auto: true });
+  assert.equal(r.status, 409); assert.match(r.json.reason, /답이 없었을 때/);
+});
+
+test("앞에서 한 일 — 가린 뒤 600자에서 자르고 안내 문장은 늘 남는다, 작업 폴더 경로는 '.'", async () => {
+  stubPlan({ delay: 400, denials: [{ tool_name: "Write", tool_input: {} }], report: { items: [{ check: "기준 1", done: false, evidence: "" }], easy: `키 ${FAKE_KEY}를 ${dir}/conf.json에 두려다 못 했어요. ${"가".repeat(150)}`, ask: "" } });
+  const r = await call("POST", "/api/task/start", { text: "긴 일", checks: ["기준 1"] });
+  assert.equal(r.status, 200, r.text);
+  for (let k = 0; k < 12; k++) await call("POST", "/api/event", { hook_event_name: "PostToolUse", session_id: "s-long", cwd: dir, tool: "claude", tool_name: "Write", step: { verb: "만들었어요", what: `src/${"폴더".repeat(18)}${k}.js`, add: 1, del: 0 } });
+  const t = await settled(); assert.equal(t.state, "blocked");
+  stubPlan({ delay: 100 });
+  assert.equal((await call("POST", "/api/task/retry", { at: t.at, way: "again" })).status, 200);
+  let sent = ""; for (let k = 0; k < 40 && !sent.includes("[앞에서 한 일]"); k++) { await wait(25); try { sent = JSON.parse(fs.readFileSync(STUB_OUT, "utf8")).stdin; } catch {} }
+  const note = sent.slice(sent.indexOf("[앞에서 한 일]"), sent.indexOf("허락 카드가 떠요.") + "허락 카드가 떠요.".length);
+  assert.ok(note.length > 0 && note.length <= 600 + 120, `길이 ${note.length}`);
+  assert.match(note, /…/, "넘쳐서 잘랐다"); assert.match(note, /허락을 못 받았던 일은 다시 하면 허락 카드가 떠요\.$/, "안내는 남는다");
+  assert.ok(!note.includes(FAKE_KEY), "가린다"); assert.ok(!note.includes(dir), "경로는 '.'으로");
+  await settled();
 });
