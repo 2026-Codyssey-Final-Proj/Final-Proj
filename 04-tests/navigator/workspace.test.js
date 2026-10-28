@@ -9,7 +9,7 @@ const read = (f) => fs.readFileSync(path.join(__dirname, "../../02-frontend", f)
 
 test("main.js — 작업실 창은 테두리 있는 보통 창: 늘 위 아님 · 작업 표시줄에 뜸 · 640×480보다 작아지지 않음 · 제목 '작업실'. 설정 창의 모양은 그대로", () => {
   const m = read("electron/main.js");
-  assert.match(m, /frame: ws, transparent: false, backgroundColor: ws \? "#E9EEF6" : "#16225E", alwaysOnTop: !ws, resizable: ws, minimizable: ws/);
+  assert.match(m, /frame: ws, transparent: false, backgroundColor: ws \? "#E9EEF6" : "#363E62", alwaysOnTop: !ws, resizable: ws, minimizable: ws/);
   assert.match(m, /minWidth: ws \? 640 : 260, minHeight: ws \? 480 : 200, title: ws \? "Floe — 작업실" : "Floe — 설정"/);
   assert.match(m, /if \(!ws\) w\.setAlwaysOnTop\(true, "floating"\)/, "늘 위는 설정 창만");
 });
@@ -79,9 +79,9 @@ test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · �
 test("app.css · win.html — 작업실은 파스텔(네이비 면 없음). 설정 창의 네이비는 그대로", () => {
   const c = read("navigator/app.css"), w = read("navigator/win.html");
   assert.match(c, /html\.in-win:not\(\.win-quest\),html\.win-quest \.isl-col\{/, "네이비 토큰은 작업실 밖과 작업실 안의 섬 옆 칸에만");
-  assert.match(c, /html\.in-win:not\(\.win-quest\) \.win\{background:#16225E\}/);
-  assert.match(c, /html\.win-quest,\.nav\.side>\.qwin\{[^}]*--card:#F7F9FC/, "브라우저 판(.nav.side>.qwin)도 같은 파스텔 — ⑥ 캔버스의 밝은 면은 고정값이라 네이비 토큰 위에서는 흰 글씨가 흰 면에 왔다(새 맥락 리뷰 2026-10-27)");
-  for (const t of ["--ok:#1E7A47", "--okbg:#E3F4EA", "--acc-ink:#FFFFFF", "--mute:#525F84", "--win:#F7F9FC", "--t-blue-ink:#1E3F7A", "--bad:#A4262C"]) assert.ok(/html\.win-quest,\.nav\.side>\.qwin\{[^}]*\}/.exec(c)[0].includes(t), `${t} — 601px 이상의 네이비 토큰을 덮어야 ✓ 글씨가 파스텔 위에서 4.5:1(새 맥락 리뷰 2026-10-26: 빠지면 1.38:1)`);
+  assert.match(c, /html\.in-win:not\(\.win-quest\) \.win\{background:var\(--isl\)\}/);
+  assert.match(c, /html\.win-quest,\.nav\.side>\.qwin\{[^}]*--card:#F2F5FA/, "브라우저 판(.nav.side>.qwin)도 같은 파스텔 — ⑥ 캔버스의 밝은 면은 고정값이라 네이비 토큰 위에서는 흰 글씨가 흰 면에 왔다(새 맥락 리뷰 2026-10-27)");
+  for (const t of ["--ok:#2B3463", "--okbg:#A9E2C4", "--acc-ink:#263066", "--mute:#5B6491", "--win:#F2F5FA", "--t-blue-ink:#2B3463", "--bad:#8E3A52"])   // C-57(2026-10-28): 웹사이트 토큰 assert.ok(/html\.win-quest,\.nav\.side>\.qwin\{[^}]*\}/.exec(c)[0].includes(t), `${t} — 601px 이상의 네이비 토큰을 덮어야 ✓ 글씨가 파스텔 위에서 4.5:1(새 맥락 리뷰 2026-10-26: 빠지면 1.38:1)`);
   assert.match(c, /html\.win-quest \.win,\.nav\.side>\.qwin\{background:var\(--card\)/);
   assert.match(w, /html\.in-win\.win-quest,html\.in-win\.win-quest body\{background:#E9EEF6\}/);
   assert.match(read("electron/main.js"), /backgroundColor: ws \? "#E9EEF6"/, "창 바탕색이 셋 다 같다");
@@ -113,14 +113,14 @@ test("app.js render — 브라우저 판의 작업실 몸통(.qwin .wbody)은 �
 test("app.js canvasPane — R-9 단계 칩: '시작 ✓' · 지난 장 'n ✓ V.n' · 지금 장 'n 짧은 이름' · 뒤 장 'n+1 ~ 8'(머리와 같은 번호 1~8). R-5: ② 맡길 일 이름, ③ 정한 줄, ④ 올라갈 파일 이름, 관문에 남은 기준 수와 '안 됨'인 기준 이름", () => {
   const a = read("navigator/app.js"), c = read("navigator/app.css");
   const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("function fileCard"));
-  assert.ok(cv.includes('${k === "done" ? `${dn(x)} ✓ V.${dn(x)}` : k === "cur" ? `${dn(x)} ${esc(x.short)}` : dn(x)}'), "칩 — 지난 장 n ✓ V.n · 지금 장 n 짧은 이름 · 뒤 장 번호(dn = n + 1)");
-  assert.ok(cv.includes('"시작 ✓" : "시작"'), "시작 칩");
+  assert.ok(cv.includes('${k === "done" ? `${dn(x)} ${OK_ICON} V.${dn(x)}` : k === "cur" ? `${dn(x)} ${esc(x.short)}` : dn(x)}'), "칩 — 지난 장 n (확인 아이콘) V.n · 지금 장 n 짧은 이름 · 뒤 장 번호(dn = n + 1) — C-57: ✓ 글자 대신 OK_ICON 아이콘");
+  assert.ok(cv.includes('`시작 ${OK_ICON}` : "시작"'), "시작 칩");
   assert.ok(cv.includes("${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}"), "뒤 장은 'n+1 ~ 8'로 묶음");
   assert.ok(!cv.includes(">${x.n}${k"), "코드 번호(0~7)는 화면에 없다");
   assert.ok(cv.includes("const curItem = ") && cv.includes("맡긴 일 ${pg.done}/${pg.total}"), "② 행동 — 지금 맡긴 일의 이름과 진행");
   assert.ok(cv.includes('class="cv-files"') && cv.includes("`docs/${slug}/${slug.slice(3)}.md`") && cv.includes("FDOCS.MAIN_DOC, FDOCS.LOG_DOC"), "④ 저장 — 올라갈 파일 이름(단계 문서 · 기획서 · 결정 기록)");
   assert.ok(cv.includes("const unmet = ") && cv.includes("남은 기준 ${left()}") && cv.includes('class="cv-unmet"'), "관문 — 남은 기준 수와 '안 됨'인 기준 이름");
-  assert.ok(cv.includes("정한 줄 ${") && cv.includes("QU.filled(q, i) && ln ? ln : QU.shortOf(o.name)"), "③ 기록 — 적은 칸은 그 줄(정한 것)을 보인다");
+  assert.ok(cv.includes("정한 줄 ${") && cv.includes("QU.filled(q, i) && ln ? ln : QU.nameOf(q, i)"), "③ 기록 — 적은 칸은 그 줄(정한 것), 빈 칸은 이 프로젝트의 말로 된 이름(C-56 R-2)을 보인다");
   assert.match(c, /\.cv-files,\.cv-unmet\{list-style:none;padding:0;/); assert.match(c, /\.cv-unmet li\{color:var\(--bad\)/);
   assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{[\s\S]*\.cv-stg\{left:calc\(672 \* var\(--u\)\);top:calc\(8 \* var\(--u\)\);width:calc\(412 \* var\(--u\)\);flex-wrap:wrap\}/, "줌에서는 칩이 판 오른쪽 끝 안에서 줄 바꿈(이름이 붙어 길어진다)");
 });
@@ -131,7 +131,7 @@ test("app.js — R-8 파일 칸: 작업실을 열 때 /api/files를 받아 진�
   assert.match(a, /const openQwin = \(tab\) => \{ if \(!st\.qwin\) \{ qpop = true; loadFiles\(\); \}/, "열 때 받는다");
   assert.match(a, /if \(!canLive \|\| st\.mode === "fixture"\) \{ st\.files = \{ src: "example"/, "연습 · 서버 없음은 예시");
   assert.match(a, /await fetch\("\/api\/files", \{ cache: "no-store" \}\)/);
-  assert.ok(a.includes('return "● 지금"') && a.includes('? "읽음" : ""'), "지금 장 · 지난 장 표시");
+  assert.ok(a.includes('return "지금"') && a.includes('? "읽음" : ""'), "지금 장 · 지난 장 표시(C-57: ● 글자 대신 CSS 점)");
   assert.match(a, /"fn-dir": \(i, el\) => \{/, "폴더 접고 펼치기"); assert.match(a, /data-act="fn-dir" data-v="\$\{i\}"/, "열쇠는 번호 — 가린 이름끼리 경로가 겹쳐도(새 맥락 리뷰)");
   assert.match(a, /if \(closedAt && x\.depth > closedAt\) return "";/, "접힌 폴더의 안쪽은 깊이로 건너뛴다"); assert.ok(a.includes("비어 있어요 — 이 폴더에 보일 파일이 없어요") && a.includes("읽지 못한 폴더 ${f.unread}"), "빈 폴더 · 읽지 못한 폴더");
   assert.match(read("navigator/app.css"), /\.wnav \.fn li\.dir button\{all:unset;cursor:pointer;min-height:44px;/, "폴더 단추는 44px(이재엽 버튼 2026-10-27)");

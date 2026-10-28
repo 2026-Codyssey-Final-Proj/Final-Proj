@@ -10,6 +10,7 @@
   const node = typeof module !== "undefined" && module.exports;
   const N = node ? require("./navigator.js") : root.NavRules;
   const Q = node ? require("./quest.js") : root.NavQuest;
+  const BC = node ? require("./basecard.js") : root.NavBaseCard;   // 기준 카드(C-56 R-1, 2026-10-28) — docs/base.md
   const SLUGS = ["01-idea", "02-plan", "03-requirements", "04-design", "05-skeleton", "06-build", "07-measure", "08-retro"];
   const PRD_PART = ["문제와 목표", "아이디어와 범위", "꼭 필요한 기능", "만드는 방법", "뼈대와 할 일", "만든 것과 확인", "잰 결과", "배운 것"];   // 기획서에서 그 단계가 맡는 절
   const MARK_START = "<!-- floe:start -->", MARK_END = "<!-- floe:end -->";
@@ -35,7 +36,7 @@
       return `## ${red(Q.shortOf(it.name))}\n\n> ${red(it.name)}\n\n${body.join("\n")}`;
     }).join("\n\n");
     const before = SLUGS.map((_, k) => k).filter((k) => k < n && R(k));
-    const mat = n === 0 ? `- 처음 말한 것: ${ctx.idea ? `“${ctx.idea}”` : "남아 있지 않아요"}` : before.length ? before.map((k) => `- ${label(k)} ${N.STAGES[k].title}에서 정한 것 — [${ctx.docOf(k).slice(5)}](../${ctx.docOf(k).slice(5)})`).join("\n") : "- 지난 단계 결과가 남아 있지 않아요";
+    const mat = n === 0 ? `- 처음 말한 것: ${ctx.idea ? `“${ctx.idea}”${ctx.srcLines ? ` … 통째로: [00-source/idea.md](../00-source/idea.md) 1 ~ ${ctx.srcLines}줄` : ""}` : "남아 있지 않아요"}` : before.length ? before.map((k) => `- ${label(k)} ${N.STAGES[k].title}에서 정한 것 — [${ctx.docOf(k).slice(5)}](../${ctx.docOf(k).slice(5)})`).join("\n") : "- 지난 단계 결과가 남아 있지 않아요";
     const prep = r.prep && r.prep.length ? `\n\n## 이 단계 전에 준비할 것\n\n${r.prep.map((x) => `- ${red(x)}`).join("\n")}` : "";
     // 증빙을 남기기 전(C-37)에 끝낸 단계는 날짜 · 누가가 없다 — '아직'이라고 지어내지 않고 '남아 있지 않아요'. 다음 단계 결과가 있으면 관문은 지난 것
     const NONE = "남아 있지 않아요(증빙을 남기기 전에 끝낸 단계)";
@@ -58,7 +59,7 @@
     const later = SLUGS.map((_, n) => n).filter((n) => !R(n)).map((n) => `- ${label(n)} · ${N.STAGES[n].title} — 아직(이 단계를 지나면 '${PRD_PART[n]}' 절이 생겨요)`).join("\n");
     return [MARK_START, `# 기획서${name ? ` — ${name}` : ""}`, "",
       "Floe의 단계를 지나며 정한 것을 한 장으로 묶었어요. 칸마다 누가 어떻게 정했는지는 [결정 기록](decisions.md)에, 단계마다의 근거는 각 단계 문서의 '증빙'에 있어요.", "",
-      "| 단계 | 상태 | 문서 |", "|---|---|---|", rows, "", "## 처음 말한 것", "", `> ${ctx.idea || "남아 있지 않아요"}`, "", parts, ...(later ? ["", "## 다음에 채울 것", "", later] : []), MARK_END, ""].join("\n");
+      "| 단계 | 상태 | 문서 |", "|---|---|---|", rows, "", "## 처음 말한 것", "", `> ${ctx.idea || "남아 있지 않아요"}${ctx.srcLines ? `\n>\n> 통째로: [00-source/idea.md](00-source/idea.md) 1 ~ ${ctx.srcLines}줄` : ""}`, "", parts, ...(later ? ["", "## 다음에 채울 것", "", later] : []), MARK_END, ""].join("\n");
   }
   // 결정 기록 — 칸마다 한 줄 + 지난 관문마다 한 줄
   function decisionsDoc(name, ctx) {
@@ -83,16 +84,22 @@
   }
 
   // 사용자 저장소에 둘 파일 — [{ path, text, merge? }]. merge면 그 파일의 글에 mergeSection으로 한 절만
-  function files({ topic = "", idea = "", results = {}, redact: hide = (t) => t } = {}) {
+  // F-68(2026-10-28, 이재엽 버튼 "통째로 파일에"): source(받은 글 전부)가 idea(앞 400자)보다 길면 docs/00-source/idea.md에 줄 번호와 함께 통째로 두고, 1단계 문서 · 기획서는 그 파일을 줄로 가리킨다. 가림(redact)을 거친다
+  const SOURCE_DOC = "docs/00-source/idea.md";
+  const sourceDoc = (text, name) => { const lines = text.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n"), w = String(lines.length).length;
+    return `# 처음 말한 것 — 받은 글 그대로${name ? ` (${name})` : ""}\n\nFloe가 받은 글을 자르지 않고 그대로 두었어요. 단계 문서의 '처음 말한 것'은 이 파일의 줄을 가리켜요. 비밀값 모양은 가렸어요.\n\n${lines.map((l, i) => `${String(i + 1).padStart(w)} | ${l}`).join("\n")}\n`; };
+  const CARD_DOC = "docs/base.md";   // 기준 카드 한 장(C-56 R-1) — Floe가 만든 카드라 덮어쓴다. 이름은 영문(파일 이름 규칙 — 받은 글이 경로가 되지 않게 A-Za-z0-9._/-만), 제목은 '이 프로젝트의 기준'
+  function files({ topic = "", idea = "", source = "", results = {}, card = null, redact: hide = (t) => t } = {}) {
     // 받은 글 안의 표시(<!-- floe:… -->)는 지운다 — 남겨 두면 mergeSection이 그 자리를 절의 끝으로 보고 올릴 때마다 꼬리가 쌓였다(2026-10-25 리뷰)
     const redact = (t) => String(hide(t)).replace(/<!--\s*floe:(?:start|end)\s*-->/gi, "");
     const R = (n) => results[n] || results[String(n)] || null;
     const name = redact(String(topic || "").trim());
     const docOf = (n) => (R(n) ? `docs/${SLUGS[n]}/${SLUGS[n].slice(3)}.md` : `docs/${SLUGS[n]}/README.md`);
-    const ctx = { R, redact, docOf, idea: redact(String(idea || "").trim().replace(/\r?\n/g, " ")) };
+    const src = redact(String(source || "")), srcLines = src.trim() ? src.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n").length : 0, hasSrc = src.trim().length > String(idea || "").trim().length;
+    const ctx = { R, redact, docOf, idea: redact(String(idea || "").trim().replace(/\r?\n/g, " ")), srcLines: hasSrc ? srcLines : 0 };
     const rows = SLUGS.map((slug, n) => `| ${label(n)} · ${N.STAGES[n].title} | [${slug}](${docOf(n).slice(5)}) | ${R(n) ? (R(n).passed || R(n + 1) ? "끝냄" : "확인함") : "아직"} |`).join("\n");
     const index = `${MARK_START}\n# 단계 문서${name ? ` — ${name}` : ""}\n\nFloe의 여덟 단계로 만들어요. 단계마다 폴더 하나 — 끝낸 단계는 정한 것과 증빙이, 아직인 단계는 할 일이 들어 있어요.\n\n`
-      + `- 기획서(끝낸 단계를 한 장으로): [PRD.md](PRD.md)\n- 결정 기록(누가 무엇을 어떻게 정했나): [decisions.md](decisions.md)\n\n| 단계 | 폴더 | 상태 |\n|---|---|---|\n${rows}\n${MARK_END}\n`;
+      + `- 기획서(끝낸 단계를 한 장으로): [PRD.md](PRD.md)\n- 결정 기록(누가 무엇을 어떻게 정했나): [decisions.md](decisions.md)${card && BC ? "\n- 이 프로젝트의 기준(1단계 관문의 카드): [base.md](base.md)" : ""}\n\n| 단계 | 폴더 | 상태 |\n|---|---|---|\n${rows}\n${MARK_END}\n`;
     const plan = R(1) ? docOf(1) : docOf(0);
     const links = SLUGS.map((_, n) => n).filter((n) => R(n)).map((n) => `- ${label(n)} ${N.STAGES[n].title}: [${docOf(n)}](${docOf(n)})`).join("\n");
     const readme = `${MARK_START}\n## 계획 (Floe)\n\n${name ? `**${name}** — ` : ""}Floe의 여덟 단계로 만들어요.\n\n- 기획서: [docs/PRD.md](docs/PRD.md)\n- 결정 기록: [docs/decisions.md](docs/decisions.md)\n${links}\n- 단계 폴더 목차: [docs/README.md](docs/README.md)\n${MARK_END}\n`;
@@ -101,7 +108,7 @@
       + "- 사람이 정한 것은 [docs/decisions.md](docs/decisions.md)에 있다 — 바꿔야 하면 바꾸기 전에 묻는다.\n"
       + "- 단계 문서는 docs/<단계 폴더>/에 둔다 — 목차는 [docs/README.md](docs/README.md).\n"
       + "- 비밀값(키 · 토큰 · 비밀번호 · .env)은 커밋하지 않는다.\n" + `${MARK_END}\n`;
-    return [{ path: "docs/README.md", text: index, merge: true }, ...SLUGS.map((_, n) => ({ path: docOf(n), text: R(n) ? stageDoc(n, R(n), name, ctx) : placeholder(n) })),
+    return [{ path: "docs/README.md", text: index, merge: true }, ...(hasSrc ? [{ path: SOURCE_DOC, text: sourceDoc(src, name) }] : []), ...(card && BC ? [{ path: CARD_DOC, text: redact(BC.toMarkdown(card, name)) }] : []), ...SLUGS.map((_, n) => ({ path: docOf(n), text: R(n) ? stageDoc(n, R(n), name, ctx) : placeholder(n) })),
       { path: MAIN_DOC, text: prdDoc(name, ctx), merge: true }, { path: LOG_DOC, text: decisionsDoc(name, ctx), merge: true },
       { path: "README.md", text: readme, merge: true }, { path: "CLAUDE.md", text: claude, merge: true }];
   }
@@ -118,7 +125,7 @@
 
   // 끝에 Claude Code가 이 둘마다 해냈는지 보고한다(server.js startTask의 checks — C-32 보고). 화면은 둘째(푸시)를 보고 '올라갔다'고 말한다
   const SHIP_CHECKS = ["위 파일들만 커밋했다", "지금 브랜치를 원격(origin)에 푸시했다"];
-  const api = { SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SHIP_CHECKS, files, mergeSection, shipRequest };
+  const api = { SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, CARD_DOC, SHIP_CHECKS, files, mergeSection, shipRequest };
   if (node) module.exports = api;
   else root.FloeDocs = api;
 })(typeof window !== "undefined" ? window : globalThis);

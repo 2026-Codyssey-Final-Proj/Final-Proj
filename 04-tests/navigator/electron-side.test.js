@@ -82,7 +82,7 @@ test("앱(main.js) — 설정 창은 테두리 없음 · 항상 위 · 불투명
   assert.match(block, /boundsFor\(kind, opt\.side, isl, wa, opt\.size\)/);
   assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? workBoundsNow\(wa\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\)/, "작업실은 작업 영역 가득 · 기억한 자리(C-42 R-1, 2026-10-27), 설정 창은 옆자리(C-41)");
   assert.match(block, /const ws = kind === "quest";/);
-  assert.match(block, /frame: ws, transparent: false, backgroundColor: ws \? "#E9EEF6" : "#16225E", alwaysOnTop: !ws, resizable: ws/);
+  assert.match(block, /frame: ws, transparent: false, backgroundColor: ws \? "#E9EEF6" : "#363E62", alwaysOnTop: !ws, resizable: ws/);
   assert.match(block, /if \(!ws\) w\.setAlwaysOnTop\(true, "floating"\)/);
   assert.match(block, /w\.loadURL\(`\$\{URL_\}navigator\/win\.html#\$\{kind\}`\)/, "화면 파일은 서버 주소로");
   assert.match(block, /win\.webContents\.send\("floe:win-closed", kind\)/, "사람이 닫으면 섬에");

@@ -58,6 +58,15 @@ async function paste(page, text) {
   await page.evaluate((t) => { const el = document.querySelector(".mc.chat [data-act=say]"); el.value = t; el.dispatchEvent(new Event("input", { bubbles: true })); }, text);
   await page.keyboard.press("Enter"); await wait(600);
 }
+// C-56(2026-10-28): '남은 칸 모두 맞아요'는 옮겨 온 칸에만 — 사람만 아는 칸은 하나씩 확인한다. 초안 카드를 끝까지: 맞아요 · 권한 크기 · 권한 예시 · 기획서로 키울지(권함)
+async function confirmAll(page) {
+  for (let k = 0; k < 12; k++) {
+    const sel = (await page.$(".mc.chat [data-act=draft-ok]")) ? ".mc.chat [data-act=draft-ok]" : (await page.$(".mc.chat [data-act=draft-size].pri, .mc.chat [data-act=draft-size][class*=pri]")) ? ".mc.chat [data-act=draft-size][class*=pri]"
+      : (await page.$(".mc.chat [data-act=draft-pick][class*=pri]")) ? ".mc.chat [data-act=draft-pick][class*=pri]" : (await page.$(".mc.chat [data-act=draft-alt].rec")) ? ".mc.chat [data-act=draft-alt].rec" : (await page.$(".mc.chat [data-act=draft-all]")) ? ".mc.chat [data-act=draft-all]" : null;
+    if (!sel) return;
+    await click(page, sel);
+  }
+}
 async function passGate(page) {
   await click(page, "[data-act=gate]"); await click(page, "[data-act=yes]");
   if (await page.$("[data-act=check-pick]")) { await click(page, "[data-act=check-pick]"); if (await page.$("[data-act=check-go]")) await click(page, "[data-act=check-go]"); }
@@ -93,7 +102,16 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.ok(await page.$(".qwin .jmap"), "도전과제의 흐름 보기");
     assert.equal(await page.$eval('.jmap .jm-stage[data-n="0"] .jm-count', (e) => e.textContent.trim()), "4/4");
     assert.ok((await page.$eval('.jmap .jm-stage[data-n="0"]', (e) => e.textContent)).includes("동아리 행사 신청을 종이로"), "채운 칸에는 적은 글");
-    await passGate(page);
+    // C-56 R-1(2026-10-28, 이재엽 버튼 "1단계 관문에서"): 1단계 관문 카드 = 이 프로젝트의 기준 — 옮겨 온 줄은 출처 칩, 성공은 사람이 채우는 빈칸 → 지나면 기록(card)에 '직접'
+    await click(page, "[data-act=gate]");
+    const bc = await page.evaluate(() => ({ rows: document.querySelectorAll(".mc.chat .bc .bc-row").length, who: document.querySelector(".mc.chat .bc .bc-row:nth-child(2) dd")?.textContent.replace(/\s+/g, " ").trim(), blank: !!document.querySelector('.mc.chat .bc input[data-act=card-field][data-v="success"]') }));
+    assert.equal(bc.rows, 8, "기준 카드 칸 여덟"); assert.match(bc.who || "", /옮겨 옴 · 1단계 Ⅲ/, `쓰는 사람은 1단계 Ⅲ에서: ${bc.who}`); assert.ok(bc.blank, "성공은 빈칸(입력)");
+    await page.type('.mc.chat .bc input[data-v="success"]', "신청 40건이 한곳에 모이면");
+    await click(page, "[data-act=yes]");   // 관문 카드는 이미 열려 있다 — passGate의 나머지만
+    if (await page.$("[data-act=check-pick]")) { await click(page, "[data-act=check-pick]"); if (await page.$("[data-act=check-go]")) await click(page, "[data-act=check-go]"); }
+    await wait(600);
+    const card = (await saved(page)).card;
+    assert.ok(card && card.success.by === "me" && card.success.text === "신청 40건이 한곳에 모이면" && card.who.by === "moved", `기준 카드가 기록에: ${JSON.stringify(card && card.success)}`);
     // 2단계 — 1단계 결과로 만든 초안(연습 예시), 제목은 주제, 받기 화면 없이 확인
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /2단계 · 동아리 행사 신청 앱/);
     assert.match(await nowSay(page), /맞나요/); assert.match(await nowSay(page), /예시예요/);
@@ -104,9 +122,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.ok((await page.$$('.jmap .jm-stage[data-n="1"] .jm-miss')).length >= 1, "2단계의 빈 칸이 보인다");
     await click(page, '.jmap .jm-stage[data-n="1"] [data-act=jmap-fill]');
     assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.dataset.act), "say", "채우기 — 채팅 칸으로");
-    const n2 = (await saved(page)).quest.objs.length;
-    for (let k = 0; k < n2; k++) { if (await page.$(".mc.chat [data-act=draft-ok]")) await click(page, ".mc.chat [data-act=draft-ok]"); else await click(page, '.mc.chat [data-act=draft-pick][data-i="0"]'); }
-    await wait(600);
+    await confirmAll(page); await wait(600);   // C-56: 칸마다 — 옮겨 온 칸은 이미 채워져 카드가 없다
     assert.match(await nowSay(page), /모두 했어요/);
     await passGate(page);
     // 2단계가 끝나면 문서로 묶어 올릴지 묻는다 — 파일 목록 · 미리 보기, 연습은 올리지 않는다
@@ -135,9 +151,11 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     const id = await ref.evaluate((e) => e.dataset.ref);
     await ref.hover(); await wait(200);
     assert.notEqual(await page.$eval(`.jm-cell[data-cell="${id}"]`, (e) => getComputedStyle(e).outlineStyle), "none", "재료에 올리면 그 칸이 빛난다");
-    const n3 = (await saved(page)).quest.objs.length;
-    for (let k = 0; k < n3; k++) await click(page, ".mc.chat [data-act=draft-ok]");
-    await wait(600);
+    // C-56 R-3(2026-10-28): 3단계 Ⅰ 초안이 2단계 Ⅲ와 같은 글이면 '옮겨 옴'으로 미리 채워진다(test-1 "같은 글 두 번") — 카드는 남은 칸만
+    const q3 = (await saved(page)).quest, moved3 = q3.by ? q3.by.filter((b) => b === "moved").length : 0;
+    if (!(await page.$(".qwin"))) await click(page, ".tb [data-act=qwin-toggle]"); await click(page, "[data-act=qtab][data-tab=quest]");
+    assert.equal((await page.$$(".qwin .ln .qs-moved")).length, moved3, `공책에 '옮겨 옴' 꼬리표 ${moved3}개`);
+    await confirmAll(page); await wait(600);
     assert.match(await nowSay(page), /모두 했어요/);
     await passGate(page);
     assert.match(await nowSay(page), /1 ~ 3단계에서 정한 것을 문서로 묶었어요 — 내 GitHub에 올릴까요/, "3단계 관문에서도 다시 묻는다");
@@ -163,7 +181,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     for (let n = 4; n <= 8; n++) {
       if (n > 4) await click(page, ".mc.chat [data-act=ship-later]");
       assert.match(await page.$eval(".tb-stage", (e) => e.textContent), new RegExp(`${n}단계 · `));
-      await click(page, ".mc.chat [data-act=draft-all]");
+      await confirmAll(page);   // C-56: 모두 맞아요 대신 칸마다
       await page.waitForFunction(() => /모두 했어요|관문 앞에서 멈췄어요/.test(document.querySelector(".msg.now .say")?.textContent || ""), { timeout: 5000 });
       if (await page.$(".mc.chat [data-act=gate-skip]")) {
         stops.push(n);
@@ -176,7 +194,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.match(await nowSay(page), /1 ~ 8단계에서 정한 것을 문서로 묶었어요/, "마지막 관문에서도 올릴지 묻는다");
     const s8 = await saved(page);
     assert.equal(s8.results["7"].checkBy, "confirm", "확인한 대로(AI 없이)"); assert.match(s8.results["7"].passed, /^\d{4}-/);
-    assert.equal(s8.results["3"].items[0].by, "pick"); assert.ok(s8.results["3"].items.slice(1).every((x) => x.by === "ok"), "모두 맞아요 = 그대로");
+    assert.equal(s8.results["3"].items[0].by, "pick"); assert.ok(s8.results["3"].items.slice(1).every((x) => ["ok", "pick", "moved", "skip"].includes(x.by)), "칸마다 확인 — 그대로 · 고름 · 옮김 · 건너뜀(C-56)");
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });
@@ -199,7 +217,7 @@ test("같은 플로로 말은 한 번만 쌓인다 — 같은 장면에서 내�
   } finally { await browser.close(); }
 });
 
-test("1단계 '남은 칸 모두 맞아요' — 줄만이 아니라 만드는 크기도 플로로가 권한 크기(보통)로, 2단계는 그 크기의 할 일 수로(2026-10-26 리뷰)", { skip }, async () => {
+test("C-56 — '남은 칸 모두 맞아요'는 옮겨 온 칸에만: 1단계(사람만 아는 칸)에는 없고 칸마다 확인한다, 권한 크기(보통)를 고르면 만드는 크기가 되고 2단계는 그 크기의 할 일 수로", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
     const page = await browser.newPage(); const errors = [];
@@ -210,10 +228,11 @@ test("1단계 '남은 칸 모두 맞아요' — 줄만이 아니라 만드는 �
     await page.waitForSelector(".mc.chat [data-act=say]", { timeout: 8000 });
     await paste(page, "동아리 행사 신청 앱을 만들고 싶어요");
     assert.notEqual((await saved(page)).tier, "Xpress", "처음엔 기본 크기");
-    await click(page, ".mc.chat [data-act=draft-all]");
+    assert.ok(!(await page.$(".mc.chat [data-act=draft-all]")), "사람만 아는 칸(쓰기)에는 '남은 칸 모두 맞아요'가 없다(C-56 R-3)");
+    await confirmAll(page);
     await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
     const s = await saved(page);
-    assert.equal(s.tier, "Xpress", "권한 크기 '보통'이 만드는 크기가 된다 — 크기 칩을 누른 것과 같게");
+    assert.equal(s.tier, "Xpress", "권한 크기 '보통'을 고르면 만드는 크기가 된다");
     assert.equal(s.results["0"].items[3].lines[0].startsWith("크기: 보통"), true);
     await passGate(page);
     assert.equal((await saved(page)).quest.objs.length, Nav.criteriaFor(1, "Xpress").length, "2단계는 보통의 할 일 수로");
@@ -253,8 +272,7 @@ async function openLive(browser, { stageFail = false } = {}) {
 // 1단계를 확인하고 관문을 지난다 — 돌려주는 것: 관문 전에 미리 부른 단계 초안 수(C-40 '다음 단계 초안 미리')
 async function stageOne(page, seen) {
   await paste(page, "독서 모임 알림 앱을 만들고 싶어요. 모임 날짜를 자꾸 잊어요.");
-  for (let k = 0; k < 3; k++) await click(page, ".mc.chat [data-act=draft-ok]");
-  await click(page, '.mc.chat [data-act=draft-size][data-i="1"]');
+  await confirmAll(page);   // C-56: 칸마다(맞아요 ×3 · 권한 크기)
   await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
   const before = seen ? seen.stagedraft.length : 0;
   await passGate(page);
@@ -273,7 +291,7 @@ test("진짜 AI(가로챔): 관문을 지나면 1단계 결과 · 받은 글로 
     assert.deepEqual(sd.prev.map((p) => p.stage), [0], "지난 단계 결과 — 단계마다 { stage, items }(C-39)");
     assert.deepEqual(sd.prev[0].items.map((x) => x.lines[0]), [DRAFT.pain, DRAFT.change, DRAFT.who, `크기: 보통 — ${DRAFT.sizeWhy}`], "1단계 결과");
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /2단계 · 독서 모임 알림 앱/);
-    for (let k = 0; k < Nav.criteriaFor(1, "Xpress").length; k++) await click(page, ".mc.chat [data-act=draft-ok]");
+    await confirmAll(page);   // C-56: 칸마다 — 옮겨 온 칸은 카드 없이
     await page.waitForFunction(() => document.querySelector(".msg.now .say")?.textContent.includes("모두 했어요"), { timeout: 5000 });
     assert.equal(seen.judge.length, 0, "초안을 칸마다 확인한 장은 AI가 다시 살펴보지 않는다(C-40, FR-1 · FR-2 바뀜)");
     await passGate(page);

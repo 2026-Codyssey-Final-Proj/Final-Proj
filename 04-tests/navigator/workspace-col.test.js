@@ -55,7 +55,7 @@ test("win.js · win.html — 옆 칸의 자리는 html[data-side], 크기는 --c
 test("app.css — 옆 칸은 섬과 같은 네이비 토큰(html.win-quest .isl-col), 옆(narrow)이면 플로로 위 · 대화 아래 · 위 줄 두 줄 · 몸통 세로 스크롤", () => {
   const c = read("navigator/app.css");
   assert.match(c, /html\.in-win:not\(\.win-quest\),html\.win-quest \.isl-col\{/);
-  assert.match(c, /\.isl-col\{display:flex;flex-direction:column;min-width:0;min-height:0;padding:10px;background:#16225E\}/);
+  assert.match(c, /\.isl-col\{display:flex;flex-direction:column;min-width:0;min-height:0;padding:10px;background:var\(--isl\)\}/);
   assert.match(c, /\.isl-col \.isl-body\{flex:1 1 auto;min-height:0;overflow:hidden auto\}/);
   assert.match(c, /\.isl-col\.narrow \.mc\.chat\{grid-template-columns:minmax\(0,1fr\)\}/); assert.match(c, /\.isl-col\.narrow \.tb\{flex-wrap:wrap\}/);
   assert.ok(!c.includes("dock-narrow") && !c.includes("dock-wide"));

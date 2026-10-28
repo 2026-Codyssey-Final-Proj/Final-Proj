@@ -156,8 +156,8 @@ test("app.js — C-37: 단계 결과(results)를 남기고 도전과제의 기�
   assert.ok(keep.includes('"results"'), "단계 결과는 다시 켜도 남는다");
   assert.match(app, /st\.results = \{ \.\.\.st\.results, \[st\.quest\.chap\]: \{ \.\.\.QU\.resultOf\(st\.quest\), at: ymd\(\), check: checkOf\(j\)/, "보고가 된 퀘스트의 결과 + 확인한 날 · 완료 기준(C-39 — R-10부터 checkOf: why · skipped도)");
   assert.match(app, /function treeMap\(cur\)/); assert.match(app, /"jmap-fill": /);
-  assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
-  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", results: shipResults\(\) \}\)/, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
+  assert.match(app, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev, base: baseText\(\) \}\)/, "2단계 초안 — 받은 글 · 1단계 결과");
+  assert.match(app, /callAI\("\/api\/docs", \{ topic: st\.topic, idea: st\.idea \|\| "", source: st\.source \|\| "", results: shipResults\(\), card: st\.card \|\| null \}\)/, "문서 올리기 — 결과 · 처음 말한 것만 보낸다(경로 · 글은 서버가 docs.js로)");
   assert.match(read("navigator/index.html"), /docs\.js/, "미리 보기도 같은 docs.js");
 });
 
@@ -172,8 +172,72 @@ test("app.js — C-39: 고르는 칩은 누가 정했나 = 고름(pick) · 관�
 
 // ── C-40(2026-10-26, 이재엽 "4 ~ 8단계 … 예시 … 선택 · 너무 느려 · 퀘스트에서도 … 어렵게") — 새 맥락 리뷰 뒤 ──
 test("app.js — C-40: 1단계 '남은 칸 모두 맞아요'는 만드는 크기도 권한 크기로 · 미리 부른 초안은 같은 기다림 화면(callAI pending) · 확인한 대로(checkBy)는 그 보고에만", () => {
-  const all = app.slice(app.indexOf('"draft-all": '), app.indexOf('"draft-all": ') + 400);
-  assert.match(all, /setTier\(QU\.SIZE_TIER\[q\.draft\.size\]\)/, "크기 칩과 같게");
+  assert.ok(!app.includes('"draft-all"') && !app.includes('act: "draft-all"'), "C-56 R-3(새 맥락 리뷰 2026-10-28): '남은 칸 모두 맞아요'는 뺐다 — 옮겨 온 칸은 미리 채워지므로 남은 칸은 하나씩");
   assert.match(app, /async function callAI\(url, body, pending = null\)/); assert.match(app, /callAI\(null, null, hit\.p\)/);
   assert.match(app, /function landed\(j0, tokens, sent = st\.text, checkBy = ""\)/);   // R-10(2026-10-27): 들어온 판정 j0에 코드 규칙(gateRules)을 거친 j를 쓴다 assert.ok(!app.includes("checkByNext"), "전역 값 없음");
+});
+
+// F-68(2026-10-28, 이재엽 버튼 "통째로 파일에"): 받은 글은 자르지 않고 기록(source)에 두고 문서로 묶을 때 docs/00-source/idea.md로. AI에 넘기는 앞 400자(idea)는 그대로 — 잘라 넘기면 화면에 한 줄
+test("app.js — 받은 글 전부(source)를 기록에 두고 /api/docs에 보낸다, 400자를 넘으면 '앞 400자만 넘겨요' 한 줄, API.md 3-23에 source", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /"results", "prep", "source", "card"\]/, "source는 기록(KEEP)에");
+  assert.match(a, /st\.source = text;/, "처음 말한 글 전부"); assert.match(a, /source: st\.source \|\| ""/, "/api/docs에 source");
+  assert.match(a, /앞 \$\{N\.IDEA_MAX\}자만/, "잘라 넘기면 화면에 한 줄");
+  assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /`source`[^\n]*64KB/, "API.md 3-23");
+});
+
+// C-56 R-3(2026-10-28): 상태 넷을 화면에 — 초안이 오면 applyStates(옮겨 온 칸은 '옮김'으로 미리, 건너뛸 칸은 '건너뜀 — 까닭'), 판정에서 건너뜀은 넘김(까닭) · 먼저는 안 됨, '남은 칸 모두 맞아요'는 옮겨 온 칸에만, 공책 줄의 꼬리표, 서버가 queststate.js를 내준다
+test("app.js — 상태 넷: applyStates가 초안 뒤에 붙고, gateApply가 건너뜀 → 넘김(까닭) · 먼저 → 안 됨, 모두 맞아요는 옮겨 온 칸에만, 먼저 카드(갈 곳 · 아직 못 함)", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const QS = window\.NavQuestState/); assert.match(a, /applyStates\(QU\.withDraft\(/); assert.equal((a.match(/applyStates\(QU\.withStageDraft\(/g) || []).length, 2, "연습 · 진짜 초안 둘 다");
+  assert.match(a, /if \(x\.state === "skip"\) return \{ \.\.\.c, met: true, skipped: true, reason: x\.why \}; if \(x\.state === "first"\) return \{ \.\.\.c, met: false, why: "first" \};/);
+  assert.match(a, /\.\.\.\(skipOf\(j\) \? \{ skip: skipOf\(j\) \} : \{\}\)/, "결과에 건너뜀 까닭(F-62와 같은 줄)");
+  assert.ok(!/act: "draft-all"/.test(a), "'남은 칸 모두 맞아요' 단추 없음 — 옮겨 온 칸은 미리 채워지니 남은 칸은 하나씩(새 맥락 리뷰 2026-10-28)"); assert.match(a, /"first-go": /); assert.match(a, /"first-notyet": /); assert.match(a, /class="qs qs-\$\{x\.state\}"/);
+  assert.match(read("navigator/index.html"), /queststate\.js/); assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8"), /"queststate\.js"/);
+});
+
+// C-56 R-1(2026-10-28, 이재엽 버튼 "1단계 관문에서"): 1단계 관문 카드에 기준 카드(옮겨 온 줄은 출처 칩 · 성공은 사람이 채우는 빈칸) → 지나면 st.card(기록)에, /api/docs에 card로, 카드를 고치면 준비된 퀘스트를 다시 짓는다
+test("app.js — 기준 카드: 1단계 관문에 보이고(basecard.js), 성공 칸을 적으면 '직접', 지나면 기록 · 문서로, 고치면 준비된 퀘스트 다시", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const BC = window\.NavBaseCard/); assert.match(a, /"prep", "source", "card"\]/, "기록(KEEP)에");
+  assert.match(a, /s\.n === 0 && BC \? \{ body: baseCardHTML\(/, "1단계 관문 카드의 몸통"); assert.match(a, /data-act="card-field"/, "사람이 채우는 칸");
+  assert.match(a, /st\.card = BC\.withEdits\(BC\.build\(\{ results: st\.results, source: st\.source \}\), st\.cardEdits\)/, "지날 때 카드를 기록에");
+  assert.match(a, /card: st\.card \|\| null/, "/api/docs에 card"); assert.match(a, /"card-edit": /, "고치면 다시 짓는다");
+  assert.match(read("navigator/index.html"), /basecard\.js/); assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8"), /"basecard\.js"/);
+});
+
+// C-56 R-2(2026-10-28): 화면은 이름을 크게(nameOf) · 방법 이름은 회색 꼬리표, 초안 요청에 기준 카드(base)를, 2단계 끝 그리기는 진짜 AI면 /api/prepare(한 번)로 — 못 받으면 규칙(stagemap)으로
+test("app.js — 이름은 nameOf로(공책 · 확인 카드 · 캔버스 ③ · 오른쪽 칸), 초안 요청에 base, prep-draw는 live면 /api/prepare → 규칙 카드와 합침", () => {
+  const a = read("navigator/app.js");
+  assert.ok((a.match(/QU\.nameOf\(q, i\)/g) || []).length >= 4, "이름은 nameOf"); assert.match(a, /class="method"/, "방법 이름 꼬리표");
+  assert.match(a, /callAI\("\/api\/stagedraft", \{ stage: n, tier: st\.tier, idea, prev, base: baseText\(\) \}\)/, "초안 요청에 기준 카드");
+  assert.match(a, /callAI\("\/api\/prepare", \{ tier: st\.tier, idea: ideaNow\(\), prev: prevOf\(2\), base: baseText\(\) \}\)/, "준비 요청은 AI 한 번"); assert.match(a, /mergePrepared\(/, "규칙 카드와 합침");
+  assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /POST \/api\/prepare/, "API.md");
+});
+
+// C-56 R-4(2026-10-28): 묻는 카드 · 확인 카드에 '폴더에서 찾기' 칩 — /api/find로 후보 줄을 받아 원문(파일 · 줄)과 나란히, '이 줄로'를 누르면 그 줄 그대로 '옮김'(by moved), 원문은 파일 보기로 연다. 서버 없이 · 연습은 칩이 없다
+test("app.js — 폴더에서 찾기: 칩 → /api/find → 후보 줄 카드(파일 · 줄 · 원문) → '이 줄로' = fillNow(text, 'moved')", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /act: "find-lines"/, "칩"); assert.match(a, /fetch\(`\/api\/find\?q=\$\{encodeURIComponent\(/, "서버에서 찾는다"); assert.match(a, /"find-use": /, "이 줄로");
+  assert.match(a, /fillNow\(x\.text, "moved"\)/, "그 줄 그대로 옮김"); assert.match(a, /class="found"/, "후보 줄 카드"); assert.match(a, /canLive && st\.mode !== "fixture"/, "연습 · 서버 없이는 없다");
+  assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /GET \/api\/find/, "API.md");
+});
+
+// C-56 R-5(2026-10-28, 이재엽 버튼 "다음 단계 미리까지"): 훅 알림(일을 마쳤어요) 뒤 몇 초 모아 지금 단계 초안을 방금 한 일로 다시 맞추고(/api/stagedraft work), 다음 단계 초안도 다시 미리 부른다. '방금 바뀜' 띠 한 줄, 사람이 적은 칸은 덮지 않고 '다시 볼까요?'
+test("app.js — 작업을 따라: onEvent → scheduleRefit(몇 초 모음) → /api/stagedraft에 work → QU.refit → 띠 + 다시 볼까요 칩 → 다음 단계 미리(prefetch). 진짜 AI 모드만", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const REFIT_MS = \d+/, "모으는 시간"); assert.match(a, /scheduleRefit\(ev\)/, "알림에서"); assert.match(a, /QU\.refit\(/, "덮지 않는 규칙은 quest.js");
+  assert.match(a, /body: JSON\.stringify\(\{ stage: q\.chap, [^}]*work[^}]*\}\)/, "방금 한 일을 보낸다"); assert.match(a, /방금 바뀜/, "띠"); assert.match(a, /"refit-use": /, "새 줄로"); assert.match(a, /"refit-keep": /, "그대로");
+  assert.ok(/pre = null;\s*prefetch\(st\.quest\)/.test(a.slice(a.indexOf("function refitNow"))), "다음 단계 초안도 다시 미리(버튼 '다음 단계 미리까지')");
+  assert.match(a.slice(a.indexOf("function scheduleRefit")), /st\.mode !== "live"/, "연습은 하지 않는다");
+});
+
+// C-54 ⑧ ⑨(2026-10-28, 디자인 넘김 ⓔ+ · 이재엽 버튼 "둘다 할것" · "'흐름 따라가기'에서만"): 지도의 끝난 · 지금 카드를 누르면 그 자리에서 커져(누르기 + 확대) 줄 하나 = 할 일 → 문서의 절 ← 재료, 줄을 누르면 오른쪽 칸에
+//   누가 정했나 · 재료가 온 곳 · 이 줄을 쓰는 다음 단계 · 파일 보기 / 틀로 맡기기(빈 칸은 플로로 초안 + '채팅에서 같이 적기'). 흐름 보기에만 짝 선(세로 길 셋)과 '두 칸 나란히'
+test("app.js — 얼음 조각 가까이: 고른 끝난 · 지금 카드는 big + 줄(.sm-row, map-line) → wside .ws-line(누가 · 재료 · 다음 단계 · 열기 · 채팅); 흐름 보기에 .jm-rails + pair-sel → .jm-side", () => {
+  const a = read("navigator/app.js"), c = read("navigator/app.css");
+  assert.match(a, /class="sm-card \$\{c\.state\} sel big"/, "고른 카드가 커진다"); assert.match(a, /data-act="map-line"/, "줄 하나 = 할 일"); assert.match(a, /"map-line": /); assert.match(a, /"map-chat": /, "채팅에서 같이 적기");
+  assert.match(a, /class="ws-line"/, "오른쪽 칸"); assert.match(a, /SM\.usedBy\(/, "이 줄을 쓰는 다음 단계"); assert.match(a, /class="jm-rails"/, "짝 선"); assert.match(a, /"pair-sel": /); assert.match(a, /class="jm-side \$\{pairSel\[0\]\}"/, "두 칸 나란히");
+  assert.ok(!/cardsMap[\s\S]*?jm-rails/.test(a.slice(a.indexOf("function cardsMap"), a.indexOf("function treePane"))), "짝 선은 지도(카드)에는 없다 — 흐름 따라가기에서만");
+  assert.match(c, /\.sm-cell\.big\{grid-column:1\/-1/, "큰 카드는 한 줄 전체"); assert.match(c, /@keyframes sm-zoom/, "확대 움직임"); assert.match(c, /\.jm-rails i\.a\{/, "길 셋의 색");
 });

@@ -64,3 +64,18 @@
 
 네 가장자리 모두 e2e [pill-overlay.test.js](../../../../04-tests/e2e/pill-overlay.test.js) R-2가 접힌 칸의 바탕이 비치는지(`rgba(0, 0, 0, 0)`)와 알약만 색이 있는지를 잰다. 위 C-46 절의 `pill-col-*-folded.png`가 고치기 전 모습이다.
 F-62(넘긴 기준의 까닭)는 화면이 아니라 문서 — [flow-api.test.js](../../../../04-tests/navigator/flow-api.test.js)가 단계 문서의 '넘김(까닭: …)'과 결정 기록의 '넘김 n — 까닭'을 본다.
+
+## 디자인 바탕 · 맞춤 퀘스트 · 지도 보강 (2026-10-28, 브랜치 `v2/design-questfit`) <!-- claude-drafted: 2026-10-28 -->
+
+[디자인 넘김](../../../00-overview/기록/fable-handoff-2026-10-28-design.md) ⓐ+ · ⓔ+, [questfit 넘김](../../../00-overview/기록/fable-handoff-2026-10-28-questfit.md) ⓐ ~ ⓕ — PR #232. '옮김' · '건너뜀' · '먼저' 배지(R-3)는 연습 예시에 그런 칸이 없고, '폴더에서 찾기'(R-4) · '방금 바뀜'(R-5)은 연결한 폴더 · 훅 알림이 있는 진짜 AI 모드에서만 보여 사진이 없다(시험 files-api · flow-api · modes가 확인). 목업은 [캔버스 v10](https://claude.ai/artifact/1To4aBVaPbF74QoBjy7Pf3)과 [맞춤 퀘스트 캔버스](https://claude.ai/artifact/UbhwLS5bcB2TWR2Pmcd3RX)(이재엽 계정).
+
+| 장면 | 목업 보드 | 사진 |
+|---|---|---|
+| 1440 × 900 — 섬(#363E62) + 작업실(종이 #F2F5FA), 글 Gowun Dodum · 제목 Bagel Fat One (C-57) | ① ③ | [design-1440.png](design-1440.png) |
+| 1280 × 900 — 같은 것 | ① ③ | [design-1280.png](design-1280.png) |
+| 앱의 섬(in-app) + 설정 (C-57) | ③ | [design-settings.png](design-settings.png) |
+| 1단계 관문의 기준 카드 — 만드는 것 · 쓰는 사람 · 크기 · 재료 · 성공(빈칸은 사람이) (C-56 R-1) | 맞춤 ③ | [questfit-basecard.png](questfit-basecard.png) |
+| 2단계 확인 카드 — 이 프로젝트의 말로 된 이름 + 방법 꼬리표, 옮겨 온 칸은 '옮김' (C-56 R-2 · R-3) | 맞춤 ④ ⑥ | [questfit-confirm.png](questfit-confirm.png) |
+| 지도 — 끝난 카드를 누르면 커져 줄마다 할 일 → 문서 ← 재료, 줄을 누르면 오른쪽 칸 (C-54 ⑧) | ⑧ | [map-zoom.png](map-zoom.png) |
+| 흐름 — 오른쪽 길 셋(1↔8 · 2↔7 · 3↔6)과 짝 단추 (C-54 ⑨) | ⑨ | [map-rails.png](map-rails.png) |
+| 흐름 — 짝 단추를 누르면 두 칸 나란히(정한 곳 → 확인하는 곳) (C-54 ⑨) | ⑨ | [map-pairs.png](map-pairs.png) |

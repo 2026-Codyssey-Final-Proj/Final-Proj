@@ -38,9 +38,11 @@
 | `POST /api/quest` | 섬 — 퀘스트를 만들 때(C-22, 2026-10-21) | 출처 · 확인 값(쿠키) | `{ok, quest:{desc, why, qa[]}, tokens}` | 403 · 413 · 400 · 502 |
 | `GET /api/files` | 섬 — 작업실을 열 때(C-42 R-8, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, files:[{name, path, dir, depth}], total, cut, unread, depth, max, why}` — 연결한 폴더의 이름만, 깊이 3 · 200개 | 403 |
 | `GET /api/file?i=N` | 섬 — 파일 칸에서 파일을 누를 때(C-43, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, i, name, path, kind, text, size, mtime, changed}` — 목록의 N번 파일(글 파일 · 512KB까지), 바뀐 줄은 git과 다른 [시작, 개수]. `ok:false`면 `why`(big · binary) | 403 · 400 · 404 |
+| `GET /api/find?q=<할 일 이름>` | 섬 — 묻는 카드 · 확인 카드의 '폴더에서 찾기' 칩(C-56 R-4, 2026-10-28) | 출처 · 확인 값(쿠키) | `{ok, found:[{i, path, line, text, hits}], files}` — 마지막 목록의 글 파일(md · txt, 64KB · 20개까지)에서 그 칸의 답 후보 줄 셋(원문 그대로, 가림). 목록을 모르면 `why:"folder"` | 403 · 400 |
 | `GET /api/docmap?now=<경로>` | 작업실의 문서 지도 탭(C-45, 2026-10-27) | 출처 · 확인 값(쿠키) | `{ok, project, board}` — 문서(docs/** · README · CLAUDE.md)를 상자로, md 링크를 선으로 이은 archi-board 보드 데이터 | 403 |
 | `POST /api/file` | 섬 — 연 파일을 저장할 때(C-43) | 출처 · 확인 값(쿠키) | `{i, path, text, mtime, eol?, force?, overwrite?, ignoreBusy?, commit?}` → `{ok, mtime, task, note}` — 그 파일에만 쓰고 commit이면 그 파일만 커밋 · 푸시를 Claude Code에 | 403 · 400 · 404 · 409(moved · sensitive · changed · busy) · 413 · 500 |
 | `POST /api/preset` | 섬 — 연 파일 머리의 '틀로 맡기기' · 채팅 '문서 틀'(C-44, 2026-10-27) | 출처 · 확인 값(쿠키) | `{i 또는 path(docs/…md), preset, stage?, note?}` → 3-16과 같은 `{ok, task, preset, name}` — presets.js의 글 · 끝 조건으로 Claude Code에 | 403 · 400 · 404 · 409 · 502 |
+| `POST /api/prepare` | 섬 — 2단계 끝 '기획서로 3 ~ 8단계 그리기'(C-56 R-2 · C-54, 2026-10-28), 진짜 AI 모드만 | 출처 · 확인 값(쿠키) | `{tier?, idea, prev[{stage, items}], base?}` → `{ok, prepare:{cards:{2..7:{title, think, act, from}}, say}, tokens}` — 빠른 모델 한 번 | 403 · 400 · 502 |
 | `POST /api/start` | 섬 — 처음 채팅에 원하는 것을 보냈을 때(C-36, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, start:{topic, pain, change, who, size, sizeWhy}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/stagedraft` | 섬 — 1단계 관문을 지났을 때(C-37, 2026-10-25) | 출처 · 확인 값(쿠키) | `{ok, draft:{items[{text} 또는 {pick, why}], say}, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/docs` | 섬 — 2단계를 마치고 '올리기'를 눌렀을 때(C-37) | 출처 · 확인 값(쿠키) | `{ok, project, files[], task}` | 403 · 413 · 400 · 409 · 500 |
@@ -542,12 +544,13 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
   - 빠른 모델 · 낮은 생각 깊이 · 글 길이 4,096(예시 셋은 길다)로 부른다 — 3-21과 같다.
 - 거절: 400 `초안을 만드는 단계가 아님 — 지금은 2 · 3 · 4 · 5 · 6 · 7 · 8단계만` · 400 `다른 예시 요청의 모양이 맞지 않음` · 400 `모르는 등급` · 400 `받은 글이 비어 있음` · 400 `받은 글이 너무 김` · 400 `지난 단계 결과의 모양이 맞지 않음 — [{ stage, items }], 바로 앞 단계는 꼭 …` · 502 `단계 초안 형식이 맞지 않음`(개수가 다르거나 기획서 칸이 셋 밖).
 - 화면: 관문을 지나면 부르고, 받으면 다음 장 퀘스트를 받기 화면 없이 칸마다 확인한다(맨 위에 준비할 것, 칸마다 '재료 — 2단계 Ⅲ …'). 4 ~ 8단계는 예시 셋 중 고르기 · 다른 예시, 어느 장이든 '남은 칸 모두 맞아요'. **미리 부르기**(C-40): 지금 장 초안을 받자마자 '모두 맞아요라면' 결과로, 지금 장을 다 적으면 실제 결과로 다음 장을 뒤에서 부르고, 관문 뒤 지난 결과가 같으면(등급 · 처음 말한 것 · prev) 그 답을 쓴다. 비밀값처럼 보이면 미리 보내지 않는다. `say`는 받았을 때 한 번 말한다. 화면은 한 줄을 400자까지만 적는다(`quest.js` `fill`) — 이 주소와 3-23이 받는 길이. 못 받으면 전처럼 받기 화면 · 한 줄씩. 연습은 예시 초안(`quest.js` `exampleStageDraft`). 시험: [`flow-api.test.js`](../../04-tests/navigator/flow-api.test.js) · [`stage-draft.test.js`](../../04-tests/navigator/stage-draft.test.js) · [`stage3-evidence.test.js`](../../04-tests/navigator/stage3-evidence.test.js) · [`stages-all.test.js`](../../04-tests/navigator/stages-all.test.js) · E2E [`quest-flow.test.js`](../../04-tests/e2e/quest-flow.test.js)
+- <!-- claude-drafted: 2026-10-28 --> **C-56 R-5 작업을 따라(2026-10-28, 이재엽 버튼 "다음 단계 미리까지"):** 본문에 `work`(코딩 도구가 방금 한 일 — 훅 알림의 작업 글, `WORK_MAX` 600자)를 주면 요청문에 `<방금한일>`로 들어가고 "그 일로 달라지는 칸만 바꾼다"고 지시한다. 섬은 '일을 마쳤어요' 알림 뒤 몇 초(`REFIT_MS`) 모아 지금 단계 초안을 이걸로 다시 받고(`quest.js refit` — 사람이 적은 칸은 덮지 않고 '다시 볼까요?'만, 안 적은 칸만 바꿈), '방금 바뀜' 띠 한 줄을 보이고, 다음 단계 초안도 다시 미리 부른다(3-22 prefetch). 연습 모드는 하지 않는다.
 
 ### 3-23. `POST /api/docs` — 단계 문서를 작업 폴더에 쓰고, 커밋 · 푸시는 Claude Code에 (C-37, 2026-10-25)
 
 <!-- claude-drafted: 2026-10-25 — 이재엽 "2단계가 끝나면 … docs와 같은 폴더들을 만들고 md들을 정리해서 깃허브에" · 버튼 "docs 단계 폴더 + CLAUDE.md" · "Floe가 만들고, 커밋 · 푸시는 Claude Code" -->
 - 확인 값이 있어야 한다(파일을 쓰고 Claude Code를 연다 — `BOOK_ROUTES`). AI는 부르지 않는다.
-- 본문 `{ topic, idea?, results }` — `results = { "0": {title, items[{name, lines[]}]}, "1": … }`, 1 · 2단계(0 · 1)가 다 있어야. `idea`는 처음 말한 것(400자까지 — 기획서 · 1단계 재료).
+- 본문 `{ topic, idea?, results }` — `results = { "0": {title, items[{name, lines[]}]}, "1": … }`, 1 · 2단계(0 · 1)가 다 있어야. `idea`는 처음 말한 것(400자까지 — 기획서 · 1단계 재료). `source`는 받은 글 **전부**(64KB까지 — F-68 2026-10-28, 이재엽 버튼 "통째로 파일에"): `idea`보다 길면 `docs/00-source/idea.md`에 줄 번호와 함께 통째로 쓰고(가림을 거침, 덮어씀) 1단계 문서 · 기획서의 '처음 말한 것'이 그 파일을 `1 ~ N줄`로 가리킨다. 넘으면 400 — 잘라 쓰지 않는다. `card`는 1단계 관문의 **기준 카드**(C-56 R-1 2026-10-28, basecard.js — 칸 여덟 `{ text(200자), by(moved · me), blank, lines?[{text, line}], from?, note? }`): 있으면 `docs/base.md`('이 프로젝트의 기준') 한 장을 쓴다(덮어씀). 모양이 틀리면 400.
   - C-40: 단계마다 `checkBy`(`confirm` — 초안을 칸마다 확인한 대로, AI 판정 없이. 없으면 AI가 살펴본 것). 문서의 완료 기준 머리에 그대로 적는다.
   - C-39 증빙(모두 없어도 된다): 칸마다 `by`(`ok` 그대로 · `edit` 고침 · `me` 직접 · `pick` 고름) · `draft`(플로로가 낸 것, 400자) · `from`(재료 `[{ s, i }]` 6개까지), 단계마다 `prep`(3줄 · 160자) · `at` · `passed`(`YYYY-MM-DD` — 칸을 다 확인한 날 · 관문을 지난 날) · `check`(완료 기준 `[{ text, met, evidence }]` 8개까지). 모르는 칸은 버린다. 화면은 **결과만** 보낸다 — 파일 이름 · 글은 서버가 [docs.js](docs.js) `files`로 만든다(받은 글이 경로가 되지 않는다). 글은 할 일 이름까지 `sensitive.js`로 가린다(공개 저장소일 수 있다).
 - 쓰는 것: 3-16 '폴더 고르기'의 작업 폴더에 `docs/<01-idea … 08-retro>/`(끝낸 단계는 결과 md와 **증빙 칸**, 아직인 단계는 README 틀) · `docs/PRD.md`(**기획서** — 처음 말한 것 · 끝낸 단계마다 한 절 · 단계 상태 표) · `docs/decisions.md`(**결정 기록** — 칸마다 한 줄 · 지난 관문마다 한 줄) · `docs/README.md`(목차) · `README.md` · `CLAUDE.md`(기획서 · 결정 기록과 이 셋은 표시 `<!-- floe:start -->` ~ `<!-- floe:end -->` 사이 한 절만 — 내 글은 그대로). 가는 길에 바로가기가 있거나 파일 자리가 파일이 아니면 **하나도 쓰지 않는다**.
@@ -635,3 +638,18 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - 확인하는 것: 주소마다 성공 모양(칸 이름·타입·개수), 거절마다 상태 코드와 이유, 등급(안 보냄·`null`·`Full`이 같음, Xpress·Lite는 그 등급의 개수), 확인 값(머리글·쿠키·머리글 먼저), 크기(40,000자 경계), 화면 파일 목록, 키·글이 사용량·녹화에 남지 않는 것.
 - 처음 설정(3-10 · 3-11)은 [`setup-api.test.js`](../../04-tests/navigator/setup-api.test.js) — 칸과 값이 새지 않는 것, 확인 값, 재생 중 확인, 스크립트 · 스타일의 `no-cache`(2026-10-19).
 - AI 진행(3-2-1 · 3-12, 2026-10-20)은 `api-contract.test.js`(403 · 모양 · since · 가림 · 50줄 · 비우기 · 상태)와 [`hook-steps.test.js`](../../04-tests/navigator/hook-steps.test.js)(hook.js를 실제로 돌려 — 본문에 내용이 없고, 서버가 꺼져 있을 때 600ms 안에 끝남).
+
+### 3-29. `POST /api/prepare` — 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 이 프로젝트의 말로 (C-56 R-2 · C-54, 2026-10-28)
+
+<!-- claude-drafted: 2026-10-28 — questfit 넘김 ⓓ(이재엽 버튼 "이 프로젝트의 말 + 방법 이름 꼬리표"). #228이 규칙(stagemap.js)으로만 두었던 '준비된 퀘스트'를 AI 한 번으로 맞춘다 -->
+- 본문 `{ tier?, idea, prev, base? }` — `idea` 받은 글(400자), `prev` 1 · 2단계 결과(`[{ stage, items }]`, 3-22와 같은 모양), `base` 기준 카드를 '칸: 내용' 줄로(1,500자까지, 3-22의 `base`와 같다 — 초안 요청에도 같이 간다).
+- 답 `{ ok, prepare: { cards: { "2": { title, think, act, from }, … "7": … }, say }, tokens }` — 코드 2 ~ 7(앱 3 ~ 8단계)이 다 있어야 한다(빠지면 502). `title`은 이 프로젝트의 말로 된 이름(40자 — 전문 용어가 들면 비워 화면이 할 일 이름으로), `think` ① 생각, `act` ② 행동(맡길 일), `from` 근거(기획서 n절 / 없으면 '새로 정함'). ③ 기록 · ④ 저장 · ⑤ 버전은 화면이 규칙(stagemap.js)으로 더한다.
+- 받은 글 · 기준 · 지난 단계 결과에 없는 숫자 · 사람 · 날짜는 지어내지 않는다(요청문). 빠른 모델. 연습 모드는 부르지 않는다 — 규칙으로만.
+
+
+### 3-30. `GET /api/find?q=<할 일 이름>` — 이미 있는 내용 옮겨 적기: 폴더의 글 파일에서 칸의 답 후보 줄 (C-56 R-4, 2026-10-28)
+
+<!-- claude-drafted: 2026-10-28 — questfit 넘김 ⓔ(이재엽 버튼 "'옮김' 새 값"). 기획서 · README에 이미 있는 답을 다시 적게 하지 않고, 그 줄을 보여 고르게 한다 -->
+- `q`는 그 칸의 할 일 이름(+ 묻는 말), 200자까지. 없으면 400.
+- 답 `{ ok, found: [{ i, path, line, text, hits }], files, why }` — 3-25의 마지막 목록 안에서 글 파일(md · txt — 내용이 글이고 64KB까지, 앞에서 20개)만 읽어 낱말이 겹치는 줄 셋(`findlines.js`: 조사를 떼고 틀 말을 뺀 낱말, 제목 줄이 맞으면 그 아래 첫 글 줄, 코드 · 표 · 200자 넘는 줄은 뺀다). `text`는 원문 그대로(목록 표시만 떼고, 비밀값 · 전화 · 이메일은 가림), `i`는 목록 번호(3-26으로 열 수 있다), `path`는 가린 상대 경로. 목록을 아직 안 받았거나 폴더가 바뀌었으면 `found:[]`에 `why:"folder"`.
+- 화면: 묻는 카드 · 확인 카드에 '폴더에서 찾기' 칩 → 후보 줄 카드(파일 · 줄 · 원문) → '이 줄로'를 누르면 그 줄이 그대로 그 칸에 들어가고 누가 = **옮김**(quest.js BY `moved`), '원문 보기'는 파일 보기(3-26)로 연다. 원문끼리 다르면 셋 다 보여 사람이 고른다 — 서버는 합치거나 지어내지 않는다. 연습 모드 · 서버 없이는 칩이 없다.

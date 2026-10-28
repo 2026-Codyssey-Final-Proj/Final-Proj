@@ -7,13 +7,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Floe — 창</title>
+<link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="seal.css">
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="library-tab.css">
 <link rel="stylesheet" href="../library/book-view.css">
 <style>
 /* 창 하나가 곧 판 하나 — 창 가득, 테두리 · 그림자 없이. 머리띠를 잡고 창을 끈다(단추는 빼고) */
-html.in-win,html.in-win body{margin:0;background:#16225E;overflow:hidden;height:100%}
+html.in-win,html.in-win body{margin:0;background:#363E62;overflow:hidden;height:100%}   /* 섬 색(C-57 — 웹사이트 회남색) */
 html.in-win.win-quest,html.in-win.win-quest body{background:#E9EEF6}   /* 작업실(C-41, 2026-10-26) — 파스텔. main.js backgroundColor · app.css html.win-quest와 같은 값 */
 html.in-win.win-quest .win-empty{color:#4A5678}
 html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
@@ -39,7 +40,7 @@ html.hd-drag #root>.isl-col{transition:none}
 #hd:focus-visible{outline:2px solid #2E4A9A;outline-offset:-2px}
 html.hd-drag #hd{transition:none}
 @media (prefers-reduced-motion:reduce){#hd{transition:none}}
-.win-empty{padding:24px;color:#B9C7E6;font:14px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+.win-empty{padding:24px;color:#B9C7E6;font:14px/1.6 var(--font-text)}
 </style>
 </head>
 <body>

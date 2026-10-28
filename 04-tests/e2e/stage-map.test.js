@@ -72,7 +72,23 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     assert.match(await page.$eval(".cv-c.c1", (e) => e.textContent), /기획서 3절의 줄|준비된/, "준비된 ① 생각");
     // 보기 셋
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(200);
+    // C-54 ⑧ 얼음 조각 가까이(2026-10-28 버튼 "둘다 할것" — 누르기 + 확대): 끝난 카드(1단계)를 누르면 커져 줄마다 할 일 → 문서 ← 재료, 줄을 누르면 오른쪽 칸에 누가 정했나 · 다음 단계
+    await page.click('.sm-card[data-i="0"]'); await wait(350);
+    assert.ok(await page.$(".sm-cell.big .sm-card.big"), "고른 끝난 카드가 커진다"); const rows = await page.$$(".sm-cell.big .sm-row"); assert.ok(rows.length >= 1, "줄 하나 = 할 일");
+    await page.click('.sm-cell.big .sm-row [data-act="map-line"]'); await wait(300);
+    const line = await page.$eval(".wside .ws-line", (el) => el.textContent.replace(/\s+/g, " ")); assert.match(line, /누가 정했나/); assert.match(line, /종이 신청이 헷갈려요/);
+    await page.click('.sm-card[data-i="0"]'); await wait(350); assert.ok(!(await page.$(".sm-card.big")), "다시 누르면 작아진다");
+    if (SHOTS) { await page.click('.sm-card[data-i="0"]'); await wait(350); await shot(page, "map-zoom"); await page.click('.sm-card[data-i="0"]'); await wait(200); }
     await page.click('[data-act="tree-view"][data-v="flow"]'); await wait(200); assert.ok(await page.$(".qwin .jmap"), "흐름 = 한눈에 보기(C-39)");
+    // C-54 ⑨ 짝 선(버튼 "'흐름 따라가기'에서만"): 1↔8 · 2↔7 · 3↔6 길 셋, 짝 단추 → 두 칸 나란히
+    assert.ok((await page.$$(".jmap .jm-rails")).length === 8, "단계마다 길 자리"); assert.ok((await page.$$(".jmap .jm-rails i.a")).length === 8, "1↔8 길은 여덟 단계를 다 지난다");
+    await page.click('.jmap [data-act="pair-sel"][data-v="a"]'); await wait(250);
+    const side2 = await page.$eval(".jmap .jm-side", (el) => el.textContent.replace(/\s+/g, " ")); assert.match(side2, /1단계/); assert.match(side2, /8단계/); assert.match(side2, /종이 신청이 헷갈려요/);
+    if (SHOTS) await shot(page, "map-pairs");
+    await page.click('.jmap .jm-side [data-act="pair-sel"]'); await wait(200); assert.ok(!(await page.$(".jm-side")), "닫기");
+    const rail = await page.$eval('.jm-stage[data-n="0"] .jm-rails i.a', (el) => { const r = el.getBoundingClientRect(), b = el.closest(".board").getBoundingClientRect(); return { w: r.width, h: r.height, inside: r.right <= b.right && r.left >= b.left }; });
+    assert.ok(rail.w >= 3 && rail.h > 20 && rail.inside, `길이 보인다 ${JSON.stringify(rail)}`);
+    if (SHOTS) { await page.$eval('.jm-stage[data-n="1"]', (el) => el.scrollIntoView({ block: "start" })); await wait(150); await shot(page, "map-rails"); }
     await page.click('[data-act="tree-view"][data-v="box"]'); await wait(200); assert.ok(await page.$(".qwin .qempty, .qwin iframe.docmap"), "상자 = 문서 지도(서버 없이는 까닭)");
     await page.click('[data-act="tree-view"][data-v="cards"]'); await wait(200); assert.ok(await page.$(".sm-grid"), "다시 지도");
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")));

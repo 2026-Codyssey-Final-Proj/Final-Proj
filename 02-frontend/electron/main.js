@@ -306,7 +306,7 @@ function openSideWin(kind, opt = {}) {
   let w = wins[kind];
   if (w && !w.isDestroyed()) { if (opt.place) { w.setBounds(b); Object.assign(w, { floeSide: opt.side, floeMoved: false }); } w.show(); if (typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); return; }
   const ws = kind === "quest";   // 작업실(C-41) — 보통 창. 바탕색은 win.html · app.css(html.win-quest)와 같은 값
-  w = wins[kind] = new BrowserWindow({ ...ICON_OPT, ...b, frame: ws, transparent: false, backgroundColor: ws ? "#E9EEF6" : "#16225E", alwaysOnTop: !ws, resizable: ws, minimizable: ws, hasShadow: true, show: false,
+  w = wins[kind] = new BrowserWindow({ ...ICON_OPT, ...b, frame: ws, transparent: false, backgroundColor: ws ? "#E9EEF6" : "#363E62", alwaysOnTop: !ws, resizable: ws, minimizable: ws, hasShadow: true, show: false,
     minWidth: ws ? 640 : 260, minHeight: ws ? 480 : 200, title: ws ? "Floe — 작업실" : "Floe — 설정",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   if (!ws) w.setAlwaysOnTop(true, "floating");

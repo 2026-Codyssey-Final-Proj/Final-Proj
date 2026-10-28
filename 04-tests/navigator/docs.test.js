@@ -84,3 +84,30 @@ test("decisions · stageDoc — 넘긴 기준(skipped)은 '됨' 수에 들지 �
   assert.match(doc, /\| 잰 값을 그대로 적어 두기 \| 넘김\(까닭: 아직 잴 수 없어요 — 발표 뒤에\) \|/);
   assert.match(doc, /\| 2단계에서 정한 숫자를 실제로 재 보기 \| 됨 \|/);
 });
+
+// F-68(2026-10-28, 이재엽 버튼 "통째로 파일에"): 받은 글은 자르지 않고 docs/00-source/idea.md에 통째로(줄 번호와 함께), 1단계 문서 · 기획서의 '처음 말한 것'은 앞 400자 + 그 파일을 줄로 가리킨다
+test("source — 받은 글 전부를 docs/00-source/idea.md에(줄 번호 · 가림), 1단계 문서와 기획서는 앞 400자 뒤에 '… 통째로: 00-source/idea.md 1 ~ N줄'", () => {
+  const long = Array.from({ length: 30 }, (_, i) => `${i + 1}번째 줄 — 동아리 행사 신청 앱 이야기 ${"가".repeat(20)}`).join("\n");
+  const f = D.files({ topic: "앱", results: RESULTS, idea: long.slice(0, 400), source: long });
+  const src = f.find((x) => x.path === "docs/00-source/idea.md");
+  assert.ok(src && !src.merge, "통째로 쓰는 파일(덮어씀 — 받은 글은 사람 글이 아니라 Floe가 받은 것)");
+  assert.match(src.text, /^# 처음 말한 것 — 받은 글 그대로/); assert.match(src.text, /\n *1 \| 1번째 줄/); assert.match(src.text, /\n30 \| 30번째 줄/, "줄 번호");
+  const idea = f.find((x) => x.path === "docs/01-idea/idea.md").text, prd = f.find((x) => x.path === "docs/PRD.md").text;
+  assert.match(idea, /통째로: \[00-source\/idea\.md\]\(\.\.\/00-source\/idea\.md\) 1 ~ 30줄/, "1단계 문서는 줄로 가리킨다"); assert.match(prd, /\[00-source\/idea\.md\]\(00-source\/idea\.md\) 1 ~ 30줄/);
+  assert.ok(!idea.includes("30번째 줄"), "1단계 문서에는 앞 400자만");
+  const g = D.files({ topic: "앱", results: RESULTS, idea: "짧은 글", source: "짧은 글" });
+  assert.ok(!g.some((x) => x.path === "docs/00-source/idea.md"), "400자 안이면 통째 파일은 없다 — 문서에 다 들어 있다");
+  const r = D.files({ topic: "앱", results: RESULTS, idea: "x", source: "password: hunter22\n" + "y".repeat(500), redact: (t) => String(t).replace(/hunter22/g, "[비밀값]") });
+  assert.ok(r.find((x) => x.path === "docs/00-source/idea.md").text.includes("[비밀값]"), "가림을 거친다");
+});
+
+// C-56 R-1(2026-10-28): 기준 카드(basecard.js)가 있으면 docs/base.md 한 장(덮어씀 — Floe가 만든 카드), 없으면 파일 없음
+test("card — 기준 카드가 오면 docs/base.md(칸 · 내용 · 어디서), 없으면 만들지 않는다", () => {
+  const B = require("../../03-backend/navigator/basecard.js");
+  const card = B.withEdits(B.build({ results: { 0: RESULTS[0] }, source: "파이썬으로 만들어야 해요" }), { success: "신청 40건" });   // 2단계 전 — 성공은 사람이 채운다
+  const f = D.files({ topic: "앱", results: RESULTS, card });
+  const k = f.find((x) => x.path === "docs/base.md"); assert.ok(k && !k.merge, "base.md");
+  assert.match(k.text, /^# 이 프로젝트의 기준 — 앱/); assert.match(k.text, /\| 성공 \| 신청 40건 \| 직접 \|/); assert.match(k.text, /파이썬으로 만들어야 해요 \(1줄\)/);
+  assert.ok(!D.files({ topic: "앱", results: RESULTS }).some((x) => x.path === "docs/base.md"), "카드가 없으면 없다");
+  assert.match(f.find((x) => x.path === "docs/README.md").text, /\[base\.md\]\(base\.md\)/, "목차에서 가리킨다");
+});

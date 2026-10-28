@@ -30,7 +30,7 @@ test("4 ~ 8단계 요청문: 지난 단계 전부 · 그 단계 할 일 순서�
 });
 
 test("초안 모양: 칸마다 text · alts(0~2) · from — 다 적어야 하는 칸(required)", () => {
-  assert.deepEqual([...N.STAGE_DRAFT_SCHEMA.properties.items.items.required].sort(), ["alts", "from", "text"]);
+  assert.deepEqual([...N.STAGE_DRAFT_SCHEMA.properties.items.items.required].sort(), ["alts", "ask", "done", "from", "text", "title"]);
   assert.equal(N.STAGE_DRAFT_SCHEMA.properties.items.items.properties.alts.maxItems, 2);
 });
 

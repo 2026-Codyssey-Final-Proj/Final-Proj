@@ -30,6 +30,7 @@ const Steps = require("./steps.js");   // AI 진행(C-12) — 한 일의 말 · 
 const AP = require("./approve.js");    // FR-17 승인 카드의 모양(2026-10-20)
 const { callClaude, usage, claudeVersion, startTask: openClaude, ledger } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
 const Files = require("./files.js");
+const FindLines = require("./findlines.js");   // C-56 R-4 — 폴더의 글 파일에서 칸의 답 후보 줄(2026-10-28)
 const Project = require("./project.js");   // runCommand — 바뀐 줄을 git diff로(C-43, 읽기만)
 const Docmap = require("./docmap.js");
 const Presets = require("./presets.js");   // C-44 맡기기 틀 — 번호로 받은 파일을 raw 경로로 바꿔 Claude Code에 넘긴다(화면은 경로를 보내지 않는다) — claude-drafted: 2026-10-27   // C-45 문서 지도 — 문서와 링크를 보드 데이터로(읽기만) — claude-drafted: 2026-10-27   // C-42 R-8 작업실 파일 칸 — 연결한 폴더의 이름만(읽기만, 2026-10-27) — claude-drafted: 2026-10-27
@@ -60,15 +61,15 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // F-04(이재엽 2026-10-18 "네 주소에도 거름"): AI를 부르는 네 주소도 같은 확인 값 — Origin 검사로는 다른 웹페이지만 막고,
 // 같은 컴퓨터의 다른 프로그램(curl 등)은 내 구독으로 AI를 부를 수 있었다(API.md 4절 11번, 위협 표 T2)
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
-const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft"];   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
+const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare"];   // /api/prepare — C-56 R-2 준비된 퀘스트(새 맥락 리뷰 2026-10-28 막힘: 토큰 없이 불렸다)   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start"];
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
-const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs"];   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
+const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs"];   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide", "/api/apps/link"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다 · Claude Desktop 설정 파일에 잇는다. 밖(터널)에서는 받지 않는다(allowed)
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
-const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -121,7 +122,7 @@ function hasToken(headers) {
 //   /                 내비게이터        /index.html         시연 입구(02-frontend/index.html)
 //   /library/…  /navigator/…   02-frontend의 화면들   /03-backend/…   규칙
 const ROOT = "../../";
-const TYPES = { html: "text/html", css: "text/css", js: "text/javascript" };
+const TYPES = { html: "text/html", css: "text/css", js: "text/javascript", woff: "font/woff", txt: "text/plain; charset=utf-8" };   // woff — 글꼴 셋(C-57)
 const STATIC = {
   // dive.js·dive.css — 내비게이터(`dive.js` → /dive.js)와 서고(`../navigator/dive.js` → /navigator/dive.js)가 같이 쓴다. 2026-10-18까지 빠져 있었다
   // notes.js — 실사용의 '느낀 점 남기기'(2026-10-19)
@@ -129,7 +130,7 @@ const STATIC = {
   // greet.js — 켤 때 인사의 시간표(C-10, 2026-10-20)
   // canvas-pan.js — 작업실 캔버스를 끌어서 옮기고 크게 · 작게(F-66, 2026-10-27)
   // morph.js — 섬의 움직임 규칙(C-14, 2026-10-20). 내비게이터는 hub.js(순수 함수) · steps.js도 부른다(C-13 기본 화면)
-  "02-frontend/navigator": ["index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js", "greet.js", "morph.js", "win.html", "win.js", "docmap.html", "canvas-pan.js"],   // docmap.html — 문서 지도(C-45, 2026-10-27)
+  "02-frontend/navigator": ["fonts.css", "index.html", "app.css", "app.js", "seal.js", "seal.css", "setup.js", "setup.css", "library-tab.css", "dive.js", "dive.css", "notes.js", "greet.js", "morph.js", "win.html", "win.js", "docmap.html", "canvas-pan.js"],   // docmap.html — 문서 지도(C-45, 2026-10-27)
   "03-backend/navigator/board": ["board.js", "board.css"],   // archi-board 엔진 v1 사본(C-45) — docmap.html이 부른다   // win.html · win.js — 앱의 설정 창 · 퀘스트 창(C-22, 2026-10-21)
   // 서재는 용어 풀이(/03-backend/navigator/glossary.js)도 같이 부른다. 2026-10-19(이재엽): learn.js · skills.js를 지우고, 지식 은하(sky.*)는 내주지 않는다(길을 막음 — 파일은 남김)
   // my-books.js — 내 책 · 예시 책 지우기(2026-10-19 실사용). 내비게이터(`../library/my-books.js`)와 서고가 같이 쓴다
@@ -138,10 +139,12 @@ const STATIC = {
   "02-frontend/library": ["index.html", "library.css", "library.js", "books.js", "my-books.js", "book-view.js", "book-view.css", "shelves.js", "schedule.js", "search.js", "spotlight.js"],
   // hub.js — 섬의 알림 · AI 진행 판이 쓰는 순수 함수. 따로 뜨던 모아 보기 창(index.html · hub.css)은 2026-10-23에 뺐다
   "02-frontend/hub": ["hub.js"],
+  // 글꼴 셋(C-57, 2026-10-28) — fonts.css가 부른다. 앱 안 파일이라 밖으로 나가는 요청이 없다
+  "02-frontend/assets/fonts": ["BagelFatOne-Regular.woff", "GowunDodum-Regular.woff", "NanumGothicCoding-Regular.woff", "NanumGothicCoding-Bold.woff"],
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -404,6 +407,21 @@ async function readFileNow(i) {
   const changed = await gitChanged(lastFiles.dir, f.rel), text = buf.toString("utf8");
   return [200, { ok: true, i: Number(i), name: f.entry.name, path: f.entry.path, kind: Files.kindOf(f.rel), text, size: st.size, mtime: st.mtimeMs, changed, eol: /\r\n/.test(text) ? "crlf" : "lf" }];   // kind는 가리지 않은 이름으로(가린 이름은 확장자가 사라질 수 있다) · eol은 저장 때 되돌리려고
 }
+// ── C-56 R-4 이미 있는 내용 옮겨 적기(API.md 3-30, 2026-10-28 — 이재엽 버튼 "'옮김' 새 값"): 마지막 목록(3-25)의 글 파일(md · txt, 64KB까지, 20개까지)에서 그 칸의 답 후보 줄을 찾는다 ──
+//   답은 가린 경로 · 줄 번호 · 원문(가린 것) · 목록 번호(파일 보기로 열 수 있게). 경로를 요청에서 받지 않는다(C-43과 같은 규칙). 읽기만
+const FIND_FILES_MAX = 20, FIND_FILE_MAX = 64 * 1024;
+function findNow(q) {
+  const s = projectNow();
+  if (!lastFiles || !s || path.resolve(s.dir) !== path.resolve(lastFiles.dir)) return { ok: true, found: [], why: "folder", reason: "파일 목록을 먼저 받아야 해요(작업실을 다시 열어요)" };
+  const docs = [];
+  for (let i = 0; i < lastFiles.list.length && docs.length < FIND_FILES_MAX; i++) {
+    const e = lastFiles.list[i]; if (e.dir || !["md", "text"].includes(Files.kindOf(e.raw))) continue;
+    const file = Files.safePath(lastFiles.dir, e.raw); if (!file) continue;
+    try { const st = fs.statSync(file); if (!st.isFile() || st.size > FIND_FILE_MAX) continue; const buf = fs.readFileSync(file); if (!Files.isText(buf)) continue; docs.push({ i, path: e.path, text: buf.toString("utf8") }); } catch { /* 못 읽는 파일은 건너뛴다 */ }
+  }
+  const found = FindLines.find(docs, { name: q }).map((x) => ({ ...x, text: Sensitive.redact(x.text) }));
+  return { ok: true, found, files: docs.length, why: "" };
+}
 // C-45 문서 지도(API.md 3-27): 연결한 폴더의 md(docs/** · README.md · CLAUDE.md — 3-25의 목록 안에서)를 읽어(64KB까지, 링크만 보려고) 보드 데이터로. 지금 장 문서는 part, git에서 바뀐 문서는 cand. 경로는 폴더 안 상대 경로만
 const DOCMAP_READ = 64 * 1024, DOCMAP_MAX = 100;   // 문서 100개까지(새 맥락 리뷰 — 200 × 64KB를 한 번에 읽지 않게), 비동기로
 async function docmapNow(nowPath) {
@@ -556,16 +574,26 @@ function docTargets(dir, files) {
   }
   return { list: out };
 }
+const SOURCE_MAX = 64 * 1024, BASE_MAX = 1500;
+const CARD_KEYS = ["what", "who", "size", "fixed", "materials", "data", "out", "success"];
+const cardFieldOk = (f) => f && typeof f === "object" && strOk(f.text || "", 200) && (f.by == null || f.by === "moved" || f.by === "me") && (f.note == null || strOk(f.note, 120))
+  && (f.lines == null || (Array.isArray(f.lines) && f.lines.length <= 8 && f.lines.every((x) => x && strOk(x.text, 200) && Number.isInteger(x.line)))) && (f.from == null || (Array.isArray(f.from) && f.from.length <= 4));
+const cardOk = (c) => c && typeof c === "object" && !Array.isArray(c) && Object.keys(c).every((k) => CARD_KEYS.includes(k)) && Object.values(c).every(cardFieldOk);
+const cardClean = (c) => Object.fromEntries(CARD_KEYS.filter((k) => c[k]).map((k) => { const f = c[k]; return [k, { text: f.text || "", by: f.by || null, blank: !f.text, ...(f.note ? { note: f.note } : {}), ...(f.lines ? { lines: f.lines.map((x) => ({ text: x.text, line: x.line })), src: f.lines.length > 0 } : {}), ...(f.from ? { from: f.from.filter((x) => x && Number.isInteger(x.s) && Number.isInteger(x.i)).map((x) => ({ s: x.s, i: x.i })) } : {}) }]; }));
 function shipDocs(body) {
   const got = resultsOf(body && body.results), topic = body && body.topic != null ? body.topic : "", idea = body && body.idea != null ? body.idea : "";
   if (got.why) return [400, { ok: false, reason: got.why }];
   if (!strOk(topic, 60)) return [400, { ok: false, reason: "주제는 60자까지" }];
   if (!strOk(idea, Nav.IDEA_MAX)) return [400, { ok: false, reason: `처음 말한 것은 ${Nav.IDEA_MAX}자까지` }];
+  const source = body && body.source != null ? body.source : "";   // F-68 — 받은 글 전부(docs/00-source/idea.md에 통째로). 64KB까지 — 넘으면 잘라 쓰지 않고 거절한다(화면이 알린다)
+  if (!strOk(source, SOURCE_MAX)) return [400, { ok: false, reason: `받은 글 전부는 ${SOURCE_MAX / 1024}KB까지` }];
+  const card = body && body.card != null ? body.card : null;   // C-56 R-1 기준 카드 — 칸마다 { text, by, blank, lines?, note? }, 모양이 틀리면 400
+  if (card !== null && !cardOk(card)) return [400, { ok: false, reason: "기준 카드의 모양이 맞지 않음 — 칸마다 글 200자 · 누가는 moved · me" }];
   const results = got.results;
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];   // 쓰기 전에(쓰고 나서 못 맡기지 않게)
-  const files = Docs.files({ topic, idea, results, redact: Sensitive.redact });
+  const files = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
   try {
@@ -673,6 +701,7 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/readme") return send(res, 200, readmeBook());   // C-26 내 작업 책(API.md 3-18) — 읽기만
   if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
   if (req.method === "GET" && route === "/api/docmap") { const [code, out] = await docmapNow(new URL(req.url, "http://localhost").searchParams.get("now") || ""); return send(res, code, out); }   // C-45 문서 지도(API.md 3-27) — 읽기만
+  if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만
   if (req.method === "GET" && route === "/api/file") { const [code, out] = await readFileNow(new URL(req.url, "http://localhost").searchParams.get("i")); return send(res, code, out); }   // C-43 파일 열기(API.md 3-26)
   if (req.method === "POST" && route === "/api/preset") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = presetStart(body); return send(res, code, out); }   // C-44 틀로 맡기기(API.md 3-28)
   if (req.method === "POST" && route === "/api/file") { const body = await readJson(req, Files.FILE_MAX * 2 + 1000); if (body === TOO_BIG) return refuse(res, `너무 커요 — ${Math.round(Files.FILE_MAX / 1024)}KB까지만 써요`, 413); const [code, out] = writeFileNow(body); return send(res, code, out); }   // C-43 파일 저장
@@ -703,6 +732,15 @@ async function handle(req, res) {
   if (route === "/api/proposals/decide") { const k = proposals.findIndex((x) => body && x.id === body.id); if (k < 0) return refuse(res, "기다리는 제안이 아님", 404); proposals.splice(k, 1); return send(res, 200, { ok: true }); }   // 맞아요 · 아니요 — 적는 일은 화면이
   if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
   if (route === "/api/docs") { const [code, out] = shipDocs(body); return send(res, code, out); }   // C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(API.md 3-23)
+  if (route === "/api/prepare") {   // C-56 R-2 + C-54(API.md 3-29, 2026-10-28) — 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 AI 한 번으로(빠른 모델). 받은 글 · 기준 카드 · 1 · 2단계 결과
+    if (!body || !Nav.filled(body.idea)) return refuse(res, "받은 글이 비어 있음");
+    if (body.idea.length > Nav.IDEA_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.IDEA_MAX}자까지`);
+    if (body.tier != null && !Nav.TIERS.includes(body.tier)) return refuse(res, "모르는 등급");
+    if (body.base != null && !strOk(body.base, BASE_MAX)) return refuse(res, `기준 카드 글은 ${BASE_MAX}자까지`);
+    const prev = prevStagesOf(body.prev, 2);
+    if (!prev || !prev.some((p) => p.stage === 0)) return refuse(res, "1 · 2단계 결과가 다 있어야 해요 — [{ stage, items }]");
+    return ask(res, Nav.preparePrompt(body.tier, { idea: body.idea, prev, base: body.base || "" }), Nav.PREPARE_SCHEMA, as("prepare", (d) => Nav.parsePrepare(d)), "준비된 퀘스트", { fast: true, maxTokens: 4096 });
+  }
   if (route === "/api/stagedraft") {   // C-37 2단계 · C-39 3단계 초안(API.md 3-22, 2026-10-25) — AI 한 번. 받은 글 · 지난 단계 결과들로 그 등급의 할 일마다 글 · 재료(기획서 칸은 고르기) · 준비할 것
     if (!body || !Nav.DRAFT_STAGES.includes(body.stage)) return refuse(res, `초안을 만드는 단계가 아님 — 지금은 ${Nav.DRAFT_STAGES.map((n) => n + 1).join(" · ")}단계만`);
     if (body.tier != null && !Nav.TIERS.includes(body.tier)) return refuse(res, "모르는 등급");
@@ -714,7 +752,9 @@ async function handle(req, res) {
     const avoid = body.avoid;
     if (avoid && !(typeof avoid === "object" && Number.isInteger(avoid.i) && avoid.i >= 0 && avoid.i < 8 && Array.isArray(avoid.texts) && avoid.texts.length >= 1 && avoid.texts.length <= 3 && avoid.texts.every((t) => strOk(t, 300) && Nav.filled(t))))
       return refuse(res, "다른 예시 요청의 모양이 맞지 않음 — { i: 칸 자리, texts: 이미 본 예시 1~3개 }");
-    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev, ...(avoid ? { avoid: { i: avoid.i, texts: avoid.texts } } : {}) }), Nav.STAGE_DRAFT_SCHEMA,
+    if (body.base != null && !strOk(body.base, BASE_MAX)) return refuse(res, `기준 카드 글은 ${BASE_MAX}자까지`);   // C-56 R-2 — 기준 카드(한 줄씩 '칸: 내용')
+    if (body.work != null && !strOk(body.work, Nav.WORK_MAX)) return refuse(res, `방금 한 일 글은 ${Nav.WORK_MAX}자까지`);   // C-56 R-5 — 작업을 따라 다시 맞추기(훅 알림의 작업 글)
+    return ask(res, Nav.stageDraftPrompt(body.stage, body.tier, { idea: body.idea, prev, base: body.base || "", work: body.work || "", ...(avoid ? { avoid: { i: avoid.i, texts: avoid.texts } } : {}) }), Nav.STAGE_DRAFT_SCHEMA,
       as("draft", (d) => Nav.parseStageDraft(d, body.stage, body.tier, prev)), "단계 초안", { fast: true, maxTokens: 4096 });
   }
   if (route === "/api/start") {   // C-36 처음 한 바퀴(API.md 3-21, 2026-10-25) — AI 한 번. 받은 글 전체로 1단계 초안(제목 · 불편 · 달라지는 것 · 누가 · 크기). 도구 없이, 글만

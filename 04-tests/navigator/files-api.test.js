@@ -182,3 +182,16 @@ test("POST /api/file — 저장: 그 파일에만 쓴다, 비밀값 모양이면
   assert.equal(r.status, 200); assert.equal(r.json.ok, true); assert.equal(fs.readFileSync(path.join(PROJ, "README.md"), "utf8"), "커밋도\n"); assert.ok("task" in r.json);
   Srv.dropProject(PROJ);
 });
+
+// C-56 R-4(2026-10-28): GET /api/find?q=<할 일 이름> — 연결한 폴더의 글 파일(md · txt, 64KB까지, 20개까지)에서 그 칸의 답 후보 줄을 찾는다. 목록 번호 · 가린 경로로만 답한다(C-43 규칙 그대로), 비밀값 모양은 가린다
+test("GET /api/find — 폴더의 글 파일에서 후보 줄(가린 경로 · 줄 번호 · 원문), q가 없으면 400, 폴더를 모르면 why folder", async () => {
+  assert.equal(Srv.useProject(PROJ), true);
+  fs.writeFileSync(path.join(PROJ, "README.md"), "# 소개\n\n프롬프트를 카테고리로 나눠요: 텍스트 · 이미지 · 페르소나\n연락은 010-1234-5678\n");
+  await call("GET", "/api/files");
+  let r = await call("GET", `/api/find?q=${encodeURIComponent("프롬프트 카테고리 나누기")}`);
+  assert.equal(r.status, 200, r.text); assert.equal(r.json.ok, true); assert.ok(r.json.found.length >= 1, JSON.stringify(r.json));
+  assert.equal(r.json.found[0].path, "README.md"); assert.equal(r.json.found[0].line, 3); assert.match(r.json.found[0].text, /카테고리/); assert.ok(Number.isInteger(r.json.found[0].i), "목록 번호(파일 보기로 열 수 있게)");
+  r = await call("GET", `/api/find?q=${encodeURIComponent("연락은")}`); assert.ok(r.json.found[0] && !r.json.found[0].text.includes("1234-5678"), "비밀값 · 전화 모양은 가린다");
+  assert.equal((await call("GET", "/api/find")).status, 400); assert.equal((await call("GET", "/api/find?q=x", { token: false })).status, 403);
+  Srv.dropProject(PROJ); r = await call("GET", "/api/find?q=%EA%B8%B0%EB%8A%A5"); assert.equal(r.json.why, "folder");
+});

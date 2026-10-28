@@ -80,8 +80,8 @@
   // 한 줄 적기 — 원본은 안 바꾼다. 빈 줄은 적지 않는다. 한 줄은 400자까지(서버가 단계 결과 · 문서에서 받는 길이 — 2026-10-25 리뷰)
   // by(C-39) — 누가 정했나: 넘겨주면 그것(고르는 칸은 pick), 아니면 플로로가 낸 것과 맞대어 그대로(ok) · 고침(edit) · 직접(me)
   const LINE_MAX = 400;
-  const BY = ["ok", "edit", "me", "pick"];
-  const BY_WORD = { ok: "그대로", edit: "고침", me: "직접", pick: "고름" };
+  const BY = ["ok", "edit", "me", "pick", "moved", "skip"];   // moved · skip — C-56(2026-10-28 이재엽 버튼 "'옮김' 새 값"): 지난 칸 · 파일에서 옮겨 적은 칸, 조건이 안 맞아 건너뛴 칸(queststate.js)
+  const BY_WORD = { ok: "그대로", edit: "고침", me: "직접", pick: "고름", moved: "옮김", skip: "건너뜀" };
   const byFor = (q, i, t, by) => (BY.includes(by) ? by : proposalOf(q, i) ? (t === proposalOf(q, i) ? "ok" : "edit") : "me");
   const withBy = (q, i, b) => ({ ...q, by: q.objs.map((_, k) => (k === i ? b : (q.by || [])[k] || null)) });
   function fill(q, i, text, by) {
@@ -144,6 +144,21 @@
     if (!q || !d || !Array.isArray(d.items) || d.items.length !== q.objs.length) return q;
     return { ...q, draft: { stage: q.chap, items: d.items, prep: Array.isArray(d.prep) ? d.prep : [], example: !!d.example }, phase: "quest", sel: 0, desc: "플로로가 지난 장에서 정한 것으로 이 장의 초안을 만들었어요. 칸마다 맞는지만 봐 주세요 — 다르면 고쳐 적으면 돼요." };
   }
+  // C-56 R-5(2026-10-28 — 이재엽 버튼 "다음 단계 미리까지"): 코딩 도구가 일을 마친 뒤 다시 맞춘 초안(d)을 지금 퀘스트에.
+  //   아직 안 적은 칸만 새 글로 바꾼다(changed). 사람이 적은 칸은 덮지 않고 글이 달라졋으면 review에 새 글만(화면이 '다시 볼까요?'로 묻는다). 개수가 다르거나 초안이 없던 퀘스트면 그대로
+  function refit(q, d) {
+    const none = { q, changed: [], review: [] };
+    if (!q || !q.draft || !d || !Array.isArray(d.items) || d.items.length !== q.objs.length) return none;
+    const changed = [], review = [];
+    const items = q.draft.items.map((it, i) => {
+      const nx = d.items[i], was = it && !it.pick ? String(it.text || "") : "", now = nx && !nx.pick ? String(nx.text || "").trim() : "";
+      if (!now || now === was || (nx.pick && it && it.pick)) return it;   // 빈 글 · 같은 글 · 고르는 칸은 그대로
+      if (filled(q, i)) { review.push({ i, text: now }); return it; }
+      changed.push(i); return { ...it, ...nx };
+    });
+    if (!changed.length && !review.length) return none;
+    return { q: { ...q, draft: { ...q.draft, items, prep: Array.isArray(d.prep) ? d.prep : q.draft.prep } }, changed, review };
+  }
   // 기획서로 키울지(PRD) — 고르는 칸의 셋. 고른 것이 그 줄이 된다
   const DOC_PICKS = [["light", "경량 기획서로"], ["full", "상세 기획서로"], ["none", "키우지 않아요"]];
   // 할 일의 짧은 이름 — 확인 카드 · 도전과제 지도 · 문서가 쓴다. 모르는 할 일은 그 이름 그대로
@@ -190,6 +205,11 @@
     "마친 작업을 저장소에 올려 두기": "다 한 것을 저장소에 올려요",
   };
   const easyOf = (name) => EASY[name] || "";
+  // C-56 R-2(2026-10-28): 칸의 이름 · 묻는 말 · 끝 조건 — 초안에 이 프로젝트의 말(title · ask · done)이 있으면 그것, 없으면 짧은 이름 · 질문 · 빈 글. 방법 이름(term)은 화면이 꼬리표로
+  const wordOf = (q, i, k) => { const it = q && q.draft && q.draft.items && q.draft.items[i]; return it && typeof it[k] === "string" && it[k].trim() ? it[k].trim() : ""; };
+  const nameOf = (q, i) => wordOf(q, i, "title") || (q && q.objs[i] ? shortOf(q.objs[i].name) : "");
+  const askOf = (q, i) => wordOf(q, i, "ask") || question(q, i);
+  const doneOf = (q, i) => wordOf(q, i, "done");
   // 플로로가 이 칸에 낸 것(C-39) — 초안 글 · 권한 크기 · 권한 기획서. 고르는 칸도 무엇을 권했는지 남긴다(문서의 '플로로 초안' · 도전과제 흐름). 없으면 빈 글
   function proposalOf(q, i) {
     const d = q && q.draft; if (!d) return "";
@@ -312,9 +332,9 @@
   // 위 줄의 진행 — "M개 중 k번째 할 일"(다 했으면 M)
   const progress = (q) => { const n = q ? q.objs.length : 0, i = curIdx(q); return { n, k: !q ? 0 : i < 0 ? n : i + 1 }; };
 
-  const api = { BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, SHELL_COST, ITEMS, draw, oddsOk,
+  const api = { nameOf, askOf, doneOf, BY, BY_WORD, proposalOf, fromOf, examplesOf, acceptedLine, fillAll, expectedResult, CONFIRM_REASON, easyOf, LABEL, roman, iconOf, chapIcon, RANKS, BANDS, rankOf, bandOf, lvOf, startLevel, levelUp, SIDES, sideOf, SHELL_COST, ITEMS, draw, oddsOk,
     itemOf, toggleWear, cleanWear, cleanOwned, makeQuest, withAI, SIZE_KEYS, SIZE_WORD, SIZE_TIER, WHO, WHO_AT, SIZE_AT, withDraft, draftOf, EXAMPLE_DRAFT,
-    pickOf, withStageDraft, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
+    pickOf, withStageDraft, refit, DOC_PICKS, SHORT, shortOf, resultOf, exampleStageDraft, total, got, curIdx, isDone, filled, fill, setLine, retitle, rename, setNeed, question, example, textOf, localJudgement, progress };
   root.NavQuest = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);

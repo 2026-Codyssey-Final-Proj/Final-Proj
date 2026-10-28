@@ -338,7 +338,13 @@
   const DRAFT_STAGES = [1, 2, 3, 4, 5, 6, 7];
   const ALT_STAGES = [3, 4, 5, 6, 7];
   const PREP_MAX = 3, PREP_LINE = 160, FROM_MAX = 4, ALT_MAX = 2, ALT_LINE = 150;
-  const STAGE_DRAFT_SCHEMA = obj({ items: list(obj({ text: str, alts: list(str, 0, ALT_MAX), from: list(str, 0, FROM_MAX) }), 1, 8), prep: list(str, 0, PREP_MAX), say: str });
+  // C-56 R-2(2026-10-28): 칸마다 title(이 프로젝트의 말로 된 이름) · ask(묻는 말) · done(끝 조건)도 — 비어도 된다(str0). 방법 이름은 꼬리표(화면의 term)로만
+  const str0 = { type: "string" };
+  const STAGE_DRAFT_SCHEMA = obj({ items: list(obj({ text: str, alts: list(str, 0, ALT_MAX), from: list(str, 0, FROM_MAX), title: str0, ask: str0, done: str0 }), 1, 8), prep: list(str, 0, PREP_MAX), say: str });
+  const TITLE_MAX = 40, ASK_MAX = 120;
+  const WORK_MAX = 600;   // C-56 R-5(2026-10-28) — 방금 한 일(훅 알림의 작업 글) 요청문에 넣는 상한
+  const hasJargon = (t) => JARGON.some((w) => String(t).includes(w));
+  const clean = (v, max) => (filled(v) ? String(v).trim().slice(0, max) : "");
   const STAGE_HINT = {
     "정해진 빈칸에 아이디어 채우기": "누구 · 불편 · 해결 · 어디까지 · 언제 성공 다섯 칸을 '칸: 내용'으로 쓰고 ' · '로 이어 한 줄.",
     "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기": "'왜: … · 어디까지: …(이번에 안 하는 것도) · 언제 성공: …(숫자로, 모르면 아직 모름)' 한 줄.",
@@ -381,7 +387,7 @@
   const PRD_PICK = [["경량", "light"], ["상세", "full"], ["안 함", "none"]];
   const refOf = (s, i) => `${s + 1}-${i + 1}`;   // 재료 번호 — 화면 번호(1부터)
   //   avoid(C-40 '다른 예시') — { i, texts }: 그 칸은 이미 보인 예시와 다르게
-  function stageDraftPrompt(stage, tier, { idea = "", prev = [], avoid = null } = {}) {
+  function stageDraftPrompt(stage, tier, { idea = "", prev = [], avoid = null, base = "", work = "" } = {}) {
     const s = STAGES[stage], todo = criteriaFor(stage, tier), done = prev.map((p) => `${p.stage + 1}단계`).join(" · ");
     const hint = (c, i) => `(${i + 1}) ${c.text} — ${c.term === "PRD" ? "text는 '경량' · '상세' · '안 함' 중 하나로 시작하고 ' — 까닭'을 붙인다(기능이 적으면 경량, 쓰는 사람 · 기능이 많으면 상세, 아주 작으면 안 함)." : STAGE_HINT[c.text] || "한 줄."}`;
     const mat = prev.flatMap((p) => p.items.map((x, i) => `[${refOf(p.stage, i)}] ${x.name}: ${(x.lines || []).join(" / ")}`)).join("\n");
@@ -394,7 +400,11 @@
       ALT_STAGES.includes(stage) ? `items마다 text에는 플로로가 가장 권하는 예시를, alts에는 서로 다른 길의 예시 ${ALT_MAX}개를(한 예시 ${ALT_LINE}자 안쪽) 쓴다 — 사용자가 셋 중 하나를 고른다.` : "alts는 빈 목록 []으로 둔다.",
       ...(avoid ? [`${avoid.i + 1}번째 칸은 이미본예시와 다른 예시로 쓴다.`] : []),
       "받은 글과 지난 단계 결과에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 모르면 '아직 모름'이라고 쓴다.",
-    ], tag("받은글", String(idea).trim()), tag("지난단계결과", mat), ...(avoid ? [tag("이미본예시", avoid.texts.join("\n"))] : []));
+      // C-56 R-2(2026-10-28 이재엽 버튼 "이 프로젝트의 말 + 방법 이름 꼬리표"): 이름 · 묻는 말 · 끝 조건을 이 프로젝트의 말로 — 방법 이름은 화면이 꼬리표로 따로 보인다
+      `items마다 title에는 이 할 일을 이 프로젝트의 말로 바꾼 이름(${TITLE_MAX}자 안쪽 — 받은 글 · 기준에 나온 이름 · 기능 · 사람을 쓴다, EARS · Planguage 같은 방법 이름은 쓰지 않는다), ask에는 사용자에게 묻는 말 한 줄, done에는 이 칸이 끝났다고 볼 조건 한 줄을 쓴다(각 ${ASK_MAX}자 안쪽). 기준 묶음이 있으면 그 말을 먼저 쓴다.`,
+      // C-56 R-5(2026-10-28 이재엽 버튼 "다음 단계 미리까지"): 코딩 도구가 방금 한 일이 있으면 그 일로 답이 달라지는 칸만 바꾼다 — 나머지는 전과 같은 글(사람이 적은 칸은 화면이 덮지 않는다)
+      ...(filled(work) ? ["방금한일은 코딩 도구가 지금 막 끝낸 작업이다. 그 일로 답이 달라지는 칸만 바꾸고 나머지 칸은 전과 같은 뜻으로 쓴다. 방금한일에 없는 파일 · 기능은 지어내지 않는다."] : []),
+    ], tag("받은글", String(idea).trim()), ...(filled(base) ? [tag("기준", String(base).trim())] : []), tag("지난단계결과", mat), ...(filled(work) ? [tag("방금한일", String(work).trim().slice(0, WORK_MAX))] : []), ...(avoid ? [tag("이미본예시", avoid.texts.join("\n"))] : []));
   }
   // 재료 번호("단계-칸", 1부터) → { s, i }(0부터) — 넘긴 지난 단계의 있는 칸만, 한 번씩, FROM_MAX개까지
   function fromRefs(list, stage, prev) {
@@ -407,6 +417,29 @@
     }
     return out;
   }
+  // ── C-56 R-2 + C-54(2026-10-28): 2단계 끝에 3 ~ 8단계(코드 2 ~ 7)의 준비된 퀘스트를 AI 한 번으로 — 받은 글 · 기준 카드 · 1 · 2단계 결과로 단계마다 이 프로젝트의 말로 된 이름 · ① 생각 · ② 행동(맡길 일) · 근거(기획서 n절 / 새로 정함).
+  //   ③ 기록(그 단계 기준) · ④ 저장(문서 이름) · ⑤ 버전은 코드(stagemap.js)가 정한다. 숫자 · 사람 · 날짜는 지어내지 않는다 ──
+  const PREPARE_STAGES = [2, 3, 4, 5, 6, 7];
+  const PREPARE_SCHEMA = obj({ items: list(obj({ stage: { type: "integer" }, title: str0, think: str, act: str, from: str0 }), 6, 6), say: str });
+  function preparePrompt(tier, { idea = "", prev = [], base = "" } = {}) {
+    const mat = prev.flatMap((p) => p.items.map((x, i) => `[${refOf(p.stage, i)}] ${x.name}: ${(x.lines || []).join(" / ")}`)).join("\n");
+    const stageLines = PREPARE_STAGES.map((n) => `${n + 1}단계 "${STAGES[n].title}"(${STAGES[n].does}) — 할 일: ${criteriaFor(n, tier).map((c) => c.text).join(" · ")}`);
+    return prompt([`사용자가 1 · 2단계를 마쳤다(지난단계결과 — 2단계가 기획서다). 3단계부터 8단계까지 단계마다 이 프로젝트에 맞춘 퀘스트의 머리를 준비한다. 사용자는 보고 맞는지만 고른다.`,
+      `단계(items도 이 순서로 ${PREPARE_STAGES.length}개, stage는 앱 번호 3 ~ 8): ${stageLines.join(" ")}`], [
+      FLORO_VOICE,
+      `items마다 title에는 그 단계를 이 프로젝트의 말로 바꾼 이름(${TITLE_MAX}자 안쪽 — 받은 글 · 기준의 이름 · 기능 · 사람을 쓴다, 방법 이름은 쓰지 않는다), think에는 ① 생각 한 줄(이 단계에서 무엇을 정할지, 기획서의 해당 절에서), act에는 ② 행동 한 줄(Claude Code에 맡길 일), from에는 근거(기획서 n절 '칸 이름' — 기획서 · 받은 글에 근거가 없으면 빈 글)를 쓴다.`,
+      "say는 사용자에게 건네는 한마디(60자 안쪽). 받은 글 · 기준 · 지난 단계 결과에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 모르면 '아직 모름'이라고 쓴다.",
+    ], tag("받은글", String(idea).trim()), ...(filled(base) ? [tag("기준", String(base).trim())] : []), tag("지난단계결과", mat));
+  }
+  // 읽기 — 3 ~ 8단계가 다 있어야(빠지면 null). 전문 용어가 든 이름은 비워 할 일 이름으로, 근거가 없으면 '새로 정함'
+  function parsePrepare(o) {
+    if (!o || !filled(o.say) || !Array.isArray(o.items)) return null;
+    const cards = {};
+    for (const x of o.items) { const n = Number(x && x.stage) - 1; if (!PREPARE_STAGES.includes(n) || cards[n] || !filled(x.think) || !filled(x.act)) continue;
+      const title = clean(x.title, TITLE_MAX), from = clean(x.from, 80);
+      cards[n] = { title: title && !hasJargon(title) ? title : "", think: clean(x.think, 300), act: clean(x.act, 300), from: from || "새로 정함" }; }
+    return PREPARE_STAGES.every((n) => cards[n]) ? { cards, say: clean(o.say, 120) } : null;
+  }
   // 답의 모양 — 할 일 개수와 같아야 하고, 기획서 칸은 경량 · 상세 · 안 함으로 시작해야(→ {pick, why}). 글은 잘라 쓴다. 재료(from) · 준비할 것(prep)은 없거나 틀리면 빈 목록. 초안을 만들지 않는 단계 · 틀리면 null
   function parseStageDraft(o, stage, tier, prev = []) {
     const todo = DRAFT_STAGES.includes(stage) ? criteriaFor(stage, tier) : null;
@@ -416,7 +449,9 @@
       const x = o.items[i]; if (!x || !filled(x.text)) return null;
       const t = x.text.trim(), from = fromRefs(x.from, stage, prev);
       const alts = ALT_STAGES.includes(stage) ? [...new Set((Array.isArray(x.alts) ? x.alts : []).filter(filled).map((a) => a.trim().slice(0, ALT_LINE)))].filter((a) => a !== t.slice(0, ALT_LINE)).slice(0, ALT_MAX) : [];
-      if (todo[i].term !== "PRD") { items.push({ text: t.slice(0, 300), from, ...(alts.length ? { alts } : {}) }); continue; }
+      const title = clean(x.title, TITLE_MAX), ask = clean(x.ask, ASK_MAX), done = clean(x.done, ASK_MAX);   // C-56 R-2 — 전문 용어가 든 이름은 버린다(화면은 할 일 이름으로)
+      const words = { ...(title && !hasJargon(title) ? { title } : {}), ...(ask ? { ask } : {}), ...(done ? { done } : {}) };
+      if (todo[i].term !== "PRD") { items.push({ text: t.slice(0, 300), from, ...(alts.length ? { alts } : {}), ...words }); continue; }
       const hit = PRD_PICK.find(([w]) => t.startsWith(w)); if (!hit) return null;
       items.push({ pick: hit[1], why: t.slice(hit[0].length).replace(/^\s*(?:—|-|:)?\s*/, "").slice(0, 120), from });
     }
@@ -526,7 +561,8 @@
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
     FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest,   // C-22 퀘스트 제작(2026-10-21)
     START_MAX, START_SCHEMA, startPrompt, parseStart,   // C-36 처음 한 바퀴 — 1단계 초안(2026-10-25)
-    DRAFT_STAGES, ALT_STAGES, STAGE_HINT, STAGE_DRAFT_SCHEMA, stageDraftPrompt, parseStageDraft, PREP_MAX, PREP_LINE, FROM_MAX, ALT_MAX, ALT_LINE,   // C-37 2단계 초안 · C-39 3단계 초안 · 재료 · 준비할 것(2026-10-25)
+    DRAFT_STAGES, ALT_STAGES, STAGE_HINT, STAGE_DRAFT_SCHEMA, stageDraftPrompt, parseStageDraft, PREP_MAX, PREP_LINE, FROM_MAX, ALT_MAX, ALT_LINE,
+    PREPARE_STAGES, PREPARE_SCHEMA, preparePrompt, parsePrepare, TITLE_MAX, ASK_MAX, hasJargon, WORK_MAX,   // C-56 R-2 준비된 퀘스트 · 이 프로젝트의 말(2026-10-28)   // C-37 2단계 초안 · C-39 3단계 초안 · 재료 · 준비할 것(2026-10-25)
     PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport };   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavRules = api;

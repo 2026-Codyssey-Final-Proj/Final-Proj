@@ -108,14 +108,14 @@ test("R-9 · R-5 — 3단계 장면: 칩은 '시작 ✓ · 1 ✓ V.1 · 2 ✓ V.
     if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
     await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
     const s = await page.evaluate(() => ({
-      chips: [...document.querySelectorAll(".cv-stg span")].map((x) => x.textContent.trim()),
+      chips: [...document.querySelectorAll(".cv-stg span")].map((x) => x.textContent.replace(/\s+/g, " ").trim() + (x.querySelector("svg") ? " ✓" : "")),   // C-57: ✓ 글자 대신 선 아이콘 — 아이콘이 있으면 ✓로 적어 본다
       head: document.querySelector(".qwin .wh .wst")?.textContent || "",
       files: [...document.querySelectorAll(".cv-c.c4 .cv-files li")].map((x) => x.textContent),
       gate: document.querySelector(".cv-c.c6")?.textContent || "",
       cards: [...document.querySelectorAll(".cv-c.c3 .cv-cards span")].map((x) => x.textContent.trim()),
       big: [...document.querySelectorAll(".cvb .ch, .cvb .cv-now, .cv-stg")].map((x) => x.textContent).join(" "),
     }));
-    assert.deepEqual(s.chips, ["시작 ✓", "1 ✓ V.1", "2 ✓ V.2", "3 기능 정리", "4 ~ 8"], `머리 '${s.head}'와 같은 번호`);
+    assert.deepEqual(s.chips, ["시작 ✓", "1 V.1 ✓", "2 V.2 ✓", "3 기능 정리", "4 ~ 8"], `머리 '${s.head}'와 같은 번호`);
     assert.ok(s.head.startsWith("3단계"), s.head);
     assert.deepEqual(s.files, ["docs/03-requirements/requirements.md", "docs/PRD.md", "docs/decisions.md"], "④ 저장 — 단계 문서 · 기획서 · 결정 기록");
     assert.match(s.gate, /남은 기준 \d/, s.gate);
