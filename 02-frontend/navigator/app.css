@@ -895,6 +895,9 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .ln.done .ck{background:#2B3463;border-color:#2B3463;color:#fff}
 .ln .lt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .ln .lt b{font-weight:800}
+/* C-56 상태 넷(2026-10-28) — 공책 줄의 꼬리표: 옮겨 옴(바다) · 건너뜀(금) · 먼저(볼) */
+.ln .qs{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:calc(11px * var(--ui-scale,1));font-weight:600;vertical-align:1px}
+.ln .qs-moved{background:#D3E0F3;color:#2B3463}.ln .qs-skip{background:#EFE3C0;color:#7A5E1E}.ln .qs-first{background:#EFC3CB;color:#8E3A52}
 .ln .lw{color:#2B3463;overflow-wrap:anywhere}
 .ln .lw.empty{color:#5B6491;font-style:italic}
 /* C-40 퀘스트 창 쉬운 말 — 짧은 이름 아래 쉬운 한 줄, '자세히 보기'를 누르면 원래 할 일 문장 · 용어 */
@@ -1161,7 +1164,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .sm-ship .b{min-height:44px;padding:0 16px;border:0;border-radius:12px;background:#B8C9F0;color:#263066;font-weight:800;font-size:calc(13px * var(--ui-scale,1))}
 @container (max-width:760px){.sm-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.sm-docs{grid-template-columns:1fr}}
 /* C-39 도전과제 흐름 — 넣은 것 → 플로로가 한 것 → 내가 정한 것 → 관문, 칸마다 누가 정했나(by) · 재료 */
-.by-ok{--by:#4E8F5E}.by-edit{--by:#B87A1E}.by-me{--by:#5B6CB8}.by-pick{--by:#9A5FAE}
+.by-ok{--by:#4E8F5E}.by-edit{--by:#B87A1E}.by-me{--by:#5B6CB8}.by-pick{--by:#9A5FAE}.by-moved{--by:#4D66B5}.by-skip{--by:#7A5E1E}   /* 옮김 · 건너뜀(C-56) */
 .jm-legend{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;margin:0;padding:2px 4px;font-size:calc(12px * var(--ui-scale,1));color:#2B3463}
 .jm-legend span{display:inline-flex;align-items:center;gap:5px;font-weight:700}
 .jm-legend i{width:10px;height:10px;border-radius:3px;background:var(--by)}

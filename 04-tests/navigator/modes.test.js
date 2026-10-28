@@ -182,3 +182,13 @@ test("app.js — 받은 글 전부(source)를 기록에 두고 /api/docs에 보�
   assert.match(a, /앞 \$\{N\.IDEA_MAX\}자만/, "잘라 넘기면 화면에 한 줄");
   assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /`source`[^\n]*64KB/, "API.md 3-23");
 });
+
+// C-56 R-3(2026-10-28): 상태 넷을 화면에 — 초안이 오면 applyStates(옮겨 온 칸은 '옮김'으로 미리, 건너뛸 칸은 '건너뜀 — 까닭'), 판정에서 건너뜀은 넘김(까닭) · 먼저는 안 됨, '남은 칸 모두 맞아요'는 옮겨 온 칸에만, 공책 줄의 꼬리표, 서버가 queststate.js를 내준다
+test("app.js — 상태 넷: applyStates가 초안 뒤에 붙고, gateApply가 건너뜀 → 넘김(까닭) · 먼저 → 안 됨, 모두 맞아요는 옮겨 온 칸에만, 먼저 카드(갈 곳 · 아직 못 함)", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const QS = window\.NavQuestState/); assert.match(a, /applyStates\(QU\.withDraft\(/); assert.equal((a.match(/applyStates\(QU\.withStageDraft\(/g) || []).length, 2, "연습 · 진짜 초안 둘 다");
+  assert.match(a, /if \(x\.state === "skip"\) return \{ \.\.\.c, met: true, skipped: true, reason: x\.why \}; if \(x\.state === "first"\) return \{ \.\.\.c, met: false, why: "first" \};/);
+  assert.match(a, /\.\.\.\(skipOf\(j\) \? \{ skip: skipOf\(j\) \} : \{\}\)/, "결과에 건너뜀 까닭(F-62와 같은 줄)");
+  assert.match(a, /QS\.allOkOnly\(qstates\(q\)\)\.length >= left/, "모두 맞아요는 옮겨 온 칸에만"); assert.match(a, /"first-go": /); assert.match(a, /"first-notyet": /); assert.match(a, /class="qs qs-\$\{x\.state\}"/);
+  assert.match(read("navigator/index.html"), /queststate\.js/); assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8"), /"queststate\.js"/);
+});
