@@ -32,7 +32,7 @@ const freePort = () => new Promise((resolve) => { const s = net.createServer(); 
 test("C-53 — 작업실 세 칸(1280 · 1440 · 1728) · 칸 접기 · 문서 도구 줄(서식 넣기 · 글 크기 · 찾기) · 상태 줄 · 오른쪽 칸(목차 · 칸 채움 · 퀘스트)", { skip }, async () => {
   const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "floe-wsmd-")), PROJ = path.join(TMP, "my-club-app");
   fs.writeFileSync(path.join(TMP, "claude-stub.js"), `process.stdin.resume(); process.stdin.on("end", () => setTimeout(() => { process.stdout.write(JSON.stringify({ type: "result", result: "ok" })); process.exit(0); }, 300));`);
-  Object.assign(process.env, { NAV_EVENT_TOKEN_FILE: path.join(TMP, "tok"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: path.join(TMP, "claude-stub.js") });
+  Object.assign(process.env, { CLAUDE_CONFIG_DIR: require("../navigator/hook-home.js")(TMP), NAV_EVENT_TOKEN_FILE: path.join(TMP, "tok"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: path.join(TMP, "claude-stub.js") });
   fs.writeFileSync(process.env.NAV_REPLAY, "{}");
   const w = (p, s) => { fs.mkdirSync(path.dirname(p), { recursive: true }); fs.writeFileSync(p, s); };
   w(path.join(PROJ, "README.md"), "# 동아리 앱\n\n소개\n");

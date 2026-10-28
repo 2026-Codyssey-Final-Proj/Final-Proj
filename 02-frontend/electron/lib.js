@@ -72,6 +72,17 @@ function connectDir(dir, backend, add = true, { now = new Date() } = {}) {
   return { ok: true, message: add ? `연결했어요: ${dir}\n이 폴더에서 Claude Code를 새로 열면 플로로가 작업을 알아채요.` : `연결을 뺐어요: ${dir}` };
 }
 
+// 다시 켤 때(main.js restoreProject, F-69 2026-10-28) — 그 폴더의 훅이 지금 앱 자리를 가리키지 않으면(앱을 옮김 · 새로 깖) connectDir로 다시 단다.
+// 같으면 아무것도 쓰지 않는다(백업도 안 만든다 — 켤 때마다 .bak이 쌓이지 않게). 옛 자리 허락 훅이 남으면 맡긴 일의 파일 쓰기 · 명령이 모두 막힌다
+function refreshDir(dir, backend) {
+  const C = require(path.join(backend, "connect.js"));
+  const file = path.join(dir, ".claude", "settings.local.json");
+  let before = {};
+  if (fs.existsSync(file)) { try { before = JSON.parse(fs.readFileSync(file, "utf8")); } catch { return { ok: false, message: `${file} 를 읽을 수 없어요(JSON 모양이 아니에요). 아무것도 바꾸지 않았어요.` }; } }
+  if (JSON.stringify(C.addHooks(before, hookCommand(path.join(backend, "hook.js")))) === JSON.stringify(before)) return { ok: true, same: true };
+  return connectDir(dir, backend, true);
+}
+
 // ── 처음 설정(2026-10-19) — 화면(setup.js)이 preload를 거쳐 키를 넣고 뺀다. 값은 어디에도 출력하지 않는다 ──
 // .env 글에서 KEY를 바꾸거나(값) 지운다(null). 다른 줄 · 주석은 그대로, 같은 KEY가 여러 줄이면 하나로. 끝은 줄바꿈 하나
 function setEnvLines(text, updates) {
@@ -210,4 +221,4 @@ function workBounds(wa, saved) {
 // 두 상자가 겹치나 — 맞닿기만 하면 겹침이 아니다. 섬 크기가 바뀔 때 옆 창을 다시 둘지 앱(main.js placeSideWins)이 묻는다
 const overlaps = (a, b) => !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-module.exports = { SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, WORK_MIN, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };
+module.exports = { refreshDir, SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, WORK_MIN, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };

@@ -40,7 +40,7 @@ test("app.js — 연 파일 머리의 '틀로 맡기기' 고르기 · 채팅의 
   assert.match(a, /<iframe class="docmap" src="\/navigator\/docmap\.html#now=\$\{encodeURIComponent\(nowDocPath\(n\)\)\}"/, "지금 장 문서는 주소 끝(#)으로 — 물음표 뒤가 붙으면 화면 파일을 못 찾는다");
   assert.match(a, /"map-open": \(i, el\) => \{/, "상자의 '파일 보기에서 열기' → 목록의 번호로 연다"); assert.match(a, /window\.addEventListener\("message", \(e\) => \{ if \(e\.origin !== location\.origin\) return; const d = e\.data; if \(d && d\.floe === "open"/);
   assert.match(a, /const PR = window\.FloePresets \|\| null;/); assert.match(a, /data-act="preset-pick"/, "연 파일 머리의 틀 고르기"); assert.match(a, /\{ label: "문서 틀", act: "preset-open", kind: "ghost" \}/, "채팅 칩");
-  assert.match(a, /await fetch\("\/api\/preset", \{ method: "POST"/, "틀은 서버가 번호 → 경로로 바꿔 맡긴다(화면은 가린 경로를 보내지 않는다)"); assert.match(s, /route === "\/api\/preset"/); assert.match(a, /if \(t && t\.report && st\.presetTask\)/, "보고가 오면 다시 읽기");
+  assert.match(a, /await fetch\("\/api\/preset", \{ method: "POST"/, "틀은 서버가 번호 → 경로로 바꿔 맡긴다(화면은 가린 경로를 보내지 않는다)"); assert.match(s, /route === "\/api\/preset"/); assert.match(a, /watchTask\(r\.task, "preset"\)/, "맡긴 일 지켜보기로(F-69 — 전에는 계획 줄을 지켜볼 때만 다시 읽었다)"); assert.match(a, /function presetEnd\(t\) \{[^}]*reloadFile\(k\)/, "끝나면 다시 읽기");
   assert.match(read("navigator/win.js"), /d\.floe === "open" && typeof d\.path === "string"\) F\.winEvent\(\{ type: "click", act: "map-open"/);
   assert.match(s, /"03-backend\/navigator\/board": \["board\.js", "board\.css"\]/, "엔진 사본을 서버가 내준다"); assert.match(s, /route === "\/api\/docmap"/);
   assert.match(read("navigator/docmap.html"), /\.\.\/\.\.\/03-backend\/navigator\/board\/board\.js/, "엔진은 앱 안의 사본 — 밖으로 요청하지 않는다");

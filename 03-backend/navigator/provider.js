@@ -204,7 +204,7 @@ function startTask({ dir, text, bin = process.env.NAV_CLAUDE_BIN || "claude", on
   const child = spawn(js ? process.execPath : bin, js ? [bin, ...args] : args, { cwd: dir, stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
   let out = "";
   child.stdout.on("data", (d) => { if (out.length < TASK_OUT_MAX) out += d; });
-  child.on("close", () => { if (!onResult) return; const j = Tokens.resultOf(out); onResult(j ? { ...Tokens.summarize(j), output: j.structured_output ?? null } : null); });
+  child.on("close", () => { if (!onResult) return; const j = Tokens.resultOf(out); onResult(j ? { ...Tokens.summarize(j), output: j.structured_output ?? null, denials: Tokens.denialsOf(j) } : null); });   // denials — 허락을 못 받은 도구의 이름 · 개수(F-69)
   child.stdin.on("error", () => {});
   child.stdin.end(`Floe(섬)에서 넘긴 일이에요. 아래 요구 문장대로 해 주세요. 파일을 고치거나 명령을 쓰기 전에 허락을 구하면 Floe 섬에서 허용 · 거절을 받아요.\n\n${String(text).trim()}\n`);
   return child;

@@ -56,6 +56,30 @@ function removeHooks(settings) {
   return s;
 }
 
+// 그 폴더에서 연 Claude Code가 섬에 허락을 물을 수 있나(F-69, 2026-10-28) — 맡긴 일(claude -p)은 허락 훅이 없으면 파일 쓰기 · 명령이 모두 거절된 채 끝 코드 0으로 끝난다.
+// Claude Code가 읽는 세 곳(폴더의 settings.local.json · settings.json, 사용자 설정 — CLAUDE_CONFIG_DIR, 없으면 ~/.claude 의 settings.json) 중 하나에
+// 우리 허락 훅(PermissionRequest → approve-hook.js)이 있고 그 파일이 있으면 ok. 없으면 why "none", 훅은 있는데 파일이 없으면(앱 자리가 바뀜) "moved". 읽기만 한다
+function approveHookPath(settings) {
+  const list = settings && settings.hooks && Array.isArray(settings.hooks[APPROVE_EVENT]) ? settings.hooks[APPROVE_EVENT] : [];
+  for (const g of list) for (const h of (g && Array.isArray(g.hooks) ? g.hooks : [])) {
+    if (!ours(h) || !h.command.includes("approve-hook.js")) continue;
+    const m = /"([^"]*approve-hook\.js)"/.exec(h.command) || /(\S*approve-hook\.js)/.exec(h.command);
+    if (m) return m[1];
+  }
+  return "";
+}
+function hookReady(dir, { configDir = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), ".claude") } = {}) {
+  let moved = false;
+  for (const f of [path.join(dir, ".claude", "settings.local.json"), path.join(dir, ".claude", "settings.json"), path.join(configDir, "settings.json")]) {
+    let s; try { s = JSON.parse(fs.readFileSync(f, "utf8")); } catch { continue; }
+    const p = approveHookPath(s);
+    if (!p) continue;
+    if (fs.existsSync(p)) return { ok: true };
+    moved = true;
+  }
+  return { ok: false, why: moved ? "moved" : "none" };
+}
+
 function main(argv) {
   const apply = argv.includes("--apply"), remove = argv.includes("--remove"), codex = argv.includes("--codex");
   const dir = path.resolve(argv.find((a) => !a.startsWith("--")) || process.cwd());
@@ -83,4 +107,4 @@ function main(argv) {
 }
 
 if (require.main === module) process.exitCode = main(process.argv.slice(2));
-module.exports = { addHooks, removeHooks, COMMAND, EVENTS, APPROVE_COMMAND, APPROVE_EVENT, APPROVE_TIMEOUT };
+module.exports = { addHooks, removeHooks, hookReady, approveHookPath, COMMAND, EVENTS, APPROVE_COMMAND, APPROVE_EVENT, APPROVE_TIMEOUT };
