@@ -10,6 +10,7 @@
   const node = typeof module !== "undefined" && module.exports;
   const N = node ? require("./navigator.js") : root.NavRules;
   const Q = node ? require("./quest.js") : root.NavQuest;
+  const BC = node ? require("./basecard.js") : root.NavBaseCard;   // 기준 카드(C-56 R-1, 2026-10-28) — docs/기준.md
   const SLUGS = ["01-idea", "02-plan", "03-requirements", "04-design", "05-skeleton", "06-build", "07-measure", "08-retro"];
   const PRD_PART = ["문제와 목표", "아이디어와 범위", "꼭 필요한 기능", "만드는 방법", "뼈대와 할 일", "만든 것과 확인", "잰 결과", "배운 것"];   // 기획서에서 그 단계가 맡는 절
   const MARK_START = "<!-- floe:start -->", MARK_END = "<!-- floe:end -->";
@@ -87,7 +88,8 @@
   const SOURCE_DOC = "docs/00-source/idea.md";
   const sourceDoc = (text, name) => { const lines = text.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n"), w = String(lines.length).length;
     return `# 처음 말한 것 — 받은 글 그대로${name ? ` (${name})` : ""}\n\nFloe가 받은 글을 자르지 않고 그대로 두었어요. 단계 문서의 '처음 말한 것'은 이 파일의 줄을 가리켜요. 비밀값 모양은 가렸어요.\n\n${lines.map((l, i) => `${String(i + 1).padStart(w)} | ${l}`).join("\n")}\n`; };
-  function files({ topic = "", idea = "", source = "", results = {}, redact: hide = (t) => t } = {}) {
+  const CARD_DOC = "docs/base.md";   // 기준 카드 한 장(C-56 R-1) — Floe가 만든 카드라 덮어쓴다. 이름은 영문(파일 이름 규칙 — 받은 글이 경로가 되지 않게 A-Za-z0-9._/-만), 제목은 '이 프로젝트의 기준'
+  function files({ topic = "", idea = "", source = "", results = {}, card = null, redact: hide = (t) => t } = {}) {
     // 받은 글 안의 표시(<!-- floe:… -->)는 지운다 — 남겨 두면 mergeSection이 그 자리를 절의 끝으로 보고 올릴 때마다 꼬리가 쌓였다(2026-10-25 리뷰)
     const redact = (t) => String(hide(t)).replace(/<!--\s*floe:(?:start|end)\s*-->/gi, "");
     const R = (n) => results[n] || results[String(n)] || null;
@@ -97,7 +99,7 @@
     const ctx = { R, redact, docOf, idea: redact(String(idea || "").trim().replace(/\r?\n/g, " ")), srcLines: hasSrc ? srcLines : 0 };
     const rows = SLUGS.map((slug, n) => `| ${label(n)} · ${N.STAGES[n].title} | [${slug}](${docOf(n).slice(5)}) | ${R(n) ? (R(n).passed || R(n + 1) ? "끝냄" : "확인함") : "아직"} |`).join("\n");
     const index = `${MARK_START}\n# 단계 문서${name ? ` — ${name}` : ""}\n\nFloe의 여덟 단계로 만들어요. 단계마다 폴더 하나 — 끝낸 단계는 정한 것과 증빙이, 아직인 단계는 할 일이 들어 있어요.\n\n`
-      + `- 기획서(끝낸 단계를 한 장으로): [PRD.md](PRD.md)\n- 결정 기록(누가 무엇을 어떻게 정했나): [decisions.md](decisions.md)\n\n| 단계 | 폴더 | 상태 |\n|---|---|---|\n${rows}\n${MARK_END}\n`;
+      + `- 기획서(끝낸 단계를 한 장으로): [PRD.md](PRD.md)\n- 결정 기록(누가 무엇을 어떻게 정했나): [decisions.md](decisions.md)${card && BC ? "\n- 이 프로젝트의 기준(1단계 관문의 카드): [base.md](base.md)" : ""}\n\n| 단계 | 폴더 | 상태 |\n|---|---|---|\n${rows}\n${MARK_END}\n`;
     const plan = R(1) ? docOf(1) : docOf(0);
     const links = SLUGS.map((_, n) => n).filter((n) => R(n)).map((n) => `- ${label(n)} ${N.STAGES[n].title}: [${docOf(n)}](${docOf(n)})`).join("\n");
     const readme = `${MARK_START}\n## 계획 (Floe)\n\n${name ? `**${name}** — ` : ""}Floe의 여덟 단계로 만들어요.\n\n- 기획서: [docs/PRD.md](docs/PRD.md)\n- 결정 기록: [docs/decisions.md](docs/decisions.md)\n${links}\n- 단계 폴더 목차: [docs/README.md](docs/README.md)\n${MARK_END}\n`;
@@ -106,7 +108,7 @@
       + "- 사람이 정한 것은 [docs/decisions.md](docs/decisions.md)에 있다 — 바꿔야 하면 바꾸기 전에 묻는다.\n"
       + "- 단계 문서는 docs/<단계 폴더>/에 둔다 — 목차는 [docs/README.md](docs/README.md).\n"
       + "- 비밀값(키 · 토큰 · 비밀번호 · .env)은 커밋하지 않는다.\n" + `${MARK_END}\n`;
-    return [{ path: "docs/README.md", text: index, merge: true }, ...(hasSrc ? [{ path: SOURCE_DOC, text: sourceDoc(src, name) }] : []), ...SLUGS.map((_, n) => ({ path: docOf(n), text: R(n) ? stageDoc(n, R(n), name, ctx) : placeholder(n) })),
+    return [{ path: "docs/README.md", text: index, merge: true }, ...(hasSrc ? [{ path: SOURCE_DOC, text: sourceDoc(src, name) }] : []), ...(card && BC ? [{ path: CARD_DOC, text: redact(BC.toMarkdown(card, name)) }] : []), ...SLUGS.map((_, n) => ({ path: docOf(n), text: R(n) ? stageDoc(n, R(n), name, ctx) : placeholder(n) })),
       { path: MAIN_DOC, text: prdDoc(name, ctx), merge: true }, { path: LOG_DOC, text: decisionsDoc(name, ctx), merge: true },
       { path: "README.md", text: readme, merge: true }, { path: "CLAUDE.md", text: claude, merge: true }];
   }
@@ -123,7 +125,7 @@
 
   // 끝에 Claude Code가 이 둘마다 해냈는지 보고한다(server.js startTask의 checks — C-32 보고). 화면은 둘째(푸시)를 보고 '올라갔다'고 말한다
   const SHIP_CHECKS = ["위 파일들만 커밋했다", "지금 브랜치를 원격(origin)에 푸시했다"];
-  const api = { SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, SHIP_CHECKS, files, mergeSection, shipRequest };
+  const api = { SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, CARD_DOC, SHIP_CHECKS, files, mergeSection, shipRequest };
   if (node) module.exports = api;
   else root.FloeDocs = api;
 })(typeof window !== "undefined" ? window : globalThis);

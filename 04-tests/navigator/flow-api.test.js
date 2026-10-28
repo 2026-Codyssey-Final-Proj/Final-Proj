@@ -198,6 +198,18 @@ test("POST /api/docs(F-68): source(받은 글 전부)를 docs/00-source/idea.md�
   const big = await call("POST", "/api/docs", { body: { topic: "앱", idea: "x", source: "z".repeat(64 * 1024 + 1), results: { 0: R0, 1: R1 } } }); assert.ok([400, 413].includes(big.status), `64KB까지 — 거절(본문 자체가 크면 413): ${big.status}`); assert.ok(!fs.existsSync(path.join(DIR, "docs/00-source/idea.md")) || !fs.readFileSync(path.join(DIR, "docs/00-source/idea.md"), "utf8").includes("zzzz"), "잘라 쓰지 않는다");
 });
 
+// C-56 R-1(2026-10-28): 기준 카드 — 칸마다 { text(200자), by(moved · me · null), blank } · 받은 글 줄(lines). 모양이 틀리면 400
+test("POST /api/docs(C-56): card(기준 카드)를 받아 docs/base.md를 쓴다, 모양이 틀리면 400", async () => {
+  assert.equal(Srv.useProject(DIR), true);
+  const B = require(path.join(BACK, "basecard.js")), card = B.withEdits(B.build({ results: { 0: R0 }, source: "" }), { success: "신청 40건" });
+  const r = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1 }, card } });
+  assert.equal(r.status, 200, r.text); assert.ok(r.json.files.includes("docs/base.md"));
+  assert.match(fs.readFileSync(path.join(DIR, "docs/base.md"), "utf8"), /\| 성공 \| 신청 40건 \| 직접 \|/);
+  await untilDone();
+  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1 }, card: { success: { text: "가".repeat(300), by: "me", blank: false } } } })).status, 400);
+  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1 }, card: { success: { text: "x", by: "ai", blank: false } } } })).status, 400, "누가는 moved · me만");
+});
+
 test("POST /api/docs: 맡긴 일이 진행 중이면 409 — 파일을 하나도 쓰지 않는다(쓰고 나서 못 맡기지 않게)", async () => {
   assert.equal(Srv.useProject(DIR), true);
   fs.writeFileSync(SLOW, "1");

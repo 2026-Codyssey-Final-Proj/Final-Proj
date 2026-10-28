@@ -102,7 +102,16 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.ok(await page.$(".qwin .jmap"), "도전과제의 흐름 보기");
     assert.equal(await page.$eval('.jmap .jm-stage[data-n="0"] .jm-count', (e) => e.textContent.trim()), "4/4");
     assert.ok((await page.$eval('.jmap .jm-stage[data-n="0"]', (e) => e.textContent)).includes("동아리 행사 신청을 종이로"), "채운 칸에는 적은 글");
-    await passGate(page);
+    // C-56 R-1(2026-10-28, 이재엽 버튼 "1단계 관문에서"): 1단계 관문 카드 = 이 프로젝트의 기준 — 옮겨 온 줄은 출처 칩, 성공은 사람이 채우는 빈칸 → 지나면 기록(card)에 '직접'
+    await click(page, "[data-act=gate]");
+    const bc = await page.evaluate(() => ({ rows: document.querySelectorAll(".mc.chat .bc .bc-row").length, who: document.querySelector(".mc.chat .bc .bc-row:nth-child(2) dd")?.textContent.replace(/\s+/g, " ").trim(), blank: !!document.querySelector('.mc.chat .bc input[data-act=card-field][data-v="success"]') }));
+    assert.equal(bc.rows, 8, "기준 카드 칸 여덟"); assert.match(bc.who || "", /옮겨 옴 · 1단계 Ⅲ/, `쓰는 사람은 1단계 Ⅲ에서: ${bc.who}`); assert.ok(bc.blank, "성공은 빈칸(입력)");
+    await page.type('.mc.chat .bc input[data-v="success"]', "신청 40건이 한곳에 모이면");
+    await click(page, "[data-act=yes]");   // 관문 카드는 이미 열려 있다 — passGate의 나머지만
+    if (await page.$("[data-act=check-pick]")) { await click(page, "[data-act=check-pick]"); if (await page.$("[data-act=check-go]")) await click(page, "[data-act=check-go]"); }
+    await wait(600);
+    const card = (await saved(page)).card;
+    assert.ok(card && card.success.by === "me" && card.success.text === "신청 40건이 한곳에 모이면" && card.who.by === "moved", `기준 카드가 기록에: ${JSON.stringify(card && card.success)}`);
     // 2단계 — 1단계 결과로 만든 초안(연습 예시), 제목은 주제, 받기 화면 없이 확인
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /2단계 · 동아리 행사 신청 앱/);
     assert.match(await nowSay(page), /맞나요/); assert.match(await nowSay(page), /예시예요/);

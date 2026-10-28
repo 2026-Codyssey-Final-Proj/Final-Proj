@@ -54,8 +54,9 @@
   const SHELF_ON = false;          // 서재(서고 · 책장) 잠시 뺌 — 이재엽 2026-10-23 "서재는 지금은 못들어가고 버튼을 지우고 나중에 이 대회가 끝나면 열어서 작업". 대회 뒤 true로 다시 연다
   // 앱(Electron)이 옆 창 둘(설정 창 · 퀘스트 창)을 열 수 있으면(preload.js openWin, 2026-10-21 이재엽 "창 셋") 그 창으로, 아니면(브라우저 · 옛 앱) 섬 옆의 판으로
   const WINS = !!(window.floeApp && window.floeApp.openWin);
-  const SM = window.NavStageMap;
-  const QS = window.NavQuestState;   // C-56 퀘스트 상태 넷(queststate.js, 2026-10-28 — 이재엽 버튼 "'옮김' 새 값"): 쓰기 · 옮겨 옴 · 건너뜀 · 먼저. 없으면 전처럼   // C-54 지도(stagemap.js, 2026-10-28) — 도전과제 탭의 카드 지도 · 준비된 퀘스트. 없으면 흐름(한눈에 보기)만
+  const SM = window.NavStageMap;   // C-54 지도(stagemap.js, 2026-10-28) — 도전과제 탭의 카드 지도 · 준비된 퀘스트. 없으면 흐름(한눈에 보기)만
+  const QS = window.NavQuestState;   // C-56 퀘스트 상태 넷(queststate.js, 2026-10-28 — 이재엽 버튼 "'옮김' 새 값"): 쓰기 · 옮겨 옴 · 건너뜀 · 먼저. 없으면 전처럼
+  const BC = window.NavBaseCard;   // C-56 R-1 기준 카드(basecard.js, 2026-10-28 — 이재엽 버튼 "1단계 관문에서"): 1단계 관문의 카드 한 장 · docs/base.md
   const FDOCS = window.FloeDocs;   // 단계 문서(C-37, 2026-10-25 — 03-backend/navigator/docs.js). 없으면 문서 올리기 없이
   const FP = window.FloePlan;   // 준비 계획 · 맡길 일 규칙(C-34 · C-32 · C-35, 2026-10-24 — 03-backend/navigator/plan.js). 없으면 채팅에 계획 칩이 없고 할 일 적기(AI 진행 판)만
   const AP = window.NavApprove;   // FR-17 승인 카드(2026-10-20) — 서버 없이 보일 예시 카드   // 먹이 주기(C-15, feed.js) — 없으면 글을 바로 본다
@@ -140,7 +141,7 @@
     results: {}, ship: null,                       // C-37(2026-10-25): 단계마다 보고한 결과(quest.js resultOf — 한곳에서 보기 · 도전과제 지도 · 문서) · 2단계를 마친 뒤 문서 올리기({phase: offer|sent, at}, 이 켜짐 동안만)
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
-    qwin: false, qtab: "canvas", boot: null, prep: null, mapSel: null, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
+    qwin: false, qtab: "canvas", boot: null, prep: null, mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
     gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
     plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {},   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
     qfocus: "stage", planSel: "",                   // C-35: 지금 할 퀘스트(stage 단계 퀘스트 · plan 준비 계획과 맡길 일 — 채팅의 지금 말이 이쪽을 따른다) · 퀘스트 창에서 고른 맡길 일(이 켜짐 동안만)
@@ -232,7 +233,7 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source"];   // prep — 준비된 퀘스트(C-54)
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   function load() {
     let s;
@@ -261,6 +262,7 @@
     st.owned = QU ? QU.cleanOwned(st.owned) : []; st.wear = QU ? QU.cleanWear(st.wear) : {};
     if (typeof st.idea !== "string") st.idea = "";
     if (typeof st.source !== "string") st.source = "";
+    if (st.card && typeof st.card !== "object") st.card = null; st.cardEdits = {};
     if (typeof st.topic !== "string") st.topic = "";
     st.results = st.results && typeof st.results === "object" && !Array.isArray(st.results)
       ? Object.fromEntries(Object.entries(st.results).filter(([k, r]) => N.STAGES[k] && r && Array.isArray(r.items) && r.items.every((x) => x && typeof x.name === "string" && Array.isArray(x.lines)))) : {};   // 고장 난 결과는 버린다
@@ -890,8 +892,9 @@
     if (st.step === "next") return { tone: "green", mood: "happy", badge: OK_ICON, meta: `<span class="mm-stage">${nx ? `다음은 ${LB(nx.n)} · ${esc(nx.title)}` : "마무리"}</span>`,
       title: "좋아요! 무엇부터 할지 순서를 정해 볼까요?", sub: "위아래 화살표로 순서를 바꾸고, 지금 안 해도 되는 일은 '나중에'로 미뤄 둬요. 꼭 할 일부터 하나씩 안내할게요.",
       body: todoList(true), acts: [{ label: "이 순서로 시작하기", act: "go", key: "Enter", pri: true }] };
-    return { tone: "amber", mood: face()[0], badge: "!", meta, title: "이번 단계에서 한 일, 이해되셨나요?",
-      sub: `잘 모르겠으면 헷갈린 곳을 골라 같이 풀어요. 몇 번이고 괜찮아요.${st.noCount ? ` (다시 물어본 횟수 ${st.noCount}번)` : ""}`,
+    return { tone: "amber", mood: face()[0], badge: "!", meta, title: s.n === 0 && BC ? "이 프로젝트의 기준 — 맞나요?" : "이번 단계에서 한 일, 이해되셨나요?",
+      sub: s.n === 0 && BC ? "1단계 칸과 받은 글로 기준 한 장을 만들었어요. 옮겨 온 줄은 어디서 왔는지 적혀 있고, 사람만 아는 칸(성공)은 비워 두었어요 — 채워 주면 다음 단계 퀘스트가 이 기준으로 지어져요." : `잘 모르겠으면 헷갈린 곳을 골라 같이 풀어요. 몇 번이고 괜찮아요.${st.noCount ? ` (다시 물어본 횟수 ${st.noCount}번)` : ""}`,
+      ...(s.n === 0 && BC ? { body: baseCardHTML(BC.withEdits(BC.build({ results: st.results, source: st.source }), st.cardEdits), true) } : {}),   // C-56 R-1 기준 카드(목업 ③)
       acts: [yes, no] };
   }
   // 가로 카드 하나 — 왼쪽 플로로, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
@@ -1174,7 +1177,7 @@
     if (!st.ship || st.ship.phase !== "offer") return;
     if (st.mode !== "live" || !canLive) { st.ship = null; render(); return say("연습이라 올리지 않았어요 — 진짜 AI 모드에서 작업 폴더에 만들고 올려요"); }
     st.planBusy = "ship";
-    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults() });   // source — 받은 글 전부(F-68)
+    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
     st.planBusy = "";
     if (!r.ok) { render(); return say(r.reason || "문서를 올리지 못했어요"); }
     st.ship = { phase: "sent", at: r.task && r.task.at }; render(); watchShip();
@@ -1469,13 +1472,14 @@
           <p class="ws-h">문서</p><p class="ws-sum"><code>${esc(c.doc.path)}</code> ${c.doc.has ? `<button type="button" class="lnk" data-act="map-open" data-v="${esc(c.doc.path)}">파일 보기로 열기</button>` : "아직 없어요"}</p></section>`;
       }
     }
+    const base = st.card && BC ? `<section class="ws-card"><h4>이 프로젝트의 기준</h4>${baseCardHTML(BC.withEdits(st.card, st.cardEdits), true)}<button type="button" class="b sm" data-act="card-edit">고친 것 적용</button></section>` : "";   // C-56 R-1 — 고치면 아직 안 한 퀘스트를 다시
     const q = st.quest && st.quest.chap === n ? st.quest : null, p = q ? QU.progress(q) : null, s = N.STAGES[n];
     const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met) : [];
     const cells = q ? `<ol class="ws-cells">${q.objs.map((o, i) => `<li class="${QU.filled(q, i) ? "y" : i === QU.curIdx(q) ? "now" : ""}">${ROMAN(i)} ${esc(QU.shortOf(o.name))}</li>`).join("")}</ol>` : `<p class="ws-sum">${st.j ? "퀘스트를 받기 전이에요 — 노트북 탭에서 받아요" : "채팅에서 원하는 것을 말하면 1단계 퀘스트가 생겨요"}</p>`;
     const quest = `<section class="ws-q"><h4>퀘스트</h4><p class="ws-sum"><b>${LB(n)} · ${esc(s.title)}</b>${p ? ` — 다섯 칸 중 ${p.k}번째, 정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}` : ""}</p>${cells}
       <p class="ws-h">관문</p><p class="ws-sum">${st.finished ? "모든 장을 마쳤어요" : st.results[n] && st.results[n].passed ? `지났어요 ${esc(st.results[n].passed.slice(5))}` : st.j && st.j.stage === n ? (unmet.length ? `남은 기준 ${unmet.length}개` : "기준을 다 채웠어요 — 섬에서 넘어가기 전 확인") : "아직 — 칸을 다 채우면"}</p>${
       unmet.length ? `<ul class="ws-unmet">${unmet.slice(0, 4).map((x) => `<li>${esc(QU.shortOf(x.text))}</li>`).join("")}${unmet.length > 4 ? `<li>+${unmet.length - 4}</li>` : ""}</ul>` : ""}</section>`;
-    return doc + quest;
+    return doc + base + quest;
   }
   function qwinHTML() {
     if (!st.qwin || !QU) return "";
@@ -2947,6 +2951,7 @@
     // C-40 — 예시 셋 중 고르기(누가 = 고름) · 남은 칸 모두 맞아요(누가 = 그대로) · 다른 예시(그 칸만 다시 — 진짜 AI는 이미 본 예시를 피해 다시, 연습은 순서만)
     "draft-alt": (k) => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex[k]) fillNow(ex[k], "pick"); },
     // 1단계에서 크기 칸까지 채우면 만드는 크기도 권한 크기로 — 크기 칩(draft-size)과 같게(2026-10-26 리뷰: 줄만 '보통'이고 등급은 Full로 남아 다음 장이 Full 할 일 수로 열렸다)
+    "card-edit": () => { if (!BC || !st.card) return; st.card = BC.withEdits(st.card, st.cardEdits); st.cardEdits = {}; if (st.prep && SM) st.prep = { ...SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits }), ok: st.prep.ok, fix: false }; save(); render(); say("기준을 고쳤어요 — 아직 안 한 단계의 퀘스트를 이 기준으로 다시 지어요"); },   // C-56 R-1: 카드를 고치면 아직 안 한 퀘스트를 다시(지금은 준비된 퀘스트 — AI 맞춤은 ⓓ)
     "first-go": () => { treeChap = null; treeView = "flow"; openQwin("tree"); render(); say("한눈에 보기에서 그 칸을 찾아 채워요 — 지난 장의 칸은 '채우기'로 채팅에서 같이 적어요"); },   // C-56 먼저 → 갈 곳
     "first-notyet": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, x = i >= 0 ? qstates(q)[i] : null; if (!x || x.state !== "first") return; fillNow(`아직 못 함 — ${x.why}`, "me"); },   // 비워 두지 않고 적되 관문 규칙(evidence)이 막는다
     "draft-all": () => { const q = st.quest; if (!q || !q.draft) return; if (q.chap === 0 && !QU.filled(q, QU.SIZE_AT) && QU.SIZE_TIER[q.draft.size]) setTier(QU.SIZE_TIER[q.draft.size]); st.quest = QU.fillAll(st.quest); afterFill(); },
@@ -3266,8 +3271,17 @@
   const reveal = (sel) => { if (isPhone()) requestAnimationFrame(() => { const el = $phone.querySelector(sel); if (el) el.scrollIntoView({ block: "center", behavior: STILL ? "auto" : "smooth" }); }); };
   // 넘어가기 전 확인의 마지막 — 다음 단계 할 일로 순서 정하기를 연다(꼭/나중에는 처음엔 모두 꼭)
   // 확인 질문 뒤 — 순서 정하기 없이 바로 다음 단계로(2026-10-18 임유정 결정, FR-12는 팀이 정한다 · PR #105). 마지막 단계만 '마치기'를 한 번 더 묻는다
+  // ── C-56 R-1 기준 카드(2026-10-28): 1단계 관문의 카드 — 옮겨 온 줄은 출처 칩, 받은 글에서 온 줄은 줄 번호, 사람만 아는 칸은 빈칸(입력) + 성공의 '아직 모름'이면 무엇이 막히는지 한 줄. edit — 입력 칸을 보일지(관문 · 오른쪽 칸) ──
+  const BC_EX = { what: "예: 신청이 한곳에 모이고 마감 전에 알림이 가요", success: "예: 신청 40건이 한곳에 모이면 · '신청됨'까지 3초 안", data: "예: 회원 이름 · 학번(운영진만)", out: "예: 알림 서비스로 이름만" };
+  function baseCardHTML(card, edit) {
+    if (!BC || !card) return "";
+    const chip = (f) => (f.by === "me" ? `<small class="bc-from me">직접</small>` : f.src && f.lines && f.lines.length ? `<small class="bc-from">옮겨 옴 · 받은 글 ${f.lines.map((x) => `${x.line}줄`).join(" · ")}</small>` : f.from && f.from.length ? `<small class="bc-from">옮겨 옴 · ${f.from.map((x) => `${LB(x.s)} ${ROMAN(x.i)}`).join(" · ")}</small>` : "");
+    return `<dl class="bc" aria-label="이 프로젝트의 기준">${BC.FIELDS.map((fd) => { const f = card[fd.key] || { text: "", blank: true }; const canEdit = edit && (f.blank || f.by === "me");
+      return `<div class="bc-row${f.blank ? " blank" : ""}"><dt>${fd.label}</dt><dd>${canEdit ? `<input type="text" data-act="card-field" data-v="${fd.key}" value="${esc(f.text || "")}" placeholder="${esc(f.note || BC_EX[fd.key] || "비었어요 — 알면 적어요")}" aria-label="${fd.label}" maxlength="200">` : f.blank ? `<span class="bc-blank">비었어요</span>` : esc(f.text)}${chip(f)}</dd></div>`; }).join("")}</dl>`;
+  }
   function toNext() {
     const nx = nextStage();
+    if (BC && stage() && stage().n === 0) { st.card = BC.withEdits(BC.build({ results: st.results, source: st.source }), st.cardEdits); st.cardEdits = {}; }   // 1단계 관문을 지나며 기준 카드를 기록에(C-56 R-1) — docs/base.md로 나간다
     if (!nx) { set({ step: "next", todos: [], todoLater: [] }); return flash("happy", 1200); }
     Object.assign(st, { todos: crits(nx.n).map((c) => c.text), todoLater: [] });
     advance();
@@ -3335,6 +3349,7 @@
     if (a === "skip-reason") { st.skip = { ...(st.skip || {}), reason: t.value.slice(0, 200) }; return; }
     if (a === "ftext") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.text = t.value; const d = f.text !== f.saved; if (d !== f.dirty) { f.dirty = d; render(); } return; }   // 파일 고치기(C-43) — 바뀜 표시만 다시 그린다(글 칸이 흔들리지 않게)
     if (a === "fn-find") { st.fnFind = t.value.slice(0, 60); render(); return; }
+    if (a === "card-field") { st.cardEdits = { ...st.cardEdits, [String(t.dataset.v)]: t.value.slice(0, 200) }; return; }   // C-56 기준 카드의 빈칸 — 다시 그리지 않는다(관문 '네' 또는 '고친 것 적용'에서 저장)
     if (a === "prep-think") { const c = st.prep && st.prep.cards && st.prep.cards[Number(t.dataset.i)]; if (c) c.think = t.value.slice(0, 120); return; }   // C-54 고칠래요 — ① 생각(다시 그리지 않는다, '맞아요'에서 저장)
     if (a === "ffind") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.find = t.value.slice(0, 60); if (f.kind === "md" && !f.edit && !f.raw && f.find) f.raw = true; render(); return; }   // C-53 문서 안 찾기 — 그 글이 든 줄 표시(원문 · 코드 보기)   // R-10 넘기는 까닭 — 다시 그리지 않는다(글 칸이 흔들리지 않게)
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다

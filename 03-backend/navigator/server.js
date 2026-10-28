@@ -143,7 +143,7 @@ const STATIC = {
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "presets.js", "tutorial.js", "plan.js", "docs.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -550,6 +550,11 @@ function docTargets(dir, files) {
   return { list: out };
 }
 const SOURCE_MAX = 64 * 1024;
+const CARD_KEYS = ["what", "who", "size", "fixed", "materials", "data", "out", "success"];
+const cardFieldOk = (f) => f && typeof f === "object" && strOk(f.text || "", 200) && (f.by == null || f.by === "moved" || f.by === "me") && (f.note == null || strOk(f.note, 120))
+  && (f.lines == null || (Array.isArray(f.lines) && f.lines.length <= 8 && f.lines.every((x) => x && strOk(x.text, 200) && Number.isInteger(x.line)))) && (f.from == null || (Array.isArray(f.from) && f.from.length <= 4));
+const cardOk = (c) => c && typeof c === "object" && !Array.isArray(c) && Object.keys(c).every((k) => CARD_KEYS.includes(k)) && Object.values(c).every(cardFieldOk);
+const cardClean = (c) => Object.fromEntries(CARD_KEYS.filter((k) => c[k]).map((k) => { const f = c[k]; return [k, { text: f.text || "", by: f.by || null, blank: !f.text, ...(f.note ? { note: f.note } : {}), ...(f.lines ? { lines: f.lines.map((x) => ({ text: x.text, line: x.line })), src: f.lines.length > 0 } : {}), ...(f.from ? { from: f.from.filter((x) => x && Number.isInteger(x.s) && Number.isInteger(x.i)).map((x) => ({ s: x.s, i: x.i })) } : {}) }]; }));
 function shipDocs(body) {
   const got = resultsOf(body && body.results), topic = body && body.topic != null ? body.topic : "", idea = body && body.idea != null ? body.idea : "";
   if (got.why) return [400, { ok: false, reason: got.why }];
@@ -557,11 +562,13 @@ function shipDocs(body) {
   if (!strOk(idea, Nav.IDEA_MAX)) return [400, { ok: false, reason: `처음 말한 것은 ${Nav.IDEA_MAX}자까지` }];
   const source = body && body.source != null ? body.source : "";   // F-68 — 받은 글 전부(docs/00-source/idea.md에 통째로). 64KB까지 — 넘으면 잘라 쓰지 않고 거절한다(화면이 알린다)
   if (!strOk(source, SOURCE_MAX)) return [400, { ok: false, reason: `받은 글 전부는 ${SOURCE_MAX / 1024}KB까지` }];
+  const card = body && body.card != null ? body.card : null;   // C-56 R-1 기준 카드 — 칸마다 { text, by, blank, lines?, note? }, 모양이 틀리면 400
+  if (card !== null && !cardOk(card)) return [400, { ok: false, reason: "기준 카드의 모양이 맞지 않음 — 칸마다 글 200자 · 누가는 moved · me" }];
   const results = got.results;
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];   // 쓰기 전에(쓰고 나서 못 맡기지 않게)
-  const files = Docs.files({ topic, idea, source, results, redact: Sensitive.redact });
+  const files = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
   try {

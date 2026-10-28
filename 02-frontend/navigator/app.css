@@ -1372,6 +1372,18 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.folded.side-top .hello-bub{top:62px;left:50%;transform:translateX(-50%)}
 .isl-col.folded.side-bottom .hello-bub{bottom:62px;left:50%;transform:translateX(-50%)}
 .isl-col.folded.side-top .hello-bub,.isl-col.folded.side-bottom .hello-bub{animation:none}   /* translateX와 겹치는 움직임은 두지 않는다 */
+/* claude-drafted: 2026-10-28 — C-56 R-1 기준 카드(.bc): 관문 카드 · 오른쪽 칸. 옮겨 온 줄은 출처 칩(눈), 직접 적은 줄은 민트 칩, 빈칸은 볼색 글 + 입력 칸(44px) */
+.bc{margin:0;display:grid;gap:4px;font-size:calc(13px * var(--ui-scale,1))}
+.bc-row{display:grid;grid-template-columns:84px minmax(0,1fr);gap:8px;align-items:start;padding:6px 8px;border-radius:10px;background:var(--soft)}
+.bc-row dt{font-weight:700;color:var(--sub);padding-top:2px}
+.bc-row dd{margin:0;min-width:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--ink);line-height:1.5}
+.bc-row.blank{box-shadow:inset 0 0 0 1.5px #EFC3CB}
+.bc-blank{color:#8E3A52;font-style:italic}
+.bc-from{padding:1px 8px;border-radius:999px;background:var(--acc-soft);color:var(--ink);font-size:calc(11px * var(--ui-scale,1));font-weight:600}
+.bc-from.me{background:#A9E2C4;color:#2B3463}
+.bc input{flex:1 1 180px;min-height:44px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:calc(13px * var(--ui-scale,1))}
+.wside .ws-card .bc-row{grid-template-columns:64px minmax(0,1fr)}
+.wside .ws-card .b.sm{margin-top:8px;min-height:44px}
 /* 섬 머리의 자리 네 칸(▲ ▼ ◀ ▶) */
 .dk{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:var(--soft);flex:none}
 .dk button{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--mute);font-size:calc(11px * var(--ui-scale,1));cursor:pointer}

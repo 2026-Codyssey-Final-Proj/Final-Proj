@@ -100,3 +100,14 @@ test("source — 받은 글 전부를 docs/00-source/idea.md에(줄 번호 · �
   const r = D.files({ topic: "앱", results: RESULTS, idea: "x", source: "password: hunter22\n" + "y".repeat(500), redact: (t) => String(t).replace(/hunter22/g, "[비밀값]") });
   assert.ok(r.find((x) => x.path === "docs/00-source/idea.md").text.includes("[비밀값]"), "가림을 거친다");
 });
+
+// C-56 R-1(2026-10-28): 기준 카드(basecard.js)가 있으면 docs/base.md 한 장(덮어씀 — Floe가 만든 카드), 없으면 파일 없음
+test("card — 기준 카드가 오면 docs/base.md(칸 · 내용 · 어디서), 없으면 만들지 않는다", () => {
+  const B = require("../../03-backend/navigator/basecard.js");
+  const card = B.withEdits(B.build({ results: { 0: RESULTS[0] }, source: "파이썬으로 만들어야 해요" }), { success: "신청 40건" });   // 2단계 전 — 성공은 사람이 채운다
+  const f = D.files({ topic: "앱", results: RESULTS, card });
+  const k = f.find((x) => x.path === "docs/base.md"); assert.ok(k && !k.merge, "base.md");
+  assert.match(k.text, /^# 이 프로젝트의 기준 — 앱/); assert.match(k.text, /\| 성공 \| 신청 40건 \| 직접 \|/); assert.match(k.text, /파이썬으로 만들어야 해요 \(1줄\)/);
+  assert.ok(!D.files({ topic: "앱", results: RESULTS }).some((x) => x.path === "docs/base.md"), "카드가 없으면 없다");
+  assert.match(f.find((x) => x.path === "docs/README.md").text, /\[base\.md\]\(base\.md\)/, "목차에서 가리킨다");
+});
