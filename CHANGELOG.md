@@ -21,6 +21,8 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v40.5 | 2026-10-29 | 이재엽 | knowledge-work-plugins 다시 봄 — 더 가져올 것 없음, 우리에게 없던 것 둘만 후보로(요구 C-64 오류에 막혔을 때 묻는 순서 · 장부 W-39 앱을 내기 전 되돌릴 조건), W-36 출처 하나 더 (#245) | `01-docs/catalog/external-tools.md`, `01-docs/catalog/reference-candidates.md`, `01-docs/00-overview/requirements.md` 2-2 |
+| v40.4 | 2026-10-29 | 이재엽 | 작업실 개편 2차 백엔드의 약속을 먼저 — 플로로와 자유 대화 길(/api/chat, 윤곽 신호 n · 칸에 적지 않음 · 누가 정했나 '대화')과 대화 저장 · 단계별 바뀐 파일(/api/chatlog, 이 컴퓨터의 앱 저장 곳)의 모양을 API.md 3-31 · 3-32에(만들기 전, 화면 쪽은 이 모양으로 가짜 답 시험) (#244) | `03-backend/navigator/API.md` |
 | v40.3 | 2026-10-29 | 두승현(F-76) · 이재엽(TASK 2차 시점) | F-76 작업실 · 섬의 한국어 낱말 중간 줄바꿈 — keep-all을 다시 올림(#241이 #240 브랜치로 병합돼 main에 빠졌다) · 작업실 개편 TASK · PRD의 2차를 11/1 전으로(결정 모음 A-08), 2차 백엔드는 이재엽 쪽 · 화면은 두승현 쪽(A-21) (#243) | `02-frontend/navigator/`(app.css 한 줄 — 담당 임유정) · `04-tests/` · `01-docs/07-maintenance/` · `01-docs/features/`(두승현 TASK · PRD) |
 | v40.2 | 2026-10-29 | 이재엽 | 멈춰 있던 결정 · 미정 전부를 모아 정함(결정 모음 — 동결 전 21 · 제출 · 사용 테스트 전 16 버튼, 대회 뒤 Hold · 낡은 칸 닫기) · 지식 퀘스트 PRD(C-47 ~ C-52 전부 11/1 전) · 요구서 2-3 · C-38 · C-47 ~ C-52 등급 칸 · 13-1 (#242) | `01-docs/00-overview/`(requirements.md · 기록/) · `01-docs/features/` · `04-tests/e2e/project-menu.test.js`(PR 239와 같은 두 줄 — 켤 때 접힌 알약이면 섬을 펼쳐 둠) |
 | v40.1 | 2026-10-29 | 두승현 | 작업실 개편 PRD를 작업 목록(TASK)으로 — PR 넷 · 작업 26개 · 범위 계약 · 정할 것 ↔ 작업, 두승현 결정 다섯 반영. F-78 파일 목록 이름순을 영어로 고정(컴퓨터 언어 따라 달랐음) · 그 시험의 Windows 임시 폴더 지우기 재시도 (#240) | `01-docs/features/` · `01-docs/07-maintenance/` · `03-backend/navigator/`(files.js 한 줄 — 담당 이재엽) · `04-tests/navigator/`(files-api.test.js 한 줄) |
