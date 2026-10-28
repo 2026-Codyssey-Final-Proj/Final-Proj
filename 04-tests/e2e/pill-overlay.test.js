@@ -86,7 +86,7 @@ async function measure(browser, h, side, folded) {
   const cls = `side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${folded ? " folded" : ""}`;
   const BUB = '<div class="hello-bub" role="status"><b class="hb-hi">좋은 오후예요!</b><span class="hb-now">멈춘 곳: 3단계 꼭 필요한 기능 정리하기 · 지금: 나온 곳 잇기</span><div class="hb-acts"><button type="button" data-act="pill">섬 펼치기</button><button type="button" class="ghost" data-act="boot-later">나중에</button></div></div>';   // C-55 켤 때 말풍선(app.js bootBubble과 같은 모양)
   await page.evaluate((html) => window.__h(html), `${h.qwin}<div class="isl-col ${cls}${folded ? " has-bub" : ""}">${folded ? h.pill + BUB : h.isl}</div>`);
-  await wait(450);
+  await wait(900);   // 0.3초 움직임 뒤 — 전체 시험(81개 파일)과 같이 돌 때 450ms로는 가끔 덜 끝났다(2026-10-28)
   const m = await page.evaluate(() => { const c = document.querySelector(".isl-col").getBoundingClientRect(), cv = document.querySelector(".cv"), p = document.querySelector(".isl-col .pill"), hd = document.getElementById("hd");
     const pr = p && p.getBoundingClientRect(), inside = !!pr && pr.top >= c.top - 0.5 && pr.bottom <= c.bottom + 0.5 && pr.left >= c.left - 0.5 && pr.right <= c.right + 0.5;
     const col = document.querySelector(".isl-col"), bb = document.querySelector(".hello-bub"), br = bb && bb.getBoundingClientRect();

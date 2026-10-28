@@ -89,8 +89,8 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.ok(p.length <= 5, `1단계 뒤 지난 말은 다섯 줄 안: ${p.length} ${JSON.stringify(p)}`);
     // 도전과제 지도 — 기본이 '한눈에', 1단계 칸이 다 차고 2단계는 아직
     if (!(await page.$(".qwin"))) await click(page, ".tb [data-act=qwin-toggle]");   // 초안을 받으면 퀘스트 창이 이미 떠 있다
-    await click(page, "[data-act=qtab][data-tab=tree]");
-    assert.ok(await page.$(".qwin .jmap"), "도전과제의 기본은 지도");
+    await click(page, "[data-act=qtab][data-tab=tree]"); await click(page, '[data-act="tree-view"][data-v="flow"]');   // C-54: 기본은 카드 지도, 흐름(한눈에 보기)은 보기 단추로
+    assert.ok(await page.$(".qwin .jmap"), "도전과제의 흐름 보기");
     assert.equal(await page.$eval('.jmap .jm-stage[data-n="0"] .jm-count', (e) => e.textContent.trim()), "4/4");
     assert.ok((await page.$eval('.jmap .jm-stage[data-n="0"]', (e) => e.textContent)).includes("동아리 행사 신청을 종이로"), "채운 칸에는 적은 글");
     await passGate(page);
@@ -100,7 +100,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.ok(!(await page.$(".qwin .ev")), "받기 화면 없이");
     const s1 = await saved(page);
     assert.equal(s1.results["0"].items.length, 4, "1단계 결과를 남긴다(한곳에서 보기 · 문서)");
-    await click(page, "[data-act=qtab][data-tab=tree]");
+    await click(page, "[data-act=qtab][data-tab=tree]"); if (!(await page.$(".qwin .jmap"))) await click(page, '[data-act="tree-view"][data-v="flow"]');
     assert.ok((await page.$$('.jmap .jm-stage[data-n="1"] .jm-miss')).length >= 1, "2단계의 빈 칸이 보인다");
     await click(page, '.jmap .jm-stage[data-n="1"] [data-act=jmap-fill]');
     assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.dataset.act), "say", "채우기 — 채팅 칸으로");
@@ -125,7 +125,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.equal(s2.results["0"].items[0].by, "ok", "맞아요 = 플로로 초안 그대로"); assert.equal(s2.results["0"].items[3].by, "pick", "크기는 고름");
     assert.ok(s2.results["0"].check.length === 4, "완료 기준과 근거");
     // 도전과제 — 네 칸 흐름 · 누가 정했나 · 재료(올리면 그 칸이 빛남)
-    await click(page, "[data-act=qtab][data-tab=tree]");
+    await click(page, "[data-act=qtab][data-tab=tree]"); if (!(await page.$(".qwin .jmap"))) await click(page, '[data-act="tree-view"][data-v="flow"]');   // C-54: 흐름 보기
     for (const k of ["in", "ai", "me", "gate"]) assert.ok(await page.$(`.jmap .jm-stage[data-n="0"] .jm-step.${k}`), `1단계 흐름 ${k}`);
     assert.match(await page.$eval('.jmap .jm-stage[data-n="0"] .jm-step.in', (e) => e.textContent), /처음 말한 것/);
     assert.match(await page.$eval('.jmap .jm-stage[data-n="1"] .jm-step.gate', (e) => e.textContent), /지났어요/);
@@ -293,7 +293,7 @@ test("진짜 AI(가로챔): 관문을 지나면 1단계 결과 · 받은 글로 
     // 도전과제 지도에서 다시 묶기 — 이번엔 Claude Code가 푸시를 못 했다고 보고하면 '마쳤어요'라고 하지 않는다(2026-10-25 리뷰)
     if (!(await page.$(".qwin"))) await click(page, ".tb [data-act=qwin-toggle]");
     await click(page, "[data-act=qtab][data-tab=tree]");
-    await click(page, ".jmap [data-act=ship-open]");
+    await click(page, ".qwin [data-act=ship-open]");   // C-54: 카드 지도에도 '문서로 묶어 GitHub에'가 있다
     assert.match(await nowSay(page), /GitHub에 올릴까요/); assert.match(await nowSay(page), /test-1|작업 폴더\(/, "어느 폴더에 쓰는지 보인다");
     await click(page, ".mc.chat [data-act=ship-go]");
     await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("푸시는 못 했어요"), { timeout: 9000 });

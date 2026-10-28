@@ -52,8 +52,8 @@ test("C-45 · C-44 — 문서 지도 탭에 보드(문서 상자 · 재료 선),
     await page.reload({ waitUntil: "load" }); await wait(500);
     await page.click(".tb [data-act=qwin-toggle]"); await wait(700);
     const tabs = await page.$$eval(".qwin .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent));
-    assert.deepEqual(tabs, ["캔버스", "노트북", "도전과제", "책", "문서 지도"]);
-    await page.click("[data-act=qtab][data-tab=map]"); await wait(300);
+    assert.deepEqual(tabs, ["캔버스", "노트북", "도전과제", "책"], "문서 지도는 도전과제 안(C-54)");
+    await page.click("[data-act=qtab][data-tab=tree]"); await wait(200); await page.click('[data-act="tree-view"][data-v="box"]'); await wait(300);   // C-54: 문서 지도는 도전과제 안의 '상자' 보기
     const frame = await (await page.waitForSelector("iframe.docmap", { timeout: 5000 })).contentFrame();
     await frame.waitForSelector("#panel, .floe-empty", { timeout: 8000 }); await wait(800);
     const s = await frame.evaluate(() => ({ title: document.querySelector("h1")?.textContent || "", boxes: window.BOARD ? window.BOARD.elements.map((e) => e.c) : [], rels: window.BOARD ? window.BOARD.relations.length : -1, empty: !!document.querySelector(".floe-empty") }));
