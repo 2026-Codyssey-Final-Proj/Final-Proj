@@ -44,4 +44,5 @@ test("outline — 글의 제목 줄(# ~ ###)을 차례로, 빈 절(제목 다음
   assert.deepEqual(M.outline("# 3단계\n\n## 기능 문장\n1. 가\n\n## 나온 곳\n\n## 막을 일\n글\n### 깊이\n"), [
     { level: 1, text: "3단계", line: 1, empty: false }, { level: 2, text: "기능 문장", line: 3, empty: false }, { level: 2, text: "나온 곳", line: 6, empty: true }, { level: 2, text: "막을 일", line: 8, empty: false }, { level: 3, text: "깊이", line: 10, empty: true }]);
   assert.deepEqual(M.outline("```\n# 코드 안\n```\n글"), [], "코드 울타리 안의 #은 제목이 아니다");
+  assert.deepEqual(M.outline("## 분석 결과\n```\n평균 71,200\n```\n## 컬렉션 구조\n```\nusers/\n  {uid}\n```\n## 빈 곳\n").map((h) => h.empty), [false, false, true], "코드 블록만 있는 절도 채운 절 — 전에는 울타리 안을 통째로 건너뛰어 '비었어요'로 보였다(2026-10-28)");
 });
