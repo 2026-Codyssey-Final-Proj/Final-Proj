@@ -64,6 +64,8 @@ test("C-43 — 파일 칸에서 누르면 작업실에 열린다(md 보기 좋�
     assert.deepEqual(found, ["src/app.js"], `찾기: ${found.join(",")}`);
     await page.click(".wnav .fn-file:not(.fn-opened)"); await wait(500);
     assert.equal((await page.$$eval(".wtabs .ftab button[role=tab]", (bs) => bs.map((b) => b.textContent))).join(","), "README.md,app.js", "열린 파일 탭 둘");
+    const xAt = await page.$$eval(".wtabs .ftab", (ts) => ts.map((t) => { const a = t.getBoundingClientRect(), x = t.querySelector(".ftab-x").getBoundingClientRect(), cx = x.left + x.width / 2, cy = x.top + x.height / 2; return cx > a.left && cx < a.right && cy > a.top && cy < a.bottom; }));
+    assert.deepEqual(xAt, [true, true], "닫기 ×는 제 탭 안에 — 반짝이 효과(.fx)와 이름이 겹쳐 왼쪽 위로 밀렸다(2026-10-28)");
     assert.equal(await page.$$eval(".fv-code li", (ls) => ls.length), 2); assert.equal(await page.$$eval(".fv-code li.chg", (ls) => ls.length), 0, "git이 아니면 바뀐 줄 없음");
     // 고치기 → 저장(⌘S) → 파일에 쓰임 · 되돌리기
     await page.click("[data-act=fedit]"); await wait(300);
@@ -85,7 +87,7 @@ test("C-43 — 파일 칸에서 누르면 작업실에 열린다(md 보기 좋�
     assert.ok(fs.readFileSync(path.join(PROJ, "src/app.js"), "utf8").includes("hunter22"), "그대로 저장");
     if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "file-edit.png") });
     // 닫기 — 고친 것이 없으니 바로
-    await page.click('.wtabs .ftab .fx[data-v="1"]'); await wait(300);
+    await page.click('.wtabs .ftab .ftab-x[data-v="1"]'); await wait(300);
     assert.equal((await page.$$eval(".wtabs .ftab button[role=tab]", (bs) => bs.map((b) => b.textContent))).join(","), "README.md");
     assert.deepEqual(errors, []);
   } finally { await browser.close(); srv.close(); Srv.dropProject(PROJ); fs.rmSync(TMP, { recursive: true, force: true }); }

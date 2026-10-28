@@ -1319,7 +1319,7 @@
   //   고치기 → 글 칸, 저장(단추 · ⌘/Ctrl+S)은 바로 쓰고 그 파일만 커밋 · 푸시를 Claude Code에 맡긴다(허락 카드는 채팅에). 비밀값 모양 · 연 뒤에 바뀜 · 맡긴 일이 도는 중이면 서버가 멈추고(409) 여기서 묻는다.
   //   저장 이력은 이 켜짐 동안 열린 파일마다 20번까지(되돌리기) — 이 컴퓨터에만. 열린 파일 탭 · 이름 찾기. 서버 없이 · 연습 모드는 예시 목록이라 열지 못한다
   const MDV = window.FloeMd || null, FHIST_MAX = 20;
-  const fileTabs = () => st.openFiles.map((f, k) => `<span class="ftab${f.dirty ? " dirty" : ""}"><button type="button" role="tab" data-act="ftab" data-v="${k}" aria-selected="${st.qtab === "file" && st.fileSel === k}" title="${esc(f.path)}">${esc(f.name)}${f.dirty ? " •" : ""}</button><button type="button" class="fx" data-act="fclose" data-v="${k}" aria-label="${esc(f.name)} 닫기" title="닫기">×</button></span>`).join("");
+  const fileTabs = () => st.openFiles.map((f, k) => `<span class="ftab${f.dirty ? " dirty" : ""}"><button type="button" role="tab" data-act="ftab" data-v="${k}" aria-selected="${st.qtab === "file" && st.fileSel === k}" title="${esc(f.path)}">${esc(f.name)}${f.dirty ? " •" : ""}</button><button type="button" class="ftab-x" data-act="fclose" data-v="${k}" aria-label="${esc(f.name)} 닫기" title="닫기">×</button></span>`).join("");
   async function openFile(i) {
     const n = Number(i), x = st.files && st.files.list && st.files.list[n]; if (!x || x.dir) return;
     const k = st.openFiles.findIndex((f) => f.path === x.path);

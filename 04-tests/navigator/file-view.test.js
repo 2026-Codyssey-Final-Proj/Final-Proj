@@ -23,7 +23,7 @@ test("app.js — 파일 칸의 파일은 단추(번호로 연다), 찾기 칸, �
   assert.match(read("navigator/win.js"), /if \(\(e\.metaKey \|\| e\.ctrlKey\) && e\.key\.toLowerCase\(\) === "s"\) \{ e\.preventDefault\(\); return F\.winEvent\(\{ type: "key", key: "s", mod: true, kind \}\); \}/);
   assert.match(read("navigator/index.html"), /<script src="\.\.\/\.\.\/03-backend\/navigator\/md-view\.js" onerror="this\.remove\(\)"><\/script>/);
   const c = read("navigator/app.css");
-  assert.match(c, /\.wnav \.fn li \.fn-file\{all:unset;cursor:pointer;flex:1;min-height:44px;/, "파일 행도 44px"); assert.match(c, /\.wtabs \.ftab \.fx\{[^}]*width:44px;height:44px/, "닫기 단추 44px"); assert.match(c, /\.fpreset\{min-height:44px;/); assert.match(c, /\.fv-code li::before\{content:counter\(ln\)/, "줄 번호"); assert.match(c, /\.fv-code li\.chg\{background:var\(--okbg\)\}/, "바뀐 줄");
+  assert.match(c, /\.wnav \.fn li \.fn-file\{all:unset;cursor:pointer;flex:1;min-height:44px;/, "파일 행도 44px"); assert.match(c, /\.wtabs \.ftab \.ftab-x\{position:absolute;top:-7px;right:-5px;[^}]*width:16px;height:16px/, "닫기 ×는 탭 오른쪽 위 작은 배지"); assert.match(c, /\.wtabs \.ftab \.ftab-x::after\{[^}]*inset:-6px/, "누르는 곳은 28px"); assert.doesNotMatch(c, /\.ftab \.fx\b/, "닫기 단추가 반짝이 효과(.fx — position:fixed)와 이름을 나누면 ×가 왼쪽 위로 밀린다"); assert.match(c, /\.fpreset\{min-height:44px;/); assert.match(c, /\.fv-code li::before\{content:counter\(ln\)/, "줄 번호"); assert.match(c, /\.fv-code li\.chg\{background:var\(--okbg\)\}/, "바뀐 줄");
 });
 
 test("server.js — /api/file은 확인 값(BOOK_ROUTES) · POST_ROUTES, 열기는 목록 번호로만(경로 없음), 저장 본문은 파일 크기만큼, md-view.js는 서버가 내준다", () => {
