@@ -35,7 +35,7 @@
 | `POST /api/task/tidy` | 섬 "요구 문장으로 정리" | 출처 · 확인 값(쿠키) | `{ok, lines[], say, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/task/start` | 섬 "허락하고 넘기기" | 출처 · 확인 값(쿠키) | `{ok, project, task:{state, project, at, code}}` — 연결한 폴더에서 `claude -p`를 연다 | 403 · 413 · 400 · 409 · 502 |
 | `POST /api/chat` **(약속 — 만드는 중, 3-31)** | 섬 — '보내기'(작업실 개편 C-61, 2026-10-29) | 출처 · 확인 값(쿠키) | `{ok, reply, slots[], n, tokens}` — 플로로의 답 + 이 대화로 채울 수 있는 칸(적지 않는다) | 403 · 413 · 400 · 502 |
-| `GET /api/chatlog` · `POST /api/chatlog` **(약속 — 만드는 중, 3-32)** | 섬 — 켤 때 · 말이 쌓일 때(작업실 개편 C-63, 2026-10-29) | 출처 · 확인 값(쿠키) | `{ok, project, turns[], changes[], why}` · `{ok, n}` — 프로젝트마다 대화 하나와 바뀐 파일, 이 컴퓨터의 앱 저장 곳 | 403 · 413 · 400 |
+| `GET /api/chatlog` · `POST /api/chatlog` (3-32) | 섬 — 켤 때 · 말이 쌓일 때(작업실 개편 C-63, 2026-10-29) | 출처 · 확인 값(쿠키) | `{ok, project, turns[], changes[], why}` · `{ok, n}` — 프로젝트마다 대화 하나와 바뀐 파일, 이 컴퓨터의 앱 저장 곳 | 403 · 413 · 400 |
 | `GET /api/task` | 섬 | 출처 · 확인 값(쿠키) | `{ok, task}` 넘긴 일의 상태(없으면 null) — `state`가 `blocked`면 허락을 못 받은 까닭(F-69) | 403 |
 | `POST /api/task/retry` | 섬 — 막힌 일의 카드(F-69, 2026-10-28) | 출처 · 확인 값(쿠키) | `{ok, project, task}` 같은 일을 같은 번호로 다시 · `{ok, brief}` 직접 하기 글 | 403 · 404 · 409 · 400 |
 | `POST /api/task/stop` | 섬 — 멈춘 것 같은 일의 카드에서 사람이 고를 때(C-50, 2026-10-28) | 출처 · 확인 값(쿠키) | `{ok, task}` 그 번호의 도는 일을 끈다 → `state: stopped` | 403 · 409 |
@@ -687,17 +687,17 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - **화면(두승현 쪽):** [보내기]는 이 길만 부르고 칸에 적지 않는다(`fillNow`에서 뗀다). `n` ≥ 1이면 정리 카드 → [칸 n개에 적기]만 `QU.fillAll`(by `chat`) · 섬 자리 이동. 연습 모드 · 서버 없이는 부르지 않고 예시 답(FR-10).
 - **보안(T21):** [security-records.md](../../.claude/rules/security-records.md) 3절 표에 한 줄 — 나가는 것은 이 단계의 대화 · 적은 줄 · 처음 말한 것(가린 뒤), Claude(AI 서비스)로.
 
-### 3-32. `GET /api/chatlog` · `POST /api/chatlog` — 프로젝트마다 대화 하나 · 단계별 바뀐 파일 (작업실 개편 C-63 — **약속, 만드는 중**)
+### 3-32. `GET /api/chatlog` · `POST /api/chatlog` — 프로젝트마다 대화 하나 · 단계별 바뀐 파일 (작업실 개편 C-63 — 서버 만듦 2026-10-29, 화면은 두승현 쪽)
 
 <!-- claude-drafted: 2026-10-29 — 작업실 개편 TASK(#240) PR ④의 T22 · T23 · T26 서버 쪽(결정 모음 A-20 대화 저장 곳 '이 컴퓨터의 앱 저장 곳' · A-21 이재엽 쪽 세션). 화면(T24 · T25 · T26 목록 — 두승현 쪽)은 이 모양대로 가짜 답으로 먼저 시험한다 -->
-- **이 절은 만들기 전의 약속이다**(3-31과 같다). 서버는 그다음 PR(T22 시험 → T23 저장 · T26 바뀐 파일)에서 만든다.
+- **서버는 만들었다**(T22 시험 [`chat-store.test.js`](../../04-tests/navigator/chat-store.test.js) → T23 저장 · T26 바뀐 파일 — [chatlog.js](chatlog.js), `server.js` `chatlogGet` · `chatlogPost` · `chatChange`). 앱은 서버를 켜기 전에 `NAV_CHAT_DIR`을 `userData/chats`로 둔다. 모양을 바꿀 일이 생기면 이 절을 먼저 고치고 화면 쪽에 알린다.
 - 확인 값이 있어야 한다(대화 글 · 폴더 이름이 오간다 — 3-18과 같은 무리). 폴더는 3-16의 '폴더 고르기'(앱이 고른 작업 폴더, 없으면 훅 알림의 폴더). 경로는 받지도 주지도 않는다.
 - **자리 — 이 컴퓨터의 앱 저장 곳(A-20):** `NAV_CHAT_DIR`(앱은 Electron `userData/chats`를 넣는다), 없으면 `NAV_USAGE_FILE` 옆(시험이 홈 폴더에 쓰지 않게 — 3-5 장부와 같은 규칙), 없으면 홈의 `.navigator-chats/`. 폴더는 나만(700) · 파일은 나만 읽기(600). **작업 폴더에는 쓰지 않는다**(커밋되지 않게). 지우는 법: 그 폴더를 지우거나 아래 `clear`.
 - **프로젝트마다 파일 하나:** 이름은 그 작업 폴더 실제 경로의 sha256 앞 16자(`<16자>.json`) — 폴더 이름 · 경로가 파일 이름에 드러나지 않게.
 - **파일 모양** `{ v: 1, project, turns: [], changes: [] }`
   - `turns[]` — 말 `{ at, stage, who: "me" | "floro" | "sys", text }` · 단계 구분선 `{ at, stage, mark: true, title }` · 지난 단계에서 가져온 것 카드 `{ at, stage, carry }`. `text` · `carry`는 2,000자, `title`은 60자. 저장하기 전에 가린다(`sensitive.js` `redact`). 2,000개까지 — 넘으면 앞에서부터 덜고 맨 앞에 `{ who: "sys", text: "앞 대화 N개를 덜어냈어요" }` 한 줄. `at`은 서버가 받은 때(ms), `stage`는 0 ~ 7.
-  - `changes[]` — 훅 알림(3-2 `PostToolUse` 중 `Write` · `Edit` · `MultiEdit` · `NotebookEdit`)으로 **그 작업 폴더 안** 파일이 바뀐 때 `{ at, path, how: "new" | "edit" }`. `path`는 작업 폴더 기준(가림), `how`는 이 파일에서 그 경로를 처음 보는 `Write`면 `new`, 아니면 `edit`. 2,000개까지(앞에서부터 덜기). 서버는 단계를 모른다 — 화면이 `turns`의 구분선 `at`으로 단계마다 나눈다.
+  - `changes[]` — 훅 알림(3-2 `PostToolUse` 중 `Write` · `Edit` · `MultiEdit` · `NotebookEdit`)으로 **그 작업 폴더 안** 파일이 바뀐 때 `{ at, path, how: "new" | "edit" }`. `path`는 작업 폴더 기준(가림), `how`는 이 파일에서 그 경로를 처음 보는 `Write`면 `new`, 아니면 `edit`. 2,000개까지(앞에서부터 덜기). 서버는 단계를 모른다 — 화면이 `turns`의 구분선 `at`으로 단계마다 나눈다. 한계: 훅은 세션 폴더 밖 파일을 이름만 보내므로(`steps.js`), 드물게 세션 폴더의 같은 이름 파일로 보일 수 있다.
 - **`GET /api/chatlog`** — 늘 200 `{ ok: true, project, turns, changes, why }`. 폴더를 모르면 `project: "", turns: [], changes: [], why: "folder"`, 파일이 없으면 빈 목록 · `why: ""`.
-- **`POST /api/chatlog`** — 본문 `{ add: [turn, …] }`(1 ~ 20개, 위 `turns` 모양 — `at`은 서버가 붙인다) → `{ ok, n }`(쌓인 수). 또는 `{ clear: true }` → 그 프로젝트의 파일을 지우고 `{ ok, n: 0 }`(화면은 한 번 더 묻는다). 거절: 400 `대화 모양이 맞지 않음 — …` · 400 폴더를 모름 · 413 본문이 너무 큼.
+- **`POST /api/chatlog`** — 본문 `{ add: [turn, …] }`(1 ~ 20개, 위 `turns` 모양 — `at`은 서버가 붙이고 보내면 400. 하나라도 틀리면 아무것도 쌓지 않는다) → `{ ok, n }`(쌓인 수). 또는 `{ clear: true }` → 그 프로젝트의 파일을 지우고 `{ ok, n: 0 }`(화면은 한 번 더 묻는다). 거절: 400 `대화 모양이 맞지 않음 — …` · 400 폴더를 모름 · 413 본문이 너무 큼.
 - **화면(두승현 쪽):** 켤 때 GET으로 이어서 보이고(`st.chat` 60개 상한 대신), `logMsg`가 `add`로 쌓는다. 단계가 바뀌면 구분선 · 가져온 것 카드를 `add`. 왼쪽 대화 목록의 단계 바로가기 아래 파일은 `changes`를 그 단계 구분선 사이의 `at`으로 나누고 단계 문서와 합친다(두승현 결정 2026-10-28 — 둘 다). 연습 모드 · 서버 없이는 이 브라우저에만(지금처럼).
 

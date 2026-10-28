@@ -64,6 +64,7 @@ async function startServer() {
   PORT = await freePort(WANT);
   URL_ = `http://127.0.0.1:${PORT}/`;   // 화면 파일은 정확한 경로만(API 약속) — 앱 안임은 preload.js가 둔 window.floeApp으로 안다
   process.env.NAV_PORT = String(PORT);
+  if (!process.env.NAV_CHAT_DIR) process.env.NAV_CHAT_DIR = path.join(app.getPath("userData"), "chats");   // 대화 저장 곳 — 이 컴퓨터의 앱 저장 곳(작업실 개편 C-63, 결정 모음 A-20, API.md 3-32)
   Server = require(path.join(P.backend, "server.js"));
   return new Promise((resolve) => {
     const s = http.createServer(Server.handle);
