@@ -495,6 +495,7 @@ const extraOk = (x) => (x.by == null || BY.includes(x.by)) && (x.draft == null |
 const extraOf = (x) => ({ ...(x.by != null ? { by: x.by } : {}), ...(x.draft != null && x.draft !== "" ? { draft: x.draft } : {}), ...(x.from && x.from.length ? { from: x.from.map((r) => ({ s: r.s, i: r.i })) } : {}) });
 const checkOk = (a) => Array.isArray(a) && a.length <= 8 && a.every((c) => c && strOk(c.text, ITEM_NAME_MAX) && Nav.filled(c.text) && typeof c.met === "boolean" && (c.evidence == null || strOk(c.evidence, 300)) && (c.skipped == null || typeof c.skipped === "boolean"));   // skipped — 관문에서 까닭을 적고 넘긴 기준(F-62, 2026-10-28)
 // F-62(2026-10-28): 넘긴 기준의 까닭 — 화면이 보내는 skip { reason(관문에서 사람이 적은 한 줄 · 200자), items(넘긴 기준 글) }. docs.js가 단계 문서 · 결정 기록에 '넘김(까닭)'으로 쓴다
+//   items는 화면이 같이 보내는 값이라 모양만 검사해 넘긴다 — 지금 docs.js는 reason과 check[].skipped만 읽는다(새 맥락 리뷰 2026-10-28: 읽는 곳이 생기기 전까지는 쓰지 않는 값)
 const skipOk = (k) => k && typeof k === "object" && !Array.isArray(k) && strOk(k.reason, CHECK_LINE_MAX) && (k.items == null || (Array.isArray(k.items) && k.items.length <= 8 && k.items.every((x) => strOk(x, ITEM_NAME_MAX))));
 const stageExtraOk = (v) => (v.prep == null || (Array.isArray(v.prep) && v.prep.length <= Nav.PREP_MAX && v.prep.every((x) => strOk(x, Nav.PREP_LINE))))
   && (v.at == null || (typeof v.at === "string" && DATE_RE.test(v.at))) && (v.passed == null || (typeof v.passed === "string" && DATE_RE.test(v.passed))) && (v.check == null || checkOk(v.check))

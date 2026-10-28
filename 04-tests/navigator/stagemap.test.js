@@ -36,6 +36,9 @@ test("prepare — 기획서(2단계 결과)의 절에서 3 ~ 8단계의 준비�
   assert.deepEqual(c.record, crit(2).map((x) => x.text)); assert.equal(c.save, "docs/03-requirements/requirements.md"); assert.equal(c.ver, "V.3");
   assert.equal(c.from, `기획서 3절 '${r1.items[2].name}'`);
   assert.equal(p.cards[6].think, "2단계 2번 칸의 줄", "7단계 재 보기 ← 기획서 2절(언제 성공)");
+  const lite = SM.prepare({ stages: N.STAGES, slugs: D.SLUGS, plan: { items: N.criteriaFor(1, "Lite").map((c, i) => ({ name: c.text, lines: [`Lite ${i + 1}번 줄`] })) }, criteria: crit });
+  assert.ok(/기획서 \d절 '한 문장에 한 가지 일만/.test(lite.cards[2].from), `Lite — 번호가 아니라 칸 이름으로 찾는다: ${lite.cards[2].from}`);
+  assert.equal(lite.cards[3].from, "새로 정함", "Lite에 없는 칸(정해진 빈칸)은 새로 정함");
   const empty = SM.prepare({ stages: N.STAGES, slugs: D.SLUGS, plan: { items: r1.items.map((x) => ({ ...x, lines: [] })) }, criteria: crit });
   assert.equal(empty.cards[2].from, "새로 정함"); assert.equal(empty.cards[2].think, N.STAGES[2].gets, "절이 비면 그 단계가 받는 것으로");
   const m = SM.build({ ...base, prep: { ...p, ok: false } });

@@ -804,7 +804,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wside .ws-sum b{color:var(--ink)}
 .wside .ws-h{margin:10px 0 4px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
 .wside ul,.wside ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
-.wside .ws-toc button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;min-height:36px;padding:0 8px;border-radius:8px;color:var(--ink)}
+.wside .ws-toc button{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;min-height:44px;padding:0 8px;border-radius:8px;color:var(--ink)}
 .wside .ws-toc button:hover{background:var(--card)}
 .wside .ws-toc button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 .wside .ws-toc li.l2 button{padding-left:18px}.wside .ws-toc li.l3 button{padding-left:30px}
@@ -1119,7 +1119,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 /* claude-drafted: 2026-10-28 — C-54 지도(도전과제 탭의 카드 지도, 목업 캔버스 ④ ~ ⑥): 바다 위 얼음 조각 — 파스텔 토큰(웹사이트 초안과 같은 값), 카드 4열 두 줄(둘째 줄은 돌아온다), 아래 줄 문서, 보기 셋 */
 .board.sea{background:#E2E9F4 repeating-radial-gradient(ellipse at 12% 18%,rgba(77,102,181,0) 0 46px,rgba(77,102,181,.07) 46px 47.5px);color:#2B3463}
 .sm-views{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:rgba(43,52,99,.08);margin:0 0 10px}
-.sm-views button{min-height:36px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#5B6491;font:inherit;font-size:calc(13px * var(--ui-scale,1));font-weight:700;cursor:pointer}
+.sm-views button{min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#5B6491;font:inherit;font-size:calc(13px * var(--ui-scale,1));font-weight:700;cursor:pointer}
 .sm-views button[aria-selected=true]{background:#F2F5FA;color:#2B3463;box-shadow:0 1px 0 #C5CEE2}
 .sm{display:grid;gap:12px}
 .sm-ban{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:14px;background:#EFE3C0;color:#2B3463;font-size:calc(13px * var(--ui-scale,1));line-height:1.5}
@@ -1130,7 +1130,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .sm-ban .b.ghost{background:transparent;box-shadow:inset 0 0 0 1.5px #C5CEE2;color:#2B3463}
 .sm-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
 .sm-cell{display:grid;gap:6px;min-width:0}
-.sm-cell input{min-height:40px;border:1.5px solid #C5CEE2;border-radius:10px;padding:0 10px;font:inherit;font-size:calc(12.5px * var(--ui-scale,1));color:#2B3463;background:#fff}
+.sm-cell input{min-height:44px;border:1.5px solid #C5CEE2;border-radius:10px;padding:0 10px;font:inherit;font-size:calc(12.5px * var(--ui-scale,1));color:#2B3463;background:#fff}
 .sm-card{position:relative;display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;min-height:118px;padding:12px 14px;border:0;border-radius:30px 38px 26px 34px / 34px 26px 36px 28px;background:#F2F5FA;color:#2B3463;font:inherit;cursor:pointer;box-shadow:0 9px 0 -2px #C6D5EE,0 20px 28px -14px rgba(54,62,98,.35);min-width:0}
 .sm-card .sm-no{font-size:calc(22px * var(--ui-scale,1));font-weight:800;color:#4D66B5;line-height:1}
 .sm-card .sm-t{font-size:calc(14px * var(--ui-scale,1));font-weight:700}
@@ -1371,7 +1371,7 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.folded.side-left .hello-bub{left:62px;top:12px}
 .isl-col.folded.side-top .hello-bub{top:62px;left:50%;transform:translateX(-50%)}
 .isl-col.folded.side-bottom .hello-bub{bottom:62px;left:50%;transform:translateX(-50%)}
-@media (prefers-reduced-motion:no-preference){.isl-col.folded.side-top .hello-bub,.isl-col.folded.side-bottom .hello-bub{animation:none}}   /* translateX와 겹치는 움직임은 두지 않는다 */
+.isl-col.folded.side-top .hello-bub,.isl-col.folded.side-bottom .hello-bub{animation:none}   /* translateX와 겹치는 움직임은 두지 않는다 */
 /* 섬 머리의 자리 네 칸(▲ ▼ ◀ ▶) */
 .dk{display:inline-flex;gap:2px;padding:2px;border-radius:10px;background:var(--soft);flex:none}
 .dk button{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--mute);font-size:calc(11px * var(--ui-scale,1));cursor:pointer}

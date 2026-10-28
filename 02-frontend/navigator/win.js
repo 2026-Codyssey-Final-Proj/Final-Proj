@@ -86,7 +86,7 @@
   root.addEventListener("focusout", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: false }); });
   // 글 칸의 줄 위치(C-53 상태 줄) — 바뀔 때만 보낸다
   let caretAt = 0;
-  const caret = (e) => { const t = e.target; if (!t || !t.classList || !t.classList.contains("fv-edit")) return; const line = t.value.slice(0, t.selectionStart).split("\n").length; if (line !== caretAt) { caretAt = line; F.winEvent({ type: "caret", line }); } };
+  const caret = (e) => { const t = e.target; if (!t || !t.classList || !t.classList.contains("fv-edit")) return; const line = t.value.slice(0, t.selectionStart).split("\n").length; if (line !== caretAt) { caretAt = line; const pos = root.querySelector(".fv-st [data-pos]"); if (pos) pos.textContent = ` · 줄 ${line}`; F.winEvent({ type: "caret", line }); } };   // 상태 줄은 여기서 바로(섬은 다음 그림에)
   root.addEventListener("keyup", caret); root.addEventListener("click", caret); root.addEventListener("select", caret);
   root.addEventListener("input", (e) => { const t = e.target; if (!t.dataset || !t.dataset.act) return; F.winEvent({ type: "input", act: t.dataset.act, data: data(t), value: t.value }); });
   document.addEventListener("keydown", (e) => {

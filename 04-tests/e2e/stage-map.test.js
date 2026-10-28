@@ -55,7 +55,7 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     // 기획서로 그리기 → 준비된 퀘스트(확인 전) → 맞아요 → 준비됨
     await page.click("[data-act=prep-draw]"); await wait(300);
     cs = await cards(); assert.deepEqual(cs.map((c) => c.state).slice(3), ["pending", "pending", "pending", "pending", "pending"], "그렸지만 확인 전");
-    assert.match(cs[3].text, /기획서 \d절|새로 정함/, "근거 절");
+    assert.match(cs[3].text, /기획서 \d절/, "근거 절 — 씨앗에 줄이 있는 칸은 절 번호"); assert.ok(!/새로 정함/.test(cs[3].text), "지어내지 않음 표시는 줄이 없을 때만");
     assert.ok(await page.$("[data-act=prep-ok]"), "맞아요(한 번에)"); assert.ok(await page.$("[data-act=prep-fix]"), "고칠래요");
     await page.click("[data-act=prep-fix]"); await wait(200);
     assert.ok((await page.$$(".sm-cell input[data-act=prep-think]")).length >= 5, "고칠래요 — 카드마다 ① 생각 칸");
@@ -66,7 +66,7 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     // 카드 → 오른쪽 칸
     await page.click('.sm-card[data-i="3"]'); await wait(300);
     const side = await page.$eval(".wside", (el) => el.textContent.replace(/\s+/g, " "));
-    assert.match(side, /4단계/); assert.match(side, /① 생각/); assert.match(side, /design\.md/); assert.match(side, /기획서 \d절|새로 정함/);
+    assert.match(side, /4단계/); assert.match(side, /① 생각/); assert.match(side, /design\.md/); assert.match(side, /기획서 \d절/);
     // 캔버스의 ① 생각 — 지금 장(3단계)은 준비된 생각이 초안 자리에
     await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
     assert.match(await page.$eval(".cv-c.c1", (e) => e.textContent), /기획서 3절의 줄|준비된/, "준비된 ① 생각");
