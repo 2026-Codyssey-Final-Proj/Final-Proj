@@ -1,6 +1,5 @@
 /* Floe 사본(2026-10-27): 원본 첫 줄의 @import(Google Fonts)를 뺐다 — 앱이 밖으로 요청하지 않게(이재엽 버튼 "앱에 한 벌 넣기"). 글꼴은 --f-ui의 시스템 글꼴로 */
 /*! archi-board engine v1.0.0 — MIT License */
-500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap');
 /* 무한 보드 — 작업을 창(프레임)으로 늘어놓고, 창 크기는 중요도, 창 안은 ArchiMate 층별 캔버스. 멀리서는 창 이름만, 가까이 가면 안의 상자와 선. */
 :root{
   --board:#E3E9F2; --dot:#C4CEDC; --sheet:#F8FAFD; --soft:#EEF2F8; --line:#D2D9E4; --line2:#B3BECF;
