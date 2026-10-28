@@ -145,7 +145,7 @@
     results: {}, ship: null,                       // C-37(2026-10-25): 단계마다 보고한 결과(quest.js resultOf — 한곳에서 보기 · 도전과제 지도 · 문서) · 2단계를 마친 뒤 문서 올리기({phase: offer|sent, at}, 이 켜짐 동안만)
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
-    qwin: false, qtab: "canvas", boot: null, prep: null, islBig: null, tidy: null, chatMark: 0, /* islBig · tidy · chatMark — C-61(2026-10-29): 섬을 크게(null이면 저절로) · 정리 카드 · 이 단계 대화가 시작된 자리 */ mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
+    qwin: false, qtab: "canvas", boot: null, prep: null, islBig: null, tidy: null, chatMark: 0, chatChanges: [], chatOpen: null, chatGo: null, fnAll: false, /* islBig · tidy · chatMark — C-61(2026-10-29): 섬을 크게(null이면 저절로) · 정리 카드 · 이 단계 대화가 시작된 자리 */ mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
     gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
     plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {},   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
     qfocus: "stage", planSel: "",                   // C-35: 지금 할 퀘스트(stage 단계 퀘스트 · plan 준비 계획과 맡길 일 — 채팅의 지금 말이 이쪽을 따른다) · 퀘스트 창에서 고른 맡길 일(이 켜짐 동안만)
@@ -237,7 +237,7 @@
   const BOUND_KEY = "floe-demo:bound";
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
-  const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
+  const KEEP = ["chat", "chatMark", "chatOpen", "mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
     "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "codeless", "linesDone", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   function load() {
@@ -246,6 +246,8 @@
     if (!s || typeof s !== "object") return;
     if (s.j && !(N.STAGES[s.j.stage] && Array.isArray(s.j.criteria))) delete s.j;   // 고장 난 기록은 버린다
     for (const k of KEEP) if (k in s) st[k] = s[k];
+    if (!Array.isArray(st.chat)) st.chat = [];   // C-63 — 저장된 대화. 고장 난 기록은 버린다
+    st.chat = st.chat.filter((m) => m && typeof m.html === "string" && ["me", "floro", "sys"].includes(m.who));   // who는 class에 들어간다 — 셋만
     if (st.mode === "live" && !canLive) st.mode = "fixture";
     st.pets = Math.max(0, Number(st.pets) || 0);
     st.libGone = [...new Set([...(Array.isArray(st.libGone) ? st.libGone.map(String) : []), ...readBound()])];
@@ -949,13 +951,42 @@
       if (was !== undefined && was !== h && logPin && l) l.scrollTop = l.scrollHeight;
     }
   }) : null;
-  const logMsg = (who, html) => { st.chat = [...st.chat, { who, html }].slice(-60); chatSeq += 1; };
-  const logMe = (text) => { settleLive(); logMsg("me", esc(text)); };
+  // C-63(2026-10-29): 대화는 저장된다 — 400줄까지, 넘치면 오래된 것부터(단계 표시 자리 chatMark도 같이 당긴다). 내 말은 비밀값을 가려서 저장(보안 기준 3절). kind — stage(구분선) · carry(가져온 것)
+  const CHAT_CAP = 400;
+  // ── C-63 대화 저장(API.md 3-32 — 서버는 이재엽 쪽 #247, 결정 모음 A-20 '이 컴퓨터의 앱 저장 곳'): 진짜 AI 모드면 켤 때 GET /api/chatlog로 이어서 보이고 logMsg가 add로 쌓는다(20개씩).
+  //   연습 · 서버 없이는 이 브라우저(localStorage KEEP)에만. 말 → { stage, who, text }, 구분선 → { stage, mark, title }, 가져온 것 → { stage, carry }. 서버가 가리고(sensitive.js) at을 붙인다 ──
+  const chatLive = () => canLive && st.mode === "live";
+  const turnOf = (m) => (m.kind === "stage" ? { stage: m.n, mark: true, title: String(m.title || "").slice(0, 60) } : m.kind === "carry" ? { stage: m.n, carry: textOf(m.html).slice(0, 2000) }
+    : m.who === "me" || m.who === "floro" || m.who === "sys" ? { stage: Number.isInteger(m.n) ? m.n : atStage(), who: m.who, text: textOf(m.html).slice(0, 2000) } : null);
+  const fromTurn = (t) => (t.mark ? { who: "sys", kind: "stage", n: t.stage, title: t.title, at: t.at, html: `<b>${LB(t.stage)} · ${esc(t.title)}</b><span>${new Date(t.at).toLocaleDateString("sv")}</span>` }
+    : typeof t.carry === "string" ? { who: "floro", kind: "carry", n: t.stage, at: t.at, html: esc(t.carry).replace(/\n/g, "<br>") } : { who: t.who, n: t.stage, at: t.at, html: esc(t.text) });
+  let chatQueue = [], chatFlushing = false;
+  function chatlogAdd(m) { if (!chatLive() || !Number.isInteger(m.n)) return; const t = turnOf(m); if (!t || !(t.text || t.title || t.carry)) return; chatQueue.push(t); if (!chatFlushing) setTimeout(chatlogFlush, 0); }
+  async function chatlogFlush() {
+    if (chatFlushing || !chatQueue.length) return; chatFlushing = true; const add = chatQueue.splice(0, 20);
+    try { await fetch("/api/chatlog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ add }), credentials: "same-origin" }); } catch { /* 못 쌓아도 화면은 계속 — 이 브라우저에는 남아 있다 */ }
+    chatFlushing = false; if (chatQueue.length) chatlogFlush();
+  }
+  async function chatlogLoad() {
+    if (!chatLive()) return false;
+    let r = null; try { r = await (await fetch("/api/chatlog", { credentials: "same-origin" })).json(); } catch { return false; }
+    if (!r || !r.ok || r.why === "folder" || !Array.isArray(r.turns)) return false;
+    st.chat = r.turns.filter((x) => x && (x.mark ? Number.isInteger(x.stage) && Number.isFinite(x.at) : typeof x.carry === "string" || (typeof x.text === "string" && ["me", "floro", "sys"].includes(x.who)))).map((x) => fromTurn({ at: Number.isFinite(x.at) ? x.at : 0, ...x }));   // 덜어낸 수를 알리는 sys 줄(3-32)은 at이 없어도 보인다
+    st.chatChanges = Array.isArray(r.changes) ? r.changes.filter((c) => c && Number.isFinite(c.at) && typeof c.path === "string") : [];
+    st.chatMark = st.chat.map((m) => !!m.kind).lastIndexOf(true) + 1;   // 대화 표시 자리는 마지막 구분선 · 가져온 것 뒤
+    return true;
+  }
+  // C-63 — 대화 목록의 바로가기: 같은 대화의 그 단계 구분선으로 옮기고 잠깐 강조. 값은 "단계:번호"라 같은 단계를 다시 눌러도 옮긴다. 앱 창은 win.js가 같은 값(data-go-stage)으로
+  let goSeq = 0, goStageShown = "";
+  const goStage = (root) => { const lg = root.querySelector("[data-log]"), v = lg ? lg.dataset.goStage || "" : ""; if (!v || v === goStageShown) return; goStageShown = v;
+    const el = lg.querySelector(`[data-stage="${CSS.escape(v.split(":")[0])}"]`); if (!el) return; logPin = false; el.scrollIntoView({ block: "start" }); el.classList.add("hl"); setTimeout(() => el.classList.remove("hl"), 1200); };
+  const logMsg = (who, html, extra = {}) => { const m = { who, html, at: Date.now(), n: st.quest ? st.quest.chap : atStage(), ...extra }; st.chat = [...st.chat, m]; const over = st.chat.length - CHAT_CAP; if (over > 0) { st.chat = st.chat.slice(over); st.chatMark = Math.max(0, (st.chatMark || 0) - over); } chatSeq += 1; chatlogAdd(m); };
+  const logMe = (text) => { settleLive(); logMsg("me", esc(window.NavSensitive ? window.NavSensitive.redact(text) : text)); };
   // 지금 보이는 플로로의 말을 기록에(한 번만) — 내 말을 남기기 전에도 불러 질문 → 답 순서로 쌓인다(C-37, 2026-10-25 — 전에는 '맞아요'가 그 질문 위에 쌓였다).
   //   기다리는 동안만 보이는 말 · 초안 확인 카드(passing)는 남기지 않는다. 그 말이 보이는 동안 say()로 남긴 말(saidSince)보다는 앞에
   function settleLive() {
     if (!lastLive || lastLive.passing || lastLive.logged) return;
-    const at = st.chat.length - saidSince; st.chat = [...st.chat.slice(0, at), { who: "floro", html: lastLive.html }, ...st.chat.slice(at)].slice(-60); lastLive.logged = true;
+    const at = st.chat.length - saidSince, m = { who: "floro", html: lastLive.html, at: Date.now(), n: st.quest ? st.quest.chap : atStage() }; st.chat = [...st.chat.slice(0, at), m, ...st.chat.slice(at)].slice(-CHAT_CAP); lastLive.logged = true; chatlogAdd(m);   // 플로로의 지금 말도 서버에(C-63 — 새 맥락 리뷰)
   }
   // 퀘스트의 결정할 것 하나 — 받기 전(draft) · 한 줄씩 묻기 · 다 적음(완료 보고). momentToday가 알림 · 경고 · 오류 · 먹이 다음에 부른다
   const stageMetaQ = () => { const q = st.quest, p = QU.progress(q); return `<span class="mm-stage">${LB(q.chap)} · ${esc(q.title)}</span><span>${p.n}개 중 ${p.k}번째 할 일</span><span class="mini" aria-hidden="true">${q.objs.map((_, i) => `<i class="${i < p.k ? "on" : ""}"></i>`).join("")}</span>`; };
@@ -1055,7 +1086,7 @@
   // 채팅 카드 — v는 momentToday()/momentGate()가 준 것(글은 이미 esc 한 것)
   function chatCard(v) {
     // C-61: 섬이 가운데이고 이 단계의 대화가 아직 비어 있으면 플로로 · 질문 하나 · 입력 상자 하나만(칩 없음). 질문은 셋 중 하나 — 문구는 예시(기획안)
-    if (islBig() && chatSeq <= (st.chatMark || 0) && !st.pane && !st.settings && st.quest && !st.quest.draft && !st.tidy) { /* chatSeq — 기록 상한(60)에 닿아도 늘 느는 번호(새 맥락 리뷰) */ const qs = ["어떤 프로젝트를 구상하고 있나요?", "어떤 미션을 수행하고 계시나요?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"];
+    if (islBig() && st.chat.length <= (st.chatMark || 0) && !st.pane && !st.settings && st.quest && !st.quest.draft && !st.tidy) { /* 구분선 뒤에 말이 없다 — 상한을 넘기면 logMsg가 chatMark도 당긴다(C-63) */ const qs = ["어떤 프로젝트를 구상하고 있나요?", "어떤 미션을 수행하고 계시나요?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"];
       return `<section class="mc chat hello tone-blue"><div class="who">${petCat("happy", 150)}</div><div class="main"><b class="say hello-q">${qs[st.quest.chap % 3]}</b><div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`; }
     for (const a of v.acts) if (a.key && !a.disabled) deskKeys[a.key] = a;
     const live = `${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}<b class="say">${v.title}</b>${v.sub ? `<span class="mc-sub">${v.sub}</span>` : ""}`;
@@ -1072,7 +1103,7 @@
     const chip = (a) => btn({ ...a, chip: !a.quiet });   // quiet — 눌러도 내 말로 쌓지 않는 칩(초안 확인 — 결과는 끝나면 한 줄로, C-37)
     // 플로로 아래 칭호 · 기분 글은 뺐다(2026-10-25 두승현) — 칭호는 설정 창 머리에 있다
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}${v.badge ? `<span class="mc-badge" aria-hidden="true">${v.badge}</span>` : ""}</div>
-      <div class="main"><div class="log" data-log>${st.chat.map((m) => `<div class="msg ${m.who}"><div class="b">${m.html}</div></div>`).join("")}${
+      <div class="main"><div class="log" data-log data-go-stage="${st.chatGo == null ? "" : `${st.chatGo}:${goSeq}`}">${st.chat.map((m) => (m.kind === "stage" ? `<div class="msg stage" data-stage="${m.n}"><div class="b">${m.html}</div></div>` : `<div class="msg ${m.who}${m.kind ? ` ${m.kind}` : ""}"><div class="b">${m.html}</div></div>`)).join("")}${
         working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast(mine()) ? ` — ${esc(stepLine(aiLast(mine())))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
         ${proposalsHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
         ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts more" id="more-chips">${moreOpen ? more.map(chip).join("") : ""}<button type="button" class="b ghost mtg" data-act="more-toggle" aria-expanded="${moreOpen}" aria-controls="more-chips">${moreOpen ? "접기" : `더 보기${unreadN() ? ` · 알림 ${unreadN()}` : ""}`}</button></div>` : ""}
@@ -1129,7 +1160,13 @@
     if (!all.length || all[all.length - 1].who !== "me") all.push({ who: "me", text: t.slice(0, 1000) });
     let out = all.slice(-40); while (out.length > 1 && out.reduce((n, m) => n + m.text.length, 0) > 8000) out = out.slice(1); return out; };
   let chatText = "";
-  const questStarted = () => { st.islBig = null; st.chatMark = chatSeq; st.tidy = null; };   // 새 단계 — 섬은 저절로 가운데(칸이 비었으니), 대화 표시는 처음부터. islBig은 저장하지 않는다 — 다시 켜면 칸 상태대로 저절로
+  // 새 단계(C-61 · C-63, 2026-10-29): 대화에 구분선(단계 · 이름 · 날짜)과 '지난 단계에서 가져온 것'(정한 줄 요약 — 틀리면 말로 고친다), 섬은 저절로 가운데(칸이 비었으니), 대화 표시 자리는 구분선 뒤. islBig은 저장하지 않는다 — 다시 켜면 칸 상태대로 저절로
+  const questStarted = () => {
+    const n = st.quest ? st.quest.chap : atStage();
+    logMsg("sys", `<b>${LB(n)} · ${esc(N.STAGES[n].title)}</b><span>${ymd()}</span>`, { kind: "stage", n, title: N.STAGES[n].title });
+    const prev = n > 0 ? st.results[n - 1] : null, got = prev ? prev.items.filter((x) => (x.lines || [])[0]) : [];
+    if (got.length) logMsg("floro", `<b>지난 단계에서 가져온 것</b>${got.map((x) => `<br>${esc(QU.shortOf(x.name))} — ${esc(x.lines[0])}`).join("")}<br><small>틀리면 말로 고쳐 주세요</small>`, { kind: "carry", n });
+    st.islBig = null; st.chatMark = st.chat.length; st.tidy = null; };
   async function chatSend(t, skipCheck) {
     const q = st.quest; st.tidy = null;
     if (st.mode !== "live" || !canLive) { st.tidy = { fills: [{ i: QU.curIdx(q), text: t }], reply: "연습이라 AI 없이 — 보낸 말을 지금 칸에 이렇게 적을 수 있어요" }; return render(); }
@@ -1398,6 +1435,28 @@
   }
   // C-53 파일 칸 맨 위 — 열어 둔 파일(탭과 같은 것, 바뀐 것은 •). 목업 ① "열어 둔 파일"
   const openGroup = () => (st.openFiles.length ? `<p class="fn-h2">열어 둔 파일</p><ul class="fn fn-open">${st.openFiles.map((x, k) => `<li class="fnrow${st.qtab === "file" && st.fileSel === k ? " sel" : ""}${x.dirty ? " dirty" : ""}"><button type="button" class="fn-file fn-opened" data-act="ftab" data-v="${k}" title="${esc(x.path)}">${fIcon(x.kind === "code" ? "code" : x.kind === "md" ? "md" : "file")}<span>${esc(x.name)}</span>${x.dirty ? "<small>•</small>" : ""}</button></li>`).join("")}</ul>` : "");
+  // ── C-63 왼쪽 대화 목록(2026-10-29, 두승현 PRD 3-2 · 이재엽 승인): 프로젝트 이름 → 단계 바로가기(최근이 위 — 지금 / 그 단계를 이야기한 날) → 맨 아래 '전체 파일'(지금의 폴더 모양, 한 칸 들여서).
+  //   바로가기를 누르면 새 대화를 열지 않고 같은 대화의 그 구분선으로 옮겨 잠깐 강조하며, 그 단계가 만든 · 고친 파일('새로' · '고침')을 펼친다. 다시 누르면 접힌다 ──
+  const dateOf = (n) => { const m = [...st.chat].reverse().find((x) => x.kind === "stage" && x.n === n); return m && m.at ? new Date(m.at).toLocaleDateString("sv").slice(5).replace("-", "/") : ""; };
+  // 그 단계의 파일 — 서버가 쌓은 바뀐 파일(3-32 changes — 훅 알림의 Write · Edit)을 이 단계 구분선과 다음 구분선의 at 사이로 나누고(new → 새로, edit → 고침), 단계 문서(폴더에 있을 때)를 더한다. 두승현 2026-10-28 "둘 다"
+  function stageFilesOf(n) {
+    const marks = st.chat.filter((m) => m.kind === "stage"), me = [...marks].reverse().find((m) => m.n === n), start = me ? me.at : null, next = me ? marks.find((m) => m.at > me.at && m.n !== n) : null, end = next ? next.at : Infinity;
+    const got = {};
+    if (start !== null) for (const c of st.chatChanges || []) { if (c.at < start || c.at >= end) continue; got[c.path] = got[c.path] === "새로" ? "새로" : c.how === "new" ? "새로" : "고침"; }
+    const out = Object.entries(got).map(([path, tag]) => ({ path, tag }));
+    const doc = nowDocPath(n); if (doc && !got[doc] && haveDocs().has(doc)) out.push({ path: doc, tag: "새로" });
+    return out.sort((a, b) => a.path.localeCompare(b.path, "en"));
+  }
+  const fileBtn = (path) => { const i = st.files && st.files.src === "mine" && st.files.list ? st.files.list.findIndex((x) => x.path === path) : -1; return i >= 0 ? `<button type="button" class="fn-file" data-act="fn-open" data-v="${i}">${esc(path.split("/").pop())}</button>` : `<span>${esc(path.split("/").pop())}</span>`; };
+  function chatNav() {
+    const cur = st.finished ? N.STAGES.length - 1 : atStage();
+    const seen = new Set(st.chat.filter((m) => m.kind === "stage").map((m) => m.n)); seen.add(cur); for (const k of Object.keys(st.results)) seen.add(Number(k));
+    const stages = [...seen].filter((n) => N.STAGES[n]).sort((a, b) => b - a);
+    const rows = stages.map((n) => { const open = st.chatOpen === n, files = stageFilesOf(n);
+      return `<li class="cn${n === cur ? " st-now" : ""}"><button type="button" data-act="chat-go" data-v="${n}" aria-expanded="${open}"><i class="chev-w${open ? " on" : ""}">${FN_CHEV}</i><span>${n + 1} · ${esc(N.STAGES[n].short || N.STAGES[n].title)}</span><small>${n === cur ? "지금" : dateOf(n)}</small></button>${
+        open ? `<ul class="cn-files">${files.length ? files.map((f) => `<li>${fileBtn(f.path)}<small>${f.tag}</small></li>`).join("") : "<li><span>아직 바뀐 파일이 없어요</span></li>"}</ul>` : ""}</li>`; }).join("");
+    return `<p class="fn-h"><b>${fIcon("open")}<span>${esc(project() || "예시 프로젝트")}</span></b></p><ul class="fn cn-list">${rows}</ul><details class="fn-all"${st.fnAll ? " open" : ""}><summary>전체 파일</summary>${fileNav()}</details>`;
+  }
   function fileNav() {
     const f = st.files, mine = f && f.src === "mine" && f.list;
     if (!mine) return openGroup() + `<p class="fn-h"><b>${fIcon("open")}<span>${esc(project() || "예시 프로젝트")}</span></b><em title="${esc(f && f.why ? `${f.why} — 폴더를 연결하면 진짜 목록이 와요` : "폴더를 연결하면 진짜 목록이 와요")}">예시</em></p><ul class="fn">${FILES_DUMMY.map(exRow).join("")}</ul><p class="fn-ft">폴더를 연결하면 그 폴더의 진짜 파일 이름이 여기에 와요 — Claude Code가 고친 파일은 캔버스의 파일 카드에</p>`;
@@ -1646,7 +1705,7 @@
         ${WINS ? `<button type="button" class="ti wfull" data-act="qfull" aria-label="작업실을 화면 가득" title="화면 가득">${FULL_ICON}</button>` : ""}
         <button type="button" class="ti" data-act="qwin" aria-label="작업실 창 닫기" title="닫기">${X_ICON}</button></div>`;
     return `${wh}<div class="win qwin${pop}" role="dialog" aria-label="작업실 창" style="width:${BROWSER_WIN[0]}px;height:${BROWSER_WIN[1]}px">
-      <div class="wmain">${wnavOpen ? `<nav class="wnav" aria-label="파일">${fileNav()}</nav>` : ""}<div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : st.qtab === "file" ? `${st.fileSel}|${(st.openFiles[st.fileSel] || {}).edit ? "e" : "v"}` : ""}`)}">${pane}</div>${sideOn() ? `<aside class="wside" aria-label="이 문서 · 퀘스트">${wsideHTML(n)}</aside>` : ""}</div></div>`;
+      <div class="wmain">${wnavOpen ? `<nav class="wnav" aria-label="대화 · 파일">${chatNav()}</nav>` : ""}<div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : st.qtab === "file" ? `${st.fileSel}|${(st.openFiles[st.fileSel] || {}).edit ? "e" : "v"}` : ""}`)}">${pane}</div>${sideOn() ? `<aside class="wside" aria-label="이 문서 · 퀘스트">${wsideHTML(n)}</aside>` : ""}</div></div>`;
   }
   // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 고한결 [정할 것 2 · 5]
   const PIC = `<svg viewBox="0 0 320 140" aria-hidden="true"><defs><linearGradient id="q-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1550"></stop><stop offset="1" stop-color="#2A4AC8"></stop></linearGradient><linearGradient id="q-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3BA6"></stop><stop offset="1" stop-color="#0E1A4F"></stop></linearGradient></defs><rect width="320" height="140" fill="url(#q-sky)"></rect><g fill="#fff"><circle cx="30" cy="22" r="1.4"></circle><circle cx="80" cy="40" r="1"></circle><circle cx="140" cy="18" r="1.6"></circle><circle cx="200" cy="34" r="1"></circle><circle cx="260" cy="16" r="1.3"></circle><circle cx="300" cy="46" r="1"></circle></g><circle cx="262" cy="36" r="16" fill="#FFF3C4"></circle><circle cx="268" cy="31" r="14" fill="url(#q-sky)"></circle><path d="M0 95 Q 80 80 160 95 T 320 95 V140 H0z" fill="url(#q-sea)"></path><path d="M70 100 L 110 78 L 200 76 L 250 100 Z" fill="#E6F6FF"></path><path d="M70 100 L 250 100 L 240 112 L 85 112 Z" fill="#A9DDFF"></path><rect x="130" y="52" width="60" height="30" rx="4" fill="#F3EBD8" stroke="#6B5B3E" stroke-width="2"></rect><path d="M138 60h44M138 67h36M138 74h40" stroke="#B99A4F" stroke-width="2" stroke-linecap="round"></path></svg>`;
@@ -2596,7 +2655,9 @@
     if (p.type === "input") { if (st.ui === "home" && timer) { clearIdle(); scheduleIdle(); } return onInput(el); }   // 글을 치는 동안 접히는 시계를 되돌린다(C-46)
     if (p.type === "key" && p.key === "Enter" && p.act === "say") return send();   // 작업실 옆 칸의 채팅 입력에서 Enter(C-41 ⑤) — 섬의 채팅 칸과 같이 보내기
     if (p.type === "key" && p.key === "s" && p.mod) { if (st.qtab === "file") ACT.fsave(); return; }   // 작업실 창의 ⌘/Ctrl+S(C-43)
-    if (p.type === "caret") { caretLine = Number(p.line) || 0; return; }   // 글 칸의 줄 위치(C-53 상태 줄) — 다시 그리지 않는다(치는 동안 글 칸이 흔들리지 않게), 다음 그릴 때 보인다
+    if (p.type === "caret") { caretLine = Number(p.line) || 0; return; }
+    if (p.type === "toggle") { st.fnAll = !!p.open; return; }   // 작업실 창의 '전체 파일' 접고 펼침(C-63) — 다시 그려도 그대로
+    // 글 칸의 줄 위치(C-53 상태 줄) — 다시 그리지 않는다(치는 동안 글 칸이 흔들리지 않게), 다음 그릴 때 보인다
     // 작업실 창에서 움직이거나 누르면(poke — win.js가 1초에 한 번까지, 흰 줄이 돌 때만) 접히는 시계를 처음부터. 흰 줄은 그 창이 스스로 다시 그렸으니 다시 그리지 않는다(임유정 2026-10-28)
     if (p.type === "poke") { if (st.ui === "home" && timer) { clearIdle(); scheduleIdle(); } return; }
     // 옆 칸에 마우스를 올리거나 글을 쓰는 동안은 접히지 않는다(C-46) — 떠나면 접히는 시계를 다시 센다
@@ -2761,6 +2822,7 @@
     }
   }
   addEventListener("resize", refract);
+  $nav.addEventListener("toggle", (e) => { if (e.target && e.target.classList && e.target.classList.contains("fn-all")) st.fnAll = !!e.target.open; }, true);   // 브라우저 판의 '전체 파일'(C-63)
 
   // 설계도 글 칸은 글 길이만큼 늘어난다 — 확정한 뒤 보기(pre)와 같은 크기로. 섬 전체가 화면 높이를 넘으면 섬 안에서 스크롤 (2026-10-18 임유정 요청)
   function grow(t) { const y = t.closest(".isl")?.scrollTop; t.style.height = "auto"; t.style.height = `${t.scrollHeight + 2}px`; if (y !== undefined) t.closest(".isl").scrollTop = y; }
@@ -2813,6 +2875,7 @@
     if (lg && !logWas) { lg.scrollTop = lg.scrollHeight; logTop.set(lg, lg.scrollTop); }
     else if (lg) { lg.scrollTop = logWas.top; logTop.set(lg, lg.scrollTop); if (logPin) lg.scrollTo({ top: lg.scrollHeight, behavior: STILL ? "auto" : "smooth" }); }
     shownSeq = chatSeq;
+    goStage($nav);   // C-63 — 대화 목록의 바로가기를 눌렀으면 그 단계 구분선으로
     if (logRO) { logRO.disconnect(); if (lg) { logRO.observe(lg); if (lg.lastElementChild) logRO.observe(lg.lastElementChild); } }
     syncWins();
     refract();
@@ -3315,6 +3378,7 @@
     "quest-report": () => questReport(),
     "tidy-fill": () => { const t = st.tidy; if (!t || !st.quest) return; st.tidy = null; st.islBig = false; let q = st.quest; for (const f of t.fills) q = QU.fill(q, f.i, f.text, "chat"); st.quest = q; afterFill(); },   // 서버는 안 적은 칸만 제안한다(3-31)   // C-61 — 누가 정했나 '대화', 섬은 옆 칸으로(사람이 눌렀을 때만)
     "tidy-more": () => set({ tidy: null }),
+    "chat-go": (i, el) => { const n = Number(el.dataset.v); st.chatOpen = st.chatOpen === n ? null : n; st.chatGo = n; goSeq += 1; render(); },   // C-63 대화 목록의 바로가기 — 펼침 · 접힘, 대화는 그 구분선으로
     "isl-big": () => set({ islBig: !islBig() }),   // 머리 줄의 크게 · 옆으로 단추
     // 준비 계획 · 맡길 일(C-34 · C-32 → C-35, 2026-10-24): 채팅의 지금 말로 연다 — 계획이 없으면 한 번에 넣기(처음 말한 것이 있으면 넣는 글에 미리), 있으면 확인 · 지금 줄
     "plan-open": () => {
@@ -3820,6 +3884,7 @@
     } catch { if (aiMode !== "live") { aiMode = "example"; aiSessions = HUB.exampleSessions(STEPS, Date.now()); } }
   }
   pollSteps().then(() => { if (st.place === "base" && st.ui === "home") render(); });
+  chatlogLoad().then((ok) => { if (ok) render(); });   // C-63 — 켤 때 저장된 대화를 이어서(진짜 AI 모드)
   if (canLive) setInterval(async () => { if (st.ui !== "home") return; const was = aiLatest; await pollSteps(); if (aiLatest !== was) render(); }, 2000);   // 펼쳐져 있으면 늘(C-22 — 채팅의 '일하고 있어요' 띠)
 
   // ── 뒤쪽 예시 화면: AI 도구로 작업하는 장면 ──
@@ -3861,7 +3926,7 @@
     if (!h) return;
     const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(decodeURIComponent)).map(([k, v]) => [k, v === undefined ? true : v]));
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
-      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, chat: [] });
+      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, chat: [], chatMark: 0, chatChanges: [], chatOpen: null });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63)
     lastLive = null;
     // 주소로 연 장면은 바이브 코딩(녹화 · 시험이 그대로), #base(&pane=alerts|ai)만 기본 화면(C-13, 넘김 문서 9절 7번)
     // 서고에서 돌아온 주소(&back)는 장면이 아니다 — 떠난 모드 그대로(F-36, PR #139 리뷰: 기본 화면에서 서재에 다녀오면 바이브 코딩이 됐다)
@@ -3971,7 +4036,7 @@
   document.addEventListener("floe:project-picked", (e) => projectPicked((e && e.detail) || {}));
   // F-72(2026-10-28): 앱 메뉴(상단바 · 트레이)로 연결 · 연결 빼기 — 섬의 단추를 거치지 않아 앱이 끝난 뒤 알려 준다. 빼면 훅 알림으로 안 이름(st.project)도 잊는다(app-disconnect와 같이)
   //   섬의 '프로젝트 폴더 연결… · 연결 빼기…' 단추도 같은 길 — 전에는 이름표(st.gh)만 비워 파일 칸은 옛 폴더 그대로였다(F-72 새 맥락 리뷰)
-  const connected = (r) => { forgetFolder(); say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); };
+  const connected = (r) => { forgetFolder(); chatlogLoad().then((ok) => { if (ok) render(); }); say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); };
   const disconnected = () => { st.project = ""; forgetFolder(); render(); };
   if (window.floeApp && window.floeApp.onProject) window.floeApp.onProject((d) => (d && d.add ? connected({ name: String(d.name || ""), config: !!d.config }) : disconnected()));
   document.addEventListener("floe:setup-done", (e) => {
