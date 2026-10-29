@@ -1537,18 +1537,6 @@
   //   처음은 '맞춤'(줌 · 다시 배치, R-11). 가운데 단추의 글(맞춤 · n%)은 canvas-pan.js가 바꾼다
   const CV_HINT = "캔버스 — 끌어서 옮겨요. ⌘ 또는 Ctrl을 누른 채 휠(트랙패드는 두 손가락 오므리기)로 크게 · 작게, 키보드는 + − 0과 화살표";
   const CV_TOOLS = `<div class="cv-tools" role="group" aria-label="캔버스 크기"><button type="button" data-cv="out" aria-label="작게" title="작게 (−)">−</button><button type="button" class="cv-z" data-cv="fit" aria-pressed="true" aria-label="화면에 맞춤 (지금 맞춤)" title="화면에 맞춤 (0)">맞춤</button><button type="button" data-cv="in" aria-label="크게" title="크게 (+)">+</button></div>`;
-  // 단계 칩(R-9 → C-58, 2026-10-29): 캔버스에서 머리 줄로. '시작 (확인) · 1 (확인) V.1 · 2 (확인) V.2 · 3 · 4 ~ 8' — 지금 칩은 번호만(이름은 옆의 단계 띠에 한 번), 모양은 C-59 st-*
-  function stageChips(n) {
-    const q = st.quest && st.quest.chap === n ? st.quest : null;
-    const chipCls = (x) => (st.finished ? "done" : stepClass(x.n));   // 다 마치면 마지막 장도 ✓(stepClass는 finished를 모른다 — 새 맥락 리뷰 2026-10-26)
-    const ks = N.STAGES.map((x) => chipCls(x) || (x.n === n ? "cur" : "")), last = N.STAGES.length - 1, i0 = ks.findIndex((k, i) => k !== "done" && k !== "cur" && i > ks.lastIndexOf("cur"));   // 아직인 장은 하나로 묶는다(목업 "3 ~ 7"). 아직 시작 전(st.j 없음)이어도 지금 장은 따로
-    // R-9(C-42, 2026-10-27): 칩은 머리와 같은 앱 번호(1~8 — 코드 n + 1). '시작 (확인 아이콘)' · 지난 장 'n (확인 아이콘) V.n'(V.n은 스토리보드대로 관문마다 하나 — C-23 ①이 정해지면 그 규칙으로) · 지금 장 'n 짧은 이름' · 뒤 장 'n+1 ~ 8'.
-    //   줌에서는 칩 줄이 판 오른쪽 끝 안에서 줄 바꿈(app.css) — 이름이 붙어 길어진다
-    const dn = (x) => x.n + 1, started = !!(st.j || st.idea || q);
-    const chip = (x, k) => `<span class="${k} st-${k === "cur" ? "now" : k === "done" ? "done" : "later"}" title="${LB(x.n)} · ${esc(x.title)}">${k === "done" ? `${dn(x)} ${OK_ICON} V.${dn(x)}` : dn(x)}</span>`;
-    const chips = `<span class="${started ? "done st-done" : "cur st-now"}" title="시작 — 무엇을 만들지 말하기">${started ? `시작 ${OK_ICON}` : "시작"}</span>` + (i0 < 0 || i0 === last ? N.STAGES.map((x, i) => chip(x, ks[i])) : [...N.STAGES.slice(0, i0).map((x, i) => chip(x, ks[i])), `<span class="st-later" title="${LB(N.STAGES[i0].n)} ~ ${LB(N.STAGES[last].n)}">${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}</span>`]).join("");
-    return `<div class="cv-stg" aria-label="단계">${chips}</div>`;
-  }
   function canvasPane(n) {
     const q = st.quest && st.quest.chap === n ? st.quest : null, r = st.results[n], ci = q ? QU.curIdx(q) : -1;
     let floAt = "";
@@ -1578,7 +1566,7 @@
     const ul = unmet.length ? `<details class="cv-unmet-d"><summary>남은 기준 ${unmet.length}</summary><ul class="cv-unmet">${unmet.slice(0, 3).map((x) => `<li>안 됨 · ${esc(x)}</li>`).join("")}${unmet.length > 3 ? `<li>+${unmet.length - 3}</li>` : ""}</ul></details>` : "";   // C-60: 처음엔 접혀 있다
     const gate = r && r.passed ? cell("c6", "done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : holding() ? cell("c6", "later", "", "관문", "멈춰 둔 단계 — 섬에서 다시 열어요") : allDone() ? cell("c6", "now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("c6", "later", "", "관문", st.j ? (unmet.length ? "넘어가기 전 확인" : `남은 기준 ${left()}`) : "할 일을 다 하면 열려요", "", ul);   // 남은 기준 수는 접힌 줄(details)에 한 번만
     const [fx, fy] = FLO_AT[floAt || "c1"];
-    // C-58(2026-10-29): 정보마다 집 하나 — 단계 이름 · 칩은 머리 줄(stageChips), '지금 하는 일' · 작은 플로로는 섬 카드가 보이는 동안 그리지 않는다(섬이 접혔을 때만), 보드 · 배울 말 · 파일 카드는 뺐다
+    // C-58(2026-10-29): 정보마다 집 하나 — 단계 이름은 머리 줄(stageHead — 단계 칩은 2026-10-29 두승현 결정으로 뺐다), '지금 하는 일' · 작은 플로로는 섬 카드가 보이는 동안 그리지 않는다(섬이 접혔을 때만), 보드 · 배울 말 · 파일 카드는 뺐다
     return `<div class="cvw"><div class="cv" tabindex="0" role="region" aria-label="${CV_HINT}"><div class="cvp"><div class="cvb" style="--fa:${floAt || "c1"}">${colFolded() ? `<div class="cv-now">지금 하는 일 <b>${esc(now)}</b></div>` : ""}<div class="cv-frame"></div><div class="cv-bh"><span>퀘스트 한 바퀴 — 다섯 칸</span></div>
       ${think}${ARROWS}${act}${rec}${save}${ver}${gate}${colFolded() ? `<div class="cv-flo" style="--fx:${fx};--fy:${fy}" title="플로로 — 지금 칸 옆에">${FLO_MINI}</div>` : ""}</div></div></div>${CV_TOOLS}</div>`;
   }
@@ -1875,7 +1863,7 @@
     // 머리 한 줄(⑥, 목업): 프로젝트 · 단계 이름 · 탭 · LV · 조개 · 크기 · 닫기. 왼쪽 파일 칸(.wnav)은 탭에 상관없이 — 펼쳐진 환경
     // 크기(R-1, 2026-10-27 이재엽 버튼 "'화면 가득' 하나로"): 앱에서는 창이 작업 영역 가득 · 사람이 바꾼 크기를 기억(main.js) — 아래 style은 브라우저 판에서만 쓰인다(win.html은 auto!important로 덮는다). S/M/L은 뺐다
     // C-62 머리 줄 하나(2026-10-29): 머리(.wh)는 판(.win) 밖의 형제 — 창 전체 폭의 첫 줄(win.html #root · 브라우저 .wsx 격자). 단계 이름 한 번 + 단계 칩(C-58), 탭, LV · 조개, 섬 단추 묶음(hisl — 집 · 설정 · 열어 두기 · 접기)은 섬 쪽(오른쪽) 끝
-    const wh = `<div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="tb-stage" aria-live="polite">${stageHead()}</span>${stageChips(n)}
+    const wh = `<div class="wh"><span class="ttl">작업실</span><span class="meta">${esc(project() || "")}</span><span class="tb-stage" aria-live="polite">${stageHead()}</span>
         <div class="wtabs" role="tablist" aria-label="작업실 창">${QTABS.map(([id, label]) => `<button type="button" role="tab" data-act="qtab" data-tab="${id}" aria-selected="${st.qtab === id}">${label}</button>`).join("")}${fileTabs()}</div>
         <span class="wtgs"><button type="button" class="wtg" data-act="wnav-toggle" aria-pressed="${wnavOpen}" aria-label="파일 칸 ${wnavOpen ? "접기" : "펼치기"}" title="파일 칸 ${wnavOpen ? "접기" : "펼치기"}">${PANE_L}</button><button type="button" class="wtg" data-act="wside-toggle"${WINS && !colFolded() ? " disabled" : ""} aria-pressed="${wsideOpen}" aria-label="오른쪽 칸 ${wsideOpen ? "접기" : "펼치기"}" title="${WINS && !colFolded() ? "오른쪽 칸 — 섬을 접으면 나와요" : `오른쪽 칸 ${wsideOpen ? "접기" : "펼치기"}`}">${PANE_R}</button></span><span class="grow"></span>
         <span class="wlv" title="칭호 · ${esc(QU.rankOf(Math.min(level, 7)))}">LV ${level} · <button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개">${coin()}<span>${st.shells}</span></button></span>${hisl()}
