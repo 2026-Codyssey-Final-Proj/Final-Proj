@@ -120,3 +120,35 @@ test("C-63 ② 서버(진짜 AI 모드) — 켤 때 /api/chatlog의 대화(2단�
     assert.ok(posted.some((b) => (b.add || []).some((t) => t.who === "me" && t.text === "회원 열두 명" && t.stage === 0)), `add로 서버에(#start 장면은 1단계 = 0): ${JSON.stringify(posted).slice(0, 300)}`);
   } finally { await shut(browser); }
 });
+
+// ③ 병합 뒤 고침(2026-10-29, 이재엽 "#251부터 차례대로 병합 문제 해결" — #247 서버 · #250 화면이 같이 들어간 main에서 plan-flow e2e가 400으로 깨졌다):
+//   서버는 앱이 고른 폴더가 없으면 POST /api/chatlog을 400으로 거절한다(API.md 3-32). 화면은 GET이 폴더를 안다고 할 때까지 보내지 않고 모아 두었다가,
+//   폴더를 모르면 버리고(이 브라우저에는 남는다), 폴더를 고르면 다시 물어 그때부터 보낸다
+test("C-63 ③ 서버(진짜 AI 모드) — 앱이 고른 폴더가 없으면 대화를 서버에 보내지 않는다(400이 쌓이지 않게), 폴더를 고르면 다시 묻고 그때부터 보낸다", { skip }, async () => {
+  const Srv = require("../../03-backend/navigator/server.js");
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
+  try {
+    const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
+    const posts = [], errors = [];
+    page.on("console", (m) => { if (m.type() === "error" && !/favicon\.ico$/.test((m.location() && m.location().url) || "")) errors.push(m.text()); });
+    page.on("request", (req) => { if (new URL(req.url()).pathname === "/api/chatlog" && req.method() === "POST") posts.push(JSON.parse(req.postData() || "{}")); });
+    await page.evaluateOnNewDocument(() => { try { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true, via: "cli" })); if (!sessionStorage.getItem("seeded")) { localStorage.setItem("navigator-prototype:v1", JSON.stringify({ mode: "live" })); sessionStorage.setItem("seeded", "1"); } } catch {} });
+    await page.goto(`http://127.0.0.1:${port}/#start`, { waitUntil: "load" }); await wait(900);
+    const send = async (t) => {
+      await page.click(".isl [data-act=say]");
+      await page.evaluate((x) => { const el = document.querySelector(".isl [data-act=say]"); el.value = x; el.dispatchEvent(new Event("input", { bubbles: true })); }, t);
+      await page.keyboard.press("Enter"); await wait(900);
+    };
+    await send("폴더 없이 한 말");
+    assert.deepEqual(posts, [], "폴더를 모르면 보내지 않는다");
+    assert.deepEqual(errors.filter((e) => /400/.test(e)), [], "400이 쌓이지 않는다");
+    // 폴더를 고르면(앱 메뉴의 '프로젝트 폴더 연결…'과 같은 알림) 다시 묻고 그때부터 보낸다
+    const DIR = fs.mkdtempSync(path.join(TMP, "proj-")); assert.equal(Srv.useProject(DIR), true);
+    await page.evaluate((name) => document.dispatchEvent(new CustomEvent("floe:project-picked", { detail: { name } })), path.basename(DIR)); await wait(600);
+    await send("폴더를 고른 뒤 한 말");
+    assert.ok(posts.some((b) => (b.add || []).some((t) => t.who === "me" && t.text === "폴더를 고른 뒤 한 말")), `폴더를 고르면 보낸다: ${JSON.stringify(posts).slice(0, 300)}`);
+    assert.ok(!posts.some((b) => (b.add || []).some((t) => t.text === "폴더 없이 한 말")), "폴더를 모를 때 한 말은 다른 폴더의 대화에 섞지 않는다");
+    assert.deepEqual(errors.filter((e) => /400/.test(e)), []);
+    Srv.dropProject(DIR);
+  } finally { await shut(browser); }
+});

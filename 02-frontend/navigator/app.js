@@ -980,17 +980,23 @@
     : m.who === "me" || m.who === "floro" || m.who === "sys" ? { stage: Number.isInteger(m.n) ? m.n : atStage(), who: m.who, text: textOf(m.html).slice(0, 2000) } : null);
   const fromTurn = (t) => (t.mark ? { who: "sys", kind: "stage", n: t.stage, title: t.title, at: t.at, html: `<b>${LB(t.stage)} · ${esc(t.title)}</b><span>${new Date(t.at).toLocaleDateString("sv")}</span>` }
     : typeof t.carry === "string" ? { who: "floro", kind: "carry", n: t.stage, at: t.at, html: esc(t.carry).replace(/\n/g, "<br>") } : { who: t.who, n: t.stage, at: t.at, html: esc(t.text) });
-  let chatQueue = [], chatFlushing = false;
-  function chatlogAdd(m) { if (!chatLive() || !Number.isInteger(m.n)) return; const t = turnOf(m); if (!t || !(t.text || t.title || t.carry)) return; chatQueue.push(t); if (!chatFlushing) setTimeout(chatlogFlush, 0); }
+  //   chatFolder — 서버가 대화를 둘 폴더(앱이 고른 폴더)를 아나(GET의 why). null이면 묻는 중(모아 둔다), false면 보내지 않는다 — 서버는 폴더 없이 POST를 400으로 거절한다(3-32).
+  //   폴더를 고르면(connected · projectPicked) 다시 묻는다. 병합 뒤 고침(2026-10-29 — #247 서버 · #250 화면이 같이 들어간 main에서 브라우저로 연 화면이 말마다 400을 쌓았다)
+  let chatQueue = [], chatFlushing = false, chatFolder = null;
+  function chatlogAdd(m) { if (!chatLive() || !Number.isInteger(m.n) || chatFolder === false) return; const t = turnOf(m); if (!t || !(t.text || t.title || t.carry)) return; chatQueue.push(t); if (!chatFlushing && chatFolder) setTimeout(chatlogFlush, 0); }
   async function chatlogFlush() {
-    if (chatFlushing || !chatQueue.length) return; chatFlushing = true; const add = chatQueue.splice(0, 20);
+    if (chatFlushing || !chatQueue.length || chatFolder !== true) return; chatFlushing = true; const add = chatQueue.splice(0, 20);
     try { await fetch("/api/chatlog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ add }), credentials: "same-origin" }); } catch { /* 못 쌓아도 화면은 계속 — 이 브라우저에는 남아 있다 */ }
     chatFlushing = false; if (chatQueue.length) chatlogFlush();
   }
   async function chatlogLoad() {
     if (!chatLive()) return false;
-    let r = null; try { r = await (await fetch("/api/chatlog", { credentials: "same-origin" })).json(); } catch { return false; }
-    if (!r || !r.ok || r.why === "folder" || !Array.isArray(r.turns)) return false;
+    chatFolder = null;
+    let r = null; try { r = await (await fetch("/api/chatlog", { credentials: "same-origin" })).json(); } catch { r = null; }
+    chatFolder = !!(r && r.ok && r.why !== "folder");
+    if (!chatFolder) { chatQueue = []; return false; }   // 폴더를 모르면 모아 둔 말은 버린다(이 브라우저에는 남는다) — 나중에 고른 폴더의 대화에 섞지 않게
+    setTimeout(chatlogFlush, 0);   // 묻는 동안 한 말
+    if (!Array.isArray(r.turns)) return false;
     st.chat = r.turns.filter((x) => x && (x.mark ? Number.isInteger(x.stage) && Number.isFinite(x.at) : typeof x.carry === "string" || (typeof x.text === "string" && ["me", "floro", "sys"].includes(x.who)))).map((x) => fromTurn({ at: Number.isFinite(x.at) ? x.at : 0, ...x }));   // 덜어낸 수를 알리는 sys 줄(3-32)은 at이 없어도 보인다
     st.chatChanges = Array.isArray(r.changes) ? r.changes.filter((c) => c && Number.isFinite(c.at) && typeof c.path === "string") : [];
     st.chatMark = st.chat.map((m) => !!m.kind).lastIndexOf(true) + 1;   // 대화 표시 자리는 마지막 구분선 · 가져온 것 뒤
@@ -4073,14 +4079,14 @@
   window.floeUnsaved = () => st.openFiles.filter((f) => f.dirty).length;   // 앱(main.js pickAndConnect)이 폴더를 고르기 전에 묻는다 — 저장 안 한 파일이 있으면 한 번 더 확인(F-72)
   const projectPicked = (d) => {
     const n = String(d.name || "");
-    forgetFolder();
+    forgetFolder(); chatlogLoad().then((ok) => { if (ok) render(); });   // 새 폴더의 대화를 이어서 — 서버가 그 폴더를 알면 그때부터 쌓는다
     say(d.config ? "가져온 저장소에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${n.length > 20 ? `${n.slice(0, 19)}…` : n} 폴더로 바꿨어요. 이제 여기서 같이 일해요.`);
   };
   document.addEventListener("floe:project-picked", (e) => projectPicked((e && e.detail) || {}));
   // F-72(2026-10-28): 앱 메뉴(상단바 · 트레이)로 연결 · 연결 빼기 — 섬의 단추를 거치지 않아 앱이 끝난 뒤 알려 준다. 빼면 훅 알림으로 안 이름(st.project)도 잊는다(app-disconnect와 같이)
   //   섬의 '프로젝트 폴더 연결… · 연결 빼기…' 단추도 같은 길 — 전에는 이름표(st.gh)만 비워 파일 칸은 옛 폴더 그대로였다(F-72 새 맥락 리뷰)
   const connected = (r) => { forgetFolder(); chatlogLoad().then((ok) => { if (ok) render(); }); say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); };
-  const disconnected = () => { st.project = ""; forgetFolder(); render(); };
+  const disconnected = () => { st.project = ""; chatFolder = false; chatQueue = []; forgetFolder(); render(); };   // 연결을 빼면 대화를 서버에 보내지 않는다(폴더 없이 400)
   if (window.floeApp && window.floeApp.onProject) window.floeApp.onProject((d) => (d && d.add ? connected({ name: String(d.name || ""), config: !!d.config }) : disconnected()));
   document.addEventListener("floe:setup-done", (e) => {
     const d = (e && e.detail) || {};
