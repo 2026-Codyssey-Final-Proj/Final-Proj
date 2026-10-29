@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.8 | 2026-10-29 | 임유정 | 작업실 대화 목록의 지금 단계 줄 — 마우스를 올려도 글자가 보이고, 펼친 파일은 버튼 아래로 (F-97) (#269) | `02-frontend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v51.7 | 2026-10-29 | 두승현 | 상단바(머리 줄)의 단계 이름을 13px에서 16px로 키워 머리 줄에서 가장 큰 글자로(F-96) (#268) | `02-frontend/navigator/`(app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/workspace-family.test.js` · `01-docs/07-maintenance/fix-map.md` |
 | v51.6 | 2026-10-29 | 이재엽 | 노트북 + 도전과제 합치기 요구(안) C-65 ~ C-68 — 한 탭으로 · 장 화면 빼기 · 남는 창과 문서 지도 크게 · 갈색 책 모양을 우리 색으로. PRD와 목업 세션에 넘길 것, 화면 사진 셋. 만들지 않음 (#267) | `01-docs/features/` · `01-docs/00-overview/requirements.md` |
 | v51.5 | 2026-10-29 | 두승현 | 상단바(머리 줄)의 단계 칩 '시작 · 1 · 2 ~ 8'을 뺐다 — 단계는 옆의 단계 이름 한 번으로, 칩을 그리던 코드 · 모양도 함께 지움(F-95) (#266) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/`(navigator workspace · workspace-family · chat-split, e2e workspace-layout · workspace-family) · `01-docs/07-maintenance/fix-map.md` |
