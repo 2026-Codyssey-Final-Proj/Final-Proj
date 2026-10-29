@@ -115,3 +115,11 @@ test("플로로 옆의 상태 뱃지(.mc-badge)와 둥실 움직임(bob), 카드
 test("머리 줄의 단계 이름은 16px로 머리 줄에서 가장 크고, 칸은 320px까지", () => {
   assert.match(c, /^\.wh \.tb-stage\{[^}]*font-size:calc\(16px \* var\(--ui-scale,1\)\);[^}]*max-width:320px;/m);
 });
+
+// claude-drafted: 2026-10-29 — 두승현 "그 단추(집 — 처음으로)도 빼줘": 작업실 머리 줄의 섬 단추 묶음에서 집을 뺐다 — 판의 '← 단추로' · Esc가 같은 일이고, 판이 닫힌 평소엔 늘 눌린 것처럼 보였다.
+//   작업실 없이 떠 있는 섬의 위 줄(.tb)에는 그대로 둔다
+test("작업실 머리 줄의 섬 단추 묶음(.hisl)에는 집 단추가 없고, 떠 있는 섬의 위 줄에는 있다", () => {
+  const h = a.slice(a.indexOf("const hisl = () =>"), a.indexOf("\n", a.indexOf("const hisl = () =>")));
+  assert.ok(h.length > 20 && !h.includes("homeBtn"), "머리 줄 묶음에 집 없음");
+  assert.match(a, /return `<div class="tb">\$\{homeBtn\(!st\.pane\)\}/, "떠 있는 섬의 위 줄에는 그대로");
+});
