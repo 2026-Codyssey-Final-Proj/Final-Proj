@@ -676,7 +676,6 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wh .ttl{font-weight:800;font-size:calc(14px * var(--ui-scale,1))}
 .wh .meta{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sub)}
 .wh .ti{width:30px;height:30px}
-.wh .wfull svg{width:16px;height:16px}   /* '화면 가득'(R-1, 2026-10-27) — S/M/L 셋을 대신한다 */
 .wbody{flex:1;overflow:auto;padding:10px 12px 12px;min-height:0;display:flex;flex-direction:column;gap:10px}
 .wtabs{display:flex;gap:4px;background:rgba(127,127,127,.12);border-radius:999px;padding:4px;width:fit-content;margin:8px 12px 0;flex:none}
 .wtabs button{border:0;background:transparent;color:var(--ink2);border-radius:999px;padding:4px 12px;font-size:calc(13px * var(--ui-scale,1));font-weight:700}
