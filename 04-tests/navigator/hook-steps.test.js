@@ -155,7 +155,7 @@ test("hook.js: 서버가 꺼져 있어도 PostToolUse 훅은 출력 없이 0으�
   }
 });
 
-test("hook.js: 서버에 보낸 본문에는 hook_event_name · session_id · cwd · tool · tool_name · step만 — tool_input · tool_response · prompt는 없다", async () => {
+test("hook.js: 서버에 보낸 본문에는 hook_event_name · session_id · cwd · tool · tool_name · step · file만 — tool_input · tool_response · prompt는 없다(file은 바뀐 파일의 세션 폴더 안 상대 경로, 작업실 개편 C-63)", async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "floe-hook-steps-")), tokenFile = path.join(tmp, "event-token");
   fs.writeFileSync(tokenFile, "t".repeat(43) + "\n");
   const got = [];
@@ -183,7 +183,8 @@ test("hook.js: 서버에 보낸 본문에는 hook_event_name · session_id · cw
     assert.equal(got[0].url, "/api/event");
     assert.equal(got[0].headers["x-nav-token"], "t".repeat(43), "확인 값 머리글");
     const body = JSON.parse(got[0].body);
-    assert.deepEqual(Object.keys(body).sort(), ["cwd", "hook_event_name", "session_id", "step", "tool", "tool_name"]);
+    assert.deepEqual(Object.keys(body).sort(), ["cwd", "file", "hook_event_name", "session_id", "step", "tool", "tool_name"]);
+    assert.equal(body.file, "src/app.js", "이름만 — 내용은 없다");
     assert.deepEqual(body.step, { verb: "고쳤어요", what: "src/app.js", add: 2, del: 1 });
     assert.deepEqual([body.hook_event_name, body.tool, body.tool_name, body.session_id, body.cwd], ["PostToolUse", "claude", "Edit", "hook-s", CWD]);
     for (const t of [FAKE_KEY, "옛 글", "새 글", "둘째 줄", "도구 결과 전체 글", "tool_input", "tool_response"]) assert.ok(!got[0].body.includes(t), `${t}가 본문에 있다`);
@@ -210,4 +211,17 @@ test("hook.js: 요청 받음(UserPromptSubmit)은 전처럼 prompt를 보낸다 
     assert.equal(body.prompt, "행사 목록 화면 만들어 줘");
     assert.equal(body.step, undefined);
   } finally { srv.close(); }
+});
+
+// 작업실 개편 C-63(2026-10-29): 바뀐 파일의 경로 — 세션 폴더 안이면 상대 경로(자르지 않음), 밖이면 ""(작업 폴더 파일로 오해하지 않게), 파일을 쓰는 도구만
+test("fileOf — Write · Edit · MultiEdit · NotebookEdit만, 세션 폴더 안이면 상대 경로(80자를 넘어도 자르지 않음), 밖이면 빈 글", () => {
+  const ev = (tool_name, tool_input, cwd = CWD) => ({ hook_event_name: "PostToolUse", tool_name, tool_input, cwd });
+  assert.equal(Steps.fileOf(ev("Write", { file_path: `${CWD}/src/app.js` })), "src/app.js");
+  assert.equal(Steps.fileOf(ev("NotebookEdit", { notebook_path: `${CWD}/a.ipynb` })), "a.ipynb");
+  const long = `src/${"a".repeat(120)}/form.tsx`;
+  assert.equal(Steps.fileOf(ev("Edit", { file_path: `${CWD}/${long}` })), long, "자르지 않는다");
+  assert.equal(Steps.fileOf(ev("Write", { file_path: "/Users/me/.claude/projects/x/memory/MEMORY.md" })), "", "밖이면 빈 글");
+  assert.equal(Steps.fileOf(ev("Write", { file_path: "notes/a.md" })), "notes/a.md", "상대 경로는 그대로");
+  assert.equal(Steps.fileOf(ev("Read", { file_path: `${CWD}/README.md` })), "", "읽기는 바뀐 파일이 아니다");
+  assert.equal(Steps.fileOf({ ...ev("Write", { file_path: "C:\\work\\club-app\\src\\app.js" }), cwd: "C:\\work\\club-app" }), "src/app.js", "Windows 경로도");
 });

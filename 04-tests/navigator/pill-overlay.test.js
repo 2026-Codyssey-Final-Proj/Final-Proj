@@ -10,7 +10,7 @@ const read = (f) => fs.readFileSync(path.join(__dirname, "../../02-frontend", f)
 test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(folded), 아니면 섬 그대로. 앱의 작업실은 열려 있어도 저절로 접힌다(pinned에서 뺌), 알약을 누르면 펼친다", () => {
   const a = read("navigator/app.js");
   assert.match(a, /const colFolded = \(\) => st\.ui === "petit" \|\| st\.ui === "hidden";/);
-  assert.match(a, /\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\(""\)\}<\/div>`;/, "접힘이면 알약 하나(+ 켤 때 말풍선 C-55)");
+  assert.match(a, /\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\("", true\)\}<\/div>`;/, "접힘이면 알약 하나(+ 켤 때 말풍선 C-55), 펼침이면 위 줄 없는 섬(C-62 inCol)");
   assert.match(a, /\|\| st\.settings \|\| \(st\.qwin && !WINS\) \|\| !!st\.gacha/, "앱의 작업실은 섬을 붙들지 않는다(설정의 시간대로) — 브라우저의 옆 판은 전처럼");
   assert.match(a, /pill: \(\) => \(st\.ui === "hidden" \? go\("home"\) : view\("click"\)\)/, "알약 누름 = 펼침(hidden이어도)"); assert.match(a, /fold: \(\) => go\("petit"\)/, "접기 단추");
   // 새 맥락 리뷰(2026-10-27) 막힘 둘 · 보완: 접힌 알약은 더 접히지 않는다, 옆 칸에 마우스 · 글 쓰는 중에는 안 접힌다, 알릴 일이 오면 펼친다, Esc는 먼저 접기
@@ -27,9 +27,9 @@ test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(fold
 test("win.js · win.html · app.css — 접힌 칸은 두께 56(손잡이 없음), 왼쪽 · 오른쪽은 세로 알약(글은 세로쓰기), 0.3초로 넓어진다", () => {
   const w = read("navigator/win.js"), h = read("navigator/win.html"), c = read("navigator/app.css");
   assert.match(w, /FOLD = 56;/); assert.match(w, /const foldedCol = \(\) => \{ const c = root\.querySelector\("\.isl-col"\); return !!c && c\.classList\.contains\("folded"\); \};/);
-  assert.match(w, /hd\.hidden = !side \|\| folded;/, "접히면 손잡이 없음");
-  assert.match(w, /h\.style\.setProperty\("--col-w", `\$\{folded \? FOLD : col\.w\}px`\); h\.style\.setProperty\("--col-h", `\$\{folded \? FOLD : col\.h\}px`\);/);
-  assert.match(h, /#root>\.isl-col\{flex:0 0 var\(--col-w,420px\);transition:flex-basis \.3s/, "0.3초");
+  assert.match(w, /hd\.hidden = !side \|\| folded \|\| center;/, "접히면 손잡이 없음");
+  assert.match(w, /h\.style\.setProperty\("--col-w", center \? \(root\.querySelector\("\.wnav"\) \? "calc\(100% - 200px\)" : "100%"\) : `\$\{folded \? FOLD : col\.w\}px`\); h\.style\.setProperty\("--col-h", `\$\{folded \? FOLD : col\.h\}px`\);/);
+  assert.match(h, /#root\{[^}]*grid-template-columns:minmax\(0,1fr\) var\(--col-w,420px\);[^}]*transition:--col-w \.3s/, "0.3초 — 격자 칸 너비로(C-62 머리 줄 하나)");
   assert.match(c, /\.isl-col\.folded\.side-left \.pill,\.isl-col\.folded\.side-right \.pill\{height:auto;max-height:100%;width:48px;flex-direction:column/, "세로 알약");
   assert.match(c, /\.isl-col\.folded\.side-right \.pill \.mini\{writing-mode:vertical-rl/, "글은 세로쓰기");
 });

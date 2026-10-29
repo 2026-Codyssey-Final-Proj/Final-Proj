@@ -103,7 +103,7 @@ test("① 카드를 못 눌러 막히면 다시 띄운다 → ② 또 막히면 
     await handFirst(page);
     // ① 첫 막힘 — 카드에 답이 없었다: 사람이 누르지 않아도 같은 일을 다시(again)
     await page.waitForFunction(() => document.body.innerText.includes("허락 카드를 다시 띄울게요"), { timeout: 12000 });
-    assert.deepEqual(seen.retry, [{ at: AT, way: "again" }]);
+    assert.deepEqual(seen.retry, [{ at: AT, way: "again", auto: true }], "①의 카드 다시는 auto — 상한(2번)에 세지 않는다(C-50)");
     // ② 또 막힘(거절) — 선택창
     await page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("허락을 못 받아 2번 막혔어요"), { timeout: 12000 });
     const two = await nowSay(page);
@@ -153,6 +153,12 @@ test("직접 하기 — 맡길 글과 복사 · 다 했어요, 그만두기 — 
     await click(page, ".mc.chat [data-act=blocked-done]");
     assert.ok(!(await page.$(".mc.chat [data-act=blocked-copy]")), "다 했어요 → 카드가 닫힌다");
     assert.ok(await page.$(".mc.chat [data-act=plan-hand]"), "그 줄을 다시 맡길 수 있다");
+    // C-50: 실패는 까닭과 함께 남고(조용히 '남음'이 아니다), 다시 맡기면 같은 일로(서버가 앞에서 한 일을 붙이고 상한을 센다)
+    assert.match(await nowSay(page), /지난번에 끝까지 못 했어요/); assert.match(await nowSay(page), /직접 하기로 했어요/);
+    assert.match(await page.$eval(".mc.chat [data-act=plan-hand]", (e) => e.textContent.trim()), /^다시 맡기기/);
+    await click(page, ".mc.chat [data-act=plan-hand]");
+    assert.deepEqual(seen.retry.at(-1), { at: AT, way: "again" }, "같은 일이면 새로 시작하지 않고 retry로");
+    assert.equal(seen.start.length, 1);
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
 });
@@ -179,5 +185,33 @@ test("C-50 멈춘 것 같으면(5분) 카드 — 더 기다리기 → 15분(시�
     assert.deepEqual(seen.retry, [{ at: AT, way: "again" }], "멈춘 뒤 같은 일을 다시");
     assert.match(await nowSay(page), /신청하는 종이를 화면으로 만들었어요/);
     assert.deepEqual(seen.errors, []);
+  } finally { await browser.close(); }
+});
+
+// C-50(2026-10-29, 지식 퀘스트 PRD 9절 7 · 8번): 미리 판정 — 덜 된 보고에서는 '맞아요'가 작은 단추. 다시 맡기기 상한(2번)에 닿은 막힘은 직접 하기 · 그만두기만
+test("C-50 미리 판정 '덜 됨'이면 '맞아요'는 작은 단추 · 상한에 닿은 막힘은 직접 하기 · 그만두기만", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
+  try {
+    const half = { ...REPORT, items: [{ check: PLAN.items[0].check, done: false, evidence: "" }], done: 0, total: 1, easy: "신청 칸은 아직이에요." };
+    const { page, seen } = await openLive(browser, [{ state: "done", code: 0, at: AT, try: 0, report: half, blocked: null, verdict: { kind: "partial", word: "덜 됨" } }]);
+    await handFirst(page);
+    await page.waitForSelector(".msg.now .pl-rep", { timeout: 12000 });
+    assert.match(await nowSay(page), /세어 보니 덜 됨/);
+    assert.equal(await page.$eval(".mc.chat [data-act=plan-accept]", (e) => e.classList.contains("pri")), false, "덜 됐으면 '맞아요'는 작은 단추");
+    assert.deepEqual(seen.errors, []);
+    await page.close();
+    const capped = await openLive(browser, [{ ...blocked([{ what: "명령", n: 1 }], { allow: 0, deny: 1, none: 0 }, 3), retries: 2, retryMax: 2 }]);
+    await handFirst(capped.page);
+    await capped.page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("다시 맡기기는 2번까지예요"), { timeout: 12000 });
+    assert.ok(await capped.page.$(".mc.chat [data-act=blocked-self]") && await capped.page.$(".mc.chat [data-act=blocked-stop]"));
+    assert.ok(!(await capped.page.$(".mc.chat [data-act=blocked-again]")) && !(await capped.page.$(".mc.chat [data-act=blocked-files]")), "다시 맡기기 단추는 없다");
+    assert.deepEqual(capped.seen.errors, []);
+    await capped.page.close();
+    // 상한에 닿은 일이 멈춘 것 같으면 — '멈추고 다시 맡기기'는 없다(멈추기만 하고 다시 맡기지 못하는 일이 없게)
+    const quiet = await openLive(browser, [{ state: "running", at: AT, try: 2, retries: 2, retryMax: 2, report: null, blocked: null, quiet: 320 }]);
+    await handFirst(quiet.page);
+    await quiet.page.waitForFunction(() => document.querySelector(".msg.now")?.textContent.includes("멈춘 것 같아요"), { timeout: 12000 });
+    assert.ok(!(await quiet.page.$(".mc.chat [data-act=stall-again]")), "상한이면 멈추고 다시 맡기기 없음");
+    assert.ok(await quiet.page.$(".mc.chat [data-act=stall-self]") && await quiet.page.$(".mc.chat [data-act=stall-stop]"));
   } finally { await browser.close(); }
 });

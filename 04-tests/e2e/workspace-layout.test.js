@@ -41,18 +41,18 @@ async function islandHTML(browser) {
   await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" }); await wait(400);
   if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
   await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
-  const h = await page.evaluate(() => ({ qwin: document.querySelector(".qwin").outerHTML, isl: document.querySelector(".isl").outerHTML }));
+  const h = await page.evaluate(() => ({ wh: document.querySelector(".wsx > .wh").outerHTML, qwin: document.querySelector(".qwin").outerHTML, isl: document.querySelector(".isl").outerHTML }));   // C-62(PR ②): 머리 줄은 판 밖의 형제
   await page.close();
   return h;
 }
-// 작업실 창 화면에 넣고 재기 — side: right(옆 칸 420) | bottom(아래 칸 360)
+// 작업실 창 화면에 넣고 재기 — side: right(옆 칸 420). 아래 · 위 · 왼쪽 자리는 2026-10-28 합의로 뺐다(PR ②)
 async function measure(browser, h, { width, height, side }) {
   const page = await browser.newPage();
   await page.evaluateOnNewDocument(() => { window.floeApp = { onWinHtml: (f) => { window.__h = f; }, onDock() {}, winEvent() {} }; });
   await page.setViewport({ width, height });
   await page.goto(url("navigator/win.html#quest"), { waitUntil: "load" });
-  const col = side === "bottom" ? "side-bottom wide" : "side-right narrow";
-  await page.evaluate((html) => window.__h(html), `${h.qwin}<div class="isl-col ${col}">${h.isl}</div>`);
+  const col = "side-right narrow";
+  await page.evaluate((html) => window.__h(html), `${h.wh}${h.qwin}<div class="isl-col ${col}">${h.isl}</div>`);
   await wait(250);
   const m = await page.evaluate(() => {
     const cv = document.querySelector(".cv"), b = document.querySelector(".cvb"), cs = getComputedStyle(b), nav = document.querySelector(".wnav");
@@ -66,13 +66,13 @@ async function measure(browser, h, { width, height, side }) {
 }
 const SCREENS = [[1024, 700], [1280, 760], [1440, 860], [1728, 1000]];
 
-test("R-11 · R-1 — 화면 1024 · 1280 · 1440 · 1728, 섬 옆 · 아래: 캔버스 판이 옆으로 넘치지 않고, 칸이 935×544 이상이면 줌(판 ≥ .85배) · 아니면 격자(640 이상 두 줄 · 미만 세로 한 줄, 글자 크기 그대로)", { skip }, async () => {
+test("R-11 · R-1 — 화면 1024 · 1280 · 1440 · 1728, 섬 옆(오른쪽): 캔버스 판이 옆으로 넘치지 않고, 칸이 935×544 이상이면 줌(판 ≥ .85배) · 아니면 격자(640 이상 두 줄 · 미만 세로 한 줄, 글자 크기 그대로)", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
     const h = await islandHTML(browser);
     assert.ok(h.qwin.includes('class="cvb"'), "캔버스 탭의 판");
     const rows = [];
-    for (const [width, height] of SCREENS) for (const side of ["right", "bottom"]) {
+    for (const [width, height] of SCREENS) for (const side of ["right"]) {
       const m = await measure(browser, h, { width, height, side });
       rows.push({ width, height, side, ...m });
       const tag = `${width}×${height} 섬 ${side}: 칸 ${m.cw}×${m.ch}`;
@@ -90,14 +90,14 @@ test("R-11 · R-1 — 화면 1024 · 1280 · 1440 · 1728, 섬 옆 · 아래: �
         assert.ok(Math.abs(m.bw - m.cw) <= 1, `${tag} — 격자는 칸 너비만큼`);
       }
     }
-    const big = rows.find((r) => r.width === 1728 && r.side === "bottom"), small = rows.find((r) => r.width === 1024 && r.side === "right");
-    assert.equal(big.display, "block", "1728 · 섬 아래 — 넓으니 줌"); assert.equal(small.display, "grid", "1024 · 섬 옆 — 좁으니 다시 배치");
+    const small = rows.find((r) => r.width === 1024 && r.side === "right");
+    assert.equal(small.display, "grid", "1024 · 섬 옆 — 좁으니 다시 배치");   // 1728도 옆 칸 420 + 파일 칸 200 + 오른쪽 칸 280을 빼면 804라 격자 — 옛 '섬 아래'(줌)는 2026-10-28 합의로 자리가 없어졌다
     console.log(`  잰 값: ${rows.map((r) => `${r.width}×${r.height}/${r.side} 칸 ${r.cw}×${r.ch} ${r.display === "block" ? `줌 ${(r.bw / 1100).toFixed(2)}` : `격자 ${r.cols === 5 ? "두 줄" : "한 줄"}`}${r.nav ? "" : " (파일 칸 숨김)"}`).join(" · ")}`);
   } finally { await browser.close(); }
 });
 
 // ② 칸의 내용(R-5) · 단계 칩(R-9) — 3단계 연습 장면에서 글로 본다
-test("R-9 · R-5 — 3단계 장면: 칩은 '시작 ✓ · 1 ✓ V.1 · 2 ✓ V.2 · 3 기능 정리 · 4 ~ 8', ④ 저장에 올라갈 파일 이름, 관문에 남은 기준 수, ③ 기록 카드는 정한 줄, 큰 글에 전문 용어 없음", { skip }, async () => {
+test("R-9 · R-5 — 3단계 장면: 칩(머리 줄, C-58)은 '시작 ✓ · 1 ✓ V.1 · 2 ✓ V.2 · 3 · 4 ~ 8', ④ 저장에 올라갈 파일 이름, 관문에 남은 기준 수, ③ 기록 카드는 정한 줄, 큰 글에 전문 용어 없음", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
     const page = await browser.newPage();
@@ -109,13 +109,13 @@ test("R-9 · R-5 — 3단계 장면: 칩은 '시작 ✓ · 1 ✓ V.1 · 2 ✓ V.
     await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
     const s = await page.evaluate(() => ({
       chips: [...document.querySelectorAll(".cv-stg span")].map((x) => x.textContent.replace(/\s+/g, " ").trim() + (x.querySelector("svg") ? " ✓" : "")),   // C-57: ✓ 글자 대신 선 아이콘 — 아이콘이 있으면 ✓로 적어 본다
-      head: document.querySelector(".qwin .wh .wst")?.textContent || "",
+      head: document.querySelector(".wsx > .wh .tb-stage")?.textContent || "",   // C-62: 머리 줄은 .wsx의 첫 줄, 단계 이름은 tb-stage 한 번
       files: [...document.querySelectorAll(".cv-c.c4 .cv-files li")].map((x) => x.textContent),
       gate: document.querySelector(".cv-c.c6")?.textContent || "",
       cards: [...document.querySelectorAll(".cv-c.c3 .cv-cards span")].map((x) => x.textContent.trim()),
       big: [...document.querySelectorAll(".cvb .ch, .cvb .cv-now, .cv-stg")].map((x) => x.textContent).join(" "),
     }));
-    assert.deepEqual(s.chips, ["시작 ✓", "1 V.1 ✓", "2 V.2 ✓", "3 기능 정리", "4 ~ 8"], `머리 '${s.head}'와 같은 번호`);
+    assert.deepEqual(s.chips, ["시작 ✓", "1 V.1 ✓", "2 V.2 ✓", "3", "4 ~ 8"], `머리 '${s.head}'와 같은 번호(지금 칩은 번호만 — 이름은 옆 단계 띠에 한 번, C-58)`);
     assert.ok(s.head.startsWith("3단계"), s.head);
     assert.deepEqual(s.files, ["docs/03-requirements/requirements.md", "docs/PRD.md", "docs/decisions.md"], "④ 저장 — 단계 문서 · 기획서 · 결정 기록");
     assert.match(s.gate, /남은 기준 \d/, s.gate);
