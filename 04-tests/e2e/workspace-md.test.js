@@ -68,8 +68,9 @@ test("C-53 — 작업실 세 칸(1280 · 1440 · 1728) · 칸 접기 · 문서 �
     await page.type(".fn-find", "requirements"); await wait(400);   // 3단계 폴더는 접혀 있다(지금 장은 2단계) — 찾기로 한 줄로
     await page.click(".wnav .fn .fn-file:not(.fn-opened)"); await wait(600);
     await page.$eval(".fn-find", (el) => { el.value = ""; el.dispatchEvent(new Event("input", { bubbles: true })); }); await wait(300);
-    const open = await page.$$eval(".wnav .fn-open li", (ls) => ls.map((l) => l.textContent.trim()));
-    assert.ok(open.some((x) => x.includes("requirements.md")), `열어 둔 파일 묶음: ${open.join(",")}`);
+    const open = await page.$$eval(".wh .ftab", (ls) => ls.map((l) => l.textContent.trim()));   // 연 파일은 머리 줄 파일 탭에만(F-82 — 왼쪽 '열어 둔 파일' 묶음을 뺌)
+    assert.ok(open.some((x) => x.includes("requirements.md")), `머리 줄 파일 탭: ${open.join(",")}`);
+    assert.equal(await page.$(".wnav .fn-open"), null, "왼쪽에 '열어 둔 파일' 묶음이 없다");
     const toc = await page.$$eval(".wside .ws-toc li", (ls) => ls.map((l) => `${l.querySelector("button").childNodes[0].textContent.trim()}${l.classList.contains("empty") ? "!" : ""}`));
     assert.deepEqual(toc, ["3단계 꼭 필요한 기능", "기능 문장", "나온 곳!", "막을 일!"], "목차 — 빈 절은 표시");
     assert.match(await page.$eval(".wside", (el) => el.textContent), /비었어요|빈 절 2/, "칸 채움 — 빈 절 수");
