@@ -37,7 +37,7 @@ test("app.js — 모드는 st.place(mode · home이라는 이름은 쓰지 않�
   assert.match(app, /"go-vibe": \(\) => \{ setPlace\("vibe"\); set\(\{ tab: "today"/, "바이브 코딩 단추 → 이번 단계");
   assert.match(app, /if \(q\.base\) \{ st\.place = "base"; st\.pane = \["alerts", "ai"\]\.includes\(q\.pane\) \? q\.pane : ""; \} else setPlace\(q\.back \? "library" : "scene"\);/, "주소 장면은 바이브 코딩, #base만 기본(&pane=alerts|ai), 서고에서 돌아온 &back은 떠난 모드 그대로(F-36)");
   assert.match(app, /if \(FP && \(q\.pane === "plan" \|\| q\.plan\)\) st\.qfocus = "plan";/, "옛 주소 &pane=plan(계획판, 2026-10-24)은 채팅의 준비 계획으로(C-35)");
-  assert.match(app, /const body = st\.settings && QU \? settingsPane\(\) : st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판(알림 · AI 진행)이 아니면 채팅(C-22, 2026-10-21 — 기본 화면의 단추 넷은 뺐다)");
+  assert.match(app, /const body = st\.settings && QU && !st\.qwin \? settingsPane\(\) : st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판(알림 · AI 진행)이 아니면 채팅(C-22, 2026-10-21 — 기본 화면의 단추 넷은 뺐다)");
 });
 
 // 2026-10-21 C-22(게임식 디자인 1차 뼈대): 기본 화면의 단추 넷(바이브 코딩 · 서재 · 알림 · AI 진행)과 바이브 코딩의 탭 넷은 뺐다 — 위 줄 하나, 채팅 중심 섬.
@@ -100,7 +100,7 @@ test("app.js — C-35: 명령 네 칸은 오버레이에서 뺐다. 퀘스트 �
   assert.match(app, /"qwin-toggle": \(\) => \{ if \(st\.qwin\) return closeQwin\(\); openQwin\("canvas"\); render\(\); \}/, "켜고 끈다 — 작업실은 캔버스 탭부터(C-41, 2026-10-26)");
   assert.match(app, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "노트북"\], \["tree", "도전과제"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "작업실 창의 탭(C-41 2026-10-26 — 캔버스가 먼저, 옛 퀘스트 탭은 노트북, 2026-10-27 C-45 문서 지도) — 배우기는 도전과제 안으로");
   assert.match(app, /if \(planNow\(\)\) return momentPlan\(\);/, "맡길 일 퀘스트를 고르면 채팅의 지금 말이 계획 · 맡기기 · 보고");
-  assert.match(app, /const body = st\.settings && QU \? settingsPane\(\) : st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판은 알림 · AI 진행 둘 — 계획판은 채팅으로 옮겼다");
+  assert.match(app, /const body = st\.settings && QU && !st\.qwin \? settingsPane\(\) : st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판은 알림 · AI 진행 둘 — 계획판은 채팅으로 옮겼다");
   const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
   assert.ok(keep.includes('"qfocus"'), "지금 할 퀘스트(단계 · 맡길 일)는 다시 켜도 이어진다");
 });

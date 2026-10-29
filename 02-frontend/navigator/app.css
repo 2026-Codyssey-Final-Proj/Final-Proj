@@ -135,6 +135,10 @@ html.notch .pill{border-radius:0 0 25px 25px}
 .setp .who .bands small{font-size:calc(11px * var(--ui-scale,1))}
 .setp .wtabs{margin:0;flex-wrap:wrap;width:auto}
 .set-body{height:calc(384px * var(--ui-scale,1));overflow:auto;display:flex;flex-direction:column;gap:10px;font-size:calc(13px * var(--ui-scale,1));color:var(--mute);padding-right:2px}
+/* 설정 모달(F-86, 2026-10-29 두승현 "별도의 모달창을 중앙에") — 작업실이 열려 있으면 작업실 위 가운데. 바탕(.set-bg)을 누르면 닫힌다. 앱 창의 머리 줄(drag)을 덮으므로 no-drag(F-63과 같은 까닭) */
+.set-layer{position:fixed;inset:0;z-index:35;display:grid;place-items:center;padding:16px;-webkit-app-region:no-drag}
+.set-bg{position:absolute;inset:0;border:0;padding:0;background:rgba(20,28,60,.35);cursor:default}
+.set-modal{position:relative;width:min(760px,100%);max-height:100%;overflow:auto;border-radius:24px;background:var(--card);border:1.5px solid var(--line);box-shadow:var(--shadow)}
 /* FR-17(2026-10-20) 할 일 적기 상자 · 허락이 필요한 카드 — AI 진행 판 위쪽 */
 .tbox{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:16px;background:var(--card);border:1.5px solid var(--line)}
 .tbox .kicker{font-size:calc(12px * var(--ui-scale,1));font-weight:800;color:var(--tink)}

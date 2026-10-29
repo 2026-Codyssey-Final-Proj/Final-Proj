@@ -20,6 +20,11 @@ test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(fold
   assert.match(a, /WINS && st\.qwin && st\.ui === "petit" \? "home" : st\.ui\);   \/\/ 작업실 안의 접힌 알약은 알릴 일이 오면 펼친다/, "peek가 펼친다");
   assert.match(a, /if \(p\.kind === "quest" && st\.qwin\) \{ if \(!colFolded\(\)\) return go\("petit"\); return closeQwin\(\); \}/, "Esc는 먼저 접기, 접혀 있으면 작업실 닫기");
   assert.match(a, /const closeQwin = \(\) => \{ st\.qwin = false; go\("petit"\); \};/, "작업실을 닫으면 섬은 알약 — 펼친 섬 대화창이 따로 남지 않는다(F-85)");
+  // F-86 — 작업실이 열려 있으면 설정은 작업실 위 가운데 모달(섬 몸통에는 그리지 않는다). 앱 창(win.html)과 브라우저 판이 같은 qwinHTML을 쓴다
+  assert.match(a, /const body = st\.settings && QU && !st\.qwin \? settingsPane\(\)/, "작업실이 열려 있으면 섬 몸통에 설정 판을 그리지 않는다");
+  assert.match(a, /const setModal = \(\) => \(st\.settings && QU \? `<div class="set-layer"><button type="button" class="set-bg" data-act="settings"/, "모달 바깥(바탕)을 누르면 닫힌다");
+  assert.match(a, /\$\{setModal\(\)\}`;\n  \}/, "작업실 HTML 끝에 모달");
+  assert.match(a, /if \(p\.type === "key" && p\.key === "Escape"\) \{ if \(p\.kind === "quest" && st\.qwin && st\.settings\) return set\(\{ settings: false \}\);/, "앱 작업실 창의 Esc는 설정 모달부터 닫는다");
   const w = read("navigator/win.js");
   assert.match(w, /F\.winEvent\(\{ type: "col", hover: on \}\)/); assert.match(w, /F\.winEvent\(\{ type: "col", typing: true \}\)/); assert.ok(!w.includes("col-folded"), "쓰지 않는 class는 없다");
   assert.match(read("navigator/app.css"), /\.isl-col\.folded\{padding:3px;/, "56 − 6 = 50 = 알약 높이"); assert.match(read("navigator/app.css"), /\.isl-col\.folded \.pill:hover\{transform:none\}/);

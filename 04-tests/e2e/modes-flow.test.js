@@ -475,11 +475,12 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     assert.ok(await page.$(".qwin .book"), "받으면 공책");
     assert.equal(await page.evaluate(() => document.querySelector(".page.r h3")?.textContent), "둘째 장 — 적어 두기", "고친 이름 그대로");
     // 설정 — 2026-10-25(두승현): 옆 창이 아니라 섬 안의 판(채팅 자리를 바꿔 끼움). 퀘스트 창은 섬 옆 — 기본은 오른쪽, '왼쪽'을 고르면 [퀘스트][섬]. 이 컴퓨터에 남는다
+    //   F-86(2026-10-29 두승현 "별도의 모달창을 중앙에"): 작업실이 열려 있으면 설정은 섬이 아니라 작업실 위 가운데 모달 — 섬의 채팅은 그대로
     await page.click("[data-act=settings]"); await wait(300);
-    assert.ok(await page.$(".isl .setp") && !(await page.$("#nav > .win.setwin")) && !(await page.$(".isl .mc.chat")), "설정은 섬 안 — 채팅 자리에");
+    assert.ok(await page.$(".set-modal .setp") && !(await page.$(".isl .setp")) && !(await page.$("#nav > .win.setwin")), "작업실이 열려 있으면 설정은 가운데 모달 — 섬 안이 아니다");
     // 칭호는 섬의 플로로 아래에서 뺐고(2026-10-25) 설정 판 왼쪽 칸에 있다 — 관문을 넘으면 바뀐다
     assert.ok((await page.evaluate(() => document.querySelector(".setp .who")?.textContent || "")).includes("적어 두는 사람"), "설정 판의 칭호가 바뀐다");
-    const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > .wsx > *")].map((x) => (x.classList.contains("wh") ? "wh" : x.classList.contains("qwin") ? "quest" : x.classList.contains("isl-col") ? "isl" : x.className)));
+    const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > .wsx > :not(.set-layer)")].map((x) => (x.classList.contains("wh") ? "wh" : x.classList.contains("qwin") ? "quest" : x.classList.contains("isl-col") ? "isl" : x.className)));
     assert.deepEqual(await order(), ["wh", "quest", "isl"], "머리 줄 하나 아래 작업실 판 · 섬 옆 칸(오른쪽) — C-62(PR ② 2026-10-29). 자리 바꾸기 단추는 2026-10-28 합의로 뺐다");
     assert.ok(!(await page.$("[data-act=side]")), "섬 자리 단추 없음");
     // 탭 — 하나씩 보인다
