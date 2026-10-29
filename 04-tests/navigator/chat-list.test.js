@@ -51,6 +51,16 @@ test("T25 왼쪽 대화 목록 — 프로젝트 이름 → 단계 바로가기(�
   assert.match(a, /aria-current="\$\{sel \? "true" : "false"\}"/, "파일 칸(전체 파일)의 열린 파일 표시는 그대로");
 });
 
+// claude-drafted: 2026-10-29 — F-81(임유정 "마우스 올리면 흰색으로 변해서 글자가 안보이고 클릭해도 반응이 없어"): 지금 단계 줄(남색 · 흰 글자)은 마우스를 올려도 밝은 바탕이 되지 않고,
+//   펼친 파일 목록은 버튼 옆(49px에 '아...')이 아니라 아래로 — `.wnav .fn li{display:flex}`가 `.cn-list .cn{display:block}`을 이겼다
+test("F-81 대화 목록의 지금 단계 줄 — 마우스를 올려도 글자가 보이고, 펼친 파일은 버튼 아래로", () => {
+  assert.match(c, /\.wnav \.fn li:not\(\.sel\):not\(\.st-now\):has\(button\):hover\{background:var\(--card\)\}/, "지금 단계 줄(.st-now)은 밝은 바탕으로 바뀌지 않는다");
+  assert.match(c, /\.wnav \.cn-list \.cn\{display:block;/, "`.wnav .fn li`보다 앞서게 — 펼친 목록이 버튼 아래로");
+  assert.match(c, /\.cn-list \.cn\.st-now>button\{background:var\(--isl\);color:#EEF1FA;/, "남색은 버튼 줄에");
+  assert.match(c, /\.wnav \.cn-list \.cn\.st-now\{background:none;color:inherit;font-weight:inherit;box-shadow:none\}/, "펼친 파일은 보통 바탕 · 글자 · 굵기");
+  assert.match(c, /\.wnav \.fn li\.st-now>small\{color:#EEF1FA\}/, "흰 글자는 그 줄의 꼬리표에만 — 펼친 파일의 '새로' · '고침'은 밝은 바탕 위라 흰색이면 안 보인다(새 맥락 리뷰)");
+});
+
 test("T26 단계별 만든 · 고친 파일 — 서버가 쌓은 changes(3-32, 훅 알림의 Write · Edit — new → 새로, edit → 고침)를 그 단계 구분선과 다음 구분선의 at 사이로 나누고, 단계 문서도 같이(두승현 2026-10-28 '둘 다')", () => {
   assert.match(a, /function stageFilesOf\(n\)/);
   assert.match(a, /const marks = st\.chat\.filter\(\(m\) => m\.kind === "stage"\), me = \[\.\.\.marks\]\.reverse\(\)\.find\(\(m\) => m\.n === n\), start = me \? me\.at : null, next = me \? marks\.find\(\(m\) => m\.at > me\.at && m\.n !== n\) : null, end = next \? next\.at : Infinity;/, "구분선 사이");
