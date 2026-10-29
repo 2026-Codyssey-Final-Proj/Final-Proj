@@ -719,7 +719,9 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .msg.stage > .b b{color:var(--ink)}
 .msg.stage.hl > .b{background:var(--acc-soft);border-radius:10px}
 .msg.carry > .b{border-style:dashed}
-.cn-list .cn{display:block;padding:0;border-radius:8px}
+.wnav .cn-list .cn{display:block;padding:0;border-radius:8px}   /* .wnav를 붙여 `.wnav .fn li{display:flex}`보다 앞서게 — 펼친 파일이 버튼 옆(49px)이 아니라 아래로(F-97) */
+.wnav .cn-list .cn.st-now{background:none;color:inherit;font-weight:inherit;box-shadow:none}   /* 남색은 버튼 줄에만 — 아래 펼친 파일은 보통 바탕 · 글자 · 굵기, C-59 테두리도 없이 */
+.cn-list .cn.st-now>button{background:var(--isl);color:#EEF1FA;border-radius:8px}
 .cn-list .cn>button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:6px;width:100%;min-height:44px;padding:0 6px;cursor:pointer;color:inherit}
 .cn-list .cn>button:focus-visible{outline:2px solid var(--acc);outline-offset:1px;border-radius:5px}
 .cn-list .cn>button>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
@@ -769,7 +771,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li.d2{padding-left:22px}.wnav .fn li.d3{padding-left:38px}
 .wnav .fn li.d2::before,.wnav .fn li.d3::before,.wnav .fn li.d3::after{content:"";position:absolute;top:0;bottom:0;border-left:1px solid var(--seg)}
 .wnav .fn li.d2::before,.wnav .fn li.d3::before{left:13px}.wnav .fn li.d3::after{left:29px}
-.wnav .fn li:not(.sel):not(.now):has(button):hover{background:var(--card)}
+.wnav .fn li:not(.sel):not(.st-now):has(button):hover{background:var(--card)}   /* .st-now(남색 · 흰 글자)는 빼야 글자가 보인다 — F-97 */
 .wnav .fn .fn-n{margin-left:auto;padding:1px 7px;border-radius:999px;background:var(--card);font-weight:500}
 .wnav .fn-h b{display:flex;align-items:center;gap:6px}
 .wnav .fn-h b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -819,7 +821,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li.st-now{background:var(--isl);color:#EEF1FA;font-weight:600}   /* 색의 메아리(C-62) */
 .wnav .fn li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .wnav .fn li small{flex:none;font-size:calc(11px * var(--ui-scale,1));color:var(--sub)}
-.wnav .fn li.st-now small{color:#EEF1FA}.wnav .fn li.new small{color:var(--ok)}.wnav .fn li.fix small{color:#8E3A52}
+.wnav .fn li.st-now>small{color:#EEF1FA}.wnav .fn li.new small{color:var(--ok)}.wnav .fn li.fix small{color:#8E3A52}
 .wnav .fn-ft{margin:auto 0 0;padding:8px 6px 0;border-top:1px solid var(--line);font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);line-height:1.5}
 /* 좁은 작업실(760 아래 — 옆에 섬 칸이 붙은 보통 화면)에서는 파일 칸 · 단계 이름을 숨겨 판에 자리를 준다. 창(.qwin)의 너비로 — 브라우저의 S 판(720)도 같다 */
 /* claude-drafted: 2026-10-28 — C-53 작업실 세 칸(이재엽 버튼 "오른쪽 칸은 섬을 펼치면 접힘" · "서식 단추는 만든다", 목업 ②): 파일 칸 | 작업 칸 | 오른쪽 칸(.wside 280). 머리 줄의 칸 접기 단추(44px, 줄 높이는 그대로), 문서 도구 줄 · 상태 줄, 열어 둔 파일 묶음 */
