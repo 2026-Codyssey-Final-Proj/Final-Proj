@@ -115,7 +115,7 @@ test("R-9 · R-5 — 3단계 장면: 칩(머리 줄, C-58)은 '시작 ✓ · 1 �
       cards: [...document.querySelectorAll(".cv-c.c3 .cv-cards span")].map((x) => x.textContent.trim()),
       big: [...document.querySelectorAll(".cvb .ch, .cvb .cv-now, .cv-stg")].map((x) => x.textContent).join(" "),
     }));
-    assert.deepEqual(s.chips, ["시작 ✓", "1 V.1 ✓", "2 V.2 ✓", "3", "4 ~ 8"], `머리 '${s.head}'와 같은 번호(지금 칩은 번호만 — 이름은 옆 단계 띠에 한 번, C-58)`);
+    assert.deepEqual(s.chips, [], `단계 칩은 없다 — 단계는 머리 줄의 단계 띠 '${s.head}' 한 번(두승현 2026-10-29)`);
     assert.ok(s.head.startsWith("3단계"), s.head);
     assert.deepEqual(s.files, ["docs/03-requirements/requirements.md", "docs/PRD.md", "docs/decisions.md"], "④ 저장 — 단계 문서 · 기획서 · 결정 기록");
     assert.match(s.gate, /남은 기준 \d/, s.gate);

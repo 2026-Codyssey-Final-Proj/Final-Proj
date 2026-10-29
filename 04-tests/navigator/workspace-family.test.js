@@ -23,7 +23,7 @@ test("C-62 테마 — 섬의 어두운 토큰은 :root가 아니라 섬 카드(.
 test("C-62 — 글꼴 · 주 단추 · 색의 메아리(두승현 결정 · 이재엽 승인 2026-10-29): 노트북 '완료 보고' · 퀘스트 받기도 같은 하늘색 알약, 고른 탭 · 단계 칩 · 파일 칸 '지금' · 지도의 장 탭은 섬 색", () => {
   assert.match(c, /\.pacts button\.pri\{background:var\(--acc-btn\);border-color:var\(--acc-btn\);color:var\(--acc-ink\)\}/, "완료 보고 = 하늘색 알약");
   assert.match(c, /\.ev \.join\{[^}]*background:var\(--acc-btn\)[^}]*color:var\(--acc-ink\)/, "퀘스트 받기 = 하늘색");
-  for (const s of [".wtabs button[aria-selected=true]", ".wh .cv-stg span.cur", ".wnav .fn li.st-now", ".vtabs button[aria-selected=true]"]) assert.match(c, new RegExp(`${s.replace(/[.[\]*+?]/g, "\\$&")}\\{[^}]*background:var\\(--isl\\)`), `${s} — 메아리`);
+  for (const s of [".wtabs button[aria-selected=true]", ".wnav .fn li.st-now", ".vtabs button[aria-selected=true]"]) assert.match(c, new RegExp(`${s.replace(/[.[\]*+?]/g, "\\$&")}\\{[^}]*background:var\\(--isl\\)`), `${s} — 메아리`);
   assert.match(c, /\.wtabs button\[aria-selected=true\]\{[^}]*color:#EEF1FA/, "메아리 위 글자는 눈색(대비 9.20)");
 });
 
@@ -65,8 +65,8 @@ test("C-58 정보마다 집 하나 — 캔버스에서 지난 · 다음 보드 �
   assert.match(cv, /\$\{colFolded\(\) \? `<div class="cv-now">지금 하는 일 <b>\$\{esc\(now\)\}<\/b><\/div>` : ""\}/, "섬이 접혔을 때만");
   assert.match(cv, /\$\{colFolded\(\) \? `<div class="cv-flo"/, "작은 플로로도");
   assert.ok(!cv.includes('class="cv-stg"'), "단계 칩은 캔버스에 없다");
-  assert.match(a, /function stageChips\(n\)/, "칩은 함수로 — 머리 줄에서 쓴다");
-  assert.match(a, /<span class="tb-stage" aria-live="polite">\$\{stageHead\(\)\}<\/span>\$\{stageChips\(n\)\}/, "머리 줄: 단계 이름 한 번 + 칩");
+  assert.ok(!/function stageChips/.test(a), "단계 칩은 뺐다(2026-10-29 두승현) — 단계는 머리 줄의 단계 띠 한 번");
+  assert.match(a, /<span class="tb-stage" aria-live="polite">\$\{stageHead\(\)\}<\/span>/, "머리 줄: 단계 이름 한 번(단계 칩은 2026-10-29에 뺐다)");
   assert.ok(!a.includes('<span class="wst">'), "머리 줄의 단계 이름 둘째 자리(wst)는 뺐다");
   assert.match(cv, /<div class="cv-bh"><span>퀘스트 한 바퀴 — 다섯 칸<\/span><\/div>/, "판 제목에는 단계 이름을 다시 쓰지 않는다");
   assert.ok(!c.includes(".cv-bd{") && !c.includes(".cv-learn{") && !c.includes(".cv-file{"), "css도");
