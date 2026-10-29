@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.3 | 2026-10-29 | 두승현 | 섬 글을 코드용 글꼴에서 Gowun Dodum으로(C-62), 섬 글자를 제목 · 본문 · 보조 세 단계로 정리해 흰빛 보조 글도 4.5:1 이상으로, 작업 칸의 흐린 글자 셋(노트북 목차 · 도전과제 보기 단추 · 책 목차)도 진하게(F-92) (#264) | `02-frontend/navigator/`(app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/workspace-family.test.js` · `01-docs/07-maintenance/fix-map.md` |
 | v51.2 | 2026-10-29 | 두승현 | 펼친 섬이 저절로 접히기 전에 테두리를 따라 돌던 흰 빛을 뺐다 — 저절로 접히기 · '접히기까지' 설정 · 작업실에서 움직이면 시계를 되돌리는 것은 그대로(F-89). 작업실 오른쪽 칸과 접힌 알약 칸을 같은 색 하나로 — 알약은 그 위에 그대로(F-90). 작업실 머리 줄을 한 단계 진한 연파랑 + 아래 경계선으로 — 아래 칸들과 층이 갈린다(F-91) (#263) | `02-frontend/navigator/`(app.js · app.css · win.js · win.html, 담당 임유정 — 이 줄이 알림) · `04-tests/`(navigator app-9 · fold-countdown · pill-overlay · workspace-family, e2e modes-flow · pill-overlay) · `01-docs/07-maintenance/fix-map.md` |
 | v51.1 | 2026-10-29 | 두승현 | 켜서 처음 만나는 1단계에도 작업실 개편 PRD의 ① 시작 화면(가운데 · 플로로 · "어떤 프로젝트를 구상하고 있나요?" · 입력 하나) — 알약을 눌러야 열리고, 첫 말로 1단계 초안. 초안이 있으면 전처럼 초안 확인 카드. 가운데 섬의 모습도 기획안 사진대로 — 작업 칸을 채우는 카드 · 가운데 질문 · 큰 입력 상자(F-88) (#262) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e chat-split · docmap · modes-flow, navigator chat-split · chat-list) · `01-docs/07-maintenance/fix-map.md` |
 | v51.0 | 2026-10-29 | 두승현 | 설정의 '플로로가 작은 소리 내기'를 뺐다 — 설정 칸 · 상태 값 · 소리 코드(seal.js chime)까지 모두 지움(F-87) (#261) | `02-frontend/navigator/`(app.js · seal.js, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/greet.test.js` · `01-docs/07-maintenance/fix-map.md` · `01-docs/features/08-floro/README.md` |
