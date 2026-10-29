@@ -50,7 +50,10 @@ paths:
 
 ## 코드 위치 규칙
 
-팀 제품(Floe)은 화면 `02-frontend/`, 서버·판정 규칙 `03-backend/`, 시험 `04-tests/`에 둔다. 아래는 7단계 워크플로우로 푸는
+팀 제품(Floe)은 화면 `02-frontend/`, 서버·판정 규칙 `03-backend/`, 시험 `04-tests/`에 둔다.
+<!-- claude-drafted: 2026-10-29 --> **섬 화면 `02-frontend/navigator/app.js`는 묶은 파일이다** — 원본은 `app/` 조각이고, 고친 뒤 `node 02-frontend/navigator/app-parts.js join`
+(app.js를 직접 고쳤으면 `split`). 둘이 다르면 `app-parts.test.js`가 커밋 전 시험과 PR 검사(`.github/workflows/app-parts.yml`)에서 막고, `join`은 app.js에만 있는 고침을 덮지 않고 멈춘다. 자세히: [app/README.md](../../02-frontend/navigator/app/README.md) (이재엽 2026-10-29).
+아래는 7단계 워크플로우로 푸는
 알고리즘·학습 트랙 코드의 자리다(지금은 없음).
 
 ```

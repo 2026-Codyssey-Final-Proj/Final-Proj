@@ -1,4 +1,4 @@
-// claude-drafted: 2026-10-29 — F-102 묶음(화면 코드 점검, 임유정 "내 담당 화면부터"): 01-docs/07-maintenance/fixes/screen-bug-hunt.md
+// claude-drafted: 2026-10-29 — F-103 묶음(화면 코드 점검, 임유정 "내 담당 화면부터"): 01-docs/07-maintenance/fixes/screen-bug-hunt.md
 //   app.js의 함수를 글자에서 떼어 가짜 상태(st) · 가짜 fetch로 실제로 돌려 본다 — 글자 모양이 아니라 동작을 잰다.
 // 실행: node --test 04-tests/navigator/screen-bug-hunt.test.js
 const test = require("node:test");
@@ -18,7 +18,7 @@ function fnSrc(name) {
 // 떼어 낸 함수를 넘긴 이름들(가짜 상태 · 도우미)이 보이는 자리에서 만든다
 const make = (src, name, env) => new Function(...Object.keys(env), `${src}; return ${name};`)(...Object.values(env));
 
-test("F-102-1 대화 — 비밀값 경고 뒤 '보낼게요'를 누르면 그 글(원문)이 AI로 간다, 그 전 메시지가 아니라", async () => {
+test("F-103-1 대화 — 비밀값 경고 뒤 '보낼게요'를 누르면 그 글(원문)이 AI로 간다, 그 전 메시지가 아니라", async () => {
   const sent = [];
   const st = { quest: { chap: 2, lines: [] }, mode: "live", tier: "lite", tidy: null, warn: null };
   const env = { st, canLive: true, QU: { curIdx: () => 0 }, render() {}, say() {}, fetchUsage() {}, ideaNow: () => "", talkOf: (t) => [{ who: "me", text: t }],
@@ -33,7 +33,7 @@ test("F-102-1 대화 — 비밀값 경고 뒤 '보낼게요'를 누르면 그 �
   assert.match(a, /chat: \(\) => chatSend\(chatText, true\)/, "RETRY.chat은 chatText를 다시 보낸다");
 });
 
-test("F-102-2 준비 계획의 '물어보기' — 경고 뒤 '보낼게요'를 누르면 다시 경고하지 않고 보낸다", async () => {
+test("F-103-2 준비 계획의 '물어보기' — 경고 뒤 '보낼게요'를 누르면 다시 경고하지 않고 보낸다", async () => {
   let warned = 0, calls = 0;
   const st = { plan: { work: { a: { report: { easy: "다 했어요", items: [] } } }, plan: { items: [{ id: "a", need: "목록", check: "보인다" }] } }, planQ: "메일 a@b.kr 로 받나요?", planAns: {}, planAsk: "a", tier: "lite", warn: null };
   const env = { st, planPractice: () => false, guard: () => { warned++; return true; }, planCall: async () => { calls++; return { ok: true, answer: "네" }; }, atStage: () => 3, fetchUsage() {}, say() {}, render() {} };
@@ -49,7 +49,7 @@ test("F-102-2 준비 계획의 '물어보기' — 경고 뒤 '보낼게요'를 �
   assert.equal(st.planAns.a, "네");
 });
 
-test("F-102-3 파일 저장 — 저장하는 동안 더 친 글은 '고침'으로 남는다(저장된 글로 치지 않는다), ⌘S를 두 번 눌러도 한 번만 보낸다", async () => {
+test("F-103-3 파일 저장 — 저장하는 동안 더 친 글은 '고침'으로 남는다(저장된 글로 치지 않는다), ⌘S를 두 번 눌러도 한 번만 보낸다", async () => {
   let posts = 0; const waiting = [];
   const f = { i: 0, path: "a.md", text: "첫 글", saved: "", mtime: 1, eol: "\n", dirty: true, hist: [] };
   const st = { openFiles: [f] };
@@ -66,7 +66,7 @@ test("F-102-3 파일 저장 — 저장하는 동안 더 친 글은 '고침'으�
   assert.equal(f.hist.length, 1, "이전 저장본은 기록에");
 });
 
-test("F-102-4 긴 글 — 채팅에는 앞 200자만 보여도 AI에는 원문(1,000자까지)이 간다", () => {
+test("F-103-4 긴 글 — 채팅에는 앞 200자만 보여도 AI에는 원문(1,000자까지)이 간다", () => {
   const src = (a.match(/const talkOf = \(t\) => \{[\s\S]*?return out; \};/) || [])[0];
   assert.ok(src, "talkOf");
   const long = "가".repeat(500), shown = `${long.slice(0, 200)}… (글 500자)`;

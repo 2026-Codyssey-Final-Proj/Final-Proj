@@ -494,7 +494,9 @@ test("외부 AI(claude·API) 호출은 provider.js 한 곳에서만 한다", () 
   // floe.js(2026-10-19, 한 줄로 켜기)도 child_process를 쓰지만 server.js · connect.js · 브라우저를 켤 뿐이다 — AI를 부르는 말이 없는지 따로 본다
   // github.js(2026-10-24, 설정의 GitHub 칸)도 child_process를 쓰지만 git · gh에게 읽기만 묻는다 — 저장소 만들기는 server.js가 일 넘기기(provider.js startTask)로 맡긴다
   // project.js(2026-10-24, C-31 시작하는 자리)도 child_process를 쓰지만 git · gh로 폴더를 가져오기만 한다(clone · 원격 읽기 · 저장소 목록) — 앱(main.js)만 부른다
-  assert.deepEqual(callers, ["floe.js", "github.js", "project.js", "provider.js"]);
+  // app-parts.js(2026-10-29, 섬 화면 조각 묶기 도구)도 child_process를 쓰지만 git에게 마지막 커밋의 조각을 읽기만 묻는다 — 사람이 명령줄에서 돌린다(화면은 부르지 않는다)
+  assert.deepEqual(callers, ["floe.js", "github.js", "project.js", "provider.js", "app-parts.js"]);
+  assert.doesNotMatch(fs.readFileSync(path.join(FRONT, "app-parts.js"), "utf8"), /(spawn|execFile)\w*\(\s*["']claude|callClaude|api\.anthropic|ANTHROPIC_API_KEY/i, "app-parts.js는 AI를 부르지 않는다(git 읽기만)");
   assert.doesNotMatch(fs.readFileSync(path.join(BACK, "project.js"), "utf8"), /spawn\(\s*["']claude|callClaude|api\.anthropic|ANTHROPIC_API_KEY/i, "project.js는 AI를 부르지 않는다(git · gh만)");
   assert.doesNotMatch(fs.readFileSync(path.join(BACK, "floe.js"), "utf8"), /claude -p|callClaude|anthropic|ANTHROPIC_API_KEY=/i, "floe.js는 AI를 부르지 않는다(server.js · connect.js · 브라우저만 켠다)");
   assert.doesNotMatch(fs.readFileSync(path.join(BACK, "github.js"), "utf8"), /spawnSync\(\s*["']claude|callClaude|api\.anthropic|ANTHROPIC_API_KEY/i, "github.js는 AI를 부르지 않는다(git · gh만)");
