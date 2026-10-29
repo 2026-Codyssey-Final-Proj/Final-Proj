@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.6 | 2026-10-29 | 이재엽 | 노트북 + 도전과제 합치기 요구(안) C-65 ~ C-68 — 한 탭으로 · 장 화면 빼기 · 남는 창과 문서 지도 크게 · 갈색 책 모양을 우리 색으로. PRD와 목업 세션에 넘길 것, 화면 사진 셋. 만들지 않음 (#267) | `01-docs/features/` · `01-docs/00-overview/requirements.md` |
 | v51.5 | 2026-10-29 | 두승현 | 상단바(머리 줄)의 단계 칩 '시작 · 1 · 2 ~ 8'을 뺐다 — 단계는 옆의 단계 이름 한 번으로, 칩을 그리던 코드 · 모양도 함께 지움(F-95) (#266) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/`(navigator workspace · workspace-family · chat-split, e2e workspace-layout · workspace-family) · `01-docs/07-maintenance/fix-map.md` |
 | v51.4 | 2026-10-29 | 두승현 | 작업실이 열린 뒤에도 옆 칸 섬의 플로로 눈동자가 커서를 따라간다 — 작업실 창이 섬 창과 같은 눈 따라가기(seal.js follow)를 쓴다(F-93). 플로로 옆에서 둥실거리던 동그란 상태 뱃지(? ! … × ‖ ✓)를 뺐다(F-94) (#265) | `02-frontend/navigator/`(win.html · win.js · app.js · app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e · navigator pill-overlay, navigator workspace-family) · `01-docs/07-maintenance/fix-map.md` |
 | v51.3 | 2026-10-29 | 두승현 | 섬 글을 코드용 글꼴에서 Gowun Dodum으로(C-62), 섬 글자를 제목 · 본문 · 보조 세 단계로 정리해 흰빛 보조 글도 4.5:1 이상으로, 작업 칸의 흐린 글자 셋(노트북 목차 · 도전과제 보기 단추 · 책 목차)도 진하게(F-92) (#264) | `02-frontend/navigator/`(app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/workspace-family.test.js` · `01-docs/07-maintenance/fix-map.md` |
