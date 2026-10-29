@@ -189,10 +189,10 @@ test("보내기 전 확인: 받은 글에 전화번호처럼 보이는 게 있�
     assert.deepEqual(seen.start, [{ text }], "괜찮다고 하면 그 글 그대로");
     await click(page, ".mc.chat [data-act=draft-ok]");
     const tap = (sel) => page.evaluate((q) => document.querySelector(q).click(), sel);   // 다시 그려지는 사이에 잡은 요소가 떨어지지 않게 그 자리에서 누른다
-    await tap(".tb [data-act=settings]"); await wait(400);
+    await tap("[data-act=settings]"); await wait(400);   // 작업실이 열려 있으면 설정 단추는 머리 줄(hisl, C-62)
     await tap("[data-act=set-tab][data-tab=view]"); await wait(200);   // 설정 판의 보기 탭(2026-10-25 F-56)
     await tap('input[data-act=tier][value="Lite"]'); await wait(400);
-    await tap(".tb [data-act=settings]"); await wait(400);
+    await tap("[data-act=settings]"); await wait(400);
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")).quest.lines[0]), [DRAFT.pain], "1단계는 크기와 상관없이 넷 — 적은 줄 · 제목을 둔다");
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /독서 모임 알림 앱/);
     await click(page, ".mc.chat [data-act=draft-ok]");

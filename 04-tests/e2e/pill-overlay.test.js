@@ -72,7 +72,7 @@ async function islandHTML(browser) {
   await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" }); await wait(400);
   if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
   await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
-  const qwin = await page.evaluate(() => document.querySelector(".qwin").outerHTML), isl = await page.evaluate(() => document.querySelector(".isl").outerHTML);
+  const qwin = await page.evaluate(() => document.querySelector(".wsx > .wh").outerHTML + document.querySelector(".qwin").outerHTML), isl = await page.evaluate(() => document.querySelector(".isl").outerHTML);   // C-62(PR ②): 머리 줄 + 판
   await page.click("[data-act=fold]"); await wait(400);   // 접기 → 알약
   const pill = await page.evaluate(() => document.querySelector(".pill")?.outerHTML || "");
   await page.close();
@@ -97,19 +97,19 @@ async function measure(browser, h, side, folded) {
   return m;
 }
 
-test("R-2 — 작업실 창 안에서 섬을 접으면 옆 칸이 알약(두께 56 · 손잡이 없음 · 옆은 세로 알약)이고 캔버스가 넓어진다, 네 가장자리 모두 · 넘침 0", { skip }, async () => {
+test("R-2 — 작업실 창 안에서 섬을 접으면 옆 칸이 알약(두께 56 · 손잡이 없음 · 세로 알약)이고 캔버스가 넓어진다, 오른쪽(2026-10-28 합의로 자리는 하나) · 넘침 0", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
     const h = await islandHTML(browser);
     assert.ok(h.pill.includes('class="pill'), "접은 섬의 알약 HTML");
-    for (const side of ["right", "left", "top", "bottom"]) {
+    for (const side of ["right"]) {
       const o = await measure(browser, h, side, false), f = await measure(browser, h, side, true);
       const vertical = side === "left" || side === "right";
       assert.equal(vertical ? f.w : f.h, 56, `${side} 접힘 — 칸 두께 56: ${JSON.stringify(f)}`);
       assert.ok(!f.hd && o.hd, `${side} — 접히면 손잡이 없음`);
       assert.ok(vertical ? f.cvw > o.cvw + 200 : f.cvh > o.cvh + 200, `${side} — 캔버스가 넓어진다: 펼침 ${o.cvw}×${o.cvh} → 접힘 ${f.cvw}×${f.cvh}`);
       assert.ok(f.pill && (vertical ? f.pill.wm === "vertical-rl" && f.pill.w <= 56 : f.pill.wm === "horizontal-tb" && f.pill.h <= 56), `${side} — ${vertical ? "세로" : "가로"} 알약: ${JSON.stringify(f.pill)}`);
-      assert.equal(f.bg, "rgba(0, 0, 0, 0)", `${side} — 접힌 칸의 바탕은 작업실 바탕이 비친다(F-65 파란 줄 없음): ${f.bg}`); assert.notEqual(o.bg, "rgba(0, 0, 0, 0)", `${side} — 펼친 칸은 네이비 그대로`);
+      assert.equal(f.bg, "rgba(0, 0, 0, 0)", `${side} — 접힌 칸의 바탕은 작업실 바탕이 비친다(F-65 파란 줄 없음): ${f.bg}`); assert.notEqual(o.bg, "rgba(0, 0, 0, 0)", `${side} — 펼친 칸은 바탕이 있다(C-62부터 파스텔, 남색은 섬 카드만)`);
       assert.ok(f.pillBg && f.pillBg !== "rgba(0, 0, 0, 0)", `${side} — 남색은 알약 하나: ${f.pillBg}`);
       assert.ok(f.bub && f.bub.in && f.bub.w >= 200, `${side} — 켤 때 말풍선(C-55)이 접힌 칸 밖 · 창 안에 다 보인다: ${JSON.stringify(f.bub)}`);
       assert.ok(!f.overflow && !o.overflow, `${side} — 넘침 0`); assert.ok(f.pill.inside, `${side} — 알약이 칸 안에 다 들어간다(잘리지 않음): ${JSON.stringify(f.pill)}`);

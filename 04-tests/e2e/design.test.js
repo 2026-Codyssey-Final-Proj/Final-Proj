@@ -56,7 +56,7 @@ test("C-57 — 글꼴 셋이 앱 파일에서 실리고(밖으로 요청 0) 글 
     // 앱의 섬 창 재현(in-app) — 섬 바탕이 #363E62, 설정 판도
     await page.evaluate(() => document.documentElement.classList.add("in-app")); await wait(100);
     const isl = await page.$eval(".isl", (e) => getComputedStyle(e).backgroundColor); assert.equal(isl, rgb("363E62"), `앱의 섬 바탕: ${isl}`);
-    await page.click(".tb [data-act=settings], .tb [data-act=set]").catch(() => {}); await wait(300);
+    await page.click("[data-act=settings], .tb [data-act=set]").catch(() => {}); await wait(300);
     await shot(page, "design-settings");
     assert.deepEqual(outside, [], "밖으로 나가는 요청 0(글꼴은 앱 파일)");
   } finally { await browser.close(); }

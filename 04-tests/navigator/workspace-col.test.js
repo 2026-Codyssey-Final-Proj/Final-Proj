@@ -23,12 +23,12 @@ test("main.js — 작업실이 뜨면 섬 창은 숨고(hide), 닫히면 다시 
 
 test("app.js — 작업실에 보내는 HTML = 작업실 판 + 섬의 옆 칸(.isl-col side-… narrow|wide). 자리를 바꾸면 다시 그릴 뿐(앱에 보내지 않음). 옆 칸의 채팅 Enter는 섬의 send()로", () => {
   const a = read("navigator/app.js");
-  assert.match(a, /const islCol = \(\) => `<div class="isl-col side-\$\{side\} \$\{side === "left" \|\| side === "right" \? "narrow" : "wide"\}\$\{colFolded\(\) \? " folded" : ""\}\$\{colFolded\(\) && st\.boot \? " has-bub" : ""\}">\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\(""\)\}<\/div>`;/, "작업실 판 + 섬의 옆 칸(접혀 있으면 알약 — C-46 R-2, 2026-10-27 · 켤 때는 알약 옆 말풍선 — C-55, 2026-10-28)");
+  assert.match(a, /const islCol = \(\) => `<div class="isl-col side-\$\{side\} \$\{side === "left" \|\| side === "right" \? "narrow" : "wide"\}\$\{!colFolded\(\) && islBig\(\) \? " center" : ""\}\$\{colFolded\(\) \? " folded" : ""\}\$\{colFolded\(\) && st\.boot \? " has-bub" : ""\}">\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\("", true\)\}<\/div>`;/, "작업실 판 + 섬의 옆 칸(접혀 있으면 알약 — C-46 R-2, 2026-10-27 · 켤 때는 알약 옆 말풍선 — C-55, 2026-10-28)");
   assert.match(a, /\[\["quest", st\.qwin, st\.qwin \? qwinHTML\(\) \+ islCol\(\) : ""\]\]/);
   assert.match(a, /if \(p\.type === "key" && p\.key === "Enter" && p\.act === "say"\) return send\(\);/);
-  assert.match(a, /side = QU\.sideOf\(el\.dataset\.v\); writeLS\(SIDE_KEY, side\); render\(\);/);
+  assert.match(a, /const side = "right";/, "섬은 오른쪽만(2026-10-28 합의)");
   for (const gone of ["applyDock", "setDockSize", "dockInner", "DOCK_W_KEY", "floeApp.dockSide"]) assert.ok(!a.includes(gone), gone);
-  assert.match(a, /const dockBtns = \(\) => \(WINS && QU && st\.qwin \?/, "섬 머리의 ▲ ▼ ◀ ▶는 그대로 — 옆 칸의 자리");
+  assert.ok(!a.includes("const dockBtns"), "섬 머리의 자리 네 칸은 뺐다(PR ②)");
 });
 
 test("win.js · win.html — 옆 칸의 자리는 html[data-side], 크기는 --col-w(320 ~ 760 · 창 너비의 반까지, 처음 420) · --col-h(320 ~ 480, 처음 360). 손잡이: 끌기 · 화살표 20 · Home · End · Enter/두 번 누르기. Enter는 채팅 보내기. 대화 기록은 맨 아래를 따라간다", () => {
@@ -36,7 +36,7 @@ test("win.js · win.html — 옆 칸의 자리는 html[data-side], 크기는 --c
   assert.match(j, /const RANGE = \{ w: \[320, 760, 420\], h: \[320, 480, 360\] \}, FOLD = 56;/);
   assert.match(j, /const hiOf = \(axis\) => \(axis === "w" \? Math\.max\(RANGE\.w\[0\], Math\.min\(RANGE\.w\[1\], Math\.floor\(innerWidth \/ 2\)\)\) : RANGE\.h\[1\]\);/, "옆은 760과 창 너비의 반 중 작은 것(두승현 결정 2026-10-27)");
   assert.match(j, /const sideOf = \(\) => \{ const c = root\.querySelector\("\.isl-col"\);/);
-  assert.match(j, /h\.dataset\.side = side; hd\.hidden = !side \|\| folded;/);
+  assert.match(j, /h\.dataset\.side = side; hd\.hidden = !side \|\| folded \|\| center;/);
   assert.match(j, /localStorage\.setItem\(axis === "w" \? "floe:col-w" : "floe:col-h", col\[axis\]\)/, "크기는 작업실이 이 컴퓨터에 기억");
   assert.match(j, /if \(e\.key === "Enter"\) reset\(\); else if \(e\.key === grow\) setCol\(col\[axis\] \+ 20\); else if \(e\.key === shrink\) setCol\(col\[axis\] - 20\); else if \(e\.key === "Home"\) setCol\(RANGE\[axis\]\[0\]\); else if \(e\.key === "End"\) setCol\(hiOf\(axis\)\);/);
   assert.match(j, /hd\.addEventListener\("dblclick", reset\)/);
@@ -44,18 +44,16 @@ test("win.js · win.html — 옆 칸의 자리는 html[data-side], 크기는 --c
   assert.match(j, /const ls = \(k\) => \{ try \{ return \+localStorage\.getItem\(k\) \|\| 0; \} catch \{ return 0; \} \};/, "저장소가 막혀도 창은 돈다");
   assert.match(j, /lg2\.scrollTop = lgTop === null \|\| lgEnd \? lg2\.scrollHeight : lgTop;/, "대화 기록 — 맨 아래를 보고 있었으면 새 말도 맨 아래");
   assert.match(j, /layoutCol\(\);\n  \}\);/, "다시 그릴 때마다 칸을 다시 잰다");
-  assert.match(h, /#root\{height:100vh;box-sizing:border-box;display:flex;flex-direction:row\}/);
-  assert.match(h, /html\[data-side="left"\] #root\{flex-direction:row-reverse\}/); assert.match(h, /html\[data-side="top"\] #root\{flex-direction:column-reverse\}/);
-  assert.match(h, /#root>\.isl-col\{flex:0 0 var\(--col-w,420px\);transition:flex-basis \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/, "0.3초(기준 8)");
-  assert.match(h, /html\[data-side="top"\] #root>\.isl-col,html\[data-side="bottom"\] #root>\.isl-col\{flex-basis:var\(--col-h,360px\)\}/);
-  assert.match(h, /@media \(prefers-reduced-motion:reduce\)\{#root>\.isl-col\{transition:none\}\}/);
+  assert.match(h, /#root\{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:minmax\(0,1fr\) var\(--col-w,420px\);grid-template-rows:auto minmax\(0,1fr\);grid-template-areas:"wh wh" "win isl";transition:--col-w \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/, "격자 — 머리 줄 하나 아래 판 · 옆 칸(오른쪽만), 0.3초(기준 8)");
+  assert.ok(!h.includes("data-side"), "위 · 아래 · 왼쪽 자리 규칙은 뺐다(2026-10-28 합의)");
+  assert.match(h, /@media \(prefers-reduced-motion:reduce\)\{#root\{transition:none\}\}/);
   assert.ok(!j.includes("onDock") && !j.includes("dock-size"), "창 간 통신은 없다");
 });
 
-test("app.css — 옆 칸은 섬과 같은 네이비 토큰(html.win-quest .isl-col), 옆(narrow)이면 플로로 위 · 대화 아래 · 위 줄 두 줄 · 몸통 세로 스크롤", () => {
+test("app.css — 옆 칸은 작업실 바탕(남색은 그 안의 섬 카드만 — C-62), 옆(narrow)이면 플로로 위 · 대화 아래 · 위 줄 두 줄 · 몸통 세로 스크롤", () => {
   const c = read("navigator/app.css");
-  assert.match(c, /html\.in-win:not\(\.win-quest\),html\.win-quest \.isl-col\{/);
-  assert.match(c, /\.isl-col\{display:flex;flex-direction:column;min-width:0;min-height:0;padding:10px;background:var\(--isl\)\}/);
+  assert.match(c, /html\.in-win:not\(\.win-quest\)\{/, "설정 창만 남색");
+  assert.match(c, /\.isl-col\{display:flex;flex-direction:column;min-width:0;min-height:0;padding:10px;background:var\(--desk\)\}/, "옆 칸은 파스텔(C-62)");
   assert.match(c, /\.isl-col \.isl-body\{flex:1 1 auto;min-height:0;overflow:hidden auto\}/);
   assert.match(c, /\.isl-col\.narrow \.mc\.chat\{grid-template-columns:minmax\(0,1fr\)\}/); assert.match(c, /\.isl-col\.narrow \.tb\{flex-wrap:wrap\}/);
   assert.ok(!c.includes("dock-narrow") && !c.includes("dock-wide"));

@@ -41,6 +41,7 @@ const Docs = require("./docs.js");   // C-37 단계 문서 — 단계 결과로 
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 const Mcp = require("./mcp.js");   // C-38 시험판 — MCP(웹 GPT · 웹 Claude · Claude Desktop)의 규칙. 이 컴퓨터 안에서는 늘, 밖(터널)에서는 NAV_MCP=1일 때만 /mcp/<토큰>을 받는다 — claude-drafted: 2026-10-25
 const Connect = require("./connect.js");   // F-69 맡기기 전에 그 폴더에서 허락 훅이 도는지(hookReady — 읽기만, 2026-10-28)
+const ChatLog = require("./chatlog.js");   // 작업실 개편 C-63 대화 저장 · 바뀐 파일(API.md 3-32, 2026-10-29) — 이 컴퓨터의 앱 저장 곳
 const AppLink = require("./app-link.js");   // C-38 시험판 '같이 쓸 앱' — Claude Desktop 설정 파일에 Floe를 잇는다(GET /api/apps · POST /api/apps/link) — claude-drafted: 2026-10-25
 
 const PORT = Number(process.env.NAV_PORT) || 4317;
@@ -67,11 +68,11 @@ const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/a
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
 const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start", "/api/task/retry", "/api/task/stop"];   // /api/task/retry — F-69 막힌 일을 다시 · 직접 하기 글, /api/task/stop — C-50 사람이 고르면 멈추기(2026-10-28)
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
-const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs"];   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
+const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs", "/api/chatlog"];   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide", "/api/apps/link"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다 · Claude Desktop 설정 파일에 잇는다. 밖(터널)에서는 받지 않는다(allowed)
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
-const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/task/retry", "/api/task/stop", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/task/retry", "/api/task/stop", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link", "/api/chatlog"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
@@ -240,7 +241,40 @@ function addStep(body, tool) {
   const what = typeof raw.what === "string" && raw.what.trim() ? raw.what.trim() : typeof body.tool_name === "string" ? body.tool_name.trim() : "";
   s.steps.push({ seq: ++stepSeq, at: Date.now(), verb: VERB_OK.has(raw.verb) ? raw.verb : Steps.OTHER, what: cut(Sensitive.redact(what)), add: count(raw.add), del: count(raw.del) });
   while (s.steps.length > MAX_STEPS) s.steps.shift();
+  chatChange(body.cwd, body.tool_name, body.file);
   return { seq: stepSeq };
+}
+// ── 작업실 개편 C-63 대화 저장 · 바뀐 파일(2026-10-29 — API.md 3-32, 결정 모음 A-20 · A-21 이재엽 쪽 세션) ──
+//   프로젝트마다 대화 하나와 그 폴더에서 바뀐 파일을 이 컴퓨터의 앱 저장 곳에(chatlog.js — 작업 폴더에는 쓰지 않는다). 폴더는 projectNow(3-16 폴더 고르기). 서버는 기억하지 않고 파일에서 읽는다
+const CHAT_DIR = ChatLog.dirOf(process.env);
+const CHAT_NO_FOLDER = "앱에서 고른 작업 폴더가 아직 없어요 — 처음 설정의 '프로젝트'나 앱 메뉴의 '프로젝트 폴더 연결…'로 골라요";
+// 폴더는 앱이 고른 작업 폴더만(appProject) — 훅 알림으로 안 폴더(projectNow의 대신)는 세션마다 달라 대화가 다른 프로젝트 파일에 섞였다(새 맥락 리뷰 2026-10-29)
+// 훅 알림(PostToolUse — Write · Edit · MultiEdit · NotebookEdit)으로 그 작업 폴더 안 파일이 바뀌면 쌓는다. file은 세션 폴더 안의 상대 경로(steps.js fileOf — 밖이면 ""), 작업 폴더 기준으로 바꾸고 밖이면 버린다
+function chatChange(cwd, tool, file) {
+  const s = appProject; if (!s || !ChatLog.CHANGE_TOOLS.has(tool)) return;
+  const p = ChatLog.projectPath(s.dir, cwd, file); if (!p) return;
+  const f = ChatLog.fileOf(CHAT_DIR, s.dir);
+  try { ChatLog.save(f, ChatLog.addChange(ChatLog.load(f, s.project), { path: Sensitive.redact(p), tool })); } catch { /* 못 써도 알림은 계속 */ }
+}
+function chatlogGet() {
+  const s = appProject;
+  if (!s) return { ok: true, project: "", turns: [], changes: [], why: "folder" };
+  return { ok: true, ...ChatLog.publicOf(ChatLog.load(ChatLog.fileOf(CHAT_DIR, s.dir), s.project)), why: "" };
+}
+function chatlogPost(body) {
+  const b = body && typeof body === "object" ? body : {}, s = appProject;
+  if (b.clear === true && Object.keys(b).length === 1) {
+    if (!s) return [400, { ok: false, reason: CHAT_NO_FOLDER }];
+    try { ChatLog.clear(ChatLog.fileOf(CHAT_DIR, s.dir)); } catch { return [500, { ok: false, reason: "대화를 지우지 못했어요 — 앱 저장 곳의 권한을 봐 주세요" }]; }
+    return [200, { ok: true, n: 0 }];
+  }
+  const cleaned = Array.isArray(b.add) ? b.add.map((t) => ChatLog.cleanTurn(t)) : [];
+  if (!cleaned.length || cleaned.length > ChatLog.ADD_MAX || cleaned.some((t) => !t))
+    return [400, { ok: false, reason: `대화 모양이 맞지 않음 — add는 1 ~ ${ChatLog.ADD_MAX}개, 말 { stage, who: me | floro | sys, text(${ChatLog.TEXT_MAX}자) } · 구분선 { stage, mark: true, title(${ChatLog.TITLE_MAX}자) } · 가져온 것 { stage, carry }` }];
+  if (!s) return [400, { ok: false, reason: CHAT_NO_FOLDER }];
+  const file = ChatLog.fileOf(CHAT_DIR, s.dir), data = ChatLog.addTurns(ChatLog.load(file, s.project), cleaned);
+  try { ChatLog.save(file, data); } catch { return [500, { ok: false, reason: "대화를 저장하지 못했어요 — 앱 저장 곳의 쓰기 권한을 봐 주세요" }]; }
+  return [200, { ok: true, n: data.turns.length }];
 }
 // 화면이 묻는 모양 — since보다 뒤의 한 일만, 세션은 최근 쓴 순
 // here: 그 세션이 앱이 고른 폴더(또는 그 안)에서 도나 — 아니면 화면은 판정의 '일한 증거' · 작업실 파일 카드 · '일하고 있어요'에 쓰지 않는다(F-73, 새 맥락 리뷰). 연결을 뺀 폴더(dir 비움)는 그 자리가 아니다
@@ -327,7 +361,7 @@ let task = null;   // {state: running|done|failed|blocked, project, at, try, cod
 // report — 기준(checks)을 같이 넘겼으면 Claude Code가 끝에 답한 기준마다 해냄 · 근거 · 쉬운 말 요약(C-32, navigator.js parseReport). 비밀값 모양은 가린다. 서버 메모리에만
 // try — 같은 일을 몇 번째로 다시 맡겼나(F-69 다시 맡기기, 처음은 0). blocked — 끝 코드 0인데 허락을 못 받은 도구가 있으면 그 까닭(아래 blockedOf)
 const publicTask = () => (task ? { state: task.state, project: task.project, at: task.at, code: task.code, tokens: task.tokens ?? null, cost: task.cost ?? null, report: task.report ?? null,
-  try: task.try || 0, blocked: task.state === "blocked" ? blockedOf(task) : null, denied: task.denied ? task.denied.count : 0, quiet: task.state === "running" ? Math.max(0, Math.floor((Date.now() - (task.lastAt || task.at)) / 1000)) : 0 } : null);
+  try: task.try || 0, retries: task.retries || 0, retryMax: RETRY_MAX, verdict: task.state === "running" ? null : Nav.reportVerdict(task.report, task.state), blocked: task.state === "blocked" ? blockedOf(task) : null, denied: task.denied ? task.denied.count : 0, quiet: task.state === "running" ? Math.max(0, Math.floor((Date.now() - (task.lastAt || task.at)) / 1000)) : 0 } : null);
 // C-50 맡긴 일이 멈추면(2026-10-28 — 결정 모음 A-06 "시간 값은 리허설에서 재서 정함, 그때까지 2분 · 5분 · 15분, 멈추면 끄지 않고 A-03의 선택창으로"):
 //   quiet — 그 일의 폴더(안)에서 훅 알림 · 허락 카드가 마지막으로 온 뒤 지난 초. 몇 초에 무엇을 할지는 화면이 정한다. 서버는 저절로 끄지 않는다 — 끄기는 사람이 고를 때만(stopTask)
 const inDir = (dir, cwd) => { if (!dir || !cwd) return false; const rel = path.relative(realDir(dir), realDir(cwd)); return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel)); };
@@ -354,6 +388,22 @@ const NO_FOLDER = "연결한 프로젝트 폴더를 아직 몰라요 — 처음 
 const NO_HOOK = { none: "이 폴더에는 허락 카드를 띄우는 연결이 없어요 — 맡기면 파일 쓰기 · 명령이 모두 막혀요. Floe 앱 메뉴의 '프로젝트 폴더 연결…'로 이 폴더를 다시 연결해 주세요",
   moved: "이 폴더의 허락 연결이 옛 자리(앱을 옮기기 전)를 가리켜요 — Floe 앱 메뉴의 '프로젝트 폴더 연결…'로 이 폴더를 다시 연결해 주세요" };
 // 다시 맡기기(F-69) — again: 같은 글 그대로(허락 카드가 다시 뜬다), files-only: 명령 없이 파일만(명령이 막혔을 때 결과에 가장 가까운 길)
+// C-50(2026-10-29 — 지식 퀘스트 PRD 9절 7번 '새로 맡기며 앞 보고만, 2번까지'): 사람이 고른 다시 맡기기는 2번까지. ①의 '카드 다시'(auto — 처음 막혔을 때 한 번)는 세지 않는다
+const RETRY_MAX = 2;
+// 앞에서 한 일 — 보고 한 줄 · 그 일 동안 그 폴더에서 만든 · 고친 파일 이름(훅 알림) · 막힌 것. 이름 · 한 줄 · 수만, 가린 뒤, 700자까지
+function prevNote(t) {
+  const files = [];
+  const end = t.endAt || Date.now();   // 그 일이 도는 동안만 — 끝난 뒤 사람이 같은 폴더에서 고친 파일은 넣지 않는다
+  for (const s of work.values()) if (s.dir && inDir(t.dir, s.dir)) for (const x of s.steps) if (x.at >= t.at && x.at <= end && (x.verb === "만들었어요" || x.verb === "고쳤어요") && x.what && !files.includes(x.what)) files.push(x.what);
+  const b = t.state === "blocked" ? blockedOf(t) : null;
+  const parts = [t.report ? `보고: ${t.report.easy} (끝 조건 ${t.report.done}/${t.report.total})` : "보고: 받지 못했어요",
+    ...(files.length ? [`바뀐 파일: ${files.slice(0, 10).join(", ")}`] : []), ...(b && b.kinds.length ? [`허락을 못 받았던 것: ${b.kinds.map((k) => `${k.what} ${k.n}`).join(" · ")}`] : []),
+    ...(t.state === "failed" ? ["끝까지 가지 못했어요"] : t.state === "stopped" ? ["사람이 멈췄어요"] : [])];
+  // 안내 문장은 늘 남기고 앞부분만 자른다(가린 뒤에) — 허락을 못 받았던 일은 다시 하면 카드가 뜬다고 적는다(①의 목적 — 카드를 다시 띄우기, 새 맥락 리뷰 2026-10-29)
+  const tail = " — 이미 끝낸 일은 다시 하지 말고 못 한 것부터 이어서 해 주세요. 허락을 못 받았던 일은 다시 하면 허락 카드가 떠요.";
+  const head = hide(`[앞에서 한 일] ${parts.join(" · ")}`, t.dir);
+  return `\n\n${head.length > 600 ? `${head.slice(0, 599)}…` : head}${tail}`;
+}
 const FILES_ONLY = "\n\n[다시 맡김 — 명령 없이] 터미널 명령(Bash)은 쓰지 말고 파일만 만들거나 고쳐 주세요. 실행 · 설치 명령이 필요하면 README의 '실행하는 법'에 적기만 해요.";
 // opts.at · opts.try — 다시 맡기기는 같은 번호(at)로(지켜보던 화면 — 계획 줄 · 문서 올리기 — 이 그대로 따라간다), opts.note — 글 끝에 더할 한 줄(길이 제한 밖)
 function startTask(text, label = "맡긴 일", checks = null, opts = {}) {
@@ -374,13 +424,13 @@ function startTask(text, label = "맡긴 일", checks = null, opts = {}) {
   try { child = openClaude({ dir: s.dir, text: checks ? Nav.taskBrief(body, checks) : body, onResult, schema: checks ? Nav.REPORT_SCHEMA : null }); }
   catch { return [502, { ok: false, reason: "claude를 열지 못함 — Claude Code가 설치됐는지 확인하세요" }]; }
   // label — 무슨 일인지(저장 커밋 · 문서 올리기 · 맡긴 일) — 파일 저장의 '맡긴 일이 도는 중' 판단에 쓴다(C-43). req — 다시 맡기기 · 직접 하기에 쓸 처음 글(메모리에만)
-  task = { state: "running", label, project: s.project, at: Number.isFinite(opts.at) ? opts.at : Date.now(), lastAt: Date.now(), try: opts.try || 0, code: null, child, tokens: null, cost: null, report: null,
+  task = { state: "running", label, project: s.project, at: Number.isFinite(opts.at) ? opts.at : Date.now(), lastAt: Date.now(), try: opts.try || 0, retries: opts.retries || 0, code: null, child, tokens: null, cost: null, report: null,
     denied: null, asks: { allow: 0, deny: 0, none: 0 }, req: { text: String(text), label, checks }, dir: s.dir };
   child.on("error", () => { if (task && task.child === child) task.state = "failed"; });
   // 막힘은 기계 신호로만 — 거절 수가 그 일 동안 섬에서 사람이 누른 '거절' 수보다 많으면(답이 없었거나 카드가 안 뜬 거절이 있으면) blocked.
   //   사람이 고른 거절뿐이면 done(denied에 수 — 화면이 한 줄로 말한다). 모델의 보고(해냄)는 믿지 않는다(진짜 Claude Code로 본 일 · 새 맥락 리뷰 2026-10-28)
   const unasked = () => (task.denied ? task.denied.count : 0) > (task.asks ? task.asks.deny : 0);
-  child.on("close", (code) => { if (task && task.child === child) { task.state = task.stopped ? "stopped" : code !== 0 || task.isError ? "failed" : unasked() ? "blocked" : "done"; task.code = code; } });
+  child.on("close", (code) => { if (task && task.child === child) { task.endAt = Date.now(); task.state = task.stopped ? "stopped" : code !== 0 || task.isError ? "failed" : unasked() ? "blocked" : "done"; task.code = code; } });
   return [200, { ok: true, project: s.project, task: publicTask() }];
 }
 // C-50 멈추기 — 본문 { at }. 사람이 선택창에서 '다시 맡기기' · '그만두기'를 고를 때만 부른다(서버는 저절로 끄지 않는다). 그 번호의 도는 일만, 끝나면 state stopped
@@ -404,7 +454,10 @@ function retryTask(body) {
   if (task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 넘겨요" }];
   if (task.state === "done") return [409, { ok: false, reason: "이미 끝난 일이에요 — 새로 맡겨요" }];
   if (b.way !== "again" && b.way !== "files-only") return [400, { ok: false, reason: "way는 again · files-only · brief 중 하나" }];
-  return startTask(task.req.text, task.req.label, task.req.checks, { at: task.at, try: (task.try || 0) + 1, note: b.way === "files-only" ? FILES_ONLY : "" });
+  const auto = b.auto === true;
+  if (auto && !(task.state === "blocked" && !task.try && task.asks && task.asks.none > 0 && !task.asks.deny)) return [409, { ok: false, reason: "카드 다시 띄우기는 처음 막혔고 카드에 답이 없었을 때 한 번만이에요" }];
+  if (!auto && (task.retries || 0) >= RETRY_MAX) return [409, { ok: false, why: "cap", reason: `다시 맡기기는 ${RETRY_MAX}번까지예요 — 직접 하기로 이어 가요` }];
+  return startTask(task.req.text, task.req.label, task.req.checks, { at: task.at, try: (task.try || 0) + 1, retries: (task.retries || 0) + (auto ? 0 : 1), note: prevNote(task) + (b.way === "files-only" ? FILES_ONLY : "") });
 }
 
 // ── C-26 내 작업 책 — 연결한 폴더의 README.md를 읽어 책으로 나눠 준다(읽기만) — claude-drafted: 2026-10-23 (이재엽 "책의 작업들은 readme 에서 … 책에서 보여주는 역할만") ──
@@ -822,6 +875,7 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/task") return send(res, 200, { ok: true, task: publicTask() });   // FR-17 넘긴 일의 상태(API.md 3-16)
   if (req.method === "GET" && route === "/api/proposals") return send(res, 200, { ok: true, items: proposals });   // C-38 시험판 — 섬이 웹 AI의 제안을 본다
   if (req.method === "GET" && route === "/api/apps") return send(res, 200, { ok: true, claudeDesktop: AppLink.status(AppLink.desktopConfig()) });   // 같이 쓸 앱 — 찾았다 · 이었다만(경로는 보이지 않는다)
+  if (req.method === "GET" && route === "/api/chatlog") return send(res, 200, chatlogGet());   // 작업실 개편 C-63 대화 저장(API.md 3-32)
   if (req.method === "GET" && route === "/api/readme") return send(res, 200, readmeBook());   // C-26 내 작업 책(API.md 3-18) — 읽기만
   if (req.method === "GET" && route === "/api/docs") return send(res, 200, docsRead());   // C-49 폴더의 단계 문서를 다시 읽는다(API.md 3-23-1) — 읽기만
   if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
@@ -829,6 +883,7 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만
   if (req.method === "GET" && route === "/api/file") { const [code, out] = await readFileNow(new URL(req.url, "http://localhost").searchParams.get("i")); return send(res, code, out); }   // C-43 파일 열기(API.md 3-26)
   if (req.method === "POST" && route === "/api/preset") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = presetStart(body); return send(res, code, out); }   // C-44 틀로 맡기기(API.md 3-28)
+  if (req.method === "POST" && route === "/api/chatlog") { const body = await readJson(req, ChatLog.ADD_MAX * (ChatLog.TEXT_MAX + 120) + 2000); if (body === TOO_BIG) return refuse(res, `너무 커요 — 한 번에 ${ChatLog.ADD_MAX}개 · 한 개 ${ChatLog.TEXT_MAX.toLocaleString()}자까지`, 413); const [code, out] = chatlogPost(body); return send(res, code, out); }   // 작업실 개편 C-63 대화 쌓기 · 지우기(API.md 3-32) — 약속한 최대(20개 × 2,000자)가 들게
   if (req.method === "POST" && route === "/api/file") { const body = await readJson(req, Files.FILE_MAX * 2 + 1000); if (body === TOO_BIG) return refuse(res, `너무 커요 — ${Math.round(Files.FILE_MAX / 1024)}KB까지만 써요`, 413); const [code, out] = writeFileNow(body); return send(res, code, out); }   // C-43 파일 저장
   if (req.method === "GET" && route === "/api/github") return send(res, 200, githubNow());   // 설정의 GitHub 칸(API.md 3-19) — 읽기만
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage(), ledger: ledger.snapshot() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다. ledger: 토큰 장부(숫자 · 이름만, 2026-10-24)

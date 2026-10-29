@@ -50,7 +50,7 @@ test("확정하면 맡길 일 목록 — 줄마다 남음 → 맡김 중 → 보
   b = B.report(b, "p1", rep); assert.equal(B.stateOf(b, "p1"), "report"); assert.equal(B.running(b), "");
   b = B.reject(b, "p1", "목록도 만들어 줘");
   assert.equal(B.stateOf(b, "p1"), "todo");
-  assert.deepEqual(B.taskFor(b, "p1"), { text: "회원이 신청한다\n지난번에 사용자가 다르게 본 점: 목록도 만들어 줘", checks: ["목록에 한 줄이 생긴다"] });
+  assert.deepEqual(B.taskFor(b, "p1"), { text: "회원이 신청한다\n지난번에 사용자가 다르게 본 점: 목록도 만들어 줘\n지난번 보고: 신청 칸만 만들었어요. (끝 조건 0/1)", checks: ["목록에 한 줄이 생긴다"] });   // 지난번 보고 — C-50(2026-10-29)
   b = B.accept(B.report(B.start(b, "p1"), "p1", { ...rep, done: 1 }), "p1");
   assert.equal(B.stateOf(b, "p1"), "done"); assert.deepEqual(B.progress(b), { done: 1, total: 2 });
   assert.equal(B.confirm(B.board(PLAN)).confirmed, false, "모든 줄이 맞아요가 아니면 확정하지 않는다");

@@ -21,6 +21,18 @@
     return f;
   }
 
+  // 바뀐 파일의 경로(작업실 개편 C-63 — 단계마다 만든 · 고친 파일, 2026-10-29): 파일을 쓰는 도구만, 세션 폴더(cwd) 안이면 그 아래 상대 경로(자르지 않는다),
+  //   밖이면 ""(작업 폴더 파일로 오해하지 않게 — 자동 메모리 · /tmp 같은 곳을 쓴다). 상대 경로는 그대로. 파일 내용은 넣지 않는다
+  const CHANGE_KEY = { Write: "file_path", Edit: "file_path", MultiEdit: "file_path", NotebookEdit: "notebook_path" };
+  function fileOf(ev) {
+    const key = ev && CHANGE_KEY[ev.tool_name]; if (!key) return "";
+    const input = ev.tool_input && typeof ev.tool_input === "object" ? ev.tool_input : {};
+    const f = slashes(input[key]), c = slashes(ev.cwd).replace(/\/+$/, "");
+    if (!f) return "";
+    if (c && f.startsWith(`${c}/`)) return f.slice(c.length + 1);
+    return /^([A-Za-z]:)?\//.test(f) ? "" : f;
+  }
+
   // 훅 입력 {hook_event_name:"PostToolUse", tool_name, tool_input, tool_response, cwd, session_id} → {verb, what, add, del}
   function fromHook(ev) {
     const name = ev && typeof ev.tool_name === "string" ? ev.tool_name : "";
@@ -67,7 +79,7 @@
     return { ...EXAMPLE, at: now + EXAMPLE.at, steps: EXAMPLE.steps.map((s) => ({ ...s, at: now + s.at })) };
   }
 
-  const api = { VERBS, OTHER, MAX, fromHook, line, EXAMPLE, example };
+  const api = { VERBS, OTHER, MAX, fromHook, fileOf, line, EXAMPLE, example };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavSteps = api;
 })(typeof window !== "undefined" ? window : globalThis);
