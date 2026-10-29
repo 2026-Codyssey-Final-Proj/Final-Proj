@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.14 | 2026-10-29 | 임유정 | 화면 코드 점검 묶음 F-103 다음 셋 — 단추를 두 번 누르면 AI를 두 번 부르던 것(F-103-5), 파일 칸을 빠르게 두 번 누르면 같은 파일 탭이 둘 생기던 것(F-103-6), 주소 끝에 깨진 %(#book=50%)가 오면 빈 화면이 되던 것(F-103-12) (#275) | `02-frontend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v51.13 | 2026-10-29 | 임유정 | 화면 코드 점검 묶음 F-103 첫 넷 — 비밀값 경고 뒤 '보낼게요'가 그 전 메시지를 보내던 것(F-103-1), 준비 계획 '물어보기'가 경고만 되풀이하던 것(F-103-2), 저장 중에 친 글이 저장된 것으로 처리돼 잃던 것 · ⌘S 두 번(F-103-3), 긴 글이 AI에 앞 200자로만 가던 것(F-103-4). 나머지 17개는 고칠 목록 fixes/screen-bug-hunt.md에 열림으로 (#274) | `02-frontend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v51.12 | 2026-10-29 | 이재엽 | 작업실 개편(#248 ~ #250) · 시작 화면(#262) 뒤 실패하는 화면 e2e 14개의 원인을 PR · 커밋별로 고칠 목록에 (F-102, 담당 두승현에게 넘김) (#271) | `01-docs/07-maintenance/fix-map.md` |
 | v51.11 | 2026-10-29 | 이재엽 | 섬 화면 app.js(4,300줄 · 530KB)를 기능 조각 16개(02-frontend/navigator/app/)로 나눔 — 조각이 원본, app.js는 묶은 릴리즈 파일(동작 · 다른 시험 그대로). 묶기 · 되돌리기 도구 app-parts.js(app.js에만 있는 고침은 덮지 않고 멈춤)와 둘이 같은지 보는 시험 · PR 검사 (#270) | `02-frontend/navigator/`(app.js · app/ · app-parts.js, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/app-parts.test.js` · `04-tests/navigator/navigator.test.js`(git을 읽는 도구 허용) · `02-frontend/electron/prebuild.js`(조각은 앱 묶음에서 뺌) · `.github/workflows/app-parts.yml` · `.claude/rules/code.md` · `.gitattributes` |
