@@ -1194,7 +1194,8 @@
   const textOf = (html) => { const d = document.createElement("div"); d.innerHTML = html; return (d.textContent || "").trim(); };
   // 이 단계의 대화(3-31 talk): 사람 · 플로로의 말만(알림 · 구분선 빼고), 40줄 · 줄 1,000자 · 합 8,000자 안에서 최근 것부터, 마지막은 방금 보낸 내 말(logMe가 먼저 쌓았다)
   const talkOf = (t) => { const all = st.chat.filter((m) => (m.who === "me" || m.who === "floro") && !m.kind).map((m) => ({ who: m.who, text: textOf(m.html).slice(0, 1000) })).filter((m) => m.text);
-    if (!all.length || all[all.length - 1].who !== "me") all.push({ who: "me", text: t.slice(0, 1000) });
+    const me = { who: "me", text: t.slice(0, 1000) };   // 마지막 내 말은 원문으로 — 채팅에는 긴 글이 앞 200자만 보인다(send의 logMe, F-102-4)
+    if (all.length && all[all.length - 1].who === "me") all[all.length - 1] = me; else all.push(me);
     let out = all.slice(-40); while (out.length > 1 && out.reduce((n, m) => n + m.text.length, 0) > 8000) out = out.slice(1); return out; };
   let chatText = "";
   // 새 단계(C-61 · C-63, 2026-10-29): 대화에 구분선(단계 · 이름 · 날짜)과 '지난 단계에서 가져온 것'(정한 줄 요약 — 틀리면 말로 고친다), 섬은 저절로 가운데(칸이 비었으니), 대화 표시 자리는 구분선 뒤. islBig은 저장하지 않는다 — 다시 켜면 칸 상태대로 저절로
@@ -1207,8 +1208,9 @@
   async function chatSend(t, skipCheck) {
     const q = st.quest; st.tidy = null;
     if (st.mode !== "live" || !canLive) { st.tidy = { fills: [{ i: QU.curIdx(q), text: t }], reply: "연습이라 AI 없이 — 보낸 말을 지금 칸에 이렇게 적을 수 있어요" }; return render(); }
+    chatText = t;   // guard 앞에서 — 경고 뒤 '보낼게요'(RETRY.chat)가 그 전 메시지가 아니라 이 글을 다시 보낸다(F-102-1)
     if (!skipCheck && guard(t, "chat")) return;
-    chatText = t;
+    st.warn = null;   // 보낸 뒤 경고 카드를 걷는다 — 남으면 '보낼게요'를 또 눌러 같은 글이 두 번 간다(startDraft와 같이, 새 맥락 리뷰 2026-10-29 막힘)
     const r = await callAI("/api/chat", { stage: q.chap, tier: st.tier, idea: ideaNow(), talk: talkOf(t), lines: q.lines });   // API.md 3-31(이재엽 쪽 서버 #246): 이 단계의 대화 · 적은 줄 · 처음 말한 것 → { reply, slots, n }
     if (!st.quest || st.quest.chap !== q.chap) return render();
     if (r.ok && typeof r.reply === "string") { st.tokens = r.tokens || 0; fetchUsage(); const slots = Array.isArray(r.slots) ? r.slots : []; if (slots.length) st.tidy = { fills: slots, reply: r.reply }; else say(r.reply); return render(); }
@@ -1667,14 +1669,15 @@
     render();
   }
   async function saveFile(k, opt = {}) {
-    const f = st.openFiles[k]; if (!f || (!f.dirty && !opt.overwrite)) return;   // 고친 것이 없으면 쓰지도 커밋을 맡기지도 않는다(새 맥락 리뷰)
+    const f = st.openFiles[k]; if (!f || f.saving || (!f.dirty && !opt.overwrite)) return;   // 고친 것이 없으면 쓰지도 커밋을 맡기지도 않는다(새 맥락 리뷰). 저장 중이면 또 보내지 않는다(⌘S 두 번 → 409, F-102-3)
     if (f.i < 0) { f.note = { kind: "bad", text: "이 파일이 목록에서 사라졌어요 — 작업실을 다시 열어요" }; return render(); }
+    const sent = f.text; f.saving = true;   // 보낸 글 — 저장하는 동안 더 친 글은 저장된 것으로 치지 않는다(F-102-3)
     try {
-      const res = await fetch("/api/file", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ i: f.i, path: f.path, text: f.text, mtime: f.mtime, eol: f.eol, commit: true, ...opt }) });
+      const res = await fetch("/api/file", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ i: f.i, path: f.path, text: sent, mtime: f.mtime, eol: f.eol, commit: true, ...opt }) });
       const r = await res.json();
       if (r && r.ok) {
-        if (f.saved !== f.text) { f.hist.push({ at: Date.now(), text: f.saved }); if (f.hist.length > FHIST_MAX) f.hist.shift(); }
-        Object.assign(f, { saved: f.text, mtime: r.mtime, dirty: false, note: { kind: "ok", text: r.task ? "저장했어요 — 이 파일의 커밋 · 푸시를 Claude Code에 맡겼어요(허락 카드는 채팅에)" : `저장했어요${r.note ? ` — ${r.note}` : ""}` } });
+        if (f.saved !== sent) { f.hist.push({ at: Date.now(), text: f.saved }); if (f.hist.length > FHIST_MAX) f.hist.shift(); }
+        Object.assign(f, { saved: sent, mtime: r.mtime, dirty: f.text !== sent, note: { kind: "ok", text: r.task ? "저장했어요 — 이 파일의 커밋 · 푸시를 Claude Code에 맡겼어요(허락 카드는 채팅에)" : `저장했어요${r.note ? ` — ${r.note}` : ""}` } });
         if (r.task) watchTask(r.task, "commit");
         render(); reloadChanged(k); return;
       }
@@ -1685,6 +1688,7 @@
       else if (why === "moved") { f.i = -1; f.note = { kind: "bad", text: (r && r.reason) || "목록이 바뀌었어요 — 파일을 다시 열어요" }; }
       else f.note = { kind: "bad", text: (r && r.reason) || "저장하지 못했어요" };
     } catch { f.note = { kind: "bad", text: "서버에 닿지 않았어요" }; }
+    finally { f.saving = false; }
     render();
   }
   async function reloadChanged(k) { const f = st.openFiles[k]; if (!f || f.i < 0) return; try { const r = await (await fetch(`/api/file?i=${f.i}`, { cache: "no-store" })).json(); if (r && r.ok) { f.changed = r.changed; render(); } } catch {} }   // 저장 뒤 바뀐 줄 표시를 다시
@@ -2541,11 +2545,12 @@
     render(); say(r.reason || "다시 세우지 못했어요");
   }
   // 물어보기 — 이 보고에 대해 플로로에게(Floe의 AI 한 번, /api/answer). 맡긴 일 · 기준 · 보고 글만 보낸다
-  async function askPlan(id) {
+  //   skipCheck — 경고 뒤 '보낼게요'(RETRY.planAsk)로 다시 올 때는 guard를 또 지나지 않는다(F-102-2 — 같은 경고만 되풀이됐다)
+  async function askPlan(id, skipCheck) {
     const b = st.plan, q = st.planQ.trim(), w = b && b.work[id], x = b && b.plan.items.find((i) => i.id === id);
     if (!q || !w || !w.report || !x) return;
     if (planPractice(b)) { st.planAns = { ...st.planAns, [id]: "연습이라 답하지 않아요 — 진짜 AI로 바꾸면 이 보고를 보고 답해 줘요." }; st.planAsk = ""; return render(); }
-    if (guard(q, "planAsk")) return;
+    if (!skipCheck && guard(q, "planAsk")) return;
     st.warn = null;
     const text = [`맡긴 일: ${x.need}`, `다 됐는지 보는 기준: ${x.check}`, `Claude Code의 보고: ${w.report.easy}`, ...w.report.items.map((c) => `- ${c.check}: ${c.done ? "해냄" : "아직"}${c.evidence ? ` (${c.evidence})` : ""}`)].join("\n");
     const r = await planCall("ask", "/api/answer", { stage: atStage(), hard: [], question: q, text, tier: st.tier });
@@ -3257,7 +3262,7 @@
     st.warn = { w, then }; render();
     return true;
   }
-  const RETRY = { chat: () => chatSend(chatText, true), start: () => startDraft(startText, true), stage: () => stageDraft(st.quest ? st.quest.chap : atStage(), true), judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk); } };   // plan* — 준비 계획판(C-34)
+  const RETRY = { chat: () => chatSend(chatText, true), start: () => startDraft(startText, true), stage: () => stageDraft(st.quest ? st.quest.chap : atStage(), true), judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk, true); } };   // plan* — 준비 계획판(C-34)
   // 새로 배운 말을 모은다. 돌려주는 것: 이번에 처음 배운 말들
   function learn(j) {
     const fresh = [];
