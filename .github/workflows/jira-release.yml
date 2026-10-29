@@ -3,8 +3,7 @@
 # 비밀값이 없으면 건너뛰고 성공으로 끝난다. 시험: 04-tests/repo/jira-release.test.js
 # 2026-10-19(이재엽 결정, 인수인계 4절 제안 1번): 그 전에 changes/*.md 조각을 CHANGELOG.md 맨 위 다음 번호로 합쳐 main에 커밋한다
 # (.github/scripts/changelog-fold.js, 시험 04-tests/repo/changelog-fold.test.js). GITHUB_TOKEN으로 한 push는 워크플로를 다시 깨우지 않아 되풀이되지 않는다.
-# main 끝(ref: main)을 받는다 — 병합이 잇달아도 concurrency가 줄을 세우고, 뒤 실행이 앞 실행의 합친 커밋 위에서 돈다.
-name: jira-release
+# main 끝(ref: main)을 받는다 — 병합이 잇달아도 concurrency가 줄을 세우고, 뒤 실행이 앞 실행의 합친 커밋 위에서 돈다.name: jira-release
 
 on:
   push:
@@ -35,7 +34,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md changes
           git commit -m "chore(changelog): 조각을 버전 기록에 합침 — $(git diff --cached --name-only -- changes | sed 's#changes/##; s#\.md$##' | paste -sd ' ' -)"
-          git push origin HEAD:main
+          node .github/scripts/push-retry.js   # 거절되면 최신 main 위로 얹고 다시(F-80)
       - name: CHANGELOG 맨 위 버전 → Jira 릴리스
         run: node .github/scripts/jira-release.js
         env:

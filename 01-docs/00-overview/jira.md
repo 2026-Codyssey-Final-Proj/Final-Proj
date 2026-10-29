@@ -50,7 +50,7 @@
 
 `main`에 올라올 때마다 [jira-release.yml](../../.github/workflows/jira-release.yml)이 [changelog-fold.js](../../.github/scripts/changelog-fold.js)와 [jira-release.js](../../.github/scripts/jira-release.js)를 차례로 돌린다.
 
-0. **(2026-10-19 — 이재엽)** `changes/*.md` 조각이 있으면 [CHANGELOG.md](../../CHANGELOG.md) 맨 위 버전의 다음 번호(큰 묶음 → N+1.0, 작은 고침 → M+1)를 붙여 표에 넣고 조각을 지운 뒤 `github-actions[bot]` 이름으로 `main`에 커밋한다 — 그래서 PR은 CHANGELOG를 고치지 않고 번호 충돌이 없다([changes/README.md](../../changes/README.md)). 이 push는 워크플로를 다시 깨우지 않는다.
+0. **(2026-10-19 — 이재엽)** `changes/*.md` 조각이 있으면 [CHANGELOG.md](../../CHANGELOG.md) 맨 위 버전의 다음 번호(큰 묶음 → N+1.0, 작은 고침 → M+1)를 붙여 표에 넣고 조각을 지운 뒤 `github-actions[bot]` 이름으로 `main`에 커밋한다 — 그래서 PR은 CHANGELOG를 고치지 않고 번호 충돌이 없다([changes/README.md](../../changes/README.md)). 이 push는 워크플로를 다시 깨우지 않는다. 그사이 다른 병합이 들어와 push가 거절되면 [push-retry.js](../../.github/scripts/push-retry.js)가 최신 `main` 위로 얹고 다시 올린다(최대 3번, 2026-10-29 · fix-map F-80). <!-- claude-drafted: 2026-10-29 -->
 1. [CHANGELOG.md](../../CHANGELOG.md) 맨 위 줄을 읽는다(버전 · 날짜 · 무엇).
 2. Floe에 그 버전이 없으면 **만들면서 릴리스**한다(설명 = "무엇" 칸). 있고 릴리스 전이면 릴리스만, 이미 릴리스됐으면 그대로 둔다.
 3. 이번 push의 커밋 메시지에서 `<키>-숫자`를 모두 찾아 그 이슈의 **수정 버전(Fix versions)**에 붙인다. 병합 커밋에는 브랜치 이름과 PR 제목이 들어 있어 2절 규칙이면 잡힌다.
