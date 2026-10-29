@@ -17,7 +17,8 @@
 <script>
 (async () => {
   let r = null;
-  const now = decodeURIComponent((/[#&]now=([^&]*)/.exec(location.hash) || [, ""])[1]);   // 지금 장 문서(섬이 주소 끝에 준다)
+  const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };   // 깨진 %가 와도 멈추지 않게(F-103-12)
+  const now = safeDecode((/[#&]now=([^&]*)/.exec(location.hash) || [, ""])[1]);   // 지금 장 문서(섬이 주소 끝에 준다)
   try { r = await (await fetch(`/api/docmap?now=${encodeURIComponent(now)}`, { cache: "no-store" })).json(); } catch {}
   if (!r || !r.ok || !r.board) { document.body.insertAdjacentHTML("afterbegin", `<p class="floe-empty">${r && r.reason ? r.reason : "문서 지도를 만들지 못했어요 — 폴더를 연결하면 보여요"}</p>`); return; }
   window.BOARD = r.board;

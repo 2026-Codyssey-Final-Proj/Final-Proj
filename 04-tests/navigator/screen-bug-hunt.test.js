@@ -78,3 +78,70 @@ test("F-103-4 긴 글 — 채팅에는 앞 200자만 보여도 AI에는 원문(1
   assert.equal(out[1].text, long, "AI에 가는 마지막 내 말은 잘린 표시가 아니라 원문");
   assert.equal(talkOf("가".repeat(1500)).at(-1).text.length, 1000, "원문도 1,000자까지");
 });
+
+test("F-103-5 AI 호출 — 기다리는 동안 단추를 또 눌러도(더블클릭) 두 번 보내지 않고, 먼저 끝난 쪽이 '바쁨'을 풀지 않는다", async () => {
+  let posts = 0; const waiting = [];
+  const st = { busy: false };
+  const timers = new Set(); let tid = 0;   // 가짜 타이머 — 덮어써 못 끈 타이머가 남는지 센다
+  const env = { st, hold() {}, render() {}, $nav: { querySelector: () => null }, setInterval: () => { timers.add(++tid); return tid; }, clearInterval: (t) => timers.delete(t),
+    fetch: async () => { posts++; await new Promise((r) => waiting.push(r)); return { json: async () => ({ ok: true }) }; } };
+  const callAI = new Function(...Object.keys(env), `let waitFrom = 0, lastWait = 0, waitTimer = 0; const waitText = () => ""; ${fnSrc("callAI")}; return callAI;`)(...Object.values(env));
+  const first = callAI("/api/task/start", { text: "a" });
+  const second = callAI("/api/task/start", { text: "a" });   // 두 번째 누름
+  await new Promise((r) => setImmediate(r));
+  assert.equal(posts, 1, "AI는 한 번만 부른다(토큰 두 배 · 두 번째 409 없음)");
+  assert.equal(st.busy, true, "두 번째가 끝나도 첫 호출을 기다리는 '바쁨'은 그대로");
+  waiting.forEach((r) => r());
+  const [r1, r2] = await Promise.all([first, second]);
+  assert.equal(r1.ok, true);
+  assert.equal(r2.ok, false); assert.equal(r2.busy, true, "부르는 쪽이 '앞의 일을 기다리는 중'임을 안다");
+  assert.equal(st.busy, false, "첫 호출이 끝나면 풀린다");
+  assert.equal(timers.size, 0, "기다림 타이머가 남지 않는다");
+
+  // askAI(어디쯤 · 물어보기 · 초안 · 다시 봐 주기)는 바쁨으로 돌아온 두 번째를 오류로 띄우지 않는다
+  const st2 = { error: "", tokens: 0 };
+  const askAI = make(fnSrc("askAI"), "askAI", { st: st2, guard: () => false, callAI: async () => ({ ok: false, busy: true, reason: "x" }), fetchUsage() {}, render() {}, pendingNotice: "" });
+  await askAI("/api/answer", {}, "물어보기", () => {});
+  assert.equal(st2.error, "", "바쁨은 '지어내지 않고 비워 둘게요' 오류가 아니다");
+});
+
+test("F-103-6 파일 열기 — 파일 칸을 빠르게 두 번 눌러도 같은 파일 탭은 하나", async () => {
+  const waiting = [];
+  const st = { files: { list: [{ path: "docs/a.md", name: "a.md" }] }, openFiles: [], fileSel: -1, qtab: "canvas" };
+  const env = { st, render() {}, say() {},
+    fetch: async () => { await new Promise((r) => waiting.push(r)); return { json: async () => ({ ok: true, path: "docs/a.md", name: "a.md", kind: "md", text: "글", mtime: 1 }) }; } };
+  const openFile = make(fnSrc("openFile"), "openFile", env);
+  const p1 = openFile(0), p2 = openFile(0);   // 응답이 오기 전에 두 번
+  await new Promise((r) => setImmediate(r)); waiting.forEach((r) => r()); await p1; await p2;
+  assert.equal(st.openFiles.length, 1, "같은 경로 탭 둘이면 한쪽 저장 뒤 다른 쪽이 409");
+  assert.equal(st.fileSel, 0);
+});
+
+test("F-103-12 주소 끝의 % — 잘못된 글자가 와도 시작 코드가 멈추지 않는다(빈 화면 없음)", () => {
+  const src = (a.match(/const safeDecode = \(s\) => \{[^\n]*\};/) || [])[0];
+  assert.ok(src, "safeDecode — decodeURIComponent를 감싼 도우미");
+  const safeDecode = new Function(`${src}; return safeDecode;`)();
+  assert.equal(safeDecode("50%"), "50%", "깨진 % 는 글자 그대로");
+  assert.equal(safeDecode("%EB%AC%B8%EC%84%9C"), "문서");
+  const from = fnSrc("fromHash");
+  assert.match(from, /\.map\(safeDecode\)/, "주소 읽기는 safeDecode로");
+  assert.doesNotMatch(from, /map\(decodeURIComponent\)/);
+  const dm = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/docmap.html"), "utf8");
+  assert.match(dm, /try \{ return decodeURIComponent\(s\); \} catch \{ return s; \}/, "문서 지도(docmap.html)도 같이");
+});
+
+test("F-103-5 새 맥락 리뷰 — 다른 호출이 도는 중에 단계 초안이 불리면, 미리 받은 초안(pre)과 앞 호출의 '무엇을 기다리나'(planBusy)를 지우지 않는다", async () => {
+  const said = [];
+  const st = { mode: "live", busy: true, planBusy: "hand", warn: null, error: "" };
+  const env = { st, canLive: true, prevOf: () => [], ideaNow: () => "", guard: () => false, baseText: () => "", say: (t) => said.push(t), render() {},
+    callAI: async () => { throw new Error("바쁠 때는 부르지 않는다"); } };
+  const mk = new Function(...Object.keys(env), `let pre = { key: "k", r: { ok: true } }; ${fnSrc("stageDraft")}; return { stageDraft, pre: () => pre };`)(...Object.values(env));
+  await mk.stageDraft(3);
+  assert.deepEqual(mk.pre(), { key: "k", r: { ok: true } }, "미리 받은 초안은 그대로");
+  assert.equal(st.planBusy, "hand", "앞 호출의 표시는 그대로");
+  assert.equal(said.length, 1, "기다리는 중이라고 한 번 말한다");
+  for (const where of ["app/45-knowledge.js", "app/55-files.js", "app/90-acts.js"]) {
+    const p = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator", where), "utf8");
+    for (const m of p.matchAll(/planBusy(: | = )"(ship|hand|again)"/g)) assert.match(p.slice(Math.max(0, m.index - 260), m.index), /if \(st\.busy\) return;/, `${where} — planBusy "${m[2]}" 앞에 바쁨 확인`);
+  }
+});

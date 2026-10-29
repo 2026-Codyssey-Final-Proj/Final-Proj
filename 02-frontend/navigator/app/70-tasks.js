@@ -118,7 +118,7 @@
   }
   // AI에게 묻는 것들 — 무엇을 기다리는지(planBusy)를 같이 보인다
   const planId = (el) => (el && el.dataset && el.dataset.id) || (st.plan ? FP.next(st.plan) : "");   // 보고 안의 단추는 data-id, 채팅의 칩은 지금 줄
-  const planCall = async (kind, url, body) => { st.planBusy = kind; try { return await callAI(url, body); } finally { st.planBusy = ""; } };
+  const planCall = async (kind, url, body) => { if (st.busy) return callAI(url, body); st.planBusy = kind; try { return await callAI(url, body); } finally { st.planBusy = ""; } };   // 바쁠 때는 앞 일의 '무엇을 기다리나'를 지우지 않는다(F-103-5)
   const carryTexts = () => (((st.carryUse || {})[st.j ? st.j.stage : 0]) || []).map((x) => x && x.text).filter(Boolean).slice(0, 3);   // C-51
   const carryBody = () => { const c = carryTexts(); return c.length ? { carry: c } : {}; };   // 고른 것이 없으면 보내지 않는다(전과 같은 본문)
   async function makePlan(skipCheck) {

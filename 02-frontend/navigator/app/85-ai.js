@@ -8,7 +8,9 @@
     return s <= lastWait ? `예상 ${lastWait}초 · ${s}초` : `예상보다 길어져요 · ${s}초`;
   };
   //   pending — 이미 보낸 요청(미리 부른 초안, C-40)을 같은 기다림 화면으로 기다린다
+  //   이미 기다리는 중이면 보내지 않고 { busy } — 단추 더블클릭에 AI를 두 번 부르고(토큰 두 배 · 맡기기 409), 먼저 끝난 쪽이 바쁨 · 타이머를 풀던 것(F-103-5)
   async function callAI(url, body, pending = null) {
+    if (st.busy) return { ok: false, busy: true, reason: "앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 눌러 주세요" };
     hold(); st.busy = true; waitFrom = Date.now(); render();
     waitTimer = setInterval(() => { const el = $nav.querySelector("[data-wait]"); if (el) el.textContent = waitText(); }, 1000);
     try {
@@ -78,6 +80,7 @@
   async function askAI(url, body, what, done, check) {
     if (check && guard(...check)) return;
     const r = await callAI(url, body);
+    if (r.busy) return;   // 더블클릭의 두 번째 — 오류가 아니라 앞 호출이 답을 그린다(F-103-5)
     if (r.ok) { st.tokens = r.tokens || 0; fetchUsage(); done(r); } else { st.error = `${what} — ${r.reason || "이유를 알 수 없어요"}. 지어내지 않고 비워 둘게요.`; pendingNotice = ""; }
     render();
   }
