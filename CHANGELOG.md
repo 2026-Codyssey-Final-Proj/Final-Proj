@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.10 | 2026-10-29 | 임유정 | 작업실 머리 줄의 접기(위쪽 화살표)를 오고 가는 단추로 — 한 번 누르면 알약, 다시 누르면 접기 전 모습으로(F-100). 앱을 켤 때 작업실이 뜨기 전에 흐린 알약 · 말풍선이 깜박이던 것을 고침(F-101) (#273) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정) · `02-frontend/electron/main.js` · `04-tests/navigator/workspace-family.test.js` · `04-tests/navigator/pill-overlay.test.js` · `04-tests/navigator/workspace-col.test.js` · `01-docs/07-maintenance/fix-map.md` |
 | v51.9 | 2026-10-29 | 두승현 | 상단바 오른쪽 X 옆의 '화면 가득' 단추를 뺐다 — 작업실 창을 키우는 것은 OS 창의 최대화로(F-98). 상단바의 집(처음으로) 단추도 뺐다 — 판의 ‘← 단추로’ · Esc가 같은 일(F-99) (#272) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `02-frontend/electron/main.js` · `04-tests/navigator/`(workspace · electron-side · workspace-col · workspace-family) · `01-docs/07-maintenance/fix-map.md` |
 | v51.8 | 2026-10-29 | 임유정 | 작업실 대화 목록의 지금 단계 줄 — 마우스를 올려도 글자가 보이고, 펼친 파일은 버튼 아래로 (F-97) (#269) | `02-frontend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v51.7 | 2026-10-29 | 두승현 | 상단바(머리 줄)의 단계 이름을 13px에서 16px로 키워 머리 줄에서 가장 큰 글자로(F-96) (#268) | `02-frontend/navigator/`(app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/workspace-family.test.js` · `01-docs/07-maintenance/fix-map.md` |
