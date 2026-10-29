@@ -51,6 +51,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .files div{padding:6px 8px;border-radius:6px}.files .on{background:var(--acc-soft)}
 .chat{padding:24px 40px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;font:calc(14px * var(--ui-scale,1))/1.7 var(--font-code);color:var(--ink2);overflow:hidden}
 .chat .me{color:var(--acc)}.chat .dim{opacity:.55}
+.isl .mc.chat{font-family:var(--font-text)}   /* 섬 대화 카드는 글 글꼴(C-62) — 위 .chat(브라우저 판 예시 터미널 #chat)과 이름이 겹쳐 코드 글꼴이 걸렸다(두승현 2026-10-29). 크기 · 색 · 배치는 그대로 */
 
 /* ── 앞쪽: 옆자리 동료 (PC) ── */
 .nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(940px,calc(100vw - 32px));z-index:10;display:flex;flex-direction:column;align-items:center}
@@ -520,12 +521,12 @@ button.pet:focus-visible{outline-offset:4px}
    어두운 토큰은 섬 카드(.isl · .pill)에만 — :root는 파스텔 하나. 별 · 유리(블러 · 굴절) · 점 격자 · 판 안의 판은 쓰지 않는다. 옛 '리퀴드 글래스'(2026-10-15 ~ 10-28)는 여기서 뺐다 ── */
 .isl,.pill{
   --win:var(--isl); --winbar:var(--isl-bar); --side:var(--isl); --line:rgba(255,255,255,.16);
-  --ink:#EEF1FA; --ink2:#E1E6F4; --mute:#AAB3D4; --sub:#C6D5EE;
+  --ink:#EEF1FA; --ink2:#E1E6F4; --mute:#D3E0F3; --sub:#D3E0F3;   /* 섬 글자 세 단계 — 제목 · 본문 · 보조, 카드 위에서도 4.5:1 이상(전에는 보조 4.42:1 · 용어 꼬리표 3.15:1 — 두승현 2026-10-29) */
   --glass2:var(--isl); --soft:rgba(255,255,255,.06); --card:rgba(255,255,255,.08);
-  --acc:#C6D5EE; --acc-btn:#B8C9F0; --acc-ink:#263066; --acc-soft:rgba(184,201,240,.18); --acc-mid:rgba(184,201,240,.5); --seg:rgba(255,255,255,.18);
+  --acc:#D3E0F3; --acc-btn:#B8C9F0; --acc-ink:#263066; --acc-soft:rgba(184,201,240,.18); --acc-mid:rgba(184,201,240,.5); --seg:rgba(255,255,255,.18);
   --ok:#A9E2C4; --okbg:rgba(169,226,196,.16); --warn:#EFE3C0; --warnbg:rgba(230,203,134,.18); --bad:#EFC3CB; --badbg:rgba(239,195,203,.18);
-  --t-blue:rgba(255,255,255,.06); --t-blue-ink:#C6D5EE; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9E2C4; --ok-btn:#A9E2C4;
-  --t-amber:rgba(255,255,255,.06); --t-amber-ink:#EFE3C0; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#C6D5EE;
+  --t-blue:rgba(255,255,255,.06); --t-blue-ink:#D3E0F3; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9E2C4; --ok-btn:#A9E2C4;
+  --t-amber:rgba(255,255,255,.06); --t-amber-ink:#EFE3C0; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#D3E0F3;
   --t-red:rgba(255,255,255,.06); --t-red-ink:#EFC3CB; --bad-btn:#EFC3CB;
   --shadow:0 10px 30px rgba(43,52,99,.18);
   color-scheme:dark;
@@ -921,7 +922,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .page{padding:14px 14px 16px;position:relative;min-width:0}
 .page.l{background:#E9DFC6;border-right:2px dashed #C6D5EE;padding-left:26px}
 .page.l::before{content:"";position:absolute;left:6px;top:24px;bottom:24px;width:8px;background:repeating-linear-gradient(180deg,#2B3463 0 14px,transparent 14px 60px);border-radius:4px}
-.page h4{margin:0 0 10px;text-align:center;font-size:calc(14px * var(--ui-scale,1));color:#5B6491;letter-spacing:.1em}
+.page h4{margin:0 0 10px;text-align:center;font-size:calc(14px * var(--ui-scale,1));color:#2B3463;letter-spacing:.1em}
 .toc{display:grid;gap:8px}
 .toc button{border:0;border-radius:10px;padding:10px 8px;font-size:calc(13px * var(--ui-scale,1));font-weight:800;text-align:center;box-shadow:inset 0 0 0 2px #fff;line-height:1.35}
 .toc button[aria-pressed=true]{outline:2px solid #7A5E1E;outline-offset:1px}
@@ -1025,12 +1026,12 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 /* 앱의 설정 창 · 퀘스트 창(win.html, C-22) — 창 폭이 601px보다 좁아도 섬과 같은 네이비(위 PC 팔레트와 같은 값 — 바꾸면 둘 다). 글자 크기 설정은 섬의 값을 따르지 않는다(창은 1배) */
 html.in-win:not(.win-quest){   /* 앱의 설정 창은 섬과 같은 남색. 작업실 창의 옆 칸(.isl-col)은 C-62(2026-10-29)부터 파스텔 — 남색은 그 안의 섬 카드(.isl)만 */
 --win:var(--isl); --winbar:var(--isl-bar); --side:var(--isl); --line:rgba(255,255,255,.16);
-    --ink:#EEF1FA; --ink2:#E1E6F4; --mute:#AAB3D4; --sub:#C6D5EE;
+    --ink:#EEF1FA; --ink2:#E1E6F4; --mute:#D3E0F3; --sub:#D3E0F3;   /* 섬 글자 세 단계 — 제목 · 본문 · 보조, 카드 위에서도 4.5:1 이상(전에는 보조 4.42:1 · 용어 꼬리표 3.15:1 — 두승현 2026-10-29) */
     --glass2:rgba(54,62,98,.55); --soft:rgba(255,255,255,.06); --card:rgba(255,255,255,.08);
-    --acc:#C6D5EE; --acc-btn:#B8C9F0; --acc-ink:#263066; --acc-soft:rgba(184,201,240,.18); --acc-mid:rgba(184,201,240,.5); --seg:rgba(255,255,255,.18);
+    --acc:#D3E0F3; --acc-btn:#B8C9F0; --acc-ink:#263066; --acc-soft:rgba(184,201,240,.18); --acc-mid:rgba(184,201,240,.5); --seg:rgba(255,255,255,.18);
     --ok:#A9E2C4; --okbg:rgba(169,226,196,.16); --warn:#EFE3C0; --warnbg:rgba(230,203,134,.18); --bad:#EFC3CB; --badbg:rgba(239,195,203,.18);
-    --t-blue:rgba(255,255,255,.06); --t-blue-ink:#C6D5EE; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9E2C4; --ok-btn:#A9E2C4;
-    --t-amber:rgba(255,255,255,.06); --t-amber-ink:#EFE3C0; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#C6D5EE;
+    --t-blue:rgba(255,255,255,.06); --t-blue-ink:#D3E0F3; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9E2C4; --ok-btn:#A9E2C4;
+    --t-amber:rgba(255,255,255,.06); --t-amber-ink:#EFE3C0; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#D3E0F3;
     --t-red:rgba(255,255,255,.06); --t-red-ink:#EFC3CB; --bad-btn:#EFC3CB;
     --shadow:0 24px 60px rgba(20,24,48,.55);
   color-scheme:dark;
@@ -1054,7 +1055,7 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 .rb-body{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:10px}
 .rb-toc{display:grid;gap:4px;align-content:start}
 .rb-toc button{border:0;background:transparent;color:var(--sub);text-align:left;border-radius:8px;padding:5px 8px;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
-.rb-toc button[aria-current=true]{background:var(--acc-soft);color:var(--acc);font-weight:700}
+.rb-toc button[aria-current=true]{background:var(--acc-soft);color:var(--acc-ink);font-weight:700}
 .rb-ch h4{margin:0 0 6px;font-size:calc(14px * var(--ui-scale,1))}
 .rb-text{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2);font-size:calc(13px * var(--ui-scale,1));line-height:1.6}
 .tu{display:grid;gap:6px;align-content:start;font-size:calc(13.5px * var(--ui-scale,1));line-height:1.55;color:var(--ink2)}
@@ -1150,7 +1151,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 /* claude-drafted: 2026-10-28 — C-54 지도(도전과제 탭의 카드 지도, 목업 캔버스 ④ ~ ⑥): 바다 위 얼음 조각 — 파스텔 토큰(웹사이트 초안과 같은 값), 카드 4열 두 줄(둘째 줄은 돌아온다), 아래 줄 문서, 보기 셋 */
 .board.sea{background:#E2E9F4 repeating-radial-gradient(ellipse at 12% 18%,rgba(77,102,181,0) 0 46px,rgba(77,102,181,.07) 46px 47.5px);color:#2B3463}
 .sm-views{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:rgba(43,52,99,.08);margin:0 0 10px}
-.sm-views button{min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#5B6491;font:inherit;font-size:calc(13px * var(--ui-scale,1));font-weight:700;cursor:pointer}
+.sm-views button{min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#2B3463;font:inherit;font-size:calc(13px * var(--ui-scale,1));font-weight:700;cursor:pointer}
 .sm-views button[aria-selected=true]{background:#F2F5FA;color:#2B3463;box-shadow:0 1px 0 #C5CEE2}
 .sm{display:grid;gap:12px}
 .sm-ban{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:14px;background:#EFE3C0;color:#2B3463;font-size:calc(13px * var(--ui-scale,1));line-height:1.5}
