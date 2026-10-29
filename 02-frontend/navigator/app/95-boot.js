@@ -133,10 +133,11 @@
   // ── 주소 끝으로 장면 바로 열기 (시연·녹화용). 진짜 AI를 부르지 않고 연습 예시로만 장면을 만든다 ──
   //   #start · #ex=<단계>(그 단계 '하는 중' 예시) · &done(그 단계를 다 한 예시) · &tab=<탭> · &crit(할 일 펼침) · &gate(넘어가기 전 확인) · &book=<책>
   //   · &tier=Lite|Xpress|Full(만드는 크기 — 장면보다 먼저 정한다) · &noex(예시 책 없이 — 내 책만, 2026-10-19)
+  const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };   // 깨진 %(예: #book=50%)는 글자 그대로 — 던지면 시작 코드 전체가 멈춰 빈 화면(F-103-12)
   function fromHash() {
     const h = location.hash.slice(1);
     if (!h) return;
-    const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(decodeURIComponent)).map(([k, v]) => [k, v === undefined ? true : v]));
+    const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(safeDecode)).map(([k, v]) => [k, v === undefined ? true : v]));
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
       termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, chat: [], chatMark: 0, chatChanges: [], chatOpen: null });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63)
     lastLive = null;

@@ -258,6 +258,7 @@
   //   초안을 못 받으면 까닭을 말하고 전처럼 1단계를 한 줄씩(받은 글이 처음 말한 것)
   let startText = "";
   async function startDraft(text, skipCheck) {
+    if (st.busy) return say("앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 해 주세요");   // 다른 호출이 도는 중(웹 AI 제안 '시작' 등) — 빈 퀘스트를 만들지 않는다(F-103-5)
     startText = text; st.source = text;   // F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
     if (st.mode !== "live" || !canLive) return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true });
     if (!skipCheck && guard(text, "start")) return;
@@ -285,6 +286,7 @@
     const prev = prevOf(n), idea = ideaNow();
     if (st.mode !== "live" || !canLive) { const ex = QU.exampleStageDraft(n, crits(n), prev); if (ex && st.quest) st.quest = applyStates(QU.withStageDraft(st.quest, ex)); return render(); }
     if (!skipCheck && guard([idea, baseText(), ...prev.flatMap((p) => p.items.flatMap((x) => x.lines))].join("\n"), "stage")) return;   // 기준 카드 줄도 같이 본다(새 맥락 리뷰 2026-10-28)
+    if (st.busy) return say("앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 해 주세요");   // 미리 받은 초안(pre)을 버리거나 앞 호출의 planBusy를 지우지 않게(F-103-5)
     Object.assign(st, { warn: null, error: "", planBusy: "stage" });
     const hit = pre && pre.key === preKey(n, prev) ? pre : null; pre = null;
     let r = hit && hit.r && hit.r.ok ? hit.r : null;

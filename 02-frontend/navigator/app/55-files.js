@@ -11,6 +11,8 @@
     try {
       const r = await (await fetch(`/api/file?i=${n}`, { cache: "no-store" })).json();
       if (!r || !r.ok) return say(`'${x.name}'은 열지 않았어요 — ${(r && r.reason) || "서버가 답하지 않았어요"}`);
+      const again = st.openFiles.findIndex((f) => f.path === r.path);   // 기다리는 동안 같은 파일이 열렸으면(빠른 두 번 누름) 그 탭으로 — 탭 둘이면 한쪽 저장 뒤 다른 쪽 409(F-103-6)
+      if (again >= 0) { st.fileSel = again; st.qtab = "file"; return render(); }
       if (st.openFiles.length >= 12) return say("연 파일이 12개예요 — 하나를 닫고 열어요");   // 저장 이력(20번 × 512KB)이 파일 수만큼 늘지 않게(새 맥락 리뷰)
       const text = r.text.replace(/\r\n/g, "\n");   // 글 칸은 LF — 저장할 때 eol로 되돌린다(CRLF 파일이 LF로 바뀌지 않게)
       st.openFiles.push({ i: n, path: r.path, name: r.name, kind: r.kind, eol: r.eol || "lf", text, saved: text, mtime: r.mtime, changed: r.changed, dirty: false, edit: false, raw: false, hist: [], note: null });
@@ -117,6 +119,7 @@
     if (!canLive || st.mode === "fixture") return say("연습 모드라 맡기지 않아요 — 진짜 폴더를 연결한 앱에서 돼요");
     if (tw && !(st.blocked && st.blocked.at === tw.at)) return say("맡긴 일이 아직 돌고 있어요 — 끝난 뒤에 맡겨요");   // 막혀 있는 일은 새로 맡기면 끝맺는다(watchTask)
     const w = sensitive(job.text); if (w.length) return say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요 — 그 칸을 고친 뒤 다시`);
+    if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "hand";
     const r = await callAI("/api/task/start", { text: job.text, checks: job.checks });
     st.planBusy = "";

@@ -1292,6 +1292,7 @@
   //   초안을 못 받으면 까닭을 말하고 전처럼 1단계를 한 줄씩(받은 글이 처음 말한 것)
   let startText = "";
   async function startDraft(text, skipCheck) {
+    if (st.busy) return say("앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 해 주세요");   // 다른 호출이 도는 중(웹 AI 제안 '시작' 등) — 빈 퀘스트를 만들지 않는다(F-103-5)
     startText = text; st.source = text;   // F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
     if (st.mode !== "live" || !canLive) return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true });
     if (!skipCheck && guard(text, "start")) return;
@@ -1319,6 +1320,7 @@
     const prev = prevOf(n), idea = ideaNow();
     if (st.mode !== "live" || !canLive) { const ex = QU.exampleStageDraft(n, crits(n), prev); if (ex && st.quest) st.quest = applyStates(QU.withStageDraft(st.quest, ex)); return render(); }
     if (!skipCheck && guard([idea, baseText(), ...prev.flatMap((p) => p.items.flatMap((x) => x.lines))].join("\n"), "stage")) return;   // 기준 카드 줄도 같이 본다(새 맥락 리뷰 2026-10-28)
+    if (st.busy) return say("앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 해 주세요");   // 미리 받은 초안(pre)을 버리거나 앞 호출의 planBusy를 지우지 않게(F-103-5)
     Object.assign(st, { warn: null, error: "", planBusy: "stage" });
     const hit = pre && pre.key === preKey(n, prev) ? pre : null; pre = null;
     let r = hit && hit.r && hit.r.ok ? hit.r : null;
@@ -1475,6 +1477,7 @@
   async function shipGo(publicOk = false) {
     if (!st.ship || !(st.ship.phase === "offer" || (publicOk && st.ship.phase === "public"))) return;
     if (st.mode !== "live" || !canLive) { st.ship = null; render(); return say("연습이라 올리지 않았어요 — 진짜 AI 모드에서 작업 폴더에 만들고 올려요"); }
+    if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "ship";
     const known = shipKnown();
     const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
@@ -1665,6 +1668,8 @@
     try {
       const r = await (await fetch(`/api/file?i=${n}`, { cache: "no-store" })).json();
       if (!r || !r.ok) return say(`'${x.name}'은 열지 않았어요 — ${(r && r.reason) || "서버가 답하지 않았어요"}`);
+      const again = st.openFiles.findIndex((f) => f.path === r.path);   // 기다리는 동안 같은 파일이 열렸으면(빠른 두 번 누름) 그 탭으로 — 탭 둘이면 한쪽 저장 뒤 다른 쪽 409(F-103-6)
+      if (again >= 0) { st.fileSel = again; st.qtab = "file"; return render(); }
       if (st.openFiles.length >= 12) return say("연 파일이 12개예요 — 하나를 닫고 열어요");   // 저장 이력(20번 × 512KB)이 파일 수만큼 늘지 않게(새 맥락 리뷰)
       const text = r.text.replace(/\r\n/g, "\n");   // 글 칸은 LF — 저장할 때 eol로 되돌린다(CRLF 파일이 LF로 바뀌지 않게)
       st.openFiles.push({ i: n, path: r.path, name: r.name, kind: r.kind, eol: r.eol || "lf", text, saved: text, mtime: r.mtime, changed: r.changed, dirty: false, edit: false, raw: false, hist: [], note: null });
@@ -1771,6 +1776,7 @@
     if (!canLive || st.mode === "fixture") return say("연습 모드라 맡기지 않아요 — 진짜 폴더를 연결한 앱에서 돼요");
     if (tw && !(st.blocked && st.blocked.at === tw.at)) return say("맡긴 일이 아직 돌고 있어요 — 끝난 뒤에 맡겨요");   // 막혀 있는 일은 새로 맡기면 끝맺는다(watchTask)
     const w = sensitive(job.text); if (w.length) return say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요 — 그 칸을 고친 뒤 다시`);
+    if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "hand";
     const r = await callAI("/api/task/start", { text: job.text, checks: job.checks });
     st.planBusy = "";
@@ -2534,7 +2540,7 @@
   }
   // AI에게 묻는 것들 — 무엇을 기다리는지(planBusy)를 같이 보인다
   const planId = (el) => (el && el.dataset && el.dataset.id) || (st.plan ? FP.next(st.plan) : "");   // 보고 안의 단추는 data-id, 채팅의 칩은 지금 줄
-  const planCall = async (kind, url, body) => { st.planBusy = kind; try { return await callAI(url, body); } finally { st.planBusy = ""; } };
+  const planCall = async (kind, url, body) => { if (st.busy) return callAI(url, body); st.planBusy = kind; try { return await callAI(url, body); } finally { st.planBusy = ""; } };   // 바쁠 때는 앞 일의 '무엇을 기다리나'를 지우지 않는다(F-103-5)
   const carryTexts = () => (((st.carryUse || {})[st.j ? st.j.stage : 0]) || []).map((x) => x && x.text).filter(Boolean).slice(0, 3);   // C-51
   const carryBody = () => { const c = carryTexts(); return c.length ? { carry: c } : {}; };   // 고른 것이 없으면 보내지 않는다(전과 같은 본문)
   async function makePlan(skipCheck) {
@@ -3256,7 +3262,9 @@
     return s <= lastWait ? `예상 ${lastWait}초 · ${s}초` : `예상보다 길어져요 · ${s}초`;
   };
   //   pending — 이미 보낸 요청(미리 부른 초안, C-40)을 같은 기다림 화면으로 기다린다
+  //   이미 기다리는 중이면 보내지 않고 { busy } — 단추 더블클릭에 AI를 두 번 부르고(토큰 두 배 · 맡기기 409), 먼저 끝난 쪽이 바쁨 · 타이머를 풀던 것(F-103-5)
   async function callAI(url, body, pending = null) {
+    if (st.busy) return { ok: false, busy: true, reason: "앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 눌러 주세요" };
     hold(); st.busy = true; waitFrom = Date.now(); render();
     waitTimer = setInterval(() => { const el = $nav.querySelector("[data-wait]"); if (el) el.textContent = waitText(); }, 1000);
     try {
@@ -3326,6 +3334,7 @@
   async function askAI(url, body, what, done, check) {
     if (check && guard(...check)) return;
     const r = await callAI(url, body);
+    if (r.busy) return;   // 더블클릭의 두 번째 — 오류가 아니라 앞 호출이 답을 그린다(F-103-5)
     if (r.ok) { st.tokens = r.tokens || 0; fetchUsage(); done(r); } else { st.error = `${what} — ${r.reason || "이유를 알 수 없어요"}. 지어내지 않고 비워 둘게요.`; pendingNotice = ""; }
     render();
   }
@@ -3532,6 +3541,7 @@
       const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex.length < 2) return;
       const swap = (it) => ({ ...st.quest, draft: { ...st.quest.draft, items: st.quest.draft.items.map((x, k) => (k === i ? it : x)) } });
       if (st.mode !== "live" || !canLive) { st.quest = swap({ ...q.draft.items[i], text: ex[1], alts: [...ex.slice(2), ex[0]] }); render(); return say("연습이라 예시 순서만 바꿨어요 — 진짜 AI면 새 예시를 만들어요"); }
+      if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
       Object.assign(st, { warn: null, error: "", planBusy: "again" });
       const r = await callAI("/api/stagedraft", { stage: q.chap, tier: st.tier, idea: ideaNow(), prev: prevOf(q.chap), base: baseText(), avoid: { i, texts: ex.slice(0, 3) } });
       st.planBusy = "";
@@ -3734,7 +3744,7 @@
     "tree-map": () => { treeChap = null; render(); },   // 도전과제의 한눈에 보기(C-37)
     // C-54 지도 — 보기 셋 · 기획서로 그리기 · 맞아요(한 번에) · 고칠래요 · 카드 누름(오른쪽 칸 + 문서가 있으면 파일 보기)
     "tree-view": (i, el) => { const v = el && el.dataset.v; if (["cards", "flow", "box"].includes(v)) treeView = v; render(); },
-    "prep-draw": async () => { if (!SM || !st.results[1] || st.prep) return;
+    "prep-draw": async () => { if (!SM || !st.results[1] || st.prep || st.busy) return;   // 바쁠 때 누르면 바쁨을 실패로 읽어 규칙 카드를 저장하던 것(F-103-5 새 맥락 리뷰)
       const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits });
       let ai = null;   // C-56 R-2(2026-10-28): 진짜 AI면 한 번에 이 프로젝트의 말로(/api/prepare) — 못 받으면 규칙(기획서의 절)으로만, 연습은 규칙
       if (st.mode === "live" && canLive) { const r = await callAI("/api/prepare", { tier: st.tier, idea: ideaNow(), prev: prevOf(2), base: baseText() }); if (r.ok && r.prepare) { ai = r.prepare.cards; st.tokens = r.tokens || 0; fetchUsage(); } else say(`AI가 맞춰 짓지는 못했어요 — ${r.reason || "연결하지 못했어요"}. 기획서의 절에서 규칙으로 그렸어요`); }
@@ -4205,10 +4215,11 @@
   // ── 주소 끝으로 장면 바로 열기 (시연·녹화용). 진짜 AI를 부르지 않고 연습 예시로만 장면을 만든다 ──
   //   #start · #ex=<단계>(그 단계 '하는 중' 예시) · &done(그 단계를 다 한 예시) · &tab=<탭> · &crit(할 일 펼침) · &gate(넘어가기 전 확인) · &book=<책>
   //   · &tier=Lite|Xpress|Full(만드는 크기 — 장면보다 먼저 정한다) · &noex(예시 책 없이 — 내 책만, 2026-10-19)
+  const safeDecode = (s) => { try { return decodeURIComponent(s); } catch { return s; } };   // 깨진 %(예: #book=50%)는 글자 그대로 — 던지면 시작 코드 전체가 멈춰 빈 화면(F-103-12)
   function fromHash() {
     const h = location.hash.slice(1);
     if (!h) return;
-    const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(decodeURIComponent)).map(([k, v]) => [k, v === undefined ? true : v]));
+    const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(safeDecode)).map(([k, v]) => [k, v === undefined ? true : v]));
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
       termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, chat: [], chatMark: 0, chatChanges: [], chatOpen: null });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63)
     lastLive = null;
