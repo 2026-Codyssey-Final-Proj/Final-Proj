@@ -737,7 +737,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .fn-all .fn{padding-left:12px}
 #root>.wh{border-radius:0}
 .wsx>.wh,#root>.wh{flex-wrap:nowrap;min-width:0}   /* 한 줄로 — 좁으면 아래 media가 칩 · 프로젝트 이름을 숨긴다(둘째 줄로 꺾이면 섬 단추가 왼쪽으로 갔다) */
-.wh .tb-stage{flex:0 1 auto;max-width:240px;padding:4px 10px;margin:0}
+.wh .tb-stage{flex:0 1 auto;font-size:calc(16px * var(--ui-scale,1));max-width:320px;padding:4px 12px;margin:0}   /* 단계는 머리 줄에서 가장 큰 글자(16 — 제목 14 · 탭 13, 두승현 2026-10-29) */
 @media (max-width:1280px){.wsx>.wh .meta,#root>.wh .meta{display:none}}
 .wh .hisl{display:inline-flex;align-items:center;gap:2px;flex:none}
 .wh .hisl .ti{width:30px;height:30px}

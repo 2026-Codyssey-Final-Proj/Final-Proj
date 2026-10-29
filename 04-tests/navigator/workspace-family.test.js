@@ -110,3 +110,8 @@ test("플로로 옆의 상태 뱃지(.mc-badge)와 둥실 움직임(bob), 카드
   assert.ok(!/\bbadge: /.test(a), "카드의 badge 값 없음");
   assert.ok(!/@keyframes bob\b|animation:bob\b/.test(c), "둥실 움직임 없음");
 });
+
+// claude-drafted: 2026-10-29 — 두승현 "상단 바의 단계 글자가 너무 작아 가시성 · 중요도가 낮아 보인다": 머리 줄에서 단계가 가장 큰 글자(16 — 제목 '작업실' 14 · 탭 13보다 크게), 칩이 빠진 자리만큼 칸도 넓게
+test("머리 줄의 단계 이름은 16px로 머리 줄에서 가장 크고, 칸은 320px까지", () => {
+  assert.match(c, /^\.wh \.tb-stage\{[^}]*font-size:calc\(16px \* var\(--ui-scale,1\)\);[^}]*max-width:320px;/m);
+});
