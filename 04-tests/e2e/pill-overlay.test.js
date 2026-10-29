@@ -64,6 +64,27 @@ test("C-55 — 주소 없이 켜면 작업실이 바로 열리고 섬은 접힌 
   } finally { await browser.close(); }
 });
 
+// claude-drafted: 2026-10-29 — 두승현 "바 형 UI를 누르면 바로 작업실로": 작업실 밖에 떠 있는 알약을 누르면 섬 대화창을 거치지 않고 작업실(+ 접힌 알약)로. 작업실 안의 알약은 전처럼 섬을 펼친다
+test("작업실 밖의 알약을 누르면 바로 작업실 — 섬은 접힌 알약 그대로, 작업실 안의 알약을 누르면 섬이 펼쳐진다", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(url("navigator/index.html#base"), { waitUntil: "load" });
+    await page.evaluate(() => { localStorage.clear(); localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); });
+    await page.reload({ waitUntil: "load" }); await wait(300);
+    await page.keyboard.press("Escape"); await wait(500);   // 떠 있는 섬 → 알약(작업실 없음)
+    const look = () => page.evaluate(() => ({ qwin: !!document.querySelector(".qwin"), pill: !!document.querySelector(".pill"), isl: !!document.querySelector(".isl") }));
+    let s = await look(); assert.ok(s.pill && !s.qwin && !s.isl, `작업실 밖의 알약: ${JSON.stringify(s)}`);
+    await page.click(".pill"); await wait(500);
+    s = await look(); assert.ok(s.qwin && s.pill && !s.isl, `누르면 작업실 + 접힌 알약(섬 대화창은 안 펼침): ${JSON.stringify(s)}`);
+    assert.ok(await page.$(".qwin .cv"), "작업실은 캔버스 탭부터");
+    await page.click(".pill"); await wait(500);
+    s = await look(); assert.ok(s.qwin && s.isl && !s.pill, `작업실 안의 알약은 섬을 펼친다: ${JSON.stringify(s)}`);
+    await page.click("[data-act=qwin]"); await wait(500);   // 작업실 닫기(×) — 펼친 섬 대화창이 남지 않고 알약으로(두승현 2026-10-29 "복귀할 때 기존 UI가 그대로")
+    s = await look(); assert.ok(s.pill && !s.qwin && !s.isl, `작업실을 닫으면 알약: ${JSON.stringify(s)}`);
+  } finally { await browser.close(); }
+});
+
 // 작업실 창 재현 — 섬이 보내는 HTML(작업실 판 + 옆 칸)을 win.html에 넣고 잰다
 async function islandHTML(browser) {
   const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
