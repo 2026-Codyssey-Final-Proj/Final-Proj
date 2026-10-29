@@ -9,14 +9,13 @@ const read = (f) => fs.readFileSync(path.join(FRONT, f), "utf8");
 const Seal = require(path.join(FRONT, "navigator/seal.js"));
 const app = read("navigator/app.js"), css = read("navigator/app.css"), sealCss = read("navigator/seal.css");
 
-test("C-20: 접히기까지 단추 다섯(5 · 10 · 15 · 30 · 60) · 기본 15 · 이 컴퓨터에 저장(floe:fold-delay). 아래 게이지바(.cd)는 없고 테두리 빛(.glow)이 있다 — 각도(--glow-p)만 움직인다", () => {
+// 테두리 빛(.glow)은 2026-10-29 두승현 결정으로 뺐다 — 접히는 기능 · '접히기까지' 설정은 그대로
+test("C-20: 접히기까지 단추 다섯(5 · 10 · 15 · 30 · 60) · 기본 15 · 이 컴퓨터에 저장(floe:fold-delay). 아래 게이지바(.cd)도 테두리 빛(.glow)도 없다", () => {
   assert.match(app, /FOLD_CHOICES = \[5, 10, 15, 30, 60\]/);
   assert.match(app, /FOLD_KEY = "floe:fold-delay"/);
   assert.ok(!/class="cd"/.test(app) && !/\.cd\{/.test(css) && !/@keyframes shrink/.test(css), "옛 게이지바가 없다");
-  assert.match(css, /@property --glow-p/);
-  assert.match(css, /\.isl \.glow\{[^}]*conic-gradient\(from 0deg/);
-  assert.match(css, /@keyframes glow\{from\{--glow-p:0\}to\{--glow-p:1\}\}/);
-  assert.match(css, /prefers-reduced-motion:reduce\)\{[^}]*\}[^@]*\.isl \.glow\{animation:none/, "움직임 줄이기면 빛이 움직이지 않는다");
+  assert.ok(!/class="glow"|countdown/.test(app) && !/\.glow|--glow-p|@keyframes glow/.test(css) && !/glow/.test(read("navigator/win.js")), "테두리 빛이 남아 있지 않다");
+  assert.ok(!app.includes("테두리 빛"), "설정 안내 글에도 없다");
   assert.match(app, /st\.ui === "home" \? foldDelay\(\) : DELAY\[st\.ui\]/, "펼친 섬만 설정을 따른다 — 한 줄 → 띠는 그대로");
 });
 

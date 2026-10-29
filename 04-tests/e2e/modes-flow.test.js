@@ -301,7 +301,7 @@ test("FR-17: #base&pane=ai&approve=1 — 승인 카드 둘(보통 · 되돌리�
 });
 
 // ── 앱 9.0.0 섬 묶음(2026-10-20, 이재엽 "모든 요구사항들을 … 하나도 빠짐없이") — 코드보다 먼저 썼다 ──
-test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본 15)를 고르면 이 컴퓨터에 남고, 마우스가 나가면 아래 게이지바 대신 테두리 빛(.glow)이 그 시간으로 돈다", { skip }, async () => {
+test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본 15)를 고르면 이 컴퓨터에 남고, 마우스가 나가면 그 시간 뒤 접힌다 — 게이지바도 테두리 빛도 없다(빛은 2026-10-29 두승현 결정으로 뺌)", { skip }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser);
@@ -316,10 +316,9 @@ test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본
     await page.click("[data-act=settings]"); await wait(200);
     await page.evaluate(() => { const p = document.querySelector('[data-act=pin][aria-pressed="true"]'); if (p) p.click(); });
     await page.mouse.move(5, 850); await wait(400);
-    const g = await page.evaluate(() => { const g = document.querySelector(".isl .glow"); return { on: !!g, dur: g && getComputedStyle(g).animationDuration, cd: !!document.querySelector(".cd") }; });
-    assert.deepEqual(g, { on: true, dur: "5s", cd: false });
-    await page.mouse.move(700, 120); await wait(300);
-    assert.ok(!(await page.evaluate(() => !!document.querySelector(".isl .glow"))), "다시 들어오면 빛을 거둔다");
+    assert.ok(!(await page.$(".isl .glow")) && !(await page.$(".cd")), "테두리 빛도 게이지바도 없다");
+    await wait(3000); assert.ok(await page.$(".isl"), "5초 전에는 펼친 그대로");
+    await wait(2500); assert.ok(!(await page.$(".isl")) && (await page.$(".pill")), "마우스가 나간 뒤 5초가 지나면 접힌다");
     // 새로 고침해도 5초
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1"), { waitUntil: "load" }); await wait(400);
     await page.click("[data-act=settings]"); await wait(200);
