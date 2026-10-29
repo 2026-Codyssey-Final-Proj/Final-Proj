@@ -585,6 +585,13 @@
       "easy는 초등학생도 알아듣는 말로 두 문장, 60자 안쪽 — 무엇을 했고 무엇이 남았는지. 어려운 말은 쉬운 말로 풀고, 파일 이름 · 명령 · 숫자는 바꾸지 않아요.",
       "사용자에게 물을 것이 있으면 ask에 한 문장(쉬운 말), 없으면 빈 글. 증거에 내 컴퓨터의 전체 경로는 쓰지 말고 폴더 안의 파일 이름만 써요."].join("\n");
   }
+  // C-50 미리 판정(2026-10-29 — 지식 퀘스트 PRD 9절 8번 '규칙으로, AI를 더 부르지 않음'): 보고의 해냄을 세어 다 됨 · 덜 됨, 일이 막혔으면 막힘,
+  //   보고가 없거나 기준이 0이거나 실패 · 멈춤이면 직접 확인 필요. 화면은 '다 됨'일 때만 '맞아요'를 큰 단추로 둔다
+  function reportVerdict(r, state = "") {
+    if (state === "blocked") return { kind: "blocked", word: "막힘" };
+    if (state === "failed" || state === "stopped" || !r || !r.total) return { kind: "check", word: "직접 확인 필요" };
+    return r.done === r.total ? { kind: "done", word: "다 됨" } : { kind: "partial", word: "덜 됨" };
+  }
   // 보고 읽기 — 기준 순서대로 맞춘다(빠진 줄은 안 됨, 남는 줄은 버림). 근거가 빈 '해냄'은 해냄으로 치지 않는다. check 글은 우리 것으로 덮는다
   function parseReport(o, checks) {
     const c = (checks || []).filter(filled);
@@ -636,7 +643,7 @@
     START_MAX, START_SCHEMA, startPrompt, parseStart,   // C-36 처음 한 바퀴 — 1단계 초안(2026-10-25)
     DRAFT_STAGES, ALT_STAGES, STAGE_HINT, STAGE_DRAFT_SCHEMA, stageDraftPrompt, parseStageDraft, PREP_MAX, PREP_LINE, FROM_MAX, ALT_MAX, ALT_LINE,
     PREPARE_STAGES, PREPARE_SCHEMA, preparePrompt, parsePrepare, TITLE_MAX, ASK_MAX, hasJargon, WORK_MAX,   // C-56 R-2 준비된 퀘스트 · 이 프로젝트의 말(2026-10-28)   // C-37 2단계 초안 · C-39 3단계 초안 · 재료 · 준비할 것(2026-10-25)
-    PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport,   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)
+    PLAN_MAX, PLAN_SCHEMA, planPrompt, parsePlan, CHECKS_MAX, REPORT_SCHEMA, taskBrief, parseReport, reportVerdict,   // C-34 준비 계획판 · C-32 해낸 것 확인(2026-10-24)
     CHAT_TURNS_MAX, CHAT_LINE_MAX, CHAT_TOTAL_MAX, CHAT_SCHEMA, talkOf, chatPrompt, parseChat };   // 작업실 개편 C-61 플로로와 자유 대화(2026-10-29, API.md 3-31)
   // 지식 퀘스트(2026-10-29) — 따로 더해 둔다(다른 갈래가 고치는 위 내보내기 줄과 부딪치지 않게). C-48 가져갈 것
   Object.assign(api, { CARRY_SCHEMA, CARRY_DECISIONS_MAX, carryPrompt, parseCarry });

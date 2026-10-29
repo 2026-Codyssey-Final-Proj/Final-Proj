@@ -29,7 +29,7 @@ const skip = !puppeteer || !chrome ? `건너뜀 — ${!puppeteer ? "puppeteer" :
 if (skip) console.log(`⚠️ e2e/gate-stop: ${skip}`);
 
 const card = (page) => page.evaluate(() => ({ title: [...document.querySelectorAll(".isl .mc.chat .say")].pop()?.textContent || "", acts: [...document.querySelectorAll(".isl .mc.chat [data-act]")].map((b) => b.dataset.act), unmet: [...document.querySelectorAll(".isl .unmet li b")].map((b) => b.textContent) }));
-async function sayLine(page, text) { await page.click("[data-act=say]"); await page.type("[data-act=say]", text); await page.keyboard.press("Enter"); await wait(350); }
+async function sayLine(page, text) { await page.click("[data-act=say]"); await page.type("[data-act=say]", text); await page.keyboard.press("Enter"); await wait(350); if (await page.$("[data-act=tidy-fill]")) { await page.click("[data-act=tidy-fill]"); await wait(350); } }   // C-61(PR ③): 보내기는 칸에 적지 않는다 — 정리 카드의 [칸 1개에 적기]로
 
 test("R-10 — 빈칸 표시가 남은 채 보고하면 관문 앞에서 멈추고, 까닭을 적고 넘기면 관문이 열린다 · 채우러 가기는 공책으로", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });

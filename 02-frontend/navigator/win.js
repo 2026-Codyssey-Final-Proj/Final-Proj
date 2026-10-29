@@ -9,7 +9,7 @@
   document.title = kind === "quest" ? "Floe — 작업실" : "Floe — 설정";   // 테두리 있는 작업실 창(C-41, 2026-10-26)은 OS 제목 줄에 이 글이 보인다 — main.js의 title을 페이지가 덮어쓴다
   if (!F || !F.onWinHtml) return;
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  let goShown = "";   // 마지막으로 옮겨 간 목차 차례 번호(data-go)
+  let goShown = "", goStageShown = "";   // 마지막으로 옮겨 간 목차 차례 번호(data-go) · 대화 구분선(data-go-stage, C-63)
   const WS_PANES = [".wnav", ".wside"];   // 다시 그려도 스크롤을 지키는 작업실 옆 칸 — 섬(app.js)의 WS_PANES와 같다
   // 파일 보기(.fv)의 글 칸 스크롤 — 섬(app.js)의 fvScroll과 같다: was 없이 부르면 읽고, 주면 같은 파일 · 같은 보기일 때 되돌린다
   const fvScroll = (fv, was) => { const b = fv && fv.querySelector(".fv-code, .fv-md"); if (!was) return b ? { f: fv.dataset.f, c: b.className, top: b.scrollTop, left: b.scrollLeft } : null; if (b && b.className === was.c && fv.dataset.f === was.f) { b.scrollTop = was.top; b.scrollLeft = was.left; } };
@@ -31,6 +31,7 @@
     const body = root.querySelector(".wbody"); if (body) body.scrollTop = body.dataset.view === view ? scroll : 0;
     const now = body && body.dataset.view !== view && !root.querySelector(".cv.free") && root.querySelector(".cv-c.now"); if (now) now.scrollIntoView({ block: "nearest" });   // 캔버스 탭으로 올 때 '지금' 칸이 보이게(C-41 기준 7, 2026-10-26)
     const lg2 = root.querySelector("[data-log]"); if (lg2) lg2.scrollTop = lgTop === null || lgEnd ? lg2.scrollHeight : lgTop;
+    const gs = root.querySelector("[data-log][data-go-stage]"), gv = gs ? gs.dataset.goStage : ""; if (gv && gv !== goStageShown) { goStageShown = gv; const el = gs.querySelector(`[data-stage="${gv.split(":")[0]}"]`); if (el) { el.scrollIntoView({ block: "start" }); el.classList.add("hl"); setTimeout(() => el.classList.remove("hl"), 1200); } }   // C-63 대화 목록의 바로가기 — 그 단계 구분선으로(섬 app.js goStage와 같다)
     const go = root.querySelector("[data-go]"); if (go && go.dataset.go !== goShown) { goShown = go.dataset.go; const p = go.closest(".fv-code"); if (p) p.scrollTop = go.offsetTop - (p.clientHeight - go.offsetHeight) / 2; }   // 목차로 고른 제목 줄로 한 번만(섬의 ftoc-go — 섬의 render와 같은 뜻)
     layoutCol();
   });
@@ -46,14 +47,15 @@
   const hd = document.createElement("div"); hd.id = "hd"; hd.setAttribute("role", "separator"); hd.tabIndex = 0; hd.hidden = true; hd.innerHTML = "<span></span>"; document.body.appendChild(hd);
   const foldedCol = () => { const c = root.querySelector(".isl-col"); return !!c && c.classList.contains("folded"); };
   function layoutCol() {
-    const side = sideOf(), h = document.documentElement, folded = foldedCol();
-    h.dataset.side = side; hd.hidden = !side || folded;   // 접힌 칸(C-46 R-2)은 손잡이 없이 두께 FOLD — 작업실이 그만큼 넓어진다(0.3초, win.html)
+    const side = sideOf(), h = document.documentElement, folded = foldedCol(), center = !!root.querySelector(".isl-col.center");   // center — C-61 섬이 작업 칸 전체(2026-10-29): 손잡이 없음
+    h.dataset.side = side; hd.hidden = !side || folded || center;   // 접힌 칸(C-46 R-2)은 손잡이 없이 두께 FOLD — 작업실이 그만큼 넓어진다(0.3초, win.html)
     if (!side) return;
     const axis = axisOf(side), v = (col[axis] = clamp(axis, col[axis]));
-    h.style.setProperty("--col-w", `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);
-    if (folded) return;
+    h.style.setProperty("--col-w", center ? (root.querySelector(".wnav") ? "calc(100% - 200px)" : "100%") : `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);   // center — 왼쪽 파일 칸만 남기고 섬(C-61)
+    if (folded || center) return;
     hd.className = axis === "w" ? "v" : "h";
-    hd.style.cssText = axis === "w" ? `left:${side === "left" ? v - 7 : innerWidth - v - 7}px;top:0;width:14px;height:100%` : `top:${side === "top" ? v - 7 : innerHeight - v - 7}px;left:0;height:14px;width:100%`;
+    const whH = (root.querySelector(".wh") || {}).offsetHeight || 0;   // 머리 줄(C-62 — 창 전체 폭)은 손잡이가 덮지 않는다(새 맥락 리뷰 2026-10-29)
+    hd.style.cssText = axis === "w" ? `left:${side === "left" ? v - 7 : innerWidth - v - 7}px;top:${whH}px;width:14px;height:calc(100% - ${whH}px)` : `top:${side === "top" ? v - 7 : innerHeight - v - 7}px;left:0;height:14px;width:100%`;
     hd.setAttribute("aria-orientation", axis === "w" ? "vertical" : "horizontal"); hd.setAttribute("aria-label", axis === "w" ? "플로로 칸 너비 손잡이" : "플로로 칸 높이 손잡이");
     hd.setAttribute("aria-valuemin", RANGE[axis][0]); hd.setAttribute("aria-valuemax", hiOf(axis)); hd.setAttribute("aria-valuenow", v); hd.setAttribute("aria-valuetext", `${axis === "w" ? "너비" : "높이"} ${v}px`);
   }
@@ -100,6 +102,7 @@
   let caretAt = 0;
   const caret = (e) => { const t = e.target; if (!t || !t.classList || !t.classList.contains("fv-edit")) return; const line = t.value.slice(0, t.selectionStart).split("\n").length; if (line !== caretAt) { caretAt = line; const pos = root.querySelector(".fv-st [data-pos]"); if (pos) pos.textContent = ` · 줄 ${line}`; F.winEvent({ type: "caret", line }); } };   // 상태 줄은 여기서 바로(섬은 다음 그림에)
   root.addEventListener("keyup", caret); root.addEventListener("click", caret); root.addEventListener("select", caret);
+  root.addEventListener("toggle", (e) => { if (e.target && e.target.classList && e.target.classList.contains("fn-all")) F.winEvent({ type: "toggle", open: !!e.target.open }); }, true);   // '전체 파일' 접고 펼침(C-63)
   root.addEventListener("input", (e) => { const t = e.target; if (!t.dataset || !t.dataset.act) return; F.winEvent({ type: "input", act: t.dataset.act, data: data(t), value: t.value }); });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") { e.preventDefault(); return F.winEvent({ type: "key", key: "Escape", kind }); }
