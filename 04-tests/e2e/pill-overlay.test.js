@@ -160,7 +160,7 @@ test("R-2 — 작업실 창 안에서 섬을 접으면 옆 칸이 알약(두께 
       assert.ok(!f.hd && o.hd, `${side} — 접히면 손잡이 없음`);
       assert.ok(vertical ? f.cvw > o.cvw + 200 : f.cvh > o.cvh + 200, `${side} — 캔버스가 넓어진다: 펼침 ${o.cvw}×${o.cvh} → 접힘 ${f.cvw}×${f.cvh}`);
       assert.ok(f.pill && (vertical ? f.pill.wm === "vertical-rl" && f.pill.w <= 56 : f.pill.wm === "horizontal-tb" && f.pill.h <= 56), `${side} — ${vertical ? "세로" : "가로"} 알약: ${JSON.stringify(f.pill)}`);
-      assert.equal(f.bg, "rgba(0, 0, 0, 0)", `${side} — 접힌 칸의 바탕은 작업실 바탕이 비친다(F-65 파란 줄 없음): ${f.bg}`); assert.notEqual(o.bg, "rgba(0, 0, 0, 0)", `${side} — 펼친 칸은 바탕이 있다(C-62부터 파스텔, 남색은 섬 카드만)`);
+      assert.equal(f.bg, "rgb(226, 233, 244)", `${side} — 접힌 칸의 바탕은 오른쪽 칸과 같은 옆 칸 색(F-90, 2026-10-29 두승현) — 남색 띠는 아니다(F-65): ${f.bg}`); assert.notEqual(o.bg, "rgba(0, 0, 0, 0)", `${side} — 펼친 칸은 바탕이 있다(C-62부터 파스텔, 남색은 섬 카드만)`);
       assert.ok(f.pillBg && f.pillBg !== "rgba(0, 0, 0, 0)", `${side} — 남색은 알약 하나: ${f.pillBg}`);
       assert.ok(f.bub && f.bub.in && f.bub.w >= 200, `${side} — 켤 때 말풍선(C-55)이 접힌 칸 밖 · 창 안에 다 보인다: ${JSON.stringify(f.bub)}`);
       assert.ok(!f.overflow && !o.overflow, `${side} — 넘침 0`); assert.ok(f.pill.inside, `${side} — 알약이 칸 안에 다 들어간다(잘리지 않음): ${JSON.stringify(f.pill)}`);

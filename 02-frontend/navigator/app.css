@@ -307,7 +307,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .flowline{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--tink)}
 
 /* 레벨 오버레이(2026-10-19 lvc — LV · EXP · 명령 네 칸)는 2026-10-21 C-22로 채팅 중심 섬(.mc.chat, 맨 아래)이 됐다 */
-@media (prefers-reduced-motion:reduce){.bn.cur{animation:none}.isl .glow{animation:none;--glow-p:1;opacity:.35}.feedlayer.show{animation:none}}
+@media (prefers-reduced-motion:reduce){.bn.cur{animation:none}.feedlayer.show{animation:none}}
 .flowline>span{padding:2px 10px;border-radius:999px;background:var(--card);color:var(--sub);font-size:calc(13px * var(--ui-scale,1))}
 .flowline>span.meta{background:none;padding:0}
 .okchip,.nowchip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:calc(12px * var(--ui-scale,1));font-weight:600}
@@ -323,15 +323,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .crit-grid{padding:4px 14px 2px;background:var(--card);border:1px solid var(--line);border-radius:16px}
 .crit-grid ul.crit{columns:2;column-gap:28px}.crit-grid ul.crit li{break-inside:avoid;border-top:0}
 
-/* 곧 접혀요 */
-/* 테두리 빛(C-20, 2026-10-20 — 아래 게이지바 .cd 대신): 위 가운데에서 켜져 양쪽 테두리를 따라 내려가 아래 가운데에서 만난다. 각도(--glow-p 0→1)만 움직여 섬 전체를 다시 그리지 않는다.
-   밝기는 리퀴드 글래스 반짝임 정도(흰빛 .7). 노치 섬은 위 가운데가 노치에 가려져 양쪽 모서리에서 보이기 시작한다 [제안] */
-@property --glow-p{syntax:"<number>";inherits:false;initial-value:0}
-.isl .glow{position:absolute;inset:0;border-radius:inherit;pointer-events:none;padding:2.5px;box-sizing:border-box;opacity:.9;
-  background:conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,.72) 0deg,rgba(255,255,255,.72) calc(var(--glow-p) * 180deg),transparent calc(var(--glow-p) * 180deg),transparent calc(360deg - var(--glow-p) * 180deg),rgba(255,255,255,.72) calc(360deg - var(--glow-p) * 180deg),rgba(255,255,255,.72) 360deg);
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
-  animation:glow linear forwards}
-@keyframes glow{from{--glow-p:0}to{--glow-p:1}}
+/* 접히기까지 — 설정 단추 */
 .fold .fold-opt{min-height:32px;padding:0 12px;border-radius:999px;font-size:calc(13px * var(--ui-scale,1))}
 .fold .fold-opt[aria-pressed="true"]{background:var(--acc-btn);color:var(--acc-ink);border-color:transparent}
 .fold .meta{flex-basis:100%;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
@@ -685,7 +677,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .win{position:relative;z-index:3;flex:none;display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:var(--card);border:1.5px solid var(--acc-mid);box-shadow:var(--shadow);font-size:calc(13.5px * var(--ui-scale,1));color:var(--ink);max-width:100%;max-height:calc(100vh - 28px)}
 .win.winpop{animation:winpop var(--t-long) var(--ease-in)}   /* 'pop'이 아니라 winpop — .pop(말풍선 판)과 겹쳐 처음 열 때 여백 · 정렬이 뒤집어썼다(⑥ 2026-10-27) */
 @keyframes winpop{from{transform:scale(.6);opacity:0}}
-.wh{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--soft);flex:none;user-select:none}
+.wh{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--acc-mid);border-bottom:1px solid var(--line);flex:none;user-select:none;--mute:var(--ink);--sub:var(--ink)}   /* 머리 줄은 한 단계 진한 연파랑 + 경계선 — 아래 칸들(눈색 · 종이)과 층이 갈린다 — 진하기 = 중요도(머리 줄 > 옆 칸 > 작업 칸, 두승현 2026-10-29). 이 바탕에서 흐린 글자는 3.85:1이라 진한 남색으로(7.98:1) */
 .wh .ttl{font-weight:800;font-size:calc(14px * var(--ui-scale,1))}
 .wh .meta{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sub)}
 .wh .ti{width:30px;height:30px}
@@ -844,7 +836,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wh .wtg:hover{background:var(--acc-soft)}
 .wh .wtg:disabled{opacity:.4;cursor:default;background:transparent}   /* 섬을 펼친 동안의 오른쪽 칸 단추 — 눌러도 바뀌지 않으니 누를 수 없게 보인다(F-84) */
 .wh .wtg:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
-.wside{width:280px;flex:none;box-sizing:border-box;padding:12px 14px;background:var(--soft);overflow:auto;display:flex;flex-direction:column;gap:14px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);border-left:1px solid var(--line)}
+.wside{width:280px;flex:none;box-sizing:border-box;padding:12px 14px;background:var(--side);overflow:auto;display:flex;flex-direction:column;gap:14px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);border-left:1px solid var(--line)}
 .wside h4{margin:0 0 6px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub);text-transform:none;letter-spacing:.02em}
 .wside .ws-sum{margin:0;line-height:1.55}
 .wside .ws-sum b{color:var(--ink)}
@@ -1315,7 +1307,7 @@ html.win-quest,.nav .wsx{--desk:#E9EEF6; --win:#F2F5FA; --winbar:#E2E9F4; --side
   --t-blue:#D3E0F3; --t-blue-ink:#2B3463; --t-green:#A9E2C4; --t-green-ink:#2B3463; --t-amber:#EFE3C0; --t-amber-ink:#7A5E1E; --t-gray:#E2E9F4; --t-gray-ink:#2B3463; --t-red:#EFC3CB; --t-red-ink:#8E3A52;
   --shadow:0 10px 30px rgba(43,52,99,.12); color-scheme:light}   /* 601px 이상의 네이비 토큰(위 :root @media)을 전부 덮는다 — 빠지면 섬의 밝은 글씨가 파스텔 위에 1.38:1(2026-10-26 새 맥락 리뷰) */
 html.win-quest .win,.nav .wsx .qwin{background:var(--card);border-color:var(--acc-mid)}   /* 브라우저 판도 같은 파스텔 — ⑥의 캔버스는 밝은 면이 고정값이라 네이비 토큰 위에서는 흰 글씨가 흰 면에 왔다(새 맥락 리뷰 2026-10-27) */
-html.win-quest .wh,.nav .wsx .wh{background:var(--soft)}
+html.win-quest .wh,.nav .wsx .wh{background:var(--acc-mid)}
 html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"이 이미 있다 — 머리띠에는 크기 · 닫기만 */
 /* claude-drafted: 2026-10-27 두승현 — C-41 ⑥ 캔버스: 디자인 캔버스(DockPrototype)의 1100×640 판. 판 위의 것은 전부 목업과 같은 숫자(--u = 판의 1px).
    2026-10-27 C-42 R-11(이재엽 버튼 "줌 + 모자라면 다시 배치", F-61-11): 칸(.cv)이 판을 0.85배 이상 담을 수 있으면(935×544 이상) 아래 @container 블록이 판을 그대로 줌한다(--u = cqw/1100 · cqh/640, 1px까지 — 컨테이너 단위라 스크립트 없이).
@@ -1413,7 +1405,7 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.narrow .mc.chat .log{max-height:max(120px,calc(100vh - 340px))}
 .isl-col.wide .mc.chat .log{max-height:max(110px,calc(var(--col-h,360px) - 250px))}
 /* 접힌 옆 칸(C-46 R-2, 2026-10-27) — 그 가장자리의 알약 하나. 왼쪽 · 오른쪽은 세로 알약(이재엽 버튼 "세로 알약"): 플로로 얼굴은 바로, 글은 세로쓰기. 칸의 두께(56)는 win.js FOLD */
-.isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden;background:transparent}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이. 바탕은 비친다(작업실 바탕) — 남색은 알약 하나만(F-65 파란 줄, 2026-10-28) */
+.isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden;background:var(--side)}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이. 남색은 알약 하나만(F-65 파란 줄, 2026-10-28). 바탕은 오른쪽 칸(.wside)과 같은 옆 칸 색 — 전에는 투명해 창 바탕이 비쳐 두 띠로 보였다(두승현 2026-10-29) */
 .isl-col.folded .pill{max-width:100%;flex:none;background:var(--isl);-webkit-backdrop-filter:none;backdrop-filter:none}   /* 남색 판(섬 토큰 — 앱 창의 .in-app 알약과 같은 값, C-57) — 작업실 창에는 앱 창의 .in-app 규칙이 없어 유리(반투명)로 그려져, F-65로 칸이 비친 뒤 파스텔이 비쳐 글자가 흐렸다(임유정 2026-10-28) */
 .isl-col.folded .pill:not(.ping){box-shadow:inset 1px 1px 0 rgba(255,255,255,.6),inset -1px -1px 0 rgba(255,255,255,.2),inset 0 0 0 .5px rgba(255,255,255,.14),0 1px 2px rgba(0,4,30,.35)}   /* 큰 그림자(0 24px 60px)는 칸(overflow:hidden · 여백 3px)에서 잘려 각진 띠로 보였다 — 1+2 = 3px 안에 */
 .isl-col.folded .pill:hover{transform:none}   /* 올리면 커지는 움직임은 접힌 칸에서는 잘린다 — 하지 않는다 */

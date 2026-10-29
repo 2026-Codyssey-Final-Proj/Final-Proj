@@ -82,3 +82,12 @@ test("C-60 주 단추 하나 · 덜 펼치기 — 섬 칩은 '더 보기' 하나
   assert.match(a, /<details class="cv-unmet-d"><summary>남은 기준 \$\{unmet\.length\}<\/summary><ul class="cv-unmet">/, "관문의 남은 기준");
   assert.match(a, /<details class="jm-peek"><summary>할 일 미리 보기<\/summary><ul class="jm-cells">/, "안 그려진 단계");
 });
+
+// claude-drafted: 2026-10-29 — 두승현 "작업실 상단 바의 색상이 다른 UI와 같아 계층 구분이 쉽지 않다": 머리 줄은 한 단계 진한 연파랑(--acc-mid, C-57 토큰) + 아래 경계선 — 같은 날 "조금은 진하게 · 진하기를 중요도 기준으로"로 --acc-soft에서 한 단계 더.
+//   그 바탕에서 흐린 글자(--mute 3.85:1)는 기준 4.5:1에 못 미쳐 머리 줄 안에서만 진한 남색(--ink, 7.98:1)으로
+test("머리 줄은 다른 칸과 구분되는 바탕(--acc-mid) · 아래 경계선, 그 안의 흐린 글자는 진한 남색 — 앱 창(win.html) · 브라우저 판 둘 다", () => {
+  assert.match(c, /^\.wh\{[^}]*background:var\(--acc-mid\);[^}]*border-bottom:1px solid var\(--line\)/m, "머리 줄 바탕 · 경계선");
+  assert.match(c, /^\.wh\{[^}]*--mute:var\(--ink\);--sub:var\(--ink\)/m, "흐린 글자는 머리 줄 안에서 진하게(대비 4.5:1 이상)");
+  assert.match(c, /html\.win-quest \.wh,\.nav \.wsx \.wh\{background:var\(--acc-mid\)\}/, "작업실 창 · 브라우저 판의 덮어쓰기도 같은 색");
+  assert.match(h, /html\.in-win\.win-quest #root>\.wh\{background:var\(--acc-mid\)\}/, "앱 창의 머리 줄도 같은 색");
+});

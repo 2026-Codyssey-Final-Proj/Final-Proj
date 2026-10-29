@@ -353,7 +353,7 @@
   const coin = () => `<i class="coin" aria-hidden="true">${SHELL_ICO}</i>`;
 
   // ── 접힘·펼침 (PC 화면만) ──
-  let hovering = false, timer = null, idleAt = 0, lastUi = null;
+  let hovering = false, timer = null, lastUi = null;
   function clearIdle() { clearTimeout(timer); timer = null; }
   function scheduleIdle() {
     if (greetSkip) return;   // 켜질 때 인사 움직임이 끝난 뒤부터 센다(C-10)
@@ -361,7 +361,6 @@
     // 마우스가 올라가 있으면 인사도 접지 않는다(플로로를 쓰다듬는 중에 사라지지 않게). 떠나면 다시 센다
     if (isPhone() || st.ui === "hidden" || hovering || colHover || (st.ui !== "greet" && pinned())) return;
     if (WINS && st.qwin && st.ui === "petit") return;   // 작업실 안의 접힌 알약은 더 접히지(hidden) 않는다 — 옆 칸은 마우스 올림을 보내지 않아 되살릴 길이 없다(새 맥락 리뷰 2026-10-27 막힘)
-    idleAt = Date.now();
     timer = setTimeout(() => { timer = null; view("idle"); }, st.ui === "home" ? foldDelay() : DELAY[st.ui]);
   }
   function go(ui) { if (ui !== st.ui) { st.ui = ui; clearIdle(); } render(); }
@@ -548,7 +547,7 @@
         <option value="live" ${st.mode === "live" ? "selected" : ""} ${canLive ? "" : "disabled"}>진짜 AI (Claude)${canLive ? "" : " — server.js를 켜야 해요"}</option></select>`)}
       ${srow("글자 크기", `<select data-act="text-size" aria-label="글자 크기">${TEXT_SIZES.map(([v, name]) =>
         `<option value="${v}" ${st.textSize === v ? "selected" : ""}>${name}</option>`).join("")}</select>`)}
-      ${srow("접히기까지", `<span class="row tiers fold" role="group" aria-label="펼친 섬이 접히기까지">${FOLD_CHOICES.map((v) => `<button type="button" class="b fold-opt" data-act="fold-delay" data-i="${v}" aria-pressed="${foldSec === v}">${v}초</button>`).join("")}<span class="meta">마우스가 나간 뒤 — 테두리 빛이 아래에서 만나면 접혀요</span></span>`)}
+      ${srow("접히기까지", `<span class="row tiers fold" role="group" aria-label="펼친 섬이 접히기까지">${FOLD_CHOICES.map((v) => `<button type="button" class="b fold-opt" data-act="fold-delay" data-i="${v}" aria-pressed="${foldSec === v}">${v}초</button>`).join("")}<span class="meta">마우스가 나간 뒤 그 시간이 지나면 접혀요</span></span>`)}
       ${tier}
       <div class="row">${modeBadge()}<span class="grow">안내 기준은 아직 시험판이에요</span></div>`);
     return view;
@@ -2340,9 +2339,6 @@
     return `<div class="tb">${homeBtn(!st.pane)}<span class="tb-stage" aria-live="polite">${stageBand()}</span><span class="grow"></span>${tbRight()}`;
   }
   const X_ICON = icon('<path d="M6 6l12 12M18 6L6 18"></path>', 16);
-  const countdownOn = () => st.ui === "home" && !hovering && !colHover && !pinned() && !!timer;
-  // 테두리 빛(C-20, 이재엽 "밑에 게이지바로 하면 너무 촉박한 느낌"): 위 가운데에서 켜져 양쪽 테두리를 따라 내려가고 아래 가운데에서 만나면 접힌다 — 접히는 시계(scheduleIdle)와 같은 시간 · 같은 시작점
-  const countdown = () => (countdownOn() ? `<i class="glow" aria-hidden="true" title="곧 접혀요 — 핀을 누르면 열어 둬요" style="animation-duration:${foldDelay()}ms;animation-delay:-${Date.now() - idleAt}ms"></i>` : "");
   // 한 줄 — 플로로가 앞지느러미를 걸치고 있다. 알릴 일이 있으면 파란 테두리로 살짝 흔든다
   function pillHTML() {
     const s = st.j && stage();
@@ -2799,7 +2795,7 @@
   // inCol — 작업실 옆 칸 안의 섬(C-62, 2026-10-29): 위 줄(.tb)은 그리지 않는다 — 집 · 설정 · 열어 두기 · 접기는 작업실 머리 줄의 섬 단추 묶음(hisl)에
   function islandHTML(enter, inCol = false) {
     const body = st.settings && QU && !st.qwin ? settingsPane() : st.pane ? basePane(st.pane) : chatCard(momentToday());
-    const isl = `<div class="isl${enter}">${inCol ? "" : topbar()}<div class="isl-body">${body}</div>${countdown()}${gachaHTML()}</div>`;
+    const isl = `<div class="isl${enter}">${inCol ? "" : topbar()}<div class="isl-body">${body}</div>${gachaHTML()}</div>`;
     if (WINS || !st.qwin || inCol) return isl;   // 앱: 작업실은 따로 뜬다(syncWins). inCol이면 섬만(아래 격자가 부른다)
     return `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow${islBig() ? " center" : ""}">${islandHTML(enter, true)}</div></div>`;   // 브라우저 판: 앱 창(win.html #root)과 같은 격자 — 머리 줄 한 줄 아래 작업실 판 · 섬 옆 칸
   }
@@ -2853,10 +2849,10 @@
     if (p.type === "caret") { caretLine = Number(p.line) || 0; return; }
     if (p.type === "toggle") { st.fnAll = !!p.open; return; }   // 작업실 창의 '전체 파일' 접고 펼침(C-63) — 다시 그려도 그대로
     // 글 칸의 줄 위치(C-53 상태 줄) — 다시 그리지 않는다(치는 동안 글 칸이 흔들리지 않게), 다음 그릴 때 보인다
-    // 작업실 창에서 움직이거나 누르면(poke — win.js가 1초에 한 번까지, 흰 줄이 돌 때만) 접히는 시계를 처음부터. 흰 줄은 그 창이 스스로 다시 그렸으니 다시 그리지 않는다(임유정 2026-10-28)
+    // 작업실 창에서 움직이거나 누르면(poke — win.js가 1초에 한 번까지, 섬이 펼쳐져 있을 때만) 접히는 시계를 처음부터(임유정 2026-10-28)
     if (p.type === "poke") { if (st.ui === "home" && timer) { clearIdle(); scheduleIdle(); } return; }
     // 옆 칸에 마우스를 올리거나 글을 쓰는 동안은 접히지 않는다(C-46) — 떠나면 접히는 시계를 다시 센다
-    if (p.type === "col") { if (typeof p.hover === "boolean") { colHover = p.hover; if (p.hover) clearIdle(); else scheduleIdle(); render(); }   // 다시 그려 흰 줄을 숨기거나 처음부터(전에는 시계만 멈추고 흰 줄은 계속 돌았다)
+    if (p.type === "col") { if (typeof p.hover === "boolean") { colHover = p.hover; if (p.hover) clearIdle(); else scheduleIdle(); }   // 들어오면 시계를 멈추고 나가면 다시 센다(접히기 전 표시는 2026-10-29 두승현 결정으로 뺐다)
     if (typeof p.typing === "boolean") { colTyping = p.typing; if (!p.typing) scheduleIdle(); } return; }
     // Esc — 옆 칸이 펼쳐져 있으면 먼저 접고(알약), 접혀 있으면 작업실을 닫는다(C-46, 새 맥락 리뷰 — 접기 단추의 '(Esc)'와 맞춤)
     if (p.type === "key" && p.key === "Escape") { if (p.kind === "quest" && st.qwin && st.settings) return set({ settings: false }); if (deskKeys.Escape && st.ui === "home" && p.kind === "quest") return run(deskKeys.Escape); if (p.kind === "quest" && st.qwin) { if (!colFolded()) return go("petit"); return closeQwin(); } }

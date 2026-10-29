@@ -18,7 +18,7 @@ html.in-win,html.in-win body{margin:0;background:#363E62;overflow:hidden;height:
 html.in-win.win-quest,html.in-win.win-quest body{background:#E9EEF6}   /* 작업실(C-41, 2026-10-26) — 파스텔. main.js backgroundColor · app.css html.win-quest와 같은 값 */
 html.in-win.win-quest .win-empty{color:#4A5678}
 html.in-win .window,html.in-win .nav,html.in-win .phone{display:none}
-html.in-win.win-quest #root>.wh{background:#E2E9F4}   /* 머리 줄은 작업실 바탕(눈색) — 판과 옆 칸 위에 하나 */
+html.in-win.win-quest #root>.wh{background:var(--acc-mid)}   /* 머리 줄은 판과 옆 칸 위에 하나 — 한 단계 진한 연파랑으로 층을 가른다(두승현 2026-10-29) */
 /* 창 = 머리 줄(.wh, 창 전체 폭) + 작업실 판(.win) + 섬 옆 칸(.isl-col, C-41 ⑤) — C-62 머리 줄 하나(2026-10-29): 격자 "wh wh" / "win isl". 옆 칸은 오른쪽만(2026-10-28 합의 — 위 · 아래 · 왼쪽 자리를 뺐다),
    너비는 --col-w(win.js, 접히면 56). 0.3초(기준 8), 움직임 줄이기면 바로 */
 #root{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:minmax(0,1fr) var(--col-w,420px);grid-template-rows:auto minmax(0,1fr);grid-template-areas:"wh wh" "win isl";transition:--col-w .3s cubic-bezier(.2,.8,.2,1)}   /* --col-w는 app.css @property — 가운데(C-61)도 같은 변수로 0.3초 */

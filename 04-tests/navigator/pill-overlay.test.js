@@ -28,6 +28,9 @@ test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(fold
   const w = read("navigator/win.js");
   assert.match(w, /F\.winEvent\(\{ type: "col", hover: on \}\)/); assert.match(w, /F\.winEvent\(\{ type: "col", typing: true \}\)/); assert.ok(!w.includes("col-folded"), "쓰지 않는 class는 없다");
   assert.match(read("navigator/app.css"), /\.isl-col\.folded\{padding:3px;/, "56 − 6 = 50 = 알약 높이"); assert.match(read("navigator/app.css"), /\.isl-col\.folded \.pill:hover\{transform:none\}/);
+  // 2026-10-29 두승현 "우측의 모든 색은 동일한 색으로 · 플로로를 그 위에 띄어" — 알약 칸과 오른쪽 칸(이 문서 · 퀘스트)이 같은 옆 칸 색(--side) 하나. 전에는 알약 칸이 투명해 창 바탕(--desk)이 비쳐 두 띠로 보였다
+  assert.match(read("navigator/app.css"), /\.isl-col\.folded\{[^}]*background:var\(--side\)\}/, "알약 칸 = 옆 칸 색");
+  assert.match(read("navigator/app.css"), /\.wside\{[^}]*background:var\(--side\);/, "오른쪽 칸 = 옆 칸 색");
 });
 
 test("win.js · win.html · app.css — 접힌 칸은 두께 56(손잡이 없음), 왼쪽 · 오른쪽은 세로 알약(글은 세로쓰기), 0.3초로 넓어진다", () => {
