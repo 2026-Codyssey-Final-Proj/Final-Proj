@@ -21,9 +21,9 @@ test("T23 대화 저장 — 진짜 AI 모드는 서버(API.md 3-32 /api/chatlog 
   assert.match(a, /const chatLive = \(\) => canLive && st\.mode === "live";/, "서버 저장은 진짜 AI 모드에서만(연습은 FR-10)");
   assert.match(a, /const turnOf = \(m\) => \(m\.kind === "stage" \? \{ stage: m\.n, mark: true, title: String\(m\.title \|\| ""\)\.slice\(0, 60\) \} : m\.kind === "carry" \? \{ stage: m\.n, carry: textOf\(m\.html\)\.slice\(0, 2000\) \}/, "3-32의 세 모양(말 · 구분선 · 가져온 것)");
   assert.match(a, /const add = chatQueue\.splice\(0, 20\);/, "한 번에 20개"); assert.match(a, /fetch\("\/api\/chatlog", \{ method: "POST"/, "add로 쌓는다");
-  assert.match(a, /async function chatlogLoad\(\)/); assert.match(a, /chatFolder = !!\(r && r\.ok && r\.why !== "folder"\);/, "폴더를 모르면 이 브라우저 것 그대로"); assert.match(a, /if \(!chatFolder\) \{ chatQueue = \[\]; return false; \}/, "폴더를 모르면 서버에 보내지 않는다(병합 뒤 고침 — 400이 쌓였다)");
+  assert.match(a, /async function chatlogLoad\(\)/); assert.match(a, /const chatRecheck = \(\) => chatlogLoad\(\)\.then/, "폴더 · 보기 방식이 바뀌면 다시 묻는다"); assert.match(a, /chatFolder = !!\(r && r\.ok && r\.why !== "folder"\);/, "폴더를 모르면 이 브라우저 것 그대로"); assert.match(a, /if \(!chatFolder\) \{ chatQueue = \[\]; return false; \}/, "폴더를 모르면 서버에 보내지 않는다(병합 뒤 고침 — 400이 쌓였다)");
   assert.match(a, /st\.chatMark = st\.chat\.map\(\(m\) => !!m\.kind\)\.lastIndexOf\(true\) \+ 1;/, "이어서 볼 때 대화 표시 자리는 마지막 구분선 뒤");
-  assert.match(a, /chatlogLoad\(\)\.then\(\(ok\) => \{ if \(ok\) render\(\); \}\);   \/\/ C-63 — 켤 때/, "켤 때"); assert.match(a, /const connected = \(r\) => \{ forgetFolder\(\); chatlogLoad\(\)/, "폴더를 바꿔도");
+  assert.match(a, /chatlogLoad\(\)\.then\(\(ok\) => \{ if \(ok\) render\(\); \}\);   \/\/ C-63 — 켤 때/, "켤 때"); assert.match(a, /const connected = \(r\) => \{ forgetFolder\(\); chatRecheck\(\);/, "폴더를 바꿔도");
 });
 
 test("T24 단계 구분선 · 가져온 것 — 새 단계가 시작되면 대화에 구분선(단계 · 이름 · 날짜)과 '지난 단계에서 가져온 것' 카드(정한 줄 요약)를 넣는다. 대화가 비었나는 구분선 뒤 내 말이 있나로", () => {

@@ -982,7 +982,7 @@
     : typeof t.carry === "string" ? { who: "floro", kind: "carry", n: t.stage, at: t.at, html: esc(t.carry).replace(/\n/g, "<br>") } : { who: t.who, n: t.stage, at: t.at, html: esc(t.text) });
   //   chatFolder — 서버가 대화를 둘 폴더(앱이 고른 폴더)를 아나(GET의 why). null이면 묻는 중(모아 둔다), false면 보내지 않는다 — 서버는 폴더 없이 POST를 400으로 거절한다(3-32).
   //   폴더를 고르면(connected · projectPicked) 다시 묻는다. 병합 뒤 고침(2026-10-29 — #247 서버 · #250 화면이 같이 들어간 main에서 브라우저로 연 화면이 말마다 400을 쌓았다)
-  let chatQueue = [], chatFlushing = false, chatFolder = null;
+  let chatQueue = [], chatFlushing = false, chatFolder = null, chatAsk = 0;
   function chatlogAdd(m) { if (!chatLive() || !Number.isInteger(m.n) || chatFolder === false) return; const t = turnOf(m); if (!t || !(t.text || t.title || t.carry)) return; chatQueue.push(t); if (!chatFlushing && chatFolder) setTimeout(chatlogFlush, 0); }
   async function chatlogFlush() {
     if (chatFlushing || !chatQueue.length || chatFolder !== true) return; chatFlushing = true; const add = chatQueue.splice(0, 20);
@@ -990,9 +990,10 @@
     chatFlushing = false; if (chatQueue.length) chatlogFlush();
   }
   async function chatlogLoad() {
-    if (!chatLive()) return false;
-    chatFolder = null;
+    if (!chatLive()) { chatFolder = false; chatQueue = []; return false; }   // 연습 · 서버 없이는 이 브라우저에만 — 진짜 AI 모드로 바꾸면 chatRecheck가 다시 묻는다
+    chatFolder = null; const ask = ++chatAsk;
     let r = null; try { r = await (await fetch("/api/chatlog", { credentials: "same-origin" })).json(); } catch { r = null; }
+    if (ask !== chatAsk) return false;   // 그사이 다시 물었다 — 늦게 온 옛 답이 덮지 않게
     chatFolder = !!(r && r.ok && r.why !== "folder");
     if (!chatFolder) { chatQueue = []; return false; }   // 폴더를 모르면 모아 둔 말은 버린다(이 브라우저에는 남는다) — 나중에 고른 폴더의 대화에 섞지 않게
     setTimeout(chatlogFlush, 0);   // 묻는 동안 한 말
@@ -1002,6 +1003,8 @@
     st.chatMark = st.chat.map((m) => !!m.kind).lastIndexOf(true) + 1;   // 대화 표시 자리는 마지막 구분선 · 가져온 것 뒤
     return true;
   }
+  // 폴더 · 보기 방식이 바뀔 수 있는 곳(처음 설정을 마침 · 보기 방식 · 폴더 연결 · 연결 빼기)에서 서버에 다시 묻는다 — 저장할 곳을 서버의 답으로만 정한다
+  const chatRecheck = () => chatlogLoad().then((ok) => { if (ok) render(); });
   // C-63 — 대화 목록의 바로가기: 같은 대화의 그 단계 구분선으로 옮기고 잠깐 강조. 값은 "단계:번호"라 같은 단계를 다시 눌러도 옮긴다. 앱 창은 win.js가 같은 값(data-go-stage)으로
   let goSeq = 0, goStageShown = "";
   const goStage = (root) => { const lg = root.querySelector("[data-log]"), v = lg ? lg.dataset.goStage || "" : ""; if (!v || v === goStageShown) return; goStageShown = v;
@@ -3773,7 +3776,7 @@
   function onChange(t) {
     const a = t.dataset.act;
     if (t.dataset.bv === "field" && BV) { bv = BV.toggle(bv, t.dataset.v); BV.write(STORE, bv); return render(); }
-    if (a === "mode") set({ mode: t.value, error: "", warn: null });
+    if (a === "mode") { set({ mode: t.value, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다
     if (a === "auto") set({ auto: t.checked });
     if (a === "text-size") { set({ textSize: Number(t.value) || 1 }); applyScale(); }
     if (a === "sound") { set({ sound: t.checked }); if (st.sound) C.chime("pop"); }
@@ -4079,19 +4082,20 @@
   window.floeUnsaved = () => st.openFiles.filter((f) => f.dirty).length;   // 앱(main.js pickAndConnect)이 폴더를 고르기 전에 묻는다 — 저장 안 한 파일이 있으면 한 번 더 확인(F-72)
   const projectPicked = (d) => {
     const n = String(d.name || "");
-    forgetFolder(); chatlogLoad().then((ok) => { if (ok) render(); });   // 새 폴더의 대화를 이어서 — 서버가 그 폴더를 알면 그때부터 쌓는다
+    forgetFolder(); chatRecheck();   // 새 폴더의 대화를 이어서 — 서버가 그 폴더를 알면 그때부터 쌓는다
     say(d.config ? "가져온 저장소에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${n.length > 20 ? `${n.slice(0, 19)}…` : n} 폴더로 바꿨어요. 이제 여기서 같이 일해요.`);
   };
   document.addEventListener("floe:project-picked", (e) => projectPicked((e && e.detail) || {}));
   // F-72(2026-10-28): 앱 메뉴(상단바 · 트레이)로 연결 · 연결 빼기 — 섬의 단추를 거치지 않아 앱이 끝난 뒤 알려 준다. 빼면 훅 알림으로 안 이름(st.project)도 잊는다(app-disconnect와 같이)
   //   섬의 '프로젝트 폴더 연결… · 연결 빼기…' 단추도 같은 길 — 전에는 이름표(st.gh)만 비워 파일 칸은 옛 폴더 그대로였다(F-72 새 맥락 리뷰)
-  const connected = (r) => { forgetFolder(); chatlogLoad().then((ok) => { if (ok) render(); }); say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); };
-  const disconnected = () => { st.project = ""; chatFolder = false; chatQueue = []; forgetFolder(); render(); };   // 연결을 빼면 대화를 서버에 보내지 않는다(폴더 없이 400)
+  const connected = (r) => { forgetFolder(); chatRecheck(); say(r.config ? "이 폴더에 Claude Code 설정이 있어요. 맡기기 전에 한 번 봐 주세요." : `${r.name.length > 20 ? `${r.name.slice(0, 19)}…` : r.name} 폴더와 이었어요. 이제 여기서 같이 일해요.`); };
+  const disconnected = () => { st.project = ""; forgetFolder(); render(); chatRecheck(); };   // 연결을 빼면 서버에 다시 묻는다 — 서버가 폴더를 모르면 보내지 않는다(폴더 없이 400)
   if (window.floeApp && window.floeApp.onProject) window.floeApp.onProject((d) => (d && d.add ? connected({ name: String(d.name || ""), config: !!d.config }) : disconnected()));
   document.addEventListener("floe:setup-done", (e) => {
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });
     else if ((d.via === "cli" || d.via === "api") && canLive) set({ mode: "live", error: "", warn: null });
+    chatRecheck();   // 처음 설정에서 폴더를 골랐을 수 있다 — 대화를 둘 폴더를 다시 묻는다(병합 뒤 고침 새 맥락 리뷰: 첫 실행에서 고른 폴더에 대화가 쌓이지 않았다)
     if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
     st.gh = null;   // 처음 설정에서 프로젝트를 골랐으면 GitHub 칸을 다시 묻는다
     // C-31(2026-10-24): 처음 설정에서 새로 만든 폴더의 GitHub 저장소를 바랐으면 — 만드는 일은 사용자의 Claude Code에(C-25), 허락은 섬의 카드로
