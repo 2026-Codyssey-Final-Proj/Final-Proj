@@ -167,3 +167,28 @@ test("R-2 — 작업실 창 안에서 섬을 접으면 옆 칸이 알약(두께 
     }
   } finally { await browser.close(); }
 });
+
+// claude-drafted: 2026-10-29 — 두승현 "초안 작성 시 플로로 눈동자가 이전 UI처럼 커서를 따라가지 않고 고정": 작업실이 열리면 섬은 작업실 창(win.html)의 옆 칸에 그려지는데,
+//   눈 따라가기(seal.js follow)는 섬 창(app.js)에서만 돌았다 — 작업실 창은 seal.js를 불러오지도 않았다. 이제 작업실 창 안의 커서를 따라간다
+test("작업실 창 — 옆 칸 섬의 플로로 눈이 커서를 따라가고, 섬이 다시 그려도 그 자리를 지킨다", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const h = await islandHTML(browser);
+    const page = await browser.newPage();
+    await page.evaluateOnNewDocument(() => { window.floeApp = { onWinHtml: (f) => { window.__h = f; }, onDock() {}, winEvent() {} }; });
+    await page.setViewport({ width: 1440, height: 860 });
+    await page.goto(url("navigator/win.html#quest"), { waitUntil: "load" });
+    const html = `${h.qwin}<div class="isl-col side-right narrow">${h.isl}</div>`;
+    await page.evaluate((x) => window.__h(x), html); await wait(500);
+    const eyes = () => page.evaluate(() => { const t = document.querySelector(".isl svg.cat .c-eyes")?.getAttribute("transform") || ""; const m = t.match(/^translate\(([-\d.]+) ([-\d.]+)\)/); return m ? { x: +m[1], y: +m[2] } : null; });
+    assert.ok(await page.$(".isl svg.cat .c-eyes"), "옆 칸 섬에 플로로가 있다");
+    await page.mouse.move(40, 430); await wait(200);
+    const left = await eyes();
+    await page.mouse.move(1430, 430); await wait(200);
+    const right = await eyes();
+    assert.ok(left && right && left.x < right.x - 2, `커서를 따라 눈이 옮겨 간다: 왼쪽 ${JSON.stringify(left)} · 오른쪽 ${JSON.stringify(right)}`);
+    await page.evaluate((x) => window.__h(x), html); await wait(300);   // 섬이 다시 보냄(같은 내용)
+    const again = await eyes();
+    assert.ok(again && Math.abs(again.x - right.x) < 0.5, `다시 그려도 마지막 커서 쪽 그대로: ${JSON.stringify(again)}`);
+  } finally { await browser.close(); }
+});
