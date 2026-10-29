@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v50.4 | 2026-10-29 | 두승현 | 작업실 밖에 떠 있는 알약을 누르면 섬 대화창을 거치지 않고 바로 작업실(캔버스)로, 작업실을 닫으면 섬은 펼친 대화창이 아니라 알약으로 — 작업실 안의 알약은 전처럼 섬을 펼침(F-85) (#259) | `02-frontend/navigator/`(app.js, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e pill-overlay · setup-flow, navigator pill-overlay · electron-hub · modes) · `01-docs/07-maintenance/fix-map.md` |
 | v50.3 | 2026-10-29 | 두승현 | 작업실 다듬기 — 섬이 작업 칸 전체로 커지면(C-61) 왼쪽에 200px 빈 띠가 남던 것(F-81), 연 파일이 머리 줄 탭과 왼쪽 '열어 둔 파일'에 두 번 보이던 것 — 왼쪽 묶음을 뺌(F-82), 알약일 때 '섬 크게'를 눌러도 그대로이던 것 — 펼치면서 가운데로(F-83), 섬을 펼친 동안 '오른쪽 칸 접기'가 눌러도 그대로이던 것 — 그동안은 누를 수 없게(F-84) (#258) | `02-frontend/navigator/`(app.css · app.js, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e chat-split · workspace-md, navigator chat-split · workspace · file-view) · `01-docs/07-maintenance/fix-map.md` |
 | v50.2 | 2026-10-29 | 이재엽 | 변경 리뷰(합침 커밋 82개) — PR base가 main이 아니면 빨갛게 알리는 검사(F-79), 합친 CHANGELOG 커밋 push가 거절되면 최신 main 위로 얹고 다시(F-80), v45.0에 빠진 (#248), 성장 로그 '버전 기록 추적 끊김' 3회 → 체크리스트 승격 (#257) | `.github/` · `04-tests/repo/` · `CHANGELOG.md`(v45.0 한 줄) · `.claude/rules/`(git-workflow · consistency) · `01-docs/00-overview/` · `01-docs/07-maintenance/` · `01-docs/catalog/` |
 | v50.1 | 2026-10-29 | 이재엽 | 병합 뒤 고침 — #247(대화 저장 서버) · #250(대화 목록 화면)이 같이 들어간 main에서 앱이 고른 폴더가 없을 때 화면이 말마다 POST /api/chatlog을 보내 400이 쌓이던 것(진짜 AI 모드 e2e 13개가 깨짐). 서버가 폴더를 안다고 할 때까지 모아 두고, 모르면 보내지 않으며, 폴더를 고르면 다시 묻는다 (#256) | `02-frontend/navigator/app.js`(대화 저장 — 두승현 님 C-63 화면, 이 줄이 알림) · `04-tests/`(chat-list e2e ③ · 단위) |
