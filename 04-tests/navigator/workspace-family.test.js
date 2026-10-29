@@ -115,3 +115,11 @@ test("플로로 옆의 상태 뱃지(.mc-badge)와 둥실 움직임(bob), 카드
 test("머리 줄의 단계 이름은 16px로 머리 줄에서 가장 크고, 칸은 320px까지", () => {
   assert.match(c, /^\.wh \.tb-stage\{[^}]*font-size:calc\(16px \* var\(--ui-scale,1\)\);[^}]*max-width:320px;/m);
 });
+
+// claude-drafted: 2026-10-29 — 임유정 "위쪽 화살표 한번 누르면 알약, 다시 누르면 이전 상태로 · X 왼쪽의 전체화면 버튼 삭제" (F-99)
+test("머리 줄의 접기 단추는 오고 가는 단추 — 펼친 섬이면 알약으로, 알약이면 접기 전 모습으로. X 옆 '화면 가득' 단추는 없다", () => {
+  assert.match(a, /fold: \(\) => go\(colFolded\(\) \? "home" : "petit"\),/, "알약이면 펼침(home — 크게 · 옆으로는 st.islBig 그대로라 접기 전 모습)");
+  assert.match(a, /data-act="fold" aria-pressed="\$\{colFolded\(\)\}" aria-label="\$\{colFolded\(\) \? "펼치기" : "접기"\}"/, "알약일 때는 펼치기로 읽힌다");
+  assert.match(a, /\$\{colFolded\(\) \? I\.down : I\.up\}<\/button><\/span>`;/, "알약일 때는 아래 화살표");
+  assert.ok(!a.includes('data-act="qfull"') && !a.includes("qfull:") && !c.includes(".wfull"), "'화면 가득' 단추 · 손잡이 · 모양 없음");
+});

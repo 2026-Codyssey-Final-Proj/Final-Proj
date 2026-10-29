@@ -72,8 +72,7 @@ test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · �
   assert.match(c, /\.wnav\{width:200px;flex:none;/); assert.match(c, /\.qwin\{min-width:260px;container-type:inline-size\}/); assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav\{display:none\}\}/, "좁은 작업실은 파일 칸을 숨긴다(단계 칩은 2026-10-29에 뺐다) — 섬이 가운데일 때는 파일 칸을 숨기지 않는다(F-81)(760은 두승현 확인 전 — 출처 없는 값)");
   assert.ok(!c.includes("@container cvboard"), "너비로 칸 배치를 다시 잡던 길(① · 900)은 뺐다 — 줌이 대신한다");
   assert.ok(!a.includes('data-act="qsize"') && !a.includes("작업실 처음 크기"), "S/M/L 단추 · 설정 줄은 없다(R-1, 이재엽 버튼 2026-10-27 \"'화면 가득' 하나로\")");
-  assert.match(a, /<button type="button" class="ti wfull" data-act="qfull" aria-label="작업실을 화면 가득" title="화면 가득">/, "머리에 '화면 가득' 하나");
-  assert.match(a, /qfull: \(\) => \{ if \(WINS && winOpen\.quest\) window\.floeApp\.sizeWin\("quest", "full"\); \},/);
+  assert.ok(!a.includes('data-act="qfull"') && !a.includes("qfull:"), "머리의 '화면 가득' 단추는 뺐다(F-99, 임유정 2026-10-29 — 옆의 '섬을 크게'와 같은 그림)");
   assert.match(a, /pop = qpop \? " winpop" : ""/, "처음 열 때의 움직임 class는 winpop"); assert.match(c, /\.win\.winpop\{animation:winpop/); assert.ok(!c.includes(".win.pop{"), "'pop'은 말풍선 판(.pop)의 이름 — 겹치면 작업실 창이 처음 열릴 때 14px 여백 · 아래 정렬 · 내용 높이(148px)로 뒤집어썼다(⑥ 앱에서 실측 2026-10-27)");
 });
 
