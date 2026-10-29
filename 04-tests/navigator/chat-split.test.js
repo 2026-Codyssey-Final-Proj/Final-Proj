@@ -25,7 +25,9 @@ test("보내기는 칸에 적지 않는다 — 퀘스트 중(초안 확인이 �
 });
 
 test("섬 자리 — 칸이 하나도 적히지 않았고(또는 관문에서 물을 때) 섬이 펼쳐져 있으면 작업 칸 전체(center), 사람이 적기를 누르면 옆 칸으로 0.3초(움직임 줄이기면 바로). AI 판단으로는 안 옮긴다. 머리 줄의 '크게 · 옆으로'", () => {
-  assert.match(a, /const bigAuto = \(\) => !!\(QU && st\.quest && st\.quest\.phase === "quest" && !st\.quest\.draft && !st\.quest\.objs\.some\(\(_, i\) => QU\.filled\(st\.quest, i\)\)\);/, "칸이 빈 동안만 — 관문 · 새 단계의 '다시 가운데'는 PRD 9절 미정이라 넣지 않았다");
+  assert.match(a, /const bigAuto = \(\) => !!\(QU && \(\(!st\.j && !st\.quest && st\.qwin\) \|\| \(st\.quest && st\.quest\.phase === "quest" && !st\.quest\.draft && !st\.quest\.objs\.some\(\(_, i\) => QU\.filled\(st\.quest, i\)\)\)\)\);/, "칸이 빈 동안만 + 작업실 안의 1단계 시작(2026-10-29 두승현) — 관문 · 새 단계의 '다시 가운데'는 PRD 9절 미정이라 넣지 않았다");
+  assert.match(a, /\(st\.quest \? !st\.quest\.draft && st\.chat\.length <= \(st\.chatMark \|\| 0\) : !st\.j && !st\.chat\.some\(\(m\) => m\.who === "me"\)\) && !st\.tidy\) \{/, "① 화면은 1단계 시작에도(지난 대화와 상관없이) — 초안이 있는 장은 아니다");
+  assert.match(a, /qs\[\(st\.quest \? st\.quest\.chap : 0\) % 3\]/, "퀘스트 전에는 1단계 질문");
   assert.match(a, /const islBig = \(\) => \(st\.islBig == null \? bigAuto\(\) : !!st\.islBig\);/, "사람이 고른 값이 먼저");
   assert.match(a, /\$\{!colFolded\(\) && islBig\(\) \? " center" : ""\}/, "옆 칸 class");
   assert.match(a, /<div class="isl-col side-right narrow\$\{islBig\(\) \? " center" : ""\}">/, "브라우저 판도");
@@ -43,7 +45,7 @@ test("섬 자리 — 칸이 하나도 적히지 않았고(또는 관문에서 �
 });
 
 test("대화가 비어 있으면 플로로 · 질문 하나 · 입력 상자 하나만(칩 줄 없음) — 질문은 셋 중 하나(문구는 예시). 가운데 대화에는 늘 있는 칩 줄이 없다", () => {
-  assert.match(a, /if \(islBig\(\) && st\.chat\.length <= \(st\.chatMark \|\| 0\) && !st\.pane && !st\.settings && st\.quest && !st\.quest\.draft && !st\.tidy\)/, "빈 대화 + 가운데(초안 확인 중에는 아님) — 구분선 뒤에 말이 없다(C-63 저장된 대화에도 맞게)");
+  assert.match(a, /if \(islBig\(\) && !st\.pane && !st\.settings && \(st\.quest \? !st\.quest\.draft && st\.chat\.length <= \(st\.chatMark \|\| 0\) : !st\.j && !st\.chat\.some\(\(m\) => m\.who === "me"\)\) && !st\.tidy\)/, "빈 대화 + 가운데(초안 확인 중에는 아님, 1단계 시작은 포함 — 2026-10-29) — 구분선 뒤에 말이 없다(C-63 저장된 대화에도 맞게)");
   assert.match(a, /const qs = \["어떤 프로젝트를 구상하고 있나요\?", "어떤 미션을 수행하고 계시나요\?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"\];/);
   assert.match(a, /<section class="mc chat hello tone-blue"><div class="who">\$\{petCat\("happy", 150\)\}<\/div><div class="main"><b class="say hello-q">/, "플로로 · 질문 · 입력 상자");
   assert.match(a, /const more = islBig\(\) \? \[\] : \[/, "가운데 대화에는 칩 줄 없음(C-60)");

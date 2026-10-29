@@ -85,3 +85,38 @@ test("C-61 — 옆 칸으로 옮기는 시간: 보통은 0.3초, 움직임 줄�
     assert.equal((await state(p2)).trans, "0s");
   } finally { await shut(browser); }
 });
+
+// claude-drafted: 2026-10-29 — 두승현 "초안이 남아 있어도 오른쪽의 세션을 클릭하지 않으면 진행되지 않도록 · 반드시 1단계 화면이 나오도록":
+//   주소 없이 켜면(C-55) 작업실 + 알약 — 알약을 누르면 ① 화면(가운데 · 1단계 질문 하나 · 입력 하나, 칩 없음). 첫 말로 1단계 초안 — 칸에는 아직 안 적힘, 초안 확인 카드.
+//   ① 화면은 1단계 시작에만 — 초안이 있으면(다시 켤 때 · 2단계 이후) 전처럼 초안 확인 카드(같은 날 두승현 고름)
+test("C-61 · 1단계 — 켜서 알약을 누르면 ① 화면, 첫 말로 초안(칸은 비어 있음). 다시 켜면 ① 화면이 아니라 초안 확인 카드", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(url("navigator/index.html#base"), { waitUntil: "load" });
+    // 지난 대화가 남아 있어도(앱에서 본 것 — 전 프로젝트의 플로로 말 한 줄, 2026-10-29) 1단계 시작이면 ① 화면 — 구분선은 퀘스트가 생길 때부터다
+    await page.evaluate(() => { localStorage.clear(); localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear();
+      localStorage.setItem("navigator-prototype:v1", JSON.stringify({ mode: "fixture" }));   // 대화는 기본 저장이 있을 때만 되읽는다(app.js load)
+      localStorage.setItem("navigator-prototype:v1:chat", JSON.stringify([{ who: "floro", html: "지난번에 남은 말", at: Date.now() - 60000, n: 0 }])); });
+    await page.goto(url("navigator/index.html"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" }); await wait(500);
+    let s = await state(page);
+    assert.ok(!s.hello && (await page.$(".pill")), `켤 때는 알약 — 누르기 전에는 진행하지 않는다: ${JSON.stringify(s)}`);
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1:chat") || "[]").length), 1, "지난 대화 한 줄이 남아 있는 채로 시작");
+    await page.click(".isl-col .pill"); await wait(500);
+    s = await state(page);
+    assert.ok(s.center && s.hello && s.who && s.chips === 0 && !s.wbody, `알약 → ① 화면(가운데 · 플로로 · 질문 · 입력): ${JSON.stringify(s)}`);
+    assert.equal(await page.$eval(".mc.chat.hello .hello-q", (e) => e.textContent), "어떤 프로젝트를 구상하고 있나요?", "1단계(코드 0)의 질문");
+    await send(page, "동아리 행사 등록 앱을 만들고 싶어요");
+    const q1 = await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1") || "{}").quest || {});
+    s = await state(page);
+    assert.ok(q1.draft && q1.chap === 0 && !s.hello, `첫 말 → 1단계 초안: ${JSON.stringify({ chap: q1.chap, draft: !!q1.draft, hello: s.hello })}`);
+    assert.equal(s.lines, 0, "칸에는 아직 안 적힘 — 사람이 맞아요를 눌러야");
+    assert.ok(await page.$(".isl [data-act=draft-ok]"), "초안 확인 카드(맞아요 · 고칠래요)");
+    // 다시 켜면 — 초안이 남아 있어도 알약을 누르기 전에는 그대로, 누르면 ① 화면이 아니라 초안 확인 카드(이미 말했으니 같은 질문을 두 번 묻지 않는다)
+    await page.reload({ waitUntil: "load" }); await wait(500);
+    assert.ok(await page.$(".isl-col .pill"), "다시 켜도 알약부터");
+    await page.click(".isl-col .pill"); await wait(500);
+    s = await state(page);
+    assert.ok(!s.hello && s.lines === 0 && (await page.$(".isl [data-act=draft-ok]")), `다시 켜면 초안 확인 카드: ${JSON.stringify(s)}`);
+  } finally { await shut(browser); }
+});

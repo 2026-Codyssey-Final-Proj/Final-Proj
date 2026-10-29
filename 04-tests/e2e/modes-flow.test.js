@@ -356,6 +356,7 @@ test("C-19: 먹이를 검사하는 동안 '어디쯤인지 보기'를 누르면 
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#feed"), { waitUntil: "load" }); await wait(400);
     // 2026-10-24 C-35: 명령 네 칸을 뺐다 — 살피기는 도전과제의 '알아 둘 것'에서 해 보기(먹이를 검사하는 중에도 보이고, 누르면 막는다)
     await page.click(".tb [data-act=qwin-toggle]"); await wait(200);
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 1단계 시작은 ① 화면이 작업 칸을 덮는다(F-88) — 섬을 옆으로
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(200);
     await page.click('[data-act=tree-chap][data-i="0"]'); await wait(200);   // 도전과제의 기본은 지도(C-54 카드 — 흐름 보기가 C-37 한눈에 보기) — 장을 고르면 그 장의 알아 둘 것
     await page.click('.learnbox [data-act=tu-sel][data-v="check"]'); await wait(200);

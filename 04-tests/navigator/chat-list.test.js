@@ -31,7 +31,7 @@ test("T24 단계 구분선 · 가져온 것 — 새 단계가 시작되면 대�
   assert.match(a, /logMsg\("floro", `<b>지난 단계에서 가져온 것<\/b>/, "가져온 것 카드");
   assert.match(a, /<small>틀리면 말로 고쳐 주세요<\/small>/, "사용자는 말로 고칠 수 있다");
   assert.match(a, /const questStarted = \(\) => \{[\s\S]*?st\.chatMark = st\.chat\.length; st\.tidy = null; \};/, "대화 표시 자리는 구분선 뒤");
-  assert.match(a, /if \(islBig\(\) && st\.chat\.length <= \(st\.chatMark \|\| 0\) && !st\.pane && !st\.settings && st\.quest && !st\.quest\.draft && !st\.tidy\)/, "빈 대화 = 구분선 뒤에 말이 없다(저장된 대화에도 맞는 기준)");
+  assert.match(a, /if \(islBig\(\) && !st\.pane && !st\.settings && \(st\.quest \? !st\.quest\.draft && st\.chat\.length <= \(st\.chatMark \|\| 0\) : !st\.j && !st\.chat\.some\(\(m\) => m\.who === "me"\)\) && !st\.tidy\)/, "빈 대화 = 구분선 뒤에 말이 없다(저장된 대화에도 맞는 기준)");
   assert.match(a, /m\.kind === "stage" \? `<div class="msg stage" data-stage="\$\{m\.n\}"><div class="b">\$\{m\.html\}<\/div><\/div>`/, "구분선은 가운데 줄로");
   assert.match(c, /\.msg\.stage > \.b\{[^}]*border-top:1px solid var\(--line\)/, "구분선 모양");
 });

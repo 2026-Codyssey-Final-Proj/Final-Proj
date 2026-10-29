@@ -1123,8 +1123,10 @@
   // 채팅 카드 — v는 momentToday()/momentGate()가 준 것(글은 이미 esc 한 것)
   function chatCard(v) {
     // C-61: 섬이 가운데이고 이 단계의 대화가 아직 비어 있으면 플로로 · 질문 하나 · 입력 상자 하나만(칩 없음). 질문은 셋 중 하나 — 문구는 예시(기획안)
-    if (islBig() && st.chat.length <= (st.chatMark || 0) && !st.pane && !st.settings && st.quest && !st.quest.draft && !st.tidy) { /* 구분선 뒤에 말이 없다 — 상한을 넘기면 logMsg가 chatMark도 당긴다(C-63) */ const qs = ["어떤 프로젝트를 구상하고 있나요?", "어떤 미션을 수행하고 계시나요?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"];
-      return `<section class="mc chat hello tone-blue"><div class="who">${petCat("happy", 150)}</div><div class="main"><b class="say hello-q">${qs[st.quest.chap % 3]}</b><div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`; }
+    //   1단계 시작(퀘스트 전)도 — 두승현 2026-10-29 "반드시 1단계 화면이 나오도록". 초안이 있는 장은 전처럼 초안 확인 카드(같은 날 두승현: 1단계에만)
+    //   1단계 시작은 사람이 아직 말하지 않았으면 — 구분선(chatMark)은 퀘스트가 생길 때부터라, 플로로 말이 한 줄 남아 있으면 ① 화면이 안 떴다(앱에서 봄). 사람이 한 말이 있으면 그 대화를 이어서 보인다(C-63)
+    if (islBig() && !st.pane && !st.settings && (st.quest ? !st.quest.draft && st.chat.length <= (st.chatMark || 0) : !st.j && !st.chat.some((m) => m.who === "me")) && !st.tidy) { /* 구분선 뒤에 말이 없다 — 상한을 넘기면 logMsg가 chatMark도 당긴다(C-63) */ const qs = ["어떤 프로젝트를 구상하고 있나요?", "어떤 미션을 수행하고 계시나요?", "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~"];
+      return `<section class="mc chat hello tone-blue"><div class="who">${petCat("happy", 150)}</div><div class="main"><b class="say hello-q">${qs[(st.quest ? st.quest.chap : 0) % 3]}</b><div class="cin"><textarea class="mc-input" data-act="say" rows="3" aria-label="채팅 입력" placeholder="묻거나 적어요">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`; }   // 안내 글은 작업실 개편 기획안 3-1 사진대로
     for (const a of v.acts) if (a.key && !a.disabled) deskKeys[a.key] = a;
     const live = `${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}<b class="say">${v.title}</b>${v.sub ? `<span class="mc-sub">${v.sub}</span>` : ""}`;
     const key = `${v.title}|${v.sub || ""}`;
@@ -1152,8 +1154,7 @@
     st.say = ""; logMe(t.length > 200 ? `${t.slice(0, 200)}… (글 ${t.length.toLocaleString()}자)` : t); activity();   // 붙여 넣은 긴 글은 앞부분만 내 말로
     if (planNow()) return planSay(t);   // 준비 계획 · 맡길 일(C-35)
     const q = st.quest;
-    if (!st.j && !q && QU) return startDraft(t);
-    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }
+    if (!st.j && !q && QU) return startDraft(t);    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }
     if (q && q.draft && q.phase === "quest" && QU.pickOf(q, QU.curIdx(q))) {   // 기획서로 키울지(2단계)는 셋 중 하나로 — 글로 답해도 맞춰 고른다
       const k = /경량|가볍|짧/.test(t) ? 0 : /상세|자세/.test(t) ? 1 : /안 함|않|없|아니/.test(t) ? 2 : -1;
       if (k < 0) { render(); return say("경량 · 상세 · 키우지 않아요 중에서 골라 주세요"); }
@@ -2811,7 +2812,8 @@
   //   알약을 누르면(ACT pill) 펼쳐지고 작업실이 비킨다. 알릴 일(허락 카드 · 보고 · 질문 · 오류)은 peek · alert로 저절로 펼친다(peek는 앱의 작업실 안이면 home으로). 저절로 접히기는 설정 '접히기까지' 그대로(pinned에서 st.qwin을 앱에서는 빼서) — 단 옆 칸에 마우스가 있거나 글을 쓰는 중(colHover · colTyping)이면 안 접히고, 접힌 알약은 더 접히지 않는다
   const colFolded = () => st.ui === "petit" || st.ui === "hidden";
   // C-61 섬 자리(2026-10-29): 그 단계의 칸이 하나도 적히지 않았거나 관문에서 물을 때, 섬이 펼쳐져 있으면 작업 칸 전체(center). 사람이 [칸 n개에 적기]를 누르면 옆 칸으로 — AI의 판단으로는 옮기지 않는다. 머리 줄의 '크게 · 옆으로'로 직접도
-  const bigAuto = () => !!(QU && st.quest && st.quest.phase === "quest" && !st.quest.draft && !st.quest.objs.some((_, i) => QU.filled(st.quest, i)));   // 관문 · 새 단계 시작의 '다시 가운데'는 기획안 9절 미정 — 사람이 머리 줄 단추로
+  //   1단계 시작(퀘스트 전)도 작업실 안이면 가운데 — 두승현 2026-10-29 "반드시 1단계 화면이 나오도록". 초안이 있는 장은 전처럼 옆(같은 날 두승현: 1단계에만). 떠 있는 섬(주소 장면 · 알림)은 그대로
+  const bigAuto = () => !!(QU && ((!st.j && !st.quest && st.qwin) || (st.quest && st.quest.phase === "quest" && !st.quest.draft && !st.quest.objs.some((_, i) => QU.filled(st.quest, i)))));   // 관문 · 새 단계 시작의 '다시 가운데'는 기획안 9절 미정 — 사람이 머리 줄 단추로
   const islBig = () => (st.islBig == null ? bigAuto() : !!st.islBig);
   const islCol = () => `<div class="isl-col side-${side} ${side === "left" || side === "right" ? "narrow" : "wide"}${!colFolded() && islBig() ? " center" : ""}${colFolded() ? " folded" : ""}${colFolded() && st.boot ? " has-bub" : ""}">${colFolded() ? pillHTML() + bootBubble() : islandHTML("", true)}</div>`;
   // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선"): 켤 때 알약 옆 말풍선 — 시간대 인사 한 줄(하루 한 번) · 멈춘 곳(단계 · 지금 칸) · 섬 펼치기 / 나중에. 몇 초 뒤(greet.js BUBBLE_MS) 사라진다

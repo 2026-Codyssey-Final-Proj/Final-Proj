@@ -711,13 +711,19 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wsx:has(>.isl-col.center){--col-w:calc(100% - 200px)}   /* 왼쪽 파일 칸(200)만 남기고 섬 — 트랙 종류를 바꾸지 않아 0.3초가 보간된다. 앱 창은 win.js가 같은 값을 --col-w에 */
 .wsx:not(:has(.wnav)):has(>.isl-col.center){--col-w:100%}
 .wsx:has(>.isl-col.center) .wbody,.wsx:has(>.isl-col.center) .wside,#root:has(>.isl-col.center) .wbody,#root:has(>.isl-col.center) .wside{display:none}
-.isl-col.center{align-items:center;padding:24px}
-.isl-col.center .isl{width:min(760px,100%);border-radius:28px}
+/* 가운데 섬 — 작업실 개편 PRD 3-1 사진대로(2026-10-29 두승현): 카드는 작업 칸을 꽉 채우고(바깥 16), 글 줄은 가운데 660. 입력은 여러 줄 큰 상자 · 보내기는 상자 안 오른쪽 아래 */
+.isl-col.center{padding:16px}
+.isl-col.center .isl{width:100%;border-radius:28px}
+.isl-col.center .isl-body{align-self:center;width:min(660px,100%)}
+.isl-col.center .isl-body>.mc{background:transparent;border-color:transparent}   /* 카드 안의 카드가 되지 않게 — 섬 카드 하나만 */
 .isl-col.center .mc.chat{grid-template-columns:minmax(0,1fr)}
 .isl-col.center .mc.chat:not(.hello) .who{display:none}
-.mc.chat.hello{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:16px;padding:28px 24px}
-.mc.chat.hello .main{width:100%;max-width:560px;gap:14px}
-.mc.chat.hello .hello-q{font-family:var(--font-disp);font-size:calc(22px * var(--ui-scale,1));font-weight:400;text-wrap:balance}
+.isl-col.center .cin{position:relative;display:block}
+.isl-col.center .cin .mc-input{display:block;width:100%;box-sizing:border-box;min-height:132px;max-height:240px;border-radius:24px;padding:18px 20px 64px}
+.isl-col.center .cin .b{position:absolute;right:14px;bottom:14px}
+.mc.chat.hello{grid-template-columns:minmax(0,1fr);justify-items:center;align-content:center;text-align:center;gap:16px;padding:28px 24px}
+.mc.chat.hello .main{width:100%;gap:18px}
+.mc.chat.hello .hello-q{font-family:var(--font-disp);font-size:calc(22px * var(--ui-scale,1));font-weight:400;text-wrap:balance;text-align:center;justify-content:center}   /* .say는 flex — 가운데는 justify-content로 */
 .tidy{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px;text-align:left}
 .tidy li{display:grid;gap:2px;padding:8px 12px;border-radius:12px;background:var(--soft);font-size:calc(13.5px * var(--ui-scale,1))}
 .tidy li b{font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
