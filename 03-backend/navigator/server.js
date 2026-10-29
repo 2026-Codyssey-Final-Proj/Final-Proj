@@ -361,7 +361,7 @@ let task = null;   // {state: running|done|failed|blocked, project, at, try, cod
 // report — 기준(checks)을 같이 넘겼으면 Claude Code가 끝에 답한 기준마다 해냄 · 근거 · 쉬운 말 요약(C-32, navigator.js parseReport). 비밀값 모양은 가린다. 서버 메모리에만
 // try — 같은 일을 몇 번째로 다시 맡겼나(F-69 다시 맡기기, 처음은 0). blocked — 끝 코드 0인데 허락을 못 받은 도구가 있으면 그 까닭(아래 blockedOf)
 const publicTask = () => (task ? { state: task.state, project: task.project, at: task.at, code: task.code, tokens: task.tokens ?? null, cost: task.cost ?? null, report: task.report ?? null,
-  try: task.try || 0, blocked: task.state === "blocked" ? blockedOf(task) : null, denied: task.denied ? task.denied.count : 0, quiet: task.state === "running" ? Math.max(0, Math.floor((Date.now() - (task.lastAt || task.at)) / 1000)) : 0 } : null);
+  try: task.try || 0, retries: task.retries || 0, retryMax: RETRY_MAX, verdict: task.state === "running" ? null : Nav.reportVerdict(task.report, task.state), blocked: task.state === "blocked" ? blockedOf(task) : null, denied: task.denied ? task.denied.count : 0, quiet: task.state === "running" ? Math.max(0, Math.floor((Date.now() - (task.lastAt || task.at)) / 1000)) : 0 } : null);
 // C-50 맡긴 일이 멈추면(2026-10-28 — 결정 모음 A-06 "시간 값은 리허설에서 재서 정함, 그때까지 2분 · 5분 · 15분, 멈추면 끄지 않고 A-03의 선택창으로"):
 //   quiet — 그 일의 폴더(안)에서 훅 알림 · 허락 카드가 마지막으로 온 뒤 지난 초. 몇 초에 무엇을 할지는 화면이 정한다. 서버는 저절로 끄지 않는다 — 끄기는 사람이 고를 때만(stopTask)
 const inDir = (dir, cwd) => { if (!dir || !cwd) return false; const rel = path.relative(realDir(dir), realDir(cwd)); return rel === "" || (rel !== ".." && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel)); };
@@ -388,6 +388,22 @@ const NO_FOLDER = "연결한 프로젝트 폴더를 아직 몰라요 — 처음 
 const NO_HOOK = { none: "이 폴더에는 허락 카드를 띄우는 연결이 없어요 — 맡기면 파일 쓰기 · 명령이 모두 막혀요. Floe 앱 메뉴의 '프로젝트 폴더 연결…'로 이 폴더를 다시 연결해 주세요",
   moved: "이 폴더의 허락 연결이 옛 자리(앱을 옮기기 전)를 가리켜요 — Floe 앱 메뉴의 '프로젝트 폴더 연결…'로 이 폴더를 다시 연결해 주세요" };
 // 다시 맡기기(F-69) — again: 같은 글 그대로(허락 카드가 다시 뜬다), files-only: 명령 없이 파일만(명령이 막혔을 때 결과에 가장 가까운 길)
+// C-50(2026-10-29 — 지식 퀘스트 PRD 9절 7번 '새로 맡기며 앞 보고만, 2번까지'): 사람이 고른 다시 맡기기는 2번까지. ①의 '카드 다시'(auto — 처음 막혔을 때 한 번)는 세지 않는다
+const RETRY_MAX = 2;
+// 앞에서 한 일 — 보고 한 줄 · 그 일 동안 그 폴더에서 만든 · 고친 파일 이름(훅 알림) · 막힌 것. 이름 · 한 줄 · 수만, 가린 뒤, 700자까지
+function prevNote(t) {
+  const files = [];
+  const end = t.endAt || Date.now();   // 그 일이 도는 동안만 — 끝난 뒤 사람이 같은 폴더에서 고친 파일은 넣지 않는다
+  for (const s of work.values()) if (s.dir && inDir(t.dir, s.dir)) for (const x of s.steps) if (x.at >= t.at && x.at <= end && (x.verb === "만들었어요" || x.verb === "고쳤어요") && x.what && !files.includes(x.what)) files.push(x.what);
+  const b = t.state === "blocked" ? blockedOf(t) : null;
+  const parts = [t.report ? `보고: ${t.report.easy} (끝 조건 ${t.report.done}/${t.report.total})` : "보고: 받지 못했어요",
+    ...(files.length ? [`바뀐 파일: ${files.slice(0, 10).join(", ")}`] : []), ...(b && b.kinds.length ? [`허락을 못 받았던 것: ${b.kinds.map((k) => `${k.what} ${k.n}`).join(" · ")}`] : []),
+    ...(t.state === "failed" ? ["끝까지 가지 못했어요"] : t.state === "stopped" ? ["사람이 멈췄어요"] : [])];
+  // 안내 문장은 늘 남기고 앞부분만 자른다(가린 뒤에) — 허락을 못 받았던 일은 다시 하면 카드가 뜬다고 적는다(①의 목적 — 카드를 다시 띄우기, 새 맥락 리뷰 2026-10-29)
+  const tail = " — 이미 끝낸 일은 다시 하지 말고 못 한 것부터 이어서 해 주세요. 허락을 못 받았던 일은 다시 하면 허락 카드가 떠요.";
+  const head = hide(`[앞에서 한 일] ${parts.join(" · ")}`, t.dir);
+  return `\n\n${head.length > 600 ? `${head.slice(0, 599)}…` : head}${tail}`;
+}
 const FILES_ONLY = "\n\n[다시 맡김 — 명령 없이] 터미널 명령(Bash)은 쓰지 말고 파일만 만들거나 고쳐 주세요. 실행 · 설치 명령이 필요하면 README의 '실행하는 법'에 적기만 해요.";
 // opts.at · opts.try — 다시 맡기기는 같은 번호(at)로(지켜보던 화면 — 계획 줄 · 문서 올리기 — 이 그대로 따라간다), opts.note — 글 끝에 더할 한 줄(길이 제한 밖)
 function startTask(text, label = "맡긴 일", checks = null, opts = {}) {
@@ -408,13 +424,13 @@ function startTask(text, label = "맡긴 일", checks = null, opts = {}) {
   try { child = openClaude({ dir: s.dir, text: checks ? Nav.taskBrief(body, checks) : body, onResult, schema: checks ? Nav.REPORT_SCHEMA : null }); }
   catch { return [502, { ok: false, reason: "claude를 열지 못함 — Claude Code가 설치됐는지 확인하세요" }]; }
   // label — 무슨 일인지(저장 커밋 · 문서 올리기 · 맡긴 일) — 파일 저장의 '맡긴 일이 도는 중' 판단에 쓴다(C-43). req — 다시 맡기기 · 직접 하기에 쓸 처음 글(메모리에만)
-  task = { state: "running", label, project: s.project, at: Number.isFinite(opts.at) ? opts.at : Date.now(), lastAt: Date.now(), try: opts.try || 0, code: null, child, tokens: null, cost: null, report: null,
+  task = { state: "running", label, project: s.project, at: Number.isFinite(opts.at) ? opts.at : Date.now(), lastAt: Date.now(), try: opts.try || 0, retries: opts.retries || 0, code: null, child, tokens: null, cost: null, report: null,
     denied: null, asks: { allow: 0, deny: 0, none: 0 }, req: { text: String(text), label, checks }, dir: s.dir };
   child.on("error", () => { if (task && task.child === child) task.state = "failed"; });
   // 막힘은 기계 신호로만 — 거절 수가 그 일 동안 섬에서 사람이 누른 '거절' 수보다 많으면(답이 없었거나 카드가 안 뜬 거절이 있으면) blocked.
   //   사람이 고른 거절뿐이면 done(denied에 수 — 화면이 한 줄로 말한다). 모델의 보고(해냄)는 믿지 않는다(진짜 Claude Code로 본 일 · 새 맥락 리뷰 2026-10-28)
   const unasked = () => (task.denied ? task.denied.count : 0) > (task.asks ? task.asks.deny : 0);
-  child.on("close", (code) => { if (task && task.child === child) { task.state = task.stopped ? "stopped" : code !== 0 || task.isError ? "failed" : unasked() ? "blocked" : "done"; task.code = code; } });
+  child.on("close", (code) => { if (task && task.child === child) { task.endAt = Date.now(); task.state = task.stopped ? "stopped" : code !== 0 || task.isError ? "failed" : unasked() ? "blocked" : "done"; task.code = code; } });
   return [200, { ok: true, project: s.project, task: publicTask() }];
 }
 // C-50 멈추기 — 본문 { at }. 사람이 선택창에서 '다시 맡기기' · '그만두기'를 고를 때만 부른다(서버는 저절로 끄지 않는다). 그 번호의 도는 일만, 끝나면 state stopped
@@ -438,7 +454,10 @@ function retryTask(body) {
   if (task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 넘겨요" }];
   if (task.state === "done") return [409, { ok: false, reason: "이미 끝난 일이에요 — 새로 맡겨요" }];
   if (b.way !== "again" && b.way !== "files-only") return [400, { ok: false, reason: "way는 again · files-only · brief 중 하나" }];
-  return startTask(task.req.text, task.req.label, task.req.checks, { at: task.at, try: (task.try || 0) + 1, note: b.way === "files-only" ? FILES_ONLY : "" });
+  const auto = b.auto === true;
+  if (auto && !(task.state === "blocked" && !task.try && task.asks && task.asks.none > 0 && !task.asks.deny)) return [409, { ok: false, reason: "카드 다시 띄우기는 처음 막혔고 카드에 답이 없었을 때 한 번만이에요" }];
+  if (!auto && (task.retries || 0) >= RETRY_MAX) return [409, { ok: false, why: "cap", reason: `다시 맡기기는 ${RETRY_MAX}번까지예요 — 직접 하기로 이어 가요` }];
+  return startTask(task.req.text, task.req.label, task.req.checks, { at: task.at, try: (task.try || 0) + 1, retries: (task.retries || 0) + (auto ? 0 : 1), note: prevNote(task) + (b.way === "files-only" ? FILES_ONLY : "") });
 }
 
 // ── C-26 내 작업 책 — 연결한 폴더의 README.md를 읽어 책으로 나눠 준다(읽기만) — claude-drafted: 2026-10-23 (이재엽 "책의 작업들은 readme 에서 … 책에서 보여주는 역할만") ──
