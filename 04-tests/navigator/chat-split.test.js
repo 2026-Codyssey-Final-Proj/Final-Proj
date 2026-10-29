@@ -29,11 +29,12 @@ test("섬 자리 — 칸이 하나도 적히지 않았고(또는 관문에서 �
   assert.match(a, /const islBig = \(\) => \(st\.islBig == null \? bigAuto\(\) : !!st\.islBig\);/, "사람이 고른 값이 먼저");
   assert.match(a, /\$\{!colFolded\(\) && islBig\(\) \? " center" : ""\}/, "옆 칸 class");
   assert.match(a, /<div class="isl-col side-right narrow\$\{islBig\(\) \? " center" : ""\}">/, "브라우저 판도");
-  assert.match(a, /"isl-big": \(\) => set\(\{ islBig: !islBig\(\) \}\)/, "머리 줄 단추");
-  assert.match(a, /data-act="isl-big" aria-pressed="\$\{islBig\(\)\}"/);
+  assert.match(a, /"isl-big": \(\) => \{ if \(colFolded\(\)\) \{ st\.islBig = true; return ACT\.pill\(\); \} set\(\{ islBig: !islBig\(\) \}\); \}/, "머리 줄 단추 — 알약일 때 누르면 펼치면서 가운데(F-83: 알약일 때는 값만 바뀌고 화면이 그대로였다)");
+  assert.match(a, /data-act="isl-big" aria-pressed="\$\{!colFolded\(\) && islBig\(\)\}"/, "눌림 표시는 보이는 모습대로 — 알약이면 false");
   assert.ok(!/st\.islBig = true/.test(a.replace(/"isl-big": [^\n]*/, "")), "코드(AI 답)가 스스로 섬을 크게 하지 않는다 — 사람이 누를 때만");
   assert.match(c, /@property --col-w\{syntax:"<length-percentage>";inherits:true;initial-value:420px\}/, "옆 칸 너비는 등록한 변수 하나 — 트랙 종류가 같아 0.3초가 보간된다(새 맥락 리뷰)");
   assert.match(c, /\.wsx:has\(>\.isl-col\.center\)\{--col-w:calc\(100% - 200px\)\}/, "가운데 — 왼쪽 파일 칸만 남기고 섬");
+  assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav,/, "좁은 판에서 왼쪽 칸을 숨기는 규칙은 가운데일 때 빼기 — 판이 200px라 빈 띠가 됐다(F-81)");
   assert.match(c, /\.wsx\{transition:--col-w \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/, "0.3초"); assert.match(c, /@media \(prefers-reduced-motion:reduce\)\{\.wsx\{transition:none\}\}/, "움직임 줄이기");
   assert.match(h, /#root\{[^}]*transition:--col-w \.3s/); assert.match(h, /@media \(prefers-reduced-motion:reduce\)\{#root\{transition:none\}\}/);
   assert.match(w, /h\.style\.setProperty\("--col-w", center \? \(root\.querySelector\("\.wnav"\) \? "calc\(100% - 200px\)" : "100%"\) :/, "앱 창은 win.js가 같은 값을");

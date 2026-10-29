@@ -42,7 +42,8 @@ async function open(browser, { reduce = false } = {}) {
 const state = (page) => page.evaluate(() => { const q = JSON.parse(localStorage.getItem("navigator-prototype:v1") || "{}").quest || {}; const col = document.querySelector(".isl-col");
   return { lines: (q.lines || []).flat().length, by: q.by || [], center: !!col && col.classList.contains("center"), colW: col ? Math.round(col.getBoundingClientRect().width) : 0, hello: !!document.querySelector(".mc.chat.hello"),
     who: (() => { const w = document.querySelector(".isl .mc.chat .who"); return !!w && getComputedStyle(w).display !== "none"; })(), chips: document.querySelectorAll(".isl .opts .b").length, tidy: document.querySelector(".tidy") ? [...document.querySelectorAll(".tidy li span")].map((x) => x.textContent) : null,
-    tidyBtn: (document.querySelector("[data-act=tidy-fill]")?.textContent || "").replace(/Enter$/, "").trim(), wbody: !!document.querySelector(".wbody") && getComputedStyle(document.querySelector(".wbody")).display !== "none", trans: col ? getComputedStyle(document.querySelector(".wsx")).transitionDuration : "" }; });
+    tidyBtn: (document.querySelector("[data-act=tidy-fill]")?.textContent || "").replace(/Enter$/, "").trim(), wbody: !!document.querySelector(".wbody") && getComputedStyle(document.querySelector(".wbody")).display !== "none", trans: col ? getComputedStyle(document.querySelector(".wsx")).transitionDuration : "",
+    navW: (() => { const n = document.querySelector(".wnav"); return n && getComputedStyle(n).display !== "none" ? Math.round(n.getBoundingClientRect().width) : 0; })() }; });   // 가운데일 때도 왼쪽 대화 목록은 그대로(C-61 '머리 줄 · 왼쪽 칸은 그대로', F-81)
 async function send(page, text) {
   await page.click(".isl [data-act=say]");
   await page.evaluate((t) => { const el = document.querySelector(".isl [data-act=say]"); el.value = t; el.dispatchEvent(new Event("input", { bubbles: true })); }, text);
@@ -55,6 +56,7 @@ test("C-61 — 칸 0개 · 섬 펼침: 섬은 작업 칸 전체 · 플로로 · 
     const page = await open(browser);
     let s = await state(page);
     assert.ok(s.center && s.hello && s.who && s.chips === 0 && !s.wbody && s.lines === 0, `처음: ${JSON.stringify(s)}`);
+    assert.equal(s.navW, 200, `가운데일 때 왼쪽 대화 목록이 보인다 — 빈 띠가 아니다(F-81): ${JSON.stringify(s)}`);
     assert.equal(await page.$eval(".mc.chat.hello .hello-q", (e) => e.textContent), "지금 작업 중인 내용을 공유해 주세요, 함께 논의해요~", "3단계(코드 2)의 질문");
     await send(page, "기능 정리가 막막해요");
     s = await state(page);
