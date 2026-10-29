@@ -136,8 +136,13 @@ test("워크플로는 main push에서만 돌고, 저장소 쓰기는 CHANGELOG �
   assert.match(wf, /permissions:\s*\n\s*contents:\s*write/);
   assert.match(wf, /fetch-depth:\s*\d{2,}/, "changelog-fold.js가 지난 병합 커밋에서 PR 번호를 찾으려면 깊이가 필요하다");
   assert.match(wf, /git add CHANGELOG\.md changes\n/);
-  assert.match(wf, /git push origin HEAD:main\n/);
+  // 2026-10-29(F-80): push는 push-retry.js가 한다 — 거절되면 최신 main 위로 얹고 다시. 그래도 main에만, --force 없이
+  assert.match(wf, /node \.github\/scripts\/push-retry\.js/);
+  assert.doesNotMatch(wf, /git push/);
   assert.doesNotMatch(wf, /--force/);
+  const pushScript = fs.readFileSync(path.join(ROOT, ".github/scripts/push-retry.js"), "utf8");
+  assert.match(pushScript, /\["push", "origin", "HEAD:main"\]/);
+  assert.doesNotMatch(pushScript, /--force|"-f"/);
   assert.ok(wf.indexOf("changelog-fold.js") < wf.indexOf("jira-release.js"), "조각을 먼저 합친 뒤 Jira 릴리스");
   for (const m of wf.matchAll(/uses:\s*(\S+)/g)) assert.match(m[1], /@[0-9a-f]{40}$/, `${m[1]}은 커밋 해시로 고정`);
   assert.match(wf, /node \.github\/scripts\/jira-release\.js/);

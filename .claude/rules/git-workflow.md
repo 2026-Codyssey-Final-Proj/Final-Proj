@@ -45,6 +45,8 @@ git 명령을 실행하기 전에 읽는다. 위험한 명령 일부는 훅(`.cl
 ## 브랜치 규칙
 
 - 사람이 `main`에 올릴 때는 푸시 직전에 `git pull --rebase`로 최신 `main`을 받는다.
+- <!-- claude-drafted: 2026-10-29 --> **PR의 base는 언제나 `main`이다 — 다른 PR 브랜치 위에 쌓지 않는다.** 쌓으면 그 내용이 main에 빠지거나 버전 기록에 PR 번호가 붙지 않는다(fix-map F-48 · F-79).
+  앞 PR이 아직이면 그 병합을 기다렸다가 최신 `main`에서 딴다. [pr-base.yml](../../.github/workflows/pr-base.yml)이 base가 main이 아닌 PR을 빨갛게 알린다(병합 버튼은 막지 못한다).
 - **이미 있는 브랜치에 커밋을 더 올리기 전에, 그 브랜치의 PR이 병합됐는지 먼저 확인한다**(`gh pr list --head <브랜치> --state all`).
   병합된 PR에는 나중에 올린 커밋이 따라가지 않는다 — 병합됐으면 최신 `main`에서 새 브랜치를 딴다. `block-merged-branch-push.sh`가
   병합된 PR의 브랜치에 `main`에 없는 커밋을 푸시하려 하면 막는다.

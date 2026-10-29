@@ -1,0 +1,26 @@
+# claude-drafted: 2026-10-29 — 변경 리뷰(성장 로그 2026-10-29)에서 이재엽 버튼 "체크리스트 + 기계 확인"(fix-map F-79).
+# PR의 base가 main이 아니면 빨갛게 알린다. 다른 PR 브랜치 위로 병합하면 그 내용이 main에 빠지거나(#241 → #243으로 다시 올림)
+# CHANGELOG에 PR 번호가 붙지 않는다(#248 → v45.0). 10/19 · 10/21 · 10/28 세 번 사람 규칙으로는 막지 못했다.
+# 한계: main이 아닌 브랜치에는 보호 규칙이 없어 병합 버튼 자체는 막지 못한다 — 빨간 표시와 이유 한 줄로 알린다.
+# PR이 부딪침(conflict) 상태면 pull_request 워크플로가 돌지 않고, 이 파일이 생기기 전에 딴 브랜치끼리 쌓은 PR에도 검사가 없다.
+# 브랜치 이름은 env로만 받는다(run 안에 ${{ }}를 쓰면 이름이 셸 명령이 될 수 있다). 시험: 04-tests/repo/pr-base.test.js
+name: pr-base
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  base:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: PR의 base는 main
+        env:
+          BASE: ${{ github.base_ref }}
+        run: |
+          if [ "$BASE" = "main" ]; then echo "base = main"; exit 0; fi
+          echo "::error::이 PR의 base가 '$BASE'예요 — main으로 바꿔 주세요(PR 화면 제목 옆 Edit → base). 다른 PR 브랜치 위로 병합하면 그 내용이 main에 빠지거나 CHANGELOG에 PR 번호가 붙지 않아요(.claude/rules/git-workflow.md 브랜치 규칙)"
+          exit 1
