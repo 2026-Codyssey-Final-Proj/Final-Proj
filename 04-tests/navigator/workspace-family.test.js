@@ -91,3 +91,15 @@ test("머리 줄은 다른 칸과 구분되는 바탕(--acc-mid) · 아래 경�
   assert.match(c, /html\.win-quest \.wh,\.nav \.wsx \.wh\{background:var\(--acc-mid\)\}/, "작업실 창 · 브라우저 판의 덮어쓰기도 같은 색");
   assert.match(h, /html\.in-win\.win-quest #root>\.wh\{background:var\(--acc-mid\)\}/, "앱 창의 머리 줄도 같은 색");
 });
+
+// claude-drafted: 2026-10-29 — 두승현 "섬 글꼴(C-62) · 일부 상황에서 글씨가 흰색으로 나와 가독성이 떨어진다 · 위계를 고려해": 브라우저로 섬 · 작업실 여러 상태의 글자 대비를 재서 4.5:1 미만을 찾았다.
+//   섬 대화 카드(section.mc.chat)는 예시 터미널(#chat)의 .chat 규칙에 함께 걸려 코드용 글꼴이었다. 섬의 보조 글(#C6D5EE)은 4.42:1, 용어 꼬리표(#AAB3D4)는 3.15:1
+test("섬 글은 Gowun Dodum · 섬 글자 세 단계(제목 #EEF1FA · 본문 #E1E6F4 · 보조 #D3E0F3, 모두 4.5:1 이상) · 작업 칸의 흐린 글자 셋을 진하게", () => {
+  assert.match(c, /\.isl \.mc\.chat\{font-family:var\(--font-text\)\}/, "섬 대화 카드는 글 글꼴 — 예시 터미널의 .chat 규칙과 이름이 겹쳐 코드 글꼴이었다");
+  const isl = c.match(/\n\.isl,\.pill\{([\s\S]*?)\n\s*background:var\(--isl\)/)[1];
+  assert.match(isl, /--ink:#EEF1FA; --ink2:#E1E6F4; --mute:#D3E0F3; --sub:#D3E0F3;/, "섬 글자 세 단계");
+  assert.ok(!/#C6D5EE|#AAB3D4/.test(isl), "섬 안 글자색에 4.5:1 미만 색이 없다");
+  assert.match(c, /\.page h4\{[^}]*color:#2B3463;/, "노트북 '목차 · n단계'");
+  assert.match(c, /\.sm-views button\{[^}]*color:#2B3463;/, "도전과제 보기 단추");
+  assert.match(c, /\.rb-toc button\[aria-current=true\]\{[^}]*color:var\(--acc-ink\);/, "책 목차의 지금 줄");
+});
