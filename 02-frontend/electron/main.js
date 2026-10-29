@@ -319,7 +319,7 @@ function openSideWin(kind, opt = {}) {
   if (ws) { w.on("will-resize", () => { w.floeUser = true; }); w.on("resize", rememberWork); w.on("move", rememberWork); }   // 작업실 — 사람이 바꾼 크기 · 자리를 기억(R-1). 앱이 둔 자리(setBounds)는 will-* 없이 와서 적히지 않는다
   w.on("will-move", () => { w.floeMoved = true; w.floeUser = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
   w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
-  if (ws) w.once("ready-to-show", () => { if (win && !win.isDestroyed()) win.hide(); });   // 작업실이 뜨면 섬 창은 숨는다 — 섬은 작업실 안의 옆 칸에(C-41 ⑤)
+  if (ws && win && !win.isDestroyed()) win.hide();   // 작업실을 만들면 섬 창은 바로 숨는다 — 섬은 작업실 안의 옆 칸에(C-41 ⑤). 작업실이 뜰 때(ready-to-show)까지 기다리면 켤 때 섬 창의 알약 · 말풍선이 흐리게 깜박였다(F-101, 임유정 2026-10-29)
   w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
   w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (win && !win.isDestroyed()) { if (ws) win.show(); win.webContents.send("floe:win-closed", kind); } });   // 작업실이 닫히면 섬 창이 다시 뜬다(C-41 ⑤)
   w.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });

@@ -1,0 +1,27 @@
+# claude-drafted: 2026-10-29 — 섬 화면 app.js 나누기(이재엽 버튼 "가장 문제가 덜하고 유지보수가 가능한 작업"). 새 맥락 리뷰의 막힘 1번:
+# 커밋 전 시험은 Claude가 하는 커밋만 막는다 — 사람의 터미널 커밋 · GitHub 병합 · 옛 브랜치 병합은 거치지 않는다.
+# 그래서 PR(병합될 모양)과 main에서 app.js가 app/ 조각을 묶은 것과 같은지 본다. 다르면 다음 join이 app.js에만 있던 고침을 지울 수 있다
+# (join은 그런 칸이 있으면 멈추지만, 커밋된 조각 자체가 어긋나 있으면 알아채지 못한다). 고치는 법: 02-frontend/navigator/app/README.md
+# 시험 파일 하나만 돌린다 — 노드는 러너에 있고 받는 것이 없다.
+name: app-parts
+
+on:
+  pull_request:
+    paths: ["02-frontend/navigator/app.js", "02-frontend/navigator/app/**", "02-frontend/navigator/app-parts.js", "04-tests/navigator/app-parts.test.js"]
+  push:
+    branches: [main]
+    paths: ["02-frontend/navigator/app.js", "02-frontend/navigator/app/**", "02-frontend/navigator/app-parts.js", "04-tests/navigator/app-parts.test.js"]
+
+permissions:
+  contents: read
+
+jobs:
+  same:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: app.js = app/ 조각을 묶은 것
+        run: node --test 04-tests/navigator/app-parts.test.js
