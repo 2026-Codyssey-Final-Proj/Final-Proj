@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v50.2 | 2026-10-29 | 이재엽 | 변경 리뷰(합침 커밋 82개) — PR base가 main이 아니면 빨갛게 알리는 검사(F-79), 합친 CHANGELOG 커밋 push가 거절되면 최신 main 위로 얹고 다시(F-80), v45.0에 빠진 (#248), 성장 로그 '버전 기록 추적 끊김' 3회 → 체크리스트 승격 (#257) | `.github/` · `04-tests/repo/` · `CHANGELOG.md`(v45.0 한 줄) · `.claude/rules/`(git-workflow · consistency) · `01-docs/00-overview/` · `01-docs/07-maintenance/` · `01-docs/catalog/` |
 | v50.1 | 2026-10-29 | 이재엽 | 병합 뒤 고침 — #247(대화 저장 서버) · #250(대화 목록 화면)이 같이 들어간 main에서 앱이 고른 폴더가 없을 때 화면이 말마다 POST /api/chatlog을 보내 400이 쌓이던 것(진짜 AI 모드 e2e 13개가 깨짐). 서버가 폴더를 안다고 할 때까지 모아 두고, 모르면 보내지 않으며, 폴더를 고르면 다시 묻는다 (#256) | `02-frontend/navigator/app.js`(대화 저장 — 두승현 님 C-63 화면, 이 줄이 알림) · `04-tests/`(chat-list e2e ③ · 단위) |
 | v50.0 | 2026-10-29 | 이재엽 | 지식 퀘스트 C-49 — 기록의 원본은 프로젝트 폴더. 브라우저 기록이 없으면 폴더의 단계 문서로 되살리고, Floe가 쓴 뒤 손으로 고친 문서는 '낡음'으로 알아 다시 읽고, 없어진 문서의 기록은 '근거 없음'으로 남김(GET /api/docs · 글 지문) (#252) | `02-frontend/navigator/`(폴더의 기록 카드) · `03-backend/navigator/`(docs.js parseStage · server.js · API.md 3-23-1) · `04-tests/` · `01-docs/07-maintenance/fix-map.md` |
 | v49.0 | 2026-10-29 | 이재엽 | 지식 퀘스트 C-48 — 8단계에서 단계마다 쓴 배운 것 · 결정 기록으로 가져갈 것 초안(기준 다섯, 못 채우면 한 번만 다시)을 만들고 고쳐 채택 · 반려(까닭) · 보류, 다음 프로젝트의 그 단계에서 최대 3개를 보이고 이번에 쓸 것을 고름(장부는 이 컴퓨터의 파일 하나) (#253) | `02-frontend/navigator/`(가져갈 것 카드 둘 · index.html) · `03-backend/navigator/`(carry.js 새 파일 · navigator.js · server.js · API.md 3-33) · `04-tests/` · `01-docs/07-maintenance/fix-map.md` · `.claude/rules/security-records.md` 3절 |
