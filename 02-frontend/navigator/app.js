@@ -143,6 +143,7 @@
     // 퀘스트(C-22 1차 뼈대, 2026-10-21 — 규칙은 quest.js): 지금 퀘스트(장 하나 = 퀘스트 하나) · 처음 말한 것 · 무지개 조개. topic — 받은 글로 정한 주제(퀘스트 제목, C-36 2026-10-25)
     quest: null, idea: "", topic: "", shells: 0,
     results: {}, ship: null,                       // C-37(2026-10-25): 단계마다 보고한 결과(quest.js resultOf — 한곳에서 보기 · 도전과제 지도 · 문서) · 2단계를 마친 뒤 문서 올리기({phase: offer|sent, at}, 이 켜짐 동안만)
+    docPrints: {}, restore: null,                  // C-49(2026-10-29): 쓴 단계 문서의 글 지문 {경로: 지문} · 폴더의 기록 카드({phase: offer|stale, …}, 이 켜짐 동안만)
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
     qwin: false, qtab: "canvas", boot: null, prep: null, islBig: null, tidy: null, chatMark: 0, chatChanges: [], chatOpen: null, chatGo: null, fnAll: false, /* islBig · tidy · chatMark — C-61(2026-10-29): 섬을 크게(null이면 저절로) · 정리 카드 · 이 단계 대화가 시작된 자리 */ mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
@@ -239,7 +240,7 @@
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const CHAT_KEY = `${KEY}:chat`;   // C-63 — 연습 모드의 대화는 따로 저장(넘쳐도 다른 저장을 막지 않게 — 새 맥락 리뷰)
   const KEEP = ["chatMark", "chatOpen", "mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "sound", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "codeless", "linesDone", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "codeless", "linesDone", "docPrints", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   function load() {
     let s;
@@ -273,6 +274,7 @@
     if (typeof st.source !== "string") st.source = "";
     if (st.card && typeof st.card !== "object") st.card = null; st.cardEdits = {};
     if (typeof st.topic !== "string") st.topic = "";
+    if (!st.docPrints || typeof st.docPrints !== "object" || Array.isArray(st.docPrints)) st.docPrints = {};
     st.results = st.results && typeof st.results === "object" && !Array.isArray(st.results)
       ? Object.fromEntries(Object.entries(st.results).filter(([k, r]) => N.STAGES[k] && r && Array.isArray(r.items) && r.items.every((x) => x && typeof x.name === "string" && Array.isArray(x.lines)))) : {};   // 고장 난 결과는 버린다
     st.back = N.welcome(s, Date.now());
@@ -719,6 +721,7 @@
     if (st.linePick && BUILD) return momentLines();   // 6단계 기능 줄 고르기(F-70 ⓒ)
     if (st.runOut) return momentRun();   // 돌려 본 결과(F-70 ⓓ)
     if (planNow()) return momentPlan();   // 준비 계획 · 맡길 일(C-35) — 퀘스트 창에서 '맡길 일'을 고르거나 계획 칩을 누르면
+    if (st.restore && FDOCS) return momentRestore();   // C-49 폴더의 기록 — 되살리기 · 다시 읽기 · 근거 없음
     if (st.ship && FDOCS) return momentShip();   // 2단계를 마친 뒤 문서 올리기(C-37)
     if (gateStop()) return momentStop();   // R-10: 보고했는데 '안 됨'이 남았다 — 관문 앞에서 멈춘다
     if (QU && st.quest && st.quest.phase !== "done" && !st.openInput) return momentQuest();   // 퀘스트(C-22): 받기 전 · 한 줄씩 · 완료 보고
@@ -1308,6 +1311,7 @@
   //   C-39: 결과 그대로(칸마다 누가 · 플로로 초안 · 재료, 준비할 것 · 확인한 날 · 관문 지난 날 · 완료 기준) + 처음 말한 것 — 서버가 증빙 칸 · 기획서 · 결정 기록을 만든다
   const shipResults = () => Object.fromEntries(Object.entries(st.results).map(([k, { chap, ...r }]) => [k, r]));
   const shipFiles = () => (FDOCS ? FDOCS.files({ topic: st.topic, idea: st.idea || "", results: st.results, redact: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) }) : []);
+  const nosrcAt = (p) => { const n = FDOCS.SLUGS ? N.STAGES.findIndex((_, i) => FDOCS.stagePath(i) === p) : -1; return n >= 0 && st.results[n] && st.results[n].nosrc; };   // C-49 근거 없음 — 올리기 카드의 파일 목록에 보인다
   function momentShip() {
     if (st.ship.phase === "sent") return { tone: "green", mood: "happy", badge: OK_ICON, meta: `<span class="mm-stage">문서 올리기</span>`, title: "올리기를 Claude Code에 맡겼어요",
       sub: "커밋 · 푸시 전에 허락 카드가 이 위에 떠요. 끝나면 알려 드릴게요.", acts: [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "확인했어요", act: "ship-done", kind: "ghost" }] };
@@ -1319,19 +1323,89 @@
     const peek = st.ship.peek != null && peeks[st.ship.peek] ? files.find((f) => f.path === peeks[st.ship.peek][0]) : null, tag = (p) => (peeks.find(([x]) => x === p) || [])[1];   // 파일 이름 옆 쉬운 이름(기획서 · 결정 기록)
     return { tone: "blue", mood: "happy", badge: "!", meta: `<span class="mm-stage">${LB(upto)}까지 정했어요</span>`, title: `1 ~ ${LB(upto)}에서 정한 것을 문서로 묶었어요 — 내 GitHub에 올릴까요?`,
       sub: `작업 폴더(${esc(wsShort())})에 단계 문서 · 기획서 · 결정 기록을 만들어요 — 칸마다 누가 어떻게 정했는지와 관문을 지난 날이 증빙으로 남아요. 커밋 · 푸시는 내 Claude Code가 해요(허락 카드가 떠요). README · CLAUDE.md · 목차 · 기획서 · 결정 기록은 Floe 절만 바꿔요.`,
-      body: `<ul class="ship-files">${files.map((f) => `<li>${tag(f.path) ? `<b>${tag(f.path)}</b> ` : ""}${esc(f.path)}${f.merge ? " <small>절만 바꿈</small>" : ""}</li>`).join("")}</ul><div class="ship-peek">${peeks.map(([, label], k) => `<button type="button" class="lnk" data-act="ship-peek" data-i="${k}" aria-expanded="${st.ship.peek === k}">${label} 미리 보기</button>`).join("")}${peek ? `<pre>${esc(peek.text)}</pre>` : ""}</div>`,
+      body: `<ul class="ship-files">${files.map((f) => `<li>${tag(f.path) ? `<b>${tag(f.path)}</b> ` : ""}${esc(f.path)}${f.merge ? " <small>절만 바꿈</small>" : ""}${nosrcAt(f.path) ? " <small>폴더에 없어요 — 다시 만들어요(근거 없음)</small>" : ""}</li>`).join("")}</ul><div class="ship-peek">${peeks.map(([, label], k) => `<button type="button" class="lnk" data-act="ship-peek" data-i="${k}" aria-expanded="${st.ship.peek === k}">${label} 미리 보기</button>`).join("")}${peek ? `<pre>${esc(peek.text)}</pre>` : ""}</div>`,
       acts: [{ label: "올리기", act: "ship-go", key: "Enter", pri: true }, { label: "나중에", act: "ship-later", kind: "ghost" }] };
   }
+  // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번 "사람이 확인한 기록만" · "글 지문"): 기록의 원본은 프로젝트 폴더 ──
+  //   폴더를 알면(진짜 AI 모드 · 앱이 고른 폴더) 그 폴더마다 한 번 단계 문서를 다시 읽는다(GET /api/docs). 이 브라우저에 기록이 없으면 되살릴지 묻고,
+  //   본 뒤 글 지문이 바뀐 문서는 '낡음' — 다시 읽을지 묻는다(나중에면 다음에 열 때 다시). 없어진 문서의 기록은 지우지 않고 '근거 없음'(nosrc).
+  //   지문 st.docPrints = { project: 폴더 열쇠(실제 경로의 지문 — 이름이 같은 다른 폴더와 견주지 않게), wrote: {단계: Floe가 마지막에 쓴 글 — 이것과 같을 때만 다시 덮는다},
+  //     own: {단계: 사람 것 — 되읽어 다시 쓰면 다른 글 · 읽을 수 없는 글, 덮지 않는다}, seen: {단계: 마지막으로 본 폴더 글}, dirty: 다시 읽은 기록으로 기획서 · 결정 기록을 아직 안 고침, declined: 되살리지 않고 새로 시작 }
+  let docsFor = "", docsKey = "";
+  const DP = () => (st.docPrints && typeof st.docPrints === "object" && !Array.isArray(st.docPrints) ? st.docPrints : {});
+  const stageOfPath = (p) => N.STAGES.findIndex((_, i) => FDOCS.stagePath(i) === p);
+  const byStage = (o) => Object.fromEntries(Object.entries(o || {}).map(([p, v]) => [stageOfPath(p), v]).filter(([n]) => n >= 0));
+  // 올릴 때 서버에 줄 것 — 이 폴더에서 Floe가 쓴 지문(prints)과 사람 것(keep). 모르면(옛 기록 · 새로 시작 · 다른 폴더) 주지 않는다 → 전처럼 쓴다
+  const shipKnown = () => { const P = DP(), at = (n) => FDOCS.stagePath(Number(n)); return P.project && P.project === docsKey && !P.declined ? { prints: Object.fromEntries(Object.entries(P.wrote || {}).map(([n, v]) => [at(n), v])), keep: Object.keys(P.own || {}).map(at) } : null; };
+  async function docsCheck() {
+    if (!canLive || st.mode !== "live" || !FDOCS) return;
+    let r; try { r = await (await fetch("/api/docs", { cache: "no-store" })).json(); } catch { return; }
+    if (!r || !r.ok || r.why === "folder" || !r.stages || typeof r.stages !== "object") return;
+    const got = Object.keys(r.stages).map(Number).filter((n) => N.STAGES[n] && r.stages[n].result).sort((a, b) => a - b);
+    docsKey = r.key || "";
+    const P = DP(), mine = !!r.key && P.project === r.key;
+    if (!Object.keys(st.results).length) { if (got.length && !(mine && P.declined)) { st.restore = { phase: "offer", got, data: r }; render(); } return; }
+    if (!mine) return;   // 다른 폴더(또는 지문을 남기기 전)의 기록 — 견주지 않는다(같은 경로라도 다른 프로젝트의 문서다)
+    const stale = [], gone = [];
+    for (const [k, print] of Object.entries(P.seen || {})) {
+      const n = Number(k), f = r.stages[n];
+      if (!st.results[n]) continue;
+      if (!f) { if (!st.results[n].nosrc) gone.push(n); } else if (f.print !== print) stale.push(n);
+    }
+    if (gone.length) { st.results = { ...st.results, ...Object.fromEntries(gone.map((n) => [n, { ...st.results[n], nosrc: true }])) }; save(); }
+    if (stale.length || gone.length) { st.restore = { phase: "stale", stale, gone, data: r }; render(); }
+    else if (P.dirty && st.results[0] && st.results[1] && !st.ship) { st.ship = { phase: "offer" }; render(); }   // 다시 읽은 기록으로 기획서 · 결정 기록을 아직 고쳐 쓰지 않았다
+  }
+  // 되살린 뒤 이어 할 단계 — 관문을 지난(또는 다음 단계 기록이 있는) 마지막 단계의 다음
+  const resumeStage = (stages) => { const has = (n) => !!(stages[n] && stages[n].result); let last = -1; for (let n = 0; n < N.STAGES.length; n++) if (has(n) && (stages[n].result.passed || has(n + 1))) last = n; return last + 1; };
+  // 1단계 '크기' 칸의 글('크기: 보통 — …') → 만드는 크기(quest.js SIZE_AT · SIZE_WORD · SIZE_TIER)
+  const tierOf = (r0) => { const it = QU && r0 && r0.items[QU.SIZE_AT], w = String((it && it.lines[0]) || "").replace(/^크기: /, ""); const k = it ? Object.keys(QU.SIZE_WORD).find((x) => w.startsWith(QU.SIZE_WORD[x])) : null; return k ? QU.SIZE_TIER[k] : ""; };
+  function momentRestore() {
+    const R = st.restore, list = (ns) => ns.map((n) => LB(n)).join(" · "), meta = `<span class="mm-stage">폴더의 기록</span>`;
+    if (R.phase === "offer") {
+      const nx = resumeStage(R.data.stages);
+      return { tone: "blue", mood: "happy", badge: "!", meta, title: "작업 폴더에 남은 기록이 있어요 — 되살릴까요?",
+        sub: `작업 폴더의 단계 문서에서 ${list(R.got)} 기록을 찾았어요. 이 브라우저에는 기록이 없어요. 되살리면 ${N.STAGES[nx] ? `${LB(nx)}부터 이어서 해요` : "끝낸 기록을 다시 볼 수 있어요"}.`,
+        acts: [{ label: "되살리기", act: "restore-go", key: "Enter", pri: true }, { label: "새로 시작", act: "restore-later", kind: "ghost" }] };
+    }
+    const unread = R.stale.filter((n) => !R.data.stages[n].result), read = R.stale.filter((n) => R.data.stages[n].result);
+    const lines = [...(read.length ? [`${list(read)} 문서를 폴더에서 고쳤어요 — 이 기록과 그 글로 만든 기획서 · 결정 기록이 낡았어요.`] : []),
+      ...(unread.length ? [`${list(unread)} 문서는 Floe가 읽을 수 없게 바뀌었어요 — 기록은 그대로 두고 그 문서는 덮지 않아요.`] : []),
+      ...(R.gone.length ? [`${list(R.gone)} 문서가 폴더에 없어요 — 기록은 지우지 않고 '근거 없음'으로 두었어요.`] : [])];
+    return { tone: "amber", mood: "think", badge: "!", meta, title: read.length ? "폴더의 단계 문서가 바뀌었어요 — 다시 읽어 올까요?" : "폴더의 단계 문서가 달라졌어요",
+      sub: esc(lines.join(" ")), ...(read.length ? { foot: "다시 읽으면 기록을 폴더의 글로 바꾸고, 기획서 · 결정 기록도 같은 파일에 고쳐 쓸지 물어요. 사람이 고친 단계 문서는 Floe가 덮지 않아요." } : {}),
+      acts: R.stale.length ? [{ label: read.length ? "다시 읽기" : "확인했어요", act: "restore-read", key: "Enter", pri: true }, { label: "나중에", act: "restore-later", kind: "ghost" }] : [{ label: "확인했어요", act: "restore-later", key: "Enter", pri: true }] };
+  }
+  // 되살린 단계부터 — advance처럼 그 장의 할 일 · 퀘스트를 세운다(레벨 · 조개는 올리지 않는다 — 이미 지난 관문)
+  function resumeAt(n) {
+    const s = N.STAGES[n];
+    if (!s) { st.finished = true; return; }
+    st.j = { stage: n, reason: `폴더의 기록으로 ${LB(n)} "${s.title}"부터 이어서 해요.`, criteria: crits(n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
+    if (QU) st.quest = QU.retitle(QU.makeQuest(s, crits(n)), st.topic);
+  }
+
   async function shipGo(publicOk = false) {
     if (!st.ship || !(st.ship.phase === "offer" || (publicOk && st.ship.phase === "public"))) return;
     if (st.mode !== "live" || !canLive) { st.ship = null; render(); return say("연습이라 올리지 않았어요 — 진짜 AI 모드에서 작업 폴더에 만들고 올려요"); }
     st.planBusy = "ship";
-    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
+    const known = shipKnown();
+    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
     st.planBusy = "";
     // C-52(2026-10-29): 공개(또는 모름) 저장소 — 저장소마다 처음 한 번 더 묻는다. 서버는 아직 아무것도 쓰지 않았다
     if (!r.ok && r.why === "public") { st.ship = { ...st.ship, phase: "public", reason: r.reason || "" }; return render(); }
+    // C-49: 쓴 단계 문서의 지문을 기억한다(맡기기가 실패해도 파일은 썼다) — 다음에 열 때 폴더의 글이 바뀌었는지(낡음) 본다. 다시 쓴 단계는 '근거 없음'도 걷는다
+    if (r.prints) {
+      if (r.key) docsKey = r.key;
+      const P = DP(), same = P.project === docsKey && !P.declined, w = byStage(r.prints), own = { ...(same ? P.own : {}) };
+      for (const n of Object.keys(w)) delete own[n];   // Floe가 방금 쓴 문서는 Floe 것
+      st.docPrints = { project: docsKey, wrote: { ...(same ? P.wrote : {}), ...w }, seen: { ...(same ? P.seen : {}), ...w }, own, dirty: false };
+      st.results = Object.fromEntries(Object.entries(st.results).map(([k, x]) => { if (!(k in w) || !x.nosrc) return [k, x]; const { nosrc, ...rest } = x; return [k, rest]; }));
+      save();
+    }
     if (!r.ok) { render(); return say(r.reason || "문서를 올리지 못했어요"); }
     st.ship = { phase: "sent", at: r.task && r.task.at }; render(); watchTask(r.task, "ship");
+    const kept = (r.kept || []).map(stageOfPath).filter((n) => n >= 0);
+    if (kept.length) say(`${kept.map((n) => LB(n)).join(" · ")} 문서는 폴더에서 고친 글이라 덮지 않았어요`);   // C-49 기록의 원본은 폴더
   }
   // 맡긴 올리기가 끝났나 — 맡긴 일 지켜보기(watchTask, F-69)가 끝나면 부른다. 막히면 막힘 카드가 먼저(다시 맡기면 같은 번호라 그대로 이어진다)
   function shipEnd(t) {
@@ -3401,6 +3475,38 @@
     // 문서 올리기(C-37) — 올리기 · 나중에(도전과제 지도에서 다시) · 확인 · 지도에서 열기
     "ship-go": () => shipGo(),
     "ship-public": () => shipGo(true),   // C-52 공개 저장소 — 저장소마다 처음 한 번
+    // C-49 폴더의 기록 — 되살리기(이 브라우저에 기록이 없을 때) · 다시 읽기(낡음) · 나중에(다음에 열 때 다시)
+    "restore-go": () => {
+      const R = st.restore; if (!R || R.phase !== "offer") return;
+      const d = R.data, nx = resumeStage(d.stages);
+      st.results = Object.fromEntries(R.got.map((n) => [n, { chap: n, title: d.topic || "", ...d.stages[n].result }]));
+      if (!st.topic && d.topic) st.topic = d.topic;
+      if (!st.idea && d.idea) st.idea = d.idea;   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰)
+      if (!st.source && d.source) st.source = d.source;
+      const all = Object.entries(d.stages);   // 읽을 수 없는 문서(result null)도 — 사람 것으로 두고 덮지 않는다
+      st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
+      const t = tierOf(st.results[0]); if (t) st.tier = t;
+      st.restore = null;
+      if (nx > 0) resumeAt(nx);
+      save(); render(); say(`${R.got.map((n) => LB(n)).join(" · ")} 기록을 폴더에서 되살렸어요.`);
+      if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1]) stageDraft(nx); else if (st.j && st.j.stage === nx) questText();
+    },
+    "restore-read": () => {
+      const R = st.restore; if (!R || R.phase !== "stale") return;
+      const d = R.data, read = R.stale.filter((n) => d.stages[n].result && st.results[n]), P = DP(), wrote = { ...(P.wrote || {}) }, own = { ...(P.own || {}) };
+      // 그 단계 기록을 폴더의 글로 바꾼다(문서에 없는 칸 — 제목 · 코드 없이 지남 — 만 남긴다). 사람이 칸을 비웠으면 비운 대로
+      st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result }]; })) };
+      for (const n of R.stale) { if (d.stages[n].lossless) { wrote[n] = d.stages[n].print; delete own[n]; } else { own[n] = d.stages[n].print; delete wrote[n]; } }   // 다시 써도 같은 글일 때만 Floe가 덮는다 — 아니면 그 문서는 사람 것(올릴 때 keep → kept)
+      st.docPrints = { ...P, wrote, own, seen: { ...(P.seen || {}), ...Object.fromEntries(R.stale.map((n) => [n, d.stages[n].print])) }, dirty: !!read.length || !!P.dirty };
+      st.restore = null;
+      if (read.length && st.results[0] && st.results[1]) st.ship = { phase: "offer" };   // 그 글로 만든 기획서 · 결정 기록도 같은 파일에 고쳐 쓸지(새 파일을 쌓지 않는다)
+      save(); render(); if (read.length) say(`${read.map((n) => LB(n)).join(" · ")} 기록을 폴더의 글로 다시 읽었어요.`);
+    },
+    "restore-later": () => {   // 새로 시작(되살리기를 고르지 않음)이면 이 폴더에서는 다시 묻지 않는다. 낡음 · 근거 없음은 다음에 열 때 다시
+      const R = st.restore;
+      if (R && R.phase === "offer") { st.docPrints = { project: R.data.key || "", wrote: {}, seen: {}, own: {}, declined: true }; save(); }
+      set({ restore: null });
+    },
     "ship-later": () => { st.ship = null; render(); say("나중에 도전과제의 한눈에 보기에서 올릴 수 있어요"); },
     "ship-done": () => set({ ship: null }),
     "ship-peek": (i) => { if (st.ship) set({ ship: { ...st.ship, peek: st.ship.peek === i ? null : i } }); },   // 기획서 · 결정 기록 미리 보기(C-39) — 다시 그려도 펼친 채로(<details>는 다시 그릴 때마다 닫혔다)
@@ -3867,6 +3973,7 @@
     try { r = await (await fetch(`/api/events?since=${Math.max(lastSeq, 0)}`)).json(); } catch { return; }
     if (!r.ok) return;
     const was = st.project; appName = r.project || ""; if (appName) st.project = appName;
+    if (appName && st.mode === "live" && appName !== docsFor) { docsFor = appName; docsCheck(); }   // C-49 폴더마다 한 번 — 단계 문서를 다시 읽는다
     const first = lastSeq < 0, ev = r.events[r.events.length - 1];
     lastSeq = r.latest;   // 연결을 끊은 동안에도 기준은 앞으로 — 다시 연결했을 때 지난 알림을 한꺼번에 받지 않는다
     if (!ev) return st.project !== was ? render() : undefined;
@@ -4066,6 +4173,7 @@
   $nav.addEventListener("keyup", caretHere); $nav.addEventListener("click", caretHere);
   // 작업 폴더가 바뀌면 옛 폴더에서 받아 둔 것을 잊고 다시 받는다 — 이름표(st.gh) · 파일 칸(작업실이 열려 있으면 바로). 처음 설정의 가져오기 · 새로 만들기와 앱 메뉴(F-72)가 같이 쓴다
   const forgetFolder = () => {
+    docsFor = "";   // C-49 새 폴더의 단계 문서를 다시 읽게
     st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "canvas";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
     if (canLive && !ghLoading) loadGithub();
     if (st.qwin) loadFiles();

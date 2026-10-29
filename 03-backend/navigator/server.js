@@ -724,18 +724,64 @@ function shipDocs(body) {
         try { PublicOk.remember(o.key); } catch { return [500, { ok: false, reason: "올려도 된다는 답을 이 컴퓨터에 남기지 못했어요 — 다시 해 주세요" }]; }
       }
     } }
+  // C-49(2026-10-29): 화면이 아는 단계 문서 지문({ 경로: 지문 } — Floe가 마지막에 쓴 것). 주면 지금 폴더의 글이 그 지문과 다른(사람이 고친 · Floe가 쓰지 않은) 단계 문서는
+  //   덮지 않고 kept로 알린다 — 기록의 원본은 폴더다. 주지 않으면(옛 기록 · 새로 시작) 전처럼 쓴다
+  //   keep(경로 목록)은 화면이 사람 것으로 아는 단계 문서(되읽어 다시 쓰면 다른 글 · 읽을 수 없는 글) — 있으면 덮지 않는다. 화면이 모르는(지문도 keep도 없는) 문서는 Floe 것으로 보고 쓴다
+  const known = body && body.prints != null ? body.prints : null, keep = body && body.keep != null ? body.keep : [];
+  const isStagePath = (k) => Docs.SLUGS.some((_, n) => Docs.stagePath(n) === k);
+  if ((known !== null && !(known && typeof known === "object" && !Array.isArray(known) && Object.entries(known).every(([k, v]) => isStagePath(k) && typeof v === "string" && /^[0-9a-f]{16}$/.test(v))))
+    || !Array.isArray(keep) || keep.length > Docs.SLUGS.length || !keep.every((k) => typeof k === "string" && isStagePath(k)))
+    return [400, { ok: false, reason: "문서 지문의 모양이 맞지 않음" }];
   const files = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
+  const isStage = (f) => !f.merge && !!Docs.parseStage(f.text);
+  const kept = t.list.filter((f) => isStage(f) && fs.existsSync(f.file) && (keep.includes(f.path) || (known && known[f.path] && (() => { try { return printOf(fs.readFileSync(f.file, "utf8")) !== known[f.path]; } catch { return true; } })()))).map((f) => f.path);
+  const writes = t.list.filter((f) => !kept.includes(f.path));
   try {
-    for (const f of t.list) {
+    for (const f of writes) {
       fs.mkdirSync(path.dirname(f.file), { recursive: true });
       fs.writeFileSync(f.file, f.merge ? Docs.mergeSection(fs.existsSync(f.file) ? fs.readFileSync(f.file, "utf8") : "", f.text) : f.text);
     }
   } catch { return [500, { ok: false, reason: "문서를 쓰지 못했어요 — 작업 폴더의 쓰기 권한을 봐 주세요" }]; }
   // 끝에 기준마다 보고하게 한다(C-32) — 화면이 '올라갔다'를 Claude Code의 답(푸시함)으로만 말하게
-  const paths = files.map((f) => f.path), [code, out] = startTask(Docs.shipRequest(paths), "문서 올리기", Docs.SHIP_CHECKS);
-  return [code, { ...out, files: paths }];
+  // C-49(2026-10-29): 쓴 단계 문서마다 글 지문 — 화면이 기억해 두었다가 폴더의 글이 바뀌면 '낡음'으로 알아본다(GET /api/docs)
+  const prints = Object.fromEntries(writes.filter(isStage).map((f) => [f.path, printOf(f.text)]));
+  const paths = writes.map((f) => f.path), [code, out] = startTask(Docs.shipRequest(paths), "문서 올리기", Docs.SHIP_CHECKS);
+  return [code, { ...out, files: paths, prints, kept, key: folderKey(s.dir) }];
+}
+
+// ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번 "사람이 확인한 기록만" · "글 지문"): 기록의 원본은 프로젝트 폴더 ──
+// 폴더의 단계 문서를 다시 읽어 단계마다 { path, print, result } — 브라우저 기록을 지웠으면 되살리고, 지문이 다르면 '낡음'. 읽기만.
+//   바로가기 · 파일이 아닌 것 · 256KB 넘는 것은 읽지 않는다. 손으로 넣은 비밀값도 가린 뒤 준다(이 결과는 뒤에 AI 묻는 글의 재료가 된다 — C-52)
+const DOC_READ_MAX = 256 * 1024;
+// 폴더 열쇠 — 이름이 같은 다른 폴더의 지문과 견주지 않게(폴더 이름이 아니라 실제 경로의 sha256 앞 16자 — 경로는 내지 않는다)
+const folderKey = (dir) => crypto.createHash("sha256").update(realDir(dir)).digest("hex").slice(0, 16);
+const printOf = (text) => crypto.createHash("sha256").update(String(text).replace(/\r\n?/g, "\n")).digest("hex").slice(0, 16);   // 줄 끝(CRLF)만 다른 것은 같은 글 — git이 줄 끝을 바꿔도 낡음이 아니다
+const redactDeep = (v) => (typeof v === "string" ? Sensitive.redact(v) : Array.isArray(v) ? v.map(redactDeep) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, redactDeep(x)])) : v);
+function docsRead() {
+  const s = projectNow();
+  if (!s) return { ok: true, project: "", topic: "", idea: "", source: "", stages: {}, why: "folder" };
+  const readDoc = (p) => { const t = docTargets(s.dir, [{ path: p }]); if (t.why) return null; try { const st = fs.lstatSync(t.list[0].file); return st.isFile() && st.size <= DOC_READ_MAX ? fs.readFileSync(t.list[0].file, "utf8") : null; } catch { return null; } };
+  const stages = {}, got = {}; let topic = "", idea = "";
+  Docs.SLUGS.forEach((_, n) => {
+    const p = Docs.stagePath(n), text = readDoc(p);
+    if (text == null) return;
+    const r = Docs.parseStage(text);
+    if (!r || r.n !== n) { stages[n] = { path: p, print: printOf(text), result: null }; return; }   // 있지만 Floe가 읽을 수 없게 바뀐 문서 — 지우지도 덮지도 않는다(화면이 낡음으로)
+    got[n] = { text, r };
+    if (!topic && r.topic) topic = r.topic;
+    if (n === 0 && r.idea != null) idea = r.idea;
+  });
+  const source = Docs.parseSource(readDoc(Docs.SOURCE_DOC) || "") || "";   // 받은 글 전부(F-68)
+  // 되읽은 것으로 다시 쓰면 같은 글인가(lossless) — 같을 때만 화면이 'Floe가 덮어도 되는 문서'로 기억한다(사람이 더한 글을 다음 올리기에서 잃지 않게)
+  const again = Docs.files({ topic, idea, source, results: Object.fromEntries(Object.entries(got).map(([n, x]) => [n, x.r.result])), redact: (x) => x });
+  const norm = (t) => String(t).replace(/\r\n?/g, "\n");
+  for (const [n, x] of Object.entries(got)) {
+    const f = again.find((y) => y.path === Docs.stagePath(Number(n)));
+    stages[n] = { path: Docs.stagePath(Number(n)), print: printOf(x.text), result: redactDeep(x.r.result), lossless: !!f && norm(f.text) === norm(x.text) };
+  }
+  return { ok: true, project: s.project, key: folderKey(s.dir), topic: Sensitive.redact(topic), idea: Sensitive.redact(idea), source: Sensitive.redact(source), stages };
 }
 
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──
@@ -831,6 +877,7 @@ async function handle(req, res) {
   if (req.method === "GET" && route === "/api/apps") return send(res, 200, { ok: true, claudeDesktop: AppLink.status(AppLink.desktopConfig()) });   // 같이 쓸 앱 — 찾았다 · 이었다만(경로는 보이지 않는다)
   if (req.method === "GET" && route === "/api/chatlog") return send(res, 200, chatlogGet());   // 작업실 개편 C-63 대화 저장(API.md 3-32)
   if (req.method === "GET" && route === "/api/readme") return send(res, 200, readmeBook());   // C-26 내 작업 책(API.md 3-18) — 읽기만
+  if (req.method === "GET" && route === "/api/docs") return send(res, 200, docsRead());   // C-49 폴더의 단계 문서를 다시 읽는다(API.md 3-23-1) — 읽기만
   if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
   if (req.method === "GET" && route === "/api/docmap") { const [code, out] = await docmapNow(new URL(req.url, "http://localhost").searchParams.get("now") || ""); return send(res, code, out); }   // C-45 문서 지도(API.md 3-27) — 읽기만
   if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만

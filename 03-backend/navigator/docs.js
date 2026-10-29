@@ -28,17 +28,19 @@
     return it ? it.lines.filter((l) => l && l.trim()).join(" / ") : "";
   }
 
+  // 칸을 누가 어떻게 정했나 — 단계 문서의 '어떻게:' 줄(stageDoc)과 다시 읽기(parseStage)가 같은 표를 쓴다. moved · skip은 C-49(2026-10-29) — 다시 읽을 때 누가 정했나가 남게
+  const HOW_WORDS = { ok: "플로로 초안을 그대로", edit: "고침", me: "직접 적음(초안 없이)", pick: "고름", chat: "플로로와 나눈 대화를 정리해 적음(작업실 개편 C-61)", moved: "지난 칸 · 파일에서 옮겨 적음", skip: "조건이 안 맞아 건너뜀" };
+
   // 그 단계 결과로 문서 한 장 — 받은 것은 묶음(ctx: results · idea · redact · docOf)
   function stageDoc(n, r, topic, ctx) {
     const s = N.STAGES[n], R = ctx.R, red = ctx.redact;
     const refName = (x) => { const it = R(x.s) && R(x.s).items[x.i]; return `${label(x.s)} ${Q.roman(x.i)}${it ? ` ${red(Q.shortOf(it.name))}` : ""}`; };
     const how = (it) => {
-      if (it.by === "ok") return "- 어떻게: 플로로 초안을 그대로";
-      if (it.by === "edit") return `- 어떻게: 고침${it.draft ? ` — 플로로 초안: “${red(it.draft)}”` : ""}`;
-      if (it.by === "me") return "- 어떻게: 직접 적음(초안 없이)";
-      if (it.by === "pick") return `- 어떻게: 고름${it.draft ? ` — 플로로가 권한 것: “${red(it.draft)}”` : ""}`;
-      if (it.by === "chat") return "- 어떻게: 플로로와 나눈 대화를 정리해 적음(작업실 개편 C-61)";
-      return "";
+      const w = HOW_WORDS[it.by];
+      if (!w) return "";
+      // 초안은 누가 정했든 같이 적는다(고름이면 '플로로가 권한 것') — 다시 읽을 때 결정 기록의 '플로로 초안' 칸이 비지 않게(C-49 새 맥락 리뷰)
+      const d = it.draft ? ` — ${it.by === "pick" ? "플로로가 권한 것" : "플로로 초안"}: “${red(it.draft)}”` : "";
+      return `- 어떻게: ${w}${d}`;
     };
     const items = r.items.map((it) => {
       const body = [...(it.lines.length ? it.lines.map((l) => `- ${red(l)}`) : ["- 아직 적지 않았어요"]), how(it), it.from && it.from.length ? `- 재료: ${it.from.map(refName).join(" · ")}` : ""].filter(Boolean);
@@ -51,12 +53,13 @@
     const NONE = "남아 있지 않아요(증빙을 남기기 전에 끝낸 단계)";
     const count = r.items.some((it) => it.by) ? Q.BY.map((b) => `${Q.BY_WORD[b]} ${r.items.filter((it) => it.by === b).length}칸`).join(" · ") : NONE;
     const gate = r.passed ? `${cell(r.passed)} — 이해했어요(예)` : R(n + 1) ? "지났어요 — 날짜는 남아 있지 않아요" : "아직";
-    const proof = ["## 증빙", "", "| 무엇 | 내용 |", "|---|---|", `| 칸을 다 확인한 날 | ${r.at ? cell(r.at) : NONE} |`, `| 관문을 지난 날 | ${gate} |`, `| 누가 정했나 | ${count} |`].join("\n");
+    const proof = ["## 증빙", "", "| 무엇 | 내용 |", "|---|---|", `| 칸을 다 확인한 날 | ${r.at ? cell(r.at) : NONE} |`, `| 관문을 지난 날 | ${gate} |`, `| 누가 정했나 | ${count} |`,
+      ...(r.nocode ? ["| 코드 | 코드 없이 지남 — '코드 파일을 만드시겠습니까?'에 아니요 |"] : [])].join("\n");   // nocode(F-70) — 다시 읽을 때도 남게(C-49)
     // checkBy confirm(C-40) — 초안을 칸마다 확인한 단계는 AI가 다시 살펴보지 않았다. 그렇다고 적는다(증빙이 무엇에 기대는지)
     const check = r.check && r.check.length ? `\n\n### 완료 기준 — ${r.checkBy === "confirm" ? "확인한 대로(AI가 다시 살펴보지 않고, 칸마다 사람이 확인)" : "살펴본 결과"}\n\n| 기준 | 됐나 | 근거 |\n|---|---|---|\n${r.check.map((c) => `| ${cell(red(c.text))} | ${c.skipped ? `넘김(까닭: ${cell(red((r.skip && r.skip.reason) || ""))})` : c.met ? "됨" : "안 됨"} | ${cell(red(c.evidence))} |`).join("\n")}` : "";
     // 지식 퀘스트 C-47(2026-10-29, PRD 6절 · A-13): 배운 것 — 관문에서 사람이 적은 말 그대로(플로로 · AI는 이 칸을 쓰지 않는다). 비우면 '비어 있음', 칸을 만들기 전에 지난 관문은 '남아 있지 않아요'.
-    //   사람 글은 줄마다 '> '(인용) — 줄머리 # · --- 가 절 제목이 되지 않게, <는 &lt; — <!-- 가 뒤의 증빙을 숨기지 않게(새 맥락 리뷰 2026-10-29)
-    const learned = typeof r.learned === "string" ? (r.learned.trim() ? red(r.learned.trim()).replace(/\r\n?/g, "\n").split("\n").map((l) => `> ${l.replace(/</g, "&lt;")}`.trimEnd()).join("\n") : "비어 있음 — 관문에서 적지 않았어요")
+    //   사람 글은 줄마다 '> '(인용) — 줄머리 # · --- 가 절 제목이 되지 않게, <는 &lt;(&는 &amp; — 다시 읽을 때 되돌린다) — <!-- 가 뒤의 증빙을 숨기지 않게(새 맥락 리뷰 2026-10-29)
+    const learned = typeof r.learned === "string" ? (r.learned.trim() ? red(r.learned.trim()).replace(/\r\n?/g, "\n").split("\n").map((l) => `> ${l.replace(/&/g, "&amp;").replace(/</g, "&lt;")}`.trimEnd()).join("\n") : "비어 있음 — 관문에서 적지 않았어요")
       : r.passed || R(n + 1) ? "남아 있지 않아요(배운 것 칸을 만들기 전에 지난 관문)" : "아직 — 관문에서 적어요";
     // 처음 뜻 — 관문에서 견준 말(1단계의 원하는 결과, 앞 관문에서 바꿨으면 바꾼 말)을 같이 적는다
     const was = oneLine(red(wantAt(R, n)));
@@ -132,6 +135,95 @@
       { path: "README.md", text: readme, merge: true }, { path: "CLAUDE.md", text: claude, merge: true }];
   }
 
+  // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번): 기록의 원본은 내 프로젝트 폴더. Floe가 쓴 단계 문서(stageDoc)를 다시 읽어 단계 결과로 ──
+  //   사람이 손으로 고친 줄은 고친 대로 읽는다. Floe 단계 문서가 아니면(아직인 단계의 틀 · 다른 글) null. 가린 글은 가린 채로(원본이 이미 가려져 있다)
+  const stagePath = (n) => `docs/${SLUGS[n]}/${SLUGS[n].slice(3)}.md`;
+  const REF_LINE = /^재료: \d단계 [ⅠⅡⅢⅣⅤⅥⅦⅧ](?: |$)/;   // stageDoc refName들을 ' · '로 이은 줄 — 'N단계 Ⅰ'로 시작할 때만 재료로 읽는다(짧은 이름 안에도 ' · '가 있다 — '왜 · 어디까지 · 언제 성공')
+  const FIXED = ["재료", "이 단계 전에 준비할 것", "배운 것", "처음 뜻 다시 보기", "증빙"];
+  const DATE = /^(\d{4}-\d{2}-\d{2})/;
+  // 표 한 줄 → 칸들(cell의 거꾸로 — \\ → \, \| → |)
+  function cellsOf(row) {
+    const out = []; let cur = "", k = row.indexOf("|") + 1;
+    for (; k < row.length; k++) {
+      const c = row[k];
+      if (c === "\\" && (row[k + 1] === "\\" || row[k + 1] === "|")) { cur += row[k + 1]; k++; }
+      else if (c === "|") { out.push(cur.trim()); cur = ""; }
+      else cur += c;
+    }
+    return out;
+  }
+  const quoted = (t) => { const m = /^“([\s\S]*)”$/.exec(t); return m ? m[1] : null; };
+  function parseStage(text) {
+    const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+    const h = /^# (\d)단계 · (.+)$/.exec(lines[0] || ""), n = h ? Number(h[1]) - 1 : -1, s = N.STAGES[n];
+    if (!s || !h[2].startsWith(s.title)) return null;
+    const topic = h[2].slice(s.title.length).replace(/^ — /, "");
+    // ## 마다 절 — 증빙 절 안의 ### 완료 기준은 증빙에 붙는다
+    const secs = []; let cur = null;
+    for (const l of lines.slice(1)) {
+      if (/^---$/.test(l)) { cur = null; continue; }   // 끝 줄(Floe가 정리했어요)
+      const m = /^## (.+)$/.exec(l);
+      if (m) { cur = { title: m[1], body: [] }; secs.push(cur); } else if (cur) cur.body.push(l);
+    }
+    const trim = (b) => { const a = [...b]; while (a.length && !a[0].trim()) a.shift(); while (a.length && !a[a.length - 1].trim()) a.pop(); return a; };
+    const result = { items: [] };
+    let idea = null;
+    for (const sec of secs) {
+      const body = trim(sec.body);
+      if (!FIXED.includes(sec.title) && body[0] && body[0].startsWith("> ")) {
+        const it = { name: body[0].slice(2), lines: [] }, ls = body.slice(1).filter((l) => l.startsWith("- ")).map((l) => l.slice(2));
+        // '재료:' · '어떻게:' 줄은 stageDoc이 칸 끝에 쓴다 — 끝에서만, 모양이 맞을 때만 읽는다(사람이 쓴 '어떻게: …' 줄을 먹지 않게, 새 맥락 리뷰)
+        if (ls.length && REF_LINE.test(ls[ls.length - 1])) {
+          const from = [...ls.pop().matchAll(/(?:^재료: | · )(\d)단계 ([ⅠⅡⅢⅣⅤⅥⅦⅧ])(?= |$)/g)].map((x) => ({ s: Number(x[1]) - 1, i: "ⅠⅡⅢⅣⅤⅥⅦⅧ".indexOf(x[2]) })).filter((x) => x.s >= 0 && x.s < N.STAGES.length);   // refName의 거꾸로(Q.roman)
+          if (from.length) it.from = from;
+        }
+        const hm = ls.length && /^어떻게: (.+)$/.exec(ls[ls.length - 1]), [hw, hd] = hm ? hm[1].split(/ — (?:플로로 초안|플로로가 권한 것): /) : [], by = hm ? Object.keys(HOW_WORDS).find((k) => HOW_WORDS[k] === hw) : null;
+        if (by) { ls.pop(); it.by = by; if (hd != null && quoted(hd) != null) it.draft = quoted(hd); }
+        it.lines = ls.length === 1 && ls[0] === "아직 적지 않았어요" ? [] : ls;
+        result.items.push(it);
+      } else if (sec.title === "재료" && n === 0) {
+        const m = /^- 처음 말한 것: “(.*)”(?: … 통째로: .*)?$/.exec(body[0] || "");   // stageDoc mat의 거꾸로 — 되살릴 때 처음 말한 것을 잃지 않게(새 맥락 리뷰)
+        if (m) idea = m[1];
+      } else if (sec.title === "이 단계 전에 준비할 것") {
+        const prep = body.filter((l) => l.startsWith("- ")).map((l) => l.slice(2));
+        if (prep.length) result.prep = prep;
+      } else if (sec.title === "배운 것") {
+        const t = body.join("\n");
+        if (!t || t === "비어 있음 — 관문에서 적지 않았어요") result.learned = "";   // 사람이 칸을 비웠으면 비어 있음
+        else if (!t.startsWith("아직 — 관문에서") && !t.startsWith("남아 있지 않아요(배운 것 칸")) result.learned = body.map((l) => l.replace(/^> ?/, "").replace(/&lt;/g, "<").replace(/&amp;/g, "&")).join("\n");   // stageDoc의 거꾸로 — 인용 · &lt; · &amp;
+      } else if (sec.title === "처음 뜻 다시 보기") {
+        const c = /^바뀌었어요 — “(.*)”(?: \(전: “.*”\))?$/.exec(body[0] || "");   // 견준 말(전:)은 앞 관문에서 다시 만든다(wantAt)
+        if (c) result.goal = { changed: c[1] }; else if ((body[0] || "").startsWith("아직 같아요")) result.goal = { same: true };
+      } else if (sec.title === "증빙") {
+        let check = null;
+        for (const l of body) {
+          if (/^### 완료 기준 — /.test(l)) { check = []; if (l.includes("확인한 대로")) result.checkBy = "confirm"; continue; }
+          if (!l.startsWith("|") || /^\|-/.test(l)) continue;
+          const c = cellsOf(l);
+          if (!check) {
+            if (c[0] === "칸을 다 확인한 날" && DATE.test(c[1])) result.at = DATE.exec(c[1])[1];
+            if (c[0] === "관문을 지난 날" && DATE.test(c[1])) result.passed = DATE.exec(c[1])[1];
+            if (c[0] === "코드" && (c[1] || "").startsWith("코드 없이 지남")) result.nocode = true;
+          } else if (!(c[0] === "기준" && c[1] === "됐나")) {
+            const skip = /^넘김\(까닭: ([\s\S]*)\)$/.exec(c[1] || "");
+            check.push({ text: c[0], met: !!skip || c[1] === "됨", evidence: c[2] === "—" ? "" : c[2] || "", ...(skip ? { skipped: true } : {}) });
+            if (skip && !result.skip) result.skip = { reason: skip[1] === "—" ? "" : skip[1], items: [] };
+            if (skip) result.skip.items.push(c[0]);
+          }
+        }
+        if (check && check.length) result.check = check;
+      }
+    }
+    return result.items.length ? { n, topic, ...(idea != null ? { idea } : {}), result } : null;
+  }
+  // 받은 글 전부(F-68 docs/00-source/idea.md — sourceDoc)의 거꾸로 — '  1 | 글' 줄들. 모양이 아니면 null
+  function parseSource(text) {
+    const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+    if (!/^# 처음 말한 것 — 받은 글 그대로/.test(lines[0] || "")) return null;
+    const body = lines.filter((l) => /^\s*\d+ \| /.test(l) || /^\s*\d+ \|$/.test(l)).map((l) => l.replace(/^\s*\d+ \| ?/, ""));
+    return body.length ? body.join("\n") : null;
+  }
+
   // Claude Code에 맡길 글 — 만든 파일만 더해 커밋하고 지금 브랜치를 푸시. 강제 푸시 · 다른 파일 고치기는 하지 않는다
   const shipRequest = (paths) => [
     "Floe가 이 작업 폴더에 단계 문서(기획서 · 결정 기록 · 단계 폴더)를 만들었어요. 아래 파일만 올려 주세요:",
@@ -144,7 +236,7 @@
 
   // 끝에 Claude Code가 이 둘마다 해냈는지 보고한다(server.js startTask의 checks — C-32 보고). 화면은 둘째(푸시)를 보고 '올라갔다'고 말한다
   const SHIP_CHECKS = ["위 파일들만 커밋했다", "지금 브랜치를 원격(origin)에 푸시했다"];
-  const api = { SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, CARD_DOC, SHIP_CHECKS, files, mergeSection, shipRequest };
+  const api = { SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, CARD_DOC, SHIP_CHECKS, files, mergeSection, shipRequest, stagePath, parseStage, parseSource };
   if (node) module.exports = api;
   else root.FloeDocs = api;
 })(typeof window !== "undefined" ? window : globalThis);
