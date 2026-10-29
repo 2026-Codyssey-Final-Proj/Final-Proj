@@ -79,7 +79,9 @@ test("app.js — 인사는 greet.js 규칙으로 켤 때(하루에 한 번) 알�
   assert.match(app, /\$nav\.addEventListener\("click", \(\) => \{ if \(greetSkip\) greetSkip\(\); \}, \{ capture: true \}\)/, "누름");
   assert.match(app, /new CustomEvent\("floe:greet-done"\)/);
   assert.match(app, /function scheduleIdle\(\) \{\n\s*if \(greetSkip\) return;/, "인사 중에는 접히지 않는다");
-  assert.match(app, /if \(p === "hello" && st\.sound\) C\.chime\("pop"\);/, "hello 단계는 소리만 — 머리 위 말풍선은 2026-10-25에 뺐다");
+  // 작은 소리(chime)는 2026-10-29 두승현 결정으로 뺐다 — 설정 칸 · 상태 값 · 소리 코드 모두. hello 단계는 이제 아무것도 하지 않는다(머리 위 말풍선은 2026-10-25에 뺐다)
+  assert.doesNotMatch(app, /chime|st\.sound|data-act="sound"|작은 소리/, "app.js에 작은 소리가 남아 있지 않다");
+  assert.doesNotMatch(read("navigator/seal.js"), /chime|AudioContext/, "seal.js에 소리 코드가 남아 있지 않다");
   assert.match(read("navigator/index.html"), /<script src="greet\.js"><\/script>\s*<script src="app\.js">/, "greet.js는 app.js보다 먼저");
 });
 

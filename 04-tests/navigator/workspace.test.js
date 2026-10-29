@@ -69,7 +69,7 @@ test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · �
   assert.match(c, /\.cv\{flex:1;min-height:0;min-width:0;overflow:auto;container-type:size;/);
   assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{\.cvb\{--u:min\(calc\(100cqw \/ 1100\),calc\(100cqh \/ 640\),1px\);display:block;width:calc\(1100 \* var\(--u\)\);height:calc\(640 \* var\(--u\)\)/, "판 1100×640을 칸에 맞춰 줌하는 것은 0.85배 이상 담을 수 있을 때만(935 = 1100 × .85 · 544 = 640 × .85) — R-11(이재엽 버튼 \"줌 + 모자라면 다시 배치\")");
   for (const s of [".cv-c.c1{left:calc(226 * var(--u));top:calc(110 * var(--u))", ".cv-c.c3{left:calc(716 * var(--u))", ".cv-c.c6{left:calc(962 * var(--u))", ".cv-ar.a3{left:calc(640 * var(--u));top:calc(362 * var(--u))"]) assert.ok(c.includes(s), `${s} — 목업 좌표`);
-  assert.match(c, /\.wnav\{width:200px;flex:none;/); assert.match(c, /\.qwin\{min-width:260px;container-type:inline-size\}/); assert.match(c, /@container \(max-width:760px\)\{\.wnav,\.wh \.cv-stg\{display:none\}\}/, "좁은 작업실은 파일 칸 · 단계 칩을 숨긴다(760은 두승현 확인 전 — 출처 없는 값)");
+  assert.match(c, /\.wnav\{width:200px;flex:none;/); assert.match(c, /\.qwin\{min-width:260px;container-type:inline-size\}/); assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav,\.wh \.cv-stg\{display:none\}\}/, "좁은 작업실은 파일 칸 · 단계 칩을 숨긴다 — 섬이 가운데일 때는 파일 칸을 숨기지 않는다(F-81)(760은 두승현 확인 전 — 출처 없는 값)");
   assert.ok(!c.includes("@container cvboard"), "너비로 칸 배치를 다시 잡던 길(① · 900)은 뺐다 — 줌이 대신한다");
   assert.ok(!a.includes('data-act="qsize"') && !a.includes("작업실 처음 크기"), "S/M/L 단추 · 설정 줄은 없다(R-1, 이재엽 버튼 2026-10-27 \"'화면 가득' 하나로\")");
   assert.match(a, /<button type="button" class="ti wfull" data-act="qfull" aria-label="작업실을 화면 가득" title="화면 가득">/, "머리에 '화면 가득' 하나");

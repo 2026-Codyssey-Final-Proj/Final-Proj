@@ -31,7 +31,7 @@ test("T24 단계 구분선 · 가져온 것 — 새 단계가 시작되면 대�
   assert.match(a, /logMsg\("floro", `<b>지난 단계에서 가져온 것<\/b>/, "가져온 것 카드");
   assert.match(a, /<small>틀리면 말로 고쳐 주세요<\/small>/, "사용자는 말로 고칠 수 있다");
   assert.match(a, /const questStarted = \(\) => \{[\s\S]*?st\.chatMark = st\.chat\.length; st\.tidy = null; \};/, "대화 표시 자리는 구분선 뒤");
-  assert.match(a, /if \(islBig\(\) && st\.chat\.length <= \(st\.chatMark \|\| 0\) && !st\.pane && !st\.settings && st\.quest && !st\.quest\.draft && !st\.tidy\)/, "빈 대화 = 구분선 뒤에 말이 없다(저장된 대화에도 맞는 기준)");
+  assert.match(a, /if \(islBig\(\) && !st\.pane && !st\.settings && \(st\.quest \? !st\.quest\.draft && st\.chat\.length <= \(st\.chatMark \|\| 0\) : !st\.j && !st\.chat\.some\(\(m\) => m\.who === "me"\)\) && !st\.tidy\)/, "빈 대화 = 구분선 뒤에 말이 없다(저장된 대화에도 맞는 기준)");
   assert.match(a, /m\.kind === "stage" \? `<div class="msg stage" data-stage="\$\{m\.n\}"><div class="b">\$\{m\.html\}<\/div><\/div>`/, "구분선은 가운데 줄로");
   assert.match(c, /\.msg\.stage > \.b\{[^}]*border-top:1px solid var\(--line\)/, "구분선 모양");
 });
@@ -51,9 +51,9 @@ test("T25 왼쪽 대화 목록 — 프로젝트 이름 → 단계 바로가기(�
   assert.match(a, /aria-current="\$\{sel \? "true" : "false"\}"/, "파일 칸(전체 파일)의 열린 파일 표시는 그대로");
 });
 
-// claude-drafted: 2026-10-29 — F-81(임유정 "마우스 올리면 흰색으로 변해서 글자가 안보이고 클릭해도 반응이 없어"): 지금 단계 줄(남색 · 흰 글자)은 마우스를 올려도 밝은 바탕이 되지 않고,
+// claude-drafted: 2026-10-29 — F-95(임유정 "마우스 올리면 흰색으로 변해서 글자가 안보이고 클릭해도 반응이 없어"): 지금 단계 줄(남색 · 흰 글자)은 마우스를 올려도 밝은 바탕이 되지 않고,
 //   펼친 파일 목록은 버튼 옆(49px에 '아...')이 아니라 아래로 — `.wnav .fn li{display:flex}`가 `.cn-list .cn{display:block}`을 이겼다
-test("F-81 대화 목록의 지금 단계 줄 — 마우스를 올려도 글자가 보이고, 펼친 파일은 버튼 아래로", () => {
+test("F-95 대화 목록의 지금 단계 줄 — 마우스를 올려도 글자가 보이고, 펼친 파일은 버튼 아래로", () => {
   assert.match(c, /\.wnav \.fn li:not\(\.sel\):not\(\.st-now\):has\(button\):hover\{background:var\(--card\)\}/, "지금 단계 줄(.st-now)은 밝은 바탕으로 바뀌지 않는다");
   assert.match(c, /\.wnav \.cn-list \.cn\{display:block;/, "`.wnav .fn li`보다 앞서게 — 펼친 목록이 버튼 아래로");
   assert.match(c, /\.cn-list \.cn\.st-now>button\{background:var\(--isl\);color:#EEF1FA;/, "남색은 버튼 줄에");

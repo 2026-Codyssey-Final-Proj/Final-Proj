@@ -51,6 +51,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .files div{padding:6px 8px;border-radius:6px}.files .on{background:var(--acc-soft)}
 .chat{padding:24px 40px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px;font:calc(14px * var(--ui-scale,1))/1.7 var(--font-code);color:var(--ink2);overflow:hidden}
 .chat .me{color:var(--acc)}.chat .dim{opacity:.55}
+.isl .mc.chat{font-family:var(--font-text)}   /* 섬 대화 카드는 글 글꼴(C-62) — 위 .chat(브라우저 판 예시 터미널 #chat)과 이름이 겹쳐 코드 글꼴이 걸렸다(두승현 2026-10-29). 크기 · 색 · 배치는 그대로 */
 
 /* ── 앞쪽: 옆자리 동료 (PC) ── */
 .nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(940px,calc(100vw - 32px));z-index:10;display:flex;flex-direction:column;align-items:center}
@@ -135,6 +136,10 @@ html.notch .pill{border-radius:0 0 25px 25px}
 .setp .who .bands small{font-size:calc(11px * var(--ui-scale,1))}
 .setp .wtabs{margin:0;flex-wrap:wrap;width:auto}
 .set-body{height:calc(384px * var(--ui-scale,1));overflow:auto;display:flex;flex-direction:column;gap:10px;font-size:calc(13px * var(--ui-scale,1));color:var(--mute);padding-right:2px}
+/* 설정 모달(F-86, 2026-10-29 두승현 "별도의 모달창을 중앙에") — 작업실이 열려 있으면 작업실 위 가운데. 바탕(.set-bg)을 누르면 닫힌다. 앱 창의 머리 줄(drag)을 덮으므로 no-drag(F-63과 같은 까닭) */
+.set-layer{position:fixed;inset:0;z-index:35;display:grid;place-items:center;padding:16px;-webkit-app-region:no-drag}
+.set-bg{position:absolute;inset:0;border:0;padding:0;background:rgba(20,28,60,.35);cursor:default}
+.set-modal{position:relative;width:min(760px,100%);max-height:100%;overflow:auto;border-radius:24px;background:var(--card);border:1.5px solid var(--line);box-shadow:var(--shadow)}
 /* FR-17(2026-10-20) 할 일 적기 상자 · 허락이 필요한 카드 — AI 진행 판 위쪽 */
 .tbox{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:16px;background:var(--card);border:1.5px solid var(--line)}
 .tbox .kicker{font-size:calc(12px * var(--ui-scale,1));font-weight:800;color:var(--tink)}
@@ -263,8 +268,6 @@ html[data-greet="hello"] .pill.greet .pl-hello,html[data-greet="settle"] .pill.g
 .tone-red{--tint:var(--t-red);--tink:var(--t-red-ink);--pb:var(--bad-btn);--pi:#8E3A52}
 .mc{display:flex;gap:22px;align-items:center;padding:18px 24px 20px 16px;border-radius:22px;background:var(--tint);transition:background .3s}
 .mc-cat{position:relative;flex:none;width:calc(124px * var(--ui-scale,1));display:grid;place-items:center;align-self:center}   /* 플로로 칸도 글자 크기를 따른다(2026-10-20) */
-.mc-badge{position:absolute;left:6px;top:4px;width:30px;height:30px;border-radius:50%;background:var(--pb);color:var(--pi);border:3px solid var(--tint);
-  display:grid;place-items:center;font-size:calc(14px * var(--ui-scale,1));font-weight:800;line-height:1;pointer-events:none}
 .mc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
 .mc-say{margin:0;align-self:flex-start;max-width:100%;padding:7px 13px;border-radius:4px 16px 16px 16px;background:var(--card);color:var(--ink2);font-size:calc(14px * var(--ui-scale,1));line-height:1.5;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .mc-notice{margin:0;display:flex;gap:6px;align-items:center;font-size:calc(13px * var(--ui-scale,1));font-weight:600;color:var(--ok)}
@@ -303,7 +306,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .flowline{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--tink)}
 
 /* 레벨 오버레이(2026-10-19 lvc — LV · EXP · 명령 네 칸)는 2026-10-21 C-22로 채팅 중심 섬(.mc.chat, 맨 아래)이 됐다 */
-@media (prefers-reduced-motion:reduce){.bn.cur{animation:none}.isl .glow{animation:none;--glow-p:1;opacity:.35}.feedlayer.show{animation:none}}
+@media (prefers-reduced-motion:reduce){.bn.cur{animation:none}.feedlayer.show{animation:none}}
 .flowline>span{padding:2px 10px;border-radius:999px;background:var(--card);color:var(--sub);font-size:calc(13px * var(--ui-scale,1))}
 .flowline>span.meta{background:none;padding:0}
 .okchip,.nowchip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:calc(12px * var(--ui-scale,1));font-weight:600}
@@ -319,15 +322,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .crit-grid{padding:4px 14px 2px;background:var(--card);border:1px solid var(--line);border-radius:16px}
 .crit-grid ul.crit{columns:2;column-gap:28px}.crit-grid ul.crit li{break-inside:avoid;border-top:0}
 
-/* 곧 접혀요 */
-/* 테두리 빛(C-20, 2026-10-20 — 아래 게이지바 .cd 대신): 위 가운데에서 켜져 양쪽 테두리를 따라 내려가 아래 가운데에서 만난다. 각도(--glow-p 0→1)만 움직여 섬 전체를 다시 그리지 않는다.
-   밝기는 리퀴드 글래스 반짝임 정도(흰빛 .7). 노치 섬은 위 가운데가 노치에 가려져 양쪽 모서리에서 보이기 시작한다 [제안] */
-@property --glow-p{syntax:"<number>";inherits:false;initial-value:0}
-.isl .glow{position:absolute;inset:0;border-radius:inherit;pointer-events:none;padding:2.5px;box-sizing:border-box;opacity:.9;
-  background:conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,.72) 0deg,rgba(255,255,255,.72) calc(var(--glow-p) * 180deg),transparent calc(var(--glow-p) * 180deg),transparent calc(360deg - var(--glow-p) * 180deg),rgba(255,255,255,.72) calc(360deg - var(--glow-p) * 180deg),rgba(255,255,255,.72) 360deg);
-  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);mask-composite:exclude;
-  animation:glow linear forwards}
-@keyframes glow{from{--glow-p:0}to{--glow-p:1}}
+/* 접히기까지 — 설정 단추 */
 .fold .fold-opt{min-height:32px;padding:0 12px;border-radius:999px;font-size:calc(13px * var(--ui-scale,1))}
 .fold .fold-opt[aria-pressed="true"]{background:var(--acc-btn);color:var(--acc-ink);border-color:transparent}
 .fold .meta{flex-basis:100%;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
@@ -509,14 +504,12 @@ button.pet:focus-visible{outline-offset:4px}
   .pet.squish svg{animation:squish .45s ease}
   .pet.purring svg{animation:purr .09s linear 16}
   .pet.hop svg{animation:hop .65s cubic-bezier(.3,1.6,.5,1)}
-  .mc-badge{animation:bob 2.6s ease-in-out infinite}
   .pill.ping{animation:nudge .6s ease 2}
   .dots i{animation:dot 1.2s infinite}.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
 }
 @keyframes squish{0%{transform:none}30%{transform:scale(1.1,.88)}60%{transform:scale(.95,1.07)}100%{transform:none}}
 @keyframes purr{0%,100%{transform:translateX(0)}50%{transform:translateX(.9px)}}
 @keyframes hop{0%{transform:none}35%{transform:translateY(-14px) scale(1.04)}70%{transform:translateY(0) scale(1.05,.95)}100%{transform:none}}
-@keyframes bob{0%,100%{transform:none}50%{transform:translateY(-3px)}}
 @keyframes nudge{0%,100%{transform:none}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 @keyframes dot{0%,100%{opacity:.25}50%{opacity:1}}
 
@@ -524,12 +517,12 @@ button.pet:focus-visible{outline-offset:4px}
    어두운 토큰은 섬 카드(.isl · .pill)에만 — :root는 파스텔 하나. 별 · 유리(블러 · 굴절) · 점 격자 · 판 안의 판은 쓰지 않는다. 옛 '리퀴드 글래스'(2026-10-15 ~ 10-28)는 여기서 뺐다 ── */
 .isl,.pill{
   --win:var(--isl); --winbar:var(--isl-bar); --side:var(--isl); --line:rgba(255,255,255,.16);
-  --ink:#EEF1FA; --ink2:#E1E6F4; --mute:#AAB3D4; --sub:#C6D5EE;
+  --ink:#EEF1FA; --ink2:#E1E6F4; --mute:#D3E0F3; --sub:#D3E0F3;   /* 섬 글자 세 단계 — 제목 · 본문 · 보조, 카드 위에서도 4.5:1 이상(전에는 보조 4.42:1 · 용어 꼬리표 3.15:1 — 두승현 2026-10-29) */
   --glass2:var(--isl); --soft:rgba(255,255,255,.06); --card:rgba(255,255,255,.08);
-  --acc:#C6D5EE; --acc-btn:#B8C9F0; --acc-ink:#263066; --acc-soft:rgba(184,201,240,.18); --acc-mid:rgba(184,201,240,.5); --seg:rgba(255,255,255,.18);
+  --acc:#D3E0F3; --acc-btn:#B8C9F0; --acc-ink:#263066; --acc-soft:rgba(184,201,240,.18); --acc-mid:rgba(184,201,240,.5); --seg:rgba(255,255,255,.18);
   --ok:#A9E2C4; --okbg:rgba(169,226,196,.16); --warn:#EFE3C0; --warnbg:rgba(230,203,134,.18); --bad:#EFC3CB; --badbg:rgba(239,195,203,.18);
-  --t-blue:rgba(255,255,255,.06); --t-blue-ink:#C6D5EE; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9E2C4; --ok-btn:#A9E2C4;
-  --t-amber:rgba(255,255,255,.06); --t-amber-ink:#EFE3C0; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#C6D5EE;
+  --t-blue:rgba(255,255,255,.06); --t-blue-ink:#D3E0F3; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9E2C4; --ok-btn:#A9E2C4;
+  --t-amber:rgba(255,255,255,.06); --t-amber-ink:#EFE3C0; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#D3E0F3;
   --t-red:rgba(255,255,255,.06); --t-red-ink:#EFC3CB; --bad-btn:#EFC3CB;
   --shadow:0 10px 30px rgba(43,52,99,.18);
   color-scheme:dark;
@@ -546,7 +539,6 @@ button.pet:focus-visible{outline-offset:4px}
 .isl .mc{border:1px solid rgba(255,255,255,.10)}
 .isl .mc[class*="tone-"]{--pi:var(--acc-ink)}
 .isl .mc.tone-blue,.isl .mc.tone-green,.isl .mc.tone-gray,.isl .mc.tone-amber{--pb:var(--acc-btn)}
-.isl .mc-badge{border-color:#1C2C78}
 .isl .mc-say{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);box-shadow:none}
 .isl .b.toggle[aria-pressed=true] kbd,.isl ol.steps li.now b{color:var(--acc-ink)}
 .isl .node.done .dot{color:var(--acc-ink)}
@@ -647,7 +639,6 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 /* 채팅 중심 섬 — 왼쪽 큰 플로로(칭호 · 기분), 가운데 채팅(지난 말 · 지금 결정할 것 · 칩 · 입력 칸) */
 .mc.chat{display:grid;grid-template-columns:clamp(150px,22%,200px) minmax(0,1fr);gap:12px;align-items:stretch;padding:14px 18px 14px 10px}
 .mc.chat .who{display:grid;place-items:center;align-content:center;gap:6px;position:relative}
-.mc.chat .who .mc-badge{left:14px;top:10px}
 .mc.chat .main{display:flex;flex-direction:column;gap:8px;min-width:0;border-radius:20px;background:var(--card);border:1px solid var(--line);padding:12px}
 .mc.chat .log{display:flex;flex-direction:column;gap:8px;max-height:min(420px,52vh);min-height:150px;overflow:auto;padding-right:4px}   /* scroll-behavior:smooth는 뺐다 — 다시 그릴 때마다 맨 위에서 미끄러져 내려왔다. 새 말에만 부드럽게(app.js render) */
 .msg{display:flex;max-width:88%}.msg.me{align-self:flex-end}
@@ -681,7 +672,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .win{position:relative;z-index:3;flex:none;display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:var(--card);border:1.5px solid var(--acc-mid);box-shadow:var(--shadow);font-size:calc(13.5px * var(--ui-scale,1));color:var(--ink);max-width:100%;max-height:calc(100vh - 28px)}
 .win.winpop{animation:winpop var(--t-long) var(--ease-in)}   /* 'pop'이 아니라 winpop — .pop(말풍선 판)과 겹쳐 처음 열 때 여백 · 정렬이 뒤집어썼다(⑥ 2026-10-27) */
 @keyframes winpop{from{transform:scale(.6);opacity:0}}
-.wh{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--soft);flex:none;user-select:none}
+.wh{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--acc-mid);border-bottom:1px solid var(--line);flex:none;user-select:none;--mute:var(--ink);--sub:var(--ink)}   /* 머리 줄은 한 단계 진한 연파랑 + 경계선 — 아래 칸들(눈색 · 종이)과 층이 갈린다 — 진하기 = 중요도(머리 줄 > 옆 칸 > 작업 칸, 두승현 2026-10-29). 이 바탕에서 흐린 글자는 3.85:1이라 진한 남색으로(7.98:1) */
 .wh .ttl{font-weight:800;font-size:calc(14px * var(--ui-scale,1))}
 .wh .meta{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--sub)}
 .wh .ti{width:30px;height:30px}
@@ -707,13 +698,19 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wsx:has(>.isl-col.center){--col-w:calc(100% - 200px)}   /* 왼쪽 파일 칸(200)만 남기고 섬 — 트랙 종류를 바꾸지 않아 0.3초가 보간된다. 앱 창은 win.js가 같은 값을 --col-w에 */
 .wsx:not(:has(.wnav)):has(>.isl-col.center){--col-w:100%}
 .wsx:has(>.isl-col.center) .wbody,.wsx:has(>.isl-col.center) .wside,#root:has(>.isl-col.center) .wbody,#root:has(>.isl-col.center) .wside{display:none}
-.isl-col.center{align-items:center;padding:24px}
-.isl-col.center .isl{width:min(760px,100%);border-radius:28px}
+/* 가운데 섬 — 작업실 개편 PRD 3-1 사진대로(2026-10-29 두승현): 카드는 작업 칸을 꽉 채우고(바깥 16), 글 줄은 가운데 660. 입력은 여러 줄 큰 상자 · 보내기는 상자 안 오른쪽 아래 */
+.isl-col.center{padding:16px}
+.isl-col.center .isl{width:100%;border-radius:28px}
+.isl-col.center .isl-body{align-self:center;width:min(660px,100%)}
+.isl-col.center .isl-body>.mc{background:transparent;border-color:transparent}   /* 카드 안의 카드가 되지 않게 — 섬 카드 하나만 */
 .isl-col.center .mc.chat{grid-template-columns:minmax(0,1fr)}
 .isl-col.center .mc.chat:not(.hello) .who{display:none}
-.mc.chat.hello{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center;gap:16px;padding:28px 24px}
-.mc.chat.hello .main{width:100%;max-width:560px;gap:14px}
-.mc.chat.hello .hello-q{font-family:var(--font-disp);font-size:calc(22px * var(--ui-scale,1));font-weight:400;text-wrap:balance}
+.isl-col.center .cin{position:relative;display:block}
+.isl-col.center .cin .mc-input{display:block;width:100%;box-sizing:border-box;min-height:132px;max-height:240px;border-radius:24px;padding:18px 20px 64px}
+.isl-col.center .cin .b{position:absolute;right:14px;bottom:14px}
+.mc.chat.hello{grid-template-columns:minmax(0,1fr);justify-items:center;align-content:center;text-align:center;gap:16px;padding:28px 24px}
+.mc.chat.hello .main{width:100%;gap:18px}
+.mc.chat.hello .hello-q{font-family:var(--font-disp);font-size:calc(22px * var(--ui-scale,1));font-weight:400;text-wrap:balance;text-align:center;justify-content:center}   /* .say는 flex — 가운데는 justify-content로 */
 .tidy{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px;text-align:left}
 .tidy li{display:grid;gap:2px;padding:8px 12px;border-radius:12px;background:var(--soft);font-size:calc(13.5px * var(--ui-scale,1))}
 .tidy li b{font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
@@ -723,7 +720,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .msg.stage > .b b{color:var(--ink)}
 .msg.stage.hl > .b{background:var(--acc-soft);border-radius:10px}
 .msg.carry > .b{border-style:dashed}
-.wnav .cn-list .cn{display:block;padding:0;border-radius:8px}   /* .wnav를 붙여 `.wnav .fn li{display:flex}`보다 앞서게 — 펼친 파일이 버튼 옆(49px)이 아니라 아래로(F-81) */
+.wnav .cn-list .cn{display:block;padding:0;border-radius:8px}   /* .wnav를 붙여 `.wnav .fn li{display:flex}`보다 앞서게 — 펼친 파일이 버튼 옆(49px)이 아니라 아래로(F-95) */
 .wnav .cn-list .cn.st-now{background:none;color:inherit;font-weight:inherit;box-shadow:none}   /* 남색은 버튼 줄에만 — 아래 펼친 파일은 보통 바탕 · 글자 · 굵기, C-59 테두리도 없이 */
 .cn-list .cn.st-now>button{background:var(--isl);color:#EEF1FA;border-radius:8px}
 .cn-list .cn>button{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:6px;width:100%;min-height:44px;padding:0 6px;cursor:pointer;color:inherit}
@@ -775,7 +772,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li.d2{padding-left:22px}.wnav .fn li.d3{padding-left:38px}
 .wnav .fn li.d2::before,.wnav .fn li.d3::before,.wnav .fn li.d3::after{content:"";position:absolute;top:0;bottom:0;border-left:1px solid var(--seg)}
 .wnav .fn li.d2::before,.wnav .fn li.d3::before{left:13px}.wnav .fn li.d3::after{left:29px}
-.wnav .fn li:not(.sel):not(.st-now):has(button):hover{background:var(--card)}   /* .st-now(남색 · 흰 글자)는 빼야 글자가 보인다 — F-81 */
+.wnav .fn li:not(.sel):not(.st-now):has(button):hover{background:var(--card)}   /* .st-now(남색 · 흰 글자)는 빼야 글자가 보인다 — F-95 */
 .wnav .fn .fn-n{margin-left:auto;padding:1px 7px;border-radius:999px;background:var(--card);font-weight:500}
 .wnav .fn-h b{display:flex;align-items:center;gap:6px}
 .wnav .fn-h b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -834,8 +831,9 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wh .wtg svg{width:18px;height:18px}
 .wh .wtg[aria-pressed=true]{color:var(--acc)}
 .wh .wtg:hover{background:var(--acc-soft)}
+.wh .wtg:disabled{opacity:.4;cursor:default;background:transparent}   /* 섬을 펼친 동안의 오른쪽 칸 단추 — 눌러도 바뀌지 않으니 누를 수 없게 보인다(F-84) */
 .wh .wtg:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
-.wside{width:280px;flex:none;box-sizing:border-box;padding:12px 14px;background:var(--soft);overflow:auto;display:flex;flex-direction:column;gap:14px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);border-left:1px solid var(--line)}
+.wside{width:280px;flex:none;box-sizing:border-box;padding:12px 14px;background:var(--side);overflow:auto;display:flex;flex-direction:column;gap:14px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);border-left:1px solid var(--line)}
 .wside h4{margin:0 0 6px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub);text-transform:none;letter-spacing:.02em}
 .wside .ws-sum{margin:0;line-height:1.55}
 .wside .ws-sum b{color:var(--ink)}
@@ -852,10 +850,6 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wside .ws-cells li.y{color:var(--ink);text-decoration:line-through;text-decoration-color:var(--ok)}
 .wside .ws-cells li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 1.5px var(--acc-mid)}
 .wside .ws-unmet li{padding:4px 8px;border-radius:8px;background:var(--warnbg);color:var(--warn);font-size:calc(12px * var(--ui-scale,1))}
-.wnav .fn-h2{margin:0 0 4px;padding:0 6px;font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);font-weight:700}
-.wnav .fn-open{margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
-.wnav .fn-open li.dirty .fn-file{color:var(--warn)}
-.wnav .fn-open .fn-opened{min-height:40px}
 .fv-tools{display:flex;align-items:center;gap:4px;flex-wrap:wrap;padding:4px 0}
 .fv-tools button{min-height:44px;padding:0 12px;border:0;border-radius:10px;background:var(--soft);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
 .fv-tools button:hover{background:var(--acc-soft)}
@@ -873,7 +867,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .fv-st .st-me{color:var(--warn)}
 @container (max-width:899px){.wside{display:none}}   /* 브라우저 판(920)에서는 보이고, 그보다 좁으면 숨는다 */
 .qwin{min-width:260px;container-type:inline-size}
-@container (max-width:760px){.wnav,.wh .cv-stg{display:none}}
+@container (max-width:760px){:is(#root,.wsx):not(:has(>.isl-col.center)) .wnav,.wh .cv-stg{display:none}}   /* 섬이 가운데(C-61)면 판이 200px로 줄어 이 규칙이 왼쪽 칸을 숨겨 빈 띠가 됐다 — 가운데일 때는 숨기지 않는다(F-81, 2026-10-29) */
 .nav.side{width:min(1800px,calc(100vw - 32px))}
 .nav.side>.win,.nav.side>.wsx{margin-top:0;align-self:flex-start;max-width:100%}
 .nav.side>.wsx{flex:1 1 auto;min-width:0;width:100%}
@@ -924,7 +918,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .page{padding:14px 14px 16px;position:relative;min-width:0}
 .page.l{background:#E9DFC6;border-right:2px dashed #C6D5EE;padding-left:26px}
 .page.l::before{content:"";position:absolute;left:6px;top:24px;bottom:24px;width:8px;background:repeating-linear-gradient(180deg,#2B3463 0 14px,transparent 14px 60px);border-radius:4px}
-.page h4{margin:0 0 10px;text-align:center;font-size:calc(14px * var(--ui-scale,1));color:#5B6491;letter-spacing:.1em}
+.page h4{margin:0 0 10px;text-align:center;font-size:calc(14px * var(--ui-scale,1));color:#2B3463;letter-spacing:.1em}
 .toc{display:grid;gap:8px}
 .toc button{border:0;border-radius:10px;padding:10px 8px;font-size:calc(13px * var(--ui-scale,1));font-weight:800;text-align:center;box-shadow:inset 0 0 0 2px #fff;line-height:1.35}
 .toc button[aria-pressed=true]{outline:2px solid #7A5E1E;outline-offset:1px}
@@ -1028,12 +1022,12 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 /* 앱의 설정 창 · 퀘스트 창(win.html, C-22) — 창 폭이 601px보다 좁아도 섬과 같은 네이비(위 PC 팔레트와 같은 값 — 바꾸면 둘 다). 글자 크기 설정은 섬의 값을 따르지 않는다(창은 1배) */
 html.in-win:not(.win-quest){   /* 앱의 설정 창은 섬과 같은 남색. 작업실 창의 옆 칸(.isl-col)은 C-62(2026-10-29)부터 파스텔 — 남색은 그 안의 섬 카드(.isl)만 */
 --win:var(--isl); --winbar:var(--isl-bar); --side:var(--isl); --line:rgba(255,255,255,.16);
-    --ink:#EEF1FA; --ink2:#E1E6F4; --mute:#AAB3D4; --sub:#C6D5EE;
+    --ink:#EEF1FA; --ink2:#E1E6F4; --mute:#D3E0F3; --sub:#D3E0F3;   /* 섬 글자 세 단계 — 제목 · 본문 · 보조, 카드 위에서도 4.5:1 이상(전에는 보조 4.42:1 · 용어 꼬리표 3.15:1 — 두승현 2026-10-29) */
     --glass2:rgba(54,62,98,.55); --soft:rgba(255,255,255,.06); --card:rgba(255,255,255,.08);
-    --acc:#C6D5EE; --acc-btn:#B8C9F0; --acc-ink:#263066; --acc-soft:rgba(184,201,240,.18); --acc-mid:rgba(184,201,240,.5); --seg:rgba(255,255,255,.18);
+    --acc:#D3E0F3; --acc-btn:#B8C9F0; --acc-ink:#263066; --acc-soft:rgba(184,201,240,.18); --acc-mid:rgba(184,201,240,.5); --seg:rgba(255,255,255,.18);
     --ok:#A9E2C4; --okbg:rgba(169,226,196,.16); --warn:#EFE3C0; --warnbg:rgba(230,203,134,.18); --bad:#EFC3CB; --badbg:rgba(239,195,203,.18);
-    --t-blue:rgba(255,255,255,.06); --t-blue-ink:#C6D5EE; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9E2C4; --ok-btn:#A9E2C4;
-    --t-amber:rgba(255,255,255,.06); --t-amber-ink:#EFE3C0; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#C6D5EE;
+    --t-blue:rgba(255,255,255,.06); --t-blue-ink:#D3E0F3; --t-green:rgba(255,255,255,.06); --t-green-ink:#A9E2C4; --ok-btn:#A9E2C4;
+    --t-amber:rgba(255,255,255,.06); --t-amber-ink:#EFE3C0; --t-gray:rgba(255,255,255,.06); --t-gray-ink:#D3E0F3;
     --t-red:rgba(255,255,255,.06); --t-red-ink:#EFC3CB; --bad-btn:#EFC3CB;
     --shadow:0 24px 60px rgba(20,24,48,.55);
   color-scheme:dark;
@@ -1057,7 +1051,7 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 .rb-body{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:10px}
 .rb-toc{display:grid;gap:4px;align-content:start}
 .rb-toc button{border:0;background:transparent;color:var(--sub);text-align:left;border-radius:8px;padding:5px 8px;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
-.rb-toc button[aria-current=true]{background:var(--acc-soft);color:var(--acc);font-weight:700}
+.rb-toc button[aria-current=true]{background:var(--acc-soft);color:var(--acc-ink);font-weight:700}
 .rb-ch h4{margin:0 0 6px;font-size:calc(14px * var(--ui-scale,1))}
 .rb-text{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2);font-size:calc(13px * var(--ui-scale,1));line-height:1.6}
 .tu{display:grid;gap:6px;align-content:start;font-size:calc(13.5px * var(--ui-scale,1));line-height:1.55;color:var(--ink2)}
@@ -1153,7 +1147,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 /* claude-drafted: 2026-10-28 — C-54 지도(도전과제 탭의 카드 지도, 목업 캔버스 ④ ~ ⑥): 바다 위 얼음 조각 — 파스텔 토큰(웹사이트 초안과 같은 값), 카드 4열 두 줄(둘째 줄은 돌아온다), 아래 줄 문서, 보기 셋 */
 .board.sea{background:#E2E9F4 repeating-radial-gradient(ellipse at 12% 18%,rgba(77,102,181,0) 0 46px,rgba(77,102,181,.07) 46px 47.5px);color:#2B3463}
 .sm-views{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:rgba(43,52,99,.08);margin:0 0 10px}
-.sm-views button{min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#5B6491;font:inherit;font-size:calc(13px * var(--ui-scale,1));font-weight:700;cursor:pointer}
+.sm-views button{min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#2B3463;font:inherit;font-size:calc(13px * var(--ui-scale,1));font-weight:700;cursor:pointer}
 .sm-views button[aria-selected=true]{background:#F2F5FA;color:#2B3463;box-shadow:0 1px 0 #C5CEE2}
 .sm{display:grid;gap:12px}
 .sm-ban{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;border-radius:14px;background:#EFE3C0;color:#2B3463;font-size:calc(13px * var(--ui-scale,1));line-height:1.5}
@@ -1310,7 +1304,7 @@ html.win-quest,.nav .wsx{--desk:#E9EEF6; --win:#F2F5FA; --winbar:#E2E9F4; --side
   --t-blue:#D3E0F3; --t-blue-ink:#2B3463; --t-green:#A9E2C4; --t-green-ink:#2B3463; --t-amber:#EFE3C0; --t-amber-ink:#7A5E1E; --t-gray:#E2E9F4; --t-gray-ink:#2B3463; --t-red:#EFC3CB; --t-red-ink:#8E3A52;
   --shadow:0 10px 30px rgba(43,52,99,.12); color-scheme:light}   /* 601px 이상의 네이비 토큰(위 :root @media)을 전부 덮는다 — 빠지면 섬의 밝은 글씨가 파스텔 위에 1.38:1(2026-10-26 새 맥락 리뷰) */
 html.win-quest .win,.nav .wsx .qwin{background:var(--card);border-color:var(--acc-mid)}   /* 브라우저 판도 같은 파스텔 — ⑥의 캔버스는 밝은 면이 고정값이라 네이비 토큰 위에서는 흰 글씨가 흰 면에 왔다(새 맥락 리뷰 2026-10-27) */
-html.win-quest .wh,.nav .wsx .wh{background:var(--soft)}
+html.win-quest .wh,.nav .wsx .wh{background:var(--acc-mid)}
 html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"이 이미 있다 — 머리띠에는 크기 · 닫기만 */
 /* claude-drafted: 2026-10-27 두승현 — C-41 ⑥ 캔버스: 디자인 캔버스(DockPrototype)의 1100×640 판. 판 위의 것은 전부 목업과 같은 숫자(--u = 판의 1px).
    2026-10-27 C-42 R-11(이재엽 버튼 "줌 + 모자라면 다시 배치", F-61-11): 칸(.cv)이 판을 0.85배 이상 담을 수 있으면(935×544 이상) 아래 @container 블록이 판을 그대로 줌한다(--u = cqw/1100 · cqh/640, 1px까지 — 컨테이너 단위라 스크립트 없이).
@@ -1408,7 +1402,7 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.narrow .mc.chat .log{max-height:max(120px,calc(100vh - 340px))}
 .isl-col.wide .mc.chat .log{max-height:max(110px,calc(var(--col-h,360px) - 250px))}
 /* 접힌 옆 칸(C-46 R-2, 2026-10-27) — 그 가장자리의 알약 하나. 왼쪽 · 오른쪽은 세로 알약(이재엽 버튼 "세로 알약"): 플로로 얼굴은 바로, 글은 세로쓰기. 칸의 두께(56)는 win.js FOLD */
-.isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden;background:transparent}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이. 바탕은 비친다(작업실 바탕) — 남색은 알약 하나만(F-65 파란 줄, 2026-10-28) */
+.isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden;background:var(--side)}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이. 남색은 알약 하나만(F-65 파란 줄, 2026-10-28). 바탕은 오른쪽 칸(.wside)과 같은 옆 칸 색 — 전에는 투명해 창 바탕이 비쳐 두 띠로 보였다(두승현 2026-10-29) */
 .isl-col.folded .pill{max-width:100%;flex:none;background:var(--isl);-webkit-backdrop-filter:none;backdrop-filter:none}   /* 남색 판(섬 토큰 — 앱 창의 .in-app 알약과 같은 값, C-57) — 작업실 창에는 앱 창의 .in-app 규칙이 없어 유리(반투명)로 그려져, F-65로 칸이 비친 뒤 파스텔이 비쳐 글자가 흐렸다(임유정 2026-10-28) */
 .isl-col.folded .pill:not(.ping){box-shadow:inset 1px 1px 0 rgba(255,255,255,.6),inset -1px -1px 0 rgba(255,255,255,.2),inset 0 0 0 .5px rgba(255,255,255,.14),0 1px 2px rgba(0,4,30,.35)}   /* 큰 그림자(0 24px 60px)는 칸(overflow:hidden · 여백 3px)에서 잘려 각진 띠로 보였다 — 1+2 = 3px 안에 */
 .isl-col.folded .pill:hover{transform:none}   /* 올리면 커지는 움직임은 접힌 칸에서는 잘린다 — 하지 않는다 */

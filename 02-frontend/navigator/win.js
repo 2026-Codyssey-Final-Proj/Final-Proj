@@ -14,6 +14,11 @@
   // 파일 보기(.fv)의 글 칸 스크롤 — 섬(app.js)의 fvScroll과 같다: was 없이 부르면 읽고, 주면 같은 파일 · 같은 보기일 때 되돌린다
   const fvScroll = (fv, was) => { const b = fv && fv.querySelector(".fv-code, .fv-md"); if (!was) return b ? { f: fv.dataset.f, c: b.className, top: b.scrollTop, left: b.scrollLeft } : null; if (b && b.className === was.c && fv.dataset.f === was.f) { b.scrollTop = was.top; b.scrollLeft = was.left; } };
   // 섬이 보낸 내용 — 쓰던 글 칸(data-act)은 커서 · 스크롤까지 되돌린다
+  // 플로로 눈은 이 창 안의 커서를 따라간다 — 작업실이 열리면 섬은 이 창의 옆 칸에 그려지는데 눈 따라가기는 섬 창(app.js)에서만 돌아 고정돼 있었다(두승현 2026-10-29).
+  //   섬 창과 같은 함수(seal.js follow) · 같은 움직임 줄이기 기준. 창 밖 커서는 따라가지 않는다(앱은 창 밖 커서를 섬 창에만 보낸다)
+  const S = window.NavSeal, STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let eyeAt = null, eyeRaf = 0;
+  if (S && !STILL) document.addEventListener("mousemove", (e) => { eyeAt = { x: e.clientX, y: e.clientY }; if (!eyeRaf) eyeRaf = requestAnimationFrame(() => { eyeRaf = 0; S.follow(root, eyeAt); }); });
   F.onWinHtml((html) => {
     const a = document.activeElement, keep = a && a.dataset && a.dataset.act && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) ? a : null;
     const key = keep ? `${keep.dataset.act}|${keep.dataset.i || ""}|${keep.dataset.k || ""}` : "", sel = keep ? [keep.selectionStart, keep.selectionEnd, keep.scrollTop] : null;
@@ -25,6 +30,7 @@
     const fvWas = fvScroll(root.querySelector(".fv")), sideWas = WS_PANES.map((c) => { const e = root.querySelector(c); return e ? e.scrollTop : null; });   // 파일 칸 · 오른쪽 칸도 — 아래쪽 목차를 누르면 맨 위로 올라갔다
     root.innerHTML = html || "";
     if (window.FloeCanvas) window.FloeCanvas.apply(root);   // 캔버스를 옮겼거나 키웠으면 그 자리 · 배율로(F-66, canvas-pan.js) — 섬은 모른다
+    if (S && eyeAt) S.follow(root, eyeAt);   // 다시 그려도 눈은 마지막 커서 쪽
     fvScroll(root.querySelector(".fv"), fvWas);
     WS_PANES.forEach((c, j) => { const e = root.querySelector(c); if (e && sideWas[j] != null) e.scrollTop = sideWas[j]; });
     if (key) { const b = [...root.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.i || ""}|${x.dataset.k || ""}` === key); if (b) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; } }
@@ -92,9 +98,10 @@
   let colHover = false;
   root.addEventListener("mouseover", (e) => { const on = !!(e.target.closest && e.target.closest(".isl-col")); if (on !== colHover) { colHover = on; F.winEvent({ type: "col", hover: on }); } });
   root.addEventListener("mouseleave", () => { if (colHover) { colHover = false; F.winEvent({ type: "col", hover: false }); } });
-  // 작업실에서 움직이거나 누르면 접히기 전의 흰 줄(.glow)을 처음부터 — 섬에도 알려 접히는 시계를 되돌린다(1초에 한 번까지, 흰 줄이 돌 때만. 임유정 2026-10-28 "움직이거나 클릭을 하면 시간 지나가는게 멈춰야")
+  // 작업실에서 움직이거나 누르면 섬에 알려 접히는 시계를 되돌린다(1초에 한 번까지, 섬이 펼쳐져 있을 때만. 임유정 2026-10-28 "움직이거나 클릭을 하면 시간 지나가는게 멈춰야").
+  //   전에는 흰 줄(테두리 빛)이 돌 때만 보내고 그 줄도 다시 그렸다 — 빛은 2026-10-29 두승현 결정으로 뺐다
   let pokeAt = 0;
-  const poke = () => { const t = Date.now(); if (t - pokeAt < 1000) return; const g = root.querySelector(".isl .glow"); if (!g) return; pokeAt = t; g.style.animationDelay = "0ms"; g.style.animationName = "none"; void g.offsetWidth; g.style.animationName = ""; F.winEvent({ type: "poke" }); };
+  const poke = () => { const t = Date.now(); if (t - pokeAt < 1000) return; if (!root.querySelector(".isl")) return; pokeAt = t; F.winEvent({ type: "poke" }); };
   for (const n of ["pointermove", "pointerdown", "keydown", "wheel"]) root.addEventListener(n, poke, { passive: true });
   root.addEventListener("focusin", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: true }); });
   root.addEventListener("focusout", (e) => { if (e.target && e.target.dataset && e.target.dataset.act === "say") F.winEvent({ type: "col", typing: false }); });

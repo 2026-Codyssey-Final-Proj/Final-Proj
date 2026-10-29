@@ -52,7 +52,8 @@ test("app.js · win.js · app.css — 작업실 세 칸(파일 · 작업 · 오�
   const a = read("navigator/app.js"), w = read("navigator/win.js"), c = read("navigator/app.css");
   assert.match(a, /<aside class="wside"/, "오른쪽 칸"); assert.match(a, /data-act="wnav-toggle"/, "파일 칸 접기"); assert.match(a, /data-act="wside-toggle"/, "오른쪽 칸 접기");
   assert.match(a, /const sideOn = \(\) => wsideOpen && \(!WINS \|\| colFolded\(\)\);/, "앱에서 섬을 펼치면(접힌 알약이 아니면) 오른쪽 칸이 접힌다 — 이재엽 버튼");
-  assert.match(a, /class="fn fn-open"/, "파일 칸 맨 위 '열어 둔 파일' 묶음");
+  assert.match(a, /data-act="wside-toggle"\$\{WINS && !colFolded\(\) \? " disabled" : ""\}/, "섬을 펼친 동안은 오른쪽 칸 단추를 누를 수 없게 — 눌러도 화면이 그대로였다(F-84)");
+  assert.doesNotMatch(a, /class="fn fn-open"/, "왼쪽 '열어 둔 파일' 묶음은 뺐다 — 머리 줄 파일 탭과 같은 정보(C-58 정보마다 집 하나, F-82)");
   for (const k of ["h2", "bold", "list", "link", "front"]) assert.match(a, new RegExp(`\\["${k}", "`), `서식 단추 ${k}`); assert.match(a, /data-act="ffmt" data-fmt="\$\{id\}"/, "서식 단추는 ffmt + 종류");
   assert.match(a, /data-act="fsize" data-v="[-+]"/, "글 크기"); assert.match(a, /data-act="ffind"/, "문서 안 찾기"); assert.match(a, /data-act="ftoc"/, "목차(오른쪽 칸으로)");
   assert.match(a, /class="fv-st"/, "상태 줄"); assert.match(a, /eol === "crlf" \? "CRLF" : "LF"/, "줄 끝");

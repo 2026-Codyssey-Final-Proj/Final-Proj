@@ -31,7 +31,7 @@ flowchart LR
     R["navigator.js<br/>face · docFace<br/>(안내 상황 → 표정 이름)"] --> M["seal.js svg(mood)<br/>MOODS 11가지"]
     M --> C["seal.css<br/>표정 class · 숨쉬기 · 꼬리 · 헤엄 · 점프"]
     P["사람 — 쓰다듬기 · 마우스 위치"] --> I["seal.js<br/>stroke · follow · bond"]
-    I --> E["하트 · 별 · 물방울 · 작은 소리<br/>친해진 정도 ♥"]
+    I --> E["하트 · 별 · 물방울<br/>친해진 정도 ♥"]
     I -->|"90초 가만히"| Z["졸음 → 잠"]
     L["서고 · 지식 은하"] -.->|"같은 seal.js를 불러 씀"| M
 ```

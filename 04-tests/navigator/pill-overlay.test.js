@@ -12,16 +12,25 @@ test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(fold
   assert.match(a, /const colFolded = \(\) => st\.ui === "petit" \|\| st\.ui === "hidden";/);
   assert.match(a, /\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\("", true\)\}<\/div>`;/, "접힘이면 알약 하나(+ 켤 때 말풍선 C-55), 펼침이면 위 줄 없는 섬(C-62 inCol)");
   assert.match(a, /\|\| st\.settings \|\| \(st\.qwin && !WINS\) \|\| !!st\.gacha/, "앱의 작업실은 섬을 붙들지 않는다(설정의 시간대로) — 브라우저의 옆 판은 전처럼");
-  assert.match(a, /pill: \(\) => \(st\.ui === "hidden" \? go\("home"\) : view\("click"\)\)/, "알약 누름 = 펼침(hidden이어도)"); assert.match(a, /fold: \(\) => go\("petit"\)/, "접기 단추");
+  assert.match(a, /pill: \(\) => \(QU && !st\.qwin \? \(openQwin\("canvas"\), render\(\)\) : st\.ui === "hidden" \? go\("home"\) : view\("click"\)\)/, "알약 누름 = 작업실 밖이면 바로 작업실(F-85), 안이면 펼침(hidden이어도)"); assert.match(a, /fold: \(\) => go\("petit"\)/, "접기 단추");
   // 새 맥락 리뷰(2026-10-27) 막힘 둘 · 보완: 접힌 알약은 더 접히지 않는다, 옆 칸에 마우스 · 글 쓰는 중에는 안 접힌다, 알릴 일이 오면 펼친다, Esc는 먼저 접기
   assert.match(a, /if \(WINS && st\.qwin && st\.ui === "petit"\) return;   \/\/ 작업실 안의 접힌 알약은 더 접히지\(hidden\) 않는다/);
   assert.match(a, /\|\| st\.openInput \|\| typing\(\) \|\| colTyping;/, "옆 칸에 글 쓰는 중은 pinned"); assert.match(a, /hovering \|\| colHover \|\|/, "옆 칸에 마우스가 있으면 접히는 시계를 걸지 않는다");
   assert.match(a, /if \(p\.type === "col"\) \{ if \(typeof p\.hover === "boolean"\)/, "옆 칸의 올림 · 글 쓰는 중을 받는다");
   assert.match(a, /WINS && st\.qwin && st\.ui === "petit" \? "home" : st\.ui\);   \/\/ 작업실 안의 접힌 알약은 알릴 일이 오면 펼친다/, "peek가 펼친다");
-  assert.match(a, /if \(p\.kind === "quest" && st\.qwin\) \{ if \(!colFolded\(\)\) return go\("petit"\); return set\(\{ qwin: false \}\); \}/, "Esc는 먼저 접기, 접혀 있으면 작업실 닫기");
+  assert.match(a, /if \(p\.kind === "quest" && st\.qwin\) \{ if \(!colFolded\(\)\) return go\("petit"\); return closeQwin\(\); \}/, "Esc는 먼저 접기, 접혀 있으면 작업실 닫기");
+  assert.match(a, /const closeQwin = \(\) => \{ st\.qwin = false; go\("petit"\); \};/, "작업실을 닫으면 섬은 알약 — 펼친 섬 대화창이 따로 남지 않는다(F-85)");
+  // F-86 — 작업실이 열려 있으면 설정은 작업실 위 가운데 모달(섬 몸통에는 그리지 않는다). 앱 창(win.html)과 브라우저 판이 같은 qwinHTML을 쓴다
+  assert.match(a, /const body = st\.settings && QU && !st\.qwin \? settingsPane\(\)/, "작업실이 열려 있으면 섬 몸통에 설정 판을 그리지 않는다");
+  assert.match(a, /const setModal = \(\) => \(st\.settings && QU \? `<div class="set-layer"><button type="button" class="set-bg" data-act="settings"/, "모달 바깥(바탕)을 누르면 닫힌다");
+  assert.match(a, /\$\{setModal\(\)\}`;\n  \}/, "작업실 HTML 끝에 모달");
+  assert.match(a, /if \(p\.type === "key" && p\.key === "Escape"\) \{ if \(p\.kind === "quest" && st\.qwin && st\.settings\) return set\(\{ settings: false \}\);/, "앱 작업실 창의 Esc는 설정 모달부터 닫는다");
   const w = read("navigator/win.js");
   assert.match(w, /F\.winEvent\(\{ type: "col", hover: on \}\)/); assert.match(w, /F\.winEvent\(\{ type: "col", typing: true \}\)/); assert.ok(!w.includes("col-folded"), "쓰지 않는 class는 없다");
   assert.match(read("navigator/app.css"), /\.isl-col\.folded\{padding:3px;/, "56 − 6 = 50 = 알약 높이"); assert.match(read("navigator/app.css"), /\.isl-col\.folded \.pill:hover\{transform:none\}/);
+  // 2026-10-29 두승현 "우측의 모든 색은 동일한 색으로 · 플로로를 그 위에 띄어" — 알약 칸과 오른쪽 칸(이 문서 · 퀘스트)이 같은 옆 칸 색(--side) 하나. 전에는 알약 칸이 투명해 창 바탕(--desk)이 비쳐 두 띠로 보였다
+  assert.match(read("navigator/app.css"), /\.isl-col\.folded\{[^}]*background:var\(--side\)\}/, "알약 칸 = 옆 칸 색");
+  assert.match(read("navigator/app.css"), /\.wside\{[^}]*background:var\(--side\);/, "오른쪽 칸 = 옆 칸 색");
 });
 
 test("win.js · win.html · app.css — 접힌 칸은 두께 56(손잡이 없음), 왼쪽 · 오른쪽은 세로 알약(글은 세로쓰기), 0.3초로 넓어진다", () => {
@@ -38,4 +47,13 @@ test("작업실 안의 접힌 알약은 진한 남색 판 · 칸 안에 드는 �
   const c = read("navigator/app.css");
   assert.match(c, /\.isl-col\.folded \.pill\{max-width:100%;flex:none;background:var\(--isl\);-webkit-backdrop-filter:none;backdrop-filter:none\}/, "섬 · 앱의 알약과 같은 남색(섬 토큰 --isl — C-57), 뒤를 비추지 않는다");
   assert.match(c, /\.isl-col\.folded \.pill:not\(\.ping\)\{box-shadow:[^}]*0 1px 2px rgba\(0,4,30,\.35\)\}/, "바깥 그림자는 1+2 = 3px — 칸의 안쪽 여백(3px) 안에서 잘리지 않게");
+});
+
+// claude-drafted: 2026-10-29 — 두승현 "플로로 눈동자가 커서를 따라가지 않고 고정": 작업실 창(win.html)이 seal.js를 불러 옆 칸 섬의 플로로 눈을 따라가게(화면 확인은 e2e/pill-overlay)
+test("작업실 창 — seal.js를 win.js보다 먼저 불러오고, 창 안의 마우스 움직임 · 다시 그릴 때 눈을 커서 쪽으로(움직임 줄이기면 안 함)", () => {
+  const h = read("navigator/win.html"), w = read("navigator/win.js");
+  assert.ok(h.indexOf('<script src="seal.js"></script>') > -1 && h.indexOf('<script src="seal.js"></script>') < h.indexOf('<script src="win.js"></script>'), "seal.js가 win.js보다 먼저");
+  assert.match(w, /const S = window\.NavSeal, STILL = matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches;/);
+  assert.match(w, /if \(S && !STILL\) document\.addEventListener\("mousemove", /, "창 안의 커서");
+  assert.match(w, /if \(S && eyeAt\) S\.follow\(root, eyeAt\);/, "다시 그려도 마지막 커서 쪽");
 });

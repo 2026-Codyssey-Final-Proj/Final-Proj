@@ -301,7 +301,7 @@ test("FR-17: #base&pane=ai&approve=1 — 승인 카드 둘(보통 · 되돌리�
 });
 
 // ── 앱 9.0.0 섬 묶음(2026-10-20, 이재엽 "모든 요구사항들을 … 하나도 빠짐없이") — 코드보다 먼저 썼다 ──
-test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본 15)를 고르면 이 컴퓨터에 남고, 마우스가 나가면 아래 게이지바 대신 테두리 빛(.glow)이 그 시간으로 돈다", { skip }, async () => {
+test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본 15)를 고르면 이 컴퓨터에 남고, 마우스가 나가면 그 시간 뒤 접힌다 — 게이지바도 테두리 빛도 없다(빛은 2026-10-29 두승현 결정으로 뺌)", { skip }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser);
@@ -316,10 +316,9 @@ test("C-20: 설정 '접히기까지' 단추(5 · 10 · 15 · 30 · 60초, 기본
     await page.click("[data-act=settings]"); await wait(200);
     await page.evaluate(() => { const p = document.querySelector('[data-act=pin][aria-pressed="true"]'); if (p) p.click(); });
     await page.mouse.move(5, 850); await wait(400);
-    const g = await page.evaluate(() => { const g = document.querySelector(".isl .glow"); return { on: !!g, dur: g && getComputedStyle(g).animationDuration, cd: !!document.querySelector(".cd") }; });
-    assert.deepEqual(g, { on: true, dur: "5s", cd: false });
-    await page.mouse.move(700, 120); await wait(300);
-    assert.ok(!(await page.evaluate(() => !!document.querySelector(".isl .glow"))), "다시 들어오면 빛을 거둔다");
+    assert.ok(!(await page.$(".isl .glow")) && !(await page.$(".cd")), "테두리 빛도 게이지바도 없다");
+    await wait(3000); assert.ok(await page.$(".isl"), "5초 전에는 펼친 그대로");
+    await wait(2500); assert.ok(!(await page.$(".isl")) && (await page.$(".pill")), "마우스가 나간 뒤 5초가 지나면 접힌다");
     // 새로 고침해도 5초
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1"), { waitUntil: "load" }); await wait(400);
     await page.click("[data-act=settings]"); await wait(200);
@@ -356,6 +355,7 @@ test("C-19: 먹이를 검사하는 동안 '어디쯤인지 보기'를 누르면 
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#feed"), { waitUntil: "load" }); await wait(400);
     // 2026-10-24 C-35: 명령 네 칸을 뺐다 — 살피기는 도전과제의 '알아 둘 것'에서 해 보기(먹이를 검사하는 중에도 보이고, 누르면 막는다)
     await page.click(".tb [data-act=qwin-toggle]"); await wait(200);
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 1단계 시작은 ① 화면이 작업 칸을 덮는다(F-88) — 섬을 옆으로
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(200);
     await page.click('[data-act=tree-chap][data-i="0"]'); await wait(200);   // 도전과제의 기본은 지도(C-54 카드 — 흐름 보기가 C-37 한눈에 보기) — 장을 고르면 그 장의 알아 둘 것
     await page.click('.learnbox [data-act=tu-sel][data-v="check"]'); await wait(200);
@@ -475,11 +475,12 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     assert.ok(await page.$(".qwin .book"), "받으면 공책");
     assert.equal(await page.evaluate(() => document.querySelector(".page.r h3")?.textContent), "둘째 장 — 적어 두기", "고친 이름 그대로");
     // 설정 — 2026-10-25(두승현): 옆 창이 아니라 섬 안의 판(채팅 자리를 바꿔 끼움). 퀘스트 창은 섬 옆 — 기본은 오른쪽, '왼쪽'을 고르면 [퀘스트][섬]. 이 컴퓨터에 남는다
+    //   F-86(2026-10-29 두승현 "별도의 모달창을 중앙에"): 작업실이 열려 있으면 설정은 섬이 아니라 작업실 위 가운데 모달 — 섬의 채팅은 그대로
     await page.click("[data-act=settings]"); await wait(300);
-    assert.ok(await page.$(".isl .setp") && !(await page.$("#nav > .win.setwin")) && !(await page.$(".isl .mc.chat")), "설정은 섬 안 — 채팅 자리에");
+    assert.ok(await page.$(".set-modal .setp") && !(await page.$(".isl .setp")) && !(await page.$("#nav > .win.setwin")), "작업실이 열려 있으면 설정은 가운데 모달 — 섬 안이 아니다");
     // 칭호는 섬의 플로로 아래에서 뺐고(2026-10-25) 설정 판 왼쪽 칸에 있다 — 관문을 넘으면 바뀐다
     assert.ok((await page.evaluate(() => document.querySelector(".setp .who")?.textContent || "")).includes("적어 두는 사람"), "설정 판의 칭호가 바뀐다");
-    const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > .wsx > *")].map((x) => (x.classList.contains("wh") ? "wh" : x.classList.contains("qwin") ? "quest" : x.classList.contains("isl-col") ? "isl" : x.className)));
+    const order = () => page.evaluate(() => [...document.querySelectorAll("#nav > .wsx > :not(.set-layer)")].map((x) => (x.classList.contains("wh") ? "wh" : x.classList.contains("qwin") ? "quest" : x.classList.contains("isl-col") ? "isl" : x.className)));
     assert.deepEqual(await order(), ["wh", "quest", "isl"], "머리 줄 하나 아래 작업실 판 · 섬 옆 칸(오른쪽) — C-62(PR ② 2026-10-29). 자리 바꾸기 단추는 2026-10-28 합의로 뺐다");
     assert.ok(!(await page.$("[data-act=side]")), "섬 자리 단추 없음");
     // 탭 — 하나씩 보인다

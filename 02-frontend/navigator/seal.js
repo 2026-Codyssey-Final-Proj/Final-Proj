@@ -5,7 +5,7 @@
 // 하늘색 Y자 앞지느러미와 그 아래 받치는 곡선 · 오른쪽 아래로 뻗은 꽃잎 두 장 꼬리 · 기쁘거나 잘 때만 분홍 볼 · 수염은 늘(2026-10-17, 전에는 살필 때만).
 // 카드 속 플로로(opts.hole)은 울퉁불퉁한 얼음 테두리를 두른 별밤 숨구멍에서 가슴까지 내밀고, 아래는 물 띠에 잠겨 있다.
 // 표정은 눈·입(m-*)으로, 상태는 머리 밖 작은 표시(s-*)로. 보이고 숨기는 건 app.css가 한다(다시 그리지 않고 class만 바꿔 표정을 바꾸려고).
-// 그림 말고도 교감에 쓰는 순수 함수(쓰다듬기 알아채기·친해진 정도·인사·졸음)와 화면 효과(하트·별·물방울 튀기기·작은 소리)가 여기 있다.
+// 그림 말고도 교감에 쓰는 순수 함수(쓰다듬기 알아채기·친해진 정도·인사·졸음)와 화면 효과(하트·별·물방울 튀기기)가 여기 있다.
 (function (root) {
   // 앞의 여섯은 안내 화면(navigator.js의 face·docFace)이 쓰고, 뒤의 다섯은 교감할 때 잠깐 짓는 표정이다
   const MOODS = ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow", "angry"];   // angry — 막을 때(C-19, 2026-10-20): 화난 눈 + 손의 X 표지판(s-sign)
@@ -195,28 +195,7 @@
       layer.appendChild(s);
     }
   }
-  // 작은 소리 — 녹음 파일 없이 브라우저가 만든 짧은 음. 설정에서 켠 사람에게만(기본 꺼짐)
-  const NOTES = { pet: [880, 1320], done: [660, 880, 1100], level: [660, 990, 1320, 1760], pop: [990] };
-  let audio = null;
-  function chime(kind) {
-    try {
-      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
-      const t0 = audio.currentTime;
-      (NOTES[kind] || NOTES.pop).forEach((f, i) => {
-        const o = audio.createOscillator(), g = audio.createGain(), t = t0 + i * 0.09;
-        o.type = "sine";
-        o.frequency.value = f;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.06, t + 0.015);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
-        o.connect(g).connect(audio.destination);
-        o.start(t);
-        o.stop(t + 0.4);
-      });
-    } catch {}
-  }
-
-  const api = { MOODS, svg, gaze, turn, follow, glide, stroke, bond, petLine, PET_LINES, greeting, sleepy, burst, chime };
+  const api = { MOODS, svg, gaze, turn, follow, glide, stroke, bond, petLine, PET_LINES, greeting, sleepy, burst };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavSeal = api;
 })(typeof window !== "undefined" ? window : globalThis);
