@@ -58,18 +58,18 @@ test("app.js — 작업실 창: 탭은 캔버스 → 노트북(옛 퀘스트) �
 // ⑥(2026-10-27 두승현 "의도했던 것은 첨부한 이미지처럼 펼쳐져 있는 환경 … 3번은 이재엽 몫으로 남기고 더미 데이터로 UI 출력만"): 머리 한 줄(단계 · 탭 · LV · 조개) · 왼쪽 파일 칸(예시) · 캔버스는 목업의 1100×640 판을 줌
 test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · 탭 · LV · 조개, 왼쪽 파일 칸은 예시 데이터(API는 이재엽 몫), 캔버스 판은 1100×640을 --u로 줌(바닥 .75) · 포스트잇 · 파일 카드 · 배울 말 · 화살표 · 작은 플로로", () => {
   const a = read("navigator/app.js"), c = read("navigator/app.css");
-  assert.match(a, /<span class="tb-stage" aria-live="polite">\$\{stageHead\(\)\}<\/span>\$\{stageChips\(n\)\}/, "머리에 단계 이름 한 번 + 칩(C-58)");
+  assert.match(a, /<span class="tb-stage" aria-live="polite">\$\{stageHead\(\)\}<\/span>/, "머리에 단계 이름 한 번(C-58) — 단계 칩은 2026-10-29에 뺐다");
   assert.match(a, /<span class="wlv" title="칭호 · \$\{esc\(QU\.rankOf\(Math\.min\(level, 7\)\)\)\}">LV \$\{level\} · <button type="button" class="shells" data-act="shells"/, "머리에 LV · 조개(조개는 뽑기 단추 — 섬 위 줄이 머리 줄로 합쳐진 뒤, C-62)");
   assert.match(a, /<div class="wmain">\$\{wnavOpen \? `<nav class="wnav" aria-label="대화 · 파일">\$\{chatNav\(\)\}<\/nav>` : ""\}<div class="wbody"/, "왼쪽 칸은 탭에 상관없이 — C-63(PR ④)부터 대화 목록, 파일 칸은 그 안의 '전체 파일'");
   assert.match(a, /const FILES_DUMMY = \[\["README\.md", 0, "고침 · 책", "fix"\]/, "예시 데이터 — API가 생기면 지운다"); assert.match(a, /\$\{esc\(project\(\) \|\| "예시 프로젝트"\)\}/, "더미 이름이 진짜 프로젝트처럼 보이지 않게(새 맥락 리뷰 2026-10-27)");
   assert.match(a, /폴더를 연결하면 진짜 목록이 와요"\)\}">예시<\/em>/, "서버 없이 · 연습 · 폴더를 모르면 화면에 예시 표시(R-8)");
-  const cv = a.slice(a.indexOf("function stageChips"), a.indexOf("// 파일 칸(C-41 ⑥"));   // 칩(stageChips) + 칸(canvasPane) — PR ②(C-58)부터
-  for (const s of ['<div class="cvp"><div class="cvb" style="--fa:', 'class="cv-frame"', 'class="cv-bh"', "${think}${ARROWS}", 'class="cv-flo" style="--fx:${fx};--fy:${fy}"', '>${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}</span>`']) assert.ok(cv.includes(s), s);   // 칩은 앱 번호(R-9, 2026-10-27 — 전에는 코드 번호만이었다)터 판 밖(새 맥락 리뷰 2026-10-27)
+  const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("// 파일 칸(C-41 ⑥"));   // 칸(canvasPane) — 단계 칩(stageChips)은 2026-10-29에 뺐다
+  for (const s of ['<div class="cvp"><div class="cvb" style="--fa:', 'class="cv-frame"', 'class="cv-bh"', "${think}${ARROWS}", 'class="cv-flo" style="--fx:${fx};--fy:${fy}"']) assert.ok(cv.includes(s), s);   // 칩은 앱 번호(R-9, 2026-10-27 — 전에는 코드 번호만이었다)터 판 밖(새 맥락 리뷰 2026-10-27)
   assert.match(cv, /if \(k === "now" && !floAt\) floAt = pos;/, "작은 플로로는 첫 '지금' 칸 옆");
   assert.match(c, /\.cv\{flex:1;min-height:0;min-width:0;overflow:auto;container-type:size;/);
   assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{\.cvb\{--u:min\(calc\(100cqw \/ 1100\),calc\(100cqh \/ 640\),1px\);display:block;width:calc\(1100 \* var\(--u\)\);height:calc\(640 \* var\(--u\)\)/, "판 1100×640을 칸에 맞춰 줌하는 것은 0.85배 이상 담을 수 있을 때만(935 = 1100 × .85 · 544 = 640 × .85) — R-11(이재엽 버튼 \"줌 + 모자라면 다시 배치\")");
   for (const s of [".cv-c.c1{left:calc(226 * var(--u));top:calc(110 * var(--u))", ".cv-c.c3{left:calc(716 * var(--u))", ".cv-c.c6{left:calc(962 * var(--u))", ".cv-ar.a3{left:calc(640 * var(--u));top:calc(362 * var(--u))"]) assert.ok(c.includes(s), `${s} — 목업 좌표`);
-  assert.match(c, /\.wnav\{width:200px;flex:none;/); assert.match(c, /\.qwin\{min-width:260px;container-type:inline-size\}/); assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav,\.wh \.cv-stg\{display:none\}\}/, "좁은 작업실은 파일 칸 · 단계 칩을 숨긴다 — 섬이 가운데일 때는 파일 칸을 숨기지 않는다(F-81)(760은 두승현 확인 전 — 출처 없는 값)");
+  assert.match(c, /\.wnav\{width:200px;flex:none;/); assert.match(c, /\.qwin\{min-width:260px;container-type:inline-size\}/); assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav\{display:none\}\}/, "좁은 작업실은 파일 칸을 숨긴다(단계 칩은 2026-10-29에 뺐다) — 섬이 가운데일 때는 파일 칸을 숨기지 않는다(F-81)(760은 두승현 확인 전 — 출처 없는 값)");
   assert.ok(!c.includes("@container cvboard"), "너비로 칸 배치를 다시 잡던 길(① · 900)은 뺐다 — 줌이 대신한다");
   assert.ok(!a.includes('data-act="qsize"') && !a.includes("작업실 처음 크기"), "S/M/L 단추 · 설정 줄은 없다(R-1, 이재엽 버튼 2026-10-27 \"'화면 가득' 하나로\")");
   assert.match(a, /<button type="button" class="ti wfull" data-act="qfull" aria-label="작업실을 화면 가득" title="화면 가득">/, "머리에 '화면 가득' 하나");
@@ -113,17 +113,15 @@ test("app.js render — 브라우저 판의 작업실 몸통(.qwin .wbody)은 �
 // R-9(단계 칩은 앱 번호로) · R-5(칸에는 상태 대신 내용) — C-42, 넘김 문서 3절 ② 묶음(2026-10-27)
 test("app.js canvasPane — R-9 단계 칩: '시작 ✓' · 지난 장 'n ✓ V.n' · 지금 장 'n 짧은 이름' · 뒤 장 'n+1 ~ 8'(머리와 같은 번호 1~8). R-5: ② 맡길 일 이름, ③ 정한 줄, ④ 올라갈 파일 이름, 관문에 남은 기준 수와 '안 됨'인 기준 이름", () => {
   const a = read("navigator/app.js"), c = read("navigator/app.css");
-  const cv = a.slice(a.indexOf("function stageChips"), a.indexOf("// 파일 칸(C-41 ⑥"));   // 칩은 stageChips(머리 줄), 칸은 canvasPane — 둘 다 이 구간
-  assert.ok(cv.includes('${k === "done" ? `${dn(x)} ${OK_ICON} V.${dn(x)}` : dn(x)}'), "칩 — 지난 장 n (확인 아이콘) V.n · 지금 장 번호만(이름은 옆 단계 띠에 한 번 — C-58) · 뒤 장 번호(dn = n + 1) — C-57: ✓ 글자 대신 OK_ICON 아이콘");
-  assert.ok(cv.includes('`시작 ${OK_ICON}` : "시작"'), "시작 칩");
-  assert.ok(cv.includes("${dn(N.STAGES[i0])} ~ ${dn(N.STAGES[last])}"), "뒤 장은 'n+1 ~ 8'로 묶음");
+  const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("// 파일 칸(C-41 ⑥"));   // 칸은 canvasPane — 단계 칩(stageChips)은 2026-10-29에 뺐다
   assert.ok(!cv.includes(">${x.n}${k"), "코드 번호(0~7)는 화면에 없다");
   assert.ok(cv.includes("const curItem = ") && cv.includes("맡긴 일 ${pg.done}/${pg.total}"), "② 행동 — 지금 맡긴 일의 이름과 진행");
   assert.ok(cv.includes('class="cv-files"') && cv.includes("`docs/${slug}/${slug.slice(3)}.md`") && cv.includes("FDOCS.MAIN_DOC, FDOCS.LOG_DOC"), "④ 저장 — 올라갈 파일 이름(단계 문서 · 기획서 · 결정 기록)");
   assert.ok(cv.includes("const unmet = ") && cv.includes("남은 기준 ${left()}") && cv.includes('class="cv-unmet"'), "관문 — 남은 기준 수와 '안 됨'인 기준 이름");
   assert.ok(cv.includes("정한 줄 ${") && cv.includes("QU.filled(q, i) && ln ? ln : QU.nameOf(q, i)"), "③ 기록 — 적은 칸은 그 줄(정한 것), 빈 칸은 이 프로젝트의 말로 된 이름(C-56 R-2)을 보인다");
   assert.match(c, /\.cv-files,\.cv-unmet\{list-style:none;padding:0;/); assert.match(c, /\.cv-unmet li\{color:var\(--bad\)/);
-  assert.match(c, /\.wh \.cv-stg\{display:inline-flex;flex-wrap:wrap;gap:4px;min-width:0\}/, "칩은 머리 줄에서 줄 바꿈(C-58)");
+  // 단계 칩(시작 · 1 · 2 ~ 8)은 2026-10-29 두승현 결정으로 머리 줄에서도 뺐다 — 단계는 옆의 단계 띠(tb-stage) 한 번, 지난 단계로 가는 길은 왼쪽 단계 바로가기(C-63)
+  assert.ok(!/cv-stg/.test(c) && !/cv-stg|stageChips/.test(read("navigator/app.js")), "단계 칩 · 그 모양이 남아 있지 않다");
 });
 
 // R-8(C-42, 2026-10-27 이재엽 버튼 "전부" · "깊이 3 · 200개") — 진짜 파일 목록: 서버 GET /api/files(이름만 · 읽기만, API.md 3-25), 화면은 작업실을 열 때 받는다

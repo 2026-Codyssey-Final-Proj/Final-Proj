@@ -36,7 +36,7 @@ test("섬 자리 — 칸이 하나도 적히지 않았고(또는 관문에서 �
   assert.ok(!/st\.islBig = true/.test(a.replace(/"isl-big": [^\n]*/, "")), "코드(AI 답)가 스스로 섬을 크게 하지 않는다 — 사람이 누를 때만");
   assert.match(c, /@property --col-w\{syntax:"<length-percentage>";inherits:true;initial-value:420px\}/, "옆 칸 너비는 등록한 변수 하나 — 트랙 종류가 같아 0.3초가 보간된다(새 맥락 리뷰)");
   assert.match(c, /\.wsx:has\(>\.isl-col\.center\)\{--col-w:calc\(100% - 200px\)\}/, "가운데 — 왼쪽 파일 칸만 남기고 섬");
-  assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav,/, "좁은 판에서 왼쪽 칸을 숨기는 규칙은 가운데일 때 빼기 — 판이 200px라 빈 띠가 됐다(F-81)");
+  assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav\{display:none\}/, "좁은 판에서 왼쪽 칸을 숨기는 규칙은 가운데일 때 빼기 — 판이 200px라 빈 띠가 됐다(F-81)");
   assert.match(c, /\.wsx\{transition:--col-w \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/, "0.3초"); assert.match(c, /@media \(prefers-reduced-motion:reduce\)\{\.wsx\{transition:none\}\}/, "움직임 줄이기");
   assert.match(h, /#root\{[^}]*transition:--col-w \.3s/); assert.match(h, /@media \(prefers-reduced-motion:reduce\)\{#root\{transition:none\}\}/);
   assert.match(w, /h\.style\.setProperty\("--col-w", center \? \(root\.querySelector\("\.wnav"\) \? "calc\(100% - 200px\)" : "100%"\) :/, "앱 창은 win.js가 같은 값을");

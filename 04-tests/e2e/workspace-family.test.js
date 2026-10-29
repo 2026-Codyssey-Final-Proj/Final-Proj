@@ -71,7 +71,7 @@ test("C-62 — 1440 · 1280 · 1024 작업 중 화면: 위 줄은 하나(머리 
         const col = document.querySelector(".isl-col").getBoundingClientRect(), tabs = document.querySelector(".wh .wtabs").getBoundingClientRect();
         const cs = (sel, prop) => { const el = document.querySelector(sel); return el ? getComputedStyle(el)[prop] : ""; };
         return { whs: whs.length, tbs: document.querySelectorAll(".isl-col .tb").length, whLeft: r.left, whRight: r.right, inner: innerWidth, hislRight: hr ? hr.right : -1, hislLeft: hr ? hr.left : -1, tabsRight: tabs.right, colLeft: col.left,
-          tab: [cs(".wh .wtabs button[aria-selected=true]", "backgroundColor"), cs(".wh .wtabs button[aria-selected=true]", "color")], chip: [cs(".wh .cv-stg span.cur", "backgroundColor"), cs(".wh .cv-stg span.cur", "color")],
+          tab: [cs(".wh .wtabs button[aria-selected=true]", "backgroundColor"), cs(".wh .wtabs button[aria-selected=true]", "color")],
           now: [cs(".wnav .fn li.st-now", "backgroundColor"), cs(".wnav .fn li.st-now", "color")], islBg: cs(".isl-col .isl", "backgroundColor"), colBg: cs(".isl-col", "backgroundColor"), glass: cs(".isl", "backdropFilter"),
           overflow: document.documentElement.scrollWidth > innerWidth };
       });
@@ -79,7 +79,7 @@ test("C-62 — 1440 · 1280 · 1024 작업 중 화면: 위 줄은 하나(머리 
       assert.equal(m.whs, 1, `${tag} — 머리 줄 하나(지금 ${m.whs})`); assert.equal(m.tbs, 0, `${tag} — 옆 칸의 섬에 위 줄 없음`);
       assert.ok(m.whLeft <= 1 && m.whRight >= m.inner - 1, `${tag} — 머리 줄이 창 전체 폭: ${m.whLeft} ~ ${m.whRight} / ${m.inner}`);
       assert.ok(m.hislRight > m.tabsRight && m.hislLeft >= m.colLeft - 120, `${tag} — 섬 단추 묶음은 탭 오른쪽 · 섬 옆 칸 가까이(묶음 ${m.hislLeft}~${m.hislRight}, 칸 ${m.colLeft})`);
-      for (const [name, [bg, fg]] of [["고른 탭", m.tab], ["지금 칩", m.chip], ["파일 칸 지금", m.now]]) if (bg && fg) assert.ok(ratio(bg, fg) >= 4.5, `${tag} — ${name} 메아리 대비 ${ratio(bg, fg).toFixed(2)} (${bg} / ${fg})`);
+      for (const [name, [bg, fg]] of [["고른 탭", m.tab], ["파일 칸 지금", m.now]]) if (bg && fg) assert.ok(ratio(bg, fg) >= 4.5, `${tag} — ${name} 메아리 대비 ${ratio(bg, fg).toFixed(2)} (${bg} / ${fg})`);
       assert.equal(m.islBg, "rgb(54, 62, 98)", `${tag} — 섬 카드는 남색 #363E62`); assert.equal(m.colBg, "rgb(233, 238, 246)", `${tag} — 옆 칸은 작업실 바탕 #E9EEF6`);
       assert.ok(m.glass === "none" || m.glass === "", `${tag} — 유리 없음(backdrop-filter ${m.glass})`);
       assert.ok(!m.overflow, `${tag} — 옆으로 넘치지 않는다`);

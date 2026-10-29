@@ -738,7 +738,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 #root>.wh{border-radius:0}
 .wsx>.wh,#root>.wh{flex-wrap:nowrap;min-width:0}   /* 한 줄로 — 좁으면 아래 media가 칩 · 프로젝트 이름을 숨긴다(둘째 줄로 꺾이면 섬 단추가 왼쪽으로 갔다) */
 .wh .tb-stage{flex:0 1 auto;max-width:240px;padding:4px 10px;margin:0}
-@media (max-width:1280px){.wsx>.wh .cv-stg,#root>.wh .cv-stg,.wsx>.wh .meta,#root>.wh .meta{display:none}}
+@media (max-width:1280px){.wsx>.wh .meta,#root>.wh .meta{display:none}}
 .wh .hisl{display:inline-flex;align-items:center;gap:2px;flex:none}
 .wh .hisl .ti{width:30px;height:30px}
 .wh .hisl .led{margin:0 4px}
@@ -865,7 +865,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .fv-st .st-me{color:var(--warn)}
 @container (max-width:899px){.wside{display:none}}   /* 브라우저 판(920)에서는 보이고, 그보다 좁으면 숨는다 */
 .qwin{min-width:260px;container-type:inline-size}
-@container (max-width:760px){:is(#root,.wsx):not(:has(>.isl-col.center)) .wnav,.wh .cv-stg{display:none}}   /* 섬이 가운데(C-61)면 판이 200px로 줄어 이 규칙이 왼쪽 칸을 숨겨 빈 띠가 됐다 — 가운데일 때는 숨기지 않는다(F-81, 2026-10-29) */
+@container (max-width:760px){:is(#root,.wsx):not(:has(>.isl-col.center)) .wnav{display:none}}   /* 섬이 가운데(C-61)면 판이 200px로 줄어 이 규칙이 왼쪽 칸을 숨겨 빈 띠가 됐다 — 가운데일 때는 숨기지 않는다(F-81, 2026-10-29) */
 .nav.side{width:min(1800px,calc(100vw - 32px))}
 .nav.side>.win,.nav.side>.wsx{margin-top:0;align-self:flex-start;max-width:100%}
 .nav.side>.wsx{flex:1 1 auto;min-width:0;width:100%}
@@ -1333,9 +1333,6 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .cv-now{grid-area:now;display:flex;align-items:center;gap:calc(10 * var(--u));padding:calc(9 * var(--u)) calc(14 * var(--u));border-radius:calc(12 * var(--u));background:var(--card);border:1px solid var(--line);font-size:calc(12 * var(--u));color:var(--sub);white-space:nowrap;overflow:hidden}
 .cv-now b{color:var(--ink);font-weight:600;font-size:calc(14 * var(--u));overflow:hidden;text-overflow:ellipsis;min-width:0}
 /* 단계 칩(C-58 — 캔버스에서 머리 줄로, 2026-10-29): 지난 · 지금 · 다음은 st-* 모양(C-59), 지금 칩은 섬 색(색의 메아리) */
-.wh .cv-stg{display:inline-flex;flex-wrap:wrap;gap:4px;min-width:0}
-.wh .cv-stg span{padding:4px 8px;border-radius:8px;font-size:calc(12px * var(--ui-scale,1));white-space:nowrap}
-.wh .cv-stg span.cur{background:var(--isl);color:#EEF1FA;font-weight:700}
 .cv-frame{display:none}
 .cv-bh{grid-area:bh;font-weight:700;font-size:calc(16 * var(--u));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
 .cv-bh span{font-weight:400;font-size:calc(12 * var(--u));color:var(--sub)}
