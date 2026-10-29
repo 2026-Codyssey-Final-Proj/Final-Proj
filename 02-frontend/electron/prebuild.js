@@ -1,10 +1,10 @@
 // claude-drafted: 2026-10-19 — 묶기 전에 화면 · 서버 코드를 payload/로 복사한다(electron-builder의 files는 이 폴더 안만 본다).
-// payload/는 git에 올리지 않는다(.gitignore). 뺀 것: node_modules · .env*(키) · 문서(*.md) · 이 폴더(electron/) 자신
+// payload/는 git에 올리지 않는다(.gitignore). 뺀 것: node_modules · .env*(키) · 문서(*.md) · 이 폴더(electron/) 자신 · 섬 화면 조각(navigator/app/ · app-parts.js — 앱은 묶은 app.js만 쓴다)
 const fs = require("node:fs");
 const path = require("node:path");
 const ROOT = path.join(__dirname, "../..");
 const OUT = path.join(__dirname, "payload");
-const skip = (p) => /node_modules|\/\.env|\.md$|02-frontend\/electron/.test(p.replace(/\\/g, "/"));
+const skip = (p) => /node_modules|\/\.env|\.md$|02-frontend\/electron|navigator\/app\/|app-parts\.js$/.test(p.replace(/\\/g, "/"));
 
 fs.rmSync(OUT, { recursive: true, force: true });
 for (const dir of ["02-frontend", "03-backend"]) {
