@@ -10,7 +10,8 @@ const read = (f) => fs.readFileSync(path.join(__dirname, "../../02-frontend", f)
 test("main.js — 작업실이 뜨면 섬 창은 숨고(hide), 닫히면 다시 뜬다(show). 트레이 · 두 번째 실행은 작업실이 열려 있으면 작업실을 앞으로. 창 좌표로 붙이던 길(placeIsland · dockBounds · floe:dock-*)은 없다", () => {
   const m = read("electron/main.js"), p = read("electron/preload.js"), L = require("../../02-frontend/electron/lib.js");
   assert.match(m, /const workspaceOpen = \(\) => !!\(wins\.quest && !wins\.quest\.isDestroyed\(\)\);/);
-  assert.match(m, /if \(ws\) w\.once\("ready-to-show", \(\) => \{ if \(win && !win\.isDestroyed\(\)\) win\.hide\(\); \}\);/, "작업실이 뜨면 섬 창은 숨는다");
+  assert.match(m, /if \(ws && win && !win\.isDestroyed\(\)\) win\.hide\(\);   \/\/ 작업실을 만들면 섬 창은 바로 숨는다/, "작업실을 만들면 섬 창은 바로 숨는다 — 작업실이 뜰 때까지 기다리면 켤 때 흐린 알약 · 말풍선이 깜박였다(F-101)");
+  assert.ok(!/ready-to-show", \(\) => \{ if \(win && !win\.isDestroyed\(\)\) win\.hide\(\)/.test(m), "작업실이 뜬 뒤에야 숨기던 길은 없다");
   assert.match(m, /if \(win && !win\.isDestroyed\(\)\) \{ if \(ws\) win\.show\(\); win\.webContents\.send\("floe:win-closed", kind\); \}/, "닫히면 섬 창이 다시 뜬다");
   assert.match(m, /function showIsland\(\) \{\n  const w = workspaceOpen\(\) \? wins\.quest : win;\n  if \(!w \|\| w\.isDestroyed\(\)\) return createWindow\(\);\n  if \(w\.isMinimized\(\)\) w\.restore\(\);/, "작업실이 열려 있으면 작업실을, 내려가 있으면 올려서");
   assert.match(m, /app\.on\("second-instance", showIsland\);/, "두 번째 실행도 같은 길 — 숨은 섬을 띄우지 않는다(새 맥락 리뷰)");
@@ -57,4 +58,12 @@ test("app.css — 옆 칸은 작업실 바탕(남색은 그 안의 섬 카드만
   assert.match(c, /\.isl-col \.isl-body\{flex:1 1 auto;min-height:0;overflow:hidden auto\}/);
   assert.match(c, /\.isl-col\.narrow \.mc\.chat\{grid-template-columns:minmax\(0,1fr\)\}/); assert.match(c, /\.isl-col\.narrow \.tb\{flex-wrap:wrap\}/);
   assert.ok(!c.includes("dock-narrow") && !c.includes("dock-wide"));
+});
+
+// claude-drafted: 2026-10-29 — 임유정 "맨 처음 실행되고 전체 화면으로 되기 전에 흐릿한 상태로 화면이 깜박거리는 오류" (F-101)
+test("켤 때 깜박임 — 앱에서 작업실이 열려 있으면 섬 창의 화면은 보이지 않게 그린다(크기는 그대로 재도록 visibility)", () => {
+  const a = read("navigator/app.js"), c = read("navigator/app.css");
+  assert.match(a, /document\.documentElement\.classList\.toggle\("ws-away", WINS && !!st\.qwin\);/, "작업실이 열린 동안은 섬 창에 ws-away");
+  assert.ok(a.indexOf('classList.toggle("ws-away"') > a.indexOf("function renderDesk()") && a.indexOf('classList.toggle("ws-away"') < a.indexOf('if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); }'), "섬을 그리기 전에 — 첫 그림부터 숨는다");
+  assert.match(c, /^html\.in-app\.ws-away body\{visibility:hidden\}/m, "display:none이 아니라 visibility — 섬 크기를 재는 길(measureSize)이 그대로");
 });
