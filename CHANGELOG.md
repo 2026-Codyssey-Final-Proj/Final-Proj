@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.12 | 2026-10-29 | 이재엽 | 작업실 개편(#248 ~ #250) · 시작 화면(#262) 뒤 실패하는 화면 e2e 14개의 원인을 PR · 커밋별로 고칠 목록에 (F-102, 담당 두승현에게 넘김) (#271) | `01-docs/07-maintenance/fix-map.md` |
 | v51.11 | 2026-10-29 | 이재엽 | 섬 화면 app.js(4,300줄 · 530KB)를 기능 조각 16개(02-frontend/navigator/app/)로 나눔 — 조각이 원본, app.js는 묶은 릴리즈 파일(동작 · 다른 시험 그대로). 묶기 · 되돌리기 도구 app-parts.js(app.js에만 있는 고침은 덮지 않고 멈춤)와 둘이 같은지 보는 시험 · PR 검사 (#270) | `02-frontend/navigator/`(app.js · app/ · app-parts.js, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/app-parts.test.js` · `04-tests/navigator/navigator.test.js`(git을 읽는 도구 허용) · `02-frontend/electron/prebuild.js`(조각은 앱 묶음에서 뺌) · `.github/workflows/app-parts.yml` · `.claude/rules/code.md` · `.gitattributes` |
 | v51.10 | 2026-10-29 | 임유정 | 작업실 머리 줄의 접기(위쪽 화살표)를 오고 가는 단추로 — 한 번 누르면 알약, 다시 누르면 접기 전 모습으로(F-100). 앱을 켤 때 작업실이 뜨기 전에 흐린 알약 · 말풍선이 깜박이던 것을 고침(F-101) (#273) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정) · `02-frontend/electron/main.js` · `04-tests/navigator/workspace-family.test.js` · `04-tests/navigator/pill-overlay.test.js` · `04-tests/navigator/workspace-col.test.js` · `01-docs/07-maintenance/fix-map.md` |
 | v51.9 | 2026-10-29 | 두승현 | 상단바 오른쪽 X 옆의 '화면 가득' 단추를 뺐다 — 작업실 창을 키우는 것은 OS 창의 최대화로(F-98). 상단바의 집(처음으로) 단추도 뺐다 — 판의 ‘← 단추로’ · Esc가 같은 일(F-99) (#272) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `02-frontend/electron/main.js` · `04-tests/navigator/`(workspace · electron-side · workspace-col · workspace-family) · `01-docs/07-maintenance/fix-map.md` |
