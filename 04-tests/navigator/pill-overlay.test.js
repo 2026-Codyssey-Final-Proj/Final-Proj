@@ -12,13 +12,14 @@ test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(fold
   assert.match(a, /const colFolded = \(\) => st\.ui === "petit" \|\| st\.ui === "hidden";/);
   assert.match(a, /\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\("", true\)\}<\/div>`;/, "접힘이면 알약 하나(+ 켤 때 말풍선 C-55), 펼침이면 위 줄 없는 섬(C-62 inCol)");
   assert.match(a, /\|\| st\.settings \|\| \(st\.qwin && !WINS\) \|\| !!st\.gacha/, "앱의 작업실은 섬을 붙들지 않는다(설정의 시간대로) — 브라우저의 옆 판은 전처럼");
-  assert.match(a, /pill: \(\) => \(st\.ui === "hidden" \? go\("home"\) : view\("click"\)\)/, "알약 누름 = 펼침(hidden이어도)"); assert.match(a, /fold: \(\) => go\("petit"\)/, "접기 단추");
+  assert.match(a, /pill: \(\) => \(QU && !st\.qwin \? \(openQwin\("canvas"\), render\(\)\) : st\.ui === "hidden" \? go\("home"\) : view\("click"\)\)/, "알약 누름 = 작업실 밖이면 바로 작업실(F-85), 안이면 펼침(hidden이어도)"); assert.match(a, /fold: \(\) => go\("petit"\)/, "접기 단추");
   // 새 맥락 리뷰(2026-10-27) 막힘 둘 · 보완: 접힌 알약은 더 접히지 않는다, 옆 칸에 마우스 · 글 쓰는 중에는 안 접힌다, 알릴 일이 오면 펼친다, Esc는 먼저 접기
   assert.match(a, /if \(WINS && st\.qwin && st\.ui === "petit"\) return;   \/\/ 작업실 안의 접힌 알약은 더 접히지\(hidden\) 않는다/);
   assert.match(a, /\|\| st\.openInput \|\| typing\(\) \|\| colTyping;/, "옆 칸에 글 쓰는 중은 pinned"); assert.match(a, /hovering \|\| colHover \|\|/, "옆 칸에 마우스가 있으면 접히는 시계를 걸지 않는다");
   assert.match(a, /if \(p\.type === "col"\) \{ if \(typeof p\.hover === "boolean"\)/, "옆 칸의 올림 · 글 쓰는 중을 받는다");
   assert.match(a, /WINS && st\.qwin && st\.ui === "petit" \? "home" : st\.ui\);   \/\/ 작업실 안의 접힌 알약은 알릴 일이 오면 펼친다/, "peek가 펼친다");
-  assert.match(a, /if \(p\.kind === "quest" && st\.qwin\) \{ if \(!colFolded\(\)\) return go\("petit"\); return set\(\{ qwin: false \}\); \}/, "Esc는 먼저 접기, 접혀 있으면 작업실 닫기");
+  assert.match(a, /if \(p\.kind === "quest" && st\.qwin\) \{ if \(!colFolded\(\)\) return go\("petit"\); return closeQwin\(\); \}/, "Esc는 먼저 접기, 접혀 있으면 작업실 닫기");
+  assert.match(a, /const closeQwin = \(\) => \{ st\.qwin = false; go\("petit"\); \};/, "작업실을 닫으면 섬은 알약 — 펼친 섬 대화창이 따로 남지 않는다(F-85)");
   const w = read("navigator/win.js");
   assert.match(w, /F\.winEvent\(\{ type: "col", hover: on \}\)/); assert.match(w, /F\.winEvent\(\{ type: "col", typing: true \}\)/); assert.ok(!w.includes("col-folded"), "쓰지 않는 class는 없다");
   assert.match(read("navigator/app.css"), /\.isl-col\.folded\{padding:3px;/, "56 − 6 = 50 = 알약 높이"); assert.match(read("navigator/app.css"), /\.isl-col\.folded \.pill:hover\{transform:none\}/);

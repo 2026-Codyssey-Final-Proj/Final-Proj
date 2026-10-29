@@ -55,7 +55,7 @@ test("섬(app.js) — 위쪽 줄에 퀘스트 창 단추 · 모아 보기 단추
   for (const bad of ["openHub", "hub/index.html", "floe-hub", "onEnter", '"hub-alerts"', "data-act=\"hub-"]) assert.ok(!c.includes(bad), `app.js에 ${bad}가 없어야`);
   assert.match(app, /"qwin-quest": \(\) => \{ openQwin\("quest"\); render\(\); \}/, "'공책 보기'로 퀘스트 창");
   assert.match(app, /data-act="qwin" aria-label="작업실 창 닫기"/, "퀘스트 창(2026-10-26부터 작업실 창, C-41) 안의 닫기는 남는다");
-  assert.match(app, /qwin: \(\) => set\(\{ qwin: false \}\),/, "×는 닫기만(켜고 끄기가 아니다)");
+  assert.match(app, /qwin: \(\) => closeQwin\(\),/, "×는 닫기만(켜고 끄기가 아니다) — 닫으면 섬은 알약(F-85)");
 });
 
 test("서버(server.js)는 모아 보기 창의 화면 파일을 내주지 않는다 — 섬이 쓰는 hub.js(순수 함수)만", () => {
