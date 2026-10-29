@@ -24,14 +24,15 @@
     render();
   }
   async function saveFile(k, opt = {}) {
-    const f = st.openFiles[k]; if (!f || (!f.dirty && !opt.overwrite)) return;   // 고친 것이 없으면 쓰지도 커밋을 맡기지도 않는다(새 맥락 리뷰)
+    const f = st.openFiles[k]; if (!f || f.saving || (!f.dirty && !opt.overwrite)) return;   // 고친 것이 없으면 쓰지도 커밋을 맡기지도 않는다(새 맥락 리뷰). 저장 중이면 또 보내지 않는다(⌘S 두 번 → 409, F-103-3)
     if (f.i < 0) { f.note = { kind: "bad", text: "이 파일이 목록에서 사라졌어요 — 작업실을 다시 열어요" }; return render(); }
+    const sent = f.text; f.saving = true;   // 보낸 글 — 저장하는 동안 더 친 글은 저장된 것으로 치지 않는다(F-103-3)
     try {
-      const res = await fetch("/api/file", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ i: f.i, path: f.path, text: f.text, mtime: f.mtime, eol: f.eol, commit: true, ...opt }) });
+      const res = await fetch("/api/file", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ i: f.i, path: f.path, text: sent, mtime: f.mtime, eol: f.eol, commit: true, ...opt }) });
       const r = await res.json();
       if (r && r.ok) {
-        if (f.saved !== f.text) { f.hist.push({ at: Date.now(), text: f.saved }); if (f.hist.length > FHIST_MAX) f.hist.shift(); }
-        Object.assign(f, { saved: f.text, mtime: r.mtime, dirty: false, note: { kind: "ok", text: r.task ? "저장했어요 — 이 파일의 커밋 · 푸시를 Claude Code에 맡겼어요(허락 카드는 채팅에)" : `저장했어요${r.note ? ` — ${r.note}` : ""}` } });
+        if (f.saved !== sent) { f.hist.push({ at: Date.now(), text: f.saved }); if (f.hist.length > FHIST_MAX) f.hist.shift(); }
+        Object.assign(f, { saved: sent, mtime: r.mtime, dirty: f.text !== sent, note: { kind: "ok", text: r.task ? "저장했어요 — 이 파일의 커밋 · 푸시를 Claude Code에 맡겼어요(허락 카드는 채팅에)" : `저장했어요${r.note ? ` — ${r.note}` : ""}` } });
         if (r.task) watchTask(r.task, "commit");
         render(); reloadChanged(k); return;
       }
@@ -42,6 +43,7 @@
       else if (why === "moved") { f.i = -1; f.note = { kind: "bad", text: (r && r.reason) || "목록이 바뀌었어요 — 파일을 다시 열어요" }; }
       else f.note = { kind: "bad", text: (r && r.reason) || "저장하지 못했어요" };
     } catch { f.note = { kind: "bad", text: "서버에 닿지 않았어요" }; }
+    finally { f.saving = false; }
     render();
   }
   async function reloadChanged(k) { const f = st.openFiles[k]; if (!f || f.i < 0) return; try { const r = await (await fetch(`/api/file?i=${f.i}`, { cache: "no-store" })).json(); if (r && r.ok) { f.changed = r.changed; render(); } } catch {} }   // 저장 뒤 바뀐 줄 표시를 다시

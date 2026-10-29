@@ -110,6 +110,7 @@
     const slid = placeFrom !== null && !moved && (placeFrom !== st.place || paneFrom !== st.pane);   // 모드 · 판이 바뀌면 판만 옆으로 밀려 바뀐다(탭 바뀜과 같은 움직임)
     placeFrom = st.place; paneFrom = st.pane;
     deskKeys = {};
+    document.documentElement.classList.toggle("ws-away", WINS && !!st.qwin);   // 앱: 작업실이 열린 동안 섬은 작업실 옆 칸에 — 섬 창은 숨기 전 첫 그림부터 보이지 않게(F-101 켤 때 깜박임)
     if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); }
     else if (st.ui === "petit") $nav.innerHTML = !WINS && st.qwin ? `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow folded${st.boot ? " has-bub" : ""}">${pillHTML()}${bootBubble()}</div></div>` : `<div class="${enter.trim()}">${pillHTML()}${bootBubble()}</div>`;   // 브라우저 판(C-55): 켤 때 작업실이 열린 채 알약이면 작업실 판도 함께(앱은 창으로 — syncWins)
     else $nav.innerHTML = islandHTML(enter);

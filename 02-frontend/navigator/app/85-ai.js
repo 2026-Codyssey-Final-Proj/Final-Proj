@@ -28,7 +28,7 @@
     st.warn = { w, then }; render();
     return true;
   }
-  const RETRY = { chat: () => chatSend(chatText, true), start: () => startDraft(startText, true), stage: () => stageDraft(st.quest ? st.quest.chap : atStage(), true), judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk); } };   // plan* — 준비 계획판(C-34)
+  const RETRY = { chat: () => chatSend(chatText, true), start: () => startDraft(startText, true), stage: () => stageDraft(st.quest ? st.quest.chap : atStage(), true), judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk, true); } };   // plan* — 준비 계획판(C-34)
   // 새로 배운 말을 모은다. 돌려주는 것: 이번에 처음 배운 말들
   function learn(j) {
     const fresh = [];

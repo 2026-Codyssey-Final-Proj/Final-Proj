@@ -11,8 +11,8 @@ test("app.js — 파일 칸의 파일은 단추(번호로 연다), 찾기 칸, �
   assert.match(a, /class="fn-file" data-act="fn-open" data-v="\$\{i\}"/, "파일 행은 번호로 연다 — 경로를 보내지 않는다");
   assert.match(a, /<input class="fn-find" type="search" data-act="fn-find"/, "이름 찾기");
   assert.match(a, /await fetch\(`\/api\/file\?i=\$\{n\}`, \{ cache: "no-store" \}\)/);
-  assert.match(a, /body: JSON\.stringify\(\{ i: f\.i, path: f\.path, text: f\.text, mtime: f\.mtime, eol: f\.eol, commit: true, \.\.\.opt \}\)/, "저장마다 커밋 맡기기(이재엽 버튼) · 경로 확인 · 줄 끝 되돌리기");
-  assert.match(a, /if \(!f \|\| \(!f\.dirty && !opt\.overwrite\)\) return;/, "고친 것이 없으면 쓰지 않는다(빈 커밋 없음)"); assert.match(a, /if \(k < st\.fileSel\) st\.fileSel--;/, "앞 탭을 닫으면 선택 보정");
+  assert.match(a, /body: JSON\.stringify\(\{ i: f\.i, path: f\.path, text: sent, mtime: f\.mtime, eol: f\.eol, commit: true, \.\.\.opt \}\)/, "저장마다 커밋 맡기기(이재엽 버튼) · 경로 확인 · 줄 끝 되돌리기");
+  assert.match(a, /if \(!f \|\| f\.saving \|\| \(!f\.dirty && !opt\.overwrite\)\) return;/, "고친 것이 없으면 쓰지 않는다(빈 커밋 없음) · 저장 중이면 또 보내지 않는다(F-103-3)"); assert.match(a, /if \(k < st\.fileSel\) st\.fileSel--;/, "앞 탭을 닫으면 선택 보정");
   assert.match(a, /st\.gh = null; st\.openFiles = \[\]; st\.fileSel = -1; st\.files = null;/, "폴더가 바뀌면 열린 파일을 비운다"); assert.match(a, /if \(e\.origin !== location\.origin\) return;/, "postMessage 출처 확인");
   assert.match(a, /"fsave-busy": \(i, el\) => saveFile\(Number\(el && el\.dataset\.v\), \{ ignoreBusy: true \}\)/, "깃발을 나눴다");
   for (const s of ['why === "sensitive"', 'why === "changed"', 'why === "busy"', '["그대로 저장", "fsave-force"]', '["다시 열기", "freload"], ["덮어쓰기", "fsave-over"]']) assert.ok(a.includes(s), s);

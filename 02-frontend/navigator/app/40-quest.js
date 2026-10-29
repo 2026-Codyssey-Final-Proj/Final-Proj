@@ -166,7 +166,8 @@
   const textOf = (html) => { const d = document.createElement("div"); d.innerHTML = html; return (d.textContent || "").trim(); };
   // 이 단계의 대화(3-31 talk): 사람 · 플로로의 말만(알림 · 구분선 빼고), 40줄 · 줄 1,000자 · 합 8,000자 안에서 최근 것부터, 마지막은 방금 보낸 내 말(logMe가 먼저 쌓았다)
   const talkOf = (t) => { const all = st.chat.filter((m) => (m.who === "me" || m.who === "floro") && !m.kind).map((m) => ({ who: m.who, text: textOf(m.html).slice(0, 1000) })).filter((m) => m.text);
-    if (!all.length || all[all.length - 1].who !== "me") all.push({ who: "me", text: t.slice(0, 1000) });
+    const me = { who: "me", text: t.slice(0, 1000) };   // 마지막 내 말은 원문으로 — 채팅에는 긴 글이 앞 200자만 보인다(send의 logMe, F-103-4)
+    if (all.length && all[all.length - 1].who === "me") all[all.length - 1] = me; else all.push(me);
     let out = all.slice(-40); while (out.length > 1 && out.reduce((n, m) => n + m.text.length, 0) > 8000) out = out.slice(1); return out; };
   let chatText = "";
   // 새 단계(C-61 · C-63, 2026-10-29): 대화에 구분선(단계 · 이름 · 날짜)과 '지난 단계에서 가져온 것'(정한 줄 요약 — 틀리면 말로 고친다), 섬은 저절로 가운데(칸이 비었으니), 대화 표시 자리는 구분선 뒤. islBig은 저장하지 않는다 — 다시 켜면 칸 상태대로 저절로
@@ -179,8 +180,9 @@
   async function chatSend(t, skipCheck) {
     const q = st.quest; st.tidy = null;
     if (st.mode !== "live" || !canLive) { st.tidy = { fills: [{ i: QU.curIdx(q), text: t }], reply: "연습이라 AI 없이 — 보낸 말을 지금 칸에 이렇게 적을 수 있어요" }; return render(); }
+    chatText = t;   // guard 앞에서 — 경고 뒤 '보낼게요'(RETRY.chat)가 그 전 메시지가 아니라 이 글을 다시 보낸다(F-103-1)
     if (!skipCheck && guard(t, "chat")) return;
-    chatText = t;
+    st.warn = null;   // 보낸 뒤 경고 카드를 걷는다 — 남으면 '보낼게요'를 또 눌러 같은 글이 두 번 간다(startDraft와 같이, 새 맥락 리뷰 2026-10-29 막힘)
     const r = await callAI("/api/chat", { stage: q.chap, tier: st.tier, idea: ideaNow(), talk: talkOf(t), lines: q.lines });   // API.md 3-31(이재엽 쪽 서버 #246): 이 단계의 대화 · 적은 줄 · 처음 말한 것 → { reply, slots, n }
     if (!st.quest || st.quest.chap !== q.chap) return render();
     if (r.ok && typeof r.reply === "string") { st.tokens = r.tokens || 0; fetchUsage(); const slots = Array.isArray(r.slots) ? r.slots : []; if (slots.length) st.tidy = { fills: slots, reply: r.reply }; else say(r.reply); return render(); }

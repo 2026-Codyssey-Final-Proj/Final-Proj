@@ -141,11 +141,12 @@
     render(); say(r.reason || "다시 세우지 못했어요");
   }
   // 물어보기 — 이 보고에 대해 플로로에게(Floe의 AI 한 번, /api/answer). 맡긴 일 · 기준 · 보고 글만 보낸다
-  async function askPlan(id) {
+  //   skipCheck — 경고 뒤 '보낼게요'(RETRY.planAsk)로 다시 올 때는 guard를 또 지나지 않는다(F-103-2 — 같은 경고만 되풀이됐다)
+  async function askPlan(id, skipCheck) {
     const b = st.plan, q = st.planQ.trim(), w = b && b.work[id], x = b && b.plan.items.find((i) => i.id === id);
     if (!q || !w || !w.report || !x) return;
     if (planPractice(b)) { st.planAns = { ...st.planAns, [id]: "연습이라 답하지 않아요 — 진짜 AI로 바꾸면 이 보고를 보고 답해 줘요." }; st.planAsk = ""; return render(); }
-    if (guard(q, "planAsk")) return;
+    if (!skipCheck && guard(q, "planAsk")) return;
     st.warn = null;
     const text = [`맡긴 일: ${x.need}`, `다 됐는지 보는 기준: ${x.check}`, `Claude Code의 보고: ${w.report.easy}`, ...w.report.items.map((c) => `- ${c.check}: ${c.done ? "해냄" : "아직"}${c.evidence ? ` (${c.evidence})` : ""}`)].join("\n");
     const r = await planCall("ask", "/api/answer", { stage: atStage(), hard: [], question: q, text, tier: st.tier });
