@@ -116,10 +116,17 @@ test("머리 줄의 단계 이름은 16px로 머리 줄에서 가장 크고, 칸
   assert.match(c, /^\.wh \.tb-stage\{[^}]*font-size:calc\(16px \* var\(--ui-scale,1\)\);[^}]*max-width:320px;/m);
 });
 
-// claude-drafted: 2026-10-29 — 임유정 "위쪽 화살표 한번 누르면 알약, 다시 누르면 이전 상태로 · X 왼쪽의 전체화면 버튼 삭제" (F-99)
-test("머리 줄의 접기 단추는 오고 가는 단추 — 펼친 섬이면 알약으로, 알약이면 접기 전 모습으로. X 옆 '화면 가득' 단추는 없다", () => {
+// claude-drafted: 2026-10-29 — 두승현 "그 단추(집 — 처음으로)도 빼줘": 작업실 머리 줄의 섬 단추 묶음에서 집을 뺐다 — 판의 '← 단추로' · Esc가 같은 일이고, 판이 닫힌 평소엔 늘 눌린 것처럼 보였다.
+//   작업실 없이 떠 있는 섬의 위 줄(.tb)에는 그대로 둔다
+test("작업실 머리 줄의 섬 단추 묶음(.hisl)에는 집 단추가 없고, 떠 있는 섬의 위 줄에는 있다", () => {
+  const h = a.slice(a.indexOf("const hisl = () =>"), a.indexOf("\n", a.indexOf("const hisl = () =>")));
+  assert.ok(h.length > 20 && !h.includes("homeBtn"), "머리 줄 묶음에 집 없음");
+  assert.match(a, /return `<div class="tb">\$\{homeBtn\(!st\.pane\)\}/, "떠 있는 섬의 위 줄에는 그대로");
+});
+
+// claude-drafted: 2026-10-29 — 임유정 "위쪽 화살표 한번 누르면 알약, 다시 누르면 이전 상태로 · X 왼쪽의 전체화면 버튼 삭제" (F-100 — 화면 가득 단추는 #272 F-98이 먼저 뺐다)
+test("머리 줄의 접기 단추는 오고 가는 단추 — 펼친 섬이면 알약으로, 알약이면 접기 전 모습으로", () => {
   assert.match(a, /fold: \(\) => go\(colFolded\(\) \? "home" : "petit"\),/, "알약이면 펼침(home — 크게 · 옆으로는 st.islBig 그대로라 접기 전 모습)");
   assert.match(a, /data-act="fold" aria-pressed="\$\{colFolded\(\)\}" aria-label="\$\{colFolded\(\) \? "펼치기" : "접기"\}"/, "알약일 때는 펼치기로 읽힌다");
   assert.match(a, /\$\{colFolded\(\) \? I\.down : I\.up\}<\/button><\/span>`;/, "알약일 때는 아래 화살표");
-  assert.ok(!a.includes('data-act="qfull"') && !a.includes("qfull:") && !c.includes(".wfull"), "'화면 가득' 단추 · 손잡이 · 모양 없음");
 });

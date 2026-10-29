@@ -288,7 +288,7 @@ ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData"
 const wins = { settings: null, quest: null };
 const sideKind = (k) => (k === "settings" || k === "quest" ? k : null);
 // 작업실의 크기 · 자리(C-42 R-1, 2026-10-27 이재엽 "화면을 채움"): 처음은 섬이 있는 화면의 작업 영역 가득(lib.js workBounds), 사람이 옮기거나 늘리면 설정 폴더의 workspace.json에 기억해 다음에 그대로.
-//   머리의 '화면 가득'(floe:win-size "full")은 다시 작업 영역만큼. S/M/L(2026-10-26)은 뺐다 <!-- claude-drafted: 2026-10-27 -->
+//   크게 하려면 OS 창의 최대화로 — 머리의 '화면 가득' 단추는 2026-10-29 두승현 결정으로 뺐다. S/M/L(2026-10-26)도 뺐다 <!-- claude-drafted: 2026-10-27 -->
 const workFile = () => path.join(app.getPath("userData"), "workspace.json");
 const savedWork = () => { try { return JSON.parse(fs.readFileSync(workFile(), "utf8")); } catch { return null; } };
 let workTimer = null;
@@ -297,7 +297,6 @@ function rememberWork() {
   clearTimeout(workTimer);
   workTimer = setTimeout(() => { const b = w.isDestroyed() ? null : w.getBounds(); if (b) try { fs.writeFileSync(workFile(), JSON.stringify(b), { mode: 0o600 }); } catch {} }, 300);
 }
-const forgetWork = () => { try { fs.unlinkSync(workFile()); } catch {} };   // '화면 가득'을 누르면 기억을 지운다 — 다음에 어느 화면에서 열어도 그 화면의 작업 영역 가득
 // 기억한 자리가 있으면 **그 자리가 있는 화면**의 작업 영역으로 당긴다(작업실을 둘째 모니터에 둔 사람 — 새 맥락 리뷰 2026-10-27), 없으면 섬이 있는 화면 가득
 const workBoundsNow = (wa) => { const s = savedWork(); return L.workBounds(s && Number.isFinite(s.x) && Number.isFinite(s.y) ? screen.getDisplayMatching(s).workArea : wa, s); };
 const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? workBoundsNow(wa) : L.sideWinBounds(kind, side, isl, wa, size));   // 작업실은 작업 영역 가득 · 기억한 자리(R-1), 설정 창은 옆자리
@@ -320,7 +319,7 @@ function openSideWin(kind, opt = {}) {
   if (ws) { w.on("will-resize", () => { w.floeUser = true; }); w.on("resize", rememberWork); w.on("move", rememberWork); }   // 작업실 — 사람이 바꾼 크기 · 자리를 기억(R-1). 앱이 둔 자리(setBounds)는 will-* 없이 와서 적히지 않는다
   w.on("will-move", () => { w.floeMoved = true; w.floeUser = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
   w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
-  if (ws && win && !win.isDestroyed()) win.hide();   // 작업실을 만들면 섬 창은 바로 숨는다 — 섬은 작업실 안의 옆 칸에(C-41 ⑤). 작업실이 뜰 때(ready-to-show)까지 기다리면 켤 때 섬 창의 알약 · 말풍선이 흐리게 깜박였다(F-100, 임유정 2026-10-29)
+  if (ws && win && !win.isDestroyed()) win.hide();   // 작업실을 만들면 섬 창은 바로 숨는다 — 섬은 작업실 안의 옆 칸에(C-41 ⑤). 작업실이 뜰 때(ready-to-show)까지 기다리면 켤 때 섬 창의 알약 · 말풍선이 흐리게 깜박였다(F-101, 임유정 2026-10-29)
   w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
   w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (win && !win.isDestroyed()) { if (ws) win.show(); win.webContents.send("floe:win-closed", kind); } });   // 작업실이 닫히면 섬 창이 다시 뜬다(C-41 ⑤)
   w.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
@@ -347,8 +346,8 @@ ipcMain.on("floe:win-close", (e, kind) => { const w = sideKind(kind) && wins[kin
 ipcMain.on("floe:win-size", (e, kind, size) => {
   const w = sideKind(kind) && wins[kind];
   if (!fromIsland(e) || !w || w.isDestroyed()) return;
-  // 작업실(R-1): "full"이면 그 창이 있는 화면의 작업 영역 가득(최대화가 아니라 크기 — 기억에도 그대로 적힌다). 설정 창: 사람이 옮기지 않았으면 같은 자리 규칙으로(커진 창이 섬을 덮지 않게, 2026-10-24) — 옮겼으면 그 자리에서 크기만
-  if (kind === "quest") { if (size === "full") { const wa = screen.getDisplayMatching(w.getBounds()).workArea; if (w.isMaximized()) w.unmaximize(); w.floeUser = false; forgetWork(); w.setBounds(L.workBounds(wa)); } return; }
+  // 작업실은 크기를 받지 않는다(화면 가득 단추는 2026-10-29에 뺐다). 설정 창: 사람이 옮기지 않았으면 같은 자리 규칙으로(커진 창이 섬을 덮지 않게, 2026-10-24) — 옮겼으면 그 자리에서 크기만
+  if (kind === "quest") return;
   if (!Array.isArray(size)) return;
   if (!w.floeMoved) { const isl = win.getContentBounds(); return w.setBounds(boundsFor(kind, w.floeSide, isl, screen.getDisplayMatching(isl).workArea, size)); }
   const b = w.getBounds(); w.setBounds({ ...b, width: Math.max(260, Math.round(size[0]) || b.width), height: Math.max(200, Math.round(size[1]) || b.height) });

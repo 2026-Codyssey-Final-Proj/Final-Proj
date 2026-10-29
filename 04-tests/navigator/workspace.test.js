@@ -30,14 +30,14 @@ test("lib.js workBounds — 작업실은 작업 영역 가득, 기억한 크기 
   assert.match(fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/win.js"), "utf8"), /document\.title = kind === "quest" \? "Floe — 작업실" : "Floe — 설정"/, "OS 제목 줄");
 });
 
-test("main.js — 작업실 창: 처음은 작업 영역 가득(workBounds(wa, 기억)), 사람이 옮기거나 늘리면 기억(설정 폴더 workspace.json), '화면 가득'(floe:win-size \"full\")은 다시 작업 영역만큼 — S/M/L은 없다", () => {
+test("main.js — 작업실 창: 처음은 작업 영역 가득(workBounds(wa, 기억)), 사람이 옮기거나 늘리면 기억(설정 폴더 workspace.json). '화면 가득' 단추는 2026-10-29 두승현 결정으로 뺐다(OS 창의 최대화가 같은 일) — S/M/L도 없다", () => {
   const m = read("electron/main.js");
   assert.match(m, /const workFile = \(\) => path\.join\(app\.getPath\("userData"\), "workspace\.json"\);/, "기억은 설정 폴더의 workspace.json(project.json과 같은 자리)");
   assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? workBoundsNow\(wa\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\);/, "작업실은 작업 영역 가득 · 기억한 자리(R-1), 설정 창은 옆자리");
   assert.match(m, /screen\.getDisplayMatching\(s\)\.workArea : wa, s\)/, "기억한 자리는 그 자리가 있는 화면의 작업 영역으로(둘째 모니터 — 새 맥락 리뷰)");
   assert.match(m, /w\.on\("will-resize", \(\) => \{ w\.floeUser = true; \}\); w\.on\("resize", rememberWork\); w\.on\("move", rememberWork\);/, "사람이 바꾼 크기 · 자리만 기억한다(이재엽 버튼 2026-10-27)");
-  assert.match(m, /if \(!w \|\| w\.isDestroyed\(\) \|\| !w\.floeUser/, "앱이 둔 크기는 적지 않는다"); assert.match(m, /w\.floeUser = false; forgetWork\(\); w\.setBounds\(L\.workBounds\(wa\)\)/, "'화면 가득'은 기억을 지운다");
-  assert.match(m, /if \(kind === "quest"\) \{ if \(size === "full"\)[^\n]*L\.workBounds\(wa\)/, "'화면 가득'은 작업 영역만큼");
+  assert.match(m, /if \(!w \|\| w\.isDestroyed\(\) \|\| !w\.floeUser/, "앱이 둔 크기는 적지 않는다"); assert.ok(!/forgetWork/.test(m), "'화면 가득'에만 쓰던 기억 지우기는 없다");
+  assert.ok(!/size === "full"/.test(m), "작업실을 '화면 가득'으로 맞추는 갈래는 없다");
   assert.ok(!m.includes("floeSize: opt.size"), "작업실 · 설정 창 모두 S/M/L 크기 기억(floeSize)은 없다 — 설정 창은 2026-10-25부터 열리지 않고, 작업실은 자리 · 크기를 workspace.json에");
 });
 
@@ -72,7 +72,7 @@ test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · �
   assert.match(c, /\.wnav\{width:200px;flex:none;/); assert.match(c, /\.qwin\{min-width:260px;container-type:inline-size\}/); assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav\{display:none\}\}/, "좁은 작업실은 파일 칸을 숨긴다(단계 칩은 2026-10-29에 뺐다) — 섬이 가운데일 때는 파일 칸을 숨기지 않는다(F-81)(760은 두승현 확인 전 — 출처 없는 값)");
   assert.ok(!c.includes("@container cvboard"), "너비로 칸 배치를 다시 잡던 길(① · 900)은 뺐다 — 줌이 대신한다");
   assert.ok(!a.includes('data-act="qsize"') && !a.includes("작업실 처음 크기"), "S/M/L 단추 · 설정 줄은 없다(R-1, 이재엽 버튼 2026-10-27 \"'화면 가득' 하나로\")");
-  assert.ok(!a.includes('data-act="qfull"') && !a.includes("qfull:"), "머리의 '화면 가득' 단추는 뺐다(F-99, 임유정 2026-10-29 — 옆의 '섬을 크게'와 같은 그림)");
+  assert.ok(!/qfull|wfull|sizeWin\("quest"/.test(a) && !/\.wfull/.test(c), "머리 줄의 '화면 가득' 단추 · 처리 · 모양은 없다(두승현 2026-10-29)");
   assert.match(a, /pop = qpop \? " winpop" : ""/, "처음 열 때의 움직임 class는 winpop"); assert.match(c, /\.win\.winpop\{animation:winpop/); assert.ok(!c.includes(".win.pop{"), "'pop'은 말풍선 판(.pop)의 이름 — 겹치면 작업실 창이 처음 열릴 때 14px 여백 · 아래 정렬 · 내용 높이(148px)로 뒤집어썼다(⑥ 앱에서 실측 2026-10-27)");
 });
 

@@ -10,7 +10,7 @@ const read = (f) => fs.readFileSync(path.join(__dirname, "../../02-frontend", f)
 test("main.js — 작업실이 뜨면 섬 창은 숨고(hide), 닫히면 다시 뜬다(show). 트레이 · 두 번째 실행은 작업실이 열려 있으면 작업실을 앞으로. 창 좌표로 붙이던 길(placeIsland · dockBounds · floe:dock-*)은 없다", () => {
   const m = read("electron/main.js"), p = read("electron/preload.js"), L = require("../../02-frontend/electron/lib.js");
   assert.match(m, /const workspaceOpen = \(\) => !!\(wins\.quest && !wins\.quest\.isDestroyed\(\)\);/);
-  assert.match(m, /if \(ws && win && !win\.isDestroyed\(\)\) win\.hide\(\);   \/\/ 작업실을 만들면 섬 창은 바로 숨는다/, "작업실을 만들면 섬 창은 바로 숨는다 — 작업실이 뜰 때까지 기다리면 켤 때 흐린 알약 · 말풍선이 깜박였다(F-100)");
+  assert.match(m, /if \(ws && win && !win\.isDestroyed\(\)\) win\.hide\(\);   \/\/ 작업실을 만들면 섬 창은 바로 숨는다/, "작업실을 만들면 섬 창은 바로 숨는다 — 작업실이 뜰 때까지 기다리면 켤 때 흐린 알약 · 말풍선이 깜박였다(F-101)");
   assert.ok(!/ready-to-show", \(\) => \{ if \(win && !win\.isDestroyed\(\)\) win\.hide\(\)/.test(m), "작업실이 뜬 뒤에야 숨기던 길은 없다");
   assert.match(m, /if \(win && !win\.isDestroyed\(\)\) \{ if \(ws\) win\.show\(\); win\.webContents\.send\("floe:win-closed", kind\); \}/, "닫히면 섬 창이 다시 뜬다");
   assert.match(m, /function showIsland\(\) \{\n  const w = workspaceOpen\(\) \? wins\.quest : win;\n  if \(!w \|\| w\.isDestroyed\(\)\) return createWindow\(\);\n  if \(w\.isMinimized\(\)\) w\.restore\(\);/, "작업실이 열려 있으면 작업실을, 내려가 있으면 올려서");
@@ -19,7 +19,7 @@ test("main.js — 작업실이 뜨면 섬 창은 숨고(hide), 닫히면 다시 
   for (const gone of ["function placeIsland", "L.dockBounds(", 'ipcMain.on("floe:dock-side"', 'ipcMain.on("floe:dock-inner"', "parkIsland(", "docked() ?"]) assert.ok(!m.includes(gone), `${gone} — 창 둘을 좌표로 맞추던 길은 뺐다(두승현 PC에서 두 번 다 안 붙었다)`);
   for (const gone of ["dockSide:", "dockInner:", "onDock:", "onDockRoom:"]) assert.ok(!p.includes(gone), gone);
   assert.equal(L.dockBounds, undefined);
-  assert.match(m, /if \(kind === "quest"\) \{ if \(size === "full"\)/, "작업실 크기는 '화면 가득'(R-1, 2026-10-27)만 — S · M · L은 뺐다");
+  assert.match(m, /if \(kind === "quest"\) return;/, "작업실은 크기를 받지 않는다 — '화면 가득'(R-1)은 2026-10-29 두승현 결정으로 뺐다(OS 창의 최대화), S · M · L도 뺐다");
 });
 
 test("app.js — 작업실에 보내는 HTML = 작업실 판 + 섬의 옆 칸(.isl-col side-… narrow|wide). 자리를 바꾸면 다시 그릴 뿐(앱에 보내지 않음). 옆 칸의 채팅 Enter는 섬의 send()로", () => {
@@ -60,7 +60,7 @@ test("app.css — 옆 칸은 작업실 바탕(남색은 그 안의 섬 카드만
   assert.ok(!c.includes("dock-narrow") && !c.includes("dock-wide"));
 });
 
-// claude-drafted: 2026-10-29 — 임유정 "맨 처음 실행되고 전체 화면으로 되기 전에 흐릿한 상태로 화면이 깜박거리는 오류" (F-100)
+// claude-drafted: 2026-10-29 — 임유정 "맨 처음 실행되고 전체 화면으로 되기 전에 흐릿한 상태로 화면이 깜박거리는 오류" (F-101)
 test("켤 때 깜박임 — 앱에서 작업실이 열려 있으면 섬 창의 화면은 보이지 않게 그린다(크기는 그대로 재도록 visibility)", () => {
   const a = read("navigator/app.js"), c = read("navigator/app.css");
   assert.match(a, /document\.documentElement\.classList\.toggle\("ws-away", WINS && !!st\.qwin\);/, "작업실이 열린 동안은 섬 창에 ws-away");

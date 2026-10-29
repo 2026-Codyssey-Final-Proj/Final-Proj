@@ -127,4 +127,5 @@ test("섬(app.js) — 앱이 창을 열 수 있으면(WINS) 섬 옆의 판 대�
   assert.match(app, /if \(p\.type === "change"\) return onChange\(el\);/); assert.match(app, /if \(p\.type === "input"\) \{ if \(st\.ui === "home" && timer\) \{ clearIdle\(\); scheduleIdle\(\); \} return onInput\(el\); \}/, "글을 치면 접히는 시계를 되돌린다(C-46)");
   assert.match(app, /if \(WINS && \(st\.settings \|\| st\.qwin\)\) \{ st\.settings = false; st\.qwin = false; syncWins\(\); \}/, "서고로 갈 때");
   assert.match(app, /\$root\.addEventListener\("change", \(e\) => onChange\(e\.target\)\);/, "섬도 같은 손잡이");
+  assert.ok(!/sizeWin\("quest"/.test(app), "'화면 가득' 단추는 뺐다(2026-10-29 두승현 — OS 창의 최대화가 같은 일)");
 });

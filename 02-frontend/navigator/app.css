@@ -57,7 +57,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .nav{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(940px,calc(100vw - 32px));z-index:10;display:flex;flex-direction:column;align-items:center}
 /* Electron 앱 안(2026-10-19, 02-frontend/electron) — 뒤의 예시 코딩 도구 창을 숨기고 바탕을 투명하게(진짜 코딩 도구가 뒤에 있다). 위쪽 줄을 잡고 창을 끈다 */
 html.in-app,html.in-app body{background:transparent;overflow:hidden}   /* 창이 섬 크기를 따라가므로 스크롤 막대가 보일 일이 없다 */
-html.in-app.ws-away body{visibility:hidden}   /* 작업실이 열린 동안 섬 창(곧 숨는다)은 그리지 않는다 — 켤 때 흐린 알약 · 말풍선 깜박임(F-100). 크기는 그대로 잰다 */
+html.in-app.ws-away body{visibility:hidden}   /* 작업실이 열린 동안 섬 창(곧 숨는다)은 그리지 않는다 — 켤 때 흐린 알약 · 말풍선 깜박임(F-101). 크기는 그대로 잰다 */
 .in-app .window{display:none}
 /* 투명 창에서는 유리 흐림(backdrop-filter)이 뒤 창을 흐리지 못하고 GPU만 쓴다 — 랙의 원인(2026-10-19). 움직임 줄이기와 같은 불투명 판으로 */
 .in-app .isl,.in-app .pill,.in-app .strip,.in-app .pop,.in-app .glass{-webkit-backdrop-filter:none;backdrop-filter:none}
