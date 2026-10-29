@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.1 | 2026-10-29 | 두승현 | 켜서 처음 만나는 1단계에도 작업실 개편 PRD의 ① 시작 화면(가운데 · 플로로 · "어떤 프로젝트를 구상하고 있나요?" · 입력 하나) — 알약을 눌러야 열리고, 첫 말로 1단계 초안. 초안이 있으면 전처럼 초안 확인 카드. 가운데 섬의 모습도 기획안 사진대로 — 작업 칸을 채우는 카드 · 가운데 질문 · 큰 입력 상자(F-88) (#262) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e chat-split · docmap · modes-flow, navigator chat-split · chat-list) · `01-docs/07-maintenance/fix-map.md` |
 | v51.0 | 2026-10-29 | 두승현 | 설정의 '플로로가 작은 소리 내기'를 뺐다 — 설정 칸 · 상태 값 · 소리 코드(seal.js chime)까지 모두 지움(F-87) (#261) | `02-frontend/navigator/`(app.js · seal.js, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/greet.test.js` · `01-docs/07-maintenance/fix-map.md` · `01-docs/features/08-floro/README.md` |
 | v50.5 | 2026-10-29 | 두승현 | 작업실 + 접힌 알약에서 머리 줄 설정 단추를 눌러도 설정 판이 안 보이던 것 — 작업실이 열려 있으면 설정을 작업실 위 가운데 모달로 연다(섬은 그대로, ×  · Esc · 바깥 누름으로 닫힘)(F-86) (#260) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e pill-overlay, navigator pill-overlay · modes) · `01-docs/07-maintenance/fix-map.md` |
 | v50.4 | 2026-10-29 | 두승현 | 작업실 밖에 떠 있는 알약을 누르면 섬 대화창을 거치지 않고 바로 작업실(캔버스)로, 작업실을 닫으면 섬은 펼친 대화창이 아니라 알약으로 — 작업실 안의 알약은 전처럼 섬을 펼침(F-85) (#259) | `02-frontend/navigator/`(app.js, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e pill-overlay · setup-flow, navigator pill-overlay · electron-hub · modes) · `01-docs/07-maintenance/fix-map.md` |
