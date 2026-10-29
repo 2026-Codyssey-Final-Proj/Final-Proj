@@ -268,8 +268,6 @@ html[data-greet="hello"] .pill.greet .pl-hello,html[data-greet="settle"] .pill.g
 .tone-red{--tint:var(--t-red);--tink:var(--t-red-ink);--pb:var(--bad-btn);--pi:#8E3A52}
 .mc{display:flex;gap:22px;align-items:center;padding:18px 24px 20px 16px;border-radius:22px;background:var(--tint);transition:background .3s}
 .mc-cat{position:relative;flex:none;width:calc(124px * var(--ui-scale,1));display:grid;place-items:center;align-self:center}   /* 플로로 칸도 글자 크기를 따른다(2026-10-20) */
-.mc-badge{position:absolute;left:6px;top:4px;width:30px;height:30px;border-radius:50%;background:var(--pb);color:var(--pi);border:3px solid var(--tint);
-  display:grid;place-items:center;font-size:calc(14px * var(--ui-scale,1));font-weight:800;line-height:1;pointer-events:none}
 .mc-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px}
 .mc-say{margin:0;align-self:flex-start;max-width:100%;padding:7px 13px;border-radius:4px 16px 16px 16px;background:var(--card);color:var(--ink2);font-size:calc(14px * var(--ui-scale,1));line-height:1.5;box-shadow:0 1px 2px rgba(0,0,0,.05)}
 .mc-notice{margin:0;display:flex;gap:6px;align-items:center;font-size:calc(13px * var(--ui-scale,1));font-weight:600;color:var(--ok)}
@@ -506,14 +504,12 @@ button.pet:focus-visible{outline-offset:4px}
   .pet.squish svg{animation:squish .45s ease}
   .pet.purring svg{animation:purr .09s linear 16}
   .pet.hop svg{animation:hop .65s cubic-bezier(.3,1.6,.5,1)}
-  .mc-badge{animation:bob 2.6s ease-in-out infinite}
   .pill.ping{animation:nudge .6s ease 2}
   .dots i{animation:dot 1.2s infinite}.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
 }
 @keyframes squish{0%{transform:none}30%{transform:scale(1.1,.88)}60%{transform:scale(.95,1.07)}100%{transform:none}}
 @keyframes purr{0%,100%{transform:translateX(0)}50%{transform:translateX(.9px)}}
 @keyframes hop{0%{transform:none}35%{transform:translateY(-14px) scale(1.04)}70%{transform:translateY(0) scale(1.05,.95)}100%{transform:none}}
-@keyframes bob{0%,100%{transform:none}50%{transform:translateY(-3px)}}
 @keyframes nudge{0%,100%{transform:none}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
 @keyframes dot{0%,100%{opacity:.25}50%{opacity:1}}
 
@@ -543,7 +539,6 @@ button.pet:focus-visible{outline-offset:4px}
 .isl .mc{border:1px solid rgba(255,255,255,.10)}
 .isl .mc[class*="tone-"]{--pi:var(--acc-ink)}
 .isl .mc.tone-blue,.isl .mc.tone-green,.isl .mc.tone-gray,.isl .mc.tone-amber{--pb:var(--acc-btn)}
-.isl .mc-badge{border-color:#1C2C78}
 .isl .mc-say{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.14);box-shadow:none}
 .isl .b.toggle[aria-pressed=true] kbd,.isl ol.steps li.now b{color:var(--acc-ink)}
 .isl .node.done .dot{color:var(--acc-ink)}
@@ -644,7 +639,6 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 /* 채팅 중심 섬 — 왼쪽 큰 플로로(칭호 · 기분), 가운데 채팅(지난 말 · 지금 결정할 것 · 칩 · 입력 칸) */
 .mc.chat{display:grid;grid-template-columns:clamp(150px,22%,200px) minmax(0,1fr);gap:12px;align-items:stretch;padding:14px 18px 14px 10px}
 .mc.chat .who{display:grid;place-items:center;align-content:center;gap:6px;position:relative}
-.mc.chat .who .mc-badge{left:14px;top:10px}
 .mc.chat .main{display:flex;flex-direction:column;gap:8px;min-width:0;border-radius:20px;background:var(--card);border:1px solid var(--line);padding:12px}
 .mc.chat .log{display:flex;flex-direction:column;gap:8px;max-height:min(420px,52vh);min-height:150px;overflow:auto;padding-right:4px}   /* scroll-behavior:smooth는 뺐다 — 다시 그릴 때마다 맨 위에서 미끄러져 내려왔다. 새 말에만 부드럽게(app.js render) */
 .msg{display:flex;max-width:88%}.msg.me{align-self:flex-end}

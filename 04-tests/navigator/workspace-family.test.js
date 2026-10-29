@@ -103,3 +103,10 @@ test("섬 글은 Gowun Dodum · 섬 글자 세 단계(제목 #EEF1FA · 본문 #
   assert.match(c, /\.sm-views button\{[^}]*color:#2B3463;/, "도전과제 보기 단추");
   assert.match(c, /\.rb-toc button\[aria-current=true\]\{[^}]*color:var\(--acc-ink\);/, "책 목차의 지금 줄");
 });
+
+// claude-drafted: 2026-10-29 — 두승현 "불필요한 애니메이션 아이콘 — 이 부분(플로로 옆의 동그란 ?) 삭제": 채팅 카드의 상태 뱃지(.mc-badge — ? ! … × ‖ ✓, 위아래로 둥실)를 통째로 뺐다
+test("플로로 옆의 상태 뱃지(.mc-badge)와 둥실 움직임(bob), 카드마다 뱃지 글자를 정하던 badge 값이 남아 있지 않다", () => {
+  assert.ok(!/mc-badge/.test(a) && !/mc-badge/.test(c), "뱃지 그리기 · 모양 없음");
+  assert.ok(!/\bbadge: /.test(a), "카드의 badge 값 없음");
+  assert.ok(!/@keyframes bob\b|animation:bob\b/.test(c), "둥실 움직임 없음");
+});

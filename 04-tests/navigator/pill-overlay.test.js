@@ -48,3 +48,12 @@ test("작업실 안의 접힌 알약은 진한 남색 판 · 칸 안에 드는 �
   assert.match(c, /\.isl-col\.folded \.pill\{max-width:100%;flex:none;background:var\(--isl\);-webkit-backdrop-filter:none;backdrop-filter:none\}/, "섬 · 앱의 알약과 같은 남색(섬 토큰 --isl — C-57), 뒤를 비추지 않는다");
   assert.match(c, /\.isl-col\.folded \.pill:not\(\.ping\)\{box-shadow:[^}]*0 1px 2px rgba\(0,4,30,\.35\)\}/, "바깥 그림자는 1+2 = 3px — 칸의 안쪽 여백(3px) 안에서 잘리지 않게");
 });
+
+// claude-drafted: 2026-10-29 — 두승현 "플로로 눈동자가 커서를 따라가지 않고 고정": 작업실 창(win.html)이 seal.js를 불러 옆 칸 섬의 플로로 눈을 따라가게(화면 확인은 e2e/pill-overlay)
+test("작업실 창 — seal.js를 win.js보다 먼저 불러오고, 창 안의 마우스 움직임 · 다시 그릴 때 눈을 커서 쪽으로(움직임 줄이기면 안 함)", () => {
+  const h = read("navigator/win.html"), w = read("navigator/win.js");
+  assert.ok(h.indexOf('<script src="seal.js"></script>') > -1 && h.indexOf('<script src="seal.js"></script>') < h.indexOf('<script src="win.js"></script>'), "seal.js가 win.js보다 먼저");
+  assert.match(w, /const S = window\.NavSeal, STILL = matchMedia\("\(prefers-reduced-motion: reduce\)"\)\.matches;/);
+  assert.match(w, /if \(S && !STILL\) document\.addEventListener\("mousemove", /, "창 안의 커서");
+  assert.match(w, /if \(S && eyeAt\) S\.follow\(root, eyeAt\);/, "다시 그려도 마지막 커서 쪽");
+});
