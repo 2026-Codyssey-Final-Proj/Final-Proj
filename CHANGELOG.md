@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v50.5 | 2026-10-29 | 두승현 | 작업실 + 접힌 알약에서 머리 줄 설정 단추를 눌러도 설정 판이 안 보이던 것 — 작업실이 열려 있으면 설정을 작업실 위 가운데 모달로 연다(섬은 그대로, ×  · Esc · 바깥 누름으로 닫힘)(F-86) (#260) | `02-frontend/navigator/`(app.js · app.css, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e pill-overlay, navigator pill-overlay · modes) · `01-docs/07-maintenance/fix-map.md` |
 | v50.4 | 2026-10-29 | 두승현 | 작업실 밖에 떠 있는 알약을 누르면 섬 대화창을 거치지 않고 바로 작업실(캔버스)로, 작업실을 닫으면 섬은 펼친 대화창이 아니라 알약으로 — 작업실 안의 알약은 전처럼 섬을 펼침(F-85) (#259) | `02-frontend/navigator/`(app.js, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e pill-overlay · setup-flow, navigator pill-overlay · electron-hub · modes) · `01-docs/07-maintenance/fix-map.md` |
 | v50.3 | 2026-10-29 | 두승현 | 작업실 다듬기 — 섬이 작업 칸 전체로 커지면(C-61) 왼쪽에 200px 빈 띠가 남던 것(F-81), 연 파일이 머리 줄 탭과 왼쪽 '열어 둔 파일'에 두 번 보이던 것 — 왼쪽 묶음을 뺌(F-82), 알약일 때 '섬 크게'를 눌러도 그대로이던 것 — 펼치면서 가운데로(F-83), 섬을 펼친 동안 '오른쪽 칸 접기'가 눌러도 그대로이던 것 — 그동안은 누를 수 없게(F-84) (#258) | `02-frontend/navigator/`(app.css · app.js, 담당 임유정 — 이 줄이 알림) · `04-tests/`(e2e chat-split · workspace-md, navigator chat-split · workspace · file-view) · `01-docs/07-maintenance/fix-map.md` |
 | v50.2 | 2026-10-29 | 이재엽 | 변경 리뷰(합침 커밋 82개) — PR base가 main이 아니면 빨갛게 알리는 검사(F-79), 합친 CHANGELOG 커밋 push가 거절되면 최신 main 위로 얹고 다시(F-80), v45.0에 빠진 (#248), 성장 로그 '버전 기록 추적 끊김' 3회 → 체크리스트 승격 (#257) | `.github/` · `04-tests/repo/` · `CHANGELOG.md`(v45.0 한 줄) · `.claude/rules/`(git-workflow · consistency) · `01-docs/00-overview/` · `01-docs/07-maintenance/` · `01-docs/catalog/` |
