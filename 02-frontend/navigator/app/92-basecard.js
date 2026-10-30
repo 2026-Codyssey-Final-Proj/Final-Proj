@@ -2,9 +2,9 @@
   const BC_EX = { what: "예: 신청이 한곳에 모이고 마감 전에 알림이 가요", success: "예: 신청 40건이 한곳에 모이면 · '신청됨'까지 3초 안", data: "예: 회원 이름 · 학번(운영진만)", out: "예: 알림 서비스로 이름만" };
   function baseCardHTML(card, edit) {
     if (!BC || !card) return "";
-    const chip = (f) => (f.by === "me" ? `<small class="bc-from me">직접</small>` : f.src && f.lines && f.lines.length ? `<small class="bc-from">옮겨 옴 · 받은 글 ${f.lines.map((x) => `${x.line}줄`).join(" · ")}</small>` : f.from && f.from.length ? `<small class="bc-from">옮겨 옴 · ${f.from.map((x) => `${LB(x.s)} ${ROMAN(x.i)}`).join(" · ")}</small>` : "");
+    const chip = (f) => (f.by === "me" ? `<small class="bc-from me">직접</small>` : f.src && f.lines && f.lines.length ? `<small class="bc-from">옮겨 옴 · 받은 글 ${f.lines[0].line}줄${f.lines.length > 1 ? ` 외 ${f.lines.length - 1}` : ""}</small>` : f.from && f.from.length ? `<small class="bc-from">옮겨 옴 · ${f.from.map((x) => `${LB(x.s)} ${ROMAN(x.i)}`).join(" · ")}</small>` : "");
     return `<dl class="bc" aria-label="이 프로젝트의 기준">${BC.FIELDS.map((fd) => { const f = card[fd.key] || { text: "", blank: true }; const canEdit = edit && (f.blank || f.by === "me");
-      return `<div class="bc-row${f.blank ? " blank" : ""}"><dt>${fd.label}</dt><dd>${canEdit ? `<input type="text" data-act="card-field" data-v="${fd.key}" value="${esc(f.text || "")}" placeholder="${esc(f.note || BC_EX[fd.key] || "비었어요 — 알면 적어요")}" aria-label="${fd.label}" maxlength="200">` : f.blank ? `<span class="bc-blank">비었어요</span>` : esc(f.text)}${chip(f)}</dd></div>`; }).join("")}</dl>`;
+      return `<div class="bc-row${f.blank ? " blank" : ""}"><dt>${fd.label}</dt><dd>${canEdit ? `<input type="text" data-act="card-field" data-v="${fd.key}" value="${esc(f.text || "")}" placeholder="${esc(f.note || BC_EX[fd.key] || "비었어요 — 알면 적어요")}" aria-label="${fd.label}" maxlength="200">` : f.blank ? `<span class="bc-blank">비었어요</span>` : `<span title="${esc(f.text)}">${esc(preview1(f.text, 60))}</span>`}${chip(f)}</dd></div>`; }).join("")}</dl>`;
   }
   function toNext() {
     const nx = nextStage();

@@ -40,7 +40,7 @@ test("4 ~ 8단계 초안 읽기: alts는 둘까지 · 짧게 · 권하는 것과
   assert.deepEqual(r.items[0].alts, ["0번 다른 예시 가", "0번 다른 예시 나"]);
   const messy = N.parseStageDraft(answer(5, "Lite", { items: answer(5, "Lite").items.map((x, i) => (i ? x : { ...x, alts: [x.text, " ", "가".repeat(400), "나", "다"] })) }), 5, "Lite", prevUpTo(5, "Lite"));
   assert.equal(messy.items[0].alts.length, 2, "둘까지"); assert.ok(!messy.items[0].alts.includes(messy.items[0].text), "권하는 것과 같은 것은 버린다");
-  assert.equal(messy.items[0].alts[0].length, 150, "한 예시 150자");
+  assert.equal(messy.items[0].alts[0].length, N.LEN.alt, "한 예시는 정한 길이까지");   // 2026-10-30 퀘스트 글 짧게(quest-short.test.js)
   const two = N.parseStageDraft({ items: N.criteriaFor(1, "Xpress").map(() => ({ text: "글", alts: ["다른"], from: [] })), prep: [], say: "한마디" }, 1, "Xpress", prevUpTo(1));
   assert.equal(two.items[0].alts, undefined, "2단계는 예시 하나 — 칸 모양은 { text, from }");
 });
