@@ -75,7 +75,7 @@ async function openLive(browser, hash = "#base&plan") {
   await page.waitForSelector(".mc.chat [data-act=say]", { timeout: 8000 });
   return { page, seen };
 }
-const click = async (page, sel) => { await page.waitForSelector(sel, { timeout: 5000 }); await page.click(sel); await wait(250); };
+const click = async (page, sel) => { if (sel.startsWith(".qwin") && await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); } await page.waitForSelector(sel, { timeout: 5000 }); await page.click(sel); await wait(250); };   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 작업실 안을 누르기 전에 섬을 옆으로
 const nowSay = (page) => page.evaluate(() => document.querySelector(".msg.now")?.textContent || "");
 // 채팅 칸에 붙여 넣고 보내기(Enter)
 async function paste(page, text) {

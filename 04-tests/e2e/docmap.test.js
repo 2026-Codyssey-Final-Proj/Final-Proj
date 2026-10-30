@@ -53,8 +53,8 @@ test("C-45 · C-44 — 문서 지도 탭에 보드(문서 상자 · 재료 선),
     await page.click(".tb [data-act=qwin-toggle]"); await wait(700);
     if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 1단계 시작은 ① 화면이 작업 칸을 덮는다(F-88) — 섬을 옆으로
     const tabs = await page.$$eval(".wsx > .wh .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent));
-    assert.deepEqual(tabs, ["캔버스", "노트북", "도전과제", "책"], "문서 지도는 도전과제 안(C-54)");
-    await page.click("[data-act=qtab][data-tab=tree]"); await wait(200); await page.click('[data-act="tree-view"][data-v="box"]'); await wait(300);   // C-54: 문서 지도는 도전과제 안의 '상자' 보기
+    assert.deepEqual(tabs, ["캔버스", "퀘스트", "책"], "문서 지도는 퀘스트 탭 안의 상자 보기(C-54 · C-65)");
+    await page.click("[data-act=qtab][data-tab=quest]"); await wait(200); await page.click('[data-act="tree-view"][data-v="box"]'); await wait(300);   // C-54: 문서 지도는 도전과제 안의 '상자' 보기
     const frame = await (await page.waitForSelector("iframe.docmap", { timeout: 5000 })).contentFrame();
     await frame.waitForSelector("#panel, .floe-empty", { timeout: 8000 }); await wait(800);
     const s = await frame.evaluate(() => ({ title: document.querySelector("h1")?.textContent || "", boxes: window.BOARD ? window.BOARD.elements.map((e) => e.c) : [], rels: window.BOARD ? window.BOARD.relations.length : -1, empty: !!document.querySelector(".floe-empty") }));

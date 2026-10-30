@@ -105,7 +105,7 @@ test("무지개 조개 — 재화 그림(SVG)은 class 'coin'으로 위 줄 · �
   assert.ok(!/class="shell"/.test(app), "재화에 class 'shell'을 쓰지 않는다(바탕 껍데기 전용)");
   const tb = app.slice(app.indexOf("const tbRight = () =>"), app.indexOf("function stageBand()"));
   assert.match(tb, /data-act="shells"[^>]*>\$\{coin\(\)\}<span>\$\{st\.shells\}<\/span><\/button>/, "위 줄 — 조개 그림과 수");
-  assert.ok((app.match(/\$\{coin\(\)\}/g) || []).length >= 5, "위 줄 · 보상 칸 · 보상 줄 · 뽑기 · 설정");
+  assert.ok((app.match(/\$\{coin\(\)\}/g) || []).length >= 3, "위 줄 · 뽑기 · 설정(보상 칸 · 보상 줄은 C-68 · C-70으로 글만 — 2026-10-30)");
   assert.match(app, /<i class="coin bigshell" aria-hidden="true">\$\{SHELL_ICO\}<\/i>/, "뽑기 창의 큰 조개도 같은 그림");
   assert.ok(!/conic-gradient\(from 200deg,#FF9AA2/.test(css), "옛 동그라미 무지개(원뿔 그라데이션)는 없다");
   assert.match(css, /\.coin\{[^}]*width:calc\(20px \* var\(--ui-scale,1\)\)/, "글자 크기 설정을 따른다");

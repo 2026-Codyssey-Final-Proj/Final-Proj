@@ -53,7 +53,7 @@ test("섬(app.js) — 위쪽 줄에 퀘스트 창 단추 · 모아 보기 단추
   assert.match(tb, /data-act="settings"/, "설정 단추는 남는다");
   const c = code(app);
   for (const bad of ["openHub", "hub/index.html", "floe-hub", "onEnter", '"hub-alerts"', "data-act=\"hub-"]) assert.ok(!c.includes(bad), `app.js에 ${bad}가 없어야`);
-  assert.match(app, /"qwin-quest": \(\) => \{ openQwin\("quest"\); render\(\); \}/, "'공책 보기'로 퀘스트 창");
+  assert.match(app, /"qwin-quest": \(\) => \{ openQwin\("quest"\); set\(\{ questUp: true \}\); \}/, "'퀘스트 보기'로 퀘스트 창(C-65 — 합친 탭 · 카드 올림, 2026-10-30)");
   assert.match(app, /data-act="qwin" aria-label="작업실 창 닫기"/, "퀘스트 창(2026-10-26부터 작업실 창, C-41) 안의 닫기는 남는다");
   assert.match(app, /qwin: \(\) => closeQwin\(\),/, "×는 닫기만(켜고 끄기가 아니다) — 닫으면 섬은 알약(F-85)");
 });
