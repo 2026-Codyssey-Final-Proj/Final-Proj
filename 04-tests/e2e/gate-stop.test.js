@@ -46,10 +46,17 @@ test("R-10 — 빈칸 표시가 남은 채 보고하면 관문 앞에서 멈추�
     c = await card(page);
     assert.match(c.title, /'안 됨'이 1개 있어요 — 관문 앞에서 멈췄어요/, JSON.stringify(c));
     assert.deepEqual(c.unmet, ["숫자로"], "빈칸 표시가 남은 Ⅱ 숫자로만 '안 됨'(코드 규칙)");
+    // C-71(2026-10-30 목업 확정본 S3): 완료 보고 뒤 · 관문 전 — 퀘스트 카드 아래 관문 칸(기준마다 맞음 · 배운 것 한 줄 · 각주 · 관문 열기는 사람의 단추), 지도의 지금 카드는 '관문 앞'
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }
+    const gb = await page.evaluate(() => { const g = document.querySelector(".qwin .qcard.gate .gatebox"); return g ? { items: g.querySelectorAll(".gb-list li").length, no: g.querySelectorAll(".gb-list li.no").length, note: g.querySelector(".gb-note")?.textContent || "", learn: !!g.querySelector("textarea[data-act=learned]"), acts: [...g.querySelectorAll(".pacts [data-act]")].map((b) => b.dataset.act), head: g.querySelector(".gb-head b")?.textContent || "" } : null; });
+    assert.ok(gb && gb.items >= 1 && gb.no === 1 && gb.learn && gb.acts.includes("gate") && gb.acts.includes("gate-fill"), `관문 칸: ${JSON.stringify(gb)}`);
+    assert.match(gb.note, /관문은 사람이 열어요 — 맞음은 플로로의 의견이에요/); assert.match(gb.head, /기준 \d+개 중 \d+개 맞음/);
+    assert.match(await page.$eval(".qwin .sm-card.st-now", (e) => e.textContent), /관문 앞/, "지도의 지금 카드는 '관문 앞'");
+    assert.ok(!(await page.$(".qwin .wside .ws-q")), "오른쪽 칸의 관문은 이 탭에서 접혀 있다(C-72)");
     assert.ok(c.acts.includes("gate-fill") && c.acts.includes("gate-skip"), c.acts.join(","));
     // 채우러 가기 → 공책(노트북 탭) · 보고 카드로 돌아온다
-    await page.click("[data-act=gate-fill]"); await wait(400);
-    assert.ok(await page.$(".qwin .qcard"), "퀘스트 카드로(C-68 한 목록)");
+    await page.click(".qwin .gatebox [data-act=gate-fill]"); await wait(400);
+    assert.ok(await page.$(".qwin .qcard:not(.gate)") && !(await page.$(".qwin .gatebox")), "'줄 고치기' → 퀘스트 카드로 돌아간다(C-68 한 목록 · 관문 칸은 접힘)");
     c = await card(page); assert.match(c.title, /완료 보고/, "다시 보고할 수 있다");
     await page.click("[data-act=quest-report]"); await wait(600);
     // 까닭 적고 넘기기 — 빈 까닭은 안 되고, 적으면 관문이 열린다

@@ -823,7 +823,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .fv-code li::before{content:counter(ln);flex:none;width:44px;text-align:right;padding-right:8px;color:var(--sub);border-right:1px solid var(--line);user-select:none}
 .fv-code li.chg{background:var(--okbg)}.fv-code li.chg::before{color:var(--ok);font-weight:700}
 .fpreset{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));padding:0 8px}   /* 틀로 맡기기(C-44) */
-.docmap{flex:1;min-height:360px;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}   /* 문서 지도(C-45) */
+.docmap{flex:1;min-height:0;height:100%;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}   /* 문서 지도(C-45) — C-67(2026-10-30): 작업 칸 가득(min-height 360 → 칸 높이) */
 .fv-edit{flex:1;min-height:240px;resize:none;font:calc(13px * var(--ui-scale,1))/1.6 var(--font-code);color:var(--ink);background:var(--card);border:1px solid var(--acc-mid);border-radius:12px;padding:10px 12px;white-space:pre;overflow:auto;tab-size:2}
 .wnav .fn li.st-now{background:var(--isl);color:#EEF1FA;font-weight:600}   /* 색의 메아리(C-62) */
 .wnav .fn li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -1418,3 +1418,28 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .qfirst{margin:0;padding:10px 12px;border-radius:12px;background:var(--acc-soft);color:var(--ink);font-size:calc(12.5px * var(--ui-scale,1))}   /* '처음 쓰는 기능' 한 줄 — 얼음 면 위 글은 진한 남색 */
 .qcard.readonly .ln{cursor:default}
 .qcard.readonly .qhead .lnk{flex:none;font-size:calc(12.5px * var(--ui-scale,1));color:var(--ink);font-weight:700}
+/* C-67 · C-71(2026-10-30 목업 확정본 S5 · S6 · S3): 흐름 · 상자는 작업 칸 가득 + '퀘스트로' 알약, 완료 보고 뒤 관문 칸 */
+.wbody>.qboard.full{flex:1;min-height:0}
+.qboard.full .board{flex:1;min-height:0;overflow:auto}
+.qboard.full.box .board{padding:0;background:none;display:flex;flex-direction:column}
+.q-back{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:calc(12.5px * var(--ui-scale,1));font-weight:700}
+.q-back b{font-family:var(--font-disp);font-weight:400;font-size:calc(14px * var(--ui-scale,1))}
+.q-back:hover{border-color:var(--acc);color:var(--acc)}
+.gatebox{margin-top:4px;padding:14px 16px;border-radius:14px;background:var(--soft);display:flex;flex-direction:column;gap:10px}
+.gb-head{display:flex;align-items:baseline;gap:10px}
+.gb-head b{font-family:var(--font-disp);font-weight:400;font-size:calc(15px * var(--ui-scale,1));color:var(--ink)}
+.gb-head small{color:var(--sub);font-size:calc(12px * var(--ui-scale,1))}
+.gb-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink)}
+.gb-list li{display:flex;align-items:center;gap:8px}
+.gb-list .ck{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--card);border:1.5px solid var(--line);color:var(--ink)}
+.gb-list li.ok .ck{background:var(--okbg);border-color:var(--okbg)}
+.gb-list .ck .ic{width:13px;height:13px}
+.gb-list li.no{color:var(--sub)}
+.gb-h{margin:0 0 4px;font-size:calc(12.5px * var(--ui-scale,1));font-weight:700;color:var(--ink)}
+.gb-learn .learn{display:grid;gap:6px}
+.gb-learn .mc-sub{margin:0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.gb-learn .mc-input{width:100%;min-height:52px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);background:var(--card);resize:vertical}
+.gb-note{margin:0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.piece.gold{background:var(--t-amber);color:var(--t-amber-ink);border:0}   /* 금 토큰은 '받았다'는 이 한 곳만(C-68) */
+.sm-card .sm-line.next{color:var(--acc);font-weight:700}
+@media (max-width:1280px){.sm.sm-strip .sm-card{min-height:80px}.qstack .qcard{padding-top:18px}}   /* 1280 × 800 — 배치는 같고 크기만(PRD 3-2절) */

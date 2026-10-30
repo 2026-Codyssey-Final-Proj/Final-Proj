@@ -1265,4 +1265,6 @@ if (first) { cam = camFor(fbox(first), 20); apply(); } else { apply(); fitAll();
 const mainF = FRAMES.find(f => f.main);
 if (innerWidth <= 720 && mainF) { cam = camFor(fbox(mainF), 12); apply(); }
 window.ArchiBoard = {version: VERSION, format: FORMAT, openFrame, openObj: id => OBJ[id] && openObj(id), openData: id => DMI[id] && openData(id)};
+// Floe 더함(2026-10-30, C-67 — 사본에만 있는 줄): 고른 상자를 가운데에 두고 배율 k로 — 처음 배율이 맞춤(fitAll)이라 상자 이름이 안 읽히던 것을 docmap.html이 켠 뒤 100%로 올린다
+window.ArchiBoard.centerOn = (match, k = 1) => { const it = E.find(x => match(x)); if (!it || !it.dom) return false; const r = it.dom.getBoundingClientRect(), b = board.getBoundingClientRect(), v = viewBox(); const wx = (r.left + r.width / 2 - b.left - cam.x) / cam.k, wy = (r.top + r.height / 2 - b.top - cam.y) / cam.k; k = clamp(k, KMIN, KMAX); cancelAnimationFrame(anim); cam = {k, x: v.w / 2 - wx * k, y: v.h / 2 - wy * k}; apply(); return true; };
 })();

@@ -2105,6 +2105,7 @@
   let qmore = false, moreOpen = false;   // moreOpen — 늘 있는 칩 줄을 펼쳤나(C-60, 2026-10-29: 주 단추는 '보내기' 하나, 칩은 '더 보기' 뒤에)
   function questPane() {
     const q = st.quest;
+    if (q && q.phase === "done" && !st.finished && st.results[q.chap] && !st.results[q.chap].passed) return gateCard(q);   // C-71(2026-10-30 목업 확정본 S3): 완료 보고 뒤 · 관문 전 — 다섯 줄 + 관문 칸
     if (!q || q.phase === "done") return `<div class="qempty"><b>${st.finished ? "모든 장을 끝냈어요" : q ? `${LB(q.chap)} 퀘스트를 보고했어요` : st.j ? "다음 퀘스트는 넘어가기 전 확인을 지나면 받아요" : "아직 퀘스트가 없어요"}</b>${
       !q && !st.j ? "채팅에서 원하는 것을 플로로에게 알려 주면 1단계 초안을 만들어요.<br>그러면 이 창에 1단계 퀘스트가 떠요." : st.finished ? (SHELF_ON ? "책은 서재의 서고에 꽂아 두고 언제든 다시 펼쳐요." : "책은 이 창의 책 탭에서 언제든 다시 펼쳐요.") : "할 일을 다 하면 플로로가 '이해되셨나요?'를 묻고, 지나면 다음 장 퀘스트를 받아요."}</div>`;
     const ed = q.edit, done = QU.isDone(q), ci = QU.curIdx(q), metOf = (i) => !!(st.j && st.j.stage === q.chap && st.j.criteria[i] && st.j.criteria[i].met);
@@ -2168,10 +2169,12 @@
     const fix = st.prep && !st.prep.ok && st.prep.fix;
     // C-69 S4(카드 내림): 끝낸 · 지금 장 카드에 칸마다 누가 정했나 칩과 건네준 것 — 흐름(S5)의 요약판
     const chips = (c) => (strip || !(c.state === "done" || c.state === "now") ? "" : `<span class="sm-chips">${stageCells(c.n).map((x, k) => `<i class="${x.by ? `by-${x.by}` : ""}${x.line ? "" : " miss"}">${ROMAN(k)} ${x.by ? QU.BY_WORD[x.by] : x.line ? "적음" : "아직"}</i>`).join("")}</span>${gv(N.STAGES[c.n]) ? `<span class="sm-gives">건네준 것 — ${esc(gv(N.STAGES[c.n]))}</span>` : ""}`);   // 건네준 것은 늘 gv(shownGives)를 거친다 — 확인 질문의 정답이 새지 않게
+    const gateNow = !!(st.quest && st.quest.phase === "done" && st.quest.chap === cur && st.results[cur] && !st.results[cur].passed);   // C-71 완료 보고 뒤 · 관문 전 — 지금 카드는 '관문 앞', 다음 카드는 '다음'
     const card = (c) => { const p = c.prepared, sel = st.mapSel === c.n;
       const body = c.state === "later" ? `<span class="sm-note">2단계에서 그려져요</span>`
         : c.state === "done" ? `<span class="sm-line">${c.q ? `퀘스트 ${c.q.k}/${c.q.n}` : "지났어요"}</span>`
-        : c.state === "now" ? `<span class="sm-line">${c.q ? `다섯 칸 중 ${Math.min(c.q.k + 1, c.q.n)}번째 · ${c.q.k}/${c.q.n}` : "퀘스트 받기 전"}${c.gateLeft ? ` · 관문 남은 ${c.gateLeft}` : ""}</span>`
+        : c.state === "now" ? `<span class="sm-line">${gateNow ? `관문 앞 · ${c.q ? `${c.q.k}/${c.q.n}` : "다 적음"}` : c.q ? `다섯 칸 중 ${Math.min(c.q.k + 1, c.q.n)}번째 · ${c.q.k}/${c.q.n}` : "퀘스트 받기 전"}${c.gateLeft && !gateNow ? ` · 관문 남은 ${c.gateLeft}` : ""}</span>`
+        : gateNow && c.n === cur + 1 ? `<span class="sm-line next">다음</span>${p ? `<span class="sm-from">${esc(p.from)}</span>` : ""}`
         : `<span class="sm-line">${p ? esc(p.think.length > 48 ? `${p.think.slice(0, 47)}…` : p.think) : ""}</span><span class="sm-from">${p ? esc(p.from) : ""}</span>`;
       const docLine = `<span class="sm-doc"><code>${esc(c.doc.path.replace(/^docs\//, ""))}</code> ${c.doc.has ? "있음" : c.state === "done" || c.state === "now" ? "아직" : ""}</span>`;
       const input = fix && p ? `<input type="text" data-act="prep-think" data-i="${c.n}" value="${esc(p.think)}" aria-label="${LB(c.n)} ① 생각" maxlength="120">` : "";
@@ -2190,16 +2193,32 @@
   function questBoard() {
     const cur = st.finished ? N.STAGES.length - 1 : st.j ? st.j.stage : st.quest ? st.quest.chap : 0;
     const views = [["cards", "지도"], ["flow", "흐름"], ["box", "상자"]], viewBar = `<div class="sm-views" role="tablist" aria-label="보기">${views.map(([v, l]) => `<button type="button" role="tab" data-act="tree-view" data-v="${v}" aria-selected="${treeView === v}">${l}</button>`).join("")}</div>`;
-    if (treeView !== "cards") return `<div class="qboard"><div class="qtop">${viewBar}</div><div class="board">${treeView === "flow" ? treeMap(cur) : mapPane(Math.min(cur, N.STAGES.length - 1))}</div></div>`;
+    const q = st.quest && st.quest.chap === cur && st.quest.phase !== "draft" ? st.quest : null, ci = q ? QU.curIdx(q) : -1, got = q ? q.objs.filter((_, i) => QU.filled(q, i)).length : 0;
+    // C-67(2026-10-30): 흐름 · 상자를 고르면 지도 띠 · 퀘스트 카드를 접고 작업 칸 가득(판 안의 판 없음). 돌아가는 길은 보기 줄 오른쪽 알약 하나 — 지금 줄 · 진행을 같이 보인다
+    if (treeView !== "cards") return `<div class="qboard full ${treeView}"><div class="qtop">${viewBar}<button type="button" class="q-back" data-act="quest-back">퀘스트로${q ? ` · ${ci >= 0 ? `${ROMAN(ci)} ${esc(QU.nameOf(q, ci))}` : "다 적음"} <b>${got}/${q.objs.length}</b>` : ""}</button></div><div class="board">${treeView === "flow" ? treeMap(cur) : mapPane(Math.min(cur, N.STAGES.length - 1))}</div></div>`;
     if (st.qview != null && (st.qview === cur || !N.STAGES[st.qview])) st.qview = null;   // 지금 장이 바뀌었으면 보던 지난 장 카드는 접고 지금 퀘스트로
-    const up = qUp(), q = st.quest && st.quest.chap === cur && st.quest.phase === "quest" ? st.quest : null, ci = q ? QU.curIdx(q) : -1;
+    const up = qUp();
     // 범례(누가 정했나)는 카드를 내렸을 때만 — 올라와 있으면 지도 띠 한 줄에 칩이 없어 뜻이 없다(두승현 2026-10-30, 요구 문서 9절 7번)
     const top = up ? `<span class="qtop-hint">지금 장 카드를 누르면 퀘스트 카드가 올라와요</span><button type="button" class="lnk" data-act="quest-down">지도 보기</button>`
       : `<p class="sm-legend by">${QU.BY.map((b) => `<span><i class="by-${b}" aria-hidden="true"></i>${QU.BY_WORD[b]}</span>`).join("")}</p>`;
-    const sub = q ? `${LB(cur)} 퀘스트 · 정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length} / ${q.objs.length}${ci >= 0 ? ` · 지금 ${ROMAN(ci)} ${esc(QU.nameOf(q, ci))}` : ""}` : `${LB(cur)} · 퀘스트 받기 전`;
+    const sub = q ? `${LB(cur)} 퀘스트 · 정한 줄 ${got} / ${q.objs.length}${ci >= 0 ? ` · 지금 ${ROMAN(ci)} ${esc(QU.nameOf(q, ci))}` : q.phase === "done" ? " · 관문 앞" : ""}` : `${LB(cur)} · 퀘스트 받기 전`;
     const card = up ? `<div class="qstack" style="--q-tail:${(cur % 4) * 25 + 12.5}%"><button type="button" class="qhandle" data-act="quest-down" aria-label="퀘스트 카드 내리기 — 지도 보기"><i aria-hidden="true"></i></button>${st.qview != null ? viewCard(st.qview) : questTab()}</div>`
       : `<div class="qdown"><div><b>${esc((st.quest && st.quest.chap === cur && st.quest.title) || N.STAGES[cur].title)}</b><span>${sub}</span></div><button type="button" class="b" data-act="quest-up">퀘스트 카드 올리기</button></div>`;
     return `<div class="qboard${up ? " up" : ""}"><div class="qtop">${viewBar}${top}</div>${cardsMap(cur, up)}${card}</div>`;
+  }
+  // C-71(2026-10-30 목업 확정본 S3): 완료 보고 뒤 · 관문 전 — 다섯 줄은 모두 끝낸 줄로 접고, 아래에 관문 칸(기준마다 맞음 · 배운 것 한 줄(C-47, 채팅 관문 카드와 같은 learnBox) · 받은 보상 · 줄 고치기 · 관문 열기).
+  //   관문을 여는 것은 사람의 단추(FR-17 · F-60) — 기준이 다 맞아도 저절로 열지 않는다. '줄 고치기'는 gate-fill(퀘스트로 돌아가 다시 완료 보고), '관문 열기'는 채팅의 관문(gate — 이해되셨나요)과 같은 길
+  function gateCard(q) {
+    const n = q.chap, j = st.j && st.j.stage === n ? st.j : null, cr = j ? j.criteria : [], met = cr.filter((c) => c.met).length, r = st.results[n];
+    const rows = q.objs.map((o, i) => ({ no: ROMAN(i), state: "done", name: esc(QU.nameOf(q, i)), method: o.term ? `<small class="method">${esc(o.term)}</small>` : "",
+      lines: (q.lines[i] || []).map((l) => `<span class="lw">${esc(l)}</span>`).join(""), right: esc(QU.BY_WORD[(q.by || [])[i]] || "") }));
+    return `<div class="qcard gate"><div class="qhead"><div><h3>${esc(q.title)}</h3><div class="meta">${LB(n)} 퀘스트 · 완료 보고를 보냈어요${r && r.at ? ` ${esc(r.at)}` : ""} · 관문 앞</div></div><div class="qprog">정한 줄 <b>${rows.length} / ${rows.length}</b><span class="dots">${rows.map(() => '<i class="on"></i>').join("")}</span></div></div>
+      ${questRows(rows, `${LB(n)} 퀘스트의 다섯 칸 — 다 적음`)}
+      <div class="gatebox"><div class="gb-head"><b>관문 — 기준 ${cr.length}개 중 ${met}개 맞음</b><small>플로로가 본 결과</small></div>
+        <ul class="gb-list">${cr.map((c) => `<li class="${c.met ? "ok" : "no"}"><span class="ck">${c.met ? OK_ICON : ""}</span><span>${esc(QU.shortOf(c.text))}${c.met ? (c.skipped ? " — 까닭을 적고 넘김" : "") : " — 아직"}</span></li>`).join("")}</ul>
+        <div class="gb-learn"><p class="gb-h">이번에 배운 것 한 줄</p>${learnBox(n)}</div>
+        <p class="gb-note">관문은 사람이 열어요 — 맞음은 플로로의 의견이에요</p>
+        <div class="qfoot"><span class="piece gold">받은 보상 · 무지개 조개 1 · ${esc(QU.rankOf(Math.min(7, n + 1)))}</span><div class="pacts"><button type="button" data-act="gate-fill">줄 고치기</button><button type="button" class="pri" data-act="gate">관문 열기${N.STAGES[n + 1] ? ` — ${LB(n + 1)}로` : ""}</button></div></div></div></div>`;
   }
   // 지난 장(읽기만) · 준비된 장(미리보기) 카드 — 지도 카드를 누르면 지금 퀘스트 자리에 올라온다(C-69). 끝낸 장의 줄을 누르면 오른쪽 칸에 누가 정했나 · 재료(C-54 ⑧ 그대로)
   function viewCard(n) {
@@ -2375,6 +2394,7 @@
     "map-card": (i) => { const m = stageMap(), c = m && m.cards[i]; if (!c) return; st.mapLine = null;
       if (c.state === "now") { st.mapSel = null; st.qview = null; } else { st.qview = st.qview === c.n && qUp() ? null : c.n; st.mapSel = st.qview != null ? c.n : null; if (st.mapSel != null && c.prepared) wsideQuest = true; }   // 오른쪽 칸(이 탭에서는 접힘)은 준비된 카드만 바로 켠다 — 끝낸 장은 줄을 누를 때(map-line)
       set({ questUp: st.qview != null || c.state === "now" ? true : st.questUp }); },
+    "quest-back": () => { treeView = "cards"; set({ questUp: true }); },   // 흐름 · 상자에서 퀘스트 카드가 올라온 지도로(C-67)
     "quest-down": () => set({ questUp: false }),   // 지도 보기 — 카드를 내려 여덟 장 + 아래 띠(S4)
     "quest-up": () => set({ questUp: true }),
     "quest-view-off": () => { st.qview = null; st.mapSel = null; render(); },
