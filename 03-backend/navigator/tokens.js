@@ -10,7 +10,7 @@ const path = require("node:path");
 
 const KINDS = ["floe", "task"];
 const RUNS_MAX = 30;
-const LABEL = /^[가-힣 ]{1,12}$/;   // 이름은 정해진 한국어 말만 — 그 밖은 "AI"
+const LABEL = /^[가-힣0-9 ]{1,12}$/;   // 이름은 정해진 한국어 말(숫자까지 — "1단계 초안", F-107)만 — 그 밖은 "AI"
 const n0 = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Math.round(Number(v)) : 0);
 const money = (v) => (Number.isFinite(Number(v)) && Number(v) >= 0 && v !== null && v !== "" ? Math.round(Number(v) * 1e6) / 1e6 : null);
 
