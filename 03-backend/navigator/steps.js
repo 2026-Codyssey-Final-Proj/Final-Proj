@@ -12,11 +12,13 @@
   // 글의 줄 수 — 빈 글은 0, 끝의 줄바꿈 하나는 줄로 세지 않는다
   const lines = (v) => { const t = str(v); return t ? t.replace(/\r?\n$/, "").split(/\r?\n/).length : 0; };
   const slashes = (p) => str(p).replace(/\\/g, "/");
+  // 폴더 안인가 — Windows 드라이브 경로(C:/…)는 대소문자를 가리지 않는다(cwd c:/proj · 파일 C:/Proj/… 가 밖으로 잡혔다, F-104-14)
+  const under = (f, c) => !!c && (f.startsWith(`${c}/`) || (/^[A-Za-z]:\//.test(c) && f.toLowerCase().startsWith(`${c.toLowerCase()}/`)));
   // 경로 — 작업 폴더(cwd) 안이면 그 아래 상대 경로, 밖이면 파일 이름만(폴더 구조를 넘기지 않는다). 상대 경로는 그대로
   function where(file, cwd) {
     const f = slashes(file), c = slashes(cwd).replace(/\/+$/, "");
     if (!f) return "";
-    if (c && f.startsWith(`${c}/`)) return f.slice(c.length + 1);
+    if (under(f, c)) return f.slice(c.length + 1);
     if (/^([A-Za-z]:)?\//.test(f)) return f.split("/").filter(Boolean).pop() || "";
     return f;
   }
@@ -29,7 +31,7 @@
     const input = ev.tool_input && typeof ev.tool_input === "object" ? ev.tool_input : {};
     const f = slashes(input[key]), c = slashes(ev.cwd).replace(/\/+$/, "");
     if (!f) return "";
-    if (c && f.startsWith(`${c}/`)) return f.slice(c.length + 1);
+    if (under(f, c)) return f.slice(c.length + 1);
     return /^([A-Za-z]:)?\//.test(f) ? "" : f;
   }
 

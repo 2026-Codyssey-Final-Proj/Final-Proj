@@ -11,9 +11,10 @@ const os = require("node:os");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const AP = require("./approve.js");
-const PORT = Number(process.env.NAV_PORT) || 4317;
 const TOOL = process.argv[2] === "codex" ? "codex" : "claude";
 const TOKEN_FILE = process.env.NAV_EVENT_TOKEN_FILE || path.join(os.homedir(), ".navigator-event-token");
+// 앱은 4317이 차면 옆 포트로 켜진다 — NAV_PORT가 없으면 서버가 확인 값 파일 옆에 적은 포트(server.js announcePort, F-104-3)
+const PORT = Number(process.env.NAV_PORT) || (() => { try { return Number(fs.readFileSync(`${TOKEN_FILE}.port`, "utf8").trim()) || 4317; } catch { return 4317; } })();
 const WAIT = Math.max(100, Number(process.env.NAV_APPROVAL_WAIT) || 95_000);
 
 let input = "";

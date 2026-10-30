@@ -66,15 +66,15 @@ const quietEnv = () => ({ ...process.env, GIT_TERMINAL_PROMPT: "0", GH_PROMPT_DI
 // 기본 run — 셸 없이 · 창 없이 · 시간 제한. 기다리는 동안 앱(메인 프로세스)이 멈추지 않게 spawn으로. { code, out(앞 1MB를 다듬은 것), missing: 명령이 없음 }
 function runCommand(cmd, args, { cwd, timeout = LIST_MS, env = quietEnv() } = {}) {
   return new Promise((resolve) => {
-    let out = "", done = false;
+    let out = "", done = false, timer = null;   // timer를 먼저 — spawn이 바로 던지면 end가 선언 전의 timer를 읽어 ReferenceError였다(F-104-9)
     const end = (r) => { if (!done) { done = true; clearTimeout(timer); resolve(r); } };
     let child;
     try { child = spawn(cmd, args, { cwd, env, shell: false, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] }); }
     catch { return end({ code: -1, out: "", missing: true }); }
-    const timer = setTimeout(() => { try { child.kill(); } catch {} end({ code: -1, out: "", timeout: true }); }, timeout);
+    timer = setTimeout(() => { try { child.kill(); } catch {} end({ code: -1, out: "", timeout: true }); }, timeout);
     child.stdout.on("data", (d) => { if (out.length < OUT_MAX) out += d; });
     child.on("error", (e) => end({ code: -1, out: "", missing: e && e.code === "ENOENT" }));
-    child.on("close", (code) => end({ code: code == null ? -1 : code, out: out.trim() }));
+    child.on("close", (code) => end({ code: code == null ? -1 : code, out: out.trimEnd() }));   // 끝만 — 앞 공백은 뜻이 있다(git status --porcelain의 ' M'). 전에는 trim이라 첫 파일 이름의 첫 글자가 잘렸다(F-104-8)
   });
 }
 

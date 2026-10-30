@@ -9,7 +9,9 @@
   const ACCEPT = [".md", ".txt", ".markdown"];     // 글 파일만 [제안] — 다른 파일은 "아직 글 파일만 먹을 수 있어요"
   const TOPIC_MAX = 40;
   // 제목 줄 — 마크다운 머리(#), 번호(1. · 1)), 밑줄 제목은 다루지 않는다
-  const HEAD = /^\s{0,3}(#{1,6}\s+(.+?)\s*#*\s*|(\d{1,2})[.)]\s+(.+?)\s*)$/;
+  //   끝의 # · 공백은 headText가 — 정규식으로 떼면(.+?\s*#*\s*$) 공백이 길 때 세제곱으로 느려졌다(F-104-6). 1: 머리 글 · 3: 번호 글
+  const HEAD = /^\s{0,3}(?:#{1,6}\s+(.+)|(\d{1,2})[.)]\s+(.+))$/;
+  const headText = (s) => { const t = String(s).trimEnd(); let e = t.length; while (e > 1 && t[e - 1] === "#") e--; return (e < t.length ? t.slice(0, e) : t).trim(); };
   // 개인적인 일 — 이메일 · 전화번호 · IP(sensitive.js의 mask)와 흔한 말 [제안]. 사람이 구간마다 고칠 수 있으니 맞히는 비율은 미정(넘김 문서 5절)
   const PERSONAL = /(일기|가족|연애|병원|진료|월급|연봉|계좌|통장|집 ?주소|개인적인|사적인)/;
   const WHY = { secret: "이건 못 먹어요 — 비밀번호 같아요", personal: "이건 안 먹을게요 — 개인적인 일 같아요" };
@@ -37,7 +39,7 @@
     if (hasHead) {
       for (const l of lines) {
         const m = HEAD.exec(l);
-        if (m) { push(); cur = { title: (m[2] || m[4] || "").trim(), lines: [] }; continue; }
+        if (m) { push(); cur = { title: m[1] != null ? headText(m[1]) : (m[3] || "").trim(), lines: [] }; continue; }
         if (!cur) cur = { title: "", lines: [] };
         cur.lines.push(l);
       }

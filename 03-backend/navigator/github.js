@@ -6,15 +6,25 @@
 // 내주지 않는 것: 폴더 경로 · GitHub 계정 이름 · 원격 주소 안의 비밀번호나 토큰(https://토큰@github.com/… 모양이면 떼고 보인다).
 // AI를 부르지 않는다 — navigator.test.js "provider.js 한 곳에서만"이 이 파일에 AI 말이 없는지 따로 본다.
 "use strict";
-const { spawnSync } = require("node:child_process");
+const { spawn } = require("node:child_process");
 const crypto = require("node:crypto");
 
 const TIMEOUT_MS = 4000;
-// 셸 없이 · 창 없이 · 비밀번호를 묻지 않게(GIT_TERMINAL_PROMPT=0, GH_PROMPT_DISABLED) · 시간 제한. 끝 코드와 첫 줄만 쓴다
-function runner(run = spawnSync) {
-  return (cmd, args, cwd) => {
+// 기다리는 동안 서버(앱의 메인 프로세스)를 붙잡지 않게 spawn으로 — 전에는 spawnSync라 gh가 느리면 호출마다 4초씩 앱이 멈췄다(F-104-7). 답: { status, stdout } 또는 { error }
+function spawnAsync(cmd, args, o) {
+  return new Promise((resolve) => {
+    let out = "", child;
+    try { child = spawn(cmd, args, { ...o, stdio: ["ignore", "pipe", "ignore"] }); } catch (e) { return resolve({ error: e }); }
+    child.stdout.setEncoding("utf8"); child.stdout.on("data", (d) => { if (out.length < 65536) out += d; });
+    child.on("error", (e) => resolve({ error: e }));
+    child.on("close", (code) => resolve({ status: code, stdout: out }));
+  });
+}
+// 셸 없이 · 창 없이 · 비밀번호를 묻지 않게(GIT_TERMINAL_PROMPT=0, GH_PROMPT_DISABLED) · 시간 제한(spawn의 timeout이 끈다). 끝 코드와 첫 줄만 쓴다
+function runner(run = spawnAsync) {
+  return async (cmd, args, cwd) => {
     try {
-      const r = run(cmd, args, { cwd, encoding: "utf8", timeout: TIMEOUT_MS, windowsHide: true, shell: false,
+      const r = await run(cmd, args, { cwd, encoding: "utf8", timeout: TIMEOUT_MS, windowsHide: true, shell: false,
         env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GH_PROMPT_DISABLED: "1", GH_NO_UPDATE_NOTIFIER: "1" } });
       if (!r || r.error) return { found: !(r && r.error && r.error.code === "ENOENT"), code: -1, out: "" };
       return { found: true, code: r.status, out: String(r.stdout || "").trim().split(/\r?\n/)[0] || "" };
@@ -40,15 +50,15 @@ function parseRemote(url) {
 }
 
 // /api/github의 답 — dir은 서버가 훅 알림에서 고른 폴더(화면이 보낸 경로는 받지 않는다). 경로는 답에 넣지 않는다
-function status(dir, project, run = runner()) {
-  const gh = run("gh", ["--version"]);
-  const auth = gh.found && gh.code === 0 ? run("gh", ["auth", "status", "--hostname", "github.com"]) : { code: -1 };
+async function status(dir, project, run = runner()) {
+  const gh = await run("gh", ["--version"]);
+  const auth = gh.found && gh.code === 0 ? await run("gh", ["auth", "status", "--hostname", "github.com"]) : { code: -1 };
   const base = { ok: true, project: project || "", gh: { found: gh.found && gh.code === 0, signedIn: gh.found && gh.code === 0 ? auth.code === 0 : null } };
   if (!dir) return { ...base, git: false, remote: null, why: "folder" };
-  const inside = run("git", ["rev-parse", "--is-inside-work-tree"], dir);
+  const inside = await run("git", ["rev-parse", "--is-inside-work-tree"], dir);
   if (!inside.found) return { ...base, git: false, remote: null, why: "no-git" };   // git 명령이 없다
   if (inside.code !== 0 || inside.out !== "true") return { ...base, git: false, remote: null, why: "not-repo" };
-  const r = run("git", ["remote", "get-url", "origin"], dir);
+  const r = await run("git", ["remote", "get-url", "origin"], dir);
   const remote = r.code === 0 ? parseRemote(r.out) : null;
   return { ...base, git: true, remote, why: remote ? "" : "no-remote" };
 }
@@ -73,17 +83,17 @@ function createRequest(project, visibility = "private") {
 //   originKey: origin이 없으면 null, 있으면 { key, repo } — GitHub면 repo는 owner/repo이고 열쇠도 그 이름으로(https · ssh 주소가 같은 열쇠), 아니면 주소(비밀번호 · 토큰 칸을 뗀 것)로.
 //   key는 sha256 앞 16자 — 주소 · 이름을 남기지 않는다
 const hash16 = (t) => crypto.createHash("sha256").update(t).digest("hex").slice(0, 16);
-function originKey(dir, run = runner()) {
+async function originKey(dir, run = runner()) {
   if (!dir) return null;
-  const r = run("git", ["remote", "get-url", "origin"], dir);
+  const r = await run("git", ["remote", "get-url", "origin"], dir);
   if (r.code !== 0 || !r.out) return null;
   const g = parseRemote(r.out), gh = g && g.kind === "github";
   return { key: hash16(gh ? `github:${g.owner}/${g.repo}`.toLowerCase() : r.out.replace(/^([a-z+]+:\/\/)[^@/]*@/i, "$1")), repo: gh ? `${g.owner}/${g.repo}` : "" };
 }
 // 공개 범위 — gh에게 그 이름(owner/repo)으로 묻는다(gh가 고르는 다른 원격 — upstream 등 — 이 아니라 푸시할 origin). GitHub가 아니거나 gh가 답하지 못하면 ""(모름)
-function visibility(o, run = runner()) {
+async function visibility(o, run = runner()) {
   if (!o || !o.repo) return "";
-  const v = run("gh", ["repo", "view", o.repo, "--json", "isPrivate", "-q", ".isPrivate"]);
+  const v = await run("gh", ["repo", "view", o.repo, "--json", "isPrivate", "-q", ".isPrivate"]);
   return v.code === 0 && v.out === "true" ? "private" : v.code === 0 && v.out === "false" ? "public" : "";
 }
 

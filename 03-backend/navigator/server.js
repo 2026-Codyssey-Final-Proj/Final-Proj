@@ -28,7 +28,7 @@ const Nav = require("./navigator.js");
 const Sensitive = require("./sensitive.js");
 const Steps = require("./steps.js");   // AI 진행(C-12) — 한 일의 말 · 80자 — claude-drafted: 2026-10-20
 const AP = require("./approve.js");    // FR-17 승인 카드의 모양(2026-10-20)
-const { callClaude, usage, claudeVersion, startTask: openClaude, ledger } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
+const { callClaude, usage, claudeVersion, startTask: openClaude, ledger, killTree } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
 const Files = require("./files.js");
 const FindLines = require("./findlines.js");   // C-56 R-4 — 폴더의 글 파일에서 칸의 답 후보 줄(2026-10-28)
 const Project = require("./project.js");   // runCommand — 바뀐 줄을 git diff로(C-43, 읽기만)
@@ -94,6 +94,14 @@ function eventToken(file = TOKEN_FILE) {
 }
 let token = null;
 const theToken = () => (token ??= eventToken());   // 시험이 server.js를 불러오기만 할 때는 파일을 만들지 않는다
+// 켠 포트를 확인 값 파일 옆(<파일>.port)에 — 앱은 4317이 차면 옆 포트로 켜지는데 훅(hook.js · approve-hook.js)은 Claude Code가 여는 따로인 프로세스라
+//   NAV_PORT를 모른다. 훅은 NAV_PORT가 없으면 이 파일을 읽는다(F-104-3). 값은 숫자 하나 — 비밀이 아니지만 확인 값 파일처럼 600
+function announcePort(port, file = TOKEN_FILE) {
+  const f = `${file}.port`;
+  try { fs.writeFileSync(f, `${port}\n`, { mode: 0o600 }); } catch { return; }
+  // 끌 때 지운다 — 남으면 그 포트를 다른 프로그램이 쓸 때 훅이 확인 값 · 허락 요청을 그쪽으로 보낸다(새 맥락 리뷰). 그사이 다른 서버가 다시 적었으면 둔다
+  process.once("exit", () => { try { if (fs.readFileSync(f, "utf8").trim() === String(port)) fs.rmSync(f, { force: true }); } catch {} });
+}
 
 // ── C-38 시험판 — MCP(Claude Desktop은 이 컴퓨터 안에서, 웹 GPT · 웹 Claude는 터널로) — claude-drafted: 2026-10-25 (두승현 "이 브랜치에서 시험용으로 만들자" · "같이 쓸 앱으로 연결으로 해줘") ──
 // /mcp/<MCP 토큰>은 이 컴퓨터 안(Claude Desktop의 중계 파일 mcp-stdio.js)에서는 늘 받고, 밖(Host가 터널)에서는 NAV_MCP=1일 때만 받는다. 나머지 주소는 지금처럼 allowed()가 막는다.
@@ -311,7 +319,7 @@ function holdApproval(body, req, res) {
   const finish = (decision) => { const p = pending.get(id); if (!p) return; pending.delete(id); clearTimeout(p.timer); countAsk(decision, body.cwd); send(p.res, 200, { ok: true, id, decision }); };
   pending.set(id, { item, res, timer: setTimeout(() => finish("none"), APPROVAL_WAIT), finish });
   touchTask(body.cwd);   // C-50 허락을 구하는 것도 일하고 있다는 표시
-  req.on("close", () => { const p = pending.get(id); if (p && p.res === res) { pending.delete(id); clearTimeout(p.timer); } });   // 훅이 먼저 끊으면(시간 초과) 표에서 뺀다
+  res.on("close", () => { if (res.writableFinished) return; const p = pending.get(id); if (p && p.res === res) { pending.delete(id); clearTimeout(p.timer); } });   // 훅이 먼저 끊으면(시간 초과 · 사람이 터미널에서 답함) 표에서 뺀다. req의 close는 본문을 다 읽은 뒤라 Node 16+에서 이미 지나 오지 않았다(F-104-4)
   return "";
 }
 const listApprovals = () => ({ items: [...pending.values()].map((p) => p.item) });
@@ -445,7 +453,7 @@ function stopTask(body) {
   if (!task || b.at !== task.at) return [409, { ok: false, reason: "다른 일이에요 — 화면을 새로 보고 다시 눌러요" }];
   if (task.state !== "running") return [409, { ok: false, reason: "도는 일이 아니에요" }];
   task.stopped = true;
-  try { task.child.kill(); } catch {}
+  killTree(task.child);   // Windows는 자식(npm · 개발 서버)까지 — child.kill()은 claude만 끝냈다(F-104-11)
   return [200, { ok: true, task: publicTask() }];
 }
 // 막힌 · 실패한 · 멈춘 일을 다시(F-69) — 본문 { at, way: again | files-only | brief }. brief는 아무것도 열지 않고 맡길 글 + 끝 조건을 돌려준다(직접 하기 — 사람이 Claude Code에 붙여 넣는다)
@@ -672,7 +680,19 @@ const checkOk = (a) => Array.isArray(a) && a.length <= 8 && a.every((c) => c && 
 const skipOk = (k) => k && typeof k === "object" && !Array.isArray(k) && strOk(k.reason, CHECK_LINE_MAX) && (k.items == null || (Array.isArray(k.items) && k.items.length <= 8 && k.items.every((x) => strOk(x, ITEM_NAME_MAX))));
 // 지식 퀘스트 C-47(2026-10-29): 관문에서 사람이 적은 배운 것(learned — 400자, ""는 '비어 있음' · A-13 막지 않음)과 처음 뜻(goal — { same: true } 또는 { changed: 새 말 200자 })
 const LEARNED_MAX = 400;
-const goalOk = (g) => g && typeof g === "object" && !Array.isArray(g) && (Object.keys(g).join() === "same" ? g.same === true : Object.keys(g).join() === "changed" && strOk(g.changed, CHECK_LINE_MAX) && Nav.filled(g.changed));
+// 폴더에서 되읽은 단계 결과(GET /api/docs)를 이 서버가 받는 모양으로 — 사람이 단계 문서를 길게 고치면 화면이 그대로 보내 /api/docs · /api/chat 등이 계속 400이었다(F-104-15 · F-103-9).
+//   할 일 8 · 줄 5 · 줄 400자 · 이름 200자 · 준비할 것 · 기준 · 배운 것. 줄였으면 fitted: true(화면이 알 수 있게). 화면은 같은 규칙을 다시 만들지 않는다(프론트엔드 역할)
+function fitResult(r) {
+  if (!r || !Array.isArray(r.items)) return r;
+  const cut = (s, n) => String(s == null ? "" : s).slice(0, n);
+  const out = { ...r, items: r.items.slice(0, 8).map((x) => ({ ...x, name: cut(x.name, ITEM_NAME_MAX), lines: (Array.isArray(x.lines) ? x.lines : []).slice(0, 5).map((l) => cut(l, LINE_MAX)), ...(x.draft != null ? { draft: cut(x.draft, LINE_MAX) } : {}) })),
+    ...(Array.isArray(r.prep) ? { prep: r.prep.slice(0, Nav.PREP_MAX).map((l) => cut(l, Nav.PREP_LINE)) } : {}),
+    ...(Array.isArray(r.check) ? { check: r.check.slice(0, 8).map((c) => ({ ...c, text: cut(c.text, ITEM_NAME_MAX), ...(c.evidence != null ? { evidence: cut(c.evidence, 300) } : {}) })) } : {}),
+    ...(typeof r.learned === "string" ? { learned: cut(r.learned, LEARNED_MAX) } : {}),
+    ...(r.skip && typeof r.skip.reason === "string" ? { skip: { ...r.skip, reason: cut(r.skip.reason, CHECK_LINE_MAX) } } : {}) };
+  return JSON.stringify(out) === JSON.stringify(r) ? r : { ...out, fitted: true };
+}
+const goalOk =(g) => g && typeof g === "object" && !Array.isArray(g) && (Object.keys(g).join() === "same" ? g.same === true : Object.keys(g).join() === "changed" && strOk(g.changed, CHECK_LINE_MAX) && Nav.filled(g.changed));
 const stageExtraOk = (v) => (v.prep == null || (Array.isArray(v.prep) && v.prep.length <= Nav.PREP_MAX && v.prep.every((x) => strOk(x, Nav.PREP_LINE))))
   && (v.at == null || (typeof v.at === "string" && DATE_RE.test(v.at))) && (v.passed == null || (typeof v.passed === "string" && DATE_RE.test(v.passed))) && (v.check == null || checkOk(v.check))
   && (v.checkBy == null || v.checkBy === "confirm")
@@ -731,7 +751,7 @@ const cardFieldOk = (f) => f && typeof f === "object" && strOk(f.text || "", 200
   && (f.lines == null || (Array.isArray(f.lines) && f.lines.length <= 8 && f.lines.every((x) => x && strOk(x.text, 200) && Number.isInteger(x.line)))) && (f.from == null || (Array.isArray(f.from) && f.from.length <= 4));
 const cardOk = (c) => c && typeof c === "object" && !Array.isArray(c) && Object.keys(c).every((k) => CARD_KEYS.includes(k)) && Object.values(c).every(cardFieldOk);
 const cardClean = (c) => Object.fromEntries(CARD_KEYS.filter((k) => c[k]).map((k) => { const f = c[k]; return [k, { text: f.text || "", by: f.by || null, blank: !f.text, ...(f.note ? { note: f.note } : {}), ...(f.lines ? { lines: f.lines.map((x) => ({ text: x.text, line: x.line })), src: f.lines.length > 0 } : {}), ...(f.from ? { from: f.from.filter((x) => x && Number.isInteger(x.s) && Number.isInteger(x.i)).map((x) => ({ s: x.s, i: x.i })) } : {}) }]; }));
-function shipDocs(body) {
+async function shipDocs(body) {   // async — 공개 저장소 확인(gh)을 기다리는 동안 서버를 붙잡지 않게(F-104-7)
   const got = resultsOf(body && body.results), topic = body && body.topic != null ? body.topic : "", idea = body && body.idea != null ? body.idea : "";
   if (got.why) return [400, { ok: false, reason: got.why }];
   if (!strOk(topic, 60)) return [400, { ok: false, reason: "주제는 60자까지" }];
@@ -747,14 +767,17 @@ function shipDocs(body) {
   { const hk = Connect.hookReady(s.dir); if (!hk.ok) return [409, { ok: false, why: "hook", reason: NO_HOOK[hk.why] || NO_HOOK.none }]; }   // 허락 연결도 쓰기 전에(F-69 — 커밋 · 푸시가 모두 막힌 채 문서만 남지 않게)
   // C-52(2026-10-29, 지식 퀘스트 PRD 9절 10번): 푸시할 곳(origin)이 공개(또는 모름)면 저장소마다 처음 한 번 묻는다 — 쓰기 전에. 화면이 '올릴게요'면 publicOk: true로 다시 보낸다.
   //   이미 '올릴게요'를 받은 저장소는 gh를 부르지 않는다(서버를 붙잡지 않게)
-  { const o = GH.originKey(s.dir);
+  { const o = await GH.originKey(s.dir);
     if (o && !PublicOk.has(o.key)) {
-      const vis = GH.visibility(o);
+      const vis = await GH.visibility(o);
       if (vis !== "private") {
         if (body.publicOk !== true) return [409, { ok: false, why: "public", reason: PublicOk.say(vis) }];
         try { PublicOk.remember(o.key); } catch { return [500, { ok: false, reason: "올려도 된다는 답을 이 컴퓨터에 남기지 못했어요 — 다시 해 주세요" }]; }
       }
-    } }
+    }
+    // gh를 기다리는 사이 다른 요청이 끼어들 수 있다 — 일이 시작됐거나 폴더가 바뀌었으면 쓰지 않는다(A 폴더에 쓰고 B 폴더에 맡기거나, 쓴 뒤 409가 되지 않게 — F-104-7 새 맥락 리뷰)
+    if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];
+    const s2 = projectNow(); if (!s2 || s2.dir !== s.dir) return [409, { ok: false, reason: "그사이 작업 폴더가 바뀌었어요 — 다시 올려 주세요" }]; }
   // C-49(2026-10-29): 화면이 아는 단계 문서 지문({ 경로: 지문 } — Floe가 마지막에 쓴 것). 주면 지금 폴더의 글이 그 지문과 다른(사람이 고친 · Floe가 쓰지 않은) 단계 문서는
   //   덮지 않고 kept로 알린다 — 기록의 원본은 폴더다. 주지 않으면(옛 기록 · 새로 시작) 전처럼 쓴다
   //   keep(경로 목록)은 화면이 사람 것으로 아는 단계 문서(되읽어 다시 쓰면 다른 글 · 읽을 수 없는 글) — 있으면 덮지 않는다. 화면이 모르는(지문도 keep도 없는) 문서는 Floe 것으로 보고 쓴다
@@ -807,10 +830,10 @@ function docsRead() {
   const source = Docs.parseSource(readDoc(Docs.SOURCE_DOC) || "") || "";   // 받은 글 전부(F-68)
   // 되읽은 것으로 다시 쓰면 같은 글인가(lossless) — 같을 때만 화면이 'Floe가 덮어도 되는 문서'로 기억한다(사람이 더한 글을 다음 올리기에서 잃지 않게)
   const again = Docs.files({ topic, idea, source, results: Object.fromEntries(Object.entries(got).map(([n, x]) => [n, x.r.result])), redact: (x) => x });
-  const norm = (t) => String(t).replace(/\r\n?/g, "\n");
+  const norm = (t) => String(t).replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");   // BOM은 같은 글로(F-104-13 — 붙었다고 늘 사람 것으로 굳지 않게)
   for (const [n, x] of Object.entries(got)) {
     const f = again.find((y) => y.path === Docs.stagePath(Number(n)));
-    stages[n] = { path: Docs.stagePath(Number(n)), print: printOf(x.text), result: redactDeep(x.r.result), lossless: !!f && norm(f.text) === norm(x.text) };
+    stages[n] = { path: Docs.stagePath(Number(n)), print: printOf(x.text), result: fitResult(redactDeep(x.r.result)), lossless: !!f && norm(f.text) === norm(x.text) && !fitResult(x.r.result).fitted };   // 줄였으면 덮어도 되는 문서가 아니다 — 잘린 글로 덮어 사람이 쓴 글을 잃지 않게(새 맥락 리뷰 막힘). 가린 뒤 줄인다(가림 표시가 길어 다시 넘지 않게)
   }
   return { ok: true, project: s.project, key: folderKey(s.dir), topic: Sensitive.redact(topic), idea: Sensitive.redact(idea), source: Sensitive.redact(source), stages };
 }
@@ -877,13 +900,13 @@ function carryPost(body) {
 
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──
 // 폴더는 README와 같이 projectNow에서만 고른다. 저장소 만들기는 Floe가 하지 않고 일 넘기기(3-16)로 사용자의 Claude Code에 맡긴다 — 글은 github.js createRequest가 정한다(화면이 글을 보내지 않는다)
-function githubNow() { const s = projectNow(); return GH.status(s ? s.dir : "", s ? s.project : ""); }
-function githubCreate(body) {
+async function githubNow() { const s = projectNow(); return GH.status(s ? s.dir : "", s ? s.project : ""); }   // async(F-104-7)
+async function githubCreate(body) {
   const vis = body && body.visibility != null ? body.visibility : "private";
   if (!GH.VIS.includes(vis)) return [400, { ok: false, reason: "공개 범위는 private · public 중 하나" }];
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
-  const now = GH.status(s.dir, s.project);
+  const now = await GH.status(s.dir, s.project);
   if (now.remote) return [409, { ok: false, reason: "이 폴더는 이미 원격 저장소와 이어져 있어요" }];
   return startTask(GH.createRequest(s.project, vis), "저장소 만들기");
 }
@@ -938,7 +961,12 @@ async function checkAi(res) {
   return refuse(res, r.error || "답의 모양이 맞지 않음", 502);
 }
 
+// 처리 중 예외(잠긴 파일 EBUSY · 지워진 파일 등)가 나도 답 없이 멈추지 않게 — 화면의 fetch가 끝없이 기다렸다(F-104-5). 답을 이미 보내기 시작했으면 연결만 끊는다
 async function handle(req, res) {
+  try { return await handleRoute(req, res); }
+  catch (e) { try { console.error(`Floe 서버: ${req.method || ""} ${String(req.url || "").split("?")[0]} 처리 중 오류 — ${(e && (e.code || e.message)) || e}`); } catch {} try { if (!res.headersSent) send(res, 500, { ok: false, reason: "서버가 이 요청을 처리하지 못했어요 — 잠시 뒤 다시 해 주세요" }); else res.destroy(); } catch {} }
+}
+async function handleRoute(req, res) {
   if (req.url.startsWith("/mcp/")) return mcpRoute(req, res);   // C-38 시험판 — allowed()보다 먼저: 밖(터널)에서도 받을 수 있는 주소는 이것뿐(NAV_MCP=1일 때). 출처는 mcpRoute가 본다
   if (!allowed(req.headers)) return refuse(res, "이 컴퓨터의 화면에서만 부를 수 있음", 403);
   if (req.method === "GET" && FILES[req.url]) {
@@ -949,7 +977,7 @@ async function handle(req, res) {
     // 스크립트 · 스타일은 늘 서버에 다시 묻는다 — 앱(Electron) · 브라우저가 고친 뒤에도 옛 파일을 꺼내 쓰지 않게(2026-10-19)
     else head["Cache-Control"] = "no-cache";
     res.writeHead(200, head);
-    return fs.createReadStream(path.join(__dirname, file)).pipe(res);
+    return fs.createReadStream(path.join(__dirname, file)).on("error", () => res.destroy()).pipe(res);   // 읽다 실패하면(잠김 · 지워짐) 끊는다 — 머리는 이미 보냈다(F-104-5)
   }
   const route = req.url.split("?")[0];
   if (TOKEN_ROUTES.includes(route) && !hasToken(req.headers)) return refuse(res, "확인 값이 없거나 맞지 않음 — 화면은 서버 주소로 다시 열고, 훅은 서버를 켠 뒤 다시 보내요", 403);   // S3: 본문을 읽기 전에
@@ -978,7 +1006,7 @@ async function handle(req, res) {
   if (req.method === "POST" && route === "/api/preset") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = presetStart(body); return send(res, code, out); }   // C-44 틀로 맡기기(API.md 3-28)
   if (req.method === "POST" && route === "/api/chatlog") { const body = await readJson(req, ChatLog.ADD_MAX * (ChatLog.TEXT_MAX + 120) + 2000); if (body === TOO_BIG) return refuse(res, `너무 커요 — 한 번에 ${ChatLog.ADD_MAX}개 · 한 개 ${ChatLog.TEXT_MAX.toLocaleString()}자까지`, 413); const [code, out] = chatlogPost(body); return send(res, code, out); }   // 작업실 개편 C-63 대화 쌓기 · 지우기(API.md 3-32) — 약속한 최대(20개 × 2,000자)가 들게
   if (req.method === "POST" && route === "/api/file") { const body = await readJson(req, Files.FILE_MAX * 2 + 1000); if (body === TOO_BIG) return refuse(res, `너무 커요 — ${Math.round(Files.FILE_MAX / 1024)}KB까지만 써요`, 413); const [code, out] = writeFileNow(body); return send(res, code, out); }   // C-43 파일 저장
-  if (req.method === "GET" && route === "/api/github") return send(res, 200, githubNow());   // 설정의 GitHub 칸(API.md 3-19) — 읽기만
+  if (req.method === "GET" && route === "/api/github") return send(res, 200, await githubNow());   // 설정의 GitHub 칸(API.md 3-19) — 읽기만
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage(), ledger: ledger.snapshot() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다. ledger: 토큰 장부(숫자 · 이름만, 2026-10-24)
   if (req.method === "POST" && route === "/api/usage/reset") { ledger.reset(); return send(res, 200, { ok: true, ledger: ledger.snapshot() }); }   // 토큰 장부 새로 재기 — 본문 없음, 확인 값
   if (req.method === "GET" && route === "/api/setup") return send(res, 200, { ok: true, ...setupNow() });   // 처음 설정 — 있다 · 없다만(API.md 3-10)
@@ -992,7 +1020,7 @@ async function handle(req, res) {
     return ev ? send(res, 200, { ok: true, seq: ev.seq }) : refuse(res, "알 수 없는 알림");
   }
   if (route === "/api/approval") { const why = holdApproval(body, req, res); return why ? refuse(res, why, why.includes("너무 많") ? 429 : 400) : undefined; }   // FR-17 훅 — 답은 결정이 오거나 시간이 지나면(3-13)
-  if (route === "/api/github/create") { const [code, out] = githubCreate(body); return send(res, code, out); }   // 저장소 만들기를 Claude Code에 맡기기(3-19)
+  if (route === "/api/github/create") { const [code, out] = await githubCreate(body); return send(res, code, out); }   // 저장소 만들기를 Claude Code에 맡기기(3-19)
   if (route === "/api/approvals/decide") { const [code, out] = decideApproval(body); return send(res, code, out); }
   if (route === "/api/task/retry") { const [code, out] = retryTask(body); return send(res, code, out); }
   if (route === "/api/task/stop") { const [code, out] = stopTask(body); return send(res, code, out); }   // C-50 사람이 고르면 멈추기(API.md 3-16)   // F-69 막힌 일을 다시 · 명령 없이 · 직접 하기 글(API.md 3-16)   // FR-17 섬의 결정(3-15)
@@ -1008,7 +1036,7 @@ async function handle(req, res) {
   if (route === "/api/proposals/decide") { const k = proposals.findIndex((x) => body && x.id === body.id); if (k < 0) return refuse(res, "기다리는 제안이 아님", 404); proposals.splice(k, 1); return send(res, 200, { ok: true }); }   // 맞아요 · 아니요 — 적는 일은 화면이
   if (route === "/api/plan") return planAsk(res, body || {});   // C-34 준비 계획판(API.md 3-20) — AI 한 번
   if (route === "/api/carry/draft") return carryDraft(res, body || {});   // 지식 퀘스트 C-48(API.md 3-33) — AI 한 번(기준을 못 채운 초안이 있으면 한 번만 다시)
-  if (route === "/api/docs") { const [code, out] = shipDocs(body); return send(res, code, out); }   // C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(API.md 3-23)
+  if (route === "/api/docs") { const [code, out] = await shipDocs(body); return send(res, code, out); }   // C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(API.md 3-23)
   if (route === "/api/prepare") {   // C-56 R-2 + C-54(API.md 3-29, 2026-10-28) — 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 AI 한 번으로(빠른 모델). 받은 글 · 기준 카드 · 1 · 2단계 결과
     if (!body || !Nav.filled(body.idea)) return refuse(res, "받은 글이 비어 있음");
     if (body.idea.length > Nav.IDEA_MAX) return refuse(res, `받은 글이 너무 김 — ${Nav.IDEA_MAX}자까지`);
@@ -1094,6 +1122,7 @@ if (require.main === module) {
   theToken();   // 켜자마자 만든다 — 화면을 열기 전에 온 훅 알림도 받게. 값은 출력하지 않는다
   if (mcpOn()) { mcpToken(); console.log(`원격 MCP(C-38 시험판): 켜짐 — 주소는 https://<터널 주소>/mcp/<${MCP_TOKEN_FILE}의 값>. 값은 보여 주지 않아요. 터널 예: cloudflared tunnel --url http://127.0.0.1:${PORT}`); }
   http.createServer(handle).listen(PORT, "127.0.0.1", () => {
+    announcePort(PORT);
     const u = usage();
     console.log(`Floe 시연 화면: http://127.0.0.1:${PORT}`);
     console.log(`알림 확인 값: ${TOKEN_FILE} (나만 읽기 — 값은 보여 주지 않아요. 기록 비우기: 서버를 다시 켜거나 README "시연 전 한 줄 점검")`);
@@ -1102,4 +1131,4 @@ if (require.main === module) {
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
   });
 }
-module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, mcpToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다
+module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, announcePort, fitResult, mcpToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다

@@ -73,7 +73,7 @@ async function startServer() {
   return new Promise((resolve) => {
     const s = http.createServer(Server.handle);
     s.on("error", (e) => resolve(`error:${e.code || e.message}`));
-    s.listen(PORT, "127.0.0.1", () => { try { Server.eventToken(); } catch {} resolve("ok"); });
+    s.listen(PORT, "127.0.0.1", () => { try { Server.eventToken(); Server.announcePort(PORT); } catch {} resolve("ok"); });   // announcePort — 옆 포트로 켜져도 훅이 찾게(F-104-3)
   });
 }
 // ④ 창 — 테두리 없음 · 투명 · 항상 위 · 모든 작업 공간. 위쪽 가운데에서 시작한다.

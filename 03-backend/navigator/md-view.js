@@ -3,6 +3,8 @@
 //   시험: 04-tests/navigator/md-view.test.js. 섬(index.html)이 읽어 작업실 창에 보낸다
 (function (root) {
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  // 제목 글의 끝 — 공백과 닫는 #(## 제목 ##)을 뗀다. 한 번 훑기라 공백이 길어도 느려지지 않는다(F-104-6). 한 글자는 남긴다(전의 .+?처럼)
+  const headText = (s) => { const t = String(s).trimEnd(); let e = t.length; while (e > 1 && t[e - 1] === "#") e--; return e < t.length ? t.slice(0, e).trimEnd() : t; };
   const SAFE_URL = /^https?:\/\/[^\s"'<>]+$/i;
   function inline(s) {
     let out = "", i = 0;
@@ -30,8 +32,8 @@
       const line = lines[i];
       const fence = /^\s*(```|~~~)\s*([A-Za-z0-9_-]*)/.exec(line);
       if (fence) { flush(); const code = []; i++; while (i < lines.length && !/^\s*(```|~~~)/.test(lines[i])) code.push(lines[i++]); i++; out.push(`<pre class="mdv-code"${fence[2] ? ` data-lang="${esc(fence[2])}"` : ""}><code>${esc(code.join("\n"))}</code></pre>`); continue; }
-      const h = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
-      if (h) { flush(); out.push(`<h${h[1].length}>${inline(h[2])}</h${h[1].length}>`); i++; continue; }
+      const h = /^(#{1,6})\s+(.+)$/.exec(line);   // 끝의 # · 공백은 headText가 — 정규식으로 떼면(.+?\s*#*\s*$) 공백이 길 때 세제곱으로 느려졌다(F-104-6)
+      if (h) { flush(); out.push(`<h${h[1].length}>${inline(headText(h[2]))}</h${h[1].length}>`); i++; continue; }
       if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { flush(); out.push("<hr>"); i++; continue; }
       if (/^\s*\|/.test(line) && i + 1 < lines.length && isSep(lines[i + 1])) {
         flush(); const head = row(line); i += 2; const body = [];
