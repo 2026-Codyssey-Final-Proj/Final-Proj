@@ -502,10 +502,21 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#start"), { waitUntil: "load" }); await wait(400);
     assert.ok(!(await page.$(".cmd4")) && !(await page.$("[data-act=cmd-hand]")), "오버레이에 명령 네 칸이 없다");
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]")?.textContent.trim()), "퀘스트", "위 줄의 '퀘스트' 단추(이재엽 그림 2026-10-24)");
+    // F-85(#259)부터 작업실을 닫으면 알약이고 알약은 작업실을 다시 연다 — 떠 있는 섬의 칩은 작업실을 열기 전에 본다(F-102 고침 2026-10-30)
+    // 계획 — 채팅의 늘 있는 칩으로 한 번에 넣기를 열고, '한 줄만 적어 맡기기'는 전의 할 일 칸(AI 진행 판)
+    if (!(await page.$(".mc.chat [data-act=plan-open]"))) { await page.click(".mc.chat [data-act=more-toggle]"); await wait(300); }   // C-60(#248): 늘 있는 칩은 '더 보기' 안
+    await page.click(".mc.chat [data-act=plan-open]"); await wait(300);
+    assert.match(await page.evaluate(() => document.querySelector(".msg.now .say")?.textContent || ""), /한 번에/, "채팅의 지금 말이 한 번에 넣기");
+    await page.click(".mc.chat [data-act=plan-direct]"); await wait(400);
+    assert.ok(await page.$("#task-text") && !(await page.$(".cmd4")), "한 줄만 적어 맡기기 — AI 진행 판의 할 일 칸");
+    await page.click("[data-act=base-back]"); await wait(300);
     // 퀘스트 단추 → 작업실 창(탭 다섯 — C-41 ① 2026-10-26: 캔버스 · 노트북(옛 퀘스트) · 도전과제 · 책, C-45 2026-10-27: 문서 지도). 한 번 더 누르면 닫힌다
     await page.click(".tb [data-act=qwin-toggle]"); await wait(300);
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "노트북", "도전과제", "책"]);   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
-    assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]").getAttribute("aria-pressed")), "true");
+    // C-62(#248) · F-85(#259): 작업실이 열리면 섬은 그 안의 옆 칸 — 떠 있는 섬의 위 줄(.tb)과 그 '퀘스트' 단추는 없고, 닫기는 작업실 머리 줄(F-102 고침 2026-10-30)
+    assert.ok(await page.$(".qwin") && !(await page.$(".tb [data-act=qwin-toggle]")), "작업실 안의 섬에는 위 줄이 없다");
+    // C-61(#249): 칸이 비면 섬이 작업 칸 전체를 덮는다 — 사람처럼 머리 줄 '옆으로'(isl-big)로 옆 칸에 두고 탭을 본다
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await page.waitForSelector(".isl-col:not(.center)", { timeout: 5000 }); await wait(300); }
     // 책: 서버 없이 열었으니 연습 예시 README
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(400);
     const book = await page.evaluate(() => ({ toc: [...document.querySelectorAll(".rb-toc button")].map((b) => b.textContent), vers: document.querySelectorAll(".rb-vers li").length, from: document.querySelector(".rb-head small")?.textContent || "" }));
@@ -523,14 +534,9 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     await page.click('[data-act=tree-chap][data-i="1"]'); await wait(200);
     assert.ok((await page.evaluate(() => [...document.querySelectorAll(".learnbox [data-act=tu-sel]")].map((b) => b.dataset.v))).includes("book"), "2단계에는 책");
     assert.match(await page.evaluate(() => document.querySelector(".learnbox h4")?.textContent || ""), /2단계/, "어느 장의 관문 전인지");
-    await page.click(".tb [data-act=qwin-toggle]"); await wait(200);
-    assert.ok(!(await page.$(".qwin")), "한 번 더 누르면 닫힌다");
-    // 계획 — 채팅의 늘 있는 칩으로 한 번에 넣기를 열고, '한 줄만 적어 맡기기'는 전의 할 일 칸(AI 진행 판)
-    await page.click(".mc.chat [data-act=plan-open]"); await wait(300);
-    assert.match(await page.evaluate(() => document.querySelector(".msg.now .say")?.textContent || ""), /한 번에/, "채팅의 지금 말이 한 번에 넣기");
-    await page.click(".mc.chat [data-act=plan-direct]"); await wait(400);
-    assert.ok(await page.$("#task-text") && !(await page.$(".cmd4")), "한 줄만 적어 맡기기 — AI 진행 판의 할 일 칸");
-    await page.click("[data-act=base-back]"); await wait(300);
+    await page.click(".wh [data-act=qwin]"); await wait(300);
+    assert.ok(!(await page.$(".qwin")), "작업실 머리 줄의 닫기로 닫힌다");
+    if (await page.$(".pill")) { await page.click(".pill"); await wait(400); }   // F-85: 작업실을 닫으면 알약, 알약을 누르면 작업실이 다시 열린다 — 설정 단추는 머리 줄
     // 레벨 — 저장된 3이 설정 창에, 서재로 가는 단추는 없다. 기록을 지우고(새 프로젝트) 다시 열어도 그대로
     await page.click("[data-act=settings]"); await wait(300);
     assert.ok((await page.evaluate(() => document.querySelector(".setp .who")?.textContent || "")).includes("LV 3"), "설정 판에 레벨 3");
@@ -564,6 +570,8 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     assert.ok(!(await page.$(".pet .deco")) && (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("navigator-prototype:v1")).wear).length)) === 0, "벗으면 기록도");
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tier=Lite&q=quest"), { waitUntil: "load" }); await wait(400);
     assert.ok(await page.$(".toc .side-h") && (await page.evaluate(() => document.querySelectorAll(".toc button.lock[disabled]").length)) >= 1, "곁 퀘스트 — 목차 아래");
+    // C-61(#249): 칸이 비면 섬이 작업 칸 전체를 덮는다 — 머리 줄 '옆으로'(isl-big)로 옆 칸에 두고 도전과제를 본다(F-102 고침 2026-10-30)
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await page.waitForSelector(".isl-col:not(.center)", { timeout: 5000 }); await wait(300); }
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(300); await page.click('[data-act=tree-chap][data-i="1"]'); await wait(200);
     assert.ok((await page.evaluate(() => document.querySelectorAll(".sidebn").length)) >= 1, "도전과제 옆 가지");
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(300);

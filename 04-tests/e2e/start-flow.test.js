@@ -64,6 +64,8 @@ async function openLive(browser, startReply, { judgeFails = 0 } = {}) {
     if (p === "/api/stagedraft") return json({ ok: false, reason: "시험에서는 2단계 초안 없음" });   // C-40 — 1단계를 하는 동안 뒤에서 미리 부르는 2단계 초안
     if (p === "/api/judge") { const b = JSON.parse(req.postData() || "{}"); seen.judge.push(b); return json(seen.judge.length <= judgeFails ? { ok: false, reason: "AI에 연결하지 못했어요" } : { ok: true, judgement: judged(b.tier), tokens: 500 }); }
     if (p === "/api/quest") return json({ ok: false, reason: "시험에서는 기본 글" });
+    // C-61(#249): 진짜 AI 모드의 보내기는 칸에 바로 적지 않고 /api/chat → 정리 카드 → [칸 n개에 적기]. 빈 칸 첫째에 보낸 말을 적자고 답한다(가로채지 않으면 이 컴퓨터의 AI로 간다 — F-102 고침 2026-10-30)
+    if (p === "/api/chat") { const b = JSON.parse(req.postData() || "{}"), i = (b.lines || []).findIndex((l) => !l || !l.length); const said = (b.talk || []).filter((m) => m.who === "me").pop(); return json({ ok: true, reply: "이렇게 적을게요", slots: i >= 0 ? [{ i, text: (said && said.text) || "" }] : [], n: i >= 0 ? 1 : 0, tokens: 10 }); }
     return req.continue();
   });
   await page.evaluateOnNewDocument(() => {
@@ -166,7 +168,7 @@ test("완료 보고가 실패해도 갇히지 않는다 — 오류를 닫으면 
   try {
     const { page, seen } = await openLive(browser, { ok: false, reason: "AI에 연결하지 못했어요" }, { judgeFails: 1 });
     await paste(page, "독서 모임 알림 앱");
-    for (const t of ["모임 날짜를 자꾸 잊어요", "전날 알림이 와요", "모임 회원 열두 명", "보통"]) await paste(page, t);
+    for (const t of ["모임 날짜를 자꾸 잊어요", "전날 알림이 와요", "모임 회원 열두 명", "보통"]) { await paste(page, t); await click(page, "[data-act=tidy-fill]"); }   // C-61 — 정리 카드로 칸에 적는다
     await click(page, ".mc.chat [data-act=quest-report]");
     await page.waitForSelector(".mc.chat [data-act=dismiss]", { timeout: 5000 });
     await click(page, ".mc.chat [data-act=dismiss]");

@@ -41,10 +41,12 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     await page.evaluateOnNewDocument((seed) => { try { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); if (!sessionStorage.getItem("seeded")) { localStorage.setItem("navigator-prototype:v1", JSON.stringify(seed)); sessionStorage.setItem("seeded", "1"); } } catch {} }, seed);
     await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await wait(400);
     if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
+    // C-61(#249): 3단계 칸이 비어 섬이 작업 칸 전체를 덮는다 — 머리 줄 '옆으로'(isl-big)로 옆 칸에 두고 지도를 본다(F-102 고침 2026-10-30)
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await page.waitForSelector(".isl-col:not(.center)", { timeout: 5000 }); await wait(300); }
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(300);
     const tabs = await page.$$eval(".wsx > .wh .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent));
     assert.ok(!tabs.includes("문서 지도") && tabs.includes("도전과제"), `문서 지도 탭은 도전과제 안으로: ${tabs.join(",")}`);
-    const cards = () => page.$$eval(".sm-grid .sm-card", (cs) => cs.map((c) => ({ n: c.dataset.i, state: ([...c.classList].find((k) => /^st-(done|now|later|ready)$/.test(k)) || "").slice(3), text: c.textContent.replace(/\s+/g, " ").trim() })));
+    const cards = () => page.$$eval(".sm-grid .sm-card", (cs) => cs.map((c) => ({ n: c.dataset.i, state: ([...c.classList].find((k) => /^st-(done|now|later|ready|pending)$/.test(k)) || "").slice(3), text: c.textContent.replace(/\s+/g, " ").trim() })));
     let cs = await cards();
     assert.equal(cs.length, 8, "카드 여덟"); assert.deepEqual(cs.map((c) => c.state), ["done", "done", "now", "later", "later", "later", "later", "later"]);
     assert.match(cs[2].text, /3단계|기능 정리/); assert.match(cs[3].text, /2단계에서 그려져요/);
