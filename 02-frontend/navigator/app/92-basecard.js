@@ -55,7 +55,7 @@
   function onChange(t) {
     const a = t.dataset.act;
     if (t.dataset.bv === "field" && BV) { bv = BV.toggle(bv, t.dataset.v); BV.write(STORE, bv); return render(); }
-    if (a === "mode") { set({ mode: t.value, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다
+    if (a === "mode") toMode(t.value);   // 연습 단추(F-106)와 같은 길 — 85-ai.js
     if (a === "auto") set({ auto: t.checked });
     if (a === "text-size") { set({ textSize: Number(t.value) || 1 }); applyScale(); }
     if ((a === "carry-review" || a === "carry-stage") && st.carry && st.carry.drafts) { const d = st.carry.drafts[Number(t.dataset.i)]; if (d && !d.state) { if (a === "carry-review") d.review = t.value; else d.stage = Number(t.value); render(); } }   // C-48 기준을 다시 잰다

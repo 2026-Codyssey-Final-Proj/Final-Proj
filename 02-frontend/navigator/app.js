@@ -701,6 +701,7 @@
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
         acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };
     }
+    if (st.keyBad && st.mode === "live") return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "API 키가 거절됐어요", sub: "키가 맞지 않거나 쓸 수 있는 권한이 없어요. 키를 고치기 전까지 연습용 예시로 둘러볼 수 있어요 — 키는 설정의 '처음 설정 다시 하기'에서 다시 넣어요.", acts: [{ label: "연습용 예시로 둘러보기", act: "practice-now", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };   // F-106
     if (st.error) return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요", sub: esc(st.error),
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
     if (st.blocked && !st.blocked.retrying) return momentBlocked();   // F-69 맡긴 일이 허락을 못 받아 막혔다 — 사람이 길을 고른다
@@ -3458,9 +3459,9 @@
     hold(); st.busy = true; waitFrom = Date.now(); render();
     waitTimer = setInterval(() => { const el = $nav.querySelector("[data-wait]"); if (el) el.textContent = waitText(); }, 1000);
     try {
-      if (pending) return await pending;
-      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      return await r.json();
+      const j = pending ? await pending : await (await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
+      st.keyBad = !!j && j.kind === "key";   // F-106 — 답마다 다시 정한다: 키가 거절됐으면 섬이 '연습용 예시로 둘러보기'를, 성공하면 끈다(어느 AI 부르기에서든)
+      return j;
     } catch { return { ok: false, reason: "AI에 연결하지 못했어요. server.js를 켜거나, 보기 방식을 '연습용 예시'로 바꿔 주세요" }; }
     finally { st.busy = false; clearInterval(waitTimer); lastWait = Math.round((Date.now() - waitFrom) / 1000); }
   }
@@ -3634,7 +3635,10 @@
   }
   // 글 칸으로 커서를 옮긴다 (다시 그린 뒤)
   const focusText = () => requestAnimationFrame(() => { const t = document.querySelector("[data-act=text]"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } });
-
+  // F-106(FR-14, 2026-10-30 이재엽 버튼 "오류에 연습 단추"): 키 거절 카드의 단추 둘 — 저절로 바꾸지 않고 사람이 고른다. 연습으로는 설정의 보기 방식과 같은 길
+  //   보기 방식을 바꾸는 길은 하나(toMode) — 설정의 '보기 방식'(92-basecard)도 같이 쓴다. 닫기는 공통 '닫기'(dismiss)가 키 카드까지 닫는다
+  function toMode(m) { set({ mode: m, keyBad: false, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다
+  Object.assign(ACT, { "practice-now": () => toMode("fixture") });
 // ━━ app/90-acts.js ━━
   // ── 누르기 — data-act 이름 → 할 일. (i: data-i, el: 누른 것) ──
   const set = (patch) => { Object.assign(st, patch); render(); };
@@ -3902,7 +3906,7 @@
     "close-input": () => set({ openInput: false }),
     // 넘어가기 전 확인 안에서는 글 칸이 안 보인다 — 보낼 작업 글이 없어 멈췄으면(F-11) 확인을 닫고 글 칸을 연다
     "retry-input": () => { const noText = st.screen === "gate" && !U.askText(st.text, st.judged); set({ error: "", openInput: !!st.j, ...(noText ? { screen: "main" } : {}) }); focusText(); },
-    dismiss: () => set({ error: "" }),
+    dismiss: () => set({ error: "", keyBad: false }),   // F-106 키 카드도 같이 — 같은 말의 오류 카드가 다시 뜨지 않게
     "look-now": () => { st.notice = ""; lookAfterWork(lastPing); },
     "peek-text": () => { set({ ping: "", openInput: !!st.j }); focusText(); },
     "ping-later": () => { st.ping = ""; go("petit"); },
@@ -4064,7 +4068,7 @@
   function onChange(t) {
     const a = t.dataset.act;
     if (t.dataset.bv === "field" && BV) { bv = BV.toggle(bv, t.dataset.v); BV.write(STORE, bv); return render(); }
-    if (a === "mode") { set({ mode: t.value, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다
+    if (a === "mode") toMode(t.value);   // 연습 단추(F-106)와 같은 길 — 85-ai.js
     if (a === "auto") set({ auto: t.checked });
     if (a === "text-size") { set({ textSize: Number(t.value) || 1 }); applyScale(); }
     if ((a === "carry-review" || a === "carry-stage") && st.carry && st.carry.drafts) { const d = st.carry.drafts[Number(t.dataset.i)]; if (d && !d.state) { if (a === "carry-review") d.review = t.value; else d.stage = Number(t.value); render(); } }   // C-48 기준을 다시 잰다
