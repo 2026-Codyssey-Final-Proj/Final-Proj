@@ -58,6 +58,10 @@ test("장부: 모르는 종류 · 이름은 버리고, 이상한 저장 값은 0
   L.add("hack", "판정", T.usageOf({ output_tokens: 9 }), null);
   L.add("floe", "<b>x</b>", T.usageOf({ output_tokens: 9 }), null);
   assert.equal(L.snapshot().total.count, 1); assert.equal(L.snapshot().runs[0].label, "AI");
+  L.add("floe", "1단계 초안", T.usageOf({ output_tokens: 9 }), null);   // F-107 — /api/start의 이름. 숫자가 든 이름도 그대로(전에는 'AI')
+  assert.equal(L.snapshot().runs[0].label, "1단계 초안");
+  L.add("floe", "1단계 <b>", T.usageOf({ output_tokens: 9 }), null);
+  assert.equal(L.snapshot().runs[0].label, "AI");
   t = 99; L.reset();
   assert.deepEqual(L.snapshot(), { since: 99, total: { count: 0, tokens: 0, cost: 0 }, kinds: { floe: { count: 0, tokens: 0, cost: 0 }, task: { count: 0, tokens: 0, cost: 0 } }, runs: [] });
   assert.equal(store.peek().since, 99);
@@ -96,4 +100,16 @@ test("토큰 칸 보기(token-view ledgerView): 합계 · 종류 두 줄 · 최�
   assert.match(v.recent[1], /판정 · 1,800토큰$/);
   assert.match(v.note, /터미널에서 직접 연 Claude Code/);
   assert.equal(TV.ledgerView(null), null);
+});
+
+test("장부 이름: 서버가 AI를 부를 때 넘기는 이름은 모두 그대로 남는다 — 이름을 바꿔도 'AI'로 뭉개지지 않게(F-107)", () => {
+  const src = fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8");
+  const names = new Set();
+  for (const m of src.matchAll(/\bask\(res,[^\n]*?, "([^"]+)"(?:, \{[^}\n]*\})?\);/g)) names.add(m[1]);
+  for (const m of src.matchAll(/\{ label: "([^"]+)" \}/g)) names.add(m[1]);
+  for (const m of src.matchAll(/LEDGER_LABEL = \{([^}]*)\}/g)) for (const v of m[1].matchAll(/: "([^"]+)"/g)) names.add(v[1]);
+  for (const m of src.matchAll(/startTask\([^,\n]+, "([^"]+)"/g)) names.add(m[1]);
+  assert.ok(names.has("1단계 초안") && names.has("판정") && names.size >= 8, `서버에서 이름을 찾는다 — ${[...names].join(", ")}`);
+  const L = T.createLedger(mem(null), () => 1);
+  for (const n of names) { L.add("floe", n, T.usageOf({ output_tokens: 1 }), null); assert.equal(L.snapshot().runs[0].label, n, `'${n}'이 'AI'가 됐다 — tokens.js LABEL`); }
 });
