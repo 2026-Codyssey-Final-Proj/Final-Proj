@@ -119,6 +119,18 @@
   const sourceDoc = (text, name) => { const lines = text.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n"), w = String(lines.length).length;
     return `# 처음 말한 것 — 받은 글 그대로${name ? ` (${name})` : ""}\n\nFloe가 받은 글을 자르지 않고 그대로 두었어요. 단계 문서의 '처음 말한 것'은 이 파일의 줄을 가리켜요. 비밀값 모양은 가렸어요.\n\n${lines.map((l, i) => `${String(i + 1).padStart(w)} | ${l}`).join("\n")}\n`; };
   const CARD_DOC = "docs/base.md";   // 기준 카드 한 장(C-56 R-1) — Floe가 만든 카드라 덮어쓴다. 이름은 영문(파일 이름 규칙 — 받은 글이 경로가 되지 않게 A-Za-z0-9._/-만), 제목은 '이 프로젝트의 기준'
+  // ── C-23 ⑤ 버전(2026-10-30 — 이재엽 "보드에서 없음 부분 전부 제작"): 관문을 하나 넘을 때마다 V.n이 하나 오른다 ──
+  //   새 상태 없이 단계 결과에서 센다 — 관문을 지난(passed) 단계를 단계 순서로 V.1, V.2 …. 줄마다 무엇이 바뀌었나 한 줄(배운 것, 없으면 첫 칸의 첫 줄 — 가린 뒤 80자)
+  function versionsOf(results = {}, hide = (t) => t) {
+    const R = (n) => (results && (results[n] || results[String(n)])) || null, out = [];
+    SLUGS.forEach((_, n) => {
+      const r = R(n); if (!r || !r.passed) return;
+      const first = (Array.isArray(r.items) ? r.items : []).map((x) => (Array.isArray(x && x.lines) ? x.lines : []).find((l) => String(l).trim())).find(Boolean) || "";
+      const what = String(hide(String(r.learned || "").trim() || String(first).trim())).replace(/\s+/g, " ").trim().slice(0, 80);
+      out.push({ v: out.length + 1, n, passed: String(r.passed).slice(0, 10), line: `${label(n)} ${N.STAGES[n].title} 관문${what ? ` — ${what}` : ""}` });
+    });
+    return out;
+  }
   function files({ topic = "", idea = "", source = "", results = {}, card = null, redact: hide = (t) => t } = {}) {
     // 받은 글 안의 표시(<!-- floe:… -->)는 지운다 — 남겨 두면 mergeSection이 그 자리를 절의 끝으로 보고 올릴 때마다 꼬리가 쌓였다(2026-10-25 리뷰)
     const redact = (t) => String(hide(t)).replace(/<!--\s*floe:(?:start|end)\s*-->/gi, "");
@@ -134,7 +146,8 @@
     const links = SLUGS.map((_, n) => n).filter((n) => R(n)).map((n) => `- ${label(n)} ${N.STAGES[n].title}: [${docOf(n)}](${docOf(n)})`).join("\n");
     // C-47 한 장(2026-10-30) — 맞아요 한 단계마다 README의 그 단계 절(C-25의 남은 일). 내 글은 표시 밖이라 그대로
     const sheets = SLUGS.map((_, n) => [n, sheetOf(R(n), redact)]).filter(([, s]) => s).map(([n, s]) => `\n### ${label(n)} · ${N.STAGES[n].title} — 한 장\n${SHT.toLines(s).join("\n")}\n`).join("");
-    const readme = `${MARK_START}\n## 계획 (Floe)\n\n${name ? `**${name}** — ` : ""}Floe의 여덟 단계로 만들어요.\n\n- 기획서: [docs/PRD.md](docs/PRD.md)\n- 결정 기록: [docs/decisions.md](docs/decisions.md)\n${links}\n- 단계 폴더 목차: [docs/README.md](docs/README.md)\n${sheets}${MARK_END}\n`;
+    const vers = versionsOf(results, redact), verBlock = vers.length ? `## 버전 기록\n\n**지금 버전: V.${vers.length}** — 관문을 하나 넘을 때마다 하나 올라요(C-23).\n\n${vers.map((x) => `- V.${x.v} · ${x.passed} · ${x.line}`).join("\n")}\n\n` : "";   // '## 버전 기록' — 책(readme-book.js)이 이 제목 아래 'V.n · 날짜 · 제목' 줄을 버전으로 읽는다
+    const readme = `${MARK_START}\n${verBlock}## 계획 (Floe)\n\n${name ? `**${name}** — ` : ""}Floe의 여덟 단계로 만들어요.\n\n- 기획서: [docs/PRD.md](docs/PRD.md)\n- 결정 기록: [docs/decisions.md](docs/decisions.md)\n${links}\n- 단계 폴더 목차: [docs/README.md](docs/README.md)\n${sheets}${MARK_END}\n`;
     const claude = `${MARK_START}\n## Floe 단계 안내\n\n이 저장소는 Floe의 여덟 단계(1 ${N.STAGES[0].title} → … → 8 ${N.STAGES[7].title})로 만든다.\n\n`
       + `- 일을 시작하기 전에 [docs/PRD.md](docs/PRD.md)(기획서)와 [${plan}](${plan})를 먼저 읽는다. 거기에 없는 기능은 더하지 않고 먼저 묻는다.\n`
       + "- 사람이 정한 것은 [docs/decisions.md](docs/decisions.md)에 있다 — 바꿔야 하면 바꾸기 전에 묻는다.\n"
@@ -249,7 +262,7 @@
 
   // 끝에 Claude Code가 이 둘마다 해냈는지 보고한다(server.js startTask의 checks — C-32 보고). 화면은 둘째(푸시)를 보고 '올라갔다'고 말한다
   const SHIP_CHECKS = ["위 파일들만 커밋했다", "지금 브랜치를 원격(origin)에 푸시했다"];
-  const api = { SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, CARD_DOC, SHIP_CHECKS, files, mergeSection, shipRequest, stagePath, parseStage, parseSource };
+  const api = { versionsOf, SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, CARD_DOC, SHIP_CHECKS, files, mergeSection, shipRequest, stagePath, parseStage, parseSource };
   if (node) module.exports = api;
   else root.FloeDocs = api;
 })(typeof window !== "undefined" ? window : globalThis);
