@@ -22,8 +22,7 @@ test("C-62 테마 — 섬의 어두운 토큰은 :root가 아니라 섬 카드(.
 
 test("C-62 — 글꼴 · 주 단추 · 색의 메아리(두승현 결정 · 이재엽 승인 2026-10-29): 노트북 '완료 보고' · 퀘스트 받기도 같은 하늘색 알약, 고른 탭 · 단계 칩 · 파일 칸 '지금' · 지도의 장 탭은 섬 색", () => {
   assert.match(c, /\.pacts button\.pri\{background:var\(--acc-btn\);border-color:var\(--acc-btn\);color:var\(--acc-ink\)\}/, "완료 보고 = 하늘색 알약");
-  assert.match(c, /\.ev \.join\{[^}]*background:var\(--acc-btn\)[^}]*color:var\(--acc-ink\)/, "퀘스트 받기 = 하늘색");
-  for (const s of [".wtabs button[aria-selected=true]", ".wnav .fn li.st-now", ".vtabs button[aria-selected=true]"]) assert.match(c, new RegExp(`${s.replace(/[.[\]*+?]/g, "\\$&")}\\{[^}]*background:var\\(--isl\\)`), `${s} — 메아리`);
+  for (const s of [".wtabs button[aria-selected=true]", ".wnav .fn li.st-now"]) assert.match(c, new RegExp(`${s.replace(/[.[\]*+?]/g, "\\$&")}\\{[^}]*background:var\\(--isl\\)`), `${s} — 메아리`);
   assert.match(c, /\.wtabs button\[aria-selected=true\]\{[^}]*color:#EEF1FA/, "메아리 위 글자는 눈색(대비 9.20)");
 });
 

@@ -98,7 +98,7 @@ test("app.js — C-35: 명령 네 칸은 오버레이에서 뺐다. 퀘스트 �
   assert.ok(!/\.cmd4\b/.test(read("navigator/app.css")), "명령 네 칸 CSS도 없다");
   assert.match(app, /<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="\$\{st\.qwin\}"[^>]*>퀘스트<\/button>/, "위 줄의 '퀘스트' 단추 — 이재엽 그림(2026-10-24)");
   assert.match(app, /"qwin-toggle": \(\) => \{ if \(st\.qwin\) return closeQwin\(\); openQwin\("canvas"\); render\(\); \}/, "켜고 끈다 — 작업실은 캔버스 탭부터(C-41, 2026-10-26)");
-  assert.match(app, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "노트북"\], \["tree", "도전과제"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "작업실 창의 탭(C-41 2026-10-26 — 캔버스가 먼저, 옛 퀘스트 탭은 노트북, 2026-10-27 C-45 문서 지도) — 배우기는 도전과제 안으로");
+  assert.match(app, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "퀘스트"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "작업실 창의 탭 셋 — 캔버스 · 퀘스트(노트북 + 도전과제, C-65 2026-10-30) · 책");
   assert.match(app, /if \(planNow\(\)\) return momentPlan\(\);/, "맡길 일 퀘스트를 고르면 채팅의 지금 말이 계획 · 맡기기 · 보고");
   assert.match(app, /const body = st\.settings && QU && !st\.qwin \? settingsPane\(\) : st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판은 알림 · AI 진행 둘 — 계획판은 채팅으로 옮겼다");
   const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
@@ -236,8 +236,21 @@ test("app.js — 작업을 따라: onEvent → scheduleRefit(몇 초 모음) →
 //   누가 정했나 · 재료가 온 곳 · 이 줄을 쓰는 다음 단계 · 파일 보기 / 틀로 맡기기(빈 칸은 플로로 초안 + '채팅에서 같이 적기'). 흐름 보기에만 짝 선(세로 길 셋)과 '두 칸 나란히'
 test("app.js — 얼음 조각 가까이: 고른 끝난 · 지금 카드는 big + 줄(.sm-row, map-line) → wside .ws-line(누가 · 재료 · 다음 단계 · 열기 · 채팅); 흐름 보기에 .jm-rails + pair-sel → .jm-side", () => {
   const a = read("navigator/app.js"), c = read("navigator/app.css");
-  assert.match(a, /class="sm-card st-\$\{c\.state\} sel big"/, "고른 카드가 커진다(모양은 C-59 st-*)"); assert.match(a, /data-act="map-line"/, "줄 하나 = 할 일"); assert.match(a, /"map-line": /); assert.match(a, /"map-chat": /, "채팅에서 같이 적기");
+  assert.match(a, /class="qcard readonly"/, "끝낸 장 카드를 누르면 읽기만 카드가 올라온다(C-69, 2026-10-30 — 전에는 그 자리에서 커졌다)"); assert.match(a, /act: done \? "map-line" : ""/, "줄 하나 = 할 일"); assert.match(a, /"map-line": /); assert.match(a, /"map-chat": /, "채팅에서 같이 적기");
   assert.match(a, /class="ws-line"/, "오른쪽 칸"); assert.match(a, /SM\.usedBy\(/, "이 줄을 쓰는 다음 단계"); assert.match(a, /class="jm-rails"/, "짝 선"); assert.match(a, /"pair-sel": /); assert.match(a, /class="jm-side \$\{pairSel\[0\]\}"/, "두 칸 나란히");
-  assert.ok(!/cardsMap[\s\S]*?jm-rails/.test(a.slice(a.indexOf("function cardsMap"), a.indexOf("function treePane"))), "짝 선은 지도(카드)에는 없다 — 흐름 따라가기에서만");
-  assert.match(c, /\.sm-cell\.big\{grid-column:1\/-1/, "큰 카드는 한 줄 전체"); assert.match(c, /@keyframes sm-zoom/, "확대 움직임"); assert.match(c, /\.jm-rails i\.a\{/, "길 셋의 색");
+  assert.ok(!/cardsMap[\s\S]*?jm-rails/.test(a.slice(a.indexOf("function cardsMap"), a.indexOf("function questBoard"))), "짝 선은 지도(카드)에는 없다 — 흐름 따라가기에서만");
+  assert.ok(!c.includes(".sm-cell.big{") && !c.includes("@keyframes sm-zoom"), "그 자리에서 커지는 카드 규칙은 뺐다(C-69 — 끝낸 장은 읽기만 카드가 올라온다, 2026-10-30)"); assert.match(c, /\.jm-rails i\.a\{/, "길 셋의 색");
+});
+
+// claude-drafted: 2026-10-30 — 퀘스트 탭 합치기 TASK T08(C-65 · C-66): 탭 셋, 세로 줄 · 장 화면 없음, 옛 길(tree · tab=learn)은 합친 탭으로
+test("app.js — C-65 · C-66: 탭 셋(캔버스 · 퀘스트 · 책), 세로 줄(.vtabs) · 장 화면(.learnbox · .tu-chips · .chain · .bn) · treeChap · tuCard 없음, tree-chap · tree-map · tu-sel 누르기 없음, openQwin(\"tree\") 0곳, 옛 값 tree · tab=learn · tab=map은 quest로", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "퀘스트"\], \["lib"/, "탭 셋");
+  for (const gone of ['class="vtabs', 'class="learnbox', 'class="tu-chips', 'class="chain', 'class="bn ', "treeChap", "tuCard", "function treePane", 'openQwin("tree")', '"tree-chap": ', '"tree-map": ', '"tu-sel": ', 'class="ev"', "rewardSlots"]) assert.ok(!a.includes(gone), `${gone} — 뺐다(C-66 · C-70)`);
+  assert.match(a, /st\.qtab = \(tab === "tree" \? "quest" : tab\) \|\| st\.qtab;/, "openQwin: 옛 도전과제는 합친 탭으로");
+  assert.match(a, /if \(st\.qtab === "tree"\) st\.qtab = "quest";/, "저장된 옛 탭 값도");
+  assert.match(a, /st\.qtab = q\.tab === "map" \? "quest" : "lib";/, "#tab=map도");
+  assert.match(a, /function questBoard\(\)/); assert.match(a, /data-act="quest-down"/); assert.match(a, /data-act="quest-up"/); assert.match(a, /keep\(\["questUp", "qview"\]\)/, "카드 올림 · 내림은 이 컴퓨터에 기억(두승현 2026-10-30)");
+  assert.match(a, /class="qcard qpre"/, "받기 전 카드(C-70)"); assert.match(a, /TU \? TU\.forChap\(n\)/, "'처음 쓰는 기능' 한 줄(PRD 9절 3번 기본값)");
+  assert.match(a, /termTag\(o\.term\)/, "용어 풀이(FR-13)는 줄의 '용어:' 칩으로 남는다");
 });
