@@ -89,6 +89,14 @@ Michael Nygard가 2011년에 제안한 개념으로, **하나의 아키텍처적
 > | `implementations/navigator-demo/index.html` | 삭제 (2026-10-17, 지금 화면은 `02-frontend/navigator/`) |
 > | `implementations/share-prototype/` | 화면 `02-frontend/share/` · 규칙 `03-backend/share/` · 시험 `04-tests/share/` |
 
+> **닫음(2026-10-30, [결정 모음](../../00-overview/기록/결정-모음-2026-10-28.md) X-08 · X-12) — Accepted 본문은 고치지 않고 여기 적는다.** <!-- claude-drafted: 2026-10-30 -->
+>
+> | ADR에 남은 빈 칸 | 지금 |
+> |---|---|
+> | 0002 (팀) '2라면 어느 장면을 실제 호출로 할지' | AI를 부르는 장면은 모두 같은 길 — 내 키 → 이 컴퓨터의 Claude 구독 → 둘 다 없으면 연습 예시([09 AI 연결](../../features/09-ai-connection/README.md)) |
+> | 0003 (팀) '완료 기준 항목 수(단계마다)' | 채움(2026-10-25, 두승현 — 이재엽 위임): 지금 앱의 값 — [requirements.md](../../00-overview/requirements.md) 11절 FR-2 |
+> | 0008 (팀) '반복 상한은 11절 미정 값' | 정함(2026-10-16): FR-3 시연 한 바퀴 · 설계 상한 없음, FR-5 '아니요' 3회 뒤 Hold — 같은 11절 |
+
 ADR-0001은 이 시스템 자체(어떻게 만들어졌는지)를 설명하는 결정입니다. **번호는
 워크스페이스 전체에서 하나의 연번**을 씁니다 — 프로젝트 전용 ADR은 파일을
 `05-projects/<슬러그>/docs/03-pattern-analysis/adr/`에 두더라도 이 표에 행을 추가하고
