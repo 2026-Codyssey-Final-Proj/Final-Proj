@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.20 | 2026-10-30 | 이재엽 | app.js 나누기 3차 — 섬 화면의 선 아이콘 · 무지개 조개를 진짜 모듈 icons.js(window.FloeIcons)로 떼어 냄(그림 · 동작 그대로) (#280) | `02-frontend/navigator/`(icons.js 새로 · index.html · app/00-base.js · app.js, 담당 임유정 — 이 줄이 알림) · `03-backend/navigator/server.js`(내줄 파일 목록) · `04-tests/navigator/`(icons 새로 · app-9) |
 | v51.19 | 2026-10-30 | 이재엽 | app.js 나누기 2차 — 기능 조각이 저장할 것(keep)과 누르기(Object.assign(ACT, …))를 스스로 등록. 대화 · 지식 퀘스트 · 파일 · 코드 맡기기 · 작업실 · 멈춤 · 막힘 · 문서 올리기를 옮겨 KEEP 한 줄 · 누르기 표의 병합 충돌을 줄임(동작 그대로, 누르기 266개 그대로) (#279) | `02-frontend/navigator/`(app.js · app/, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/`(app-register 새로 · knowledge-carry · knowledge-restore · chat-list의 KEEP 확인) |
 | v51.18 | 2026-10-30 | 이재엽 | 커밋 전 시험이 main에 이미 있는 화면 e2e 실패 때문에 모든 브랜치에서 막히던 것 — 고칠 목록 번호 · 담당 · 기한이 붙은 알려진 실패(04-tests/known-failures.json)는 보이되 막지 않음. 새 실패 · 기한 지남은 그대로 막고, 고쳐지면 빼라고 알림 (#278) | `04-tests/run_all_tests.py` · `04-tests/known-failures.json` · `04-tests/repo/test_known_failures.py` · `CLAUDE.md`(훅 표 한 줄) |
 | v51.17 | 2026-10-30 | 임유정 | 화면 코드 점검 묶음 F-103 마무리 — 준비 계획의 '기다리지 않기'를 '멈추기'로(Claude Code에 맡긴 일도 끄고 바로 다시 맡길 수 있게, F-103-7), Electron 앱의 키 · 폴더 IPC는 섬 창만 · 앱 밖 주소로 넘어가지 않기 · 두 번째 실행은 알림만 · 서버 파일을 못 읽으면 오류 창(F-103-22 ~ 24), 가벼운 것 일곱(새 말 안내 · 표시 자리 · 저장소 두 번 · 먹이 층 · GitHub 칸 · 뒤로 가기 플로로 · 문서 지도 까닭 글, F-103-25 ~ 31) (#281) | `02-frontend/navigator/` · `02-frontend/electron/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
