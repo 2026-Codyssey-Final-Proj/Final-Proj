@@ -159,7 +159,7 @@
     const t = FP.taskFor(b, id);
     if (planPractice(b)) {
       st.plan = FP.start(b, id); render();
-      setTimeout(() => { st.plan = FP.report(st.plan, id, FP.exampleReport(t.checks)); save(); render(); say("예시 보고가 왔어요. 맞는지 봐 주세요."); }, 900);
+      setTimeout(() => { if (!st.plan || FP.running(st.plan) !== id) return; st.plan = FP.report(st.plan, id, FP.exampleReport(t.checks)); save(); render(); say("예시 보고가 왔어요. 맞는지 봐 주세요."); }, 900);
       return;
     }
     // C-50: 지난번에 끝까지 못 한 줄이 아직 서버의 그 일이면 같은 일로 다시 — 서버가 앞에서 한 일을 붙이고 다시 맡기기 상한(2번)을 센다(새 맥락 리뷰 2026-10-29 막힘)
@@ -209,8 +209,9 @@
     if (!tw) { twStop(); return; }
     if (twBusy) return;
     twBusy = true;   // 3초 타이머와 훅 알림이 겹쳐 두 번 묻지 않게
+    const asked = tw;   // 물은 일 — 묻는 사이 새 일을 지키기 시작했으면 이 답은 옛 일의 것이다
     let t = null; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch { return; } finally { twBusy = false; }
-    if (!tw) return;
+    if (!tw || tw !== asked) return;   // 옛 답으로 새 일을 '잃었다'고 하지 않게(F-103-7) — 다음 틱이 새 일을 묻는다
     const w = tw, h = TASK_END[w.kind] || {};
     if (!t || t.at !== w.at) { twStop(); st.blocked = null; st.stall = null; if (h.lost) h.lost(); else if (h.stop) h.stop(); render(); return; }   // 다른 일 — 이 일의 결과는 잃었다
     if (t.state === "running") { stallCheck(t, w.kind); return; }
@@ -309,6 +310,7 @@
   }
   // C-38 시험판(2026-10-25) — MCP로 이은 AI의 제안: 퀘스트 시작(floe_start, kind "start") · 할 일에 적을 한 줄(floe_report). 사람이 "맞아요"를 눌러야 시작되거나 적히고, 판정은 그 뒤 평소대로
   let proposals = [];
+  const decided = new Set();   // 고른 제안 — 고르기 전에 출발한 목록 응답이 늦게 와도 되살리지 않게(F-103-8)
   const proposalsHTML = () => (!proposals.length ? "" : `<div class="aplist" role="region" aria-label="웹 AI의 제안">${proposals.map((p) => { const go = p.kind === "start"; return `<section class="ap" data-pr="${esc(p.id)}"><div class="row ap-h">${I.look}<b class="grow">${go ? "웹 AI가 이 글로 퀘스트를 시작하자고 해요" : `웹 AI가 ${esc(ROMAN(p.todo))} '${esc(QU.shortOf(p.name))}'에 이렇게 적자고 해요`}</b></div>
       <p class="ap-what">${esc(p.text)}</p><div class="row"><button type="button" class="btn pri" data-act="pr-ok" data-id="${esc(p.id)}">${go ? "맞아요, 시작해요" : "맞아요, 적어요"}</button><button type="button" class="btn" data-act="pr-no" data-id="${esc(p.id)}">아니요</button></div></section>`; }).join("")}</div>`);
   async function pollProposals() {
@@ -317,14 +319,16 @@
     try { j = await (await fetch("/api/proposals", { credentials: "same-origin" })).json(); } catch { return; }
     if (!j || !j.ok || !Array.isArray(j.items)) return;
     const was = proposals.map((p) => p.id).join();
-    proposals = j.items;
+    proposals = j.items.filter((p) => !decided.has(p.id));
     if (proposals.map((p) => p.id).join() === was) return;
     if (proposals.length && st.ui !== "home") { st.ping = "웹 AI가 퀘스트에 적자고 해요 — 눌러서 볼까요?"; peek(); } else render();
   }
   async function decideProposal(id, ok) {
     const p = proposals.find((x) => x.id === id); if (!p) return;
-    proposals = proposals.filter((x) => x.id !== id);
-    try { await fetch("/api/proposals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }), credentials: "same-origin" }); } catch {}
+    proposals = proposals.filter((x) => x.id !== id); decided.add(id);
+    let refused = 0;   // 서버가 받지 않았다 — 404는 그 제안이 없다(다른 화면에서 이미 고름 · 시간이 지남), 그 밖은 확인 값 등. 적거나 시작하지 않는다(F-103-8)
+    try { const res = await fetch("/api/proposals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }), credentials: "same-origin" }); if (!res.ok) refused = res.status; } catch {}
+    if (refused) { render(); return say(refused === 404 ? "이미 처리된 제안이에요 — 적지 않았어요" : "서버가 받지 않아 적지 않았어요"); }
     const q = st.quest;
     if (!ok) { render(); return say(p.kind === "start" ? "시작하지 않았어요" : "적지 않았어요"); }
     if (p.kind === "start") {   // floe_start — 섬 채팅에 처음 한 줄을 보낸 것과 같은 길(startDraft). 그사이 퀘스트가 생겼으면 하지 않는다

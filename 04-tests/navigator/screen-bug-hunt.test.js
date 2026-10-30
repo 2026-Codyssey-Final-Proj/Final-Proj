@@ -204,3 +204,69 @@ test("F-103-21 옆 창 — 창을 좁혔다 넓히면 고른 칸 너비로 돌�
   assert.match(lay, /folded \? FOLD : axis === "w" \? v : col\.w\}px/, "칸 너비도 손잡이처럼 보이는 값 — 기억한 값으로 그리면 좁은 창에서 칸과 손잡이가 어긋난다(새 맥락 리뷰 막힘)");
   assert.match(w, /else if \(e\.key === "End"\) setCol\(hiOf\(axis\)\); else return;/, "키 처리 줄이 끝까지 살아 있다 — 줄 가운데 주석이 Home · End · else return을 지웠던 일(새 맥락 리뷰 막힘)");
 });
+
+// ── 기다리는 사이 상태가 바뀜(F-103-7 · 8 · 10 · 11) — await 앞에서 본 것과 뒤의 상태가 다를 때 ──
+const tick = () => new Promise((r) => setImmediate(r));
+const later = () => { const box = []; return { wait: () => new Promise((r) => box.push(r)), go: (v) => box.splice(0).forEach((r) => r(v)) }; };
+
+test("F-103-7 맡긴 일 지켜보기 — 묻는 사이 새 일을 지키기 시작했으면, 옛 일의 답으로 새 일을 '잃었다'고 하지 않는다", async () => {
+  let lost = 0; const gate = later();
+  const env = { st: { blocked: null, stall: null }, TASK_END: { plan: { lost: () => lost++ } }, render() {}, stallCheck() {}, onBlocked() {}, logMsg() {}, clearInterval() {},
+    fetch: async () => { const t = await gate.wait(); return { json: async () => ({ task: t }) }; } };
+  const m = new Function(...Object.keys(env), `let tw = { at: 1, kind: "plan" }, twTimer = null, twBusy = false; function twStop() { tw = null; } ${fnSrc("twTick")}; return { twTick, setTw: (x) => { tw = x; }, tw: () => tw };`)(...Object.values(env));
+  const p = m.twTick(); await tick();
+  m.setTw({ at: 2, kind: "plan" });           // 그사이 새 일
+  gate.go({ at: 1, state: "running" }); await p;   // 옛 일(at 1)의 답
+  assert.equal(lost, 0, "새 일을 잃었다고 처리하지 않는다");
+  assert.deepEqual(m.tw(), { at: 2, kind: "plan" }, "새 일을 계속 지켜본다");
+  const hp = fnSrc("handPlan");
+  assert.match(hp, /setTimeout\(\(\) => \{ if \(!st\.plan \|\| FP\.running\(st\.plan\) !== id\) return; st\.plan = FP\.report\(/, "연습 0.9초 사이 계획을 새로 적거나 지웠으면 예시 보고를 넣지 않는다(FP.report(null) TypeError)");
+});
+
+test("F-103-8 웹 AI 제안 — 고른 카드를 늦게 온 목록이 되살리지 않고, 서버가 이미 처리됐다고 하면(404) 적지 않는다", async () => {
+  const p = { id: "p1", kind: "report", chap: 2, todo: 0, text: "한 줄" }; let filled = 0; const poll = later();
+  const st = { quest: { phase: "quest", chap: 2, objs: [{}] }, ui: "home", j: null };
+  const env = { st, postState() {}, peek() {}, render() {}, say() {}, logMsg() {}, esc: (x) => x, startDraft() {}, QU: {}, fillNow: () => filled++, ROMAN: () => "Ⅰ",
+    fetch: async (url) => url === "/api/proposals" ? { json: async () => { await poll.wait(); return { ok: true, items: [p] }; } } : { ok: true, status: 200, json: async () => ({ ok: true }) } };
+  const m = new Function(...Object.keys(env), `let proposals = [${JSON.stringify(p)}]; const decided = new Set(); ${fnSrc("pollProposals")} ${fnSrc("decideProposal")}; return { pollProposals, decideProposal, list: () => proposals };`)(...Object.values(env));
+  const polling = m.pollProposals(); await tick();   // 목록을 묻는 중
+  await m.decideProposal("p1", true);              // 그사이 '맞아요'
+  poll.go(); await polling;                        // 고르기 전 목록이 늦게 온다
+  assert.equal(filled, 1);
+  assert.deepEqual(m.list().map((x) => x.id), [], "고른 카드가 되살아나지 않는다(또 누르면 두 번 적힘)");
+
+  let filled2 = 0;
+  const env2 = { ...env, fillNow: () => filled2++, fetch: async () => ({ ok: false, status: 404, json: async () => ({ ok: false, reason: "기다리는 제안이 아님" }) }) };
+  const m2 = new Function(...Object.keys(env2), `let proposals = [${JSON.stringify(p)}]; const decided = new Set(); ${fnSrc("decideProposal")}; return { decideProposal };`)(...Object.values(env2));
+  await m2.decideProposal("p1", true);
+  assert.equal(filled2, 0, "서버에 없는 제안(다른 화면에서 이미 처리)은 적지 않는다");
+});
+
+test("F-103-10 대화 불러오기 — 묻는 사이 연습으로 바꿨으면 늦게 온 서버 대화가 덮지 않고, 기다리는 동안 남긴 말은 사라지지 않는다", async () => {
+  const gate = later(); let live = true;
+  const st = { chat: [{ who: "floro", html: "안녕" }], chatChanges: [], chatMark: 0 };
+  const env = { st, CHAT_CAP: 400, chatLive: () => live, chatlogFlush() {}, setTimeout: () => 0, fromTurn: (x) => ({ who: x.who, html: x.text }),
+    fetch: async () => { const r = await gate.wait(); return { json: async () => r }; } };
+  // logMsg처럼 새 배열로 쌓고 chatSeq를 올린다
+  const mk = () => new Function(...Object.keys(env), `let chatQueue = [], chatFolder = null, chatAsk = 0, chatSeq = 0; ${fnSrc("chatlogLoad")}; const log = (html) => { st.chat = [...st.chat, { who: "floro", html }]; chatSeq += 1; }; return Object.assign(chatlogLoad, { log });`)(...Object.values(env));
+  const load = mk();
+  const p = load(); await tick();
+  live = false; await load();             // 연습으로 바꿈 — 다시 묻는다
+  gate.go({ ok: true, turns: [{ who: "me", text: "서버의 옛 말" }] }); assert.equal(await p, false, "옛 답은 버린다");
+  assert.deepEqual(st.chat.map((x) => x.html), ["안녕"], "연습인데 서버 대화로 덮이지 않는다");
+
+  live = true; const load2 = mk(); const gate2 = gate;
+  const p2 = load2(); await tick();
+  load2.log("기다리는 동안 한 인사");   // 묻는 사이 남긴 말
+  gate2.go({ ok: true, turns: [{ who: "me", text: "서버의 말" }] }); assert.equal(await p2, true);
+  assert.deepEqual(st.chat.map((x) => x.html), ["서버의 말", "기다리는 동안 한 인사"], "서버 대화 뒤에 기다리는 동안 남긴 말");
+});
+
+test("F-103-11 가져갈 것 — 남기는 사이 '나중에'로 닫았어도 멈추지 않는다(TypeError 없음)", async () => {
+  const d = { id: "c1", text: "다음엔 먼저 시험", why: "", stage: 5, review: "", from: [] };
+  const st = { carry: { drafts: [d] } };
+  const env = { st, render() {}, say() {}, save() {}, carryPost: async () => { st.carry = null; return { ok: true }; } };
+  const carryDecide = make(fnSrc("carryDecide"), "carryDecide", env);
+  await carryDecide(0, "adopt");
+  assert.equal(d.state, "adopted", "장부에는 남았다");
+});
