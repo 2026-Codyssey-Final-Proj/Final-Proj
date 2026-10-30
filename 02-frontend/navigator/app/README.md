@@ -13,6 +13,14 @@
 | `app.js`를 직접 고쳤다(옛 브랜치 · 다른 도구) | `node 02-frontend/navigator/app-parts.js split` — 고친 줄이 제 조각으로 돌아간다 |
 | 병합에서 부딪쳤다 | 조각의 부딪침만 풀고 `join`. `app.js`의 부딪침은 손으로 풀지 않는다(묶으면 덮인다). 조각 없이 `app.js`만 부딪친 옛 브랜치면 `app.js`를 풀고 `split` |
 | 새 기능 조각을 더한다 | 넣을 자리의 번호 사이 이름(`47-이름.js`)으로 만들고 `join` — 번호가 곧 차례다 |
+| 기능에 저장할 것이 생겼다 | `00-base.js`의 `KEEP` 한 줄을 고치지 말고 **그 기능 조각 맨 위에** `keep(["이름", …])` — 켤 때 읽어 둔 기록에서 값을 가져온다. 고장 난 값 고치기는 그 다음 줄에 |
+| 기능에 누르기(`data-act`)가 생겼다 | `90-acts.js`의 공통 표를 고치지 말고 **그 기능 조각 끝의** `Object.assign(ACT, { "이름": () => … })`에 더한다 |
+
+<!-- claude-drafted: 2026-10-29 — 나누기 2차 --> **왜 등록식인가:** 모든 기능 PR이 `KEEP` 한 줄과 누르기 표 하나를 같이 고쳐 병합마다 거기서 부딪쳤다(#250 ↔ #252 ~ #254).
+지금 등록식인 기능: 대화(`30-chat` — `chatMark` · `chatOpen`), 지식 퀘스트(`45-knowledge` — 가져갈 것 · 폴더의 기록), 파일 · 코드 맡기기(`55-files`),
+작업실 세 칸 · 카드 지도(`58-workspace`), 멈춤 · 막힘(`70-tasks`), 문서 올리기(`40-quest`). 나머지는 공통 `KEEP` · `90-acts.js`에 그대로 있다 — 그 기능을 고칠 때 옮기면 된다.
+같은 누르기 이름이 두 조각에 있거나 저장 키가 겹치면 [app-register.test.js](../../../04-tests/navigator/app-register.test.js)가 막는다.
+`keep`은 그 조각이 실행될 때(켜는 중) 맨 위에서 부른다 — 켤 때 읽어 둔 기록을 쓰므로 그사이 `save()`가 있어도 값을 잃지 않지만, 함수 안에서 늦게 부르면 그 전의 `save()`가 그 키 없이 기록을 쓴다.
 
 둘이 다르면 [app-parts.test.js](../../../04-tests/navigator/app-parts.test.js)가 실패하고 위 명령을 알려 준다 — Claude의 커밋은 커밋 전 시험에서,
 사람의 터미널 커밋 · GitHub 병합은 PR과 `main`의 검사([app-parts.yml](../../../.github/workflows/app-parts.yml))에서.
