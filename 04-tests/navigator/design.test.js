@@ -50,3 +50,19 @@ test("app.js — 글자 기호(▲ ▼ ◀ ▶ ✓ ● 🗺 ⛩)를 아이콘으
   assert.match(a, /const OK_ICON = /, "확인 표시 아이콘 하나"); assert.ok(!/badge: "✓"/.test(a), "카드 뱃지도 OK_ICON");
   assert.ok(!/\$\{ok \? "✓" : "○"\}/.test(a), "점검 목록의 ✓ · ○도 아이콘");
 });
+
+// claude-drafted: 2026-10-30 — 퀘스트 탭 합치기 PRD C-68(두승현 목업 확정본 "공책 모양 — 모양까지 바꿈"): 공책 두 쪽 · 갈색 · 금색을 빼고 한 목록으로
+test("C-68 — 퀘스트 카드 · 맡길 일은 한 목록: 공책 규칙(.book · .page · .toc)이 없고, 퀘스트 카드 규칙에 갈색 · 금색이 경고 밖에서 0곳, 얼음 면 위 글은 진한 남색", () => {
+  const css = read("navigator/app.css");
+  for (const sel of [".book{", ".book .", ".page{", ".page.l", ".page.r", ".toc{", ".toc button"]) assert.ok(!css.includes(sel), `${sel} — 공책 두 쪽 규칙은 뺐다`);
+  // 퀘스트 카드 쪽 규칙(선택자에 .qcard · .ln · .pacts · .piece · .qhead · .qrows가 든 것)만 본다 — 도전과제의 갈색(.adv · .vtabs · .bn)은 ⓑ(C-66)에서
+  const rules = css.split("}").map((r) => r.split("{")).filter((p) => p.length === 2).map(([s, b]) => [s.trim(), b]);
+  const mine = rules.filter(([s]) => /\.(qcard|ln|pacts|piece|qhead|qrows|qprog|qfoot)\b/.test(s) && !/\.qs-skip|\.sm-ban/.test(s));
+  assert.ok(mine.length >= 8, `퀘스트 카드 규칙이 있다(${mine.length})`);
+  for (const [s, b] of mine) for (const hex of ["#E9DFC6", "#6B5E48", "#454E77", "#E6CB86", "#EFE3C0", "#7A5E1E", "#7A5B12"]) assert.ok(!b.toUpperCase().includes(hex), `${s} — ${hex}(갈색 · 금색)은 경고 밖에서 쓰지 않는다`);
+  assert.match(css, /\.pacts button\.pri\{background:var\(--acc-btn\);border-color:var\(--acc-btn\);color:var\(--acc-ink\)\}/, "주 단추는 하늘색 알약 그대로(C-62)");
+  assert.match(css, /\.ln\.st-now\{[^}]*background:var\(--acc-soft\)/, "지금 줄은 면의 색으로만(얼음)");
+  assert.ok(!/\.ln\.st-now\{[^}]*(border-left|outline|box-shadow)/.test(css), "지금 줄에 왼쪽 막대 · 테두리 강조 없음");
+  assert.match(css, /\.ln\.st-now[^{]*\.easy[^{]*\{[^}]*color:var\(--ink\)/, "얼음 면 위 흐린 글은 진한 남색으로(5B6491은 얼음 위 4.3:1)");
+  assert.ok(ratio("#2B3463", "#D3E0F3") >= 4.5 && ratio("#2B3463", "#E2E9F4") >= 4.5 && ratio("#5B6491", "#E2E9F4") >= 4.5, "카드 면 위 글자 대비");
+});

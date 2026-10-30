@@ -49,7 +49,7 @@ test("R-10 — 빈칸 표시가 남은 채 보고하면 관문 앞에서 멈추�
     assert.ok(c.acts.includes("gate-fill") && c.acts.includes("gate-skip"), c.acts.join(","));
     // 채우러 가기 → 공책(노트북 탭) · 보고 카드로 돌아온다
     await page.click("[data-act=gate-fill]"); await wait(400);
-    assert.ok(await page.$(".qwin .book"), "공책으로");
+    assert.ok(await page.$(".qwin .qcard"), "퀘스트 카드로(C-68 한 목록)");
     c = await card(page); assert.match(c.title, /완료 보고/, "다시 보고할 수 있다");
     await page.click("[data-act=quest-report]"); await wait(600);
     // 까닭 적고 넘기기 — 빈 까닭은 안 되고, 적으면 관문이 열린다
