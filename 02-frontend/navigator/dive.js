@@ -96,7 +96,7 @@
     const anims = [water.animate([{ transform: "translateY(104%)" }, { transform: "translateY(0)" }], { duration: LEAVE_MS, easing: "cubic-bezier(.6,0,.3,1)", fill: "forwards" })];
     if (seal) anims.push(seal.animate([{ transform: "none" }, { transform: "translateY(-40px) scale(.96,1.06)", offset: 0.3 }, { transform: "translateY(90px) scale(.9,1.1)", opacity: 0 }],
       { duration: LEAVE_MS, easing: "cubic-bezier(.5,0,.6,1)", fill: "forwards" }));
-    whenDone(anims, LEAVE_CAP, () => { location.href = href; }, () => water.remove());
+    whenDone(anims, LEAVE_CAP, () => { location.href = href; }, () => { water.remove(); anims.forEach((x) => x.cancel()); });   // 뒤로 가기(페이지 보관)로 돌아오면 진짜 플로로(seal)에 건 forwards 움직임도 걷는다 — 남으면 안 보인다(F-103-30)
   }
 
   // 작업 화면이 물속에서 떠오름(2026-10-20 "오버레이가 작아졌다가 다시 켜지는 애니메이션") — 서고에서 돌아오면 처음부터 물이 덮고 있다가(#dive-cover, html.surfacing)

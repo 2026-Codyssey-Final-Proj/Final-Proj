@@ -270,3 +270,120 @@ test("F-103-11 가져갈 것 — 남기는 사이 '나중에'로 닫았어도 �
   await carryDecide(0, "adopt");
   assert.equal(d.state, "adopted", "장부에는 남았다");
 });
+
+test("F-103-7 '멈추기'(옛 '기다리지 않기') — 맡긴 일을 서버에서도 멈추고, 멈춘 뒤 그 줄을 끝맺어 바로 다시 맡길 수 있다(임유정 2026-10-30 '클로드 코드도 멈추는 거로')", async () => {
+  // 서버: 멈춤을 받으면 다음 물음부터 running이 아니다
+  const calls = []; let running = true;
+  const fetchStub = async (url, o) => { calls.push(url); if (url === "/api/task/stop") { running = false; return { json: async () => ({ ok: true }) }; } return { json: async () => ({ task: { at: 7, state: running ? "running" : "stopped" } }) }; };
+  const halt = new Function("fetch", "clearInterval", "setTimeout", `let twTimer = 1; ${fnSrc("taskHalt")}; return taskHalt;`)(fetchStub, () => {}, (f) => f());
+  await halt(7);
+  assert.equal(calls[0], "/api/task/stop", "먼저 서버에 멈추라고 한다");
+  assert.ok(calls.length >= 2 && !running, "멈춘 것을 확인할 때까지 기다린다(그 전에 다시 맡기면 409)");
+
+  // 단추: 지켜보던 맡긴 일(plan)을 멈추고 그 줄을 끝맺는다
+  const acts = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app/90-acts.js"), "utf8");
+  const body = (acts.match(/"plan-unwait": (async \(\) => \{[^\n]*?\}),(?: +\/\/[^\n]*)?\n/) || [])[1];   // 줄 끝 주석은 빼고
+  assert.ok(body, "plan-unwait");
+  const st = { plan: { run: "a" }, stall: { at: 7 }, blocked: null }; const halted = [], said = [];
+  const FP = { running: (b) => (b && b.run) || "", failed: (b, id, why) => ({ run: "", failed: id, why }) };
+  const mk = (stopped, st0) => new Function("st", "FP", "taskHalt", "save", "render", "say", "setInterval", "twTick", `let tw = { at: 7, kind: "plan" }, twTimer = null; const fn = ${body}; return { fn, tw: () => tw, timer: () => twTimer };`)(st0, FP, async (at) => { halted.push(at); return stopped; }, () => {}, () => {}, (t) => said.push(t), () => 99, () => {});
+  const m = mk(true, st);
+  await m.fn();
+  assert.deepEqual(halted, [7], "그 일을 서버에서 멈춘다");
+  assert.equal(m.tw(), null, "더 지켜보지 않는다");
+  assert.equal(st.plan.failed, "a", "그 줄을 끝맺는다 — 다시 맡기기는 /api/task/retry(멈춘 일은 받는다)");
+  assert.equal(st.halting, false, "멈추는 동안만 '멈추는 중'");
+  assert.match(said[0], /바로 다시 맡길 수 있어요/);
+  // 서버가 멈추지 못했으면(닿지 않음 · 10초 뒤에도 running) 줄을 끝맺지 않고 다시 지켜본다 — 끝맺으면 다시 맡기기가 409(새 맥락 리뷰)
+  const st2 = { plan: { run: "a" }, stall: null }; said.length = 0;
+  const m2 = mk(false, st2); await m2.fn();
+  assert.equal(st2.plan.run, "a", "그 줄은 아직 맡김 중");
+  assert.deepEqual(m2.tw(), { at: 7, kind: "plan" }); assert.equal(m2.timer(), 99, "다시 3초마다 묻는다");
+  assert.match(said[0], /멈추지 못했어요/);
+  assert.match(fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app/70-tasks.js"), "utf8"), /\{ label: "멈추기", act: "plan-unwait"/, "단추 이름도 하는 일대로");
+});
+
+// ── Electron 앱(02-frontend/electron/main.js) — F-103-22 ~ 24 ──
+const mainJs = () => fs.readFileSync(path.join(__dirname, "../../02-frontend/electron/main.js"), "utf8");
+
+test("F-103-22 키 저장 · 지우기 · 폴더 잇기 · 빼기 · 설정 폴더 열기는 섬 창이 보낸 것만 받고, 앱 창은 앱 서버 밖 주소로 넘어가지 않는다", () => {
+  const m = mainJs();
+  for (const ch of ["floe:save-key", "floe:clear-key", "floe:connect", "floe:disconnect", "floe:open-settings"]) {
+    const at = m.indexOf(`ipcMain.handle("${ch}"`), head = at < 0 ? "" : m.slice(at, at + 220);   // 핸들러 첫머리(한두 줄)
+    assert.match(head, /fromIsland\(e\)/, `${ch} — 옆 창 · 다른 페이지가 보낸 것은 받지 않는다`);
+  }
+  assert.equal((m.match(/webContents\.on\("will-navigate", keepInApp\)/g) || []).length, 2, "섬 창 · 옆 창 모두");
+  const src = (m.match(/const keepInApp = \(e, url\) => \{[^\n]*\};/) || [])[0]; assert.ok(src, "keepInApp");
+  const opened = [];
+  const keep = (U) => new Function("shell", "URL_", `${src} return keepInApp;`)({ openExternal: (u) => opened.push(u) }, U);
+  const ev = () => ({ stopped: false, preventDefault() { this.stopped = true; } });
+  const e1 = ev(); keep("http://127.0.0.1:4317/")(e1, "http://127.0.0.1:4317/library/index.html"); assert.equal(e1.stopped, false, "서고 · 화면(앱 서버 안)은 그대로");
+  const e2 = ev(); keep("http://127.0.0.1:4317/")(e2, "http://127.0.0.1:43170/x"); assert.equal(e2.stopped, true, "다른 포트는 막는다");
+  const e3 = ev(); keep("http://127.0.0.1:4317/")(e3, "https://cli.github.com"); assert.equal(e3.stopped, true); assert.deepEqual(opened, ["https://cli.github.com"], "바깥 https는 기본 브라우저로(새 맥락 리뷰)");
+  const e4 = ev(); keep("")(e4, "file:///C:/x.md"); assert.equal(e4.stopped, true, "서버가 켜지기 전 · 파일 주소는 막는다");
+});
+
+test("F-103-23 두 번째로 켜면 알림만 하고 끝난다 — 창 · 트레이 · 서버를 띄우지 않는다", () => {
+  const m = mainJs();
+  assert.match(m, /const ONLY = app\.requestSingleInstanceLock\(\);[^\n]*\nif \(!ONLY\) \{/, "잠금 결과를 기억한다");
+  assert.match(m, /app\.whenReady\(\)\.then\(async \(\) => \{\n  if \(!ONLY\) return;/, "두 번째는 ready에서 아무것도 만들지 않는다");
+});
+
+test("F-103-24 서버 파일을 못 읽으면(묶음에서 빠짐 등) '켜지는 중'에 멈추지 않고 오류 창을 띄운다", () => {
+  const s = mainJs(), body = s.slice(s.indexOf("async function startServer()"), s.indexOf("return new Promise((resolve) => {", s.indexOf("async function startServer()")));
+  assert.match(body, /try \{ Server = require\(path\.join\(P\.backend, "server\.js"\)\); \} catch \(e\) \{ return `error:\$\{e\.code \|\| e\.message\}`; \}/, "require 오류도 'error:'로 — whenReady가 오류 창을 띄운다");
+});
+
+// ── 가벼운 것 일곱(F-103-25 ~ 31) ──
+const part = (f) => nav(`app/${f}`);
+
+test("F-103-25 할 일을 다 끝낸 판정에서도 '새 말을 배웠어요'가 남는다(축하로 일찍 빠지기 전에 채팅에)", () => {
+  assert.match(part("85-ai.js"), /if \(allDone\(\)\) \{ view\("alert"\); if \(!was\) \{ if \(fresh\.length\) logMsg\("floro", `새 말을 배웠어요: \$\{esc\(fresh\.join\(", "\)\)\}`\); return celebrate\("done"\); \} \}/);
+});
+
+test("F-103-26 저장 칸이 넘쳐 대화를 100줄로 줄일 때 표시 자리(chatMark)도 같이 당긴다", () => {
+  assert.match(part("00-base.js"), /catch \{ const over = st\.chat\.length - 100; st\.chat = st\.chat\.slice\(-100\); if \(over > 0\) st\.chatMark = Math\.max\(0, \(st\.chatMark \|\| 0\) - over\); \}/);
+});
+
+test("F-103-27 저장소 만들기를 두 번 눌러도 한 번만 맡기고, 두 번째 409가 성공 문구를 덮지 않는다", async () => {
+  let posts = 0; const gate = later();
+  const st = { ghVis: "private", ghNote: "" };
+  const env = { st, render() {}, watchTask() {}, fetch: async () => { posts++; await gate.wait(); return { json: async () => (posts > 1 ? { ok: false, reason: "이미 맡긴 일이 있어요" } : { ok: true, task: { at: 1 } }) }; } };
+  const m = new Function(...Object.keys(env), `let repoReq = null; ${fnSrc("createRepoOnce")} ${(a.match(/function createRepo\(\) \{[^\n]*\}/) || [""])[0]}; return createRepo;`)(...Object.values(env));
+  const p1 = m(), p2 = m(); await tick(); gate.go(); const [r1, r2] = await Promise.all([p1, p2]);
+  assert.equal(posts, 1, "한 번만 맡긴다");
+  assert.equal(r1.ok, true); assert.equal(r2.ok, true, "두 번째 누름도 같은 결과");
+  assert.match(st.ghNote, /맡겼어요/, "성공 문구가 남는다");
+});
+
+test("F-103-28 파일을 빠르게 끌어왔다 빼도 '먹이 주기' 층이 켜진 채 남지 않는다", () => {
+  assert.match(part("20-feed.js"), /requestAnimationFrame\(\(\) => \{ if \(dragDepth > 0\) feedLayer\(true\); \}\)/, "켜기를 미룬 사이 이미 떠났으면 켜지 않는다");
+});
+
+test("F-103-29 GitHub 칸 — 한 번 그릴 때 여러 번 묻지 않고, 늦게 온 옛 답이 새 답을 덮지 않는다", async () => {
+  const gates = []; let asks = 0;
+  const st = { gh: null };
+  const env = { st, canLive: true, render() {}, fetch: async () => { asks++; const g = later(); gates.push(g); const v = await g.wait(); return { json: async () => v }; } };
+  const m = new Function(...Object.keys(env), `let ghLoading = false, ghAsk = 0; ${fnSrc("loadGithub")} return loadGithub;`)(...Object.values(env));
+  const old = m(), fresh = m(); await tick();
+  gates[1].go({ ok: true, v: "새" }); await fresh;
+  gates[0].go({ ok: true, v: "옛" }); await old;
+  assert.equal(st.gh.v, "새", "늦게 온 옛 답은 버린다");
+  const soon = (a.match(/const ghSoon = \(\) => \{[^\n]*\};/) || [])[0]; assert.ok(soon, "ghSoon");
+  let timers = 0; const st2 = { gh: null };
+  const ghSoon = new Function("st", "canLive", "setTimeout", "loadGithub", `let ghLoading = false; ${soon} return ghSoon;`)(st2, true, () => timers++, () => {});
+  ghSoon(); ghSoon(); ghSoon();
+  assert.equal(timers, 1, "한 번 그리는 동안 여러 곳이 불러도 한 번만 묻는다");
+  assert.equal((a.match(/setTimeout\(loadGithub, 0\)/g) || []).length, 1, "그리는 곳은 ghSoon으로 — 직접 미루는 곳은 ghSoon 하나");
+});
+
+test("F-103-30 서고로 갔다가 뒤로 가기(페이지 보관)로 돌아오면 플로로가 보인다 — 떠나며 건 움직임을 걷는다", () => {
+  const d = nav("dive.js"), leave = d.slice(d.indexOf("function leave(href, seal) {"));
+  assert.match(leave, /whenDone\(anims, LEAVE_CAP, \(\) => \{ location\.href = href; \}, \(\) => \{ water\.remove\(\); anims\.forEach\(\(x\) => x\.cancel\(\)\); \}\);/);
+});
+
+test("F-103-31 문서 지도 — 서버의 까닭 글을 HTML로 넣지 않는다", () => {
+  const dm = nav("docmap.html");
+  assert.doesNotMatch(dm, /\$\{r && r\.reason \? r\.reason :/, "innerHTML 틀에 그대로 넣지 않는다");
+  assert.match(dm, /\.textContent = r && r\.reason \? r\.reason : "문서 지도를 만들지 못했어요/, "글자로만");
+});

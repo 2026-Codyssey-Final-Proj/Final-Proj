@@ -288,7 +288,7 @@
     const o = { at: Date.now() };
     for (const k of KEEP) o[k] = st[k];
     try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
-    try { localStorage.setItem(CHAT_KEY, JSON.stringify(st.chat)); } catch { st.chat = st.chat.slice(-100); }   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify(st.chat)); } catch { const over = st.chat.length - 100; st.chat = st.chat.slice(-100); if (over > 0) st.chatMark = Math.max(0, (st.chatMark || 0) - over); }   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로. 표시 자리도 같이 당긴다(logMsg와 같이, F-103-26)
     postState();
   }
   // C-38 시험판(2026-10-25, 두승현) — 서버에 지금 상태를 알린다: MCP로 이은 AI(Claude Desktop · 터널을 연 웹 GPT · 웹 Claude)가 floe_now로 읽는다. 바뀌었을 때만 보낸다

@@ -40,8 +40,8 @@
       sub: "끝낸 줄과 보고는 퀘스트 창의 맡길 일에 남아 있어요.", acts: [{ label: "새 계획 적기", act: "plan-reset", pri: true }] };
     const i = b.plan.items.findIndex((x) => x.id === id), x = b.plan.items[i], w = b.work[id] || {}, s = FP.stateOf(b, id);
     const meta = `<span class="mm-stage">맡길 일 · ${p.total}개 중 ${i + 1}번째</span>${planMini(b, i)}${ex}`;
-    if (s === "running") return { tone: "gray", mood: "think", meta, title: `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,
-      body: `<p class="mc-fine">허락이 필요하면 이 말 위에 카드가 떠요. 끝나면 기준마다 해냈는지 알려 줘요.</p>`, acts: [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "기다리지 않기", act: "plan-unwait", kind: "ghost" }] };   // 진행 보기 — Claude Code가 한 일 한 줄씩(AI 진행 판)
+    if (s === "running") return { tone: "gray", mood: "think", meta, title: st.halting ? `Claude Code를 멈추는 중이에요${dots}` : `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,   // halting — '멈추기'를 누르고 서버가 끌 때까지(최대 10초) 단추 없이
+      body: `<p class="mc-fine">허락이 필요하면 이 말 위에 카드가 떠요. 끝나면 기준마다 해냈는지 알려 줘요.</p>`, acts: st.halting ? [] : [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "멈추기", act: "plan-unwait", kind: "ghost" }] };   // 진행 보기 — Claude Code가 한 일 한 줄씩(AI 진행 판). 멈추기 — 맡긴 일을 끄고 그 줄을 끝맺어 바로 다시 맡길 수 있게(F-103-7)
     if (s === "report" && w.report) { const v = w.verdict || N.reportVerdict(w.report, "done");   // C-50 서버가 기준을 세어 준 미리 보기(없던 옛 기록만 화면이 센다)
       return { tone: v.kind === "done" ? "green" : "amber", mood: v.kind === "done" ? "happy" : "think", meta, title: `보고가 왔어요 — 세어 보니 ${v.word} (기준 ${Number(w.report.total) || 0}개 중 ${Number(w.report.done) || 0}개)`, sub: esc(w.report.easy),
         body: planReportBody(b, id), acts: planReportActs(id, !!w.report.ask, v.kind === "done") }; }
@@ -246,10 +246,16 @@
   // 사람이 고르면 멈춘다 — 지켜보기를 잠시 세우고(멈춘 결과를 끝으로 읽지 않게) 서버가 그 일을 끌 때까지 기다린다
   async function stallHalt() {
     const s = st.stall; if (!s) return null;
-    clearInterval(twTimer); twTimer = null; st.stall = null;
-    try { await fetch("/api/task/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at: s.at }) }); } catch {}
-    for (let k = 0; k < 40; k++) { let t = null; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch {} if (!t || t.at !== s.at || t.state !== "running") break; await new Promise((r) => setTimeout(r, 250)); }
+    st.stall = null; await taskHalt(s.at);
     return s;
+  }
+  //   멈춘 것을 확인할 때까지(최대 10초) 기다린다 — 그 전에 다시 맡기면 서버가 '아직 진행 중'(409)으로 거절한다. '멈추기'(plan-unwait)도 같이 쓴다
+  //   돌려주는 값: 멈춘 것을 서버의 답으로 확인했나(못 닿았거나 10초 뒤에도 running이면 false — 그때 다시 맡기면 409)
+  async function taskHalt(at) {
+    clearInterval(twTimer); twTimer = null;
+    try { await fetch("/api/task/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at }) }); } catch {}
+    for (let k = 0; k < 40; k++) { let t = null, heard = true; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch { heard = false; } if (heard && (!t || t.at !== at || t.state !== "running")) return true; await new Promise((r) => setTimeout(r, 250)); }
+    return false;
   }
   // 막혔다 — ①이면 바로 다시 맡기고, ② · ③이면 카드(momentBlocked). 접혀 있어도 펼친다(허락 카드와 같이 — 사람이 골라야 이어진다)
   function onBlocked(t, kind) {

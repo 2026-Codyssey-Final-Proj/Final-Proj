@@ -78,14 +78,21 @@
   };
   // GitHub 칸(C-25, claude-drafted: 2026-10-24 — 이재엽 "깃허브을 연동하는 곳을 설정창에") — Floe는 토큰을 받지 않는다. 서버가 이 컴퓨터의 git · gh에게 읽기만 묻고(/api/github, API.md 3-19),
   // 저장소 만들기는 사람이 누를 때만 사용자의 Claude Code에 맡긴다(/api/github/create → 일 넘기기 3-16). 서버 없이 열면 안내만
-  let ghLoading = false;
+  let ghLoading = false, ghAsk = 0;
+  //   ghAsk — 가장 나중에 물은 답만 쓴다('다시 확인' · 저장소가 생긴 뒤 다시 묻기가 겹치면 늦게 온 옛 답이 덮었다, F-103-29)
   async function loadGithub() {
     if (!canLive) return;
-    ghLoading = true;
-    try { st.gh = await (await fetch("/api/github", { cache: "no-store" })).json(); } catch { st.gh = { ok: false }; }
-    ghLoading = false; render();
+    const ask = ++ghAsk; ghLoading = true;
+    let g; try { g = await (await fetch("/api/github", { cache: "no-store" })).json(); } catch { g = { ok: false }; }
+    if (ask !== ghAsk) return;
+    st.gh = g; ghLoading = false; render();
   }
-  async function createRepo() {
+  // 그리는 곳(설정의 GitHub 칸 · 작업실 머리)이 부른다 — 한 번 그리는 동안 여러 곳이 불러도 한 번만 묻는다(F-103-29)
+  const ghSoon = () => { if (canLive && !st.gh && !ghLoading) { ghLoading = true; setTimeout(loadGithub, 0); } };
+  // 두 번 눌러도 같은 요청을 기다린다 — 두 번째가 '이미 맡긴 일'(409)로 성공 문구를 실패로 덮었다(F-103-27)
+  let repoReq = null;
+  function createRepo() { return repoReq || (repoReq = createRepoOnce().finally(() => { repoReq = null; })); }
+  async function createRepoOnce() {
     st.ghNote = "Claude Code에 맡기는 중…"; render();
     let r;
     try { r = await (await fetch("/api/github/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visibility: st.ghVis }) })).json(); }
@@ -99,7 +106,7 @@
   function githubGroup() {
     const box = (body) => sgrp(SG.git, "GitHub", body);
     if (!canLive) return box(`<span>서버로 열면(앱 · floe.js) 연결한 프로젝트 폴더가 GitHub 저장소와 이어졌는지 보여요. Floe는 GitHub 비밀번호 · 토큰을 받지 않아요.</span>`);
-    if (!st.gh && !ghLoading) setTimeout(loadGithub, 0);
+    ghSoon();
     const g = st.gh;
     const again = `<button type="button" class="btn" data-act="gh-reload">다시 확인</button>`;
     if (!g) return box(ledRow("", "확인하는 중…"));
