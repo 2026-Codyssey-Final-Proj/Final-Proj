@@ -2114,18 +2114,34 @@
         <div class="box"><h4>REWARD</h4><div class="slots">${rewardSlots(q)}</div></div>
         <button type="button" class="join" data-act="${ed ? "quest-save" : "quest-ok"}">${ed ? "이대로 받기" : "퀘스트 받기"}</button>
         <div class="sub"><button type="button" data-act="${ed ? "quest-cancel" : "quest-fix"}">${ed ? "고치기 취소" : "고쳐 주세요"}</button><button type="button" data-act="quest-later">나중에</button></div></div>`;
-    const toc = q.objs.map((o, i) => { const cls = metOf(i) || QU.filled(q, i) ? "done" : i === ci ? "" : "lock";
-      return `<button type="button" data-act="quest-sel" data-i="${i}" aria-pressed="${q.sel === i}" class="st-${cls === "done" ? "done" : cls === "lock" ? "later" : "now"}" data-tt="${esc(QU.nameOf(q, i))}|${esc(QU.easyOf(o.name))}">${ROMAN(i)}. ${esc(QU.nameOf(q, i))}<small>${cls === "done" ? (metOf(i) ? "끝냄 ✓" : "적음") : cls === "lock" ? "★ 아직" : "지금"}</small></button>`; }).join("")
-      + ((q.side || []).length ? `<div class="side-h">곁 퀘스트 — 안 해도 돼요</div>${q.side.map((s) => `<button type="button" class="lock" disabled title="만드는 크기를 키우면 할 일이 돼요">${s.icon} ${esc(s.name)}<small>★ 더 크게 만들 때</small></button>`).join("")}` : "");
+    // C-68(2026-10-30 두승현 목업 확정본 "공책 모양 — 모양까지 바꿈"): 공책 두 쪽(목차 + 줄 — 같은 다섯 칸을 두 번) → 한 목록. 끝낸 줄은 체크 · 한 줄, 지금 줄만 펼침, 아직 줄은 흐리게
     const sts = qstates(q), badge = (i) => { const x = sts[i]; if (!x || x.state === "write") return ""; const w = QS.STATE_WORD[x.state]; return `<small class="qs qs-${x.state}" title="${esc(x.why || "")}">${w}${x.from ? ` · ${LB(x.from.s)} ${ROMAN(x.from.i)}` : ""}</small>`; };   // C-56 상태 넷
-    const lines = q.objs.map((o, i) => { const ls = q.lines[i] || [], ok = metOf(i);
-      return `<div class="ln${ok ? " done" : ""}${q.sel === i ? " sel" : ""}"><span class="ck">${ok ? OK_ICON : ""}</span><span class="lt">${ed ? `<input data-act="quest-name" data-i="${i}" value="${esc(o.name)}" aria-label="할 일 이름" maxlength="60">` : `<b>${esc(QU.nameOf(q, i))}</b>${o.term ? `<small class="method">${esc(o.term)}</small>` : ""}${badge(i)}${QU.easyOf(o.name) ? `<span class="easy">${esc(QU.easyOf(o.name))}</span>` : ""}${qmore ? `<span class="full">${esc(o.name)}${o.term ? ` ${termTag(o.term)}` : ""}</span>` : ""}`}${
-        ls.map((l, k) => (ed ? `<input data-act="quest-line" data-i="${i}" data-k="${k}" value="${esc(l)}" aria-label="적은 줄" maxlength="200">` : `<span class="lw">${esc(l)}</span>`)).join("")}${!ls.length && !ed ? `<span class="lw empty">${q.draft ? "아직 — 채팅에서 맞는지 봐요" : "아직 — 채팅에서 한 줄 적어요"}</span>` : ""}</span><span class="n">${ed ? `${ls.length} / <input type="number" min="1" max="5" value="${o.need}" data-act="quest-need" data-i="${i}" aria-label="개수">` : o.need > 1 ? `${ls.length} / ${o.need}` : ls.length ? "✓" : ""}</span></div>`; }).join("");
-    return `<div class="book"><div class="page l"><h4>목차 · ${LB(q.chap)}</h4><div class="toc">${toc}</div></div>
-      <div class="page r"><h3>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</h3><div class="meta">${LB(q.chap)}${q.title !== N.STAGES[q.chap].title ? ` ${esc(N.STAGES[q.chap].title)}` : ""} · 플로로가 만들었어요 · ${done ? "다 적음" : "하는 중"}</div>
-        <div class="lines">${lines}</div><details class="qdesc"><summary>자세히 보기 · 왜 하나요</summary><p>${esc(q.desc)}</p><p><b>왜 하나요</b> — ${esc(q.why)}</p><button type="button" class="lnk qmore" data-act="qmore" aria-expanded="${qmore}">${qmore ? "간단히 보기" : "원래 할 일 문장 · 용어 보기"}</button></details>
-        <div class="rw"><span>보상</span><span class="piece">${coin()}무지개 조개 ×1</span><span class="piece">🏅 ${esc(QU.rankOf(Math.min(7, q.chap + 1)))}</span></div>
-        <div class="pacts">${ed ? `<button type="button" class="pri" data-act="quest-save">저장</button><button type="button" data-act="quest-cancel">취소</button><span></span>` : `<button type="button" class="${done ? "pri" : ""}" data-act="quest-report" ${done ? "" : "disabled"}>완료 보고</button><button type="button" data-act="quest-hint">힌트</button><button type="button" data-act="quest-edit">고치기</button>`}</div></div></div>`;
+    const stateOf = (i) => (metOf(i) || QU.filled(q, i) ? "done" : i === ci ? "now" : "later");
+    const rows = q.objs.map((o, i) => { const ls = q.lines[i] || [], s = stateOf(i), by = (q.by || [])[i];
+      return { no: ROMAN(i), state: s, act: "quest-sel", key: `data-i="${i}"`, pressed: q.sel === i, edit: ed,
+        name: ed ? `<input data-act="quest-name" data-i="${i}" value="${esc(o.name)}" aria-label="할 일 이름" maxlength="60">` : esc(QU.nameOf(q, i)),
+        method: o.term ? `<small class="method">${esc(o.term)}</small>` : "", tag: badge(i), easy: esc(QU.easyOf(o.name)),
+        full: qmore ? `<span class="full">${esc(o.name)}${o.term ? ` ${termTag(o.term)}` : ""}</span>` : "",
+        lines: ls.map((l, k) => (ed ? `<input data-act="quest-line" data-i="${i}" data-k="${k}" value="${esc(l)}" aria-label="적은 줄" maxlength="200">` : `<span class="lw">${esc(l)}</span>`)).join(""),
+        hint: !ls.length && !ed ? (q.draft ? "아직 — 채팅에서 맞는지 봐요" : "섬에서 한 줄 적어 보내면 여기에 남아요") : "",
+        right: ed ? `${ls.length} / <input type="number" min="1" max="5" value="${o.need}" data-act="quest-need" data-i="${i}" aria-label="개수">`
+          : s === "now" ? `<span class="now-badge">지금</span>${o.need > 1 ? ` ${ls.length} / ${o.need}` : ""}` : s === "done" ? (by && QU.BY_WORD[by] ? esc(QU.BY_WORD[by]) : o.need > 1 ? `${ls.length} / ${o.need}` : "") : "아직" }; });
+    const got = rows.filter((r) => r.state === "done").length, dots = rows.map((r) => `<i class="${r.state === "done" ? "on" : r.state === "now" ? "now" : ""}"></i>`).join("");
+    const side = (q.side || []).length ? `<p class="qside">곁 퀘스트 — 안 해도 돼요 · ${q.side.map((s) => `${s.icon} ${esc(s.name)}`).join(" · ")}<small>만드는 크기를 키우면 할 일이 돼요</small></p>` : "";
+    return `<div class="qcard"><div class="qhead"><div><h3>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</h3><div class="meta">${LB(q.chap)} 퀘스트${q.title !== N.STAGES[q.chap].title ? ` · ${esc(N.STAGES[q.chap].title)}` : ""} · 플로로가 만들었어요 · ${done ? "다 적음" : "하는 중"}</div></div><div class="qprog">정한 줄 <b>${got} / ${rows.length}</b><span class="dots">${dots}</span></div></div>
+      ${questRows(rows, `${LB(q.chap)} 퀘스트의 다섯 칸`)}${side}
+      <details class="qdesc"><summary>자세히 보기 · 왜 하나요</summary><p>${esc(q.desc)}</p><p><b>왜 하나요</b> — ${esc(q.why)}</p><button type="button" class="lnk qmore" data-act="qmore" aria-expanded="${qmore}">${qmore ? "간단히 보기" : "원래 할 일 문장 · 용어 보기"}</button></details>
+      <div class="qfoot"><span class="rw">보상 · 무지개 조개 1 · ${esc(QU.rankOf(Math.min(7, q.chap + 1)))}</span>
+        <div class="pacts">${ed ? `<button type="button" class="pri" data-act="quest-save">저장</button><button type="button" data-act="quest-cancel">취소</button>` : `<button type="button" data-act="quest-hint">힌트</button><button type="button" data-act="quest-edit">고치기</button><button type="button" class="${done ? "pri" : ""}" data-act="quest-report" ${done ? "" : "disabled"}>완료 보고</button>`}</div></div></div>`;
+  }
+  // 한 목록의 줄 — 퀘스트(questPane)와 맡길 일(70-tasks planQuestPane)이 같이 쓴다(C-68 · C-73). state: done(체크 · 적은 글) · now(펼침 — 쉬운 한 줄 · 힌트, 면의 색으로만) · later(흐리게 — 이름 · 쉬운 한 줄)
+  //   row: { no, state, name, method, tag, easy, full, lines, hint, detail, right, act, key, pressed, edit } — 고치는 중(edit)이면 단추 대신 div(안에 입력 칸이 든다)
+  function questRows(rows, label) {
+    const one = (r) => { const Tag = r.edit || !r.act ? "div" : "button", at = Tag === "button" ? ` type="button" data-act="${r.act}" ${r.key || ""} aria-pressed="${!!r.pressed}"` : "";
+      const easy = r.easy && r.state !== "done" ? `<span class="easy">${r.easy}</span>` : "", hint = r.state === "now" && r.hint ? `<span class="lw empty">${r.hint}</span>` : "";
+      const body = `<b>${r.name}</b>${r.method || ""}${r.tag || ""}${easy}${r.state === "later" ? "" : `${r.full || ""}${r.lines || ""}${hint}${r.detail || ""}`}`;
+      return `<li><${Tag} class="ln st-${r.state}${r.pressed ? " sel" : ""}"${at}><span class="ck">${r.state === "done" ? OK_ICON : r.no}</span><span class="lt">${body}</span><span class="n">${r.right || ""}</span></${Tag}></li>`; };
+    return `<ol class="qrows" aria-label="${label}">${rows.map(one).join("")}</ol>`;
   }
   // 도전과제 판(C-22) — 세로 탭 = 장(여덟), 그림만 크게, 마우스를 올리면 설명(data-tt). 상태는 지금 단계(st.j)와 퀘스트(적은 줄)에서 — 단계 · 할 일 · 판정 규칙은 그대로
   //   나무 위에 그 장의 '관문 전에 알아 둘 것'(C-35, 2026-10-24 — 옛 배우기 탭): 그 장에서 처음 쓰는 기능의 튜토리얼(tutorial.js forChap) · 이 장에서 쓰는 말(용어 풀이)
@@ -2809,18 +2825,20 @@
     return `<div class="qsel" role="group" aria-label="지금 할 퀘스트">${opt("stage", stageName, qp ? `${qp.n}개 중 ${qp.k}번째 할 일` : "채팅에서 이어 해요")}${
       opt("plan", "맡길 일", p ? `${p.total}개 중 ${p.done}개 끝냄` : `계획 ${b.v}판 · 확인하는 중`)}</div>${st.qfocus === "plan" ? planQuestPane(b) : questPane()}`;
   }
-  // 맡길 일 퀘스트 — 왼쪽 목차(순서대로 끝냄 · 지금 · 아직), 오른쪽 고른 줄(요구 · 기준 · 받은 보고). 맡기기 · 보고 확인은 채팅에서 — 여기는 보기만
+  // 맡길 일 퀘스트 — 퀘스트 카드와 같은 한 목록(C-73, 2026-10-30 목업 확정본 S7): 줄마다 요구 · 다 됐는지 보는 기준 · 받은 보고(끝낸 줄). 맡기기 · 허락 · 보고 확인은 섬 채팅에서 — 여기는 보기만
   function planQuestPane(b) {
     if (!b.confirmed) return `<div class="qempty"><b>계획을 확인하는 중이에요 (${b.v}판)</b>채팅에서 줄마다 맞아요 / 고칠래요를 누르고 확정하면, 이 창에 맡길 일이 순서대로 생겨요.</div>`;
     const items = b.plan.items, cur = FP.next(b), sel = items.some((x) => x.id === st.planSel) ? st.planSel : cur || items[items.length - 1].id;
-    const word = (id) => { const s = FP.stateOf(b, id); return s === "done" ? "끝냄 ✓" : id !== cur ? "★ 아직" : s === "running" ? "맡김 중" : s === "report" ? "보고 왔어요" : (b.work[id] || {}).fail ? "다시" : "지금"; };   // 다시 — 지난번에 끝까지 못 한 줄(C-50)
-    const toc = items.map((x, i) => `<button type="button" data-act="plan-sel" data-id="${esc(x.id)}" aria-pressed="${x.id === sel}" class="${FP.stateOf(b, x.id) === "done" ? "done" : x.id === cur ? "" : "lock"}">${ROMAN(i)}. ${esc(x.need)}<small>${word(x.id)}</small></button>`).join("");
-    const k = items.findIndex((x) => x.id === sel), x = items[k], w = b.work[sel] || {};
-    return `<div class="book"><div class="page l"><h4>목차 · 맡길 일</h4><div class="toc">${toc}</div></div>
-      <div class="page r"><h3>${esc(x.need)}</h3><div class="meta">맡길 일 · ${items.length}개 중 ${k + 1}번째 · ${word(sel)}${planPractice(b) ? " · 예시예요" : ""}</div>
-        <p><b>다 됐는지 보는 기준</b> — ${esc(x.check)}</p>${w.fail ? `<p><b>지난번에 끝까지 못 했어요${w.fail.n > 1 ? `(${w.fail.n}번)` : ""}</b> — ${esc(w.fail.why)}</p>` : ""}${w.note ? `<p><b>지난번 의견</b> — ${esc(w.note)}</p>` : ""}${w.report ? `<div class="pl-rep"><p>${esc(w.report.easy)}</p>${repChecks(w.report)}</div>` : ""}
-        <p class="meta">${sel === cur ? "맡기기 · 보고 확인은 채팅에서 해요." : FP.stateOf(b, sel) === "done" ? "끝낸 줄이에요." : "앞 줄을 끝내면 열려요."}</p>
-        <p><b>풀려는 문제</b> — ${esc(b.plan.problem)}</p></div></div>`;
+    const word = (id) => { const s = FP.stateOf(b, id); return s === "done" ? "끝냄" : id !== cur ? "앞 줄 뒤에" : s === "running" ? "맡김 중" : s === "report" ? "보고 왔어요" : (b.work[id] || {}).fail ? "다시" : "지금"; };   // 다시 — 지난번에 끝까지 못 한 줄(C-50)
+    const rows = items.map((x, i) => { const w = b.work[x.id] || {}, s = FP.stateOf(b, x.id) === "done" ? "done" : x.id === cur ? "now" : "later", check = `다 됐는지 보는 기준 — ${esc(x.check)}`;
+      const rep = w.report ? `<span class="done-when">받은 보고 — ${esc(w.report.easy)}${w.report.items ? ` · 기준 ${w.report.items.length}개 중 ${w.report.items.filter((c) => c.done).length}개 맞음` : ""}</span>` : "";
+      return { no: ROMAN(i), state: s, act: "plan-sel", key: `data-id="${esc(x.id)}"`, pressed: x.id === sel, name: esc(x.need), easy: check,
+        detail: s === "done" ? `<span class="done-when">${check}</span>${rep}` : `${w.fail ? `<span class="done-when">지난번에 끝까지 못 했어요${w.fail.n > 1 ? `(${w.fail.n}번)` : ""} — ${esc(w.fail.why)}</span>` : ""}${w.note ? `<span class="done-when">지난번 의견 — ${esc(w.note)}</span>` : ""}${w.report ? `<div class="pl-rep"><p>${esc(w.report.easy)}</p>${repChecks(w.report)}</div>` : ""}`,
+        hint: s === "now" ? "맡기기 · 허락 · 보고 확인은 섬 채팅에서 해요" : "", right: s === "now" ? `<span class="now-badge">${word(x.id)}</span>` : word(x.id) }; });
+    const got = rows.filter((r) => r.state === "done").length, dots = rows.map((r) => `<i class="${r.state === "done" ? "on" : r.state === "now" ? "now" : ""}"></i>`).join("");
+    return `<div class="qcard"><div class="qhead"><div><h3>맡길 일</h3><div class="meta">${items.length}개 중 ${got}개 끝냄 · 계획 ${b.v}판${planPractice(b) ? " · 예시예요" : ""}</div></div><div class="qprog">끝낸 줄 <b>${got} / ${rows.length}</b><span class="dots">${dots}</span></div></div>
+      ${questRows(rows, "맡길 일")}
+      <p class="rw">풀려는 문제 — ${esc(b.plan.problem)}</p></div>`;
   }
   // AI에게 묻는 것들 — 무엇을 기다리는지(planBusy)를 같이 보인다
   const planId = (el) => (el && el.dataset && el.dataset.id) || (st.plan ? FP.next(st.plan) : "");   // 보고 안의 단추는 data-id, 채팅의 칩은 지금 줄

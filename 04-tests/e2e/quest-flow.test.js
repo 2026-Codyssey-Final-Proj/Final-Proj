@@ -188,8 +188,8 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     await click(page, '.msg.now .dalt [data-act=draft-alt][data-i="1"]');
     assert.equal((await saved(page)).quest.by[0], "pick", "예시를 고르면 고름");
     await click(page, "[data-act=qtab][data-tab=quest]");
-    const toc = await page.$$eval(".qwin .toc button", (bs) => bs.map((b) => b.textContent));
-    assert.ok(toc[0].includes("후보 찾기") && !toc[0].includes("흔히 쓰는 방법 목록에서"), `목차는 짧은 이름: ${toc[0]}`);
+    const toc = await page.$$eval(".qwin .qcard .ln .lt b", (bs) => bs.map((b) => b.textContent));
+    assert.ok(toc[0].includes("후보 찾기") && !toc[0].includes("흔히 쓰는 방법 목록에서"), `줄 이름은 짧은 이름(C-68 한 목록): ${toc[0]}`);
     assert.ok(await page.$(".qwin .ln .easy"), "쉬운 한 줄"); assert.equal(await page.$(".qwin .ln .full"), null, "원래 문장은 접혀 있다");
     await click(page, ".qwin [data-act=qmore]");
     assert.match(await page.$eval(".qwin .ln .full", (e) => e.textContent), /흔히 쓰는 방법 목록에서/, "자세히 보기 — 원래 할 일 문장");

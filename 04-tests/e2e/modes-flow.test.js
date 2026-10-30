@@ -449,7 +449,7 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     assert.ok(!(await page.$(".qwin")), "처음엔 퀘스트 창이 없다");
     await page.type("[data-act=say]", "동아리 행사 신청 앱을 만들고 싶어요"); await page.keyboard.press("Enter"); await wait(600);
     assert.ok((await page.evaluate(() => [...document.querySelectorAll(".msg.me .b")].map((x) => x.textContent))).includes("동아리 행사 신청 앱을 만들고 싶어요"), "내 말은 오른쪽에 남는다");
-    assert.ok(await page.$(".qwin .book") && !(await page.$(".qwin .ev")), "퀘스트 창이 바로 떠서 공책 — 받기 화면 · '시작하시겠습니까'는 없다");
+    assert.ok(await page.$(".qwin .qcard") && !(await page.$(".qwin .ev")), "퀘스트 창이 바로 떠서 퀘스트 카드(C-68 한 목록) — 받기 화면 · '시작하시겠습니까'는 없다");
     assert.equal(await band().then((b) => b.split("·")[0].trim()), "1단계", `위 줄은 1단계부터: ${await band()}`);
     assert.ok((await band()).includes("동아리 행사 신청 앱"), `제목은 주제: ${await band()}`);
     assert.ok((await say()).startsWith("Ⅰ."), `칸마다 확인: ${await say()}`);
@@ -461,7 +461,7 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     await page.click("[data-act=gate]"); await wait(300); await page.click("[data-act=yes]"); await wait(400);
     if (await page.$("[data-act=check-pick]")) { await page.click("[data-act=check-pick]"); await wait(400); if (await page.$("[data-act=check-go]")) { await page.click("[data-act=check-go]"); await wait(400); } }
     // 2단계는 1단계 결과로 만든 초안을 받기 화면 없이 바로 확인(C-37, 2026-10-25 — 연습은 예시 초안)
-    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".shells span")?.textContent, book: !!document.querySelector(".qwin .book"), ev: !!document.querySelector(".qwin .ev") }));
+    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".shells span")?.textContent, book: !!document.querySelector(".qwin .qcard"), ev: !!document.querySelector(".qwin .ev") }));
     assert.ok(after.band.startsWith("2단계 · 동아리 행사 신청 앱") && after.shells === "1" && after.book && !after.ev, JSON.stringify(after));
     assert.match(await say(), /^Ⅰ\./, "2단계도 칸마다 확인");
     assert.equal(await page.evaluate(() => localStorage.getItem("floe:level")), null, "연습 모드의 관문은 영구 레벨에 남기지 않는다(C-28 — 이 켜짐 동안만 오른다, 칭호는 위처럼 바뀐다)");
@@ -472,8 +472,8 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     await page.click("[data-act=quest-fix]"); await wait(300);
     await page.evaluate(() => { const i = document.querySelector("[data-act=quest-title]"); i.value = "둘째 장 — 적어 두기"; i.dispatchEvent(new Event("input", { bubbles: true })); });
     await page.click("[data-act=quest-save]"); await wait(500);
-    assert.ok(await page.$(".qwin .book"), "받으면 공책");
-    assert.equal(await page.evaluate(() => document.querySelector(".page.r h3")?.textContent), "둘째 장 — 적어 두기", "고친 이름 그대로");
+    assert.ok(await page.$(".qwin .qcard"), "받으면 퀘스트 카드");
+    assert.equal(await page.evaluate(() => document.querySelector(".qwin .qhead h3")?.textContent), "둘째 장 — 적어 두기", "고친 이름 그대로");
     // 설정 — 2026-10-25(두승현): 옆 창이 아니라 섬 안의 판(채팅 자리를 바꿔 끼움). 퀘스트 창은 섬 옆 — 기본은 오른쪽, '왼쪽'을 고르면 [퀘스트][섬]. 이 컴퓨터에 남는다
     //   F-86(2026-10-29 두승현 "별도의 모달창을 중앙에"): 작업실이 열려 있으면 설정은 섬이 아니라 작업실 위 가운데 모달 — 섬의 채팅은 그대로
     await page.click("[data-act=settings]"); await wait(300);
@@ -563,7 +563,7 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     await page.click(".closet [data-act=wear]"); await wait(300);
     assert.ok(!(await page.$(".pet .deco")) && (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("navigator-prototype:v1")).wear).length)) === 0, "벗으면 기록도");
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tier=Lite&q=quest"), { waitUntil: "load" }); await wait(400);
-    assert.ok(await page.$(".toc .side-h") && (await page.evaluate(() => document.querySelectorAll(".toc button.lock[disabled]").length)) >= 1, "곁 퀘스트 — 목차 아래");
+    assert.ok(await page.$(".qwin .qside"), "곁 퀘스트 — 목록 아래 한 줄(C-68)");
     await page.click("[data-act=qtab][data-tab=tree]"); await wait(300); await page.click('[data-act=tree-chap][data-i="1"]'); await wait(200);
     assert.ok((await page.evaluate(() => document.querySelectorAll(".sidebn").length)) >= 1, "도전과제 옆 가지");
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(300);
