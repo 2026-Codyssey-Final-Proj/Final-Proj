@@ -85,6 +85,11 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     if (SHOTS) await shot(page, "map-readonly");
     await page.click("[data-act=quest-view-off]"); await wait(300); assert.ok(!(await page.$(".qcard.readonly")), "'지금 퀘스트로'면 읽기만 카드가 내려간다");
     await page.click('[data-act="tree-view"][data-v="flow"]'); await wait(200); assert.ok(await page.$(".qwin .jmap"), "흐름 = 한눈에 보기(C-39)");
+    // C-67(2026-10-30): 흐름이면 지도 띠 · 퀘스트 카드가 접히고 작업 칸 가득, 돌아가는 길은 '퀘스트로' 알약 하나(지금 줄 · 진행)
+    assert.ok(!(await page.$(".qwin .sm-grid")) && !(await page.$(".qwin .qstack")) && await page.$(".qwin .qboard.full") && await page.$(".qwin .q-back"), "흐름 보기 — 지도 띠 · 카드 없음 · 알약 있음");
+    assert.match(await page.$eval(".qwin .q-back", (e) => e.textContent), /퀘스트로/);
+    await page.click(".qwin .q-back"); await wait(300); assert.ok(await page.$(".qwin .sm-grid.one") && await page.$(".qwin .qstack"), "알약 → 퀘스트 카드가 올라온 지도(S2)");
+    await page.click('[data-act="tree-view"][data-v="flow"]'); await wait(200);
     // C-54 ⑨ 짝 선(버튼 "'흐름 따라가기'에서만"): 1↔8 · 2↔7 · 3↔6 길 셋, 짝 단추 → 두 칸 나란히
     assert.ok((await page.$$(".jmap .jm-rails")).length === 8, "단계마다 길 자리"); assert.ok((await page.$$(".jmap .jm-rails i.a")).length === 8, "1↔8 길은 여덟 단계를 다 지난다");
     await page.click('.jmap [data-act="pair-sel"][data-v="a"]'); await wait(250);
