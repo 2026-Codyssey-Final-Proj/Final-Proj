@@ -40,6 +40,7 @@ const GH = require("./github.js");   // 설정의 GitHub 칸(C-25, 2026-10-24) �
 const Carry = require("./carry.js");   // 지식 퀘스트 C-48 가져갈 것 — 기준 다섯 · 장부의 규칙(순수, 2026-10-29)
 const Plan = require("./plan.js");   // C-51 앞의 결정과 다름(규칙) — 계획판 규칙(순수)과 같은 파일
 const Quest = require("./quest.js");   // C-51 근거 줄의 칸 이름(짧은 이름)
+const Sheet = require("./sheet.js");   // C-47 한 장(2026-10-30) — 단계 결과의 sheet 모양 검사 — claude-drafted: 2026-10-30
 const Docs = require("./docs.js");   // C-37 단계 문서 — 단계 결과로 사용자 저장소에 둘 파일(순수 함수) — claude-drafted: 2026-10-25
 const Setup = require("./setup-status.js");   // 처음 설정(GET /api/setup · POST /api/setup/check) — claude-drafted: 2026-10-19
 const Mcp = require("./mcp.js");   // C-38 시험판 — MCP(웹 GPT · 웹 Claude · Claude Desktop)의 규칙. 이 컴퓨터 안에서는 늘, 밖(터널)에서는 NAV_MCP=1일 때만 /mcp/<토큰>을 받는다 — claude-drafted: 2026-10-25
@@ -162,7 +163,8 @@ const STATIC = {
   // 화면 빈칸(2026-10-18): 용어 풀이 · 확인 질문과 잠시 멈추기 · 꼭/나중에 · 작업 알림 기록 · 만드는 크기. 화면이 부르는 파일은 static-files.test.js가 이 목록과 맞대어 본다
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
-  "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "build.js", "presets.js", "handoff.js", "tutorial.js", "plan.js", "docs.js", "carry.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+  "03-backend/navigator": ["sheet.js",   // C-47 한 장(2026-10-30) — 화면이 ../../03-backend/navigator/sheet.js로 부른다
+    "navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "build.js", "presets.js", "handoff.js", "tutorial.js", "plan.js", "docs.js", "carry.js"],   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -698,7 +700,8 @@ const stageExtraOk = (v) => (v.prep == null || (Array.isArray(v.prep) && v.prep.
   && (v.at == null || (typeof v.at === "string" && DATE_RE.test(v.at))) && (v.passed == null || (typeof v.passed === "string" && DATE_RE.test(v.passed))) && (v.check == null || checkOk(v.check))
   && (v.checkBy == null || v.checkBy === "confirm")
   && (v.skip == null || skipOk(v.skip)) && (v.nocode == null || v.nocode === true)
-  && (v.learned == null || strOk(v.learned, LEARNED_MAX)) && (v.goal == null || goalOk(v.goal));   // nocode — 6단계를 코드 없이 지남(A-04 '아니요', F-70)   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
+  && (v.learned == null || strOk(v.learned, LEARNED_MAX)) && (v.goal == null || goalOk(v.goal))
+  && (v.sheet == null || Sheet.ok(v.sheet));   // C-47 한 장 — 다섯 칸 · 칸마다 300자 · 확인한 날(2026-10-30)   // nocode — 6단계를 코드 없이 지남(A-04 '아니요', F-70)   // C-40 — 완료 기준을 누가 봤나(confirm = 초안을 칸마다 확인, AI 판정 없이 · 없으면 AI가 살펴봄)
 // 화면이 보낸 단계 결과들 — { "0": {title, items, …}, "1": … }. 1 · 2단계(0 · 1)가 다 있어야. 단계 번호 0~7만. 모르는 칸은 버린다
 // 답: { results } 또는 { why } — 무엇이 틀렸는지 그대로 말한다(2026-10-25 리뷰)
 function resultsOf(r) {
@@ -713,7 +716,8 @@ function resultsOf(r) {
       ...(v.prep && v.prep.length ? { prep: [...v.prep] } : {}), ...(v.at ? { at: v.at } : {}), ...(v.passed ? { passed: v.passed } : {}),
       ...(v.check && v.check.length ? { check: v.check.map((c) => ({ text: c.text, met: c.met, evidence: c.evidence || "", ...(c.skipped ? { skipped: true } : {}) })) } : {}), ...(v.checkBy ? { checkBy: v.checkBy } : {}),
       ...(v.skip ? { skip: { reason: v.skip.reason, items: Array.isArray(v.skip.items) ? [...v.skip.items] : [] } } : {}), ...(v.nocode === true ? { nocode: true } : {}),
-      ...(typeof v.learned === "string" ? { learned: v.learned } : {}), ...(v.goal ? { goal: v.goal.same ? { same: true } : { changed: v.goal.changed } } : {}) };
+      ...(typeof v.learned === "string" ? { learned: v.learned } : {}), ...(v.goal ? { goal: v.goal.same ? { same: true } : { changed: v.goal.changed } } : {}),
+      ...(v.sheet ? { sheet: Object.fromEntries(Sheet.FIELDS.map(([k]) => [k, v.sheet[k]]).concat(v.sheet.at ? [["at", v.sheet.at]] : [])) } : {}) };   // C-47 한 장 — 아는 칸만
   }
   return { results: out };
 }

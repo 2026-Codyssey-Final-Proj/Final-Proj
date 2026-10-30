@@ -807,6 +807,8 @@
     // 종류를 붙인 구간은 '확인할 먹이'로(FR-15 더함) — 사람이 확인하기 전에는 책의 칸에 넣지 않는다(C-8 ②). 퀘스트 창의 '책' 탭(README 책 아래)에서 확인한다 — 서재가 있으면(SHELF_ON) 도서관 탭 맨 위
     const items = FD.inbox(fd.sections, fd.marks, fd.kinds).map((x) => ({ ...x, at: Date.now(), example: !!fd.example }));
     st.inbox = [...items, ...st.inbox].slice(0, 60);
+    for (const x of items) mat("feed", FD.kindLabel ? FD.kindLabel(x.kind) : x.kind);   // C-47 재료 — 구간의 종류만
+    if (p.left.length) mat("feed", `뺀 구간 ${p.left.length}`);
     if (items.length) setTimeout(() => say(`확인할 먹이 ${items.length}개는 ${SHELF_ON ? "도서관 탭 맨 위" : "위 줄 '퀘스트' 창의 '책' 탭"}에 두었어요`), 3200);
     // 연습 모드의 예시 먹이는 정해진 장면(연습 첫 글)으로 이어진다 — 연습용 예시는 정해진 글만 알아서(FR-10). 진짜 AI면 먹은 글 그대로
     Object.assign(st, { text: fd.example && st.mode === "fixture" ? S.first.text : p.text, meal: null, undo: [] });
@@ -1137,14 +1139,15 @@
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}</div>
       <div class="main"><div class="log" data-log data-go-stage="${st.chatGo == null ? "" : `${st.chatGo}:${goSeq}`}">${st.chat.map((m) => (m.kind === "stage" ? `<div class="msg stage" data-stage="${m.n}"><div class="b">${m.html}</div></div>` : `<div class="msg ${m.who}${m.kind ? ` ${m.kind}` : ""}"><div class="b">${m.html}</div></div>`)).join("")}${
         working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast(mine()) ? ` — ${esc(stepLine(aiLast(mine())))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
-        ${proposalsHTML()}${handoffHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
+        ${sheetHTML()}${proposalsHTML()}${handoffHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
         ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts more" id="more-chips">${moreOpen ? more.map(chip).join("") : ""}<button type="button" class="b ghost mtg" data-act="more-toggle" aria-expanded="${moreOpen}" aria-controls="more-chips">${moreOpen ? "접기" : `더 보기${unreadN() ? ` · 알림 ${unreadN()}` : ""}`}</button></div>` : ""}
         <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`;
   }
   // 채팅 입력(C-22) — 상황에 따라: 준비 계획 · 맡길 일(C-35, planSay) / 처음 — 원하는 것(C-36, startDraft) / 퀘스트 한 줄 적기 · 고쳐 적기 / 궁금한 것 / 직접 쓴 답 / 바뀐 작업(진짜 AI)
   function send() {
     const t = st.say.trim(); if (!t || st.busy) return;
-    st.say = ""; logMe(t.length > 200 ? `${t.slice(0, 200)}… (글 ${t.length.toLocaleString()}자)` : t); activity();   // 붙여 넣은 긴 글은 앞부분만 내 말로
+    st.say = ""; logMe(t.length > 200 ? `${t.slice(0, 200)}… (글 ${t.length.toLocaleString()}자)` : t); activity();
+    mat("chat", t);   // C-47 재료 — 내가 적어 보낸 말의 한 줄(48-sheet, 가린 뒤 80자)   // 붙여 넣은 긴 글은 앞부분만 내 말로
     if (planNow()) return planSay(t);   // 준비 계획 · 맡길 일(C-35)
     const q = st.quest;
     if (!st.j && !q && QU) return startDraft(t);    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }
@@ -1569,7 +1572,7 @@
     const ck = r && r.check;
     // R-5 ③ 기록(C-42): 적은 칸은 카드에 그 줄(정한 것)을 보인다 — 아직인 칸은 짧은 이름. 3단계의 '꼭 / 있으면 좋음'은 한 칸(Ⅲ)에 적는다 [해석: 스토리보드의 두 칸 → 한 줄]
     const cards = q ? `<div class="cv-cards">${q.objs.map((o, i) => { const ln = (q.lines[i] || [])[0] || ""; return `<span class="${QU.filled(q, i) ? "y" : ""}" title="${ROMAN(i)} ${esc(QU.nameOf(q, i))}">${ROMAN(i)} ${esc(QU.filled(q, i) && ln ? ln : QU.nameOf(q, i))}</span>`; }).join("")}</div>` : "";
-    const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, "도전과제 탭에서 칸마다 누가 정했는지") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
+    const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, !SH ? "도전과제 탭에서 칸마다 누가 정했는지" : r.sheet ? `한 장 확인함 ${r.sheet.at || ""}` : "한 장 — 섬에서 맞아요 / 고칠래요") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
     // R-5 ④ 저장(C-42): 올라갈 파일 이름 — 이 장의 단계 문서 · 기획서 · 결정 기록(docs.js가 만드는 것과 같은 이름)
     const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
     const fl = files.length ? `<ul class="cv-files">${files.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
@@ -1717,6 +1720,48 @@
       render();
     },
     "handoff-close": () => { hoText = ""; render(); },
+  });
+// ━━ app/48-sheet.js ━━
+  // ── C-47 남은 몫(2026-10-30, 이재엽 버튼 "10/31까지" — 지식 퀘스트 PRD 3 · 6 · 7절, 9절 5번): 재료는 저절로 · ③ 기록 칸의 한 장은 확인만 ──
+  //   재료 — 내가 한 말(logMe) · 맡긴 일 보고(planEnd) · 허락 결정(decideApproval — 도구 이름만) · 먹이 구간의 종류(feedConfirm) · 바뀐 파일 이름(그 단계의 훅 알림, stageFilesOf).
+  //   가린 뒤 이름 · 한 줄 · 수만, 이 컴퓨터에만(sheet.js add). 대화 원문 · 도구 입력은 남기지 않는다.
+  //   한 장 — 완료 보고 뒤(그 단계 결과가 생기면) 채팅 위 카드로 다섯 칸 초안을 규칙으로(AI를 부르지 않는다 — 연습 모드에서도 서버 없이).
+  //   맞아요 → 단계 결과의 sheet(확인한 날) → '문서로 묶어 GitHub에'에서 단계 문서의 '한 장' 절 · README의 그 단계 절(docs.js), 폴더에서 다시 읽힌다(C-49). 고칠래요 → 칸마다 고쳐 저장
+  const SH = window.FloeSheet;
+  keep(["mats"]);
+  st.mats = SH ? SH.fromSaved(st.mats) : {};
+  let sheetEdit = null;   // 고치는 중인 다섯 칸 { n, s } — 저장하지 않는다
+  const sheetLater = new Set();   // 이번 켜짐에 '나중에'를 누른 단계
+  const matStage = () => (st.quest ? st.quest.chap : atStage());   // 채팅 기록(logMsg)과 같은 단계
+  function mat(kind, text) { if (SH) st.mats = SH.add(st.mats, matStage(), kind, text, (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t)); }
+  function sheetDraft(n) {
+    const r = st.results[n], s = N.STAGES[n] || {}, nx = N.STAGES[n + 1];
+    return SH.draft({ title: s.title || "", mats: (st.mats || {})[n] || [], cells: (r ? r.items : []).map((x) => ({ name: QU ? QU.shortOf(x.name) : x.name, line: (x.lines || [])[0] || "" })),
+      terms: crits(n).map((c) => c.term).filter(Boolean), files: stageFilesOf(n).map((x) => x.path), next: nx ? `${LB(n + 1)} · ${nx.title}` : "마지막 단계 — 돌아보기를 마쳐요" });
+  }
+  // 지금 단계에 결과가 있고 아직 한 장을 확인하지 않았으면 그 단계, 아니면 -1
+  const sheetFor = () => { const n = nowStage(), r = st.results[n]; return SH && r && !r.sheet && !sheetLater.has(n) ? n : -1; };
+  function sheetHTML() {
+    const n = sheetFor(); if (n < 0) return "";
+    const ed = !!sheetEdit && sheetEdit.n === n, s = ed ? sheetEdit.s : sheetDraft(n);
+    const rows = SH.FIELDS.map(([k, w]) => (ed ? `<label class="sh-f"><b>${w}</b><textarea data-act="sheet-field" data-k="${k}" rows="2" maxlength="${SH.FIELD_MAX}" aria-label="한 장 — ${w}">${esc(s[k])}</textarea></label>`
+      : `<div class="sh-f"><b>${w}</b><span>${esc(s[k])}</span></div>`)).join("");
+    const acts = ed ? `<button type="button" class="b pri" data-act="sheet-save">이대로 저장</button><button type="button" class="b ghost" data-act="sheet-edit">그만 고치기</button>`
+      : `<button type="button" class="b pri" data-act="sheet-ok">맞아요</button><button type="button" class="b" data-act="sheet-edit">고칠래요</button><button type="button" class="b ghost" data-act="sheet-later">나중에</button>`;
+    return `<div class="msg floro sh"><div class="b"><p><b>③ 기록 — ${LB(n)} 한 장</b> 이 단계에서 한 일을 한 장으로 묶었어요. 맞으면 '맞아요', 고칠 곳이 있으면 '고칠래요'.</p><div class="sh-grid">${rows}</div><p class="mc-fine">맞아요 하면 '문서로 묶어 GitHub에'에서 README의 그 단계 절과 단계 문서에 들어가요.</p><div class="opts">${acts}</div></div></div>`;
+  }
+  function sheetInput(k, v) { if (sheetEdit && SH.FIELDS.some(([f]) => f === k)) sheetEdit.s = { ...sheetEdit.s, [k]: String(v).slice(0, SH.FIELD_MAX) }; }   // 치는 동안 다시 그리지 않는다
+  const sheetKeep = (n, s) => { st.results = { ...st.results, [n]: { ...st.results[n], sheet: { ...s, at: ymd() } } }; sheetEdit = null; save(); render(); say(`${LB(n)} 한 장을 기록에 넣었어요`); };
+  Object.assign(ACT, {
+    "sheet-ok": () => { const n = sheetFor(); if (n >= 0) sheetKeep(n, sheetDraft(n)); },
+    "sheet-edit": () => { const n = sheetFor(); if (n < 0) return; sheetEdit = sheetEdit && sheetEdit.n === n ? null : { n, s: sheetDraft(n) }; render(); },
+    "sheet-save": () => {
+      const n = sheetFor(); if (n < 0 || !sheetEdit || sheetEdit.n !== n) return;
+      const s = Object.fromEntries(SH.FIELDS.map(([k]) => [k, String(sheetEdit.s[k] || "").trim()]));
+      if (!SH.ok(s)) return say("칸마다 한 줄은 적어 주세요");
+      sheetKeep(n, s);
+    },
+    "sheet-later": () => { const n = sheetFor(); if (n >= 0) { sheetLater.add(n); sheetEdit = null; render(); } },
   });
 // ━━ app/50-chatlist.js ━━
   // ── C-63 왼쪽 대화 목록(2026-10-29, 두승현 PRD 3-2 · 이재엽 승인): 프로젝트 이름 → 단계 바로가기(최근이 위 — 지금 / 그 단계를 이야기한 날) → 맨 아래 '전체 파일'(지금의 폴더 모양, 한 칸 들여서).
@@ -2762,7 +2807,7 @@
   function planEnd(t) {
     const id = st.plan && FP.running(st.plan); if (!id) return;
     // 보고는 맡길 일의 지금 말로(C-35). 단계 퀘스트를 보고 있으면 지금 할 퀘스트는 그대로 두고 채팅에 한 줄 · 칩(planChip)으로 알린다 — 고르는 것은 사람(2026-10-24 리뷰). 접혀 있으면 살짝 보인다
-    if (t && t.report) { st.plan = FP.report(st.plan, id, t.report, t.verdict || null); logMsg("sys", `Claude Code가 보고를 보냈어요${st.qfocus === "plan" ? "" : " — '맡길 일'에서 봐요"}`); peek(); say(t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy); }
+    if (t && t.report) { st.plan = FP.report(st.plan, id, t.report, t.verdict || null); mat("report", t.report.easy); logMsg("sys", `Claude Code가 보고를 보냈어요${st.qfocus === "plan" ? "" : " — '맡길 일'에서 봐요"}`); peek(); say(t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy); }
     else { const why = t && t.state === "failed" ? "끝까지 가지 못했어요" : "보고를 받지 못했어요"; st.plan = FP.failed(st.plan, id, why); peek(); say(`${why} — 다시 맡길 수 있어요`); }
     save(); render(); fetchUsage();
   }
@@ -2949,6 +2994,7 @@
     if (decision === "allow" && a.card && a.card.danger && st.apSure !== id) return set({ apSure: id });   // 되돌리기 어려운 일 — 한 번 더 묻는다
     const sure = st.apSure === id; st.apSure = "";
     approvals = approvals.filter((x) => x.id !== id);
+    mat("approve", `${decision === "allow" ? "허용" : "거절"} — ${(a.card && a.card.tool_name) || "도구"}`);   // C-47 재료 — 도구 이름만
     if (apMode !== "live") { say(decision === "allow" ? "연습이라 실제로 허용하지는 않았어요" : "연습이라 실제로 거절하지는 않았어요"); return render(); }
     render();
     try {
@@ -3657,7 +3703,7 @@
     },
     judge: () => { if (refuse(mealWhy())) return; st.notice = ""; judge(false); },
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
-    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [] }); ACT.ex(S.examples.indexOf(S.first)); },
+    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, mats: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [] }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => RETRY[st.warn.then](),
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
@@ -4093,6 +4139,7 @@
     if (a === "ftext") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.text = t.value; const d = f.text !== f.saved; if (d !== f.dirty) { f.dirty = d; render(); } return; }   // 파일 고치기(C-43) — 바뀜 표시만 다시 그린다(글 칸이 흔들리지 않게)
     if (a === "fn-find") { st.fnFind = t.value.slice(0, 60); render(); return; }
     if (a === "card-field") { st.cardEdits = { ...st.cardEdits, [String(t.dataset.v)]: t.value.slice(0, 200) }; return; }   // C-56 기준 카드의 빈칸 — 다시 그리지 않는다(관문 '네' 또는 '고친 것 적용'에서 저장)
+    if (a === "sheet-field") { sheetInput(t.dataset.k, t.value); return; }   // C-47 한 장 고칠래요 — 다시 그리지 않는다('이대로 저장'에서)
     if (a === "prep-think") { const c = st.prep && st.prep.cards && st.prep.cards[Number(t.dataset.i)]; if (c) c.think = t.value.slice(0, 120); return; }   // C-54 고칠래요 — ① 생각(다시 그리지 않는다, '맞아요'에서 저장)
     if (a === "ffind") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.find = t.value.slice(0, 60); if (f.kind === "md" && !f.edit && !f.raw && f.find) f.raw = true; render(); return; }   // C-53 문서 안 찾기 — 그 글이 든 줄 표시(원문 · 코드 보기)   // R-10 넘기는 까닭 — 다시 그리지 않는다(글 칸이 흔들리지 않게)
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다
@@ -4284,7 +4331,7 @@
     if (q.approve && AP) { approvals = AP.EXAMPLE.map((a) => ({ ...a, at: Date.now() })); apMode = "example"; st.task = { text: "", lines: null, say: "", sent: "" }; st.apSure = ""; }   // &approve=1 — 예시 승인 카드(FR-17, 녹화 · 시험용)
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
-    if (q.start) Object.assign(st, { codeless: null, linesDone: [], carryUse: {}, carryDone: false, j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, ship: null, prep: null, mapSel: null });
+    if (q.start) Object.assign(st, { codeless: null, linesDone: [], carryUse: {}, carryDone: false, j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, mats: {}, ship: null, prep: null, mapSel: null });
     // #feed — 먹이 주기의 정리 장면(예시 먹이, C-15 — 녹화 · 시험용)
     if (q.feed && FD) Object.assign(st, { j: null, finished: false, todos: null, tab: "today", hold: null, text: FD.EXAMPLE, meal: feedState(FD.EXAMPLE, true) });
     if (q.ex !== undefined) {
