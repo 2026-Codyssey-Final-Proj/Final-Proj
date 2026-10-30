@@ -3,7 +3,8 @@
 # 비밀값이 없으면 건너뛰고 성공으로 끝난다. 시험: 04-tests/repo/jira-release.test.js
 # 2026-10-19(이재엽 결정, 인수인계 4절 제안 1번): 그 전에 changes/*.md 조각을 CHANGELOG.md 맨 위 다음 번호로 합쳐 main에 커밋한다
 # (.github/scripts/changelog-fold.js, 시험 04-tests/repo/changelog-fold.test.js). GITHUB_TOKEN으로 한 push는 워크플로를 다시 깨우지 않아 되풀이되지 않는다.
-# main 끝(ref: main)을 받는다 — 병합이 잇달아도 concurrency가 줄을 세우고, 뒤 실행이 앞 실행의 합친 커밋 위에서 돈다.name: jira-release
+# main 끝(ref: main)을 받는다 — 병합이 잇달아도 concurrency가 줄을 세우고, 뒤 실행이 앞 실행의 합친 커밋 위에서 돈다.
+name: jira-release   # 주석 끝에 붙어 있어 워크플로 이름이 비어 있었다(새 맥락 리뷰 2026-10-30)
 
 on:
   push:
@@ -25,7 +26,10 @@ jobs:
         with:
           ref: main
           fetch-depth: 200   # changelog-fold.js가 지난 병합 커밋에서 PR 번호를 찾는다
+      # 틀린 조각이 하나 있어도 정상 조각은 합쳐 커밋 · Jira까지 가게 — 실패는 맨 끝 단계가 빨갛게 표시한다(고칠 목록 F-105-5)
       - name: changes/*.md 조각 → CHANGELOG.md 다음 번호
+        id: fold
+        continue-on-error: true
         run: node .github/scripts/changelog-fold.js
       - name: 합친 CHANGELOG를 main에 커밋
         run: |
@@ -42,3 +46,9 @@ jobs:
           JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY }}
+          FOLDED_VERSIONS: ${{ steps.fold.outputs.versions }}   # 한 번에 합친 버전마다 릴리스(F-105-6)
+      - name: 틀린 조각이 있었으면 실패로 표시
+        if: steps.fold.outcome == 'failure'
+        run: |
+          echo "::error::changes/의 조각 파일 중 틀린 것이 있어 합치지 못했어요 — 위 '조각 → CHANGELOG' 단계의 오류를 보고 고쳐 주세요(changes/README.md)"
+          exit 1

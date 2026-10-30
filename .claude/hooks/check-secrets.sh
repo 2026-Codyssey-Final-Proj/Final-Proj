@@ -14,7 +14,12 @@ if [ "${1:-}" = "--staged" ]; then
   mode="staged"
 else
   cmd=$(json_field tool_input.command)
-  echo "$cmd" | grep -q 'git commit' || exit 0
+  # 커밋 명령인가 · 어느 폴더인가 — 명령을 풀어 본다(gitcmd.py). 전에는 'git commit' 글자만 봐서 `git -c k=v commit`이 검사를 건너뛰었다(고칠 목록 F-105-7)
+  where=$(gitcmd commit-dir "$cmd"); rc=$?
+  # 파이썬이 없거나(3) 도우미가 죽으면 글자로 — 커밋 같으면 이 폴더를 검사한다(아래에서 파이썬이 없으면 막는다)
+  if [ $rc -ne 0 ]; then echo "$cmd" | grep -qE 'git\s.*commit' && where=.; fi
+  [ -n "$where" ] || exit 0
+  cd "$where" 2>/dev/null || cd .   # git -C <폴더> 커밋이면 그 폴더 — 도우미가 풀 수 없는 폴더면 "."을 준다(건너뛰지 않게, 새 맥락 리뷰)
 fi
 
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
@@ -45,14 +50,15 @@ ASSIGN = re.compile(
 PLACEHOLDER = re.compile(r"(?i)[<${]|your|example|changeme|placeholder|dummy|xxxx|\*\*\*")
 FORBIDDEN = re.compile(r"(^|/)(\.env(\.(?!example$|sample$|template$)[^/]+)?|id_rsa|id_ed25519|credentials\.json)$|\.(pem|key|p12|pfx)$")
 
+# core.quotepath=off — 기본값이면 한글 경로가 "b/\352…"로 바뀌어 아래 '+++ b/'에 안 맞아 그 파일을 통째로 건너뛰었다(고칠 목록 F-105-1). 출력은 UTF-8로 읽는다
 def git(*a):
-    return subprocess.run(["git", *a], capture_output=True, text=True).stdout
+    return subprocess.run(["git", "-c", "core.quotepath=off", *a], capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
 
 def mask(v):
     return f"{v[:4]}…({len(v)}자)"
 
 diff = git("diff", "--cached", "-U0", "--no-color") if mode == "staged" else git("diff", "HEAD", "-U0", "--no-color")
-changed = git("diff", "--cached" if mode == "staged" else "HEAD", "--name-only", "--diff-filter=AMR").split()
+changed = git("diff", "--cached" if mode == "staged" else "HEAD", "--name-only", "--diff-filter=AMR").splitlines()   # 줄로 — 이름에 빈칸이 있어도
 added = []  # (path, lineno, text)
 path, line = None, 0
 for l in diff.splitlines():

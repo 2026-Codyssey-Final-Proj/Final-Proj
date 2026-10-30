@@ -6,14 +6,20 @@
 # gh 조회가 실패하면 막지 않고 경고만 한다.
 . "$(dirname "$0")/lib.sh"
 cmd=$(json_field tool_input.command)
-echo "$cmd" | grep -qE '(^|[;&|]|\s)git\s+push(\s|$)' || exit 0
-echo "$cmd" | grep -qE -- '--delete|(\s):' && exit 0   # 브랜치 삭제 푸시는 해당 없음
+# 올리는 브랜치 — 명령을 풀어 refspec의 대상(src:dst면 dst), 없으면 HEAD. 지우는 푸시는 해당 없음(gitcmd.py push-target)
+branch=$(gitcmd push-target "$cmd")
+if [ $? -eq 3 ]; then   # 파이썬이 없으면 전처럼 글자로
+  echo "$cmd" | grep -qE '(^|[;&|]|\s)git\s+push(\s|$)' || exit 0
+  echo "$cmd" | grep -qE -- '--delete|(\s):' && exit 0
+  branch=$(echo "$cmd" | grep -oE 'git\s+push(\s+-[a-zA-Z-]+)*\s+origin\s+[^ ;&|]+' | awk '{print $NF}' | tail -1)
+  branch=${branch##*:}; [ -n "$branch" ] || branch=HEAD
+fi
+[ -n "$branch" ] || exit 0
 
 cd "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || exit 0
-# 명령에 `origin <브랜치>`가 있으면 그 브랜치, 없으면 현재 브랜치
-branch=$(echo "$cmd" | grep -oE 'git\s+push(\s+-[a-zA-Z-]+)*\s+origin\s+[^ ;&|]+' | awk '{print $NF}' | tail -1)
-[ -n "$branch" ] || branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
-[ -n "$branch" ] && [ "$branch" != "main" ] && [ "$branch" != "HEAD" ] || exit 0
+# HEAD(`git push -u origin HEAD` — 가장 흔한 꼴)는 지금 브랜치로 — 전에는 HEAD면 병합 여부를 보지 않고 통과했다(고칠 목록 F-105-4)
+[ "$branch" = "HEAD" ] && branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+case "$branch" in ""|main|HEAD) exit 0 ;; esac
 
 merged=$(gh pr list --head "$branch" --state merged --json number -q '[.[].number]|join(",")' 2>/dev/null) || { echo "⚠️ block-merged-branch-push: gh 조회 실패 — 확인 없이 진행합니다" >&2; exit 0; }
 [ -n "$merged" ] || exit 0
