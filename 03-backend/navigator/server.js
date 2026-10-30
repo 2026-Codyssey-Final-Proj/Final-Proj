@@ -30,6 +30,7 @@ const Steps = require("./steps.js");   // AI 진행(C-12) — 한 일의 말 · 
 const AP = require("./approve.js");    // FR-17 승인 카드의 모양(2026-10-20)
 const { callClaude, usage, claudeVersion, startTask: openClaude, ledger, killTree } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
 const Files = require("./files.js");
+const Exclude = require("./exclude.js");   // C-52 빼 둘 곳 — 사람이 고른 폴더 · 파일을 Floe가 읽지 않게(순수, 2026-10-30)
 const FindLines = require("./findlines.js");   // C-56 R-4 — 폴더의 글 파일에서 칸의 답 후보 줄(2026-10-28)
 const Project = require("./project.js");   // runCommand — 바뀐 줄을 git diff로(C-43, 읽기만)
 const Docmap = require("./docmap.js");
@@ -80,6 +81,10 @@ const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 
 // 지식 퀘스트 C-48(2026-10-29) — 따로 더해 둔다(다른 갈래가 고치는 위 목록 줄과 부딪치지 않게). 가져갈 것 초안(AI 한 번) · 장부(이 컴퓨터) 모두 확인 값
 TOKEN_ROUTES.push("/api/carry/draft", "/api/carry");
 POST_ROUTES.push("/api/carry/draft");
+
+// C-52 빼 둘 곳(2026-10-30) — 따로 더해 둔다(다른 갈래와 부딪치지 않게). 폴더 이름 · 목록이 나가고 저장하므로 확인 값
+TOKEN_ROUTES.push("/api/exclude");
+POST_ROUTES.push("/api/exclude");
 
 // 있으면 나만 읽게(600) 고친 뒤 읽고, 없거나 모양이 이상하면 새로 만든다. Windows에서는 chmod가 거의 효과가 없다 — 홈 폴더의 기본 권한(그 사용자만)에 기댄다
 function eventToken(file = TOKEN_FILE) {
@@ -475,6 +480,38 @@ function retryTask(body) {
   return startTask(task.req.text, task.req.label, task.req.checks, { at: task.at, try: (task.try || 0) + 1, retries: (task.retries || 0) + (auto ? 0 : 1), note: prevNote(task) + (b.way === "files-only" ? FILES_ONLY : "") });
 }
 
+// ── C-52 빼 둘 곳(2026-10-30 — 지식 퀘스트 PRD 9절 10번 "설정 창의 '빼 둘 곳'", 이재엽 버튼 "10/31까지") — claude-drafted: 2026-10-30 ──
+// 사람이 고른 폴더 · 파일은 Floe가 읽지 않는다: 파일 칸 · 찾기 · 문서 지도 · README 책 · 계획 AI에 가는 맨 위 이름 · 단계 문서 · 결정 기록. 화면이 아니라 서버가 지킨다.
+// 목록은 폴더마다 — 열쇠는 실제 경로의 지문(folderKey, 경로 · 이름은 남기지 않는다), 이 컴퓨터의 파일 하나(NAV_USAGE_FILE 옆 -exclude.json, 없으면 홈의 .navigator-exclude.json, 600). 규칙은 exclude.js
+const excludeFile = () => (process.env.NAV_USAGE_FILE ? process.env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-exclude.json") : path.join(os.homedir(), ".navigator-exclude.json"));
+function excludeBook() { try { return Exclude.revive(JSON.parse(fs.readFileSync(excludeFile(), "utf8"))); } catch { return {}; } }
+const excludeList = (dir) => excludeBook()[folderKey(dir)] || [];
+const excludeOf = (dir) => Exclude.matcher(excludeList(dir));
+function excludeSave(dir, list) {
+  const k = folderKey(dir), f = excludeFile(), tmp = `${f}.${process.pid}.tmp`;
+  const { [k]: _old, ...rest } = excludeBook();
+  const book = list.length ? { [k]: list, ...rest } : rest;   // 방금 저장한 폴더를 맨 앞에 — 폴더가 200개를 넘으면 오래된 것부터 빠진다(새 줄이 잘려 저장되지 않는 일이 없게)
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(tmp, JSON.stringify(Exclude.revive(book)), { mode: 0o600 });
+  fs.renameSync(tmp, f);
+}
+function excludeGet() {
+  const s = projectNow();
+  if (!s) return { ok: true, project: "", list: [], why: "folder" };
+  return { ok: true, project: s.project, list: excludeList(s.dir), why: "" };
+}
+// POST { lines: [줄] } — 거절할 줄이 하나라도 있으면 아무것도 바꾸지 않고 줄마다 까닭(why bad). 저장하면 옛 파일 목록을 버린다(옛 번호로 빼 둔 파일을 열지 못하게)
+function excludePost(body) {
+  const s = projectNow();
+  if (!s) return [400, { ok: false, why: "folder", reason: "연결한 폴더를 먼저 골라요" }];
+  if (!body || !Array.isArray(body.lines) || body.lines.length > Exclude.MAX_LINES * 2) return [400, { ok: false, why: "shape", reason: `줄 목록(lines)으로 보내요 — ${Exclude.MAX_LINES}줄까지` }];
+  const r = Exclude.clean(body.lines);
+  if (r.bad.length) return [400, { ok: false, why: "bad", bad: r.bad, reason: "적을 수 없는 줄이 있어요 — 고친 뒤 다시 저장해요" }];
+  try { excludeSave(s.dir, r.list); } catch { return [500, { ok: false, reason: "빼 둘 곳을 저장하지 못했어요 — 홈 폴더의 쓰기 권한을 봐 주세요" }]; }
+  lastFiles = null;
+  return [200, { ok: true, project: s.project, list: r.list }];
+}
+
 // ── C-26 내 작업 책 — 연결한 폴더의 README.md를 읽어 책으로 나눠 준다(읽기만) — claude-drafted: 2026-10-23 (이재엽 "책의 작업들은 readme 에서 … 책에서 보여주는 역할만") ──
 // 폴더는 일 넘기기와 같이 projectNow에서만 고른다(화면이 보낸 경로는 받지 않는다). 바로가기(심볼릭 링크)는 따라가지 않는다.
 // 앞의 256KB만 읽고, 나누기 전에 비밀값을 가린다. 폴더 경로는 주지 않는다 — 이름만. 책이 없으면 why로 까닭만(folder: 폴더를 모름 · none: README 없음)
@@ -482,6 +519,7 @@ const README_MAX_BYTES = 256 * 1024;
 // 그 폴더의 README.md — { text(가린 것), big } | null. 바로가기는 따라가지 않고 앞의 256KB만, 개인 키 덩어리는 통째로(sensitive.js는 BEGIN 줄만 가린다) · 그 밖은 sensitive.js로
 function readmeText(dir) {
   if (!path.isAbsolute(dir)) return null;   // 훅이 보낸 cwd가 절대 경로가 아니면 읽지 않는다(서버의 작업 폴더를 읽지 않게)
+  if (excludeOf(dir)("README.md")) return null;   // C-52 빼 둔 곳 — 책 · 계획 AI 모두 읽지 않는다
   let text = "", big = false;
   try {
     const file = path.join(dir, "README.md");
@@ -502,9 +540,10 @@ let lastFiles = null;   // 마지막 목록 { dir, list } — /api/file은 이 �
 function filesNow() {
   const s = projectNow();
   if (!s) { lastFiles = null; return { ok: true, project: "", files: null, why: "folder" }; }
-  const r = Files.listFiles(s.dir, { redact: Sensitive.redact });
+  const ex = excludeList(s.dir);   // C-52 — 빼 둔 곳은 목록에 없다(화면은 '빼 둔 곳 n줄'로 알린다)
+  const r = Files.listFiles(s.dir, { redact: Sensitive.redact, exclude: Exclude.matcher(ex) });
   lastFiles = { dir: s.dir, list: r.files };
-  return { ok: true, project: s.project, files: r.files.map(({ raw, ...f }) => f), total: r.total, cut: r.cut, unread: r.unread, depth: Files.DEPTH, max: Files.MAX, why: "" };
+  return { ok: true, project: s.project, files: r.files.map(({ raw, ...f }) => f), total: r.total, cut: r.cut, unread: r.unread, depth: Files.DEPTH, max: Files.MAX, excluded: ex.length, why: "" };
 }
 // ── C-43 파일 보기 · 고치기(API.md 3-26, 2026-10-27 이재엽 버튼 "읽기 + 고치기" · "바로 저장 + 되돌리기" · "저장마다 커밋 맡기기" · "512KB · 내용으로 판단") ──
 // 열기: 목록의 번호(i) → 그 폴더 안의 파일만(바로가기 없이), 512KB까지, 내용이 글이면(NUL 없음 · UTF-8). 바뀐 줄은 git diff의 덩어리 머리만(있으면). 경로는 답에 가린 것만
@@ -515,6 +554,7 @@ function fileEntry(i) {
   const e = Number.isInteger(n) && n >= 0 && lastFiles.list[n];
   if (!e) return { code: 404, why: "none", reason: "그런 파일이 목록에 없어요 — 목록을 다시 받아요" };
   if (e.dir) return { code: 400, why: "dir", reason: "폴더는 열 수 없어요 — 안의 파일을 골라요" };
+  if (excludeOf(lastFiles.dir)(e.raw)) return { code: 400, why: "excluded", reason: "빼 둔 곳이라 열지 않아요 — 설정 '기록'의 빼 둘 곳에서 풀 수 있어요" };   // C-52 열 때 한 번 더
   const file = Files.safePath(lastFiles.dir, e.raw);
   if (!file) return { code: 400, why: "outside", reason: "작업 폴더 밖이거나 바로가기라 열지 않아요" };
   return { entry: e, file, rel: e.raw };
@@ -557,7 +597,7 @@ const DOCMAP_READ = 64 * 1024, DOCMAP_MAX = 100;   // 문서 100개까지(새 �
 async function docmapNow(nowPath) {
   const s = projectNow();
   if (!s) return [200, { ok: false, why: "folder", reason: "연결한 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열거나 설정에서 폴더를 골라요" }];
-  const r = Files.listFiles(s.dir, { redact: Sensitive.redact });
+  const r = Files.listFiles(s.dir, { redact: Sensitive.redact, exclude: excludeOf(s.dir) });   // C-52 빼 둔 곳은 지도에 없다
   const docs = []; let cut = false;
   for (const e of r.files) {
     if (e.dir || !/\.md$/i.test(e.raw) || !(/^docs\//.test(e.raw) || /^(README|CLAUDE)\.md$/.test(e.raw))) continue;
@@ -612,6 +652,7 @@ function writeFileNow(body) {
 function readmeBook() {
   const s = projectNow();
   if (!s) return { ok: true, project: "", book: null, why: "folder" };
+  if (excludeOf(s.dir)("README.md")) return { ok: true, project: s.project, book: null, why: "excluded" };   // C-52 — 빼 둔 README는 책으로 읽지 않는다
   const r = readmeText(s.dir);
   if (!r) return { ok: true, project: s.project, book: null, why: "none" };
   const book = RB.parse(r.text);
@@ -623,7 +664,8 @@ function readmeBook() {
 // 다시 세울 때는 지난 계획(서버가 모양을 다시 확인) · 줄마다 의견 · 물은 것의 답 · 전체 의견을 같이. 폴더 경로는 보내지 않는다(파일 이름만, 점으로 시작하는 것 · node_modules 빼고 60개까지)
 const PLAN_README_MAX = 6000, PLAN_FILES_MAX = 60, NOTE_MAX = 300;
 function topFiles(dir) {
-  try { return fs.readdirSync(dir).filter((n) => !n.startsWith(".") && n !== "node_modules").sort().slice(0, PLAN_FILES_MAX).map((n) => Sensitive.redact(n)); } catch { return []; }
+  const ex = excludeOf(dir);   // C-52 — 빼 둔 이름은 AI에 보내지 않는다
+  try { return fs.readdirSync(dir, { withFileTypes: true }).filter((e) => !e.name.startsWith(".") && e.name !== "node_modules" && !ex(e.name, e.isDirectory())).map((e) => e.name).sort().slice(0, PLAN_FILES_MAX).map((n) => Sensitive.redact(n)); } catch { return []; }
 }
 const strOk = (v, max) => typeof v === "string" && v.length <= max;
 function planAsk(res, body) {
@@ -648,8 +690,9 @@ function planAsk(res, body) {
 // ── 지식 퀘스트 C-51(2026-10-29 — PRD 6절 · 9절 9번 "근거는 가린 뒤 4,000자까지"): 계획의 근거 ──
 // 사람이 정한 줄 — 폴더의 단계 문서(원본, C-49)에서 칸마다 '정한 것'(결정 기록의 '정한 것' 칸과 같은 줄 — docs.js가 같은 기록으로 둘을 쓴다). 단계 순서(오래된 것부터)
 function decidedLines(dir) {
-  const out = [];
+  const out = [], ex = excludeOf(dir);
   Docs.SLUGS.forEach((_, n) => {
+    if (ex(Docs.stagePath(n))) return;   // C-52 빼 둔 단계 문서는 근거로 보내지 않는다
     const t = docTargets(dir, [{ path: Docs.stagePath(n) }]);
     if (t.why) return;
     let text; try { const st = fs.lstatSync(t.list[0].file); if (!st.isFile() || st.size > DOC_READ_MAX) return; text = fs.readFileSync(t.list[0].file, "utf8"); } catch { return; }
@@ -817,7 +860,8 @@ const redactDeep = (v) => (typeof v === "string" ? Sensitive.redact(v) : Array.i
 function docsRead() {
   const s = projectNow();
   if (!s) return { ok: true, project: "", topic: "", idea: "", source: "", stages: {}, why: "folder" };
-  const readDoc = (p) => { const t = docTargets(s.dir, [{ path: p }]); if (t.why) return null; try { const st = fs.lstatSync(t.list[0].file); return st.isFile() && st.size <= DOC_READ_MAX ? fs.readFileSync(t.list[0].file, "utf8") : null; } catch { return null; } };
+  const ex = excludeOf(s.dir);   // C-52 빼 둔 문서는 되살리지도 읽지도 않는다
+  const readDoc = (p) => { if (ex(p)) return null; const t = docTargets(s.dir, [{ path: p }]); if (t.why) return null; try { const st = fs.lstatSync(t.list[0].file); return st.isFile() && st.size <= DOC_READ_MAX ? fs.readFileSync(t.list[0].file, "utf8") : null; } catch { return null; } };
   const stages = {}, got = {}; let topic = "", idea = "";
   Docs.SLUGS.forEach((_, n) => {
     const p = Docs.stagePath(n), text = readDoc(p);
@@ -851,6 +895,7 @@ function carrySave(book) {
 }
 // 결정 기록 — 작업 폴더의 docs/decisions.md, 가린 뒤 4,000자까지(PRD 9절 9번). 바로가기 · 파일이 아닌 것 · 너무 큰 것은 읽지 않는다
 function decisionsText(dir) {
+  if (excludeOf(dir)(Docs.LOG_DOC)) return "";   // C-52 빼 둔 결정 기록은 초안에 보내지 않는다
   const t = docTargets(dir, [{ path: Docs.LOG_DOC }]);
   if (t.why) return "";
   try { const st = fs.lstatSync(t.list[0].file); if (!st.isFile() || st.size > DOC_READ_MAX) return ""; return Sensitive.redact(fs.readFileSync(t.list[0].file, "utf8")).slice(0, Nav.CARRY_DECISIONS_MAX); } catch { return ""; }
@@ -1000,6 +1045,8 @@ async function handleRoute(req, res) {
   if (req.method === "GET" && route === "/api/docs") return send(res, 200, docsRead());   // C-49 폴더의 단계 문서를 다시 읽는다(API.md 3-23-1) — 읽기만
   if (req.method === "GET" && route === "/api/carry") { const r = carryGet(new URL(req.url, "http://localhost").searchParams.get("stage")); return send(res, r.ok ? 200 : 400, r); }   // C-48 그 단계에 가져온 것(API.md 3-33) — 읽기만
   if (req.method === "POST" && route === "/api/carry") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = carryPost(body || {}); return send(res, code, out); }   // C-48 채택 · 반려 · 보류
+  if (req.method === "GET" && route === "/api/exclude") return send(res, 200, excludeGet());   // C-52 빼 둘 곳(API.md 3-34) — 폴더마다의 줄 목록
+  if (req.method === "POST" && route === "/api/exclude") { const body = await readJson(req, 16 * 1024); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = excludePost(body); return send(res, code, out); }   // C-52 저장(거절할 줄이 있으면 바꾸지 않음)
   if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
   if (req.method === "GET" && route === "/api/docmap") { const [code, out] = await docmapNow(new URL(req.url, "http://localhost").searchParams.get("now") || ""); return send(res, code, out); }   // C-45 문서 지도(API.md 3-27) — 읽기만
   if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만
@@ -1133,3 +1180,5 @@ if (require.main === module) {
   });
 }
 module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, announcePort, fitResult, mcpToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다
+module.exports.topFiles = topFiles;   // C-52 시험 — 계획 AI에 가는 맨 위 이름에 빼 둔 것이 없는지
+module.exports.decisionsText = decisionsText;   // C-52 시험 — 빼 둔 결정 기록은 읽지 않는지

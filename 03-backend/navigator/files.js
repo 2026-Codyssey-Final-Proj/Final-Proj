@@ -11,7 +11,8 @@ const SECRET = /^(\.env(\.(?!example$|sample$|template$)[^/]+)?|id_rsa|id_ed2551
 const skip = (e) => e.name.startsWith(".") || e.isSymbolicLink() || SECRET.test(e.name) || (e.isDirectory() && e.name === "node_modules") || !(e.isDirectory() || e.isFile());
 
 // { files: [{ name, path, dir, depth }](깊이 우선 — 폴더의 안쪽이 바로 뒤에), total, cut, unread }. redact: 이름을 가리는 함수(sensitive.js) — 폴더 경로(dir)는 답에 넣지 않는다
-function listFiles(dir, { depth = DEPTH, max = MAX, redact = (s) => s } = {}) {
+// exclude: (상대 경로, 폴더인가) => 빼나 — 사람이 고른 '빼 둘 곳'(C-52, exclude.js matcher). 맞으면 목록에 넣지도 그 안으로 내려가지도 않는다
+function listFiles(dir, { depth = DEPTH, max = MAX, redact = (s) => s, exclude = () => false } = {}) {
   const files = []; let cut = false, unread = 0;   // unread: 읽지 못한 폴더 수(권한 등) — 빈 폴더와 구분해 알린다(security-records 6-1, 새 맥락 리뷰 2026-10-27)
   const walk = (d, lvl, rel) => {
     let ents; try { ents = fs.readdirSync(d, { withFileTypes: true }); } catch { unread++; return; }
@@ -19,6 +20,7 @@ function listFiles(dir, { depth = DEPTH, max = MAX, redact = (s) => s } = {}) {
     for (const e of ents) {
       if (files.length >= max) { cut = true; return; }
       const isDir = e.isDirectory(), p = rel ? `${rel}/${e.name}` : e.name;
+      if (exclude(p, isDir)) continue;
       files.push({ name: redact(e.name), path: redact(p), dir: isDir, depth: lvl, raw: p });   // raw — 가리지 않은 상대 경로(서버가 열 때 쓰고 답에는 넣지 않는다, C-43)
       if (isDir && lvl < depth) walk(path.join(d, e.name), lvl + 1, p);
       if (cut) return;

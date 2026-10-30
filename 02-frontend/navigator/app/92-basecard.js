@@ -72,6 +72,7 @@
     if (a === "hold-who") st.holdWho = t.value;
     if (a === "hold-when") st.holdWhen = t.value;
     if (a === "text") st.text = t.value;
+    if (a === "ex-text") { exText = t.value.slice(0, EX_TEXT_MAX); exDirty = true; return; }   // C-52 빼 둘 곳(59-exclude) — 치는 동안 다시 그리지 않는다(저장에서 보낸다)
     if (a === "question") st.question = t.value;
     if (a === "skip-reason") { st.skip = { ...(st.skip || {}), reason: t.value.slice(0, 200) }; return; }
     if (a === "learned") { st.learnDraft = t.value.slice(0, 400); return; }   // C-47 배운 것 — 다시 그리지 않는다(관문 '네'를 지나며 저장)
