@@ -1055,6 +1055,17 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 .rb-vers li b{color:var(--acc)}
 .rb-vers li span{color:var(--mute);font-variant-numeric:tabular-nums}
 .rb-body{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr);gap:10px}
+/* C-27 관문 계획서(2026-10-30) — 책 탭, README 책과 같은 판 모양 */
+.gplan{border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin:0 0 12px;display:grid;gap:8px;background:var(--card)}
+.gplan .stg{font-size:calc(12px * var(--ui-scale,1));font-weight:700;color:var(--sub)}
+.gplan h4{margin:0;font-size:calc(14px * var(--ui-scale,1))}
+.gp-pick{display:flex;flex-wrap:wrap;gap:6px}
+.gp-toc{display:grid;gap:2px}
+.gp-toc .lnk{text-align:left;font-size:calc(12.5px * var(--ui-scale,1));min-height:32px}
+.gp-sec{border-top:1px solid var(--line);padding-top:8px;scroll-margin-top:8px}
+.gp-sec:focus{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
+.gp-sec h5{margin:0 0 4px;font-size:calc(13px * var(--ui-scale,1))}
+.gp-sec ul{margin:0;padding-left:18px;display:grid;gap:3px;font-size:calc(12.5px * var(--ui-scale,1));line-height:1.55;word-break:keep-all;overflow-wrap:anywhere}
 .rb-toc{display:grid;gap:4px;align-content:start}
 .rb-toc button{border:0;background:transparent;color:var(--sub);text-align:left;border-radius:8px;padding:5px 8px;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
 .rb-toc button[aria-current=true]{background:var(--acc-soft);color:var(--acc-ink);font-weight:700}

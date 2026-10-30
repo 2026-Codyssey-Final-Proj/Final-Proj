@@ -33,11 +33,26 @@
   // 책 탭(C-26, 2026-10-23) — 내 저장소 README를 받아 와 보여 주기만(고치는 곳은 README). 아래는 전부터 있던 이 화면의 책(단계 문서 · 확인할 먹이 — FR-3 · FR-15)
   // README 칸은 책을 고르지 않았을 때(책 탭의 첫 화면)만 — 단계 문서를 펼치면 그 책에 집중한다.
   //   서재를 잠시 뺀 동안은 열어 둔 책 목록(작은 서재)을 보이지 않고, 확인할 먹이와 이 프로젝트의 책 하나만 — "서재 없이 지금 프로젝트의 책 한 권"(C-26)
+  // ── C-27 관문 계획서(2026-10-30 — gateplan.js): 단계마다 한 권 — 결과가 있는 단계와 지금 관문의 단계. 목차를 누르면 그 절로, 파일로도 받는다 ──
+  //   글은 규칙으로(AI 없음). 가리기(sensitive.js)를 거친다. 어느 단계를 펼쳤나(st.gpSel)는 이 켜짐 동안만
+  const GPL = window.FloeGatePlan;
+  const gpStages = () => N.STAGES.map((s) => s.n).filter((n) => st.results[n] || (st.j && st.j.stage === n));
+  const gpBook = (n) => GPL.build(n, { results: st.results, tier: st.tier, hide: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) });
+  function gatePlanBox() {
+    if (!GPL) return "";
+    const list = gpStages(); if (!list.length) return "";
+    const sel = list.includes(st.gpSel) ? st.gpSel : list[list.length - 1], b = gpBook(sel);
+    return `<section class="gplan" aria-label="관문 계획서"><div class="stg">관문 계획서 — 지금까지 한 것과 다음에 할 것</div>
+      <div class="gp-pick" role="group" aria-label="어느 단계">${list.map((n) => `<button type="button" class="b${n === sel ? " pri" : " ghost"}" data-act="gp-sel" data-i="${n}" aria-pressed="${n === sel}">${LB(n)}</button>`).join("")}</div>
+      <h4>${esc(b.title)}</h4><nav class="gp-toc" aria-label="계획서 목차">${b.toc.map((t, k) => `<button type="button" class="lnk" data-act="gp-toc" data-v="${esc(t.id)}">${k + 1}. ${esc(t.title)}</button>`).join("")}</nav>
+      ${b.sections.map((s, k) => `<article class="gp-sec" id="${esc(s.id)}" tabindex="-1"><h5>${k + 1}. ${esc(s.title)}</h5><ul>${s.rows.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></article>`).join("")}
+      <div class="ob-foot"><button type="button" class="b" data-act="gp-file">파일로 받기 (.md)</button></div></section>`;
+  }
   function bookPane() {
     if (libSelected()) return deskLib();
-    if (SHELF_ON) return `${readmeBox()}${deskLib()}`;
+    if (SHELF_ON) return `${readmeBox()}${gatePlanBox()}${deskLib()}`;
     const mine = L() && SCH() ? openBooks().find((b) => b.mine) : null;
-    return `${readmeBox()}<div class="libtab">${inboxBox()}${mine ? `<div class="ob-foot"><button type="button" class="b" data-act="lib-book" data-id="${esc(mine.id)}">이 프로젝트의 단계 문서 · 정한 것 펼치기</button></div>` : ""}</div>`;
+    return `${readmeBox()}${gatePlanBox()}<div class="libtab">${inboxBox()}${mine ? `<div class="ob-foot"><button type="button" class="b" data-act="lib-book" data-id="${esc(mine.id)}">이 프로젝트의 단계 문서 · 정한 것 펼치기</button></div>` : ""}</div>`;
   }
   function readmeBox() {
     if (!RB) return "";
@@ -281,3 +296,15 @@
         counts.length ? `<ul class="verbs">${counts.map(([v, n]) => `<li><span>${esc(v)}</span><b>${n}</b></li>`).join("")}</ul>` : ""}</div>
       <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div></div></section>`;
   }
+  // C-27 관문 계획서 — 관문 카드의 '계획서 보기' · 단계 고르기 · 목차 → 그 절 · 파일로 받기
+  Object.assign(ACT, {
+    "gp-open": () => { const n = st.j ? st.j.stage : atStage(); st.gpSel = n; openQwin("lib"); render(); },
+    "gp-sel": (i) => { st.gpSel = i | 0; render(); },
+    "gp-toc": (i, el) => { const id = el && el.dataset.v, t = id && document.getElementById(id); if (t) { t.scrollIntoView({ block: "start", behavior: "smooth" }); t.focus({ preventScroll: true }); } },
+    "gp-file": () => {
+      if (!GPL) return; const list = gpStages(), n = list.includes(st.gpSel) ? st.gpSel : list[list.length - 1]; if (n == null) return;
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([GPL.toMarkdown(gpBook(n))], { type: "text/markdown;charset=utf-8" }));
+      a.download = `${String(n + 1).padStart(2, "0")}-gate-plan.md`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      say("계획서를 파일로 내려받았어요 — 공부 묶음이나 NotebookLM에 같이 넣을 수 있어요");
+    },
+  });

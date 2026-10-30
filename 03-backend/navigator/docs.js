@@ -11,7 +11,8 @@
   const N = node ? require("./navigator.js") : root.NavRules;
   const Q = node ? require("./quest.js") : root.NavQuest;
   const BC = node ? require("./basecard.js") : root.NavBaseCard;   // 기준 카드(C-56 R-1, 2026-10-28) — docs/base.md
-  const SHT = node ? require("./sheet.js") : root.FloeSheet;   // C-47 한 장(2026-10-30) — 단계 문서의 '한 장' 절 · README의 그 단계 절
+  const SHT = node ? require("./sheet.js") : root.FloeSheet;
+  const GP = node ? require("./gateplan.js") : root.FloeGatePlan;   // C-27 관문 계획서(2026-10-30) — 관문을 지난 단계 폴더의 gate-plan.md   // C-47 한 장(2026-10-30) — 단계 문서의 '한 장' 절 · README의 그 단계 절
   const SLUGS = ["01-idea", "02-plan", "03-requirements", "04-design", "05-skeleton", "06-build", "07-measure", "08-retro"];
   const PRD_PART = ["문제와 목표", "아이디어와 범위", "꼭 필요한 기능", "만드는 방법", "뼈대와 할 일", "만든 것과 확인", "잰 결과", "배운 것"];   // 기획서에서 그 단계가 맡는 절
   const MARK_START = "<!-- floe:start -->", MARK_END = "<!-- floe:end -->";
@@ -30,7 +31,7 @@
   }
 
   // 칸을 누가 어떻게 정했나 — 단계 문서의 '어떻게:' 줄(stageDoc)과 다시 읽기(parseStage)가 같은 표를 쓴다. moved · skip은 C-49(2026-10-29) — 다시 읽을 때 누가 정했나가 남게
-  const HOW_WORDS = { ok: "플로로 초안을 그대로", edit: "고침", me: "직접 적음(초안 없이)", pick: "고름", chat: "플로로와 나눈 대화를 정리해 적음(작업실 개편 C-61)", moved: "지난 칸 · 파일에서 옮겨 적음", skip: "조건이 안 맞아 건너뜀" };
+  const HOW_WORDS = GP.HOW_WORDS;   // 누가 정했나 — 관문 계획서(gateplan.js)와 같은 말이라 그쪽에 둔다(2026-10-30)
 
   // 확인한 한 장(C-47) — 모양이 맞을 때만, 칸마다 가려 한 줄로
   const sheetOf = (r, red) => (SHT && r && SHT.ok(r.sheet) ? Object.fromEntries(Object.entries(r.sheet).filter(([, v]) => v !== undefined).map(([k, v]) => [k, k === "at" ? v : oneLine(red(v))])) : null);
@@ -155,7 +156,8 @@
       + "- 비밀값(키 · 토큰 · 비밀번호 · .env)은 커밋하지 않는다.\n" + `${MARK_END}\n`;
     return [{ path: "docs/README.md", text: index, merge: true }, ...(hasSrc ? [{ path: SOURCE_DOC, text: sourceDoc(src, name) }] : []), ...(card && BC ? [{ path: CARD_DOC, text: redact(BC.toMarkdown(card, name)) }] : []), ...SLUGS.map((_, n) => ({ path: docOf(n), text: R(n) ? stageDoc(n, R(n), name, ctx) : placeholder(n) })),
       { path: MAIN_DOC, text: prdDoc(name, ctx), merge: true }, { path: LOG_DOC, text: decisionsDoc(name, ctx), merge: true },
-      { path: "README.md", text: readme, merge: true }, { path: "CLAUDE.md", text: claude, merge: true }];
+      { path: "README.md", text: readme, merge: true }, { path: "CLAUDE.md", text: claude, merge: true },
+      ...SLUGS.map((s, n) => n).filter((n) => R(n) && R(n).passed).map((n) => ({ path: `docs/${SLUGS[n]}/gate-plan.md`, text: GP.toMarkdown(GP.build(n, { results, hide: redact })) }))];   // C-27 — 관문을 지난 단계마다, 덮어쓴다(Floe가 만든 글)
   }
 
   // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번): 기록의 원본은 내 프로젝트 폴더. Floe가 쓴 단계 문서(stageDoc)를 다시 읽어 단계 결과로 ──
