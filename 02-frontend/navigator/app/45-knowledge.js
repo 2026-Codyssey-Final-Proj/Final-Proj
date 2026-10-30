@@ -86,10 +86,13 @@
     d.state = "saving"; render();
     const r = await carryPost({ action, id: d.id, item: { text: d.text, why: d.why, stage: d.stage, review: d.review, from: d.from }, ...(reason ? { reason } : {}) });
     if (!r.ok) { d.state = ""; render(); return say(r.reason || "남기지 못했어요"); }
+    if (r.id) d.id = r.id;   // 장부의 번호 — 지식 창고로 넣을 때 쓴다
     d.state = { adopt: "adopted", reject: "rejected", hold: "held" }[action]; d.rejecting = false;
     if (st.carry && st.carry.drafts.every((x) => x.state && x.state !== "saving")) { st.carryDone = true; save(); }   // 이 프로젝트에서 다 정했다 — 8단계 카드를 다시 띄우지 않는다. st.carry 확인: 남기는 사이 '나중에'(carry: null)로 닫았을 수 있다(F-103-11)
     render();
   }
+  // ── 지식 창고(세컨드 브레인) 연결(2026-10-30, API.md 3-35): 채택한 가져갈 것 하나를 그 데이터 폴더의 지식 문서로 — 폴더(SECOND_BRAIN_DATA)가 있을 때만 단추 ──
+  async function sbCheck() { try { const r = await (await fetch("/api/knowledge-store", { cache: "no-store" })).json(); st.sbReady = !!(r && r.ok && r.ready); } catch { st.sbReady = false; } render(); }
   function momentCarry() {
     const C = st.carry, meta = `<span class="mm-stage">${LB(7)} · 가져갈 것</span>`, n = learnedList().length;
     if (C.phase === "offer") return { tone: "blue", mood: "happy", meta, title: "다음 프로젝트에 가져갈 것을 정리해 볼까요?",
@@ -97,7 +100,8 @@
       acts: [{ label: "초안 만들기", act: "carry-draft", key: "Enter", pri: true }, { label: "나중에", act: "carry-later", kind: "ghost" }] };
     const rows = C.drafts.map((d, k) => {
       const miss = CY.missing(CY.measure(d, CY.today()));
-      if (d.state) return `<li class="carry-d"><p><b>${esc(d.text)}</b> — ${CARRY_WORD[d.state]}</p></li>`;
+      if (d.state) return `<li class="carry-d"><p><b>${esc(d.text)}</b> — ${CARRY_WORD[d.state]}</p>${d.state === "adopted" && st.sbReady && d.id
+        ? d.sb ? `<p class="mc-fine">지식 창고에 넣었어요 — 세컨드 브레인의 '지식 · 작업'에서 찾아요</p>` : `<div class="opts">${btn({ label: "지식 창고로", act: "carry-sb", i: k, kind: "opt" })}</div>` : ""}</li>`;   // 지식 창고 연결(2026-10-30) — 데이터 폴더가 있을 때만
       const stageSel = `<select data-act="carry-stage" data-i="${k}" aria-label="언제 쓰나(단계)"><option value="-1"${d.stage < 0 ? " selected" : ""}>언제 쓰나 — 고르기</option>${N.STAGES.map((x) => `<option value="${x.n}"${d.stage === x.n ? " selected" : ""}>${LB(x.n)} · ${esc(x.title)}</option>`).join("")}</select>`;
       const fromBtns = N.STAGES.map((x) => `<button type="button" class="b opt toggle" data-act="carry-from" data-i="${k}" data-v="${x.n}" aria-pressed="${d.from.includes(x.n)}">${x.n + 1}</button>`).join("");
       return `<li class="carry-d">
@@ -276,7 +280,13 @@
       st.carry = { phase: "drafts", drafts: r.drafts.map((d, k) => ({ id: `c${tag}${k}`, text: d.text, why: d.why || "", stage: Number.isInteger(d.stage) ? d.stage : -1, review: d.review || "", from: Array.isArray(d.from) ? d.from : [] })), say: r.say || "" };
       st.tokens = r.tokens || 0; fetchUsage(); render();
     },
-    "carry-adopt": (i) => carryDecide(i, "adopt"),
+    "carry-adopt": async (i) => { await carryDecide(i, "adopt"); if (canLive && st.sbReady == null) sbCheck(); },   // 채택하면 지식 창고 폴더가 있는지 한 번 묻는다
+    "carry-sb": async (i) => {
+      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state !== "adopted" || !d.id || d.sb) return;
+      let r; try { r = await (await fetch("/api/knowledge-store", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) })).json(); } catch { r = null; }
+      if (!r || !r.ok) return say((r && r.reason) || "지식 창고에 넣지 못했어요");
+      d.sb = true; render(); say("지식 창고에 넣었어요 — 세컨드 브레인의 '지식 · 작업'에서 찾아요");
+    },
     "carry-hold": (i) => carryDecide(i, "hold"),
     "carry-reject": (i) => {
       const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state) return;
