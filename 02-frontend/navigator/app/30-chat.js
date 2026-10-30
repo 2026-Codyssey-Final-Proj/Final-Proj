@@ -39,15 +39,16 @@
     chatFlushing = false; if (chatQueue.length) chatlogFlush();
   }
   async function chatlogLoad() {
-    if (!chatLive()) { chatFolder = false; chatQueue = []; return false; }   // 연습 · 서버 없이는 이 브라우저에만 — 진짜 AI 모드로 바꾸면 chatRecheck가 다시 묻는다
-    chatFolder = null; const ask = ++chatAsk;
+    if (!chatLive()) { ++chatAsk; chatFolder = false; chatQueue = []; return false; }   // 연습 · 서버 없이는 이 브라우저에만 — 진짜 AI 모드로 바꾸면 chatRecheck가 다시 묻는다. ++chatAsk: 묻던 진짜 쪽 답이 늦게 와도 덮지 않게(F-103-10)
+    chatFolder = null; const ask = ++chatAsk, seq0 = chatSeq;   // seq0 — 묻는 동안 남긴 말을 세려고(logMsg가 하나마다 올린다)
     let r = null; try { r = await (await fetch("/api/chatlog", { credentials: "same-origin" })).json(); } catch { r = null; }
     if (ask !== chatAsk) return false;   // 그사이 다시 물었다 — 늦게 온 옛 답이 덮지 않게
     chatFolder = !!(r && r.ok && r.why !== "folder");
     if (!chatFolder) { chatQueue = []; return false; }   // 폴더를 모르면 모아 둔 말은 버린다(이 브라우저에는 남는다) — 나중에 고른 폴더의 대화에 섞지 않게
     setTimeout(chatlogFlush, 0);   // 묻는 동안 한 말
     if (!Array.isArray(r.turns)) return false;
-    st.chat = r.turns.filter((x) => x && (x.mark ? Number.isInteger(x.stage) && Number.isFinite(x.at) : typeof x.carry === "string" || (typeof x.text === "string" && ["me", "floro", "sys"].includes(x.who)))).map((x) => fromTurn({ at: Number.isFinite(x.at) ? x.at : 0, ...x }));   // 덜어낸 수를 알리는 sys 줄(3-32)은 at이 없어도 보인다
+    const fresh = st.chat.slice(Math.max(0, st.chat.length - (chatSeq - seq0)));   // 묻는 동안 남긴 말(인사 등) — 아직 서버에 없다(위 flush가 보낸다). 서버 대화 뒤에 그대로 둔다(F-103-10)
+    st.chat = [...r.turns.filter((x) => x && (x.mark ? Number.isInteger(x.stage) && Number.isFinite(x.at) : typeof x.carry === "string" || (typeof x.text === "string" && ["me", "floro", "sys"].includes(x.who)))).map((x) => fromTurn({ at: Number.isFinite(x.at) ? x.at : 0, ...x })), ...fresh].slice(-CHAT_CAP);   // 덜어낸 수를 알리는 sys 줄(3-32)은 at이 없어도 보인다. 합친 뒤에도 상한(logMsg와 같이)
     st.chatChanges = Array.isArray(r.changes) ? r.changes.filter((c) => c && Number.isFinite(c.at) && typeof c.path === "string") : [];
     st.chatMark = st.chat.map((m) => !!m.kind).lastIndexOf(true) + 1;   // 대화 표시 자리는 마지막 구분선 · 가져온 것 뒤
     return true;

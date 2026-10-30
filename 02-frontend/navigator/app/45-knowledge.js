@@ -83,7 +83,7 @@
     const r = await carryPost({ action, id: d.id, item: { text: d.text, why: d.why, stage: d.stage, review: d.review, from: d.from }, ...(reason ? { reason } : {}) });
     if (!r.ok) { d.state = ""; render(); return say(r.reason || "남기지 못했어요"); }
     d.state = { adopt: "adopted", reject: "rejected", hold: "held" }[action]; d.rejecting = false;
-    if (st.carry.drafts.every((x) => x.state && x.state !== "saving")) { st.carryDone = true; save(); }   // 이 프로젝트에서 다 정했다 — 8단계 카드를 다시 띄우지 않는다
+    if (st.carry && st.carry.drafts.every((x) => x.state && x.state !== "saving")) { st.carryDone = true; save(); }   // 이 프로젝트에서 다 정했다 — 8단계 카드를 다시 띄우지 않는다. st.carry 확인: 남기는 사이 '나중에'(carry: null)로 닫았을 수 있다(F-103-11)
     render();
   }
   function momentCarry() {
