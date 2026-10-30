@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.19 | 2026-10-30 | 이재엽 | app.js 나누기 2차 — 기능 조각이 저장할 것(keep)과 누르기(Object.assign(ACT, …))를 스스로 등록. 대화 · 지식 퀘스트 · 파일 · 코드 맡기기 · 작업실 · 멈춤 · 막힘 · 문서 올리기를 옮겨 KEEP 한 줄 · 누르기 표의 병합 충돌을 줄임(동작 그대로, 누르기 266개 그대로) (#279) | `02-frontend/navigator/`(app.js · app/, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/`(app-register 새로 · knowledge-carry · knowledge-restore · chat-list의 KEEP 확인) |
 | v51.18 | 2026-10-30 | 이재엽 | 커밋 전 시험이 main에 이미 있는 화면 e2e 실패 때문에 모든 브랜치에서 막히던 것 — 고칠 목록 번호 · 담당 · 기한이 붙은 알려진 실패(04-tests/known-failures.json)는 보이되 막지 않음. 새 실패 · 기한 지남은 그대로 막고, 고쳐지면 빼라고 알림 (#278) | `04-tests/run_all_tests.py` · `04-tests/known-failures.json` · `04-tests/repo/test_known_failures.py` · `CLAUDE.md`(훅 표 한 줄) |
 | v51.17 | 2026-10-30 | 임유정 | 화면 코드 점검 묶음 F-103 마무리 — 준비 계획의 '기다리지 않기'를 '멈추기'로(Claude Code에 맡긴 일도 끄고 바로 다시 맡길 수 있게, F-103-7), Electron 앱의 키 · 폴더 IPC는 섬 창만 · 앱 밖 주소로 넘어가지 않기 · 두 번째 실행은 알림만 · 서버 파일을 못 읽으면 오류 창(F-103-22 ~ 24), 가벼운 것 일곱(새 말 안내 · 표시 자리 · 저장소 두 번 · 먹이 층 · GitHub 칸 · 뒤로 가기 플로로 · 문서 지도 까닭 글, F-103-25 ~ 31) (#281) | `02-frontend/navigator/` · `02-frontend/electron/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v51.16 | 2026-10-30 | 임유정 | 화면 코드 점검 묶음 F-103 기다리는 사이 상태가 바뀌는 넷 — 맡긴 일을 지켜보다 옛 답으로 새 일을 잃었다고 하던 것 · 연습 예시 보고가 지운 계획에 들어가 멈추던 것(F-103-7 일부), 고른 웹 AI 제안이 되살아나 두 번 적히던 것(F-103-8), 연습으로 바꿔도 늦게 온 대화가 덮고 기다리는 동안 남긴 말이 사라지던 것(F-103-10), 가져갈 것을 나중에로 닫으면 멈추던 것(F-103-11) (#277) | `02-frontend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
