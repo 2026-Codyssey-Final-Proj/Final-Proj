@@ -98,6 +98,7 @@
       save();
     }
     if (a === "plan-rej-note") st.planRejNote = t.value.slice(0, 300);
+    if (a === "dbg-text" && st.dbg) { const q = FP.DEBUG_QS[st.dbg.i]; st.dbg = { ...st.dbg, a: { ...st.dbg.a, [q.key]: t.value.slice(0, 20000) } }; }   // C-64 — 글자를 칠 때는 다시 그리지 않는다. 자르기는 가린 뒤 한 곳(plan.js withDebug)에서만 — 넉넉한 상한만
     if (a === "plan-q") st.planQ = t.value.slice(0, 300);
     if (a === "plan-reply") st.planReply = { ...st.planReply, [t.dataset.id]: t.value.slice(0, 300) };
     if (a === "own-text") st.ownText = t.value;
