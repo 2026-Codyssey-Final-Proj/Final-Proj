@@ -155,10 +155,31 @@ async function callApi(client, cfg, prompt, schema) {
   try { return { data: extractJson(text), tokens, usage }; } catch { return { error: "Claude가 정해진 형식으로 답하지 않음", tokens, usage }; }
 }
 
+// claude를 어떻게 여나 — 셸 없이 spawn("claude")는 Windows에서 claude.exe만 찾는다. npm으로만 깐 PC(claude.cmd)는 그 옆 node_modules의 cli.js를 node로 연다
+//   (.cmd를 셸 없이 열 수 없고, 셸로 열면 --json-schema 같은 인자의 따옴표가 깨진다). node는 PATH의 것 — claude.cmd도 그것을 쓴다.
+//   앱의 실행 파일(Electron)을 ELECTRON_RUN_AS_NODE로 쓰면 그 값이 claude의 모든 하위 명령에 물려져 사용자의 Electron 프로젝트가 node로 떴다(새 맥락 리뷰, F-104-10)
+function claudeLaunch(platform = process.platform, env = process.env, exists = fs.existsSync) {
+  const plain = { cmd: "claude", pre: [], env: {} };
+  if (platform !== "win32") return plain;
+  const W = path.win32, dirs = String(env.PATH || env.Path || "").split(";").filter(Boolean);
+  if (dirs.some((d) => exists(W.join(d, "claude.exe")))) return plain;
+  for (const d of dirs) {
+    const js = W.join(d, "node_modules", "@anthropic-ai", "claude-code", "cli.js");
+    if (exists(W.join(d, "claude.cmd")) && exists(js)) return { cmd: "node", pre: [js], env: {} };
+  }
+  return plain;
+}
+// 맡긴 일 끄기 — Windows에서 child.kill()은 claude만 끝내고 그 자식(npm · 개발 서버)은 남아 파일을 고치거나 포트를 붙잡았다. 나무째(taskkill /T) 끈다(F-104-11)
+function killTree(child, platform = process.platform, run = spawn) {
+  if (!child) return;
+  if (platform === "win32" && child.pid) { try { run("taskkill", ["/pid", String(child.pid), "/T", "/F"], { windowsHide: true, stdio: "ignore" }).on("error", () => { try { child.kill(); } catch {} }); return; } catch {} }
+  try { child.kill(); } catch {}
+}
+
 // 처음 설정(2026-10-19, setup-status.js · GET /api/setup)이 묻는 claude 명령의 판 — --version이라 AI를 부르지 않고 토큰도 쓰지 않는다. run: 시험에서 바꿔 끼운다
-function claudeVersion(run = spawnSync) {
+function claudeVersion(run = spawnSync, L = claudeLaunch()) {
   try {
-    const r = run("claude", ["--version"], { encoding: "utf8", timeout: 4000, windowsHide: true });
+    const r = run(L.cmd, [...L.pre, "--version"], { encoding: "utf8", timeout: 4000, windowsHide: true, env: { ...process.env, ...L.env } });
     if (!r || r.error || r.status !== 0) return { found: false, version: "" };
     const v = String(r.stdout || "").trim().split(/\s+/)[0] || "";
     return { found: true, version: /^\d+\.\d+/.test(v) ? v : "" };
@@ -173,7 +194,8 @@ const cliArgs = (schema, opts = null) => ["-p", "--tools", "", "--strict-mcp-con
   ...(opts && opts.fast ? ["--model", opts.model || FAST.cliModel, "--effort", FAST.effort] : [])];
 function callCli(prompt, schema, opts = null) {
   return new Promise((resolve) => {
-    const child = spawn("claude", cliArgs(schema, opts), { env: { ...process.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
+    const L = claudeLaunch();
+    const child = spawn(L.cmd, [...L.pre, ...cliArgs(schema, opts)], { env: { ...process.env, ...L.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
     let out = "";
     const timer = setTimeout(() => { child.kill(); resolve({ error: "시간 초과" }); }, TIMEOUT_MS);
     child.stdout.on("data", (d) => (out += d));
@@ -201,7 +223,8 @@ function callCli(prompt, schema, opts = null) {
 const TASK_OUT_MAX = 4 * 1024 * 1024;
 function startTask({ dir, text, bin = process.env.NAV_CLAUDE_BIN || "claude", onResult = null, schema = null }) {
   const args = ["-p", "--output-format", "json", ...(schema ? ["--json-schema", JSON.stringify(schema)] : [])], js = bin.endsWith(".js");
-  const child = spawn(js ? process.execPath : bin, js ? [bin, ...args] : args, { cwd: dir, stdio: ["pipe", "pipe", "ignore"], windowsHide: true });
+  const L = !js && bin === "claude" ? claudeLaunch() : { cmd: bin, pre: [], env: {} };   // npm으로만 깐 Windows도(F-104-10)
+  const child = spawn(js ? process.execPath : L.cmd, js ? [bin, ...args] : [...L.pre, ...args], { cwd: dir, stdio: ["pipe", "pipe", "ignore"], windowsHide: true, ...(Object.keys(L.env).length ? { env: { ...process.env, ...L.env } } : {}) });
   let out = "";
   child.stdout.on("data", (d) => { if (out.length < TASK_OUT_MAX) out += d; });
   child.on("close", () => { if (!onResult) return; const j = Tokens.resultOf(out); onResult(j ? { ...Tokens.summarize(j), output: j.structured_output ?? null, denials: Tokens.denialsOf(j), isError: j.is_error === true } : null); });   // denials — 허락을 못 받은 도구의 이름 · 개수, isError — 결과가 오류(F-69)
@@ -263,4 +286,4 @@ const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); retur
 const ledger = Tokens.createLedger(Tokens.fileStore(Tokens.fileOf(process.env)));   // 토큰 장부(2026-10-24) — 설정의 토큰 칸 · /api/usage의 ledger
 const callClaude = createCaller({ makeClient, meter, ledger });
 
-module.exports = { RELAY_MODELS, cliArgs, callClaude, ledger, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, startTask };
+module.exports = { RELAY_MODELS, cliArgs, callClaude, ledger, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, claudeLaunch, killTree, startTask };

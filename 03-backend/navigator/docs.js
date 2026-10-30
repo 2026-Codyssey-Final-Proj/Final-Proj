@@ -34,6 +34,8 @@
   // 그 단계 결과로 문서 한 장 — 받은 것은 묶음(ctx: results · idea · redact · docOf)
   function stageDoc(n, r, topic, ctx) {
     const s = N.STAGES[n], R = ctx.R, red = ctx.redact;
+    // 줄 하나는 문서에서도 한 줄 — 줄 안의 줄바꿈을 그대로 쓰면 '- …' 다음 줄이 다시 읽을 때 사라지고 문서가 '사람이 고친 것'으로 잡혀 이후 덮지 않았다(F-104-12)
+    const one = (t) => { const x = red(t); return /[\r\n]/.test(x) ? oneLine(x) : x; };
     const refName = (x) => { const it = R(x.s) && R(x.s).items[x.i]; return `${label(x.s)} ${Q.roman(x.i)}${it ? ` ${red(Q.shortOf(it.name))}` : ""}`; };
     const how = (it) => {
       const w = HOW_WORDS[it.by];
@@ -43,7 +45,7 @@
       return `- 어떻게: ${w}${d}`;
     };
     const items = r.items.map((it) => {
-      const body = [...(it.lines.length ? it.lines.map((l) => `- ${red(l)}`) : ["- 아직 적지 않았어요"]), how(it), it.from && it.from.length ? `- 재료: ${it.from.map(refName).join(" · ")}` : ""].filter(Boolean);
+      const body = [...(it.lines.length ? it.lines.map((l) => `- ${one(l)}`) : ["- 아직 적지 않았어요"]), how(it), it.from && it.from.length ? `- 재료: ${it.from.map(refName).join(" · ")}` : ""].filter(Boolean);
       return `## ${red(Q.shortOf(it.name))}\n\n> ${red(it.name)}\n\n${body.join("\n")}`;
     }).join("\n\n");
     const before = SLUGS.map((_, k) => k).filter((k) => k < n && R(k));
@@ -154,7 +156,7 @@
   }
   const quoted = (t) => { const m = /^“([\s\S]*)”$/.exec(t); return m ? m[1] : null; };
   function parseStage(text) {
-    const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+    const lines = String(text || "").replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split("\n");   // BOM — Windows 편집기가 붙여 저장하면 첫 줄이 맞지 않아 못 읽었다(F-104-13)
     const h = /^# (\d)단계 · (.+)$/.exec(lines[0] || ""), n = h ? Number(h[1]) - 1 : -1, s = N.STAGES[n];
     if (!s || !h[2].startsWith(s.title)) return null;
     const topic = h[2].slice(s.title.length).replace(/^ — /, "");
@@ -218,7 +220,7 @@
   }
   // 받은 글 전부(F-68 docs/00-source/idea.md — sourceDoc)의 거꾸로 — '  1 | 글' 줄들. 모양이 아니면 null
   function parseSource(text) {
-    const lines = String(text || "").replace(/\r\n?/g, "\n").split("\n");
+    const lines = String(text || "").replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").split("\n");   // BOM(F-104-13)
     if (!/^# 처음 말한 것 — 받은 글 그대로/.test(lines[0] || "")) return null;
     const body = lines.filter((l) => /^\s*\d+ \| /.test(l) || /^\s*\d+ \|$/.test(l)).map((l) => l.replace(/^\s*\d+ \| ?/, ""));
     return body.length ? body.join("\n") : null;
