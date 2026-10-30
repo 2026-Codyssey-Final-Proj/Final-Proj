@@ -49,6 +49,9 @@ test("C-43 — 파일 칸에서 누르면 작업실에 열린다(md 보기 좋�
     await page.evaluate(() => { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); });
     await page.reload({ waitUntil: "load" }); await wait(500);
     await page.click(".tb [data-act=qwin-toggle]"); await wait(700);
+    // 2026-10-29 두승현 "시험만 맞춰줘"(F-102) — 사람이 하는 조작 둘: 1단계 시작은 ① 화면이 작업 칸을 덮어(F-88) 섬을 옆으로, 파일 목록은 접힌 '전체 파일' 안(C-63)이라 펼친다
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }
+    if (!(await page.$(".wnav details.fn-all[open]"))) { await page.click(".wnav details.fn-all > summary"); await wait(300); }
     const rows = await page.$$eval(".wnav .fn li", (ls) => ls.map((l) => l.textContent.trim()));
     assert.ok(rows.includes("README.md") && !rows.some((r) => r.includes(".env")), `진짜 목록: ${rows.join(" | ")}`);
     // md 열기 → 보기 좋게 → 원문

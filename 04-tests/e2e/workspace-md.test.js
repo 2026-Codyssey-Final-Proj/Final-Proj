@@ -51,6 +51,7 @@ test("C-53 — 작업실 세 칸(1280 · 1440 · 1728) · 칸 접기 · 문서 �
       await page.evaluate(() => { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); localStorage.removeItem("floe:ws-nav"); localStorage.removeItem("floe:ws-side"); });
       await page.reload({ waitUntil: "load" }); await wait(500);
       if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(600); }
+      if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 1단계 시작은 ① 화면이 작업 칸을 덮는다(F-88) — 세 칸을 재려면 섬을 옆으로(두승현 2026-10-29 "시험만 맞춰줘", F-102)
       const c = await cols();
       assert.ok(c.nav > 0 && c.body > 300 && c.side > 0 && !c.over && !c.pageOver, `${width} — 세 칸이 다 보이고 넘침 0: ${JSON.stringify(c)}`);
       assert.ok(c.nav + c.body + c.side <= c.win + 2, `${width} — 세 칸이 작업실 폭 안에: ${JSON.stringify(c)}`);
@@ -65,6 +66,7 @@ test("C-53 — 작업실 세 칸(1280 · 1440 · 1728) · 칸 접기 · 문서 �
     const side = await page.$eval(".wside", (el) => el.textContent.replace(/\s+/g, " "));
     assert.match(side, /퀘스트/, "오른쪽 칸 아래 — 퀘스트"); assert.match(side, /관문/, "관문 남은 기준");
     // 파일을 열면 — 도구 줄 · 상태 줄 · 오른쪽 칸 '이 문서'(목차 · 빈 절)
+    if (!(await page.$(".wnav details.fn-all[open]"))) { await page.click(".wnav details.fn-all > summary"); await wait(300); }   // 찾기 칸 · 파일 목록은 접힌 '전체 파일' 안(C-63)
     await page.type(".fn-find", "requirements"); await wait(400);   // 3단계 폴더는 접혀 있다(지금 장은 2단계) — 찾기로 한 줄로
     await page.click(".wnav .fn .fn-file:not(.fn-opened)"); await wait(600);
     await page.$eval(".fn-find", (el) => { el.value = ""; el.dispatchEvent(new Event("input", { bubbles: true })); }); await wait(300);
