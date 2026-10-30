@@ -264,7 +264,7 @@
     "close-input": () => set({ openInput: false }),
     // 넘어가기 전 확인 안에서는 글 칸이 안 보인다 — 보낼 작업 글이 없어 멈췄으면(F-11) 확인을 닫고 글 칸을 연다
     "retry-input": () => { const noText = st.screen === "gate" && !U.askText(st.text, st.judged); set({ error: "", openInput: !!st.j, ...(noText ? { screen: "main" } : {}) }); focusText(); },
-    dismiss: () => set({ error: "" }),
+    dismiss: () => set({ error: "", keyBad: false }),   // F-106 키 카드도 같이 — 같은 말의 오류 카드가 다시 뜨지 않게
     "look-now": () => { st.notice = ""; lookAfterWork(lastPing); },
     "peek-text": () => { set({ ping: "", openInput: !!st.j }); focusText(); },
     "ping-later": () => { st.ping = ""; go("petit"); },

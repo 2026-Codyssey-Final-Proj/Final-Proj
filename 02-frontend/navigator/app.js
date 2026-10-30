@@ -701,6 +701,7 @@
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
         acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };
     }
+    if (st.keyBad && st.mode === "live") return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "API 키가 거절됐어요", sub: "키가 맞지 않거나 쓸 수 있는 권한이 없어요. 키를 고치기 전까지 연습용 예시로 둘러볼 수 있어요 — 키는 설정의 '처음 설정 다시 하기'에서 다시 넣어요.", acts: [{ label: "연습용 예시로 둘러보기", act: "practice-now", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };   // F-106
     if (st.error) return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요", sub: esc(st.error),
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
     if (st.blocked && !st.blocked.retrying) return momentBlocked();   // F-69 맡긴 일이 허락을 못 받아 막혔다 — 사람이 길을 고른다
@@ -1611,7 +1612,7 @@
       if (r && r.ok && r.files) {
         const n = st.finished ? N.STAGES.length - 1 : atStage(), slug = FDOCS ? FDOCS.SLUGS[n] : "";
         st.fnOpen = r.files.map((f, i) => (f.dir && (f.path === "docs" || (slug && f.path === `docs/${slug}`)) ? String(i) : "")).filter(Boolean);   // 지금 장의 폴더는 펼쳐 둔다 — 열쇠는 목록의 번호(가린 이름끼리 경로가 겹칠 수 있다, 새 맥락 리뷰)
-        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, why: "" };
+        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, excluded: r.excluded || 0, exBroken: !!r.excludeBroken, why: "" };   // excluded · exBroken — C-52 빼 둔 곳 줄 수 · 저장 파일이 깨졌나
         for (const f of st.openFiles) f.i = r.files.findIndex((x) => !x.dir && x.path === f.path);   // 열린 파일은 새 목록의 번호로 다시 잇는다(없어졌으면 -1 — 저장하지 못한다)
       } else st.files = { src: "example", why: "연결한 폴더를 아직 몰라요" };
     } catch { st.files = { src: "example", why: "서버에 닿지 않았어요" }; }
@@ -1817,7 +1818,7 @@
       const tag = tagOf(x), sel = !!cur && cur.path === x.path && st.qtab === "file";
       return `<li class="${x.dir ? "dir" : tag === "지금" ? "st-now" : ""}${sel ? " sel" : ""} ${q ? "d1" : `d${x.depth}`}">${x.dir ? `<button type="button" data-act="fn-dir" data-v="${i}" aria-expanded="${isOpen}"><i class="chev-w${isOpen ? " on" : ""}">${FN_CHEV}</i>${fIcon(isOpen ? "open" : "dir")}<span>${esc(x.name)}</span>${kids[i] ? `<small class="fn-n">${kids[i]}</small>` : ""}</button>` : `<button type="button" class="fn-file" data-act="fn-open" data-v="${i}" aria-current="${sel ? "true" : "false"}"><i class="chev-w"></i>${fIcon(fKind(x.name))}<span>${esc(q ? x.path : x.name)}</span></button>`}${tag ? `<small>${tag}</small>` : ""}</li>`;
     }).join("");
-    const ft = f.total ? `${f.total}개 · 깊이 ${f.depth}까지 · 이름만 봐요${f.cut ? " · 더 있어요(200개까지만)" : ""}${f.unread ? ` · 읽지 못한 폴더 ${f.unread}` : ""}` : "비어 있어요 — 이 폴더에 보일 파일이 없어요";
+    const ft = f.total ? `${f.total}개 · 깊이 ${f.depth}까지 · 이름만 봐요${f.cut ? " · 더 있어요(200개까지만)" : ""}${f.unread ? ` · 읽지 못한 폴더 ${f.unread}` : ""}${f.excluded ? ` · 빼 둔 곳 ${f.excluded}줄은 보이지 않아요` : ""}${f.exBroken ? " · 빼 둘 곳 파일이 깨졌어요(설정 '기록')" : ""}` : "비어 있어요 — 이 폴더에 보일 파일이 없어요";
     return `<p class="fn-h"><b>${fIcon("open")}<span>${esc(f.project || project() || "")}</span></b></p><input class="fn-find" type="search" data-act="fn-find" value="${esc(st.fnFind)}" placeholder="파일 이름 찾기" aria-label="파일 이름 찾기"><ul class="fn">${rows || (q ? `<li class="d1"><span>'${esc(st.fnFind)}'이 든 파일이 없어요</span></li>` : "")}</ul><p class="fn-ft">${ft}</p>`;
   }
 // ━━ app/55-files.js ━━
@@ -2360,6 +2361,64 @@
     "pair-sel": (_, el) => { const v = el && el.dataset.v; if (!SM || !SM.PAIRS.some(([k]) => k === v)) return; st.pair = st.pair === v ? null : v; render(); },   // C-54 ⑨ 두 칸 나란히
     "map-card": (i) => { const m = stageMap(), c = m && m.cards[i]; if (!c) return; st.mapSel = st.mapSel === i ? null : i; if (!st.mapLine || st.mapLine.n !== i) st.mapLine = null; if (st.mapSel != null && !wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); if (st.mapSel != null && c.doc.has) ACT["map-open"](null, { dataset: { act: "map-open", v: c.doc.path } }); },
   });
+// ━━ app/59-exclude.js ━━
+  // ── C-52 빼 둘 곳(2026-10-30 — 지식 퀘스트 PRD 9절 10번 "설정 창의 '빼 둘 곳'", 이재엽 버튼 "10/31까지"): 설정 '기록' 탭에 묶음 하나 ──
+  //   사람이 한 줄에 하나씩 적은 폴더 · 파일은 Floe가 읽지 않는다 — 서버가 지킨다(03-backend/navigator/exclude.js · GET · POST /api/exclude, API.md 3-34). 화면은 적고 보이기만.
+  //   목록은 폴더마다 서버에(이 화면은 기억하지 않는다 — keep 없음). 거절할 줄이 있으면 서버가 아무것도 바꾸지 않고 줄마다 까닭을 돌려준다.
+  //   어느 폴더의 목록인지 이름을 보이고, 저장할 때 그 폴더의 열쇠를 같이 보낸다 — 그사이 폴더가 바뀌었으면 서버가 409(moved)로 거절한다(새 맥락 리뷰)
+  const EX_TEXT_MAX = 4000, EX_AGAIN_MS = 5000;   // 글 칸 글자 상한 · 고쳐 적는 중이 아닐 때 서버에 다시 묻는 간격(서버 쪽 폴더가 바뀌었는지)
+  let exList = null, exText = "", exBad = [], exMsg = "", exBusy = false, exMax = 30;   // 서버에서 받은 목록 · 적는 중인 글 · 거절된 줄 · 알림 · 묻는 중 · 줄 수 상한(서버 값)
+  let exSeen = null, exFor = null, exKey = "", exProject = "", exAt = 0, exDirty = false, exBroken = "";   // 화면의 프로젝트 이름 · 서버가 알려 준 폴더(이름 · 열쇠) · 물은 때 · 고쳐 적는 중 · 저장 파일이 깨졌다는 말
+  async function exLoad() {
+    if (!canLive || exBusy) return;
+    exBusy = true; exSeen = project(); exAt = Date.now();
+    try {
+      const r = await (await fetch("/api/exclude", { cache: "no-store" })).json();
+      if (r && r.ok) {
+        exList = Array.isArray(r.list) ? r.list : [];
+        if (Number.isInteger(r.max)) exMax = r.max;
+        const moved = exFor !== null && r.key !== exKey;
+        // 같은 폴더면 고쳐 적는 중인 글을 덮지 않는다 — 프로젝트 이름이 늦게 와 다시 물어도 친 글이 사라지지 않게. 폴더가 바뀌었으면 그 폴더의 목록으로(지난 알림도 지운다)
+        if (!exDirty || moved) { exText = exList.join("\n"); exDirty = false; exBad = []; }
+        if (moved) exMsg = "";
+        exFor = r.project || ""; exKey = r.key || ""; exProject = r.project || "";
+        exBroken = r.why === "broken" ? r.reason || "빼 둘 곳 파일이 깨졌어요" : "";
+        if (r.why === "folder") exMsg = "연결한 폴더를 먼저 골라요 — 폴더마다 따로 적어요";
+      } else { if (exList === null) exList = []; exMsg = "목록을 받지 못했어요"; }
+    } catch { if (exList === null) exList = []; exMsg = "목록을 받지 못했어요 — 서버가 켜져 있는지 봐 주세요"; }
+    exBusy = false; render();
+  }
+  function excludeGroup() {
+    const head = "빼 둘 곳";
+    if (!canLive) return sgrp(SG.box, head, `<p class="meta">Floe를 서버로 켰을 때만 고를 수 있어요 — 연습 모드에서는 폴더를 읽지 않아요.</p>`);
+    // 처음 · 프로젝트 이름이 바뀌었을 때 · 고쳐 적는 중이 아니면 몇 초마다(서버 쪽 폴더가 바뀌었을 수 있다) — 그동안 글 칸은 그대로 둔다(다시 그리면 초점을 잃는다)
+    if (!exBusy && (exSeen !== project() || (!exDirty && Date.now() - exAt > EX_AGAIN_MS))) exLoad();
+    if (exList === null) return sgrp(SG.box, head, `<p class="meta">불러오는 중이에요…</p>`);
+    const bad = exBad.length ? `<ul class="ex-bad">${exBad.map((b) => `<li><code>${esc(b.line)}</code> — ${esc(b.why)}</li>`).join("")}</ul>` : "";
+    const whose = exProject ? `<b>'${esc(exProject)}'</b> 폴더의 목록이에요. ` : "";
+    return sgrp(SG.box, head, `<p class="meta">${whose}여기 적은 파일 · 폴더는 <b>Floe가 읽지 않아요</b> — 작업실 파일 칸 · 찾기 · 문서 지도 · README 책에 안 보이고, 계획 · 가져갈 것 초안을 만들 때 AI에 보내지 않고, 문서 올리기에서도 쓰지 않아요.
+        점으로 시작하는 것 · 비밀값 파일(.env · *.pem 같은 것) · node_modules는 원래 빼요.</p>
+      <p class="meta"><b>막지 못하는 것</b> — 맡긴 일(Claude Code)은 스스로 파일을 읽어요. 그 일이 이 파일을 고치면 AI 진행에는 '빼 둔 곳의 파일'로만 보이고 대화 목록에는 쌓지 않아요.</p>
+      ${exBroken ? `<p class="meta" role="alert">${esc(exBroken)}</p>` : ""}
+      <textarea class="ex-text" data-act="ex-text" rows="5" maxlength="${EX_TEXT_MAX}" aria-label="빼 둘 곳 — 한 줄에 하나" placeholder="한 줄에 하나 — 예: secrets/ (폴더) · *.env · 회원명단.csv">${esc(exText)}</textarea>
+      <div class="row"><span class="grow meta">끝이 /면 폴더 전부, *는 한 칸 안의 아무 글자. ${exMax}줄까지 · 폴더마다 따로</span><button type="button" class="btn" data-act="ex-save">저장</button></div>
+      ${bad}${exMsg ? `<p class="meta" aria-live="polite">${esc(exMsg)}</p>` : ""}`);
+  }
+  const keepBase = SET_PART.keep;
+  SET_PART.keep = () => `${keepBase()}${excludeGroup()}`;
+  Object.assign(ACT, {
+    "ex-save": async () => {
+      if (!canLive || exBusy) return;
+      exBusy = true;
+      let r = null;
+      try { r = await (await fetch("/api/exclude", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lines: exText.split("\n"), key: exKey }) })).json(); } catch { r = null; }
+      exBusy = false;
+      if (r && r.ok) { exList = r.list; exText = exList.join("\n"); exDirty = false; exKey = r.key || exKey; exProject = r.project || exProject; exBad = []; exBroken = ""; exMsg = exList.length ? `저장했어요 — 빼 둔 곳 ${exList.length}줄. 파일 목록을 다시 받아요` : "저장했어요 — 빼 둔 곳이 없어요"; loadFiles(); }
+      else if (r && r.why === "moved") { exMsg = r.reason; exDirty = false; exAt = 0; }   // 다른 폴더가 됐다 — 그 폴더의 목록을 다시 받는다(친 글은 그 폴더 것이 아니다)
+      else { exBad = (r && Array.isArray(r.bad)) ? r.bad : []; exMsg = (r && r.reason) || "저장하지 못했어요 — 서버가 켜져 있는지 봐 주세요"; }
+      render();
+    },
+  });
 // ━━ app/60-library.js ━━
   // ── 도서관(FR-8 위젯) — 서고 시안(../library)의 더미 책(books.js)과 마감 계산(schedule.js)을 같이 쓴다.
   // 같은 화면이 둘이 되지 않게 서고 시안의 작업 화면 위젯을 여기로 옮겼다(2026-10-17). 첫 책(s1)은 이 화면의 단계·할 일을 그대로 따른다.
@@ -2424,7 +2483,7 @@
     try {
       const r = await (await fetch("/api/readme", { cache: "no-store" })).json();
       st.rb = r && r.ok && r.book ? { book: r.book, src: "mine", project: r.project, why: "" }
-        : example(r && r.why === "none" ? "이 폴더에 README.md가 없어요" : "연결한 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열어요");
+        : example(r && r.why === "excluded" ? "README.md는 빼 둔 곳이라 읽지 않아요 — 설정 '기록'의 빼 둘 곳에서 풀 수 있어요" : r && r.why === "none" ? "이 폴더에 README.md가 없어요" : "연결한 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열어요");
     } catch { st.rb = example("서버에 닿지 않았어요"); }
     render();
   }
@@ -3519,9 +3578,9 @@
     hold(); st.busy = true; waitFrom = Date.now(); render();
     waitTimer = setInterval(() => { const el = $nav.querySelector("[data-wait]"); if (el) el.textContent = waitText(); }, 1000);
     try {
-      if (pending) return await pending;
-      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      return await r.json();
+      const j = pending ? await pending : await (await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
+      st.keyBad = !!j && j.kind === "key";   // F-106 — 답마다 다시 정한다: 키가 거절됐으면 섬이 '연습용 예시로 둘러보기'를, 성공하면 끈다(어느 AI 부르기에서든)
+      return j;
     } catch { return { ok: false, reason: "AI에 연결하지 못했어요. server.js를 켜거나, 보기 방식을 '연습용 예시'로 바꿔 주세요" }; }
     finally { st.busy = false; clearInterval(waitTimer); lastWait = Math.round((Date.now() - waitFrom) / 1000); }
   }
@@ -3695,7 +3754,10 @@
   }
   // 글 칸으로 커서를 옮긴다 (다시 그린 뒤)
   const focusText = () => requestAnimationFrame(() => { const t = document.querySelector("[data-act=text]"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } });
-
+  // F-106(FR-14, 2026-10-30 이재엽 버튼 "오류에 연습 단추"): 키 거절 카드의 단추 둘 — 저절로 바꾸지 않고 사람이 고른다. 연습으로는 설정의 보기 방식과 같은 길
+  //   보기 방식을 바꾸는 길은 하나(toMode) — 설정의 '보기 방식'(92-basecard)도 같이 쓴다. 닫기는 공통 '닫기'(dismiss)가 키 카드까지 닫는다
+  function toMode(m) { set({ mode: m, keyBad: false, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다
+  Object.assign(ACT, { "practice-now": () => toMode("fixture") });
 // ━━ app/90-acts.js ━━
   // ── 누르기 — data-act 이름 → 할 일. (i: data-i, el: 누른 것) ──
   const set = (patch) => { Object.assign(st, patch); render(); };
@@ -3963,7 +4025,7 @@
     "close-input": () => set({ openInput: false }),
     // 넘어가기 전 확인 안에서는 글 칸이 안 보인다 — 보낼 작업 글이 없어 멈췄으면(F-11) 확인을 닫고 글 칸을 연다
     "retry-input": () => { const noText = st.screen === "gate" && !U.askText(st.text, st.judged); set({ error: "", openInput: !!st.j, ...(noText ? { screen: "main" } : {}) }); focusText(); },
-    dismiss: () => set({ error: "" }),
+    dismiss: () => set({ error: "", keyBad: false }),   // F-106 키 카드도 같이 — 같은 말의 오류 카드가 다시 뜨지 않게
     "look-now": () => { st.notice = ""; lookAfterWork(lastPing); },
     "peek-text": () => { set({ ping: "", openInput: !!st.j }); focusText(); },
     "ping-later": () => { st.ping = ""; go("petit"); },
@@ -4125,7 +4187,7 @@
   function onChange(t) {
     const a = t.dataset.act;
     if (t.dataset.bv === "field" && BV) { bv = BV.toggle(bv, t.dataset.v); BV.write(STORE, bv); return render(); }
-    if (a === "mode") { set({ mode: t.value, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다
+    if (a === "mode") toMode(t.value);   // 연습 단추(F-106)와 같은 길 — 85-ai.js
     if (a === "auto") set({ auto: t.checked });
     if (a === "text-size") { set({ textSize: Number(t.value) || 1 }); applyScale(); }
     if ((a === "carry-review" || a === "carry-stage") && st.carry && st.carry.drafts) { const d = st.carry.drafts[Number(t.dataset.i)]; if (d && !d.state) { if (a === "carry-review") d.review = t.value; else d.stage = Number(t.value); render(); } }   // C-48 기준을 다시 잰다
@@ -4142,6 +4204,7 @@
     if (a === "hold-who") st.holdWho = t.value;
     if (a === "hold-when") st.holdWhen = t.value;
     if (a === "text") st.text = t.value;
+    if (a === "ex-text") { exText = t.value.slice(0, EX_TEXT_MAX); exDirty = true; return; }   // C-52 빼 둘 곳(59-exclude) — 치는 동안 다시 그리지 않는다(저장에서 보낸다)
     if (a === "question") st.question = t.value;
     if (a === "skip-reason") { st.skip = { ...(st.skip || {}), reason: t.value.slice(0, 200) }; return; }
     if (a === "learned") { st.learnDraft = t.value.slice(0, 400); return; }   // C-47 배운 것 — 다시 그리지 않는다(관문 '네'를 지나며 저장)

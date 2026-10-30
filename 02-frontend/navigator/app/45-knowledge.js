@@ -257,7 +257,7 @@
       if (r && r.ok && r.files) {
         const n = st.finished ? N.STAGES.length - 1 : atStage(), slug = FDOCS ? FDOCS.SLUGS[n] : "";
         st.fnOpen = r.files.map((f, i) => (f.dir && (f.path === "docs" || (slug && f.path === `docs/${slug}`)) ? String(i) : "")).filter(Boolean);   // 지금 장의 폴더는 펼쳐 둔다 — 열쇠는 목록의 번호(가린 이름끼리 경로가 겹칠 수 있다, 새 맥락 리뷰)
-        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, why: "" };
+        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, excluded: r.excluded || 0, exBroken: !!r.excludeBroken, why: "" };   // excluded · exBroken — C-52 빼 둔 곳 줄 수 · 저장 파일이 깨졌나
         for (const f of st.openFiles) f.i = r.files.findIndex((x) => !x.dir && x.path === f.path);   // 열린 파일은 새 목록의 번호로 다시 잇는다(없어졌으면 -1 — 저장하지 못한다)
       } else st.files = { src: "example", why: "연결한 폴더를 아직 몰라요" };
     } catch { st.files = { src: "example", why: "서버에 닿지 않았어요" }; }

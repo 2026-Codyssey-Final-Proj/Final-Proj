@@ -55,7 +55,7 @@
   function onChange(t) {
     const a = t.dataset.act;
     if (t.dataset.bv === "field" && BV) { bv = BV.toggle(bv, t.dataset.v); BV.write(STORE, bv); return render(); }
-    if (a === "mode") { set({ mode: t.value, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다
+    if (a === "mode") toMode(t.value);   // 연습 단추(F-106)와 같은 길 — 85-ai.js
     if (a === "auto") set({ auto: t.checked });
     if (a === "text-size") { set({ textSize: Number(t.value) || 1 }); applyScale(); }
     if ((a === "carry-review" || a === "carry-stage") && st.carry && st.carry.drafts) { const d = st.carry.drafts[Number(t.dataset.i)]; if (d && !d.state) { if (a === "carry-review") d.review = t.value; else d.stage = Number(t.value); render(); } }   // C-48 기준을 다시 잰다
@@ -72,6 +72,7 @@
     if (a === "hold-who") st.holdWho = t.value;
     if (a === "hold-when") st.holdWhen = t.value;
     if (a === "text") st.text = t.value;
+    if (a === "ex-text") { exText = t.value.slice(0, EX_TEXT_MAX); exDirty = true; return; }   // C-52 빼 둘 곳(59-exclude) — 치는 동안 다시 그리지 않는다(저장에서 보낸다)
     if (a === "question") st.question = t.value;
     if (a === "skip-reason") { st.skip = { ...(st.skip || {}), reason: t.value.slice(0, 200) }; return; }
     if (a === "learned") { st.learnDraft = t.value.slice(0, 400); return; }   // C-47 배운 것 — 다시 그리지 않는다(관문 '네'를 지나며 저장)
