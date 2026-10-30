@@ -43,6 +43,7 @@ GitHub PR에서는 `app.js` 차이를 접어 둔다(`.gitattributes`의 `linguis
 | `30-chat.js` | 채팅 중심 섬(C-22) · 대화 저장(C-63) |
 | `40-quest.js` | 옮겨 적기 · 대화 → 칸 정리 · 다음 단계 초안 · 상태 넷 · 작업을 따라 · 단계 폴더를 GitHub에(C-56 · C-61 · C-40 · C-37) |
 | `45-knowledge.js` | 지식 퀘스트 — 폴더에서 되살리기 · 가져가기(C-49 · C-48) |
+| `47-handoff.js` | <!-- claude-drafted: 2026-10-30 --> 넘김 카드 — 다른 AI(웹 Claude · ChatGPT · VS Code)에 지금 상태를 복사(C-38 길 1). 글은 `03-backend/navigator/handoff.js` |
 | `50-chatlist.js` | 왼쪽 대화 목록(C-63) |
 | `55-files.js` | 파일 보기 · 고치기 · 문서 지도 · 맡기기 틀 · 코드 맡기기(C-43 ~ 45 · F-70) |
 | `58-workspace.js` | 작업실 세 칸 · 카드 지도(C-53 · C-54) |

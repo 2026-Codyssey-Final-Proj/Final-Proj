@@ -87,6 +87,7 @@
       if (PR && st.j && canLive && st.mode !== "fixture" && !st.presetPick) out.push({ label: "문서 틀", act: "preset-open", kind: "ghost" });   // C-44 — 지금 장 문서를 틀로 맡기기
       if (!(QU && st.quest && st.quest.phase !== "done")) out.push(...buildActs(nowStage()));   // F-70 — 퀘스트 카드가 없을 때(퀘스트를 마친 뒤)만 여기에. 있으면 퀘스트 카드의 답 줄에(A-02)
     }
+    if (HO && (st.j || st.quest)) out.push({ label: "다른 AI에 넘기기", act: "handoff-copy", kind: "ghost" });   // C-38 넘김 카드(47-handoff) — 단계를 시작한 뒤, 계획 · 맡길 일에서도
     out.push({ label: unreadN() ? `알림 ${unreadN()}` : "알림", act: "base-alerts", kind: "ghost" });
     return out;
   }
@@ -115,7 +116,7 @@
     return `<section class="mc chat tone-${v.tone}"><div class="who">${petCat(v.mood, 150, v.extra)}</div>
       <div class="main"><div class="log" data-log data-go-stage="${st.chatGo == null ? "" : `${st.chatGo}:${goSeq}`}">${st.chat.map((m) => (m.kind === "stage" ? `<div class="msg stage" data-stage="${m.n}"><div class="b">${m.html}</div></div>` : `<div class="msg ${m.who}${m.kind ? ` ${m.kind}` : ""}"><div class="b">${m.html}</div></div>`)).join("")}${
         working() ? `<div class="msg sys"><div class="b">Claude Code가 일하고 있어요${aiLast(mine()) ? ` — ${esc(stepLine(aiLast(mine())))}` : ""}<span class="bar" aria-hidden="true"><i></i></span></div></div>` : ""}
-        ${proposalsHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
+        ${proposalsHTML()}${handoffHTML()}${approvalsHTML()}<div class="msg floro now"><div class="b" aria-live="polite">${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}${live}${v.body || ""}${v.foot ? `<p class="mc-foot">${v.foot}</p>` : ""}</div></div></div>
         ${answers.length ? `<div class="opts">${answers.map(chip).join("")}</div>` : ""}${more.length ? `<div class="opts more" id="more-chips">${moreOpen ? more.map(chip).join("") : ""}<button type="button" class="b ghost mtg" data-act="more-toggle" aria-expanded="${moreOpen}" aria-controls="more-chips">${moreOpen ? "접기" : `더 보기${unreadN() ? ` · 알림 ${unreadN()}` : ""}`}</button></div>` : ""}
         <div class="cin"><textarea class="mc-input" data-act="say" rows="1" aria-label="채팅 입력" placeholder="${esc(sayHint())}">${esc(st.say)}</textarea><button type="button" class="b pri" data-act="send" ${st.busy ? "disabled" : ""}>보내기</button></div></div></section>`;
   }
