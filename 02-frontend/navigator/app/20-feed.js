@@ -60,7 +60,7 @@
   }
   document.addEventListener("dragenter", (e) => {
     if (!hasFiles(e) || isPhone()) return;
-    if (dragDepth++ === 0) { if (st.ui === "hidden") go("petit"); requestAnimationFrame(() => feedLayer(true)); }
+    if (dragDepth++ === 0) { if (st.ui === "hidden") go("petit"); requestAnimationFrame(() => { if (dragDepth > 0) feedLayer(true); }); }   // 미룬 사이 이미 떠났으면(빠르게 넣었다 뺌) 켜지 않는다(F-103-28)
   });
   document.addEventListener("dragleave", (e) => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; feedLayer(false); } });
   // 파일 끌어다 놓기 — 띠 · 한 줄 · 펼침 어디에 놓아도 펼쳐서 먹이 주기로. 글 파일(.md · .txt) 1MB 아래만, 내용은 file.text()로 읽는다(경로가 필요 없어 앱을 고치지 않는다).

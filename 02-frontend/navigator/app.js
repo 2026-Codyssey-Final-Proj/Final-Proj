@@ -290,7 +290,7 @@
     const o = { at: Date.now() };
     for (const k of KEEP) o[k] = st[k];
     try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
-    try { localStorage.setItem(CHAT_KEY, JSON.stringify(st.chat)); } catch { st.chat = st.chat.slice(-100); }   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify(st.chat)); } catch { const over = st.chat.length - 100; st.chat = st.chat.slice(-100); if (over > 0) st.chatMark = Math.max(0, (st.chatMark || 0) - over); }   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로. 표시 자리도 같이 당긴다(logMsg와 같이, F-103-26)
     postState();
   }
   // C-38 시험판(2026-10-25, 두승현) — 서버에 지금 상태를 알린다: MCP로 이은 AI(Claude Desktop · 터널을 연 웹 GPT · 웹 Claude)가 floe_now로 읽는다. 바뀌었을 때만 보낸다
@@ -458,14 +458,21 @@
   };
   // GitHub 칸(C-25, claude-drafted: 2026-10-24 — 이재엽 "깃허브을 연동하는 곳을 설정창에") — Floe는 토큰을 받지 않는다. 서버가 이 컴퓨터의 git · gh에게 읽기만 묻고(/api/github, API.md 3-19),
   // 저장소 만들기는 사람이 누를 때만 사용자의 Claude Code에 맡긴다(/api/github/create → 일 넘기기 3-16). 서버 없이 열면 안내만
-  let ghLoading = false;
+  let ghLoading = false, ghAsk = 0;
+  //   ghAsk — 가장 나중에 물은 답만 쓴다('다시 확인' · 저장소가 생긴 뒤 다시 묻기가 겹치면 늦게 온 옛 답이 덮었다, F-103-29)
   async function loadGithub() {
     if (!canLive) return;
-    ghLoading = true;
-    try { st.gh = await (await fetch("/api/github", { cache: "no-store" })).json(); } catch { st.gh = { ok: false }; }
-    ghLoading = false; render();
+    const ask = ++ghAsk; ghLoading = true;
+    let g; try { g = await (await fetch("/api/github", { cache: "no-store" })).json(); } catch { g = { ok: false }; }
+    if (ask !== ghAsk) return;
+    st.gh = g; ghLoading = false; render();
   }
-  async function createRepo() {
+  // 그리는 곳(설정의 GitHub 칸 · 작업실 머리)이 부른다 — 한 번 그리는 동안 여러 곳이 불러도 한 번만 묻는다(F-103-29)
+  const ghSoon = () => { if (canLive && !st.gh && !ghLoading) { ghLoading = true; setTimeout(loadGithub, 0); } };
+  // 두 번 눌러도 같은 요청을 기다린다 — 두 번째가 '이미 맡긴 일'(409)로 성공 문구를 실패로 덮었다(F-103-27)
+  let repoReq = null;
+  function createRepo() { return repoReq || (repoReq = createRepoOnce().finally(() => { repoReq = null; })); }
+  async function createRepoOnce() {
     st.ghNote = "Claude Code에 맡기는 중…"; render();
     let r;
     try { r = await (await fetch("/api/github/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visibility: st.ghVis }) })).json(); }
@@ -479,7 +486,7 @@
   function githubGroup() {
     const box = (body) => sgrp(SG.git, "GitHub", body);
     if (!canLive) return box(`<span>서버로 열면(앱 · floe.js) 연결한 프로젝트 폴더가 GitHub 저장소와 이어졌는지 보여요. Floe는 GitHub 비밀번호 · 토큰을 받지 않아요.</span>`);
-    if (!st.gh && !ghLoading) setTimeout(loadGithub, 0);
+    ghSoon();
     const g = st.gh;
     const again = `<button type="button" class="btn" data-act="gh-reload">다시 확인</button>`;
     if (!g) return box(ledRow("", "확인하는 중…"));
@@ -846,7 +853,7 @@
   }
   document.addEventListener("dragenter", (e) => {
     if (!hasFiles(e) || isPhone()) return;
-    if (dragDepth++ === 0) { if (st.ui === "hidden") go("petit"); requestAnimationFrame(() => feedLayer(true)); }
+    if (dragDepth++ === 0) { if (st.ui === "hidden") go("petit"); requestAnimationFrame(() => { if (dragDepth > 0) feedLayer(true); }); }   // 미룬 사이 이미 떠났으면(빠르게 넣었다 뺌) 켜지 않는다(F-103-28)
   });
   document.addEventListener("dragleave", (e) => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; feedLayer(false); } });
   // 파일 끌어다 놓기 — 띠 · 한 줄 · 펼침 어디에 놓아도 펼쳐서 먹이 주기로. 글 파일(.md · .txt) 1MB 아래만, 내용은 file.text()로 읽는다(경로가 필요 없어 앱을 고치지 않는다).
@@ -2373,7 +2380,7 @@
   //   앱에서 고른 폴더 이름(/api/github의 project — git이 아니어도 온다)을 먼저, 그다음 훅 알림의 폴더 — 전에는 훅 알림의 폴더(st.project)만 봐서
   //   일반 폴더 · 원격 없는 git 폴더는 Claude Code를 한 번 쓰기 전까지 '폴더 없음'이었다(임유정 2026-10-25, F-58-5) — claude-drafted: 2026-10-25
   // 2026-10-28 임유정 "폴더 이름 뜨는거 어떤 형태든 로컬 폴더 이름을 최우선으로"(F-73): 보이는 이름은 늘 이 컴퓨터의 폴더 이름 — GitHub 저장소(주인/이름)는 title · aria-label에만 덧붙인다(F-54의 '저장소 먼저'를 바꿈)
-  const wsFull = () => { if (canLive && !st.gh && !ghLoading) setTimeout(loadGithub, 0); return (st.gh && st.gh.project) || project(); };
+  const wsFull = () => { ghSoon(); return (st.gh && st.gh.project) || project(); };
   const wsRepo = () => { const r = st.gh && st.gh.remote; return r && r.kind === "github" ? `${r.owner}/${r.repo}` : ""; };
   const wsShort = () => wsFull() || "폴더 없음";
   const wsTitle = () => (wsFull() ? `작업 자리 — ${wsFull()}${wsRepo() ? ` · GitHub ${wsRepo()}` : ""}` : "연결한 폴더가 없어요");
@@ -2463,8 +2470,8 @@
       sub: "끝낸 줄과 보고는 퀘스트 창의 맡길 일에 남아 있어요.", acts: [{ label: "새 계획 적기", act: "plan-reset", pri: true }] };
     const i = b.plan.items.findIndex((x) => x.id === id), x = b.plan.items[i], w = b.work[id] || {}, s = FP.stateOf(b, id);
     const meta = `<span class="mm-stage">맡길 일 · ${p.total}개 중 ${i + 1}번째</span>${planMini(b, i)}${ex}`;
-    if (s === "running") return { tone: "gray", mood: "think", meta, title: `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,
-      body: `<p class="mc-fine">허락이 필요하면 이 말 위에 카드가 떠요. 끝나면 기준마다 해냈는지 알려 줘요.</p>`, acts: [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "기다리지 않기", act: "plan-unwait", kind: "ghost" }] };   // 진행 보기 — Claude Code가 한 일 한 줄씩(AI 진행 판)
+    if (s === "running") return { tone: "gray", mood: "think", meta, title: st.halting ? `Claude Code를 멈추는 중이에요${dots}` : `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,   // halting — '멈추기'를 누르고 서버가 끌 때까지(최대 10초) 단추 없이
+      body: `<p class="mc-fine">허락이 필요하면 이 말 위에 카드가 떠요. 끝나면 기준마다 해냈는지 알려 줘요.</p>`, acts: st.halting ? [] : [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "멈추기", act: "plan-unwait", kind: "ghost" }] };   // 진행 보기 — Claude Code가 한 일 한 줄씩(AI 진행 판). 멈추기 — 맡긴 일을 끄고 그 줄을 끝맺어 바로 다시 맡길 수 있게(F-103-7)
     if (s === "report" && w.report) { const v = w.verdict || N.reportVerdict(w.report, "done");   // C-50 서버가 기준을 세어 준 미리 보기(없던 옛 기록만 화면이 센다)
       return { tone: v.kind === "done" ? "green" : "amber", mood: v.kind === "done" ? "happy" : "think", meta, title: `보고가 왔어요 — 세어 보니 ${v.word} (기준 ${Number(w.report.total) || 0}개 중 ${Number(w.report.done) || 0}개)`, sub: esc(w.report.easy),
         body: planReportBody(b, id), acts: planReportActs(id, !!w.report.ask, v.kind === "done") }; }
@@ -2669,10 +2676,16 @@
   // 사람이 고르면 멈춘다 — 지켜보기를 잠시 세우고(멈춘 결과를 끝으로 읽지 않게) 서버가 그 일을 끌 때까지 기다린다
   async function stallHalt() {
     const s = st.stall; if (!s) return null;
-    clearInterval(twTimer); twTimer = null; st.stall = null;
-    try { await fetch("/api/task/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at: s.at }) }); } catch {}
-    for (let k = 0; k < 40; k++) { let t = null; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch {} if (!t || t.at !== s.at || t.state !== "running") break; await new Promise((r) => setTimeout(r, 250)); }
+    st.stall = null; await taskHalt(s.at);
     return s;
+  }
+  //   멈춘 것을 확인할 때까지(최대 10초) 기다린다 — 그 전에 다시 맡기면 서버가 '아직 진행 중'(409)으로 거절한다. '멈추기'(plan-unwait)도 같이 쓴다
+  //   돌려주는 값: 멈춘 것을 서버의 답으로 확인했나(못 닿았거나 10초 뒤에도 running이면 false — 그때 다시 맡기면 409)
+  async function taskHalt(at) {
+    clearInterval(twTimer); twTimer = null;
+    try { await fetch("/api/task/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ at }) }); } catch {}
+    for (let k = 0; k < 40; k++) { let t = null, heard = true; try { t = (await (await fetch("/api/task", { cache: "no-store" })).json()).task; } catch { heard = false; } if (heard && (!t || t.at !== at || t.state !== "running")) return true; await new Promise((r) => setTimeout(r, 250)); }
+    return false;
   }
   // 막혔다 — ①이면 바로 다시 맡기고, ② · ③이면 카드(momentBlocked). 접혀 있어도 펼친다(허락 카드와 같이 — 사람이 골라야 이어진다)
   function onBlocked(t, kind) {
@@ -3323,7 +3336,7 @@
     if (j.reason) logMsg("floro", esc(j.reason));   // 플로로의 쉬운 말 풀이(AI의 reason)는 채팅에 남긴다(C-22)
     const fresh = learn(j);
     // 다 했으면 스스로 펼쳐서 알린다(CouCou의 alert), 아니면 접혀 있던 것만 한 줄로 보인다
-    if (allDone()) { view("alert"); if (!was) return celebrate("done"); } else peek();
+    if (allDone()) { view("alert"); if (!was) { if (fresh.length) logMsg("floro", `새 말을 배웠어요: ${esc(fresh.join(", "))}`); return celebrate("done"); } } else peek();   // 축하로 빠지기 전에 배운 말은 채팅에(F-103-25)
     if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")}`));
   }
   const stop = (msg) => { st.error = msg; pendingNotice = ""; render(); };   // 보낼 수 없을 때 — 이유를 보여 주고 멈춘다
@@ -3705,7 +3718,7 @@
     "plan-ask-open": (i, el) => { st.planAsk = planId(el); st.planQ = ""; render(); requestAnimationFrame(() => { const q = $nav.querySelector("[data-act=plan-q]"); if (q) q.focus(); }); },
     "plan-ask-close": () => { st.planAsk = ""; render(); },
     "plan-ask-send": (i, el) => askPlan(planId(el)),
-    "plan-unwait": () => { st.plan = FP.failed(st.plan, FP.running(st.plan), "기다리지 않기로 했어요"); save(); render(); say("기다리지 않을게요. 다시 맡길 수 있어요."); },
+    "plan-unwait": async () => { const id = FP.running(st.plan); if (!id || st.halting) return; const w = tw && tw.kind === "plan" ? tw : null; if (w) { st.halting = true; render(); const ok = await taskHalt(w.at); st.halting = false; if (!ok) { if (tw === w) twTimer = setInterval(twTick, 3000); render(); return say("Claude Code를 멈추지 못했어요 — 아직 일하는 중이라 조금 뒤 다시 눌러 주세요."); } if (tw === w) tw = null; st.stall = null; } if (FP.running(st.plan) !== id) return render(); st.plan = FP.failed(st.plan, id, "멈췄어요"); save(); render(); say(w ? "Claude Code도 멈췄어요 — 바로 다시 맡길 수 있어요." : "멈췄어요 — 다시 맡길 수 있어요."); },   // F-103-7(임유정 2026-10-30 '클로드 코드도 멈추는 거로'): 서버의 일을 끄고(taskHalt — 꺼진 걸 확인할 때까지) 그 줄을 끝맺는다. 그사이 보고가 와서 끝났으면 그대로 둔다
     // 살피기 · 책 — 옛 명령 칸(C-29)의 길. 지금은 도전과제의 '알아 둘 것'에서 해 보기 · 끝 카드의 책 보기가 부른다(C-35)
     "cmd-look": () => {
       const q = st.quest;

@@ -22,7 +22,8 @@ if (process.platform === "win32") app.setAppUserModelId(app.isPackaged ? L.APP_I
 
 // F-42(2026-10-20): 한 번에 하나만 — 옛 앱이 켜진 채 새 것을 열면 둘이 다른 포트로 떠 섬이 겹치고 훅은 옛 쪽으로 갔다. 두 번째는 켜진 쪽을 앞으로 부르고 쉬운 말로 알린 뒤 끝난다.
 //   켜진 쪽이 옛 버전이어도 바꿔 켜지 않는다 [제안] — 사람이 옛 것을 끝내고 새 것을 연다(알림 글에 적는다)
-if (!app.requestSingleInstanceLock()) {
+const ONLY = app.requestSingleInstanceLock();   // ONLY — whenReady도 본다: app.quit()은 바로 끝나지 않아 두 번째가 창 · 서버를 잠깐 띄웠다(F-103-23)
+if (!ONLY) {
   dialog.showErrorBox("Floe", "Floe가 이미 켜져 있어요. 켜진 Floe를 먼저 끝낸 뒤(메뉴 Floe → 끝내기) 새 것을 열어 주세요.");
   app.quit();
 }
@@ -31,6 +32,9 @@ const P = L.paths(app.isPackaged, __dirname);
 const WANT = Number(process.env.NAV_PORT) || 4317;
 const RELEASES = "https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases";
 let PORT = WANT, URL_ = "", win = null, tray = null, serverState = "", Server = null;   // Server — server.js(startServer가 한 번 읽는다 — 그 전에 읽으면 포트 값이 굳는다)
+// 앱 창(섬 · 옆 창)은 앱 서버(URL_) 안에서만 넘어간다 — 화면 · 서고가 모두 그 안이고, 밖 주소로 넘어가면 그 페이지가 preload의 키 · 폴더 IPC를 쓸 수 있다.
+//   바깥 https 링크는 창을 넘기지 않고 기본 브라우저로(setWindowOpenHandler와 같이, F-103-22)
+const keepInApp = (e, url) => { if (URL_ && String(url).startsWith(URL_)) return; e.preventDefault(); if (/^https:\/\//.test(String(url))) shell.openExternal(String(url)); };
 const LINUX = process.platform === "linux";
 // Linux: 투명 창은 ARGB 비주얼을 켜 달라고 미리 말해야 한다(아니면 뒤가 검게 나올 수 있다). 창은 ready 뒤 잠깐 기다려 만든다(아래)
 if (LINUX) app.commandLine.appendSwitch("enable-transparent-visuals");
@@ -65,7 +69,7 @@ async function startServer() {
   URL_ = `http://127.0.0.1:${PORT}/`;   // 화면 파일은 정확한 경로만(API 약속) — 앱 안임은 preload.js가 둔 window.floeApp으로 안다
   process.env.NAV_PORT = String(PORT);
   if (!process.env.NAV_CHAT_DIR) process.env.NAV_CHAT_DIR = path.join(app.getPath("userData"), "chats");   // 대화 저장 곳 — 이 컴퓨터의 앱 저장 곳(작업실 개편 C-63, 결정 모음 A-20, API.md 3-32)
-  Server = require(path.join(P.backend, "server.js"));
+  try { Server = require(path.join(P.backend, "server.js")); } catch (e) { return `error:${e.code || e.message}`; }   // 못 읽으면(묶음에서 빠짐 등) whenReady가 오류 창 — '켜지는 중'에 멈추지 않게(F-103-24)
   return new Promise((resolve) => {
     const s = http.createServer(Server.handle);
     s.on("error", (e) => resolve(`error:${e.code || e.message}`));
@@ -117,6 +121,7 @@ function createWindow() {
   win.on("closed", () => { clearInterval(cursorTick); win = null; closeSideWins(); });   // 섬 창이 닫히면 옆 창 둘도(C-22)
   // 화면의 바깥 링크(처음 설정의 'Claude Code 설치 안내' 등)는 앱 창이 아니라 기본 브라우저로
   win.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
+  win.webContents.on("will-navigate", keepInApp);   // F-103-22
   // Windows · Linux: 창 우클릭 → 같은 메뉴(메뉴 줄이 없으니). Mac은 위 메뉴 줄 그대로
   if (process.platform !== "darwin") win.webContents.on("context-menu", () => Menu.buildFromTemplate(floeItems()).popup({ window: win }));
   // 서고 주소로 넘어가기 시작하면 창을 먼저 넓힌다(내비게이터의 '내 서고 들어가기' · '내 배움'은 화면이 floeApp.expand로도 부른다 — 둘 중 먼저 온 것이 넓힌다)
@@ -273,12 +278,13 @@ function menu() {
   } catch (e) { console.log(`트레이 아이콘을 못 만들었어요(${e.message}) — 창 우클릭 메뉴로`); }
 }
 
-ipcMain.handle("floe:connect", () => pickAndConnect(true));
+// 키 · 폴더 · 설정 폴더는 섬 창이 보낸 것만(옆 창 · 다른 페이지는 받지 않는다, F-103-22) — 부르는 곳은 섬의 app.js · setup.js뿐
+ipcMain.handle("floe:connect", (e) => (fromIsland(e) ? pickAndConnect(true) : { ok: false, message: "" }));
 ipcMain.handle("floe:project-new", async (e, name) => { if (!fromIsland(e)) return { ok: false, message: "" }; return afterPick(await Project.newFolder(os.homedir(), name)); });
 ipcMain.handle("floe:project-clone", async (e, text) => { if (!fromIsland(e)) return { ok: false, message: "" }; return afterPick(await Project.cloneRepo(os.homedir(), text, { ghReady: await Project.ghReady() })); });
 ipcMain.handle("floe:project-repos", async (e) => (fromIsland(e) ? Project.myRepos({ ghReady: await Project.ghReady() }) : []));
-ipcMain.handle("floe:disconnect", () => pickAndConnect(false));
-ipcMain.handle("floe:open-settings", () => shell.openPath(app.getPath("userData")));
+ipcMain.handle("floe:disconnect", (e) => (fromIsland(e) ? pickAndConnect(false) : { ok: false, message: "" }));
+ipcMain.handle("floe:open-settings", (e) => (fromIsland(e) ? shell.openPath(app.getPath("userData")) : ""));
 // ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "설정 창과 퀘스트 창 그리고 채팅을 입력하는 창 이렇게 3개") — 섬 창 옆에 뜨는 창 둘 ──
 // 상태는 섬(app.js) 하나가 갖는다: 섬이 창의 내용(HTML)을 그려 보내고(floe:win-html), 창의 누름 · 바뀜 · 입력은 섬으로 돌아가(floe:win-event) 섬이 처리하고 다시 그려 보낸다.
 // 설정 창(kind "settings"): 테두리 없음 · 항상 위(섬처럼) · 불투명 네이비, 머리띠를 잡고 끈다(win.html의 app-region). 자리는 섬 창 옆(lib.js sideWinBounds — 고른 쪽). 2026-10-25(F-56)부터 설정은 섬 안의 판이라 이 창은 열리지 않는다.
@@ -323,6 +329,7 @@ function openSideWin(kind, opt = {}) {
   w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
   w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (win && !win.isDestroyed()) { if (ws) win.show(); win.webContents.send("floe:win-closed", kind); } });   // 작업실이 닫히면 섬 창이 다시 뜬다(C-41 ⑤)
   w.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
+  w.webContents.on("will-navigate", keepInApp);   // F-103-22
   w.loadURL(`${URL_}navigator/win.html#${kind}`);
 }
 // 2026-10-24(이재엽 "지금 오버레이가 겹치지 않도록") — 섬 창의 크기가 바뀌어 옆 창과 겹치면 같은 규칙(lib.js sideWinBounds — 옆자리가 좁으면 줄이고, 없으면 섬 아래)으로 다시 둔다.
@@ -365,7 +372,8 @@ function writeEnv(updates) {
 }
 // 앱은 늘 자기 서버를 켜므로(빈 포트, #115) 보통 "ok"다 — 서버를 못 켰을 때만 막는다
 const OTHER_SERVER = "앱의 서버가 켜지지 않아 키를 바꿀 수 없어요. 앱을 다시 켜 주세요.";
-ipcMain.handle("floe:save-key", (_e, p) => {
+ipcMain.handle("floe:save-key", (e, p) => {   // 섬 창이 보낸 것만(F-103-22)
+  if (!fromIsland(e)) return { ok: false, message: "" };
   if (serverState !== "ok") return { ok: false, message: OTHER_SERVER };
   const key = String((p && p.key) || "").trim(), base = L.relayUrl(p && p.baseUrl);
   if (!L.looksLikeKey(key)) return { ok: false, message: "키 모양이 아니에요. 띄어쓰기 없이 통째로 붙여 넣어 주세요." };
@@ -373,13 +381,15 @@ ipcMain.handle("floe:save-key", (_e, p) => {
   try { writeEnv({ ANTHROPIC_API_KEY: key, ANTHROPIC_BASE_URL: base || null }); } catch (e) { return { ok: false, message: `저장하지 못했어요: ${e.code || "알 수 없는 까닭"}` }; }
   return { ok: true };
 });
-ipcMain.handle("floe:clear-key", () => {
+ipcMain.handle("floe:clear-key", (e) => {   // 섬 창이 보낸 것만(F-103-22)
+  if (!fromIsland(e)) return { ok: false, message: "" };
   if (serverState !== "ok") return { ok: false, message: OTHER_SERVER };
   try { writeEnv({ ANTHROPIC_API_KEY: null, ANTHROPIC_BASE_URL: null }); } catch (e) { return { ok: false, message: `키를 빼지 못했어요: ${e.code || "알 수 없는 까닭"}` }; }
   return { ok: true };
 });
 
 app.whenReady().then(async () => {
+  if (!ONLY) return;   // 두 번째로 켠 것 — 알림만 하고 끝난다(창 · 트레이 · 서버 없이, F-103-23)
   menu();
   const icon = L.devIcon(app.isPackaged, __dirname);   // 개발 실행도 Dock에 플로로(묶은 앱과 같은 그림)
   if (icon && process.platform === "darwin" && app.dock) app.dock.setIcon(icon);

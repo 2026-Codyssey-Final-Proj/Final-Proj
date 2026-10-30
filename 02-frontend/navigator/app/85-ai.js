@@ -64,7 +64,7 @@
     if (j.reason) logMsg("floro", esc(j.reason));   // 플로로의 쉬운 말 풀이(AI의 reason)는 채팅에 남긴다(C-22)
     const fresh = learn(j);
     // 다 했으면 스스로 펼쳐서 알린다(CouCou의 alert), 아니면 접혀 있던 것만 한 줄로 보인다
-    if (allDone()) { view("alert"); if (!was) return celebrate("done"); } else peek();
+    if (allDone()) { view("alert"); if (!was) { if (fresh.length) logMsg("floro", `새 말을 배웠어요: ${esc(fresh.join(", "))}`); return celebrate("done"); } } else peek();   // 축하로 빠지기 전에 배운 말은 채팅에(F-103-25)
     if (fresh.length) requestAnimationFrame(() => say(`새 말을 배웠어요: ${fresh.join(", ")}`));
   }
   const stop = (msg) => { st.error = msg; pendingNotice = ""; render(); };   // 보낼 수 없을 때 — 이유를 보여 주고 멈춘다
