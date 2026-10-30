@@ -9,8 +9,9 @@
 const KEY = /^[A-Z][A-Z0-9]{1,9}$/;
 
 // CHANGELOG 맨 위 버전 줄 — 칸: 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 (04-tests/repo/test_changelog.py와 같은 줄 모양)
-function topVersion(text) {
-  const line = String(text || "").split("\n").find((l) => /^\| v\d+\.\d+ \| \d{4}-\d{2}-\d{2} \|/.test(l));
+//   want — 그 버전의 줄(한 번에 합친 버전이 여럿일 때, F-105-6). 없으면 맨 위
+function topVersion(text, want = "") {
+  const line = String(text || "").split("\n").find((l) => /^\| v\d+\.\d+ \| \d{4}-\d{2}-\d{2} \|/.test(l) && (!want || l.startsWith(`| ${want} |`)));
   if (!line) return null;
   const [version, date, , what = ""] = line.split(/(?<!\\)\|/).slice(1, -1).map((c) => c.trim());
   return { version, date, what: what.replace(/\*\*|`/g, "").slice(0, 250) };
@@ -66,17 +67,23 @@ async function run(env, io) {
   try { event = JSON.parse(io.read(env.GITHUB_EVENT_PATH || "") || "{}"); } catch {}
   const keys = issueKeys((event.commits || []).map((c) => c && c.message), cfg.key);
 
+  // 이번에 합친 버전들(FOLDED_VERSIONS — changelog-fold.js의 출력) — 한 번에 조각 여럿을 합치면 맨 위 하나만 릴리스되고 나머지가 빠졌다(고칠 목록 F-105-6). 이슈 키는 전처럼 맨 위 버전에
+  const text = io.read("CHANGELOG.md");
+  const names = [...new Set([...String(env.FOLDED_VERSIONS || "").split(",").map((s) => s.trim()).filter(Boolean), top.version])];
+  const releases = names.map((v) => (v === top.version ? top : topVersion(text, v))).filter(Boolean);
   try {
     const project = await call(io, cfg, "GET", `/rest/api/3/project/${cfg.key}`);
     const versions = await call(io, cfg, "GET", `/rest/api/3/project/${cfg.key}/versions`);
-    const found = (versions || []).find((v) => v.name === top.version);
-    if (!found) {
-      await call(io, cfg, "POST", "/rest/api/3/version", { name: top.version, projectId: Number(project.id), description: top.what, released: true, releaseDate: top.date });
-      io.log(`${top.version}: 만들고 릴리스함`);
-    } else if (!found.released) {
-      await call(io, cfg, "PUT", `/rest/api/3/version/${found.id}`, { released: true, releaseDate: top.date });
-      io.log(`${top.version}: 릴리스함`);
-    } else io.log(`${top.version}: 이미 릴리스돼 있음`);
+    for (const rel of releases) {
+      const found = (versions || []).find((v) => v.name === rel.version);
+      if (!found) {
+        await call(io, cfg, "POST", "/rest/api/3/version", { name: rel.version, projectId: Number(project.id), description: rel.what, released: true, releaseDate: rel.date });
+        io.log(`${rel.version}: 만들고 릴리스함`);
+      } else if (!found.released) {
+        await call(io, cfg, "PUT", `/rest/api/3/version/${found.id}`, { released: true, releaseDate: rel.date });
+        io.log(`${rel.version}: 릴리스함`);
+      } else io.log(`${rel.version}: 이미 릴리스돼 있음`);
+    }
   } catch (e) { io.log(`::error::Jira 버전을 만들지 못했어요 — ${e.message}`); return 1; }
 
   if (!keys.length) io.log(`이번 push에 ${cfg.key}- 키가 없어요 — 이슈에는 붙이지 않았어요`);

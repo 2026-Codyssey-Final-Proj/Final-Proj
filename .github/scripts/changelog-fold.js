@@ -45,7 +45,8 @@ function prNumbers(messages) {
   for (const msg of messages || []) {
     const s = String(msg || "");
     const merge = /^Merge pull request #(\d+) from [^/\s]+\/(\S+)/.exec(s);
-    if (merge) { byBranch[merge[2].split("/").pop()] = merge[1]; all.push(merge[1]); continue; }
+    // 같은 끝 이름이 여러 번 병합됐으면 가장 새(큰) 번호 — git log는 새것부터, 이벤트는 옛것부터라 순서로 고르면 어긋났다(고칠 목록 F-105-6)
+    if (merge) { const k = merge[2].split("/").pop(); if (!byBranch[k] || Number(merge[1]) > Number(byBranch[k])) byBranch[k] = merge[1]; all.push(merge[1]); continue; }
     const squash = /\(#(\d+)\)\s*$/m.exec(s.split("\n")[0]);
     if (squash) all.push(squash[1]);
   }
@@ -89,7 +90,9 @@ function run(io) {
   if (r.rows.length) {
     io.write("CHANGELOG.md", r.text);
     for (const row of r.rows) { io.remove(`changes/${row.name}.md`); io.log(`${row.version} ← changes/${row.name}.md`); }
+    if (io.output) io.output("versions", r.rows.map((x) => x.version).join(","));   // Jira 단계가 버전마다 릴리스를 만들게(F-105-6)
   }
+  // 틀린 조각이 있어도 정상 조각은 위에서 합쳤다 — 1은 알리기 위해서다. 워크플로가 이 단계를 continue-on-error로 두고 커밋 · Jira 뒤에 실패로 표시한다(F-105-5)
   return r.errors.length ? 1 : 0;
 }
 
@@ -106,6 +109,7 @@ if (require.main === module) {
     write: (p, t) => fs.writeFileSync(p, t),
     remove: (p) => fs.rmSync(p, { force: true }),
     log: (s) => console.log(s),
+    output: (k, v) => { if (process.env.GITHUB_OUTPUT) fs.appendFileSync(process.env.GITHUB_OUTPUT, `${k}=${v}\n`); },
   };
   process.exitCode = run(io);
 }

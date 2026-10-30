@@ -9,8 +9,17 @@
 . "$(dirname "$0")/lib.sh"
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 0
 
-CHROME="${MERMAID_CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
-if [ ! -x "$CHROME" ]; then
+# Chrome — 지정한 것, 없으면 Mac · Windows(Git Bash 경로) · Linux 자리를 차례로(전에는 Mac 경로뿐이라 Windows에서 늘 건너뛰었다, 고칠 목록 F-105-8)
+CHROME="${MERMAID_CHROME:-}"
+if [ -z "$CHROME" ]; then
+  for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+           "/c/Program Files/Google/Chrome/Application/chrome.exe" "/c/Program Files (x86)/Google/Chrome/Application/chrome.exe" \
+           "${LOCALAPPDATA:+$(cygpath -u "$LOCALAPPDATA" 2>/dev/null)/Google/Chrome/Application/chrome.exe}" \
+           /usr/bin/google-chrome /usr/bin/google-chrome-stable /usr/bin/chromium /usr/bin/chromium-browser; do
+    [ -n "$c" ] && [ -x "$c" ] && { CHROME="$c"; break; }
+  done
+fi
+if [ -z "$CHROME" ] || [ ! -x "$CHROME" ]; then
   echo "⚠️ check-mermaid: Chrome을 찾지 못해 Mermaid 검사를 건너뜁니다 (MERMAID_CHROME로 경로 지정 가능)" >&2
   exit 0
 fi
@@ -25,6 +34,8 @@ fi
 [ -n "$files" ] || exit 0
 
 tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
+# Windows(Git Bash)면 node가 읽는 경로(C:/…)로 — /c/… 그대로는 '브라우저를 못 찾음'이었다
+command -v cygpath >/dev/null 2>&1 && CHROME=$(cygpath -m "$CHROME")
 printf '{"executablePath":"%s","args":["--no-sandbox"]}' "$CHROME" > "$tmp/pptr.json"
 failed=0
 while IFS= read -r f; do
