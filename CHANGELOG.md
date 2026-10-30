@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v54.4 | 2026-10-30 | 두승현 | 퀘스트 탭 합치기(C-65 ~ C-68 + 새 (안) C-69 ~ C-73) 만들기 판 PRD · 작업 목록(TASK 28개) · 목업 확정본 쪽 사진 9장 — 두승현 결정(배치 · 공책 모양 · 1280 규칙 · 화면 가득 뺌 · 범례 · 기억)과 이재엽 결정 대기 6개 (#296) | `01-docs/features/`(PRD · TASK · shots/2026-10-30-quest-tab/) |
 | v54.3 | 2026-10-30 | 두승현 | F-102 ③ — 화면 시험 file-view(C-43) · workspace-md(C-53)를 새 화면에 맞춤(1단계 시작은 섬을 옆으로 · 접힌 '전체 파일'을 펼침), 알려진 실패 목록에서 두 줄 뺌 (#292) | `04-tests/e2e/` · `04-tests/known-failures.json` · `01-docs/07-maintenance/fix-map.md` |
 | v54.2 | 2026-10-30 | 이재엽 | 설정 토큰 칸에서 처음 초안이 AI로만 보이던 것 — 장부 이름이 숫자도 받는다 (F-107) · C-52(#287) 뒤 깨진 작업실 파일 칸 시험 한 줄을 맞춤 (#289) | `03-backend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/fix-map.md` |
 | v54.1 | 2026-10-30 | 임유정 | 훅 · CI 코드 점검 묶음 F-105(8개) — 한글 이름 파일도 비밀값 검사, 강제 푸시 · main 막기 · 병합된 브랜치 푸시 막기의 빈틈(env · bash -c · git -C · gh -R · 뒤에 붙은 --force · HEAD)을 공용 도우미 gitcmd.py로, 틀린 조각이 있어도 정상 조각은 합치고 실패 표시, PR 번호 · 합친 버전마다 Jira 릴리스, 커밋 시험은 이 저장소 커밋에만, jq · node가 없어도 main 막기가 열리지 않게, Windows에서도 Mermaid 검사 (#288) | `.claude/hooks/`(담당 이재엽 — 이 줄이 알림) · `.github/` · `04-tests/hooks/` · `04-tests/repo/` · `01-docs/` · `CLAUDE.md` |
