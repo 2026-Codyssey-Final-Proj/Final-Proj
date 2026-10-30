@@ -19,7 +19,7 @@
     },
     judge: () => { if (refuse(mealWhy())) return; st.notice = ""; judge(false); },
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
-    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [] }); ACT.ex(S.examples.indexOf(S.first)); },
+    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, mats: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [] }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => RETRY[st.warn.then](),
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },

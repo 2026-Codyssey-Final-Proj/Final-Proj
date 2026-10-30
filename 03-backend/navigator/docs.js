@@ -11,6 +11,7 @@
   const N = node ? require("./navigator.js") : root.NavRules;
   const Q = node ? require("./quest.js") : root.NavQuest;
   const BC = node ? require("./basecard.js") : root.NavBaseCard;   // 기준 카드(C-56 R-1, 2026-10-28) — docs/base.md
+  const SHT = node ? require("./sheet.js") : root.FloeSheet;   // C-47 한 장(2026-10-30) — 단계 문서의 '한 장' 절 · README의 그 단계 절
   const SLUGS = ["01-idea", "02-plan", "03-requirements", "04-design", "05-skeleton", "06-build", "07-measure", "08-retro"];
   const PRD_PART = ["문제와 목표", "아이디어와 범위", "꼭 필요한 기능", "만드는 방법", "뼈대와 할 일", "만든 것과 확인", "잰 결과", "배운 것"];   // 기획서에서 그 단계가 맡는 절
   const MARK_START = "<!-- floe:start -->", MARK_END = "<!-- floe:end -->";
@@ -30,6 +31,9 @@
 
   // 칸을 누가 어떻게 정했나 — 단계 문서의 '어떻게:' 줄(stageDoc)과 다시 읽기(parseStage)가 같은 표를 쓴다. moved · skip은 C-49(2026-10-29) — 다시 읽을 때 누가 정했나가 남게
   const HOW_WORDS = { ok: "플로로 초안을 그대로", edit: "고침", me: "직접 적음(초안 없이)", pick: "고름", chat: "플로로와 나눈 대화를 정리해 적음(작업실 개편 C-61)", moved: "지난 칸 · 파일에서 옮겨 적음", skip: "조건이 안 맞아 건너뜀" };
+
+  // 확인한 한 장(C-47) — 모양이 맞을 때만, 칸마다 가려 한 줄로
+  const sheetOf = (r, red) => (SHT && r && SHT.ok(r.sheet) ? Object.fromEntries(Object.entries(r.sheet).filter(([, v]) => v !== undefined).map(([k, v]) => [k, k === "at" ? v : oneLine(red(v))])) : null);
 
   // 그 단계 결과로 문서 한 장 — 받은 것은 묶음(ctx: results · idea · redact · docOf)
   function stageDoc(n, r, topic, ctx) {
@@ -66,8 +70,10 @@
     // 처음 뜻 — 관문에서 견준 말(1단계의 원하는 결과, 앞 관문에서 바꿨으면 바꾼 말)을 같이 적는다
     const was = oneLine(red(wantAt(R, n)));
     const goal = r.goal ? `\n\n## 처음 뜻 다시 보기\n\n${r.goal.changed ? `바뀌었어요 — “${oneLine(red(r.goal.changed))}”${was ? ` (전: “${was}”)` : ""}\n\n처음 말은 [기획서](../PRD.md)의 '처음 말한 것'에 그대로 있어요.` : `아직 같아요 — ${was ? `“${was}” ` : ""}그대로`}` : "";
+    // C-47 한 장(2026-10-30): ③ 기록 칸에서 사람이 맞아요 한 것만 — 다섯 칸 한 줄씩, 가린 뒤
+    const sh = sheetOf(r, red), sheet = sh ? `\n\n## 한 장\n\n${SHT.toLines(sh).join("\n")}` : "";
     const plan = n === 1 ? "\n\n이 문서가 이 프로젝트의 **계획서**예요. 일을 시작하기 전에 먼저 읽어요. 단계를 모은 기획서 한 장은 [../PRD.md](../PRD.md)에 있어요." : "";
-    return `# ${label(n)} · ${s.title}${topic ? ` — ${topic}` : ""}\n\n${meta(s)}${plan}\n\n## 재료\n\n${mat}${prep}\n\n${items}\n\n## 배운 것\n\n${learned}${goal}\n\n${proof}${check}\n\n---\nFloe가 단계를 지나며 정리했어요. 누가 무엇을 정했는지는 [../decisions.md](../decisions.md)에 모았어요.\n`;
+    return `# ${label(n)} · ${s.title}${topic ? ` — ${topic}` : ""}\n\n${meta(s)}${plan}\n\n## 재료\n\n${mat}${prep}\n\n${items}${sheet}\n\n## 배운 것\n\n${learned}${goal}\n\n${proof}${check}\n\n---\nFloe가 단계를 지나며 정리했어요. 누가 무엇을 정했는지는 [../decisions.md](../decisions.md)에 모았어요.\n`;
   }
   const placeholder = (n) => { const s = N.STAGES[n]; return `# ${label(n)} · ${s.title}\n\n아직 — 이 단계를 지나면 Floe가 채워요.\n\n${meta(s)}\n`; };
 
@@ -126,7 +132,9 @@
       + `- 기획서(끝낸 단계를 한 장으로): [PRD.md](PRD.md)\n- 결정 기록(누가 무엇을 어떻게 정했나): [decisions.md](decisions.md)${card && BC ? "\n- 이 프로젝트의 기준(1단계 관문의 카드): [base.md](base.md)" : ""}\n\n| 단계 | 폴더 | 상태 |\n|---|---|---|\n${rows}\n${MARK_END}\n`;
     const plan = R(1) ? docOf(1) : docOf(0);
     const links = SLUGS.map((_, n) => n).filter((n) => R(n)).map((n) => `- ${label(n)} ${N.STAGES[n].title}: [${docOf(n)}](${docOf(n)})`).join("\n");
-    const readme = `${MARK_START}\n## 계획 (Floe)\n\n${name ? `**${name}** — ` : ""}Floe의 여덟 단계로 만들어요.\n\n- 기획서: [docs/PRD.md](docs/PRD.md)\n- 결정 기록: [docs/decisions.md](docs/decisions.md)\n${links}\n- 단계 폴더 목차: [docs/README.md](docs/README.md)\n${MARK_END}\n`;
+    // C-47 한 장(2026-10-30) — 맞아요 한 단계마다 README의 그 단계 절(C-25의 남은 일). 내 글은 표시 밖이라 그대로
+    const sheets = SLUGS.map((_, n) => [n, sheetOf(R(n), redact)]).filter(([, s]) => s).map(([n, s]) => `\n### ${label(n)} · ${N.STAGES[n].title} — 한 장\n${SHT.toLines(s).join("\n")}\n`).join("");
+    const readme = `${MARK_START}\n## 계획 (Floe)\n\n${name ? `**${name}** — ` : ""}Floe의 여덟 단계로 만들어요.\n\n- 기획서: [docs/PRD.md](docs/PRD.md)\n- 결정 기록: [docs/decisions.md](docs/decisions.md)\n${links}\n- 단계 폴더 목차: [docs/README.md](docs/README.md)\n${sheets}${MARK_END}\n`;
     const claude = `${MARK_START}\n## Floe 단계 안내\n\n이 저장소는 Floe의 여덟 단계(1 ${N.STAGES[0].title} → … → 8 ${N.STAGES[7].title})로 만든다.\n\n`
       + `- 일을 시작하기 전에 [docs/PRD.md](docs/PRD.md)(기획서)와 [${plan}](${plan})를 먼저 읽는다. 거기에 없는 기능은 더하지 않고 먼저 묻는다.\n`
       + "- 사람이 정한 것은 [docs/decisions.md](docs/decisions.md)에 있다 — 바꿔야 하면 바꾸기 전에 묻는다.\n"
@@ -141,7 +149,7 @@
   //   사람이 손으로 고친 줄은 고친 대로 읽는다. Floe 단계 문서가 아니면(아직인 단계의 틀 · 다른 글) null. 가린 글은 가린 채로(원본이 이미 가려져 있다)
   const stagePath = (n) => `docs/${SLUGS[n]}/${SLUGS[n].slice(3)}.md`;
   const REF_LINE = /^재료: \d단계 [ⅠⅡⅢⅣⅤⅥⅦⅧ](?: |$)/;   // stageDoc refName들을 ' · '로 이은 줄 — 'N단계 Ⅰ'로 시작할 때만 재료로 읽는다(짧은 이름 안에도 ' · '가 있다 — '왜 · 어디까지 · 언제 성공')
-  const FIXED = ["재료", "이 단계 전에 준비할 것", "배운 것", "처음 뜻 다시 보기", "증빙"];
+  const FIXED = ["재료", "이 단계 전에 준비할 것", "한 장", "배운 것", "처음 뜻 다시 보기", "증빙"];   // 한 장 — C-47(2026-10-30)
   const DATE = /^(\d{4}-\d{2}-\d{2})/;
   // 표 한 줄 → 칸들(cell의 거꾸로 — \\ → \, \| → |)
   function cellsOf(row) {
@@ -189,6 +197,9 @@
       } else if (sec.title === "이 단계 전에 준비할 것") {
         const prep = body.filter((l) => l.startsWith("- ")).map((l) => l.slice(2));
         if (prep.length) result.prep = prep;
+      } else if (sec.title === "한 장") {
+        const s = SHT && SHT.parse(body);   // stageDoc 한 장 절의 거꾸로 — 다섯 칸이 다 있어야
+        if (s) result.sheet = s;
       } else if (sec.title === "배운 것") {
         const t = body.join("\n");
         if (!t || t === "비어 있음 — 관문에서 적지 않았어요") result.learned = "";   // 사람이 칸을 비웠으면 비어 있음

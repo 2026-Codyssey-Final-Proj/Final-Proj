@@ -149,7 +149,7 @@
     if (q.approve && AP) { approvals = AP.EXAMPLE.map((a) => ({ ...a, at: Date.now() })); apMode = "example"; st.task = { text: "", lines: null, say: "", sent: "" }; st.apSure = ""; }   // &approve=1 — 예시 승인 카드(FR-17, 녹화 · 시험용)
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
-    if (q.start) Object.assign(st, { codeless: null, linesDone: [], carryUse: {}, carryDone: false, j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, ship: null, prep: null, mapSel: null });
+    if (q.start) Object.assign(st, { codeless: null, linesDone: [], carryUse: {}, carryDone: false, j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, mats: {}, ship: null, prep: null, mapSel: null });
     // #feed — 먹이 주기의 정리 장면(예시 먹이, C-15 — 녹화 · 시험용)
     if (q.feed && FD) Object.assign(st, { j: null, finished: false, todos: null, tab: "today", hold: null, text: FD.EXAMPLE, meal: feedState(FD.EXAMPLE, true) });
     if (q.ex !== undefined) {

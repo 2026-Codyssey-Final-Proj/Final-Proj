@@ -218,7 +218,7 @@
     const ck = r && r.check;
     // R-5 ③ 기록(C-42): 적은 칸은 카드에 그 줄(정한 것)을 보인다 — 아직인 칸은 짧은 이름. 3단계의 '꼭 / 있으면 좋음'은 한 칸(Ⅲ)에 적는다 [해석: 스토리보드의 두 칸 → 한 줄]
     const cards = q ? `<div class="cv-cards">${q.objs.map((o, i) => { const ln = (q.lines[i] || [])[0] || ""; return `<span class="${QU.filled(q, i) ? "y" : ""}" title="${ROMAN(i)} ${esc(QU.nameOf(q, i))}">${ROMAN(i)} ${esc(QU.filled(q, i) && ln ? ln : QU.nameOf(q, i))}</span>`; }).join("")}</div>` : "";
-    const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, "도전과제 탭에서 칸마다 누가 정했는지") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
+    const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, !SH ? "도전과제 탭에서 칸마다 누가 정했는지" : r.sheet ? (r.nosrc ? "한 장 낡음 — 폴더에 단계 문서가 없어요" : st.restore && st.restore.phase === "stale" && st.restore.stale.includes(n) ? "한 장 낡음 — 폴더의 글이 바뀌었어요" : `한 장 확인함 ${r.sheet.at || ""}`) : "한 장 — 섬에서 맞아요 / 고칠래요") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
     // R-5 ④ 저장(C-42): 올라갈 파일 이름 — 이 장의 단계 문서 · 기획서 · 결정 기록(docs.js가 만드는 것과 같은 이름)
     const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
     const fl = files.length ? `<ul class="cv-files">${files.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
@@ -319,7 +319,7 @@
       const R = st.restore; if (!R || R.phase !== "stale") return;
       const d = R.data, read = R.stale.filter((n) => d.stages[n].result && st.results[n]), P = DP(), wrote = { ...(P.wrote || {}) }, own = { ...(P.own || {}) };
       // 그 단계 기록을 폴더의 글로 바꾼다(문서에 없는 칸 — 제목 · 코드 없이 지남 — 만 남긴다). 사람이 칸을 비웠으면 비운 대로
-      st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result }]; })) };
+      st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result, ...(old.sheet && !d.stages[n].result.sheet ? { sheet: old.sheet } : {}) }]; })) };   // C-47 — 맞아요 하고 아직 올리지 않은 한 장은 남긴다
       for (const n of R.stale) { if (d.stages[n].lossless) { wrote[n] = d.stages[n].print; delete own[n]; } else { own[n] = d.stages[n].print; delete wrote[n]; } }   // 다시 써도 같은 글일 때만 Floe가 덮는다 — 아니면 그 문서는 사람 것(올릴 때 keep → kept)
       st.docPrints = { ...P, wrote, own, seen: { ...(P.seen || {}), ...Object.fromEntries(R.stale.map((n) => [n, d.stages[n].print])) }, dirty: !!read.length || !!P.dirty };
       st.restore = null;

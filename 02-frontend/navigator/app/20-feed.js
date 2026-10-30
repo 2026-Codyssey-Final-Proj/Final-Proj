@@ -36,6 +36,8 @@
     // 종류를 붙인 구간은 '확인할 먹이'로(FR-15 더함) — 사람이 확인하기 전에는 책의 칸에 넣지 않는다(C-8 ②). 퀘스트 창의 '책' 탭(README 책 아래)에서 확인한다 — 서재가 있으면(SHELF_ON) 도서관 탭 맨 위
     const items = FD.inbox(fd.sections, fd.marks, fd.kinds).map((x) => ({ ...x, at: Date.now(), example: !!fd.example }));
     st.inbox = [...items, ...st.inbox].slice(0, 60);
+    for (const x of items) mat("feed", FD.kindLabel ? FD.kindLabel(x.kind) : x.kind);   // C-47 재료 — 구간의 종류만
+    for (let k = 0; k < p.left.length; k++) mat("feed", "뺀 구간");
     if (items.length) setTimeout(() => say(`확인할 먹이 ${items.length}개는 ${SHELF_ON ? "도서관 탭 맨 위" : "위 줄 '퀘스트' 창의 '책' 탭"}에 두었어요`), 3200);
     // 연습 모드의 예시 먹이는 정해진 장면(연습 첫 글)으로 이어진다 — 연습용 예시는 정해진 글만 알아서(FR-10). 진짜 AI면 먹은 글 그대로
     Object.assign(st, { text: fd.example && st.mode === "fixture" ? S.first.text : p.text, meal: null, undo: [] });
@@ -108,7 +110,7 @@
   function learnBox(n) {
     if (!st.results[n]) return "";   // 남길 단계 결과가 없으면 적은 글이 버려진다 — 칸을 보이지 않는다(새 맥락 리뷰)
     const w = n >= 1 ? wantNow(n) : null, g = st.goalDraft;
-    return `<div class="learn"><p class="mc-sub">이번 단계에서 배운 것을 내 말로 한 줄 적어요. 비워도 넘어가요 — 비우면 문서에 '비어 있음'으로 남아요.</p>
+    return `<div class="learn">${sheetGate(n)}<p class="mc-sub">이번 단계에서 배운 것을 내 말로 한 줄 적어요. 비워도 넘어가요 — 비우면 문서에 '비어 있음'으로 남아요.</p>
       <textarea class="mc-input" data-act="learned" rows="2" maxlength="400" aria-label="이번 단계에서 배운 것" placeholder="이번 단계에서 새로 알게 된 것은 무엇인가요?">${esc(st.learnDraft || "")}</textarea>${w ? `
       <p class="mc-sub">${w.from}: “${esc(w.text)}” — 아직 같은가요?</p>
       <div class="opts">${btn({ label: "아직 같아요", act: "goal-same", kind: "opt toggle", pressed: !!(g && g.same) })}${btn({ label: "바뀌었어요", act: "goal-changed", kind: "opt toggle", pressed: !!(g && g.changed != null) })}</div>${g && g.changed != null ? `

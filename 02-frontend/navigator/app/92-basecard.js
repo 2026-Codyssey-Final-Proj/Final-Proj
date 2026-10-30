@@ -85,6 +85,7 @@
     if (a === "ftext") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.text = t.value; const d = f.text !== f.saved; if (d !== f.dirty) { f.dirty = d; render(); } return; }   // 파일 고치기(C-43) — 바뀜 표시만 다시 그린다(글 칸이 흔들리지 않게)
     if (a === "fn-find") { st.fnFind = t.value.slice(0, 60); render(); return; }
     if (a === "card-field") { st.cardEdits = { ...st.cardEdits, [String(t.dataset.v)]: t.value.slice(0, 200) }; return; }   // C-56 기준 카드의 빈칸 — 다시 그리지 않는다(관문 '네' 또는 '고친 것 적용'에서 저장)
+    if (a === "sheet-field") { sheetInput(t.dataset.k, t.value); return; }   // C-47 한 장 고칠래요 — 다시 그리지 않는다('이대로 저장'에서)
     if (a === "prep-think") { const c = st.prep && st.prep.cards && st.prep.cards[Number(t.dataset.i)]; if (c) c.think = t.value.slice(0, 120); return; }   // C-54 고칠래요 — ① 생각(다시 그리지 않는다, '맞아요'에서 저장)
     if (a === "ffind") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.find = t.value.slice(0, 60); if (f.kind === "md" && !f.edit && !f.raw && f.find) f.raw = true; render(); return; }   // C-53 문서 안 찾기 — 그 글이 든 줄 표시(원문 · 코드 보기)   // R-10 넘기는 까닭 — 다시 그리지 않는다(글 칸이 흔들리지 않게)
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다

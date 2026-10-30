@@ -175,7 +175,7 @@
   function planEnd(t) {
     const id = st.plan && FP.running(st.plan); if (!id) return;
     // 보고는 맡길 일의 지금 말로(C-35). 단계 퀘스트를 보고 있으면 지금 할 퀘스트는 그대로 두고 채팅에 한 줄 · 칩(planChip)으로 알린다 — 고르는 것은 사람(2026-10-24 리뷰). 접혀 있으면 살짝 보인다
-    if (t && t.report) { st.plan = FP.report(st.plan, id, t.report, t.verdict || null); logMsg("sys", `Claude Code가 보고를 보냈어요${st.qfocus === "plan" ? "" : " — '맡길 일'에서 봐요"}`); peek(); say(t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy); }
+    if (t && t.report) { st.plan = FP.report(st.plan, id, t.report, t.verdict || null); mat("report", t.report.easy); logMsg("sys", `Claude Code가 보고를 보냈어요${st.qfocus === "plan" ? "" : " — '맡길 일'에서 봐요"}`); peek(); say(t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy); }
     else { const why = t && t.state === "failed" ? "끝까지 가지 못했어요" : "보고를 받지 못했어요"; st.plan = FP.failed(st.plan, id, why); peek(); say(`${why} — 다시 맡길 수 있어요`); }
     save(); render(); fetchUsage();
   }
@@ -363,6 +363,7 @@
     const sure = st.apSure === id; st.apSure = "";
     approvals = approvals.filter((x) => x.id !== id);
     if (apMode !== "live") { say(decision === "allow" ? "연습이라 실제로 허용하지는 않았어요" : "연습이라 실제로 거절하지는 않았어요"); return render(); }
+    mat("approve", `${decision === "allow" ? "허용" : "거절"} — ${(a.card && a.card.tool_name) || "도구"}`);   // C-47 재료 — 진짜로 보낸 결정만, 도구 이름만
     render();
     try {
       const r = await (await fetch("/api/approvals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, sig: a.sig, decision, sure }) })).json();
