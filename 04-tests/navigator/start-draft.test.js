@@ -31,7 +31,7 @@ test("초안 읽기(parseStart): 맞으면 글을 잘라 쓰고, 크기는 short
   assert.equal(N.parseStart({ ...DRAFT, who: "  " }).who, "", "사람이 없으면 빈 글자");
   for (const none of ["없음", "모름", "없어요.", "-"]) assert.equal(N.parseStart({ ...DRAFT, who: none }).who, "", `'${none}'도 사람이 없는 것(2026-10-25 리뷰)`);
   const long = N.parseStart({ ...DRAFT, topic: "가".repeat(80), pain: "나".repeat(400) });
-  assert.equal(long.topic.length, 30); assert.equal(long.pain.length, 160);
+  assert.equal(long.topic.length, 30); assert.equal(long.pain.length, N.LEN.pain);   // 2026-10-30 퀘스트 글 짧게(quest-short.test.js)
   for (const bad of [null, {}, { ...DRAFT, size: "huge" }, { ...DRAFT, topic: "" }, { ...DRAFT, who: 3 }, { ...DRAFT, pain: " " }, { ...DRAFT, sizeWhy: undefined }]) assert.equal(N.parseStart(bad), null, JSON.stringify(bad).slice(0, 60));
 });
 
