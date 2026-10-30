@@ -37,7 +37,7 @@ test("2단계 초안 읽기(parseStageDraft): 할 일 개수 · 순서대로, �
   assert.equal(N.parseStageDraft({ ...answer("Full"), items: answer("Full").items.map((x, i) => (i === 3 ? { text: "안 함" } : x)) }, 1, "Full").items[3].pick, "none");
   assert.equal(N.parseStageDraft(answer("Xpress"), 1, "Xpress").items.length, 4, "보통에는 기획서 칸이 없다");
   const long = N.parseStageDraft({ ...answer("Lite"), items: [{ text: "가".repeat(900) }, { text: "나" }] }, 1, "Lite");
-  assert.equal(long.items[0].text.length, 300);
+  assert.equal(long.items[0].text.length, N.LEN.line);   // 2026-10-30 퀘스트 글 짧게(quest-short.test.js)
   const prdAs = (t) => ({ ...answer("Full"), items: answer("Full").items.map((x, i) => (i === 3 ? { text: t } : x)) });
   for (const [bad, stage, tier] of [[null, 1, "Full"], [{}, 1, "Full"], [{ ...answer("Full"), items: answer("Full").items.slice(1) }, 1, "Full"], [prdAs("몰라요"), 1, "Full"],
     [{ ...answer("Lite"), items: [{ text: " " }, { text: "a" }] }, 1, "Lite"], [answer("Full"), 8, "Full"]]) assert.equal(N.parseStageDraft(bad, stage, tier), null, `${JSON.stringify(bad).slice(0, 50)} · ${stage}`);
@@ -80,7 +80,7 @@ test("연습(서버 없이)의 2단계 예시 초안 — 등급마다 그 할 �
 
 // C-56 R-2(2026-10-28, 이재엽 버튼 "이 프로젝트의 말 + 방법 이름 꼬리표"): 초안 요청문에 기준 카드(<기준>)를 재료로 주고 칸마다 이 프로젝트의 말로 된 이름(title) · 묻는 말(ask) · 끝 조건(done)을 함께 받는다.
 //   방법 이름(EARS · Planguage …)은 꼬리표로만 — 이름에 전문 용어가 섞이면 버리고 할 일 이름으로 둔다(지어낸 숫자 · 사람은 그대로 안 받는다)
-test("C-56 R-2 — 초안 요청문: 기준 카드가 있으면 <기준>으로 싸서 넘기고(없으면 요청문이 전과 같다), 칸마다 title · ask · done을 묻는다; 읽기: title 40자 · ask · done 120자, 전문 용어가 든 title은 버린다", () => {
+test("C-56 R-2 — 초안 요청문: 기준 카드가 있으면 <기준>으로 싸서 넘기고(없으면 요청문이 전과 같다), 칸마다 title · ask · done을 묻는다; 읽기: title · ask · done은 정한 길이(N.LEN)까지, 전문 용어가 든 title은 버린다", () => {
   const IDEA = "동아리 행사 신청 앱을 만들고 싶어요", PREV3 = [{ stage: 0, items: PREV }, { stage: 1, items: N.criteriaFor(1, "Xpress").map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) }];
   const base = "만드는 것: 신청이 한곳에 모여요\n쓰는 사람: 운영진 3명 · 회원 40명\n성공: 신청 40건";
   const p0 = N.stageDraftPrompt(2, "Xpress", { idea: IDEA, prev: PREV3 }), p1 = N.stageDraftPrompt(2, "Xpress", { idea: IDEA, prev: PREV3, base });
@@ -91,7 +91,7 @@ test("C-56 R-2 — 초안 요청문: 기준 카드가 있으면 <기준>으로 �
   const d = N.parseStageDraft({ say: "네", prep: [], items: todo.map((c, i) => ({ text: `${i} 글`, alts: [], from: [], title: i === 0 ? "프롬프트 저장하기 요구 문장 세 줄" : i === 1 ? "EARS로 쓰기" : "", ask: "어떤 프롬프트를 저장하나요?", done: "문장 셋이 '~하면, 앱은 ~한다' 꼴" })) }, 2, "Xpress", PREV3);
   assert.ok(d, "읽힌다"); assert.equal(d.items[0].title, "프롬프트 저장하기 요구 문장 세 줄"); assert.equal(d.items[0].ask, "어떤 프롬프트를 저장하나요?"); assert.equal(d.items[0].done, "문장 셋이 '~하면, 앱은 ~한다' 꼴");
   assert.equal(d.items[1].title, undefined, "전문 용어(EARS)가 든 이름은 버린다"); assert.equal(d.items[2].title, undefined, "빈 이름은 없다");
-  assert.equal(N.parseStageDraft({ say: "네", prep: [], items: todo.map((c, i) => ({ text: `${i} 글`, alts: [], from: [], title: "가".repeat(80) })) }, 2, "Xpress", PREV3).items[0].title.length, 40, "40자까지");
+  assert.equal(N.parseStageDraft({ say: "네", prep: [], items: todo.map((c, i) => ({ text: `${i} 글`, alts: [], from: [], title: "가".repeat(80) })) }, 2, "Xpress", PREV3).items[0].title.length, N.LEN.title, "이름은 정한 길이까지");   // 2026-10-30 퀘스트 글 짧게(quest-short.test.js)
 });
 
 // C-56 R-2 + C-54(2026-10-28): 2단계 끝에 3 ~ 8단계 준비된 퀘스트를 AI 한 번으로 — 받은 글 · 기준 카드 · 1 · 2단계 결과로 단계마다 이 프로젝트의 말로 된 이름 · ① 생각 · ② 행동 · 근거 절. 숫자 · 사람 · 날짜는 지어내지 않는다(#228이 규칙으로만 두었던 것)
