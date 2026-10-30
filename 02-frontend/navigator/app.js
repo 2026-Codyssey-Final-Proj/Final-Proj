@@ -808,7 +808,7 @@
     const items = FD.inbox(fd.sections, fd.marks, fd.kinds).map((x) => ({ ...x, at: Date.now(), example: !!fd.example }));
     st.inbox = [...items, ...st.inbox].slice(0, 60);
     for (const x of items) mat("feed", FD.kindLabel ? FD.kindLabel(x.kind) : x.kind);   // C-47 재료 — 구간의 종류만
-    if (p.left.length) mat("feed", `뺀 구간 ${p.left.length}`);
+    for (let k = 0; k < p.left.length; k++) mat("feed", "뺀 구간");
     if (items.length) setTimeout(() => say(`확인할 먹이 ${items.length}개는 ${SHELF_ON ? "도서관 탭 맨 위" : "위 줄 '퀘스트' 창의 '책' 탭"}에 두었어요`), 3200);
     // 연습 모드의 예시 먹이는 정해진 장면(연습 첫 글)으로 이어진다 — 연습용 예시는 정해진 글만 알아서(FR-10). 진짜 AI면 먹은 글 그대로
     Object.assign(st, { text: fd.example && st.mode === "fixture" ? S.first.text : p.text, meal: null, undo: [] });
@@ -881,7 +881,7 @@
   function learnBox(n) {
     if (!st.results[n]) return "";   // 남길 단계 결과가 없으면 적은 글이 버려진다 — 칸을 보이지 않는다(새 맥락 리뷰)
     const w = n >= 1 ? wantNow(n) : null, g = st.goalDraft;
-    return `<div class="learn"><p class="mc-sub">이번 단계에서 배운 것을 내 말로 한 줄 적어요. 비워도 넘어가요 — 비우면 문서에 '비어 있음'으로 남아요.</p>
+    return `<div class="learn">${sheetGate(n)}<p class="mc-sub">이번 단계에서 배운 것을 내 말로 한 줄 적어요. 비워도 넘어가요 — 비우면 문서에 '비어 있음'으로 남아요.</p>
       <textarea class="mc-input" data-act="learned" rows="2" maxlength="400" aria-label="이번 단계에서 배운 것" placeholder="이번 단계에서 새로 알게 된 것은 무엇인가요?">${esc(st.learnDraft || "")}</textarea>${w ? `
       <p class="mc-sub">${w.from}: “${esc(w.text)}” — 아직 같은가요?</p>
       <div class="opts">${btn({ label: "아직 같아요", act: "goal-same", kind: "opt toggle", pressed: !!(g && g.same) })}${btn({ label: "바뀌었어요", act: "goal-changed", kind: "opt toggle", pressed: !!(g && g.changed != null) })}</div>${g && g.changed != null ? `
@@ -1146,8 +1146,8 @@
   // 채팅 입력(C-22) — 상황에 따라: 준비 계획 · 맡길 일(C-35, planSay) / 처음 — 원하는 것(C-36, startDraft) / 퀘스트 한 줄 적기 · 고쳐 적기 / 궁금한 것 / 직접 쓴 답 / 바뀐 작업(진짜 AI)
   function send() {
     const t = st.say.trim(); if (!t || st.busy) return;
-    st.say = ""; logMe(t.length > 200 ? `${t.slice(0, 200)}… (글 ${t.length.toLocaleString()}자)` : t); activity();
-    mat("chat", t);   // C-47 재료 — 내가 적어 보낸 말의 한 줄(48-sheet, 가린 뒤 80자)   // 붙여 넣은 긴 글은 앞부분만 내 말로
+    st.say = ""; logMe(t.length > 200 ? `${t.slice(0, 200)}… (글 ${t.length.toLocaleString()}자)` : t); activity();   // 붙여 넣은 긴 글은 앞부분만 내 말로
+    mat("chat", t);   // C-47 재료 — 내가 적어 보낸 말의 한 줄(48-sheet, 가린 뒤 80자)
     if (planNow()) return planSay(t);   // 준비 계획 · 맡길 일(C-35)
     const q = st.quest;
     if (!st.j && !q && QU) return startDraft(t);    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }
@@ -1572,7 +1572,7 @@
     const ck = r && r.check;
     // R-5 ③ 기록(C-42): 적은 칸은 카드에 그 줄(정한 것)을 보인다 — 아직인 칸은 짧은 이름. 3단계의 '꼭 / 있으면 좋음'은 한 칸(Ⅲ)에 적는다 [해석: 스토리보드의 두 칸 → 한 줄]
     const cards = q ? `<div class="cv-cards">${q.objs.map((o, i) => { const ln = (q.lines[i] || [])[0] || ""; return `<span class="${QU.filled(q, i) ? "y" : ""}" title="${ROMAN(i)} ${esc(QU.nameOf(q, i))}">${ROMAN(i)} ${esc(QU.filled(q, i) && ln ? ln : QU.nameOf(q, i))}</span>`; }).join("")}</div>` : "";
-    const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, !SH ? "도전과제 탭에서 칸마다 누가 정했는지" : r.sheet ? `한 장 확인함 ${r.sheet.at || ""}` : "한 장 — 섬에서 맞아요 / 고칠래요") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
+    const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, !SH ? "도전과제 탭에서 칸마다 누가 정했는지" : r.sheet ? (r.nosrc ? "한 장 낡음 — 폴더에 단계 문서가 없어요" : st.restore && st.restore.phase === "stale" && st.restore.stale.includes(n) ? "한 장 낡음 — 폴더의 글이 바뀌었어요" : `한 장 확인함 ${r.sheet.at || ""}`) : "한 장 — 섬에서 맞아요 / 고칠래요") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
     // R-5 ④ 저장(C-42): 올라갈 파일 이름 — 이 장의 단계 문서 · 기획서 · 결정 기록(docs.js가 만드는 것과 같은 이름)
     const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
     const fl = files.length ? `<ul class="cv-files">${files.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
@@ -1673,7 +1673,7 @@
       const R = st.restore; if (!R || R.phase !== "stale") return;
       const d = R.data, read = R.stale.filter((n) => d.stages[n].result && st.results[n]), P = DP(), wrote = { ...(P.wrote || {}) }, own = { ...(P.own || {}) };
       // 그 단계 기록을 폴더의 글로 바꾼다(문서에 없는 칸 — 제목 · 코드 없이 지남 — 만 남긴다). 사람이 칸을 비웠으면 비운 대로
-      st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result }]; })) };
+      st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result, ...(old.sheet && !d.stages[n].result.sheet ? { sheet: old.sheet } : {}) }]; })) };   // C-47 — 맞아요 하고 아직 올리지 않은 한 장은 남긴다
       for (const n of R.stale) { if (d.stages[n].lossless) { wrote[n] = d.stages[n].print; delete own[n]; } else { own[n] = d.stages[n].print; delete wrote[n]; } }   // 다시 써도 같은 글일 때만 Floe가 덮는다 — 아니면 그 문서는 사람 것(올릴 때 keep → kept)
       st.docPrints = { ...P, wrote, own, seen: { ...(P.seen || {}), ...Object.fromEntries(R.stale.map((n) => [n, d.stages[n].print])) }, dirty: !!read.length || !!P.dirty };
       st.restore = null;
@@ -1723,38 +1723,52 @@
   });
 // ━━ app/48-sheet.js ━━
   // ── C-47 남은 몫(2026-10-30, 이재엽 버튼 "10/31까지" — 지식 퀘스트 PRD 3 · 6 · 7절, 9절 5번): 재료는 저절로 · ③ 기록 칸의 한 장은 확인만 ──
-  //   재료 — 내가 한 말(logMe) · 맡긴 일 보고(planEnd) · 허락 결정(decideApproval — 도구 이름만) · 먹이 구간의 종류(feedConfirm) · 바뀐 파일 이름(그 단계의 훅 알림, stageFilesOf).
-  //   가린 뒤 이름 · 한 줄 · 수만, 이 컴퓨터에만(sheet.js add). 대화 원문 · 도구 입력은 남기지 않는다.
+  //   재료 — 내가 적어 보낸 말(send) · 맡긴 일 보고(planEnd) · 진짜로 보낸 허락 결정(decideApproval — 도구 이름만) · 먹이 구간의 종류(feedConfirm).
+  //   가린 뒤 이름 · 한 줄 · 수만, 이 컴퓨터에만(sheet.js add). 대화 원문 · 도구 입력은 남기지 않는다. 바뀐 파일은 한 장을 만들 때 그 단계의 훅 알림(stageFilesOf)에서 — Floe가 쓴 문서는 뺀다.
+  //   가리기(sensitive.js)가 없으면 모으지도 카드를 띄우지도 않는다(실패하면 닫힌 쪽 — 새 맥락 리뷰 2026-10-30).
   //   한 장 — 완료 보고 뒤(그 단계 결과가 생기면) 채팅 위 카드로 다섯 칸 초안을 규칙으로(AI를 부르지 않는다 — 연습 모드에서도 서버 없이).
-  //   맞아요 → 단계 결과의 sheet(확인한 날) → '문서로 묶어 GitHub에'에서 단계 문서의 '한 장' 절 · README의 그 단계 절(docs.js), 폴더에서 다시 읽힌다(C-49). 고칠래요 → 칸마다 고쳐 저장
+  //   맞아요 → 보인 초안 그대로 단계 결과의 sheet(확인한 날) → '문서로 묶어 GitHub에'에서 단계 문서의 '한 장' 절 · README의 그 단계 절(docs.js), 폴더에서 다시 읽힌다(C-49).
+  //   고칠래요 → 칸마다 고쳐 저장. 나중에 → 이번 켜짐에는 숨기고, 관문의 배운 것 칸에서 다시 연다(sheetGate)
   const SH = window.FloeSheet;
   keep(["mats"]);
   st.mats = SH ? SH.fromSaved(st.mats) : {};
-  let sheetEdit = null;   // 고치는 중인 다섯 칸 { n, s } — 저장하지 않는다
+  let sheetEdit = null, sheetShown = null;   // 고치는 중인 다섯 칸 { n, s } · 카드에 보인 초안 { n, s } — 저장하지 않는다
   const sheetLater = new Set();   // 이번 켜짐에 '나중에'를 누른 단계
   const matStage = () => (st.quest ? st.quest.chap : atStage());   // 채팅 기록(logMsg)과 같은 단계
-  function mat(kind, text) { if (SH) st.mats = SH.add(st.mats, matStage(), kind, text, (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t)); }
+  const sheetRed = (t) => window.NavSensitive.redact(t);
+  function mat(kind, text) { if (!SH || !window.NavSensitive) return; st.mats = SH.add(st.mats, matStage(), kind, text, sheetRed); }
+  // Floe가 쓴 문서(단계 문서 · 기획서 · 결정 기록 · 목차 · 기준 카드 · 받은 글) — 바뀐 파일에 넣지 않는다
+  const floeDoc = (p) => !!FDOCS && (p === FDOCS.MAIN_DOC || p === FDOCS.LOG_DOC || p === FDOCS.CARD_DOC || p === FDOCS.SOURCE_DOC || p === "docs/README.md"
+    || FDOCS.SLUGS.some((s, k) => p === FDOCS.stagePath(k) || p === `docs/${s}/README.md`));
   function sheetDraft(n) {
     const r = st.results[n], s = N.STAGES[n] || {}, nx = N.STAGES[n + 1];
     return SH.draft({ title: s.title || "", mats: (st.mats || {})[n] || [], cells: (r ? r.items : []).map((x) => ({ name: QU ? QU.shortOf(x.name) : x.name, line: (x.lines || [])[0] || "" })),
-      terms: crits(n).map((c) => c.term).filter(Boolean), files: stageFilesOf(n).map((x) => x.path), next: nx ? `${LB(n + 1)} · ${nx.title}` : "마지막 단계 — 돌아보기를 마쳐요" });
+      terms: crits(n).map((c) => c.term).filter(Boolean), files: stageFilesOf(n).map((x) => x.path).filter((p) => !floeDoc(p)),
+      next: nx ? `${LB(n + 1)} · ${nx.title}` : "마지막 단계 — 돌아보기를 마쳐요" }, { redact: sheetRed });
   }
-  // 지금 단계에 결과가 있고 아직 한 장을 확인하지 않았으면 그 단계, 아니면 -1
-  const sheetFor = () => { const n = nowStage(), r = st.results[n]; return SH && r && !r.sheet && !sheetLater.has(n) ? n : -1; };
+  // 지금 단계에 결과가 있고 아직 한 장을 확인하지 않았으면 그 단계, 아니면 -1. 가리기가 없으면 늘 -1
+  const sheetFor = () => { if (!SH || !window.NavSensitive) return -1; const n = nowStage(), r = st.results[n]; return r && !r.sheet && !sheetLater.has(n) ? n : -1; };
+  const sheetRows = (s, ed) => SH.FIELDS.map(([k, w]) => (ed ? `<label class="sh-f"><b>${w}</b><textarea data-act="sheet-field" data-k="${k}" rows="2" maxlength="${SH.FIELD_MAX}" aria-label="한 장 — ${w}">${esc(s[k])}</textarea></label>`
+    : `<div class="sh-f"><b>${w}</b><span>${esc(s[k])}</span></div>`)).join("");
   function sheetHTML() {
     const n = sheetFor(); if (n < 0) return "";
     const ed = !!sheetEdit && sheetEdit.n === n, s = ed ? sheetEdit.s : sheetDraft(n);
-    const rows = SH.FIELDS.map(([k, w]) => (ed ? `<label class="sh-f"><b>${w}</b><textarea data-act="sheet-field" data-k="${k}" rows="2" maxlength="${SH.FIELD_MAX}" aria-label="한 장 — ${w}">${esc(s[k])}</textarea></label>`
-      : `<div class="sh-f"><b>${w}</b><span>${esc(s[k])}</span></div>`)).join("");
+    if (!ed) sheetShown = { n, s };
     const acts = ed ? `<button type="button" class="b pri" data-act="sheet-save">이대로 저장</button><button type="button" class="b ghost" data-act="sheet-edit">그만 고치기</button>`
       : `<button type="button" class="b pri" data-act="sheet-ok">맞아요</button><button type="button" class="b" data-act="sheet-edit">고칠래요</button><button type="button" class="b ghost" data-act="sheet-later">나중에</button>`;
-    return `<div class="msg floro sh"><div class="b"><p><b>③ 기록 — ${LB(n)} 한 장</b> 이 단계에서 한 일을 한 장으로 묶었어요. 맞으면 '맞아요', 고칠 곳이 있으면 '고칠래요'.</p><div class="sh-grid">${rows}</div><p class="mc-fine">맞아요 하면 '문서로 묶어 GitHub에'에서 README의 그 단계 절과 단계 문서에 들어가요.</p><div class="opts">${acts}</div></div></div>`;
+    return `<div class="msg floro sh"><div class="b"><p><b>③ 기록 — ${LB(n)} 한 장</b> 이 단계에서 한 일을 한 장으로 묶었어요. 맞으면 '맞아요', 고칠 곳이 있으면 '고칠래요'.</p><div class="sh-grid">${sheetRows(s, ed)}</div><p class="mc-fine">맞아요 하면 '문서로 묶어 GitHub에'에서 README의 그 단계 절과 단계 문서에 들어가요.</p><div class="opts">${acts}</div></div></div>`;
+  }
+  // 관문의 배운 것 칸 — 그 단계의 한 장을 나란히(PRD 6절 C-47), 아직이면 다시 여는 단추
+  function sheetGate(n) {
+    const r = st.results[n]; if (!SH || !r || !window.NavSensitive) return "";
+    if (r.sheet) return `<details class="sh-gate"><summary>이 단계의 한 장${r.sheet.at ? ` — ${esc(r.sheet.at)} 확인` : ""}</summary><div class="sh-grid">${sheetRows(r.sheet, false)}</div></details>`;
+    return `<p class="mc-sub">한 장은 아직이에요 <button type="button" class="b ghost" data-act="sheet-open">한 장 확인하기</button></p>`;
   }
   function sheetInput(k, v) { if (sheetEdit && SH.FIELDS.some(([f]) => f === k)) sheetEdit.s = { ...sheetEdit.s, [k]: String(v).slice(0, SH.FIELD_MAX) }; }   // 치는 동안 다시 그리지 않는다
-  const sheetKeep = (n, s) => { st.results = { ...st.results, [n]: { ...st.results[n], sheet: { ...s, at: ymd() } } }; sheetEdit = null; save(); render(); say(`${LB(n)} 한 장을 기록에 넣었어요`); };
+  const sheetKeep = (n, s) => { st.results = { ...st.results, [n]: { ...st.results[n], sheet: { ...s, at: ymd() } } }; sheetEdit = null; sheetShown = null; save(); render(); say(`${LB(n)} 한 장을 기록에 넣었어요`); };
   Object.assign(ACT, {
-    "sheet-ok": () => { const n = sheetFor(); if (n >= 0) sheetKeep(n, sheetDraft(n)); },
-    "sheet-edit": () => { const n = sheetFor(); if (n < 0) return; sheetEdit = sheetEdit && sheetEdit.n === n ? null : { n, s: sheetDraft(n) }; render(); },
+    "sheet-ok": () => { const n = sheetFor(); if (n >= 0) sheetKeep(n, sheetShown && sheetShown.n === n ? sheetShown.s : sheetDraft(n)); },   // 보인 초안 그대로
+    "sheet-edit": () => { const n = sheetFor(); if (n < 0) return; sheetEdit = sheetEdit && sheetEdit.n === n ? null : { n, s: sheetShown && sheetShown.n === n ? sheetShown.s : sheetDraft(n) }; render(); },
     "sheet-save": () => {
       const n = sheetFor(); if (n < 0 || !sheetEdit || sheetEdit.n !== n) return;
       const s = Object.fromEntries(SH.FIELDS.map(([k]) => [k, String(sheetEdit.s[k] || "").trim()]));
@@ -1762,6 +1776,7 @@
       sheetKeep(n, s);
     },
     "sheet-later": () => { const n = sheetFor(); if (n >= 0) { sheetLater.add(n); sheetEdit = null; render(); } },
+    "sheet-open": () => { sheetLater.delete(nowStage()); render(); },   // 관문에서 '한 장 확인하기' — 채팅 위 카드를 다시
   });
 // ━━ app/50-chatlist.js ━━
   // ── C-63 왼쪽 대화 목록(2026-10-29, 두승현 PRD 3-2 · 이재엽 승인): 프로젝트 이름 → 단계 바로가기(최근이 위 — 지금 / 그 단계를 이야기한 날) → 맨 아래 '전체 파일'(지금의 폴더 모양, 한 칸 들여서).
@@ -2994,8 +3009,8 @@
     if (decision === "allow" && a.card && a.card.danger && st.apSure !== id) return set({ apSure: id });   // 되돌리기 어려운 일 — 한 번 더 묻는다
     const sure = st.apSure === id; st.apSure = "";
     approvals = approvals.filter((x) => x.id !== id);
-    mat("approve", `${decision === "allow" ? "허용" : "거절"} — ${(a.card && a.card.tool_name) || "도구"}`);   // C-47 재료 — 도구 이름만
     if (apMode !== "live") { say(decision === "allow" ? "연습이라 실제로 허용하지는 않았어요" : "연습이라 실제로 거절하지는 않았어요"); return render(); }
+    mat("approve", `${decision === "allow" ? "허용" : "거절"} — ${(a.card && a.card.tool_name) || "도구"}`);   // C-47 재료 — 진짜로 보낸 결정만, 도구 이름만
     render();
     try {
       const r = await (await fetch("/api/approvals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, sig: a.sig, decision, sure }) })).json();

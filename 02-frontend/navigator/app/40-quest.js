@@ -123,8 +123,8 @@
   // 채팅 입력(C-22) — 상황에 따라: 준비 계획 · 맡길 일(C-35, planSay) / 처음 — 원하는 것(C-36, startDraft) / 퀘스트 한 줄 적기 · 고쳐 적기 / 궁금한 것 / 직접 쓴 답 / 바뀐 작업(진짜 AI)
   function send() {
     const t = st.say.trim(); if (!t || st.busy) return;
-    st.say = ""; logMe(t.length > 200 ? `${t.slice(0, 200)}… (글 ${t.length.toLocaleString()}자)` : t); activity();
-    mat("chat", t);   // C-47 재료 — 내가 적어 보낸 말의 한 줄(48-sheet, 가린 뒤 80자)   // 붙여 넣은 긴 글은 앞부분만 내 말로
+    st.say = ""; logMe(t.length > 200 ? `${t.slice(0, 200)}… (글 ${t.length.toLocaleString()}자)` : t); activity();   // 붙여 넣은 긴 글은 앞부분만 내 말로
+    mat("chat", t);   // C-47 재료 — 내가 적어 보낸 말의 한 줄(48-sheet, 가린 뒤 80자)
     if (planNow()) return planSay(t);   // 준비 계획 · 맡길 일(C-35)
     const q = st.quest;
     if (!st.j && !q && QU) return startDraft(t);    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }

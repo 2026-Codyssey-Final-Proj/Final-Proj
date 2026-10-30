@@ -10,8 +10,8 @@
   const node = typeof module !== "undefined" && module.exports;
   const N = node ? require("./navigator.js") : root.NavRules;
   const Q = node ? require("./quest.js") : root.NavQuest;
-  const BC = node ? require("./basecard.js") : root.NavBaseCard;
-  const SHT = node ? require("./sheet.js") : root.FloeSheet;   // C-47 한 장(2026-10-30) — 단계 문서의 '한 장' 절 · README의 그 단계 절   // 기준 카드(C-56 R-1, 2026-10-28) — docs/base.md
+  const BC = node ? require("./basecard.js") : root.NavBaseCard;   // 기준 카드(C-56 R-1, 2026-10-28) — docs/base.md
+  const SHT = node ? require("./sheet.js") : root.FloeSheet;   // C-47 한 장(2026-10-30) — 단계 문서의 '한 장' 절 · README의 그 단계 절
   const SLUGS = ["01-idea", "02-plan", "03-requirements", "04-design", "05-skeleton", "06-build", "07-measure", "08-retro"];
   const PRD_PART = ["문제와 목표", "아이디어와 범위", "꼭 필요한 기능", "만드는 방법", "뼈대와 할 일", "만든 것과 확인", "잰 결과", "배운 것"];   // 기획서에서 그 단계가 맡는 절
   const MARK_START = "<!-- floe:start -->", MARK_END = "<!-- floe:end -->";
@@ -133,7 +133,7 @@
     const plan = R(1) ? docOf(1) : docOf(0);
     const links = SLUGS.map((_, n) => n).filter((n) => R(n)).map((n) => `- ${label(n)} ${N.STAGES[n].title}: [${docOf(n)}](${docOf(n)})`).join("\n");
     // C-47 한 장(2026-10-30) — 맞아요 한 단계마다 README의 그 단계 절(C-25의 남은 일). 내 글은 표시 밖이라 그대로
-    const sheets = SLUGS.map((_, n) => n).filter((n) => sheetOf(R(n), redact)).map((n) => `\n### ${label(n)} · ${N.STAGES[n].title} — 한 장\n${SHT.toLines(sheetOf(R(n), redact)).join("\n")}\n`).join("");
+    const sheets = SLUGS.map((_, n) => [n, sheetOf(R(n), redact)]).filter(([, s]) => s).map(([n, s]) => `\n### ${label(n)} · ${N.STAGES[n].title} — 한 장\n${SHT.toLines(s).join("\n")}\n`).join("");
     const readme = `${MARK_START}\n## 계획 (Floe)\n\n${name ? `**${name}** — ` : ""}Floe의 여덟 단계로 만들어요.\n\n- 기획서: [docs/PRD.md](docs/PRD.md)\n- 결정 기록: [docs/decisions.md](docs/decisions.md)\n${links}\n- 단계 폴더 목차: [docs/README.md](docs/README.md)\n${sheets}${MARK_END}\n`;
     const claude = `${MARK_START}\n## Floe 단계 안내\n\n이 저장소는 Floe의 여덟 단계(1 ${N.STAGES[0].title} → … → 8 ${N.STAGES[7].title})로 만든다.\n\n`
       + `- 일을 시작하기 전에 [docs/PRD.md](docs/PRD.md)(기획서)와 [${plan}](${plan})를 먼저 읽는다. 거기에 없는 기능은 더하지 않고 먼저 묻는다.\n`
