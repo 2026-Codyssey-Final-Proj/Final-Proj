@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v51.21 | 2026-10-30 | 임유정 | 서버 코드 점검 묶음 F-104(15개) — 개인키 본문 · JSON 비밀번호 · GitHub · Bearer 토큰 가리기, 앱이 옆 포트로 켜져도 훅이 찾기(.port), 허락 카드가 훅이 끊겨도 남던 것, 예외에 답 없이 멈추던 것, 제목 줄 ReDoS, GitHub 확인이 앱을 붙잡던 것(spawnSync → async), git 출력 첫 글자 잘림 · TDZ, npm으로만 깐 Windows의 claude, 멈춰도 자식 프로세스가 남던 것, 단계 문서의 줄바꿈 · BOM, Windows 경로 대소문자, 되읽은 단계 결과를 서버 모양으로(F-103-9). 훅 · CI 쪽은 F-105로 올림 (#282) | `03-backend/navigator/`(담당 이재엽 — 이 줄이 알림) · `02-frontend/electron/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v51.20 | 2026-10-30 | 이재엽 | app.js 나누기 3차 — 섬 화면의 선 아이콘 · 무지개 조개를 진짜 모듈 icons.js(window.FloeIcons)로 떼어 냄(그림 · 동작 그대로) (#280) | `02-frontend/navigator/`(icons.js 새로 · index.html · app/00-base.js · app.js, 담당 임유정 — 이 줄이 알림) · `03-backend/navigator/server.js`(내줄 파일 목록) · `04-tests/navigator/`(icons 새로 · app-9) |
 | v51.19 | 2026-10-30 | 이재엽 | app.js 나누기 2차 — 기능 조각이 저장할 것(keep)과 누르기(Object.assign(ACT, …))를 스스로 등록. 대화 · 지식 퀘스트 · 파일 · 코드 맡기기 · 작업실 · 멈춤 · 막힘 · 문서 올리기를 옮겨 KEEP 한 줄 · 누르기 표의 병합 충돌을 줄임(동작 그대로, 누르기 266개 그대로) (#279) | `02-frontend/navigator/`(app.js · app/, 담당 임유정 — 이 줄이 알림) · `04-tests/navigator/`(app-register 새로 · knowledge-carry · knowledge-restore · chat-list의 KEEP 확인) |
 | v51.18 | 2026-10-30 | 이재엽 | 커밋 전 시험이 main에 이미 있는 화면 e2e 실패 때문에 모든 브랜치에서 막히던 것 — 고칠 목록 번호 · 담당 · 기한이 붙은 알려진 실패(04-tests/known-failures.json)는 보이되 막지 않음. 새 실패 · 기한 지남은 그대로 막고, 고쳐지면 빼라고 알림 (#278) | `04-tests/run_all_tests.py` · `04-tests/known-failures.json` · `04-tests/repo/test_known_failures.py` · `CLAUDE.md`(훅 표 한 줄) |
