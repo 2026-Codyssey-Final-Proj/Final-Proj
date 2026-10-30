@@ -61,7 +61,7 @@
     try {
       const r = await (await fetch("/api/readme", { cache: "no-store" })).json();
       st.rb = r && r.ok && r.book ? { book: r.book, src: "mine", project: r.project, why: "" }
-        : example(r && r.why === "none" ? "이 폴더에 README.md가 없어요" : "연결한 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열어요");
+        : example(r && r.why === "excluded" ? "README.md는 빼 둔 곳이라 읽지 않아요 — 설정 '기록'의 빼 둘 곳에서 풀 수 있어요" : r && r.why === "none" ? "이 폴더에 README.md가 없어요" : "연결한 폴더를 아직 몰라요 — 그 폴더에서 Claude Code를 한 번 열어요");
     } catch { st.rb = example("서버에 닿지 않았어요"); }
     render();
   }
