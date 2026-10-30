@@ -78,7 +78,7 @@ test("서고 → 작업 화면 — 물이 차오르고 플로로가 잠수한 �
   assert.doesNotMatch(lib.slice(lib.indexOf("a.lib-out"), lib.indexOf("a.lib-out") + 400), /prefers-reduced-motion/, "움직임 줄이기도 &back으로 간다(F-36) — 움직임만 없다(dive.js leave !CAN)");
   assert.match(nav, /if \(\/\[#&\]back\(&\|\$\)\/\.test\(location\.hash\)\) document\.documentElement\.classList\.add\("surfacing"\)/, "머리에서 바로");
   assert.match(nav, /<div class="dive" id="dive-cover" aria-hidden="true"><\/div>/);
-  assert.match(read("navigator/dive.css"), /html:not\(\.dive-in\):not\(\.surfacing\) #dive-cover\{display:none\}/);
+  assert.match(read("navigator/dive.css"), /html:not\(\.dive-in\):not\(\.surfacing\) #dive-cover:not\(\.rising\)\{display:none\}/);   // 빠지는 중(.rising)은 끝까지(F-103-13)
   assert.match(app, /history\.replaceState\(null, "", st\.place === "base" \? location\.pathname : `\$\{location\.pathname\}\$\{location\.hash\.replace\(\/&back/, "새로 고침하면 또 떠오르지 않게 — 기본 화면이면 주소 끝을 통째로(F-36)");
   assert.match(app, /window\.FloeDive\.surface\(\{ cover: document\.getElementById\("dive-cover"\), island: \$nav\.firstElementChild/);
 });

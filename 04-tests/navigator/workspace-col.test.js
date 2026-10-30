@@ -39,12 +39,12 @@ test("win.js · win.html — 옆 칸의 자리는 html[data-side], 크기는 --c
   assert.match(j, /const sideOf = \(\) => \{ const c = root\.querySelector\("\.isl-col"\);/);
   assert.match(j, /h\.dataset\.side = side; hd\.hidden = !side \|\| folded \|\| center;/);
   assert.match(j, /localStorage\.setItem\(axis === "w" \? "floe:col-w" : "floe:col-h", col\[axis\]\)/, "크기는 작업실이 이 컴퓨터에 기억");
-  assert.match(j, /if \(e\.key === "Enter"\) reset\(\); else if \(e\.key === grow\) setCol\(col\[axis\] \+ 20\); else if \(e\.key === shrink\) setCol\(col\[axis\] - 20\); else if \(e\.key === "Home"\) setCol\(RANGE\[axis\]\[0\]\); else if \(e\.key === "End"\) setCol\(hiOf\(axis\)\);/);
+  assert.match(j, /if \(e\.key === "Enter"\) reset\(\); else if \(e\.key === grow\) setCol\(clamp\(axis, col\[axis\]\) \+ 20\); else if \(e\.key === shrink\) setCol\(clamp\(axis, col\[axis\]\) - 20\); else if \(e\.key === "Home"\) setCol\(RANGE\[axis\]\[0\]\); else if \(e\.key === "End"\) setCol\(hiOf\(axis\)\); else return;/);   // ± 20은 보이는 값에서, Home · End · else return이 살아 있다(F-103-21 — 줄 가운데 주석이 뒤를 지웠던 일)
   assert.match(j, /hd\.addEventListener\("dblclick", reset\)/);
   assert.match(j, /e\.key === "Enter" && !e\.shiftKey && !e\.isComposing && e\.target && e\.target\.dataset && e\.target\.dataset\.act === "say"\) \{ e\.preventDefault\(\); F\.winEvent\(\{ type: "key", key: "Enter", act: "say", kind \}\); \}/, "한글 조합 중의 Enter는 보내지 않는다");
   assert.match(j, /const ls = \(k\) => \{ try \{ return \+localStorage\.getItem\(k\) \|\| 0; \} catch \{ return 0; \} \};/, "저장소가 막혀도 창은 돈다");
   assert.match(j, /lg2\.scrollTop = lgTop === null \|\| lgEnd \? lg2\.scrollHeight : lgTop;/, "대화 기록 — 맨 아래를 보고 있었으면 새 말도 맨 아래");
-  assert.match(j, /layoutCol\(\);\n  \}\);/, "다시 그릴 때마다 칸을 다시 잰다");
+  assert.match(j, /function draw\(html\) \{[\s\S]*?layoutCol\(\);\n  \}\n/, "다시 그릴 때마다 칸을 다시 잰다(draw — 한글 조합 중에는 미뤘다가, F-103-18)");
   assert.match(h, /#root\{height:100vh;box-sizing:border-box;display:grid;grid-template-columns:minmax\(0,1fr\) var\(--col-w,420px\);grid-template-rows:auto minmax\(0,1fr\);grid-template-areas:"wh wh" "win isl";transition:--col-w \.3s cubic-bezier\(\.2,\.8,\.2,1\)\}/, "격자 — 머리 줄 하나 아래 판 · 옆 칸(오른쪽만), 0.3초(기준 8)");
   assert.ok(!h.includes("data-side"), "위 · 아래 · 왼쪽 자리 규칙은 뺐다(2026-10-28 합의)");
   assert.match(h, /@media \(prefers-reduced-motion:reduce\)\{#root\{transition:none\}\}/);

@@ -249,9 +249,13 @@
     if (!host) return;   // 가져오는 중(최대 3분)에 닫혔다 — 끝난 뒤 빈 화면에 그리지 않는다
     const mood = s.busy === "check" || s.busy === "clone" ? "think" : s.checked && s.checked.error ? "alert" : s.checked === true && s.step !== "done" && stageOf(s.step) === "ai" ? "happy" : MOOD[s.step] || "idle";
     const at = flow.indexOf(stageOf(s.step));
+    // 다시 그려도 치던 글 · 커서가 남게 — 글 칸이 상태에 묶여 있지 않아 응답(저장소 목록 · gh 상태)이 와서 다시 그리면 지워졌다(F-103-17)
+    const typed = [...host.querySelectorAll("input[name]")].map((i) => [i.name, i.value]), was = doc.activeElement, caret = was && was.name && host.contains(was) ? [was.name, was.selectionStart, was.selectionEnd] : null;
     host.innerHTML = `<div class="su-back"></div><section class="su isl" role="dialog" aria-modal="true" aria-labelledby="su-title">
       <div class="su-cat">${floro(mood, phone() ? 84 : 124)}</div><div class="su-main">${body()}</div>
       <ol class="su-dots" aria-label="처음 설정 ${at + 1} / ${flow.length}">${flow.map((k) => `<li class="${stageOf(s.step) === k ? "on" : ""}"></li>`).join("")}</ol></section>`;
+    for (const [n, v] of typed) { const i = host.querySelector(`input[name="${n}"]`); if (i && !i.value) i.value = v; }
+    if (caret) { const i = host.querySelector(`input[name="${caret[0]}"]`); if (i) { i.focus({ preventScroll: true }); try { i.setSelectionRange(caret[1], caret[2]); } catch {} } }
     // 단계가 바뀌면 제목으로(화면 읽기 프로그램이 새 단계부터 읽는다), 같은 단계에서 다시 그리면 하던 자리 가까이로
     const title = host.querySelector("#su-title");
     if (title && s.step !== lastStep) { title.setAttribute("tabindex", "-1"); title.focus({ preventScroll: true }); }
@@ -352,6 +356,7 @@
     s.busy = "clone"; s.note = ""; render();
     let r; try { r = await root.floeApp.cloneProject(text); } catch { r = { ok: false, message: "가져오지 못했어요" }; }
     if (!host) return picked(r);
+    if (r && r.ok) clearTyped();
     s.busy = ""; chose(r, true); render();
   }
   async function makeNew(name) {
@@ -359,8 +364,11 @@
     s.busy = "new"; s.note = ""; render();
     let r; try { r = await root.floeApp.newProject(name); } catch { r = { ok: false, message: "폴더를 만들지 못했어요" }; }
     if (!host) return picked(r);
+    if (r && r.ok) clearTyped();
     s.busy = ""; chose(r, true); render();
   }
+  // 가져오기 · 새로 만들기가 됐으면 친 글을 비운다 — render가 다시 그릴 때 친 글을 남기므로(F-103-17) 성공 뒤에는 전처럼 빈 칸으로(새 맥락 리뷰)
+  function clearTyped() { for (const i of host.querySelectorAll("input[name]")) i.value = ""; }
   async function submitKey(form) {
     const key = form.key.value.trim(), base = form.base ? form.base.value.trim() : "";
     if (!key) return;

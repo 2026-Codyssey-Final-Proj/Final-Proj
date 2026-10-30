@@ -49,7 +49,7 @@
   // 끌기 — 단추 · 글 칸이 아닌 곳을 눌러 4px 넘게 움직이면. 듣는 곳은 document: 끄는 중에 섬이 다시 그려 칸이 바뀌어도 이어진다
   document.addEventListener("pointerdown", (e) => {
     const cv = e.target.closest && e.target.closest(".cv");
-    if (!cv || e.button !== 0 || e.target.closest("a,button,input,textarea,select,[contenteditable]")) return;
+    if (!cv || e.button !== 0 || e.target.closest("a,button,input,textarea,select,summary,[contenteditable]")) return;
     e.preventDefault(); cv.focus({ preventScroll: true, focusVisible: false });   // 글자 고르기 대신 끌기 — 키(+ − 0 화살표)는 이어서 칸에. 마우스로 잡은 것이라 키보드 테두리는 그리지 않는다
     try { cv.setPointerCapture(e.pointerId); } catch {}
     drag = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: false };
