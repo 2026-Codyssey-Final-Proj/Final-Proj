@@ -82,3 +82,29 @@ test("C-27 — 책 탭의 관문 계획서: 결과가 있는 단계를 고르고
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });
+
+test("C-24 — 용어 풀이의 '더 공부하기' → 책 탭의 공부 묶음: 고르기 · 묶음 받기(파일 + 질문 다섯) · NotebookLM 안내(가리기는 단위 시험 study-pack)", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
+  try {
+    const { page, errors } = await open(browser, "#tab=lib");
+    await page.click("[data-act=fold]"); await wait(400);
+    // 용어 단추가 있는 화면으로 — 연습 모드의 처음 화면에서 용어 단추를 찾는다(없으면 튜토리얼과 같은 동작을 직접)
+    const viaTerm = await page.evaluate(() => { const t = document.querySelector("[data-act=term]"); if (!t) return false; t.click(); return true; });
+    if (viaTerm) { await wait(300); await page.waitForSelector("[data-act=study-open]", { timeout: 3000 }); await page.click("[data-act=study-open]"); }
+    else await page.evaluate(() => { const b = document.createElement("button"); b.dataset.act = "study-open"; document.querySelector(".gplan").appendChild(b); b.click(); });   // 판정 전이라 용어 단추가 없으면 같은 동작을 화면 안에서(용어 · 관문 자리의 단추는 단위 시험이 본다)
+    await page.waitForSelector(".study", { timeout: 5000 });
+    assert.deepEqual(await page.$$eval(".study .gp-pick button", (bs) => bs.map((b) => [b.textContent.trim(), b.getAttribute("aria-pressed")])),
+      [["지금 단계 설명", "true"], ["관문 계획서", "true"], ["용어 풀이", "true"], ["내 기록", "false"]], "내 기록은 사람이 골라야");
+    await page.click('.study [data-act=study-pick][data-i="3"]'); await wait(200);
+    await page.evaluate(() => { window.__got = null; const orig = URL.createObjectURL; URL.createObjectURL = (b) => { window.__blob = b; return orig.call(URL, b); }; });
+    await page.click(".study [data-act=study-get]"); await wait(400);
+    const text = await page.evaluate(async () => (window.__blob ? await window.__blob.text() : ""));
+    assert.match(text, /^# 공부 묶음 — /); assert.match(text, /## 내 기록/); assert.match(text, /## 먼저 물을 질문 다섯/);
+    assert.equal(await page.$$eval(".study .study-q li", (ls) => ls.length), 5);
+    assert.match(await page.$eval(".study", (e) => e.textContent), /NotebookLM에 아무것도 보내지 않아요/);
+    if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT.replace(/\.png$/, "-study.png") });
+    await page.click(".study [data-act=study-close]"); await wait(200);
+    assert.equal(await page.$(".study"), null);
+    assert.deepEqual(errors, []);
+  } finally { await browser.close(); }
+});

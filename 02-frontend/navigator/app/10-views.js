@@ -21,7 +21,7 @@
     const line = G.explain(t), open = st.termOpen === t;
     if (!line) return `<span class="tag" title="전문가들이 부르는 이름이에요">용어: ${esc(t)}</span>`;
     return `<button type="button" class="tag term" data-act="term" data-term="${esc(t)}" aria-expanded="${open}" title="${esc(line)}">용어: ${esc(t)}</button>${
-      open ? `<span class="term-say" role="note">${esc(line)}</span>` : ""}`;
+      open ? `<span class="term-say" role="note">${esc(line)}</span>${window.FloeStudyPack ? `<button type="button" class="lnk term-more" data-act="study-open" data-term="${esc(t)}">더 공부하기</button>` : ""}` : ""}`;   // C-24 — 이 말로 공부 묶음
   }
   // 넘어가기 전 확인의 한 장 요약 — [이름, 내용]. iPhone은 줄로, PC는 표로 그린다
   function planRows() {

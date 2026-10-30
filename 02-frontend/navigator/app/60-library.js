@@ -48,11 +48,27 @@
       ${b.sections.map((s, k) => `<article class="gp-sec" id="${esc(s.id)}" tabindex="-1"><h5>${k + 1}. ${esc(s.title)}</h5><ul>${s.rows.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></article>`).join("")}
       <div class="ob-foot"><button type="button" class="b" data-act="gp-file">파일로 받기 (.md)</button></div></section>`;
   }
+  // ── C-24 공부 묶음(2026-10-30 — studypack.js): 고른 것(지금 단계 · 관문 계획서 · 용어 풀이 · 내 기록)을 파일 하나 + 질문 다섯으로 내려받는다 ──
+  //   '더 공부하기'(용어 풀이 · 관문의 '아니요' 뒤 · 튜토리얼)에서 열린다(st.study — 이 켜짐 동안만). 가리기가 없으면 묶지 않는다(실패하면 닫힌 쪽).
+  //   NotebookLM에는 보내지 않는다 — 올리는 법 한 장만 보인다
+  const SPK = window.FloeStudyPack;
+  const studyN = () => (st.j ? st.j.stage : atStage());
+  const studyPack = () => SPK.build({ n: studyN(), pick: st.study.pick, results: st.results, tier: st.tier, term: st.study.term, hide: (t) => window.NavSensitive.redact(t), scan: (t) => window.NavSensitive.scan(t) });
+  function studyBox() {
+    if (!SPK || !st.study) return "";
+    const d = st.study, g = d.got;
+    return `<section class="gplan study" aria-label="공부 묶음"><div class="stg">공부 묶음 — ${LB(studyN())}${d.term ? ` · ${esc(d.term)}` : ""}</div>
+      <p class="meta">넣을 것을 고르면 글 파일 하나와 먼저 물을 질문 다섯을 만들어요. 내 NotebookLM에 직접 올려 물어봐요.</p>
+      <div class="gp-pick" role="group" aria-label="넣을 것">${SPK.SOURCES.map(([k, w], i) => `<button type="button" class="b${d.pick.includes(k) ? " pri" : " ghost"}" data-act="study-pick" data-i="${i}" aria-pressed="${d.pick.includes(k)}">${w}</button>`).join("")}</div>
+      ${g ? `<p class="meta"><b>받았어요 — ${esc(g.file)}</b>${g.masked.length ? ` · 가린 것: ${esc(g.masked.join(", "))}` : " · 가린 것 없음"}</p><ol class="study-q">${g.questions.map((q) => `<li>${esc(q)}</li>`).join("")}</ol>` : ""}
+      <div class="gp-sec"><h5>NotebookLM에 올리는 법</h5><ol>${SPK.GUIDE.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></div>
+      <div class="ob-foot"><button type="button" class="b pri" data-act="study-get" ${d.pick.length ? "" : "disabled"}>묶음 받기 (.md)</button><button type="button" class="b ghost" data-act="study-close">닫기</button></div></section>`;
+  }
   function bookPane() {
     if (libSelected()) return deskLib();
-    if (SHELF_ON) return `${readmeBox()}${gatePlanBox()}${deskLib()}`;
+    if (SHELF_ON) return `${studyBox()}${readmeBox()}${gatePlanBox()}${deskLib()}`;
     const mine = L() && SCH() ? openBooks().find((b) => b.mine) : null;
-    return `${readmeBox()}${gatePlanBox()}<div class="libtab">${inboxBox()}${mine ? `<div class="ob-foot"><button type="button" class="b" data-act="lib-book" data-id="${esc(mine.id)}">이 프로젝트의 단계 문서 · 정한 것 펼치기</button></div>` : ""}</div>`;
+    return `${studyBox()}${readmeBox()}${gatePlanBox()}<div class="libtab">${inboxBox()}${mine ? `<div class="ob-foot"><button type="button" class="b" data-act="lib-book" data-id="${esc(mine.id)}">이 프로젝트의 단계 문서 · 정한 것 펼치기</button></div>` : ""}</div>`;
   }
   function readmeBox() {
     if (!RB) return "";
@@ -296,15 +312,26 @@
         counts.length ? `<ul class="verbs">${counts.map(([v, n]) => `<li><span>${esc(v)}</span><b>${n}</b></li>`).join("")}</ul>` : ""}</div>
       <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div></div></section>`;
   }
-  // C-27 관문 계획서 — 관문 카드의 '계획서 보기' · 단계 고르기 · 목차 → 그 절 · 파일로 받기
+  const download = (name, text) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+  // C-27 관문 계획서 — 관문 카드의 '계획서 보기' · 단계 고르기 · 목차 → 그 절 · 파일로 받기 / C-24 공부 묶음 — 열기 · 고르기 · 받기 · 닫기
   Object.assign(ACT, {
+    "study-open": (i, el) => { if (!SPK) return; st.study = { term: (el && el.dataset && el.dataset.term) || "", pick: [...SPK.DEFAULT_PICK], got: null }; openQwin("lib"); render(); },
+    "study-pick": (i) => { const d = st.study, k = SPK && SPK.SOURCES[i] && SPK.SOURCES[i][0]; if (!d || !k) return; st.study = { ...d, got: null, pick: d.pick.includes(k) ? d.pick.filter((x) => x !== k) : [...d.pick, k] }; render(); },
+    "study-get": () => {
+      if (!SPK || !st.study) return;
+      if (!window.NavSensitive) return say("가리는 도구(sensitive.js)를 불러오지 못해서 묶지 않았어요 — 화면을 다시 열어 주세요");
+      const p = studyPack(); if (!p) return say("넣을 것을 하나 이상 골라요");
+      download(p.file, p.text); st.study = { ...st.study, got: { file: p.file, questions: p.questions, masked: p.masked } }; render();
+      say(p.masked.length ? `받았어요 — ${p.masked.join(", ")} 모양은 가렸어요` : "받았어요 — 내 NotebookLM에 직접 올려 질문 다섯부터 물어봐요");
+    },
+    "study-close": () => { st.study = null; render(); },
     "gp-open": () => { const n = st.j ? st.j.stage : atStage(); st.gpSel = n; openQwin("lib"); render(); },
     "gp-sel": (i) => { st.gpSel = i | 0; render(); },
     "gp-toc": (i, el) => { const id = el && el.dataset.v, t = id && document.getElementById(id); if (t) { t.scrollIntoView({ block: "start", behavior: "smooth" }); t.focus({ preventScroll: true }); } },
     "gp-file": () => {
       if (!GPL) return; const list = gpStages(), n = list.includes(st.gpSel) ? st.gpSel : list[list.length - 1]; if (n == null) return;
-      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([GPL.toMarkdown(gpBook(n))], { type: "text/markdown;charset=utf-8" }));
-      a.download = `${String(n + 1).padStart(2, "0")}-gate-plan.md`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      download(`${String(n + 1).padStart(2, "0")}-gate-plan.md`, GPL.toMarkdown(gpBook(n)));
       say("계획서를 파일로 내려받았어요 — 공부 묶음이나 NotebookLM에 같이 넣을 수 있어요");
     },
   });
