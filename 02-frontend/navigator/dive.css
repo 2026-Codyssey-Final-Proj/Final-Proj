@@ -12,7 +12,7 @@
 .dive.out{background:none}
 .dive.out .pane{position:absolute;transform-origin:0 0;will-change:transform;
   background:radial-gradient(ellipse 120% 70% at 50% -10%,rgba(150,200,255,.35),transparent 60%),linear-gradient(180deg,#1b3a9c,#13286f 45%,#0a1238)}
-.dive.out .fx{position:absolute;inset:0;opacity:0;overflow:hidden}
+.dive.out .fx{position:absolute;inset:0;opacity:0;overflow:hidden;translate:none;animation:none}   /* 하트용 .fx(app.css)의 가운데 맞춤 · fly를 받지 않게(F-103-14) */
 @keyframes dive-rise{to{transform:translate(var(--x,10px),-110vh)}}
 /* 수면 — 서고에서 물이 위로 빠질 때 보이는 밝은 물결 띠 */
 .dive .surf{position:absolute;left:-5%;right:-5%;bottom:-2px;height:26px;border-radius:50% 50% 0 0/100% 100% 0 0;
@@ -31,7 +31,7 @@
 
 /* 서고에 들어올 때: 그려지기 전부터 물이 덮고 있다(서고 index.html 머리의 한 줄이 html에 dive-in을 붙인다).
    작업 화면으로 돌아올 때(2026-10-20)도 같다 — 내비게이터 index.html 머리의 한 줄이 주소 끝 &back을 보고 surfacing을 붙인다 */
-html:not(.dive-in):not(.surfacing) #dive-cover{display:none}
+html:not(.dive-in):not(.surfacing) #dive-cover:not(.rising){display:none}   /* .rising — 빠지는 중인 물은 surfacing을 뗀 뒤(180ms)에도 끝까지(600ms) 보인다(F-103-13) */
 /* 서고에서 나갈 때 물이 아래에서 차오른다 — 수면 띠는 위쪽에 */
 .dive.rising-up .surf{display:block;top:-2px;bottom:auto;border-radius:0 0 50% 50%/0 0 100% 100%;background:linear-gradient(0deg,rgba(220,240,255,.85),rgba(150,200,255,0))}
 /* 작업 화면이 떠오르는 동안 섬은 보이지 않는다 — 물이 빠진 뒤 위에서 내려앉는다(dive.js surface) */

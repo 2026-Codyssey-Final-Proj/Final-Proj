@@ -19,7 +19,13 @@
   const S = window.NavSeal, STILL = matchMedia("(prefers-reduced-motion: reduce)").matches;
   let eyeAt = null, eyeRaf = 0;
   if (S && !STILL) document.addEventListener("mousemove", (e) => { eyeAt = { x: e.clientX, y: e.clientY }; if (!eyeRaf) eyeRaf = requestAnimationFrame(() => { eyeRaf = 0; S.follow(root, eyeAt); }); });
-  F.onWinHtml((html) => {
+  // 한글을 조합하는 동안 다시 그리면 조합이 깨진다(입력마다 섬이 화면을 다시 보낸다) — 조합 중에 온 화면은 미뤄 두고 끝나면 마지막 것을 그린다(F-103-18)
+  let composing = false, pending = null;
+  root.addEventListener("compositionstart", () => { composing = true; });
+  //   끝난 바로 뒤에 다음 음절의 compositionstart가 오므로 한 박자 미뤄 그때도 조합 중이 아니면 그린다(새 맥락 리뷰)
+  root.addEventListener("compositionend", () => { composing = false; setTimeout(() => { if (composing || pending === null) return; const h = pending; pending = null; draw(h); }, 0); });
+  F.onWinHtml((html) => { if (composing && root.contains(document.activeElement)) { pending = html; return; } composing = false; draw(html); });   // 글 칸이 사라져 compositionend가 안 와도 멈춰 있지 않게
+  function draw(html) {
     const a = document.activeElement, keep = a && a.dataset && a.dataset.act && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) ? a : null;
     const key = keep ? `${keep.dataset.act}|${keep.dataset.i || ""}|${keep.dataset.k || ""}` : "", sel = keep ? [keep.selectionStart, keep.selectionEnd, keep.scrollTop] : null;
     // 스크롤은 같은 화면(data-view — 탭 · 펼친 책 · 단계 문서)을 다시 그릴 때만 되돌린다. 화면이 바뀌면 맨 위부터 —
@@ -40,7 +46,7 @@
     const gs = root.querySelector("[data-log][data-go-stage]"), gv = gs ? gs.dataset.goStage : ""; if (gv && gv !== goStageShown) { goStageShown = gv; const el = gs.querySelector(`[data-stage="${gv.split(":")[0]}"]`); if (el) { el.scrollIntoView({ block: "start" }); el.classList.add("hl"); setTimeout(() => el.classList.remove("hl"), 1200); } }   // C-63 대화 목록의 바로가기 — 그 단계 구분선으로(섬 app.js goStage와 같다)
     const go = root.querySelector("[data-go]"); if (go && go.dataset.go !== goShown) { goShown = go.dataset.go; const p = go.closest(".fv-code"); if (p) p.scrollTop = go.offsetTop - (p.clientHeight - go.offsetHeight) / 2; }   // 목차로 고른 제목 줄로 한 번만(섬의 ftoc-go — 섬의 render와 같은 뜻)
     layoutCol();
-  });
+  }
   // ── 섬 옆 칸(.isl-col)의 자리와 크기 — 자리는 class side-top · bottom · left · right(섬이 보냄), 크기는 여기서: 옆이면 너비 320 ~ 760(그리고 창 너비의 반까지, 처음 420), 위아래면 높이 320 ~ 480(처음 360).
   //   손잡이(#hd, role separator): 끌기 · 화살표 20 · Home · End · Enter/두 번 누르기로 처음. 두승현 결정 2026-10-27(스토리보드 열린 질문 6 · 8)
   const RANGE = { w: [320, 760, 420], h: [320, 480, 360] }, FOLD = 56;   // FOLD: 접힌 칸(C-46 R-2 — 알약 하나)의 두께
@@ -55,9 +61,10 @@
   function layoutCol() {
     const side = sideOf(), h = document.documentElement, folded = foldedCol(), center = !!root.querySelector(".isl-col.center");   // center — C-61 섬이 작업 칸 전체(2026-10-29): 손잡이 없음
     h.dataset.side = side; hd.hidden = !side || folded || center;   // 접힌 칸(C-46 R-2)은 손잡이 없이 두께 FOLD — 작업실이 그만큼 넓어진다(0.3초, win.html)
+    if (hd.hidden && drag) endDrag();   // 끄는 도중 손잡이가 숨으면 pointerup이 오지 않는다 — 끌기가 켜진 채 남지 않게(F-103-19)
     if (!side) return;
-    const axis = axisOf(side), v = (col[axis] = clamp(axis, col[axis]));
-    h.style.setProperty("--col-w", center ? (root.querySelector(".wnav") ? "calc(100% - 200px)" : "100%") : `${folded ? FOLD : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : col.h}px`);   // center — 왼쪽 파일 칸만 남기고 섬(C-61)
+    const axis = axisOf(side), v = clamp(axis, col[axis]);   // 보이는 값만 줄인다 — 기억한 너비를 덮으면 창을 다시 넓혀도 안 돌아온다(F-103-21)
+    h.style.setProperty("--col-w", center ? (root.querySelector(".wnav") ? "calc(100% - 200px)" : "100%") : `${folded ? FOLD : axis === "w" ? v : col.w}px`); h.style.setProperty("--col-h", `${folded ? FOLD : axis === "h" ? v : col.h}px`);   // 칸도 손잡이처럼 보이는 값(v)으로(F-103-21 새 맥락 리뷰)   // center — 왼쪽 파일 칸만 남기고 섬(C-61)
     if (folded || center) return;
     hd.className = axis === "w" ? "v" : "h";
     const whH = (root.querySelector(".wh") || {}).offsetHeight || 0;   // 머리 줄(C-62 — 창 전체 폭)은 손잡이가 덮지 않는다(새 맥락 리뷰 2026-10-29)
@@ -75,11 +82,12 @@
   });
   const endDrag = () => { drag = false; document.documentElement.classList.remove("hd-drag"); };
   hd.addEventListener("pointerup", endDrag); hd.addEventListener("pointercancel", endDrag);
+  hd.addEventListener("lostpointercapture", endDrag);   // 캡처가 풀려도 끝낸다(F-103-19 — 숨을 때는 layoutCol이 끝낸다)
   hd.addEventListener("dblclick", reset);
   hd.addEventListener("keydown", (e) => {
     const side = sideOf(); if (!side) return;
     const axis = axisOf(side), grow = { right: "ArrowLeft", left: "ArrowRight", top: "ArrowDown", bottom: "ArrowUp" }[side], shrink = { right: "ArrowRight", left: "ArrowLeft", top: "ArrowUp", bottom: "ArrowDown" }[side];
-    if (e.key === "Enter") reset(); else if (e.key === grow) setCol(col[axis] + 20); else if (e.key === shrink) setCol(col[axis] - 20); else if (e.key === "Home") setCol(RANGE[axis][0]); else if (e.key === "End") setCol(hiOf(axis)); else return;
+    if (e.key === "Enter") reset(); else if (e.key === grow) setCol(clamp(axis, col[axis]) + 20); else if (e.key === shrink) setCol(clamp(axis, col[axis]) - 20); else if (e.key === "Home") setCol(RANGE[axis][0]); else if (e.key === "End") setCol(hiOf(axis)); else return;   // ± 20은 보이는 값에서(F-103-21)
     e.preventDefault();
   });
   window.addEventListener("resize", layoutCol);

@@ -492,7 +492,7 @@ button.pet:focus-visible{outline-offset:4px}
 .pet:hover .cat .c-blush ellipse{opacity:.62}
 
 /* 하트·별·물방울과 플로로의 한마디 — 화면 맨 위 층 */
-#fx{position:fixed;inset:0;pointer-events:none;z-index:30}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}   /* 맨 위 층 — 처음 설정(40) · 풍선 도움말(40) 위, 먹이 층(60) 아래(F-103-15) */
 .fx{position:fixed;translate:-50% -50%;animation:fly 1s cubic-bezier(.2,.7,.3,1) forwards;opacity:0}   /* F-45: 가운데 맞춤은 translate 속성, 움직임은 transform — 키프레임마다 -50%를 다시 적지 않는다 */
 .fx svg{display:block}
 @keyframes fly{0%{opacity:0;transform:scale(.4)}15%{opacity:1}70%{opacity:1}

@@ -145,3 +145,62 @@ test("F-103-5 새 맥락 리뷰 — 다른 호출이 도는 중에 단계 초안
     for (const m of p.matchAll(/planBusy(: | = )"(ship|hand|again)"/g)) assert.match(p.slice(Math.max(0, m.index - 260), m.index), /if \(st\.busy\) return;/, `${where} — planBusy "${m[2]}" 앞에 바쁨 확인`);
   }
 });
+
+// ── E 묶음(F-103-13 ~ 21) — 화면 CSS · 처음 설정 · 옆 창 · 캔버스. DOM 라이브러리가 없어 다른 화면 시험처럼 글자 모양으로 ──
+const nav = (f) => fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator", f), "utf8");
+// CSS 규칙 하나의 본문 — 선택자가 줄 처음이나 앞 규칙의 } 바로 뒤에 그대로 있을 때만(앞에 다른 선택자가 붙은 것은 다른 규칙이다)
+const rule = (css, sel) => { for (let i = css.indexOf(sel + "{"); i >= 0; i = css.indexOf(sel + "{", i + 1)) { const p = css[i - 1]; if (i === 0 || p === "\n" || p === "}") return css.slice(i + sel.length + 1, css.indexOf("}", i)); } return null; };
+
+test("F-103-13 서고에서 돌아올 때 — surfacing을 뗀 뒤에도 빠지는 중(.rising)인 물은 600ms 끝까지 보인다", () => {
+  const css = nav("dive.css");
+  assert.equal(rule(css, "html:not(.dive-in):not(.surfacing) #dive-cover"), null, "빠지는 중인 물까지 숨기는 옛 규칙이 없다");
+  assert.match(rule(css, "html:not(.dive-in):not(.surfacing) #dive-cover:not(.rising)") || "", /display:none/, "덮개는 빠지는 중이 아닐 때만 숨긴다");
+});
+
+test("F-103-14 서고로 들어갈 때 — 물 효과 층(.dive.out .fx)이 하트용 .fx의 가운데 맞춤 · 날기 움직임을 받지 않는다", () => {
+  const r = rule(nav("dive.css"), ".dive.out .fx") || "";
+  assert.match(r, /translate:none/, "translate -50% -50%로 왼쪽 위로 밀리지 않게");
+  assert.match(r, /animation:none/, "하트의 fly 움직임을 받지 않게");
+});
+
+test("F-103-15 하트 · 별 층(#fx)이 처음 설정(#floe-setup) 위에 뜬다 — index.html '맨 위 층'", () => {
+  const z = (css, sel) => Number(((rule(css, sel) || "").match(/z-index:(\d+)/) || [])[1]);
+  assert.ok(z(nav("app.css"), "#fx") > z(nav("setup.css"), "#floe-setup"), "하트가 대화상자 뒤에 깔리지 않게");
+});
+
+test("F-103-16 앱에서 처음 설정 위쪽 단추를 누르면 창이 끌리지 않는다(F-63과 같은 꼴 — 위 줄 drag를 덮는 층은 no-drag)", () => {
+  assert.match(nav("setup.css"), /html\.in-app #floe-setup\{[^}]*-webkit-app-region:no-drag/);
+});
+
+test("F-103-17 처음 설정 — 응답이 와서 다시 그려도 치던 글 · 커서가 남는다", () => {
+  const s = nav("setup.js"), r = s.slice(s.indexOf("function render() {"), s.indexOf("async function refresh()"));
+  assert.match(r, /querySelectorAll\("input\[name\]"\)/, "다시 그리기 전에 이름 있는 글 칸의 값을 모은다");
+  assert.ok(r.indexOf("querySelectorAll(\"input[name]\")") < r.indexOf("host.innerHTML ="), "innerHTML을 바꾸기 전에");
+  assert.match(r, /setSelectionRange/, "치던 칸이면 커서 자리도");
+  assert.equal((s.match(/if \(r && r\.ok\) clearTyped\(\);/g) || []).length, 2, "가져오기 · 새로 만들기가 되면 전처럼 빈 칸(새 맥락 리뷰)");
+});
+
+test("F-103-18 옆 창 — 한글을 조합하는 동안에는 다시 그리지 않고, 조합이 끝나면 마지막 화면을 그린다", () => {
+  const w = nav("win.js");
+  assert.match(w, /addEventListener\("compositionstart"/); assert.match(w, /addEventListener\("compositionend"/);
+  assert.match(w, /F\.onWinHtml\(\(html\) => \{ if \(composing && root\.contains\(document\.activeElement\)\) \{ pending = html; return; \} composing = false;/, "조합 중에 온 화면은 미뤄 둔다");
+  assert.match(w, /addEventListener\("compositionend", \(\) => \{ composing = false; setTimeout\(\(\) => \{ if \(composing \|\| pending === null\) return;/, "다음 음절이 곧 시작하니 한 박자 미뤄 다시 본다(새 맥락 리뷰)");
+});
+
+test("F-103-19 옆 창 손잡이 — 끄는 도중 손잡이가 숨어 pointerup이 안 와도 끌기가 끝난다", () => {
+  const w = nav("win.js"), lay = w.slice(w.indexOf("function layoutCol() {"), w.indexOf("const setCol ="));
+  assert.match(lay, /hd\.hidden = !side \|\| folded \|\| center;[^\n]*\n\s*if \(hd\.hidden && drag\) endDrag\(\);/, "손잡이를 숨기는 자리에서 끌기를 끝낸다(숨으면 pointerup · lostpointercapture가 온다는 보장이 없다 — 새 맥락 리뷰)");
+  assert.match(w, /hd\.addEventListener\("lostpointercapture", endDrag\)/);
+});
+
+test("F-103-20 캔버스 — '남은 기준' 같은 접힘(summary)을 누르면 끌기가 아니라 펼쳐진다", () => {
+  assert.match(nav("canvas-pan.js"), /e\.target\.closest\("a,button,input,textarea,select,summary,\[contenteditable\]"\)/);
+});
+
+test("F-103-21 옆 창 — 창을 좁혔다 넓히면 고른 칸 너비로 돌아온다(창 크기가 바뀔 때 기억한 값을 덮지 않는다)", () => {
+  const w = nav("win.js"), lay = w.slice(w.indexOf("function layoutCol() {"), w.indexOf("const setCol ="));
+  assert.doesNotMatch(lay, /col\[axis\] = clamp/, "layoutCol은 보이는 값만 줄인다");
+  assert.match(lay, /const axis = axisOf\(side\), v = clamp\(axis, col\[axis\]\);/);
+  assert.match(lay, /folded \? FOLD : axis === "w" \? v : col\.w\}px/, "칸 너비도 손잡이처럼 보이는 값 — 기억한 값으로 그리면 좁은 창에서 칸과 손잡이가 어긋난다(새 맥락 리뷰 막힘)");
+  assert.match(w, /else if \(e\.key === "End"\) setCol\(hiOf\(axis\)\); else return;/, "키 처리 줄이 끝까지 살아 있다 — 줄 가운데 주석이 Home · End · else return을 지웠던 일(새 맥락 리뷰 막힘)");
+});
