@@ -136,7 +136,7 @@ test("app.js — R-8 파일 칸: 작업실을 열 때 /api/files를 받아 진�
   assert.ok(!a.includes("진짜 파일 목록은 다음 판에"), "'다음 판' 글은 없다 — 이 판이다");
   assert.match(s, /const BOOK_ROUTES = \["\/api\/readme", "\/api\/files",/, "확인 값이 필요한 주소");
   assert.match(s, /if \(req\.method === "GET" && route === "\/api\/files"\) return send\(res, 200, filesNow\(\)\);/);
-  assert.match(s, /const r = Files\.listFiles\(s\.dir, \{ redact: Sensitive\.redact \}\);/, "이름은 가린다 · 폴더는 서버가 아는 것만(요청의 경로 없음)");
+  assert.match(s, /const r = Files\.listFiles\(s\.dir, \{ redact: Sensitive\.redact, exclude: Exclude\.matcher\(ex\) \}\);/, "이름은 가린다 · 폴더는 서버가 아는 것만(요청의 경로 없음) · C-52 빼 둔 곳은 목록에 없다(#287 뒤 맞춤, 2026-10-30)");
 });
 
 // R-10(C-42 · F-60, 2026-10-27): 판정이 오면 코드 규칙(gateRules)을 한 번 더 거치고, '안 됨'이 남으면 관문 앞에서 멈춰 '채우러 가기 / 까닭 적고 넘기기'를 묻는다 — 넘기면 까닭이 결정 기록 관문 줄에

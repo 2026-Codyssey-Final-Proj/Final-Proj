@@ -152,7 +152,7 @@
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
     qwin: false, qtab: "canvas", boot: null, prep: null, islBig: null, tidy: null, chatMark: 0, chatChanges: [], chatOpen: null, chatGo: null, fnAll: false, /* islBig · tidy · chatMark — C-61(2026-10-29): 섬을 크게(null이면 저절로) · 정리 카드 · 이 단계 대화가 시작된 자리 */ mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
     gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
-    plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {},   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
+    plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {}, dbg: null,   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
     qfocus: "stage", planSel: "",                   // C-35: 지금 할 퀘스트(stage 단계 퀘스트 · plan 준비 계획과 맡길 일 — 채팅의 지금 말이 이쪽을 따른다) · 퀘스트 창에서 고른 맡길 일(이 켜짐 동안만)
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
@@ -2751,10 +2751,33 @@
     if (s === "report" && w.report) { const v = w.verdict || N.reportVerdict(w.report, "done");   // C-50 서버가 기준을 세어 준 미리 보기(없던 옛 기록만 화면이 센다)
       return { tone: v.kind === "done" ? "green" : "amber", mood: v.kind === "done" ? "happy" : "think", meta, title: `보고가 왔어요 — 세어 보니 ${v.word} (기준 ${Number(w.report.total) || 0}개 중 ${Number(w.report.done) || 0}개)`, sub: esc(w.report.easy),
         body: planReportBody(b, id), acts: planReportActs(id, !!w.report.ask, v.kind === "done") }; }
+    if (st.dbg && st.dbg.id === id && st.dbg.v === b.v && st.dbg.n === (w.fail && w.fail.n) && FP.canDebug(b, id)) return dbgCard(meta);   // C-64 오류 같이 보기 — 질문 하나씩(판 · 실패 횟수가 같을 때만 — 새 계획의 같은 번호 줄에 옛 카드가 뜨지 않게)
+    const wd = FP.debugOf(w), dbgDone = wd ? `<p class="pl-ans"><b>오류 같이 본 것</b> ${esc(`오류: ${wd.err.length > 120 ? `${wd.err.slice(0, 119)}…` : wd.err} · 바로 전에 바꾼 것: ${wd.changed} · 다시 하면 또 나나: ${wd.again}`)} — 다시 맡기면 이 답과 '다시 안 나는지 보는 시험 하나'가 같이 가요</p>` : "";
     return { tone: "blue", mood: face()[0], meta, title: `${ROMAN(i)}. ${esc(x.need)}`, sub: `다 됐는지 보는 기준 — ${esc(x.check)}`,
-      body: `${w.fail ? `<p class="pl-ans"><b>지난번에 끝까지 못 했어요${w.fail.n > 1 ? `(${w.fail.n}번)` : ""}</b> ${esc(w.fail.why)}</p>` : ""}${w.note ? `<p class="pl-ans"><b>지난번 의견</b> ${esc(w.note)}</p>` : ""}`,   // C-50 실패는 남겨 보인다(조용히 '남음'으로 되돌리지 않는다)
+      body: `${w.fail ? `<p class="pl-ans"><b>지난번에 끝까지 못 했어요${w.fail.n > 1 ? `(${w.fail.n}번)` : ""}</b> ${esc(w.fail.why)}</p>` : ""}${w.note ? `<p class="pl-ans"><b>지난번 의견</b> ${esc(w.note)}</p>` : ""}${dbgDone}`,   // C-50 실패는 남겨 보인다(조용히 '남음'으로 되돌리지 않는다)
       foot: planPractice(b) ? "연습이라 Claude Code에 보내지 않고 예시 보고를 받아요" : "맡기면 Claude Code가 이 폴더에서 일하고, 끝나면 기준마다 해냈는지 알려 줘요",
-      acts: [{ label: w.note || w.fail ? "다시 맡기기" : "맡기기", act: "plan-hand", key: "Enter", pri: true }, { label: "새 계획 적기", act: "plan-reset", kind: "ghost" }] };
+      acts: [{ label: w.note || w.fail ? "다시 맡기기" : "맡기기", act: "plan-hand", key: "Enter", pri: true }, ...(FP.canDebug(b, id) ? [{ label: wd ? "오류 다시 적기" : "오류 같이 보기", act: "dbg-open" }] : []), { label: "새 계획 적기", act: "plan-reset", kind: "ghost" }] };   // C-64 — 끝까지 못 간 줄에서만
+  }
+  // ── C-64 오류에 막혔을 때(2026-10-30 — 이재엽 버튼 "10/31까지 작게"): 끝까지 못 간 맡길 일에서 한 번에 하나씩 묻는다(plan.js DEBUG_QS) ──
+  //   ① 오류 글 그대로 ② 바로 전에 바꾼 것 ③ 다시 하면 또 나나(예 · 아니요 · 모름). 모르면 '모름'으로 넘어가고, 그만두면 아무것도 붙이지 않는다.
+  //   답은 메모리(st.dbg)에만 두다가 다 되면 그 줄에 붙인다(FP.withDebug — 키 모양은 가리고 홈 경로는 ~로). 맡기는 것은 사람이 '다시 맡기기'를 누를 때
+  function dbgCard(meta) {
+    const k = st.dbg.i, q = FP.DEBUG_QS[k], last = k === FP.DEBUG_QS.length - 1, v = esc(st.dbg.a[q.key] || "");
+    const field = q.choices ? "" : q.key === "err"
+      ? `<textarea class="mc-input" data-act="dbg-text" rows="4" aria-label="${esc(q.q)}" placeholder="예) TypeError: Cannot read properties of undefined (reading 'name')">${v}</textarea>`
+      : `<input class="mc-input" data-act="dbg-text" value="${v}" aria-label="${esc(q.q)}" placeholder="예) form.js를 고쳤어요 · npm install을 했어요">`;
+    return { tone: "amber", mood: "think", meta, title: `오류 같이 보기 — ${k + 1} / ${FP.DEBUG_QS.length}`, sub: esc(q.q),
+      body: `${field}<p class="mc-fine">모르면 '모름'으로 넘어가요. 키 · 비밀번호 모양은 가리고, 내 컴퓨터 이름이 든 경로는 ~로 바꿔서 맡겨요.</p>`,
+      acts: q.choices ? [...q.choices.map((c, j) => ({ label: c, act: "dbg-pick", i: j, ...(j === 0 ? { pri: true } : {}) })), { label: "그만두기", act: "dbg-close", key: "Escape", kind: "ghost" }]
+        : [{ label: last ? "다 됐어요" : "다음", act: "dbg-next", key: "c-Enter", pri: true }, { label: "모름", act: "dbg-skip" }, { label: "그만두기", act: "dbg-close", key: "Escape", kind: "ghost" }] };
+  }
+  const dbgFocus = () => requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=dbg-text]"); if (t) t.focus(); });
+  function dbgStep() {
+    const d = st.dbg; if (!d) return;
+    if (d.i < FP.DEBUG_QS.length - 1) { st.dbg = { ...d, i: d.i + 1 }; render(); dbgFocus(); return; }
+    if (!window.NavSensitive) { st.dbg = null; render(); return say("가리는 도구(sensitive.js)를 불러오지 못해서 답을 붙이지 않았어요 — 화면을 다시 열어 주세요"); }   // 요구: 가린 뒤 보낸다
+    st.plan = FP.withDebug(st.plan, d.id, d.a, (s) => window.NavSensitive.redact(s)); st.dbg = null; save(); render();
+    say("답을 붙였어요 — '다시 맡기기'를 누르면 고칠 일과 다시 안 나는지 보는 시험을 같이 맡겨요");
   }
   // 지식 퀘스트 C-51(2026-10-29 — PRD 6절 · 9절 9번): 줄마다 근거 한 줄(없으면 '새로 정함'), 앞의 결정과 다르면 그 표시와 어느 쪽을 따를지(이 줄대로 = 맞아요 · 앞의 결정대로 = 고칠래요 + 의견)
   const planBasisHTML = (x) => `${x.basis ? `<span class="meta">근거 — ${esc(x.basis)}</span>` : ""}${x.diff ? `<span class="meta pl-diff"><b>앞의 결정과 다름</b> — 앞에서 정한 것은 '${esc(x.diff.was)}', 이 줄은 '${esc(x.diff.now)}'. 어느 쪽을 따를까요?
@@ -2870,7 +2893,9 @@
     }
     // C-50: 지난번에 끝까지 못 한 줄이 아직 서버의 그 일이면 같은 일로 다시 — 서버가 앞에서 한 일을 붙이고 다시 맡기기 상한(2번)을 센다(새 맥락 리뷰 2026-10-29 막힘)
     const w = b.work[id] || {};
-    let r = w.fail && Number.isFinite(w.at) ? await planCall("hand", "/api/task/retry", { at: w.at, way: "again" }) : null;
+    // C-64: '오류 같이 보기'로 답을 붙였으면 옛 글을 잇지 않고 답이 든 새 글로(기준에 시험 하나가 더해진다). 또 실패하면 답은 지워지고(plan.js failed),
+    //   묻기는 실패 2번째까지(FP.DEBUG_TRIES — C-50 다시 맡기기 2번과 같은 수) — 끝없이 새로 맡기지 않게(새 맥락 리뷰 2026-10-30 막힘)
+    let r = w.fail && !FP.debugOf(w) && Number.isFinite(w.at) ? await planCall("hand", "/api/task/retry", { at: w.at, way: "again" }) : null;
     if (r && !r.ok && r.why === "cap") { render(); return say(r.reason); }
     if (!r || !r.ok) r = await planCall("hand", "/api/task/start", { text: t.text, checks: t.checks });   // 다른 일이 지나갔으면 새로 — 글에 '지난번에 끝까지 못 했어요'가 붙는다(taskFor)
     if (!r.ok) { render(); return say(r.reason || "맡기지 못했어요"); }
@@ -3118,6 +3143,13 @@
     "blocked-copy": async () => { const t = st.blocked && st.blocked.brief; if (!t) return; try { await navigator.clipboard.writeText(t); say("복사했어요 — Claude Code에 붙여 넣어요"); } catch { say("복사하지 못했어요 — 글을 골라 직접 복사해요"); } },
     "blocked-done": () => endBlocked("직접 해 보세요 — 그 폴더에서 Claude Code가 일하면 플로로가 진행을 따라가요", "직접 하기로 했어요"),
     "blocked-stop": () => endBlocked("그만뒀어요 — 언제든 다시 맡길 수 있어요", "허락을 못 받아 그만뒀어요"),
+    // C-64 오류 같이 보기 — 열기 · 다음 · 모름 · 고르기(예 · 아니요 · 모름) · 그만두기
+    "dbg-open": () => { const b = st.plan, id = b && FP.next(b); if (!id || !FP.canDebug(b, id)) return; const w = b.work[id], old = FP.debugOf(w) || {};   // 다시 적기 — 앞서 붙인 답(가린 것)으로 채워 둔다, '모름'은 빈 칸
+      st.dbg = { id, v: b.v, n: w.fail.n, i: 0, a: Object.fromEntries(Object.entries(old).filter(([, x]) => x !== "모름")) }; render(); dbgFocus(); },
+    "dbg-next": () => dbgStep(),
+    "dbg-skip": () => { const d = st.dbg; if (!d) return; st.dbg = { ...d, a: { ...d.a, [FP.DEBUG_QS[d.i].key]: "" } }; dbgStep(); },
+    "dbg-pick": (i) => { const d = st.dbg, q = d && FP.DEBUG_QS[d.i]; if (!q || !q.choices || !q.choices[i]) return; st.dbg = { ...d, a: { ...d.a, [q.key]: q.choices[i] } }; dbgStep(); },
+    "dbg-close": () => { st.dbg = null; render(); say("그만뒀어요 — 답은 붙이지 않았어요"); },
   });
 // ━━ app/80-island.js ━━
   // ── 앱의 옆 창 둘(C-22): 섬이 창의 내용을 그려 보내고, 창의 누름은 돌아온다(win.js). 열림 · 닫힘 · 내용이 바뀐 것만 보낸다 ──
@@ -3893,7 +3925,7 @@
     "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); requestAnimationFrame(() => { const t = $nav.querySelector(`[data-act=plan-note][data-id="${el && el.dataset.id}"]`); if (t) t.focus(); }); },
     "plan-confirm": () => { if (!FP.canConfirm(st.plan)) return; st.plan = FP.confirm(st.plan); st.qfocus = "plan"; st.planSel = ""; if (qauto) openQwin("quest"); save(); render(); say("확정했어요! 퀘스트 창에 맡길 일이 생겼어요"); },
     "plan-again": () => revisePlan(),
-    "plan-reset": () => { st.plan = null; st.planRej = ""; st.qfocus = "plan"; save(); render(); },
+    "plan-reset": () => { st.plan = null; st.dbg = null; st.planRej = ""; st.qfocus = "plan"; save(); render(); },
     // 지금 줄에 하는 일 — 채팅의 칩에는 줄 이름이 없다(순서대로라 지금 줄 하나 — FP.next). 보고 안의 단추는 data-id
     "plan-hand": () => handPlan(),
     "plan-accept": (i, el) => { st.plan = FP.accept(st.plan, planId(el)); save(); const p = FP.progress(st.plan); render(); say(p.done === p.total ? "계획을 다 끝냈어요! 정말 멋져요." : `끝냈어요! ${p.done} / ${p.total}`); },
@@ -4230,6 +4262,7 @@
       save();
     }
     if (a === "plan-rej-note") st.planRejNote = t.value.slice(0, 300);
+    if (a === "dbg-text" && st.dbg) { const q = FP.DEBUG_QS[st.dbg.i]; st.dbg = { ...st.dbg, a: { ...st.dbg.a, [q.key]: t.value.slice(0, 20000) } }; }   // C-64 — 글자를 칠 때는 다시 그리지 않는다. 자르기는 가린 뒤 한 곳(plan.js withDebug)에서만 — 넉넉한 상한만
     if (a === "plan-q") st.planQ = t.value.slice(0, 300);
     if (a === "plan-reply") st.planReply = { ...st.planReply, [t.dataset.id]: t.value.slice(0, 300) };
     if (a === "own-text") st.ownText = t.value;
