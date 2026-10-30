@@ -293,15 +293,25 @@
   // 플로로 말투 — 이재엽이 다듬을 자리(요청문의 규칙 한 줄로 들어간다). 바꿔도 모양(스키마)은 그대로
   const FLORO_VOICE = "너는 길잡이 물범 '플로로'다. 초등학생도 알아듣는 말로, 짧고 다정하게, '~해요'로 말한다. 재촉하지 않고, 사용자가 말한 것을 그대로 예로 든다.";
   const IDEA_MAX = 400, QA_EX_MAX = 3;
+  // ── 퀘스트 글의 길이(2026-10-30 이재엽 "퀘스트 내용에서 내용들이 너무 긴 상황을 해결해줘" — 섬의 퀘스트 카드 · AI가 만든 퀘스트 글 · 초안 카드) ──
+  //   AI에게 말하는 길이와 서버가 자르는 길이를 이 한 묶음으로 맞춘다(전에는 '60자 안쪽'이라 하고 120에서 잘랐다). 자를 때는 낱말 사이에서 '…'(fit)
+  const LEN = { title: 20, ask: 60, done: 40, line: 100, alt: 70, prep: 30, say: 80, pain: 60, change: 60, who: 40, sizeWhy: 40, example: 80, desc: 160, why: 80 };
+  const SHORT_RULE = "글은 모두 짧게 — 한 칸에 한 문장, 초등학교 고학년이 한 번에 읽을 길이. 정한 글자 수를 넘기지 않는다.";
+  const fit = (v, n) => {
+    const t = String(v || "").replace(/\s+/g, " ").trim(), ch = Array.from(t); if (ch.length <= n) return t;
+    const cut = ch.slice(0, n - 1).join(""), sp = cut.lastIndexOf(" "), w = (sp >= cut.length * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,·—\-“"'(:/]+$/, "");
+    return `${w || cut}…`;   // 낱말 사이에서, 이모지 같은 짝 글자는 반으로 자르지 않는다(새 맥락 리뷰)
+  };
   const QUEST_SCHEMA = obj({ desc: str, why: str, qa: list(obj({ question: str, examples: list(str, 1, QA_EX_MAX) }), 1, 8) });
   function questPrompt(stage, idea, tier) {
     const s = STAGES[stage], todo = criteriaFor(stage, tier);
     return prompt([`사용자가 "${String(idea).trim()}"를 만들고 싶다고 했다. 지금은 ${s.n + 1}단계 "${s.title}"(${s.does})다. 이 단계를 게임의 퀘스트처럼 보여 주려고 한다 — 퀘스트 글을 만든다.`,
       `할 일(이름 · 개수는 정해져 있다 — 바꾸지 않는다): ${todoOf(todo)}`], [
       FLORO_VOICE,
-      "desc는 이 퀘스트에서 무엇을 하는지 두세 문장, 200자 안쪽. 사용자가 만들고 싶다고 한 것을 예로 든다.",
-      "why는 이 퀘스트를 왜 하는지 한 문장, 100자 안쪽.",
-      `qa는 할 일과 같은 개수(${todo.length}개), 같은 순서다. question은 그 할 일을 하려면 사용자가 말해야 할 것을 묻는 짧은 질문(60자 안쪽). examples는 사용자가 만들고 싶다고 한 것에 맞춘 예시 답 1~${QA_EX_MAX}개(각 80자 안쪽), 한 줄에 한 가지.`,
+      SHORT_RULE,
+      `desc는 이 퀘스트에서 무엇을 하는지 한두 문장, ${LEN.desc}자 안쪽. 사용자가 만들고 싶다고 한 것을 예로 든다.`,
+      `why는 이 퀘스트를 왜 하는지 한 문장, ${LEN.why}자 안쪽.`,
+      `qa는 할 일과 같은 개수(${todo.length}개), 같은 순서다. question은 그 할 일을 하려면 사용자가 말해야 할 것을 묻는 짧은 질문(${LEN.ask}자 안쪽). examples는 사용자가 만들고 싶다고 한 것에 맞춘 예시 답 1~${QA_EX_MAX}개(각 ${LEN.example}자 안쪽), 한 줄에 한 가지.`,
       "사용자가 말하지 않은 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. examples는 보기일 뿐 정답이 아니다.",
     ], tag("만들고싶은것", String(idea).trim()));
   }
@@ -316,17 +326,18 @@
     return prompt([`사용자가 만들고 싶은 것을 플로로에게 말했다(넣은글). 글 전체를 읽고 무엇을 만들려는지 파악해서, ${s.n + 1}단계 "${s.title}"(${s.does})의 할 일 넷의 초안을 만든다. 사용자는 초안을 보고 맞는지만 고른다.`,
       `할 일: ${todoOf(s.criteria)}`], [
       FLORO_VOICE,
+      SHORT_RULE,
       `topic은 무엇을 만드는지 ${TOPIC_MAX}자 안쪽 이름(예: 동아리 행사 신청 앱). 퀘스트 제목이 된다.`,
-      "pain은 (1) 어떤 불편을 풀고 싶은지 한 문장(80자 안쪽). change는 (2) 다 만들면 무엇이 달라지는지 한 문장(80자 안쪽).",
-      "who는 (3) 누가 쓰는지 — 글에 쓰는 사람이 나오면 그 사람을 한 문장(60자 안쪽)으로, 글에 없으면 빈 문자열 \"\". 사람을 지어내지 않는다.",
-      "size는 (4) 얼마나 크게 만들지 — 규모 판단표(scope-tiers)를 이 순서대로 따른다: ① 흔히 쓰는 방법(표준 패턴) 하나로 바로 풀리는 일이면 medium ② 아니고, 작은 버그 고치기나 한 파일짜리 스크립트 수준이면 short ③ 둘 다 아니면 long. sizeWhy는 그렇게 본 까닭 한 문장(60자 안쪽).",
+      `pain은 (1) 어떤 불편을 풀고 싶은지 한 문장(${LEN.pain}자 안쪽). change는 (2) 다 만들면 무엇이 달라지는지 한 문장(${LEN.change}자 안쪽).`,
+      `who는 (3) 누가 쓰는지 — 글에 쓰는 사람이 나오면 그 사람을 한 문장(${LEN.who}자 안쪽)으로, 글에 없으면 빈 문자열 "". 사람을 지어내지 않는다.`,
+      "size는 (4) 얼마나 크게 만들지 — 규모 판단표(scope-tiers)를 이 순서대로 따른다: ① 흔히 쓰는 방법(표준 패턴) 하나로 바로 풀리는 일이면 medium ② 아니고, 작은 버그 고치기나 한 파일짜리 스크립트 수준이면 short ③ 둘 다 아니면 long. sizeWhy는 그렇게 본 까닭 한 문장(" + LEN.sizeWhy + "자 안쪽).",
       "글에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 글에 있는 말을 그대로 쓴다.",
     ], tag("넣은글", String(text).trim()));
   }
   // 답의 모양 — 글은 잘라 쓰고, size는 셋 중 하나, who는 빈 글자도 된다('없음' · '모름' 같은 답도 빈 글자로). 틀리면 null. START_MAX는 계획(PLAN_MAX)과 같은 8,000자 — 시험이 맞대어 본다
   function parseStart(o) {
     if (!o || !has(o, ["topic", "pain", "change", "sizeWhy"]) || typeof o.who !== "string" || !START_SIZES.includes(o.size)) return null;
-    return { topic: o.topic.trim().slice(0, TOPIC_MAX), pain: o.pain.trim().slice(0, 160), change: o.change.trim().slice(0, 160), who: /^(없음|없어요|모름|알 수 없음|-)?\.?$/.test(o.who.trim()) ? "" : o.who.trim().slice(0, 120), size: o.size, sizeWhy: o.sizeWhy.trim().slice(0, 120) };
+    return { topic: fit(o.topic, TOPIC_MAX), pain: fit(o.pain, LEN.pain), change: fit(o.change, LEN.change), who: /^(없음|없어요|모름|알 수 없음|-)?\.?$/.test(o.who.trim()) ? "" : fit(o.who, LEN.who), size: o.size, sizeWhy: fit(o.sizeWhy, LEN.sizeWhy) };
   }
   // ── C-37 2단계 초안(2026-10-25, 이재엽 "1단계에서 받은 내용들을 2단계에서도 초안들을 진행하며 생각들을 2단계 진행하기 전에 먼저 생각하고 동의들을 구한후") ──
   //   받은 글(처음 말한 것)과 지난 단계 결과로 이 단계 할 일의 초안 — 할 일 이름 · 순서 · 개수는 그 등급 그대로(criteriaFor), AI는 칸마다 글만. 기획서로 키울지(PRD)는 셋 중 하나를 권하기만 — 고르는 것은 사람
@@ -337,11 +348,11 @@
   //   2 ~ 8단계 모두 초안부터. 4 ~ 8단계(ALT_STAGES)는 칸마다 예시 셋 — text가 플로로가 권하는 것, alts가 다른 길 둘. 사람이 셋 중 고른다(다 아니면 적거나 '다른 예시')
   const DRAFT_STAGES = [1, 2, 3, 4, 5, 6, 7];
   const ALT_STAGES = [3, 4, 5, 6, 7];
-  const PREP_MAX = 3, PREP_LINE = 160, FROM_MAX = 4, ALT_MAX = 2, ALT_LINE = 150;
+  const PREP_MAX = 3, PREP_LINE = 160, FROM_MAX = 4, ALT_MAX = 2, ALT_LINE = 150;   // 서버 · 폴더에서 되읽을 때 받는 상한 — 예전 기록 · 사람이 쓴 문서도 받는다. AI에게 말하고 자르는 길이는 LEN(2026-10-30 새 맥락 리뷰)
   // C-56 R-2(2026-10-28): 칸마다 title(이 프로젝트의 말로 된 이름) · ask(묻는 말) · done(끝 조건)도 — 비어도 된다(str0). 방법 이름은 꼬리표(화면의 term)로만
   const str0 = { type: "string" };
   const STAGE_DRAFT_SCHEMA = obj({ items: list(obj({ text: str, alts: list(str, 0, ALT_MAX), from: list(str, 0, FROM_MAX), title: str0, ask: str0, done: str0 }), 1, 8), prep: list(str, 0, PREP_MAX), say: str });
-  const TITLE_MAX = 40, ASK_MAX = 120;
+  const TITLE_MAX = LEN.title, ASK_MAX = LEN.ask;   // 2026-10-30 짧게(SHORT) — 끝 조건은 LEN.done
   const WORK_MAX = 600;   // C-56 R-5(2026-10-28) — 방금 한 일(훅 알림의 작업 글) 요청문에 넣는 상한
   const hasJargon = (t) => JARGON.some((w) => String(t).includes(w));
   const clean = (v, max) => (filled(v) ? String(v).trim().slice(0, max) : "");
@@ -395,14 +406,15 @@
     return prompt([`사용자가 ${done}를 마쳤다(지난단계결과). 받은 글과 지난 단계 결과를 읽고 ${s.n + 1}단계 "${s.title}"(${s.does})의 할 일마다 초안을 만든다. 사용자는 초안을 보고 맞는지만 고른다.`,
       `할 일(이름 · 개수 · 순서는 정해져 있다 — items도 이 순서로 ${todo.length}개): ${todo.map(hint).join(" ")}`], [
       FLORO_VOICE,
-      "글은 한 칸에 300자 안쪽. say는 사용자에게 건네는 한마디(60자 안쪽).",
+      SHORT_RULE,
+      `글(text)은 한 칸에 한 문장, ${LEN.line}자 안쪽. say는 사용자에게 건네는 한마디(${LEN.say}자 안쪽).`,
       `items마다 from에 그 칸을 쓸 때 본 지난 단계 칸의 번호를 적는다(예: ["1-1", "2-3"], ${FROM_MAX}개까지, 받은 글만 봤으면 빈 목록).`,
-      `prep에는 이 단계를 하기 전에 사용자가 준비할 것을 ${PREP_MAX}줄까지(한 줄 40자 안쪽, 예: 기능 개수 세기).`,
-      ALT_STAGES.includes(stage) ? `items마다 text에는 플로로가 가장 권하는 예시를, alts에는 서로 다른 길의 예시 ${ALT_MAX}개를(한 예시 ${ALT_LINE}자 안쪽) 쓴다 — 사용자가 셋 중 하나를 고른다.` : "alts는 빈 목록 []으로 둔다.",
+      `prep에는 이 단계를 하기 전에 사용자가 준비할 것을 ${PREP_MAX}줄까지(한 줄 ${LEN.prep}자 안쪽, 예: 기능 개수 세기).`,
+      ALT_STAGES.includes(stage) ? `items마다 text에는 플로로가 가장 권하는 예시를, alts에는 서로 다른 길의 예시 ${ALT_MAX}개를(한 예시 ${LEN.alt}자 안쪽) 쓴다 — 사용자가 셋 중 하나를 고른다.` : "alts는 빈 목록 []으로 둔다.",
       ...(avoid ? [`${avoid.i + 1}번째 칸은 이미본예시와 다른 예시로 쓴다.`] : []),
       "받은 글과 지난 단계 결과에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 모르면 '아직 모름'이라고 쓴다.",
       // C-56 R-2(2026-10-28 이재엽 버튼 "이 프로젝트의 말 + 방법 이름 꼬리표"): 이름 · 묻는 말 · 끝 조건을 이 프로젝트의 말로 — 방법 이름은 화면이 꼬리표로 따로 보인다
-      `items마다 title에는 이 할 일을 이 프로젝트의 말로 바꾼 이름(${TITLE_MAX}자 안쪽 — 받은 글 · 기준에 나온 이름 · 기능 · 사람을 쓴다, EARS · Planguage 같은 방법 이름은 쓰지 않는다), ask에는 사용자에게 묻는 말 한 줄, done에는 이 칸이 끝났다고 볼 조건 한 줄을 쓴다(각 ${ASK_MAX}자 안쪽). 기준 묶음이 있으면 그 말을 먼저 쓴다.`,
+      `items마다 title에는 이 할 일을 이 프로젝트의 말로 바꾼 이름(${TITLE_MAX}자 안쪽 — 받은 글 · 기준에 나온 이름 · 기능 · 사람을 쓴다, EARS · Planguage 같은 방법 이름은 쓰지 않는다), ask에는 사용자에게 묻는 말 한 줄(${ASK_MAX}자 안쪽), done에는 이 칸이 끝났다고 볼 조건 한 줄(${LEN.done}자 안쪽)을 쓴다. 기준 묶음이 있으면 그 말을 먼저 쓴다.`,
       // C-56 R-5(2026-10-28 이재엽 버튼 "다음 단계 미리까지"): 코딩 도구가 방금 한 일이 있으면 그 일로 답이 달라지는 칸만 바꾼다 — 나머지는 전과 같은 글(사람이 적은 칸은 화면이 덮지 않는다)
       ...(filled(work) ? ["방금한일은 코딩 도구가 지금 막 끝낸 작업이다. 그 일로 답이 달라지는 칸만 바꾸고 나머지 칸은 전과 같은 뜻으로 쓴다. 방금한일에 없는 파일 · 기능은 지어내지 않는다."] : []),
       // 작업실 개편 C-61(2026-10-29, API.md 3-31): 그 단계에서 플로로와 나눈 대화가 있으면 받은 글처럼 읽는다
@@ -411,7 +423,7 @@
   }
   // ── 작업실 개편 C-61 플로로와 자유 대화(2026-10-29 — API.md 3-31, 결정 모음 A-21 2차 백엔드는 이재엽 쪽 세션): 마지막 사람 말에 답하고,
   //   이 대화로 채울 수 있는 지금 단계 칸마다 한 줄을 **제안만** 한다(윤곽 신호 n). 칸에 적는 것 · 섬 자리는 사람이 정한다. 대화에 없는 사실은 지어내지 않는다 ──
-  const CHAT_TURNS_MAX = 40, CHAT_LINE_MAX = 1000, CHAT_TOTAL_MAX = 8000, CHAT_REPLY_MAX = 400, SLOT_LINE_MAX = 400;
+  const CHAT_TURNS_MAX = 40, CHAT_LINE_MAX = 1000, CHAT_TOTAL_MAX = 8000, CHAT_REPLY_MAX = 400, SLOT_LINE_MAX = LEN.line;   // 칸에 적을 한 줄만 짧게 — 답은 일반 대화도 같이 써서 그대로(2026-10-30 새 맥락 리뷰)
   const CHAT_SCHEMA = obj({ reply: str, slots: list(obj({ i: { type: "integer" }, text: str })) });
   // 대화 글 안의 태그 흉내(</대화> 등)와 줄머리 '플로로:'는 지운다 — 붙여 넣은 바깥 글이 대화를 꾸미지 못하게(새 맥락 리뷰 2026-10-29)
   const talkText = (talk) => talk.map((m) => `${m.who === "me" ? "사람" : "플로로"}: ${m.text.replace(/<\/?[^<>\n]{1,20}>/g, "").replace(/^\s*(사람|플로로)\s*:/gm, "")}`).join("\n");
@@ -443,10 +455,10 @@
     for (const x of o.slots) {
       const i = x && Number.isInteger(x.i) ? x.i - 1 : -1;
       if (i < 0 || i >= n || out.some((y) => y.i === i) || (lines[i] || []).some(filled) || !x || !filled(x.text)) continue;
-      out.push({ i, text: x.text.trim().slice(0, SLOT_LINE_MAX) });
+      out.push({ i, text: fit(x.text, SLOT_LINE_MAX) });
     }
     out.sort((a, b) => a.i - b.i);
-    return { reply: o.reply.trim().slice(0, CHAT_REPLY_MAX), slots: out, n: out.length };
+    return { reply: fit(o.reply, CHAT_REPLY_MAX), slots: out, n: out.length };
   }
   // 재료 번호("단계-칸", 1부터) → { s, i }(0부터) — 넘긴 지난 단계의 있는 칸만, 한 번씩, FROM_MAX개까지
   function fromRefs(list, stage, prev) {
@@ -469,8 +481,9 @@
     return prompt([`사용자가 1 · 2단계를 마쳤다(지난단계결과 — 2단계가 기획서다). 3단계부터 8단계까지 단계마다 이 프로젝트에 맞춘 퀘스트의 머리를 준비한다. 사용자는 보고 맞는지만 고른다.`,
       `단계(items도 이 순서로 ${PREPARE_STAGES.length}개, stage는 앱 번호 3 ~ 8): ${stageLines.join(" ")}`], [
       FLORO_VOICE,
-      `items마다 title에는 그 단계를 이 프로젝트의 말로 바꾼 이름(${TITLE_MAX}자 안쪽 — 받은 글 · 기준의 이름 · 기능 · 사람을 쓴다, 방법 이름은 쓰지 않는다), think에는 ① 생각 한 줄(이 단계에서 무엇을 정할지, 기획서의 해당 절에서), act에는 ② 행동 한 줄(Claude Code에 맡길 일), from에는 근거(기획서 n절 '칸 이름' — 기획서 · 받은 글에 근거가 없으면 빈 글)를 쓴다.`,
-      "say는 사용자에게 건네는 한마디(60자 안쪽). 받은 글 · 기준 · 지난 단계 결과에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 모르면 '아직 모름'이라고 쓴다.",
+      `items마다 title에는 그 단계를 이 프로젝트의 말로 바꾼 이름(${TITLE_MAX}자 안쪽 — 받은 글 · 기준의 이름 · 기능 · 사람을 쓴다, 방법 이름은 쓰지 않는다), think에는 ① 생각 한 줄(이 단계에서 무엇을 정할지, 기획서의 해당 절에서 — ${LEN.line}자 안쪽), act에는 ② 행동 한 줄(Claude Code에 맡길 일 — ${LEN.line}자 안쪽), from에는 근거(기획서 n절 '칸 이름' — 기획서 · 받은 글에 근거가 없으면 빈 글)를 쓴다.`,
+      SHORT_RULE,
+      `say는 사용자에게 건네는 한마디(${LEN.say}자 안쪽). 받은 글 · 기준 · 지난 단계 결과에 없는 사실(숫자 · 사람 · 기능 · 날짜)은 지어내지 않는다. 모르면 '아직 모름'이라고 쓴다.`,
     ], tag("받은글", String(idea).trim()), ...(filled(base) ? [tag("기준", String(base).trim())] : []), tag("지난단계결과", mat));
   }
   // 읽기 — 3 ~ 8단계가 다 있어야(빠지면 null). 전문 용어가 든 이름은 비워 할 일 이름으로, 근거가 없으면 '새로 정함'
@@ -478,9 +491,9 @@
     if (!o || !filled(o.say) || !Array.isArray(o.items)) return null;
     const cards = {};
     for (const x of o.items) { const n = Number(x && x.stage) - 1; if (!PREPARE_STAGES.includes(n) || cards[n] || !filled(x.think) || !filled(x.act)) continue;
-      const title = clean(x.title, TITLE_MAX), from = clean(x.from, 80);
-      cards[n] = { title: title && !hasJargon(title) ? title : "", think: clean(x.think, 300), act: clean(x.act, 300), from: from || "새로 정함" }; }
-    return PREPARE_STAGES.every((n) => cards[n]) ? { cards, say: clean(o.say, 120) } : null;
+      const title = hasJargon(String(x.title || "")) ? "" : fit(x.title, TITLE_MAX), from = clean(x.from, 80);   // 이름은 낱말 사이에서, 전문 용어는 원문으로 본다(2026-10-30)
+      cards[n] = { title, think: fit(x.think, LEN.line), act: fit(x.act, LEN.line), from: from || "새로 정함" }; }
+    return PREPARE_STAGES.every((n) => cards[n]) ? { cards, say: fit(o.say, LEN.say) } : null;
   }
   // 답의 모양 — 할 일 개수와 같아야 하고, 기획서 칸은 경량 · 상세 · 안 함으로 시작해야(→ {pick, why}). 글은 잘라 쓴다. 재료(from) · 준비할 것(prep)은 없거나 틀리면 빈 목록. 초안을 만들지 않는 단계 · 틀리면 null
   function parseStageDraft(o, stage, tier, prev = []) {
@@ -490,15 +503,15 @@
     for (let i = 0; i < todo.length; i++) {
       const x = o.items[i]; if (!x || !filled(x.text)) return null;
       const t = x.text.trim(), from = fromRefs(x.from, stage, prev);
-      const alts = ALT_STAGES.includes(stage) ? [...new Set((Array.isArray(x.alts) ? x.alts : []).filter(filled).map((a) => a.trim().slice(0, ALT_LINE)))].filter((a) => a !== t.slice(0, ALT_LINE)).slice(0, ALT_MAX) : [];
-      const title = clean(x.title, TITLE_MAX), ask = clean(x.ask, ASK_MAX), done = clean(x.done, ASK_MAX);   // C-56 R-2 — 전문 용어가 든 이름은 버린다(화면은 할 일 이름으로)
+      const alts = ALT_STAGES.includes(stage) ? [...new Set((Array.isArray(x.alts) ? x.alts : []).filter(filled).map((a) => fit(a, LEN.alt)))].filter((a) => a !== fit(t, LEN.alt)).slice(0, ALT_MAX) : [];
+      const title = hasJargon(String(x.title || "")) ? "" : fit(x.title, TITLE_MAX), ask = fit(x.ask, ASK_MAX), done = fit(x.done, LEN.done);   // 전문 용어는 자르기 전 원문으로 본다   // C-56 R-2 — 전문 용어가 든 이름은 버린다(화면은 할 일 이름으로)
       const words = { ...(title && !hasJargon(title) ? { title } : {}), ...(ask ? { ask } : {}), ...(done ? { done } : {}) };
-      if (todo[i].term !== "PRD") { items.push({ text: t.slice(0, 300), from, ...(alts.length ? { alts } : {}), ...words }); continue; }
+      if (todo[i].term !== "PRD") { items.push({ text: fit(t, LEN.line), from, ...(alts.length ? { alts } : {}), ...words }); continue; }
       const hit = PRD_PICK.find(([w]) => t.startsWith(w)); if (!hit) return null;
-      items.push({ pick: hit[1], why: t.slice(hit[0].length).replace(/^\s*(?:—|-|:)?\s*/, "").slice(0, 120), from });
+      items.push({ pick: hit[1], why: fit(t.slice(hit[0].length).replace(/^\s*(?:—|-|:)?\s*/, ""), LEN.why), from });
     }
-    const prep = (Array.isArray(o.prep) ? o.prep : []).filter(filled).slice(0, PREP_MAX).map((x) => x.trim().slice(0, PREP_LINE));
-    return { items, prep, say: o.say.trim().slice(0, 120) };
+    const prep = (Array.isArray(o.prep) ? o.prep : []).filter(filled).slice(0, PREP_MAX).map((x) => fit(x, LEN.prep));
+    return { items, prep, say: fit(o.say, LEN.say) };
   }
   // 답의 모양 — qa는 할 일 개수와 같아야 한다(다르면 null). 긴 글은 잘라 쓴다
   function parseQuest(o, stage, tier) {
@@ -507,9 +520,9 @@
     const qa = [];
     for (const x of o.qa) {
       if (!x || !filled(x.question) || !Array.isArray(x.examples) || !x.examples.length || !x.examples.every(filled)) return null;
-      qa.push({ question: x.question.trim().slice(0, 120), examples: x.examples.slice(0, QA_EX_MAX).map((e) => e.trim().slice(0, 200)) });
+      qa.push({ question: fit(x.question, LEN.ask), examples: x.examples.slice(0, QA_EX_MAX).map((e) => fit(e, LEN.example)) });
     }
-    return { desc: o.desc.trim().slice(0, 400), why: o.why.trim().slice(0, 200), qa };
+    return { desc: fit(o.desc, LEN.desc), why: fit(o.why, LEN.why), qa };
   }
 
   // ── C-34 준비 계획판 · C-32 해낸 것 확인 · C-33 초등학생 말(2026-10-24, 이재엽 "한번에 내용들을 넣으면 어떻게 준비하고 기준들을 사람들이 확인해서 너한테 의견들을 바로바로" ·
@@ -647,7 +660,7 @@
   const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, gateRules, BLANK_MARK, EVIDENCE_CRITERIA, GATE_WHY, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, TASK_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt, taskPrompt,
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
-    FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest,   // C-22 퀘스트 제작(2026-10-21)
+    FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest, LEN, SHORT_RULE, fit,   // 퀘스트 글의 길이(2026-10-30) — C-22 퀘스트 제작(2026-10-21)
     START_MAX, START_SCHEMA, startPrompt, parseStart,   // C-36 처음 한 바퀴 — 1단계 초안(2026-10-25)
     DRAFT_STAGES, ALT_STAGES, STAGE_HINT, STAGE_DRAFT_SCHEMA, stageDraftPrompt, parseStageDraft, PREP_MAX, PREP_LINE, FROM_MAX, ALT_MAX, ALT_LINE,
     PREPARE_STAGES, PREPARE_SCHEMA, preparePrompt, parsePrepare, TITLE_MAX, ASK_MAX, hasJargon, WORK_MAX,   // C-56 R-2 준비된 퀘스트 · 이 프로젝트의 말(2026-10-28)   // C-37 2단계 초안 · C-39 3단계 초안 · 재료 · 준비할 것(2026-10-25)
