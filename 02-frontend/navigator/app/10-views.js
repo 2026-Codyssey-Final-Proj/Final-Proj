@@ -343,6 +343,7 @@
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
         acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };
     }
+    if (st.keyBad && st.mode === "live") return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "API 키가 거절됐어요", sub: "키가 맞지 않거나 쓸 수 있는 권한이 없어요. 키를 고치기 전까지 연습용 예시로 둘러볼 수 있어요 — 키는 설정의 '처음 설정 다시 하기'에서 다시 넣어요.", acts: [{ label: "연습용 예시로 둘러보기", act: "practice-now", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };   // F-106
     if (st.error) return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요", sub: esc(st.error),
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
     if (st.blocked && !st.blocked.retrying) return momentBlocked();   // F-69 맡긴 일이 허락을 못 받아 막혔다 — 사람이 길을 고른다

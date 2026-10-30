@@ -28,7 +28,7 @@ const Nav = require("./navigator.js");
 const Sensitive = require("./sensitive.js");
 const Steps = require("./steps.js");   // AI 진행(C-12) — 한 일의 말 · 80자 — claude-drafted: 2026-10-20
 const AP = require("./approve.js");    // FR-17 승인 카드의 모양(2026-10-20)
-const { callClaude, usage, claudeVersion, startTask: openClaude, ledger, killTree } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
+const { callClaude, usage, claudeVersion, startTask: openClaude, ledger, killTree, keyKind } = require("./provider.js");   // openClaude — FR-17 넘긴 일로 claude를 연다(외부 AI 호출은 provider.js 한 곳, code.md 6번) · ledger — 토큰 장부(2026-10-24, tokens.js)
 const Files = require("./files.js");
 const FindLines = require("./findlines.js");   // C-56 R-4 — 폴더의 글 파일에서 칸의 답 후보 줄(2026-10-28)
 const Project = require("./project.js");   // runCommand — 바뀐 줄을 git diff로(C-43, 읽기만)
@@ -198,7 +198,7 @@ function readJson(req, limit = MAX_BODY) {   // limit — 파일 저장(/api/fil
 }
 
 const send = (res, code, obj) => { res.writeHead(code, { "Content-Type": "application/json; charset=utf-8" }); res.end(JSON.stringify(obj)); };
-const refuse = (res, reason, code = 400) => send(res, code, { ok: false, reason });
+const refuse = (res, reason, code = 400) => send(res, code, { ok: false, reason, ...keyKind(reason) });   // 키 거절이면 kind: "key" — 섬이 연습 단추를 보인다(F-106)
 const as = (key, read) => (d) => { const v = read(d); return v && { [key]: v }; };   // 확인한 결과를 화면이 읽는 칸 이름으로
 // 작업실 개편 C-61(2026-10-29, API.md 3-31) — 대화 모양이 틀린 까닭(navigator.js talkOf) → 거절 말, 대화의 말마다 비밀값 가림
 const TALK_WHY = { empty: "대화가 비어 있음 — 마지막은 사람의 말", shape: "대화 모양이 맞지 않음 — [{ who: me | floro, text }]",

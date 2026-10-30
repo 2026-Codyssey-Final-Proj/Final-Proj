@@ -118,10 +118,13 @@ function createMeter(budget, store, { plan = null, testerBudget = null } = {}) {
 }
 
 // ── API 호출 ──
+// 키 거절(401 · 403)의 앞말 — 서버의 거절 응답이 이 말로 시작하면 kind: "key"를 싣고, 섬은 '연습용 예시로 둘러보기' 단추를 보인다(F-106 · FR-14, 2026-10-30)
+const KEY_REJECT = "API 키가 맞지 않거나 권한이 없어요";
+const keyKind = (reason) => (String(reason || "").startsWith(KEY_REJECT) ? { kind: "key" } : {});
 const apiError = (e, cfg = {}) => {
   const s = e && e.status;
   const code = s ? ` (${s})` : "";
-  if (s === 401 || s === 403) return `API 키가 맞지 않거나 권한이 없어요${code} — 키와 ANTHROPIC_BASE_URL(중계 서버를 쓴다면)을 확인하세요`;
+  if (s === 401 || s === 403) return `${KEY_REJECT}${code} — 키와 ANTHROPIC_BASE_URL(중계 서버를 쓴다면)을 확인하세요`;
   if ((s === 400 || s === 404) && cfg.relay) return `요청이 받아들여지지 않았어요${code} — 중계 서버가 받는 모델은 ${RELAY_MODELS.join(", ")}예요. NAV_MODEL을 확인하세요`;
   if (s === 400 || s === 404) return `요청이 받아들여지지 않았어요${code} — 모델 이름(NAV_MODEL)이나 호환 모드(NAV_COMPAT=1)를 확인하세요`;
   if (s === 429) return `잠시 너무 많이 불렀어요${code} — 조금 뒤에 다시 눌러 주세요`;
@@ -286,4 +289,4 @@ const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); retur
 const ledger = Tokens.createLedger(Tokens.fileStore(Tokens.fileOf(process.env)));   // 토큰 장부(2026-10-24) — 설정의 토큰 칸 · /api/usage의 ledger
 const callClaude = createCaller({ makeClient, meter, ledger });
 
-module.exports = { RELAY_MODELS, cliArgs, callClaude, ledger, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, claudeLaunch, killTree, startTask };
+module.exports = { RELAY_MODELS, KEY_REJECT, keyKind, apiError, cliArgs, callClaude, ledger, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, claudeLaunch, killTree, startTask };

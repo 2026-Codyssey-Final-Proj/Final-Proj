@@ -14,9 +14,9 @@
     hold(); st.busy = true; waitFrom = Date.now(); render();
     waitTimer = setInterval(() => { const el = $nav.querySelector("[data-wait]"); if (el) el.textContent = waitText(); }, 1000);
     try {
-      if (pending) return await pending;
-      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      return await r.json();
+      const j = pending ? await pending : await (await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })).json();
+      st.keyBad = !!j && j.kind === "key";   // F-106 — 답마다 다시 정한다: 키가 거절됐으면 섬이 '연습용 예시로 둘러보기'를, 성공하면 끈다(어느 AI 부르기에서든)
+      return j;
     } catch { return { ok: false, reason: "AI에 연결하지 못했어요. server.js를 켜거나, 보기 방식을 '연습용 예시'로 바꿔 주세요" }; }
     finally { st.busy = false; clearInterval(waitTimer); lastWait = Math.round((Date.now() - waitFrom) / 1000); }
   }
@@ -190,4 +190,7 @@
   }
   // 글 칸으로 커서를 옮긴다 (다시 그린 뒤)
   const focusText = () => requestAnimationFrame(() => { const t = document.querySelector("[data-act=text]"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } });
-
+  // F-106(FR-14, 2026-10-30 이재엽 버튼 "오류에 연습 단추"): 키 거절 카드의 단추 둘 — 저절로 바꾸지 않고 사람이 고른다. 연습으로는 설정의 보기 방식과 같은 길
+  //   보기 방식을 바꾸는 길은 하나(toMode) — 설정의 '보기 방식'(92-basecard)도 같이 쓴다. 닫기는 공통 '닫기'(dismiss)가 키 카드까지 닫는다
+  function toMode(m) { set({ mode: m, keyBad: false, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다
+  Object.assign(ACT, { "practice-now": () => toMode("fixture") });
