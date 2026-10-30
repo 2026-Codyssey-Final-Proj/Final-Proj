@@ -259,7 +259,8 @@ function addStep(body, tool) {
   const s = workSession(body, tool);
   const raw = body.step && typeof body.step === "object" ? body.step : {};
   const what = typeof raw.what === "string" && raw.what.trim() ? raw.what.trim() : typeof body.tool_name === "string" ? body.tool_name.trim() : "";
-  s.steps.push({ seq: ++stepSeq, at: Date.now(), verb: VERB_OK.has(raw.verb) ? raw.verb : Steps.OTHER, what: cut(Sensitive.redact(what)), add: count(raw.add), del: count(raw.del) });
+  const hidden = stepHidden(body.cwd, body.file);   // C-52 — 빼 둔 곳의 파일이면 AI 진행에 이름을 보이지 않는다
+  s.steps.push({ seq: ++stepSeq, at: Date.now(), verb: VERB_OK.has(raw.verb) ? raw.verb : Steps.OTHER, what: hidden ? "빼 둔 곳의 파일" : cut(Sensitive.redact(what)), add: count(raw.add), del: count(raw.del) });
   while (s.steps.length > MAX_STEPS) s.steps.shift();
   chatChange(body.cwd, body.tool_name, body.file);
   return { seq: stepSeq };
@@ -270,9 +271,17 @@ const CHAT_DIR = ChatLog.dirOf(process.env);
 const CHAT_NO_FOLDER = "앱에서 고른 작업 폴더가 아직 없어요 — 처음 설정의 '프로젝트'나 앱 메뉴의 '프로젝트 폴더 연결…'로 골라요";
 // 폴더는 앱이 고른 작업 폴더만(appProject) — 훅 알림으로 안 폴더(projectNow의 대신)는 세션마다 달라 대화가 다른 프로젝트 파일에 섞였다(새 맥락 리뷰 2026-10-29)
 // 훅 알림(PostToolUse — Write · Edit · MultiEdit · NotebookEdit)으로 그 작업 폴더 안 파일이 바뀌면 쌓는다. file은 세션 폴더 안의 상대 경로(steps.js fileOf — 밖이면 ""), 작업 폴더 기준으로 바꾸고 밖이면 버린다
+// C-52 — 훅이 알려 준 파일(세션 폴더 안 상대 경로)이 빼 둔 곳인가. 앱이 고른 폴더가 있으면 그 기준, 없으면 세션 폴더 기준
+function stepHidden(cwd, file) {
+  if (typeof file !== "string" || !file) return false;
+  const s = appProject, p = s ? ChatLog.projectPath(s.dir, cwd, file) : "";
+  if (p) return excludeOf(s.dir)(p);
+  return typeof cwd === "string" && path.isAbsolute(cwd) ? excludeOf(cwd)(file) : false;
+}
 function chatChange(cwd, tool, file) {
   const s = appProject; if (!s || !ChatLog.CHANGE_TOOLS.has(tool)) return;
   const p = ChatLog.projectPath(s.dir, cwd, file); if (!p) return;
+  if (excludeOf(s.dir)(p)) return;   // C-52 빼 둔 곳의 파일은 대화 목록에 쌓지 않는다
   const f = ChatLog.fileOf(CHAT_DIR, s.dir);
   try { ChatLog.save(f, ChatLog.addChange(ChatLog.load(f, s.project), { path: Sensitive.redact(p), tool })); } catch { /* 못 써도 알림은 계속 */ }
 }
@@ -484,7 +493,12 @@ function retryTask(body) {
 // 사람이 고른 폴더 · 파일은 Floe가 읽지 않는다: 파일 칸 · 찾기 · 문서 지도 · README 책 · 계획 AI에 가는 맨 위 이름 · 단계 문서 · 결정 기록. 화면이 아니라 서버가 지킨다.
 // 목록은 폴더마다 — 열쇠는 실제 경로의 지문(folderKey, 경로 · 이름은 남기지 않는다), 이 컴퓨터의 파일 하나(NAV_USAGE_FILE 옆 -exclude.json, 없으면 홈의 .navigator-exclude.json, 600). 규칙은 exclude.js
 const excludeFile = () => (process.env.NAV_USAGE_FILE ? process.env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-exclude.json") : path.join(os.homedir(), ".navigator-exclude.json"));
-function excludeBook() { try { return Exclude.revive(JSON.parse(fs.readFileSync(excludeFile(), "utf8"))); } catch { return {}; } }
+// { book, broken } — 파일이 없으면 빈 장부, 있는데 읽을 수 없으면 broken(조용히 넘기지 않는다 — GET · 파일 목록이 알리고 다시 저장하면 새로 쓴다, 새 맥락 리뷰)
+function excludeRead() {
+  let raw; try { raw = fs.readFileSync(excludeFile(), "utf8"); } catch (e) { return { book: {}, broken: !!e && e.code !== "ENOENT" }; }
+  try { return { book: Exclude.revive(JSON.parse(raw)), broken: false }; } catch { return { book: {}, broken: true }; }
+}
+const excludeBook = () => excludeRead().book;
 const excludeList = (dir) => excludeBook()[folderKey(dir)] || [];
 const excludeOf = (dir) => Exclude.matcher(excludeList(dir));
 function excludeSave(dir, list) {
@@ -495,21 +509,24 @@ function excludeSave(dir, list) {
   fs.writeFileSync(tmp, JSON.stringify(Exclude.revive(book)), { mode: 0o600 });
   fs.renameSync(tmp, f);
 }
+const EX_BROKEN = "빼 둘 곳 파일이 깨져 읽지 못했어요 — 지금은 빼는 것이 없어요. 목록을 다시 적어 저장하면 새로 만들어요";
 function excludeGet() {
   const s = projectNow();
-  if (!s) return { ok: true, project: "", list: [], why: "folder" };
-  return { ok: true, project: s.project, list: excludeList(s.dir), why: "" };
+  if (!s) return { ok: true, project: "", key: "", list: [], max: Exclude.MAX_LINES, why: "folder" };
+  const { book, broken } = excludeRead(), key = folderKey(s.dir);
+  return { ok: true, project: s.project, key, list: book[key] || [], max: Exclude.MAX_LINES, why: broken ? "broken" : "", ...(broken ? { reason: EX_BROKEN } : {}) };
 }
 // POST { lines: [줄] } — 거절할 줄이 하나라도 있으면 아무것도 바꾸지 않고 줄마다 까닭(why bad). 저장하면 옛 파일 목록을 버린다(옛 번호로 빼 둔 파일을 열지 못하게)
 function excludePost(body) {
   const s = projectNow();
   if (!s) return [400, { ok: false, why: "folder", reason: "연결한 폴더를 먼저 골라요" }];
-  if (!body || !Array.isArray(body.lines) || body.lines.length > Exclude.MAX_LINES * 2) return [400, { ok: false, why: "shape", reason: `줄 목록(lines)으로 보내요 — ${Exclude.MAX_LINES}줄까지` }];
+  if (!body || !Array.isArray(body.lines) || body.lines.length > Exclude.RAW_MAX) return [400, { ok: false, why: "shape", reason: `줄 목록(lines)으로 보내요 — 빈 줄까지 ${Exclude.RAW_MAX}줄 안에서` }];
+  if (typeof body.key === "string" && body.key && body.key !== folderKey(s.dir)) return [409, { ok: false, why: "moved", reason: "그사이 연결한 폴더가 바뀌었어요 — 목록을 다시 받은 뒤 저장해요" }];   // 화면이 본 폴더의 목록인지(writeFileNow moved와 같은 생각)
   const r = Exclude.clean(body.lines);
   if (r.bad.length) return [400, { ok: false, why: "bad", bad: r.bad, reason: "적을 수 없는 줄이 있어요 — 고친 뒤 다시 저장해요" }];
   try { excludeSave(s.dir, r.list); } catch { return [500, { ok: false, reason: "빼 둘 곳을 저장하지 못했어요 — 홈 폴더의 쓰기 권한을 봐 주세요" }]; }
   lastFiles = null;
-  return [200, { ok: true, project: s.project, list: r.list }];
+  return [200, { ok: true, project: s.project, key: folderKey(s.dir), list: r.list }];
 }
 
 // ── C-26 내 작업 책 — 연결한 폴더의 README.md를 읽어 책으로 나눠 준다(읽기만) — claude-drafted: 2026-10-23 (이재엽 "책의 작업들은 readme 에서 … 책에서 보여주는 역할만") ──
@@ -540,10 +557,10 @@ let lastFiles = null;   // 마지막 목록 { dir, list } — /api/file은 이 �
 function filesNow() {
   const s = projectNow();
   if (!s) { lastFiles = null; return { ok: true, project: "", files: null, why: "folder" }; }
-  const ex = excludeList(s.dir);   // C-52 — 빼 둔 곳은 목록에 없다(화면은 '빼 둔 곳 n줄'로 알린다)
+  const ex = excludeList(s.dir), exBroken = excludeRead().broken;   // C-52 — 빼 둔 곳은 목록에 없다(화면은 '빼 둔 곳 n줄'로 알린다), 저장 파일이 깨졌으면 그것도
   const r = Files.listFiles(s.dir, { redact: Sensitive.redact, exclude: Exclude.matcher(ex) });
   lastFiles = { dir: s.dir, list: r.files };
-  return { ok: true, project: s.project, files: r.files.map(({ raw, ...f }) => f), total: r.total, cut: r.cut, unread: r.unread, depth: Files.DEPTH, max: Files.MAX, excluded: ex.length, why: "" };
+  return { ok: true, project: s.project, files: r.files.map(({ raw, ...f }) => f), total: r.total, cut: r.cut, unread: r.unread, depth: Files.DEPTH, max: Files.MAX, excluded: ex.length, excludeBroken: exBroken, why: "" };
 }
 // ── C-43 파일 보기 · 고치기(API.md 3-26, 2026-10-27 이재엽 버튼 "읽기 + 고치기" · "바로 저장 + 되돌리기" · "저장마다 커밋 맡기기" · "512KB · 내용으로 판단") ──
 // 열기: 목록의 번호(i) → 그 폴더 안의 파일만(바로가기 없이), 512KB까지, 내용이 글이면(NUL 없음 · UTF-8). 바뀐 줄은 git diff의 덩어리 머리만(있으면). 경로는 답에 가린 것만
@@ -618,7 +635,8 @@ function presetStart(body) {
   const p = Presets.byId(String(body.preset || "")); if (!p) return [400, { ok: false, reason: "그런 틀이 없어요" }];
   let rel = "";
   if (body.i !== undefined && body.i !== null) { const f = fileEntry(body.i); if (f.code) return [f.code, { ok: false, why: f.why, reason: f.reason }]; rel = f.rel; }
-  else { rel = String(body.path || "").trim(); if (!/^docs\/[A-Za-z0-9._/-]+\.md$/.test(rel) || rel.split("/").some((x) => !x || x === "." || x === "..")) return [400, { ok: false, reason: "파일은 목록의 번호나 docs/ 안의 md 이름으로" }]; }
+  else { rel = String(body.path || "").trim(); if (!/^docs\/[A-Za-z0-9._/-]+\.md$/.test(rel) || rel.split("/").some((x) => !x || x === "." || x === "..")) return [400, { ok: false, reason: "파일은 목록의 번호나 docs/ 안의 md 이름으로" }];
+    const s = projectNow(); if (s && excludeOf(s.dir)(rel)) return [400, { ok: false, why: "excluded", reason: "빼 둔 곳의 문서라 맡기지 않아요 — 설정 '기록'의 빼 둘 곳에서 풀 수 있어요" }]; }   // C-52 — 번호(i)로 고를 때(fileEntry)와 같게
   const stage = typeof body.stage === "string" ? body.stage.slice(0, 60) : "지금 단계";
   const [code, out] = startTask(Presets.requestOf(p, { path: rel, stage, note: typeof body.note === "string" ? body.note.slice(0, 300) : "" }), "틀로 맡기기", Presets.checksOf(p));
   return [code, code === 200 ? { ...out, preset: p.id, name: p.name } : out];
@@ -830,7 +848,9 @@ async function shipDocs(body) {   // async — 공개 저장소 확인(gh)을 �
   if ((known !== null && !(known && typeof known === "object" && !Array.isArray(known) && Object.entries(known).every(([k, v]) => isStagePath(k) && typeof v === "string" && /^[0-9a-f]{16}$/.test(v))))
     || !Array.isArray(keep) || keep.length > Docs.SLUGS.length || !keep.every((k) => typeof k === "string" && isStagePath(k)))
     return [400, { ok: false, reason: "문서 지문의 모양이 맞지 않음" }];
-  const files = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
+  const ex = excludeOf(s.dir);   // C-52 — 빼 둔 문서는 읽지도(지문 · 절 합치기) 쓰지도 맡기지도 않는다. 되살리기도 빼 두므로 지문이 없어 '모르는 문서 = Floe 것'으로 덮는 일이 없게(새 맥락 리뷰)
+  const all = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
+  const excluded = all.filter((f) => ex(f.path)).map((f) => f.path), files = all.filter((f) => !ex(f.path));
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
   const isStage = (f) => !f.merge && !!Docs.parseStage(f.text);
@@ -846,7 +866,7 @@ async function shipDocs(body) {   // async — 공개 저장소 확인(gh)을 �
   // C-49(2026-10-29): 쓴 단계 문서마다 글 지문 — 화면이 기억해 두었다가 폴더의 글이 바뀌면 '낡음'으로 알아본다(GET /api/docs)
   const prints = Object.fromEntries(writes.filter(isStage).map((f) => [f.path, printOf(f.text)]));
   const paths = writes.map((f) => f.path), [code, out] = startTask(Docs.shipRequest(paths), "문서 올리기", Docs.SHIP_CHECKS);
-  return [code, { ...out, files: paths, prints, kept, key: folderKey(s.dir) }];
+  return [code, { ...out, files: paths, prints, kept, excluded, key: folderKey(s.dir) }];
 }
 
 // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번 "사람이 확인한 기록만" · "글 지문"): 기록의 원본은 프로젝트 폴더 ──

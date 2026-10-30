@@ -52,10 +52,30 @@ test("matcher — 끝이 /면 폴더(그 안 전부), / 없는 이름은 어느 
   assert.equal(E.matcher([])("anything"), false);
 });
 
-test("matcher — 별이 많은 긴 경로도 빨리 끝난다(되돌아가기 폭주 없음)", () => {
-  const m = E.matcher(["*a*a*a"]); const t = Date.now();
-  for (let i = 0; i < 200; i++) m(`${"a".repeat(150)}b/${"a".repeat(150)}b`);
-  assert.ok(Date.now() - t < 1000);
+test("matcher — 별이 많은 긴 경로도 맞게 답한다(정규식을 쓰지 않고 직접 맞춤)", () => {
+  const m = E.matcher(["*a*a*a"]);
+  assert.equal(m(`${"a".repeat(150)}b/${"a".repeat(150)}b`), false);
+  assert.equal(m(`x/${"b".repeat(100)}aaa`), true);
+  assert.equal(E.wild, undefined, "속 함수는 내보내지 않는다");
+});
+
+test("한글 이름은 NFC로 맞춘다 — macOS가 주는 NFD 이름도 같은 이름(새 맥락 리뷰)", () => {
+  const nfd = "회원명단.csv".normalize("NFD");
+  assert.ok(E.matcher(["회원명단.csv"])(nfd), "적은 줄 NFC · 경로 NFD");
+  assert.ok(E.matcher([nfd])("회원명단.csv"), "적은 줄 NFD · 경로 NFC");
+  assert.deepEqual(E.clean([nfd]).list, ["회원명단.csv"], "다듬을 때 NFC로");
+  assert.ok(E.matcher(["비밀/"])("비밀/a.md".normalize("NFD")));
+});
+
+test("** 는 받지 않는다(gitignore와 뜻이 달라 헷갈린다) — 줄마다 까닭", () => {
+  const r = E.clean(["**/x.md", "a/**", "ok/"]);
+  assert.deepEqual(r.list, ["ok/"]); assert.equal(r.bad.length, 2); assert.match(r.bad[0].why, /\*\*/);
+});
+
+test("빈 줄 · # 줄은 줄 수에 세지 않는다 — 서버가 받는 줄(빈 줄 포함)은 RAW_MAX까지", () => {
+  const lines = [...Array.from({ length: 100 }, () => ""), "a.md", "# 메모"];
+  assert.deepEqual(E.clean(lines).list, ["a.md"]);
+  assert.ok(E.RAW_MAX >= 200);
 });
 
 test("revive — 저장 파일의 이상한 값은 버린다(폴더 열쇠 모양 · 목록 모양)", () => {
@@ -84,6 +104,7 @@ test("listFiles — exclude가 맞는 것과 그 안은 목록에 없다(폴더 
 
 // ── 서버 ──
 let port, srv, Srv;
+const EX_FILE = () => process.env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-exclude.json");
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 const token = () => fs.readFileSync(process.env.NAV_EVENT_TOKEN_FILE, "utf8").trim();
 before(async () => {
@@ -109,7 +130,7 @@ function call(method, url, { body, token: withTok = true, headers = {} } = {}) {
 test("GET · POST /api/exclude — 확인 값 없으면 403, 폴더를 모르면 why 'folder'(쓰지 않음)", async () => {
   assert.equal((await call("GET", "/api/exclude", { token: false })).status, 403);
   assert.equal((await call("POST", "/api/exclude", { token: false, body: { lines: [] } })).status, 403);
-  assert.deepEqual((await call("GET", "/api/exclude")).json, { ok: true, project: "", list: [], why: "folder" });
+  assert.deepEqual((await call("GET", "/api/exclude")).json, { ok: true, project: "", key: "", list: [], max: E.MAX_LINES, why: "folder" });
   const r = await call("POST", "/api/exclude", { body: { lines: ["a/"] } });
   assert.equal(r.status, 400); assert.equal(r.json.why, "folder");
 });
@@ -124,8 +145,9 @@ test("POST /api/exclude — 거절할 줄이 있으면 400 + 줄마다 까닭(�
   const ok = await call("POST", "/api/exclude", { body: { lines: ["secrets/", "./notes.txt", "*.env", "README.md", "docs/decisions.md", "docs/private/"] } });
   assert.equal(ok.status, 200); assert.deepEqual(ok.json.list, ["secrets/", "notes.txt", "*.env", "README.md", "docs/decisions.md", "docs/private/"]);
   const g = await call("GET", "/api/exclude");
-  assert.deepEqual(g.json, { ok: true, project: "proj", list: ok.json.list, why: "" });
-  const f = process.env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-exclude.json");
+  assert.deepEqual({ ...g.json, key: "" }, { ok: true, project: "proj", key: "", list: ok.json.list, max: E.MAX_LINES, why: "" });
+  assert.match(g.json.key, /^[0-9a-f]{16}$/, "어느 폴더의 목록인지 — 열쇠(경로 지문)");
+  const f = EX_FILE();
   const saved = fs.readFileSync(f, "utf8");
   assert.ok(!saved.includes(TMP) && !saved.includes("proj"), "폴더 경로 · 이름은 저장하지 않는다(열쇠는 지문)");
   if (process.platform !== "win32") assert.equal(fs.statSync(f).mode & 0o777, 0o600);
@@ -147,18 +169,92 @@ test("빼 둔 것은 서버가 읽지 않는다 — 파일 칸 · 찾기 · READ
   assert.equal(Srv.decisionsText(PROJ), "", "결정 기록(docs/decisions.md)을 빼 두면 가져갈 것 초안에 보내지 않는다");
 });
 
-test("빼 둔 뒤에는 옛 목록 번호로도 못 연다 — 저장하면 목록을 다시 받아야 하고, 열 때도 한 번 더 본다", async () => {
+test("열 때 · 저장할 때 한 번 더 본다 — 목록을 받은 뒤 빼 둔 곳이 바뀌어도(다른 창 · 손으로 고친 파일) 그 번호로 열지도 쓰지도 않는다", async () => {
   assert.equal(Srv.useProject(PROJ), true);
   await call("POST", "/api/exclude", { body: { lines: [] } });
   const list = (await call("GET", "/api/files")).json.files;
   const i = list.findIndex((x) => x.path === "keep.md");
-  assert.equal((await call("GET", `/api/file?i=${i}`)).status, 200);
-  await call("POST", "/api/exclude", { body: { lines: ["keep.md"] } });
+  const opened = await call("GET", `/api/file?i=${i}`);
+  assert.equal(opened.status, 200);
+  const key = (await call("GET", "/api/exclude")).json.key;
+  fs.writeFileSync(EX_FILE(), JSON.stringify({ [key]: ["keep.md"] }));   // 저장 요청 없이 — 옛 목록(lastFiles)이 그대로 남은 채
   const r = await call("GET", `/api/file?i=${i}`);
-  assert.equal(r.status, 400); assert.equal(r.json.why, "folder", "저장하면 옛 목록은 버린다");
-  assert.deepEqual((await call("GET", "/api/exclude")).json.list, ["keep.md"]);
+  assert.equal(r.status, 400); assert.equal(r.json.why, "excluded");
+  const w = await call("POST", "/api/file", { body: { i, path: "keep.md", text: "덮어쓰기", mtime: opened.json.mtime, ignoreBusy: true } });
+  assert.equal(w.status, 400); assert.equal(w.json.why, "excluded");
+  assert.match(fs.readFileSync(path.join(PROJ, "keep.md"), "utf8"), /보여도 되는 것/, "쓰지 않았다");
   await call("POST", "/api/exclude", { body: { lines: [] } });
   assert.deepEqual((await call("GET", "/api/exclude")).json.list, [], "비우면 지운다");
+});
+
+test("어느 폴더의 목록인지 — 보낸 열쇠가 지금 폴더와 다르면 409 moved(저장하지 않음)", async () => {
+  assert.equal(Srv.useProject(PROJ), true);
+  const r = await call("POST", "/api/exclude", { body: { lines: ["a.md"], key: "0000000000000000" } });
+  assert.equal(r.status, 409); assert.equal(r.json.why, "moved");
+  assert.deepEqual((await call("GET", "/api/exclude")).json.list, []);
+  const key = (await call("GET", "/api/exclude")).json.key;
+  assert.equal((await call("POST", "/api/exclude", { body: { lines: ["a.md"], key } })).status, 200, "맞는 열쇠면 저장");
+  await call("POST", "/api/exclude", { body: { lines: [], key } });
+});
+
+test("저장 파일이 깨졌으면 조용히 넘기지 않는다 — GET why 'broken' · 파일 목록에도 알림, 다시 저장하면 새로", async () => {
+  assert.equal(Srv.useProject(PROJ), true);
+  fs.writeFileSync(EX_FILE(), "{ 깨진");
+  const g = (await call("GET", "/api/exclude")).json;
+  assert.equal(g.why, "broken"); assert.match(g.reason, /깨/);
+  assert.equal((await call("GET", "/api/files")).json.excludeBroken, true);
+  assert.equal((await call("POST", "/api/exclude", { body: { lines: ["notes.txt"] } })).status, 200);
+  assert.equal((await call("GET", "/api/exclude")).json.why, "");
+  await call("POST", "/api/exclude", { body: { lines: [] } });
+});
+
+test("틀로 맡기기(path로 docs/ 문서를 고를 때)도 빼 둔 곳이면 맡기지 않는다", async () => {
+  assert.equal(Srv.useProject(PROJ), true);
+  await call("POST", "/api/exclude", { body: { lines: ["docs/private/"] } });
+  const r = await call("POST", "/api/preset", { body: { preset: "fill", path: "docs/private/x.md" } });
+  assert.equal(r.status, 400); assert.equal(r.json.why, "excluded");
+  await call("POST", "/api/exclude", { body: { lines: [] } });
+});
+
+test("훅 알림으로 바뀐 파일 — 빼 둔 곳이면 대화 목록(changes)에 쌓지 않고 AI 진행에는 이름을 감춘다", async () => {
+  const Steps = require(path.join(BACK, "steps.js"));
+  assert.equal(Srv.useProject(PROJ), true);
+  await call("POST", "/api/exclude", { body: { lines: ["secrets/"] } });
+  const hook = (tool_name, tool_input) => { const ev = { hook_event_name: "PostToolUse", session_id: "s-ex", cwd: PROJ, tool_name, tool_input };
+    return call("POST", "/api/event", { body: { hook_event_name: "PostToolUse", session_id: "s-ex", cwd: PROJ, tool: "claude", tool_name, step: Steps.fromHook(ev), file: Steps.fileOf(ev) } }); };
+  const h1 = await hook("Write", { file_path: path.join(PROJ, "secrets/token-note.md"), content: "a" }); assert.equal(h1.status, 200, h1.text);
+  await hook("Write", { file_path: path.join(PROJ, "keep2.md"), content: "b" });
+  const changes = (await call("GET", "/api/chatlog")).json.changes.map((c) => c.path);
+  assert.ok(changes.includes("keep2.md") && !changes.some((p) => p.includes("token-note")), changes.join(","));
+  const steps = JSON.stringify((await call("GET", "/api/steps")).json);
+  assert.ok(!steps.includes("token-note"), "AI 진행에도 이름이 없다"); assert.match(steps, /빼 둔 곳/);
+  await call("POST", "/api/exclude", { body: { lines: [] } });
+});
+
+test("문서 올리기 — 빼 둔 단계 문서 · 결정 기록은 읽지도 쓰지도 맡기지도 않는다(브라우저 기록이 없어도 사람이 고친 문서를 덮지 않는다)", async () => {
+  const Nav = require(path.join(BACK, "navigator.js"));
+  const SHIP = path.join(TMP, "ship"); fs.mkdirSync(path.join(SHIP, ".git"), { recursive: true });
+  w(path.join(SHIP, "docs/01-idea/idea.md"), "# 사람이 고친 1단계\n손으로 쓴 글\n"); w(path.join(SHIP, "docs/decisions.md"), "# 내 결정 기록\n손으로\n");
+  assert.equal(Srv.useProject(SHIP), true);
+  assert.equal((await call("POST", "/api/exclude", { body: { lines: ["docs/01-idea/", "docs/decisions.md"] } })).status, 200);
+  const R0 = { chap: 0, title: "앱", items: Nav.STAGES[0].criteria.map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) };
+  const R1 = { chap: 1, title: "앱", items: Nav.criteriaFor(1, "Xpress").map((c) => ({ name: c.text, lines: [`${c.text} 줄`] })) };
+  const r = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: R0, 1: R1 } } });   // 지문 없이 — 브라우저 기록을 지운 뒤
+  assert.equal(r.status, 200, r.text);
+  assert.ok(!r.json.files.some((p) => p.startsWith("docs/01-idea/") || p === "docs/decisions.md"), r.json.files.join(","));
+  assert.deepEqual(r.json.excluded.sort(), ["docs/01-idea/idea.md", "docs/decisions.md"].sort());
+  assert.equal(fs.readFileSync(path.join(SHIP, "docs/01-idea/idea.md"), "utf8"), "# 사람이 고친 1단계\n손으로 쓴 글\n");
+  assert.equal(fs.readFileSync(path.join(SHIP, "docs/decisions.md"), "utf8"), "# 내 결정 기록\n손으로\n");
+  for (let k = 0; k < 50; k++) { const tk = (await call("GET", "/api/task")).json.task; if (!tk || tk.state !== "running") break; await new Promise((res) => setTimeout(res, 100)); }
+  Srv.dropProject(SHIP);
+});
+
+test("빼기를 거치지 않는 폴더 읽기가 새로 생기지 않게 — server.js의 listFiles · docTargets 부르는 곳마다 빼기를 거친다", () => {
+  const lines = fs.readFileSync(path.join(BACK, "server.js"), "utf8").split("\n");
+  lines.forEach((l, k) => {
+    if (/Files\.listFiles\(/.test(l)) assert.match(l, /exclude:/, `server.js ${k + 1}줄 — listFiles에 exclude가 없다`);
+    if (/docTargets\(/.test(l) && !/function docTargets/.test(l)) assert.ok(lines.slice(Math.max(0, k - 6), k + 1).some((x) => /excludeOf\(|\bex\(/.test(x)), `server.js ${k + 1}줄 — docTargets 앞에 빼기 확인이 없다`);
+  });
 });
 
 test("폴더마다 따로 — 다른 폴더에는 이 목록이 걸리지 않는다", async () => {

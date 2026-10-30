@@ -1,11 +1,11 @@
 // claude-drafted: 2026-10-30 — C-52 '빼 둘 곳'(지식 퀘스트 PRD 6절 C-52 "사용자가 고른 폴더 · 파일은 Floe의 AI에 보내지 않는다 — 비밀값 파일 목록과 같은 목록에 사용자가 더한다",
 //   9절 10번 "설정 창의 '빼 둘 곳'", 이재엽 버튼 2026-10-30 "10/31까지"). 사람이 적은 줄을 고르고(clean) 경로와 맞춰 본다(matcher). 순수 함수 — 서버(server.js)만 쓴다.
-//   줄 모양(gitignore를 줄인 것): 끝이 /면 폴더(그 안 전부), / 없는 이름은 어느 깊이에서든, / 있는 줄은 연결한 폴더의 맨 위부터, *는 한 칸(/ 사이) 안의 아무 글자. 대소문자는 보지 않는다(빼는 쪽으로).
+//   줄 모양(gitignore를 줄인 것 — **는 받지 않는다): 끝이 /면 폴더(그 안 전부), / 없는 이름은 어느 깊이에서든, / 있는 줄은 연결한 폴더의 맨 위부터, *는 한 칸(/ 사이) 안의 아무 글자. 대소문자는 보지 않는다(빼는 쪽으로).
 //   자기 또는 위 폴더 하나라도 맞으면 뺀다. 받지 않는 것: 폴더 밖(..) · 절대 경로 · 드라이브 · *말고 다른 기호(? [ ] { } !) · 별 넷 이상 · 긴 줄 — 사람이 헷갈리거나 맞추기가 느려지지 않게.
 //   *는 정규식으로 바꾸지 않고 직접 맞춘다(되돌아가기가 폭주하지 않게). 시험: 04-tests/navigator/exclude.test.js
 "use strict";
 
-const MAX_LINES = 30, LINE_MAX = 120, STARS_MAX = 3, MAX_KEYS = 200;
+const MAX_LINES = 30, LINE_MAX = 120, STARS_MAX = 3, MAX_KEYS = 200, RAW_MAX = 300;   // RAW_MAX — 서버가 받는 줄 수(빈 줄 · # 줄 포함). 세는 것은 다듬은 줄(MAX_LINES)
 const KEY = /^[0-9a-f]{16}$/;   // 폴더 열쇠 — server.js folderKey(실제 경로의 지문 앞 16자). 경로 · 이름은 저장하지 않는다
 
 // 사람이 적은 줄들(배열 또는 줄바꿈 글) → { list: 다듬은 줄, bad: [{ line, why }] }
@@ -14,12 +14,13 @@ function clean(lines) {
   const list = [], bad = [];
   for (const l of raw) {
     if (typeof l !== "string") { bad.push({ line: String(l), why: "글이 아니에요" }); continue; }
-    let t = l.trim();
+    let t = l.normalize("NFC").trim();   // macOS는 한글 이름을 NFD로 준다 — 적은 줄도 경로도 NFC로 맞춘다(새 맥락 리뷰)
     if (!t || t.startsWith("#")) continue;
     t = t.replace(/\\/g, "/");
     while (t.startsWith("./")) t = t.slice(2);
     const why = t.length > LINE_MAX ? `너무 길어요 — ${LINE_MAX}자까지`
       : /^\//.test(t) || /^[A-Za-z]:/.test(t) ? "연결한 폴더 안의 경로만 적어요(맨 앞의 / · C: 없이)"
+      : /\*\*/.test(t) ? "**는 쓰지 않아요 — 폴더 전부는 끝에 /를 붙여요(예: secrets/)"
       : /[?[\]{}!\u0000-\u001f]/.test(t) ? "기호는 *만 써요"
       : t.replace(/\/$/, "").split("/").some((s) => !s || s === "." || s === "..") ? "폴더 밖(..)이나 빈 칸은 적을 수 없어요"
       : (t.match(/\*/g) || []).length > STARS_MAX ? `*는 ${STARS_MAX}개까지`
@@ -48,12 +49,12 @@ function wild(p, s) {
 // 다듬은 줄 → (rel, isDir) => 빼나. rel은 연결한 폴더 안의 상대 경로(/로 나눔)
 function matcher(list) {
   const pats = (Array.isArray(list) ? list : []).map((x) => {
-    const dirOnly = x.endsWith("/"), body = (dirOnly ? x.slice(0, -1) : x).toLowerCase();
+    const y = String(x).normalize("NFC"), dirOnly = y.endsWith("/"), body = (dirOnly ? y.slice(0, -1) : y).toLowerCase();
     return { dirOnly, parts: body.split("/"), anchored: body.includes("/") };
   });
   return (rel, isDir = false) => {
     if (!pats.length) return false;
-    const segs = String(rel || "").toLowerCase().split("/").filter(Boolean);
+    const segs = String(rel || "").normalize("NFC").toLowerCase().split("/").filter(Boolean);
     for (const p of pats) {
       if (!p.anchored) {
         for (let k = 0; k < segs.length; k++) {
@@ -83,4 +84,4 @@ function revive(book) {
   return out;
 }
 
-module.exports = { MAX_LINES, LINE_MAX, STARS_MAX, MAX_KEYS, clean, matcher, revive, wild };
+module.exports = { MAX_LINES, LINE_MAX, STARS_MAX, MAX_KEYS, RAW_MAX, clean, matcher, revive };
