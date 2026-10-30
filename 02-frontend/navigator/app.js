@@ -243,13 +243,22 @@
   const readBound = () => { try { const v = JSON.parse(localStorage.getItem(BOUND_KEY) || "[]"); return Array.isArray(v) ? v.map(String) : []; } catch { return []; } };
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const CHAT_KEY = `${KEY}:chat`;   // C-63 — 연습 모드의 대화는 따로 저장(넘쳐도 다른 저장을 막지 않게 — 새 맥락 리뷰)
-  const KEEP = ["chatMark", "chatOpen", "mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "codeless", "linesDone", "carryDone", "carryUse", "docPrints", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
+  const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "finished", "libGone",
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
+  // 기능 조각이 저장할 것을 더한다(새 기능은 KEEP 한 줄 대신 자기 조각 맨 위에서 — 2026-10-29 나누기 2차). load는 이미 지나갔으니
+  // load가 읽어 둔 기록(saved)에서 그 키의 값을 가져온다 — 그사이 save가 있었어도 잃지 않는다. save는 KEEP 전체를 쓴다
+  let saved = null;
+  function keep(keys) {
+    for (const k of keys) { if (!KEEP.includes(k)) KEEP.push(k); if (saved && k in saved) st[k] = saved[k]; }
+  }
+  // 누르기 표 — data-act 이름 → 할 일. 공통은 90-acts.js, 기능의 누르기는 그 조각이 Object.assign(ACT, { … })로 더한다
+  const ACT = {};
   function load() {
     let s;
     try { s = JSON.parse(localStorage.getItem(KEY) || "null"); } catch { return; }
     if (!s || typeof s !== "object") return;
+    saved = s;
     if (s.j && !(N.STAGES[s.j.stage] && Array.isArray(s.j.criteria))) delete s.j;   // 고장 난 기록은 버린다
     for (const k of KEEP) if (k in s) st[k] = s[k];
     try { st.chat = JSON.parse(localStorage.getItem(CHAT_KEY) || "[]"); } catch { st.chat = []; }
@@ -278,9 +287,6 @@
     if (typeof st.source !== "string") st.source = "";
     if (st.card && typeof st.card !== "object") st.card = null; st.cardEdits = {};
     if (typeof st.topic !== "string") st.topic = "";
-    if (!st.docPrints || typeof st.docPrints !== "object" || Array.isArray(st.docPrints)) st.docPrints = {};
-    if (!st.carryUse || typeof st.carryUse !== "object" || Array.isArray(st.carryUse)) st.carryUse = {};
-    st.carryDone = st.carryDone === true;
     st.results = st.results && typeof st.results === "object" && !Array.isArray(st.results)
       ? Object.fromEntries(Object.entries(st.results).filter(([k, r]) => N.STAGES[k] && r && Array.isArray(r.items) && r.items.every((x) => x && typeof x.name === "string" && Array.isArray(x.lines)))) : {};   // 고장 난 결과는 버린다
     st.back = N.welcome(s, Date.now());
@@ -964,6 +970,7 @@
   // ── 채팅 중심 섬(C-22 1차 뼈대, claude-drafted: 2026-10-21 — 이재엽 "메인은 버튼이 아니라 플로로와 소통", 설계는 quest-storyboard.md 10절) ──
   //    레벨 오버레이(2026-10-19 LV · EXP · 명령 네 칸)는 뺐다 — 왼쪽 큰 플로로(칭호 · 기분 글은 2026-10-25에 뺌), 가운데 채팅(플로로 말 왼쪽 · 내 말 오른쪽 · 고르는 칩 · 입력 칸, 채팅 안에 플로로 그림 없음).
   //    규칙은 안 바뀐다: 지금 결정할 것 하나(momentToday · momentGate)가 플로로의 마지막 말이 되고, 그 단추들이 칩이 된다. 지나간 말은 위로 쌓인다(이 켜짐 동안만 — 기록에는 안 남긴다).
+  keep(["chatMark", "chatOpen"]);   // C-63 — 대화 표시 자리 · 펼친 단계 바로가기는 다시 켜도
   const ROMAN = (i) => (QU ? QU.roman(i) : String(i + 1));
   let lastLive = null;   // 마지막으로 보인 플로로의 말 — 바뀌면 지난 말로 쌓는다
   let saidSince = 0;     // 그 말이 보이는 동안 say()가 기록에 남긴 말 수 — 지난 말은 그 앞에 끼운다(먼저 보인 말이 위에, 2026-10-25)
@@ -1350,12 +1357,26 @@
       body: `<ul class="ship-files">${files.map((f) => `<li>${tag(f.path) ? `<b>${tag(f.path)}</b> ` : ""}${esc(f.path)}${f.merge ? " <small>절만 바꿈</small>" : ""}${nosrcAt(f.path) ? " <small>폴더에 없어요 — 다시 만들어요(근거 없음)</small>" : ""}</li>`).join("")}</ul><div class="ship-peek">${peeks.map(([, label], k) => `<button type="button" class="lnk" data-act="ship-peek" data-i="${k}" aria-expanded="${st.ship.peek === k}">${label} 미리 보기</button>`).join("")}${peek ? `<pre>${esc(peek.text)}</pre>` : ""}</div>`,
       acts: [{ label: "올리기", act: "ship-go", key: "Enter", pri: true }, { label: "나중에", act: "ship-later", kind: "ghost" }] };
   }
+  // 이 조각의 누르기 — 00-base의 누르기 표(ACT)에 더한다. 공통 누르기는 90-acts.js(2026-10-29 나누기 2차)
+  Object.assign(ACT, {
+    // 문서 올리기(C-37) — 올리기 · 나중에(도전과제 지도에서 다시) · 확인 · 지도에서 열기
+    "ship-go": () => shipGo(),
+    "ship-public": () => shipGo(true),   // C-52 공개 저장소 — 저장소마다 처음 한 번
+    "ship-later": () => { st.ship = null; render(); say("나중에 도전과제의 한눈에 보기에서 올릴 수 있어요"); },
+    "ship-done": () => set({ ship: null }),
+    "ship-peek": (i) => { if (st.ship) set({ ship: { ...st.ship, peek: st.ship.peek === i ? null : i } }); },   // 기획서 · 결정 기록 미리 보기(C-39) — 다시 그려도 펼친 채로(<details>는 다시 그릴 때마다 닫혔다)
+    "ship-open": () => set({ ship: { phase: "offer" }, qfocus: "stage", pane: "" }),
+  });
 // ━━ app/45-knowledge.js ━━
   // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번 "사람이 확인한 기록만" · "글 지문"): 기록의 원본은 프로젝트 폴더 ──
   //   폴더를 알면(진짜 AI 모드 · 앱이 고른 폴더) 그 폴더마다 한 번 단계 문서를 다시 읽는다(GET /api/docs). 이 브라우저에 기록이 없으면 되살릴지 묻고,
   //   본 뒤 글 지문이 바뀐 문서는 '낡음' — 다시 읽을지 묻는다(나중에면 다음에 열 때 다시). 없어진 문서의 기록은 지우지 않고 '근거 없음'(nosrc).
   //   지문 st.docPrints = { project: 폴더 열쇠(실제 경로의 지문 — 이름이 같은 다른 폴더와 견주지 않게), wrote: {단계: Floe가 마지막에 쓴 글 — 이것과 같을 때만 다시 덮는다},
   //     own: {단계: 사람 것 — 되읽어 다시 쓰면 다른 글 · 읽을 수 없는 글, 덮지 않는다}, seen: {단계: 마지막으로 본 폴더 글}, dirty: 다시 읽은 기록으로 기획서 · 결정 기록을 아직 안 고침, declined: 되살리지 않고 새로 시작 }
+  keep(["carryDone", "carryUse", "docPrints"]);   // C-48 가져갈 것 · C-49 글 지문 — 고장 난 기록은 빈 값으로
+  if (!st.docPrints || typeof st.docPrints !== "object" || Array.isArray(st.docPrints)) st.docPrints = {};
+  if (!st.carryUse || typeof st.carryUse !== "object" || Array.isArray(st.carryUse)) st.carryUse = {};
+  st.carryDone = st.carryDone === true;
   let docsFor = "", docsKey = "";
   const DP = () => (st.docPrints && typeof st.docPrints === "object" && !Array.isArray(st.docPrints) ? st.docPrints : {});
   const stageOfPath = (p) => N.STAGES.findIndex((_, i) => FDOCS.stagePath(i) === p);
@@ -1612,6 +1633,76 @@
     } catch { st.files = { src: "example", why: "서버에 닿지 않았어요" }; }
     render();
   }
+  // 이 조각의 누르기 — 00-base의 누르기 표(ACT)에 더한다. 공통 누르기는 90-acts.js(2026-10-29 나누기 2차)
+  Object.assign(ACT, {
+    // C-48 가져갈 것 — 8단계 초안(AI 한 번) · 채택 · 반려(까닭) · 보류, 단계에 들어서면 지난 프로젝트에서 가져온 것 고르기
+    "carry-draft": async () => {
+      if (!st.carry || st.carry.phase !== "offer") return;
+      const r = await callAI("/api/carry/draft", { topic: st.topic || "", lessons: learnedList() });
+      if (!r.ok) { render(); return say(r.reason || "초안을 만들지 못했어요"); }
+      const tag = Date.now().toString(36);
+      st.carry = { phase: "drafts", drafts: r.drafts.map((d, k) => ({ id: `c${tag}${k}`, text: d.text, why: d.why || "", stage: Number.isInteger(d.stage) ? d.stage : -1, review: d.review || "", from: Array.isArray(d.from) ? d.from : [] })), say: r.say || "" };
+      st.tokens = r.tokens || 0; fetchUsage(); render();
+    },
+    "carry-adopt": (i) => carryDecide(i, "adopt"),
+    "carry-hold": (i) => carryDecide(i, "hold"),
+    "carry-reject": (i) => {
+      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state) return;
+      if (!d.rejecting) { d.rejecting = true; return render(); }
+      if (!String(d.reason || "").trim()) return say("버리는 까닭을 한 줄 적어 주세요 — 반려도 지우지 않고 남겨요");
+      carryDecide(i, "reject", d.reason.trim());
+    },
+    "carry-from": (i, el) => { const d = st.carry && st.carry.drafts && st.carry.drafts[i], v = Number(el && el.dataset.v); if (!d || d.state || !N.STAGES[v]) return; d.from = d.from.includes(v) ? d.from.filter((x) => x !== v) : [...d.from, v].sort((a, b) => a - b); render(); },
+    "carry-hold-rest": async () => { const C = st.carry; if (!C || !C.drafts) return; for (let k = 0; k < C.drafts.length; k++) if (!C.drafts[k].state) await carryDecide(k, "hold"); },   // 미루면 보류(지식 퀘스트 9절 2번) — 다음 프로젝트를 시작할 때 다시 묻는다
+    "carry-later": () => set({ carry: null }),
+    "carry-use": (i) => { const O = st.carryOffer, x = O && O.items[i]; if (!x) return; O.pick = O.pick.includes(x.id) ? O.pick.filter((y) => y !== x.id) : [...O.pick, x.id]; render(); },
+    "carry-held-adopt": async (i) => {
+      const O = st.carryOffer, x = O && O.held[i]; if (!x || x.saving) return;
+      x.saving = true;
+      const r = await carryPost({ action: "adopt", item: x, id: x.id });
+      x.saving = false;
+      if (!r.ok) return say(r.reason || "남기지 못했어요");
+      O.held = O.held.filter((y) => y.id !== x.id);
+      if (!O.items.length && !O.held.length) st.carryOffer = null;
+      render(); say("채택했어요 — 다음 프로젝트부터 그 단계에서 보여요");
+    },
+    "carry-use-done": () => { const O = st.carryOffer; if (!O) return; st.carryUse = { ...st.carryUse, [O.n]: O.items.filter((x) => O.pick.includes(x.id)).map((x) => ({ id: x.id, text: x.text })) }; st.carryOffer = null; save(); render(); },
+    "carry-use-none": () => { const O = st.carryOffer; if (O) st.carryUse = { ...st.carryUse, [O.n]: [] }; st.carryOffer = null; save(); render(); },
+    // C-49 폴더의 기록 — 되살리기(이 브라우저에 기록이 없을 때) · 다시 읽기(낡음) · 나중에(다음에 열 때 다시)
+    "restore-go": () => {
+      const R = st.restore; if (!R || R.phase !== "offer") return;
+      const d = R.data, nx = resumeStage(d.stages);
+      st.results = Object.fromEntries(R.got.map((n) => [n, { chap: n, title: d.topic || "", ...d.stages[n].result }]));
+      if (!st.topic && d.topic) st.topic = d.topic;
+      if (!st.idea && d.idea) st.idea = d.idea;   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰)
+      if (!st.source && d.source) st.source = d.source;
+      const all = Object.entries(d.stages);   // 읽을 수 없는 문서(result null)도 — 사람 것으로 두고 덮지 않는다
+      st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
+      const t = tierOf(st.results[0]); if (t) st.tier = t;
+      st.restore = null;
+      if (nx > 0) resumeAt(nx);
+      save(); render(); say(`${R.got.map((n) => LB(n)).join(" · ")} 기록을 폴더에서 되살렸어요.`);
+      if (N.STAGES[nx]) carryLoad(nx);   // C-48
+      if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1]) stageDraft(nx); else if (st.j && st.j.stage === nx) questText();
+    },
+    "restore-read": () => {
+      const R = st.restore; if (!R || R.phase !== "stale") return;
+      const d = R.data, read = R.stale.filter((n) => d.stages[n].result && st.results[n]), P = DP(), wrote = { ...(P.wrote || {}) }, own = { ...(P.own || {}) };
+      // 그 단계 기록을 폴더의 글로 바꾼다(문서에 없는 칸 — 제목 · 코드 없이 지남 — 만 남긴다). 사람이 칸을 비웠으면 비운 대로
+      st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result }]; })) };
+      for (const n of R.stale) { if (d.stages[n].lossless) { wrote[n] = d.stages[n].print; delete own[n]; } else { own[n] = d.stages[n].print; delete wrote[n]; } }   // 다시 써도 같은 글일 때만 Floe가 덮는다 — 아니면 그 문서는 사람 것(올릴 때 keep → kept)
+      st.docPrints = { ...P, wrote, own, seen: { ...(P.seen || {}), ...Object.fromEntries(R.stale.map((n) => [n, d.stages[n].print])) }, dirty: !!read.length || !!P.dirty };
+      st.restore = null;
+      if (read.length && st.results[0] && st.results[1]) st.ship = { phase: "offer" };   // 그 글로 만든 기획서 · 결정 기록도 같은 파일에 고쳐 쓸지(새 파일을 쌓지 않는다)
+      save(); render(); if (read.length) say(`${read.map((n) => LB(n)).join(" · ")} 기록을 폴더의 글로 다시 읽었어요.`);
+    },
+    "restore-later": () => {   // 새로 시작(되살리기를 고르지 않음)이면 이 폴더에서는 다시 묻지 않는다. 낡음 · 근거 없음은 다음에 열 때 다시
+      const R = st.restore;
+      if (R && R.phase === "offer") { st.docPrints = { project: R.data.key || "", wrote: {}, seen: {}, own: {}, declined: true }; save(); }
+      set({ restore: null });
+      if (R && R.phase === "offer") carryLoad(0);   // C-48 새로 시작 — 1단계에 가져온 것 · 보류한 것
+    },
+  });
 // ━━ app/50-chatlist.js ━━
   // ── C-63 왼쪽 대화 목록(2026-10-29, 두승현 PRD 3-2 · 이재엽 승인): 프로젝트 이름 → 단계 바로가기(최근이 위 — 지금 / 그 단계를 이야기한 날) → 맨 아래 '전체 파일'(지금의 폴더 모양, 한 칸 들여서).
   //   바로가기를 누르면 새 대화를 열지 않고 같은 대화의 그 구분선으로 옮겨 잠깐 강조하며, 그 단계가 만든 · 고친 파일('새로' · '고침')을 펼친다. 다시 누르면 접힌다 ──
@@ -1659,6 +1750,7 @@
   //   파일 칸에서 누르면 서버가 목록의 번호로 연다(GET /api/file?i — API.md 3-26, 경로를 보내지 않는다). md는 보기 좋게(md-view.js) · 원문으로, 코드 · 글은 줄 번호와 함께, git과 다른 줄은 표시.
   //   고치기 → 글 칸, 저장(단추 · ⌘/Ctrl+S)은 바로 쓰고 그 파일만 커밋 · 푸시를 Claude Code에 맡긴다(허락 카드는 채팅에). 비밀값 모양 · 연 뒤에 바뀜 · 맡긴 일이 도는 중이면 서버가 멈추고(409) 여기서 묻는다.
   //   저장 이력은 이 켜짐 동안 열린 파일마다 20번까지(되돌리기) — 이 컴퓨터에만. 열린 파일 탭 · 이름 찾기. 서버 없이 · 연습 모드는 예시 목록이라 열지 못한다
+  keep(["linesDone", "codeless"]);   // F-70 — 맡긴 기능 줄 · 6단계 '코드 없이'(A-04)
   const MDV = window.FloeMd || null, FHIST_MAX = 20;
   const fileTabs = () => st.openFiles.map((f, k) => `<span class="ftab${f.dirty ? " dirty" : ""}"><button type="button" role="tab" data-act="ftab" data-v="${k}" aria-selected="${st.qtab === "file" && st.fileSel === k}" title="${esc(f.path)}">${esc(f.name)}${f.dirty ? " •" : ""}</button><button type="button" class="ftab-x" data-act="fclose" data-v="${k}" aria-label="${esc(f.name)} 닫기" title="닫기">×</button></span>`).join("");
   async function openFile(i) {
@@ -1833,6 +1925,39 @@
   }
   const BROWSER_WIN = [920, 640];   // 브라우저 판(섬 옆)의 크기 — 앱의 창 크기는 main.js(R-1)
   const FULL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V3h5M12 3h5v5M17 12v5h-5M8 17H3v-5"/></svg>';
+  // 이 조각의 누르기 — 00-base의 누르기 표(ACT)에 더한다. 공통 누르기는 90-acts.js(2026-10-29 나누기 2차)
+  Object.assign(ACT, {
+    // F-70 코드 맡기기 — 5단계 뼈대 · 6단계 기능 줄(고르기 · 맡기기 · 닫기) · 돌려 보기 · 결과 파일 열기 · 6단계 코드 물음(A-04 예 · 아니요)
+    "build-skeleton": () => buildGo("build", BUILD && BUILD.skeletonTask({ results: st.results, topic: st.topic })),
+    "line-open": () => { st.linePick = true; render(); },
+    "line-x": () => { st.linePick = false; render(); },
+    "line-go": (i) => { const l = BUILD ? BUILD.features(st.results)[i] : ""; if (l) buildGo("line", BUILD.lineTask({ line: l, results: st.results, checksNote: checksNote() }), { line: l }); },
+    "run-go": () => { st.runOut = null; buildGo("run", BUILD && BUILD.runTask()); },
+    "run-done": () => { st.runOut = null; render(); },
+    "result-open": (k) => { const f = st.runOut && st.runOut.files[k || 0]; if (!f) return; const i = st.files && st.files.list ? st.files.list.findIndex((x) => !x.dir && x.path === f.path) : -1; if (i < 0) return say("파일 목록에서 그 파일을 못 찾았어요 — 작업실을 다시 열어요"); openQwin("quest"); openFile(i); },
+    "code-yes": () => buildGo("code", BUILD && BUILD.skeletonTask({ results: st.results, topic: st.topic, why: "code" })),
+    "code-no": () => { st.codeless = { at: ymd() }; save(); if (st.quest) st.quest = applyStates(st.quest); render(); say("코드 없이 이 단계를 해요 — 결정 기록에 '코드 없이 지남'으로 남겨요"); },
+    // 문서 지도(C-45) · 맡기기 틀(C-44)
+    "map-open": (i, el) => { const p = el && el.dataset.v; if (!p || !st.files || !st.files.list) return; const k = st.files.list.findIndex((x) => !x.dir && (x.path === p || (window.NavSensitive && window.NavSensitive.redact(p) === x.path))); if (k >= 0) openFile(k); else say(`'${p}'은 파일 목록에 없어요 — 깊이 3 · 200개 안의 글 파일만 열어요`); },
+    "preset-open": () => { const n = st.finished ? N.STAGES.length - 1 : atStage(); st.presetPick = { path: nowDocPath(n) }; render(); },
+    "preset-x": () => { st.presetPick = null; render(); },
+    "preset-go": (i, el) => { const id = el && el.dataset.i; if (st.presetPick) presetGo(id, { path: st.presetPick.path }); },
+    "preset-pick": () => {},
+    // 파일 보기 · 고치기(C-43)
+    "fn-open": (i, el) => { if (el && el.dataset.v !== undefined) openFile(el.dataset.v); },
+    ftab: (i, el) => { const k = Number(el && el.dataset.v); if (st.openFiles[k]) { st.fileSel = k; st.qtab = "file"; render(); } },
+    fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (k < st.fileSel) st.fileSel--; if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "canvas"; render(); },
+    fedit: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.edit = !f.edit; render(); } },
+    fraw: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.raw = !f.raw; render(); } },
+    fsave: (i, el) => { const k = el && el.dataset.v !== undefined ? Number(el.dataset.v) : st.fileSel; const f = st.openFiles[k]; if (f) { f.closing = false; saveFile(k); } },
+    "fsave-force": (i, el) => saveFile(Number(el && el.dataset.v), { force: true }),
+    "fsave-over": (i, el) => saveFile(Number(el && el.dataset.v), { overwrite: true }),   // 연 뒤 바뀐 파일을 덮어쓴다(비밀값 검사는 그대로 — 깃발을 나눴다, 새 맥락 리뷰)
+    "fsave-busy": (i, el) => saveFile(Number(el && el.dataset.v), { ignoreBusy: true }),
+    freload: (i, el) => reloadFile(Number(el && el.dataset.v)),
+    fundo: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (!f || !f.hist.length) return; const h = f.hist.pop(); f.text = h.text; f.dirty = f.text !== f.saved; f.edit = true; f.note = { kind: "ok", text: "마지막으로 저장하기 전 글로 되돌렸어요 — 저장을 누르면 그대로 써요" }; render(); },
+    "fnote-x": (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.note = null; f.closing = false; render(); } },
+    "fn-dir": (i, el) => { const v = el && el.dataset.v; if (!v) return; const s = new Set(st.fnOpen); if (s.has(v)) s.delete(v); else s.add(v); st.fnOpen = [...s]; render(); },   // 파일 칸의 폴더 접고 펼치기(R-8)
+  });
 // ━━ app/58-workspace.js ━━
   // ── C-53 작업실 세 칸(2026-10-28, 이재엽 버튼 "오른쪽 칸은 섬을 펼치면 접힘" · "서식 단추는 만든다", 목업 캔버스 ②): 파일 칸 | 작업 칸 | 오른쪽 칸(위: 이 문서 — 목차 · 칸 채움 · 재료, 아래: 퀘스트 — 지금 단계 · 다섯 칸 · 관문 남은 기준).
   //   파일 칸 · 오른쪽 칸은 머리 줄 단추로 접는다(이 컴퓨터에 기억). 앱에서 섬을 펼치면(접힌 알약이 아니면) 오른쪽 칸이 접혀 작업실이 비킬 자리를 만든다 — 섬을 접으면 다시 보인다
@@ -2135,6 +2260,31 @@
       `<div class="doc-head"><h3>${esc(s.doc)}</h3><span class="meta">${LB(s.n)}</span></div><textarea class="doc" data-act="doc" aria-label="단계 문서">${esc(d.text)}</textarea>${reviewList(d.review)}${docNotes()}`);
   }
   // 단계 지도(deskMap)는 2026-10-21 C-22로 퀘스트 창의 도전과제 판(treePane)이 됐다. 휴대폰의 단계 지도(mapBody)는 그대로
+  // 이 조각의 누르기 — 00-base의 누르기 표(ACT)에 더한다. 공통 누르기는 90-acts.js(2026-10-29 나누기 2차)
+  Object.assign(ACT, {
+    // C-53 작업실 세 칸 — 칸 접기(이 컴퓨터에 기억), 글 크기, 목차(오른쪽 칸 펼치기), 서식(브라우저 판 — 글 칸의 고른 자리에; 앱은 win.js가 창 안에서 같은 함수로 넣고 input으로 보낸다)
+    "wnav-toggle": () => { wnavOpen = !wnavOpen; writeLS("floe:ws-nav", wnavOpen ? "1" : "0"); render(); },
+    "wside-toggle": () => { wsideOpen = !wsideOpen; writeLS("floe:ws-side", wsideOpen ? "1" : "0"); render(); },
+    fsize: (i, el) => { const f = st.openFiles[Number(el && el.dataset.i)]; if (!f) return; f.zoom = Math.round(Math.min(1.6, Math.max(0.8, (f.zoom || 1) + (el.dataset.v === "+" ? 0.1 : -0.1))) * 10) / 10; render(); },
+    ftoc: () => { if (!wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); },
+    "ftoc-go": (i, el) => { const f = st.openFiles[st.fileSel]; if (!f) return; f.find = String((el && el.dataset.v) || "").slice(0, 60); if (f.kind === "md" && !f.edit) f.raw = true; f.go = f.edit ? null : { line: Number(el && el.dataset.line) || 0, seq: ++tocGo }; render(); },   // 그 절의 제목을 찾기 칸에 — 원문 보기에서 그 줄이 표시되고, 그 제목 줄로 스크롤(전에는 표시만 되고 옮기지 않았다 — 임유정 2026-10-28)
+    ffmt: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k], ta = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (!f || !ta || !MDV) return;
+      const r = MDV.format(ta.value, ta.selectionStart, ta.selectionEnd, el.dataset.fmt); ta.value = r.text; f.text = r.text; f.dirty = f.text !== f.saved; render();
+      const t2 = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (t2) { t2.focus(); t2.setSelectionRange(r.start, r.end); } },
+    // C-54 지도 — 보기 셋 · 기획서로 그리기 · 맞아요(한 번에) · 고칠래요 · 카드 누름(오른쪽 칸 + 문서가 있으면 파일 보기)
+    "tree-view": (i, el) => { const v = el && el.dataset.v; if (["cards", "flow", "box"].includes(v)) treeView = v; render(); },
+    "prep-draw": async () => { if (!SM || !st.results[1] || st.prep || st.busy) return;   // 바쁠 때 누르면 바쁨을 실패로 읽어 규칙 카드를 저장하던 것(F-103-5 새 맥락 리뷰)
+      const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits });
+      let ai = null;   // C-56 R-2(2026-10-28): 진짜 AI면 한 번에 이 프로젝트의 말로(/api/prepare) — 못 받으면 규칙(기획서의 절)으로만, 연습은 규칙
+      if (st.mode === "live" && canLive) { const r = await callAI("/api/prepare", { tier: st.tier, idea: ideaNow(), prev: prevOf(2), base: baseText() }); if (r.ok && r.prepare) { ai = r.prepare.cards; st.tokens = r.tokens || 0; fetchUsage(); } else say(`AI가 맞춰 짓지는 못했어요 — ${r.reason || "연결하지 못했어요"}. 기획서의 절에서 규칙으로 그렸어요`); }
+      st.prep = { cards: mergePrepared(rule.cards, ai), ok: false, fix: false, at: ymd(), ...(ai ? { ai: true } : {}) }; save(); render(); say(ai ? "이 프로젝트의 말로 3단계부터 8단계까지 그렸어요 — 카드마다 근거 절을 적었어요. 맞으면 '맞아요'로 한 번에 넘어가요" : "기획서로 3단계부터 8단계까지 그렸어요 — 카드마다 어느 절에서 왔는지 적었어요. 맞으면 '맞아요'로 한 번에 넘어가요"); },
+    "prep-ok": () => { if (!st.prep) return; st.prep = { ...st.prep, ok: true, fix: false }; save(); render(); say("준비된 퀘스트로 가요 — 그 단계에 들어서면 준비한 칸으로 시작해요"); },
+    "prep-fix": () => { if (!st.prep) return; st.prep = { ...st.prep, fix: true }; render(); },
+    "map-line": (i, el) => { const k = Number(el && el.dataset.k); if (!Number.isInteger(k)) return; st.mapLine = st.mapLine && st.mapLine.n === Number(i) && st.mapLine.k === k ? null : { n: Number(i), k }; if (st.mapLine && !wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); },   // C-54 ⑧ 줄 하나 → 오른쪽 칸
+    "map-chat": () => { st.qtab = "quest"; ACT["draft-fix"](); },   // C-54 ⑧ 빈 칸 — 채팅에서 같이 적기(공책을 열고 채팅 칸에 커서)
+    "pair-sel": (_, el) => { const v = el && el.dataset.v; if (!SM || !SM.PAIRS.some(([k]) => k === v)) return; st.pair = st.pair === v ? null : v; render(); },   // C-54 ⑨ 두 칸 나란히
+    "map-card": (i) => { const m = stageMap(), c = m && m.cards[i]; if (!c) return; st.mapSel = st.mapSel === i ? null : i; if (!st.mapLine || st.mapLine.n !== i) st.mapLine = null; if (st.mapSel != null && !wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); if (st.mapSel != null && c.doc.has) ACT["map-open"](null, { dataset: { act: "map-open", v: c.doc.path } }); },
+  });
 // ━━ app/60-library.js ━━
   // ── 도서관(FR-8 위젯) — 서고 시안(../library)의 더미 책(books.js)과 마감 계산(schedule.js)을 같이 쓴다.
   // 같은 화면이 둘이 되지 않게 서고 시안의 작업 화면 위젯을 여기로 옮겼다(2026-10-17). 첫 책(s1)은 이 화면의 단계·할 일을 그대로 따른다.
@@ -2809,6 +2959,21 @@
     if (WINS || !st.qwin || inCol) return isl;   // 앱: 작업실은 따로 뜬다(syncWins). inCol이면 섬만(아래 격자가 부른다)
     return `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow${islBig() ? " center" : ""}">${islandHTML(enter, true)}</div></div>`;   // 브라우저 판: 앱 창(win.html #root)과 같은 격자 — 머리 줄 한 줄 아래 작업실 판 · 섬 옆 칸
   }
+  // 이 조각의 누르기 — 00-base의 누르기 표(ACT)에 더한다. 공통 누르기는 90-acts.js(2026-10-29 나누기 2차)
+  Object.assign(ACT, {
+    // C-50 멈춘 것 같을 때(A-06) — 더 기다리기(다음 단계까지 묻지 않음) · 멈추고 다시 맡기기 · 직접 하기(멈추고 맡길 글) · 멈추고 그만두기
+    "stall-wait": () => { if (!st.stall) return; st.stall.wait = st.stall.lv; render(); say("더 기다릴게요 — 소식이 오면 알려 드려요"); },
+    "stall-again": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, stall: true, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("again"); },
+    "stall-self": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, stall: true, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("brief"); },
+    "stall-stop": async () => { const s = await stallHalt(); if (!s) return; tw = null; const h = TASK_END[s.kind]; if (h && h.stop) h.stop("오래 조용해서 멈췄어요"); render(); say("멈췄어요 — 언제든 다시 맡길 수 있어요"); },
+    // F-69 막힌 일(A-03) — 다시 맡기기 · 명령 없이 파일만 · 직접 하기(맡길 글) · 글 복사 · 다 했어요 · 그만두기
+    "blocked-again": () => retryBlocked("again"),
+    "blocked-files": () => retryBlocked("files-only"),
+    "blocked-self": () => retryBlocked("brief"),
+    "blocked-copy": async () => { const t = st.blocked && st.blocked.brief; if (!t) return; try { await navigator.clipboard.writeText(t); say("복사했어요 — Claude Code에 붙여 넣어요"); } catch { say("복사하지 못했어요 — 글을 골라 직접 복사해요"); } },
+    "blocked-done": () => endBlocked("직접 해 보세요 — 그 폴더에서 Claude Code가 일하면 플로로가 진행을 따라가요", "직접 하기로 했어요"),
+    "blocked-stop": () => endBlocked("그만뒀어요 — 언제든 다시 맡길 수 있어요", "허락을 못 받아 그만뒀어요"),
+  });
 // ━━ app/80-island.js ━━
   // ── 앱의 옆 창 둘(C-22): 섬이 창의 내용을 그려 보내고, 창의 누름은 돌아온다(win.js). 열림 · 닫힘 · 내용이 바뀐 것만 보낸다 ──
   const winOpen = { settings: false, quest: false }, winHtml = { settings: "", quest: "" };
@@ -3450,22 +3615,14 @@
   const set = (patch) => { Object.assign(st, patch); render(); };
   // 헷갈린 곳 고르기/빼기 (PC 단추·iPhone 체크 상자)
   const toggleHard = (i, on = !st.hard.includes(i)) => set({ hard: on ? [...new Set([...st.hard, i])].sort() : st.hard.filter((x) => x !== i) });
-  const ACT = {
+  // 공통 누르기 — 기능의 누르기는 그 조각이 Object.assign(ACT, …)로 더한다(00-base의 ACT, 2026-10-29)
+  Object.assign(ACT, {
     strip: () => view("enter"),
     open: () => view("click"),
     pin: () => { clearIdle(); set({ userPin: !st.userPin }); say(st.userPin ? "여기 열어 둘게요" : "이제 잠시 뒤 작게 접힐게요"); },
     pill: () => (QU && !st.qwin ? (openQwin("canvas"), render()) : st.ui === "hidden" ? go("home") : view("click")),   // 작업실 밖의 알약은 누르면 바로 작업실(섬은 접힌 알약 그대로 — 두승현 2026-10-29). 작업실 안의 알약은 어느 상태든 누르면 펼침(C-46, 새 맥락 리뷰)
     fold: () => go(colFolded() ? "home" : "petit"),   // 머리 줄의 접기 단추는 오고 가는 단추 — 알약이면 접기 전 모습으로(크게 · 옆으로는 st.islBig 그대로, F-100 임유정 2026-10-29). 섬 위 줄(tbRight)의 접기는 펼친 섬에만 보여 그대로 접기
     "boot-later": () => { st.boot = null; render(); },   // C-55 말풍선의 '나중에' — 말풍선만 사라진다(작업실 · 알약은 그대로)
-    // C-53 작업실 세 칸 — 칸 접기(이 컴퓨터에 기억), 글 크기, 목차(오른쪽 칸 펼치기), 서식(브라우저 판 — 글 칸의 고른 자리에; 앱은 win.js가 창 안에서 같은 함수로 넣고 input으로 보낸다)
-    "wnav-toggle": () => { wnavOpen = !wnavOpen; writeLS("floe:ws-nav", wnavOpen ? "1" : "0"); render(); },
-    "wside-toggle": () => { wsideOpen = !wsideOpen; writeLS("floe:ws-side", wsideOpen ? "1" : "0"); render(); },
-    fsize: (i, el) => { const f = st.openFiles[Number(el && el.dataset.i)]; if (!f) return; f.zoom = Math.round(Math.min(1.6, Math.max(0.8, (f.zoom || 1) + (el.dataset.v === "+" ? 0.1 : -0.1))) * 10) / 10; render(); },
-    ftoc: () => { if (!wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); },
-    "ftoc-go": (i, el) => { const f = st.openFiles[st.fileSel]; if (!f) return; f.find = String((el && el.dataset.v) || "").slice(0, 60); if (f.kind === "md" && !f.edit) f.raw = true; f.go = f.edit ? null : { line: Number(el && el.dataset.line) || 0, seq: ++tocGo }; render(); },   // 그 절의 제목을 찾기 칸에 — 원문 보기에서 그 줄이 표시되고, 그 제목 줄로 스크롤(전에는 표시만 되고 옮기지 않았다 — 임유정 2026-10-28)
-    ffmt: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k], ta = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (!f || !ta || !MDV) return;
-      const r = MDV.format(ta.value, ta.selectionStart, ta.selectionEnd, el.dataset.fmt); ta.value = r.text; f.text = r.text; f.dirty = f.text !== f.saved; render();
-      const t2 = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (t2) { t2.focus(); t2.setSelectionRange(r.start, r.end); } },
     pet: () => pet("tap"),
     // 연습용은 바로 살펴보고, 진짜 AI 모드에서는 글만 넣어 둔다(보내는 건 사용자가 '어디쯤인지 보기'를 누를 때)
     ex: (i) => {
@@ -3514,28 +3671,6 @@
     // 1단계에서 크기 칸까지 채우면 만드는 크기도 권한 크기로 — 크기 칩(draft-size)과 같게(2026-10-26 리뷰: 줄만 '보통'이고 등급은 Full로 남아 다음 장이 Full 할 일 수로 열렸다)
     "card-edit": () => { if (!BC || !st.card) return; st.card = BC.withEdits(st.card, st.cardEdits); st.cardEdits = {}; if (st.prep && SM) { const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits }); st.prep = { ...st.prep, cards: st.prep.ai ? mergePrepared(rule.cards, st.prep.cards) : rule.cards, fix: false }; } save(); render(); say("기준을 고쳤어요 — 아직 안 한 단계의 퀘스트를 이 기준으로 다시 지어요"); },   // C-56 R-1: 카드를 고치면 아직 안 한 퀘스트를 다시(지금은 준비된 퀘스트 — AI 맞춤은 ⓓ)
     "first-go": () => { treeChap = null; treeView = "flow"; openQwin("tree"); render(); say("한눈에 보기에서 그 칸을 찾아 채워요 — 지난 장의 칸은 '채우기'로 채팅에서 같이 적어요"); },   // C-56 먼저 → 갈 곳
-    // F-70 코드 맡기기 — 5단계 뼈대 · 6단계 기능 줄(고르기 · 맡기기 · 닫기) · 돌려 보기 · 결과 파일 열기 · 6단계 코드 물음(A-04 예 · 아니요)
-    "build-skeleton": () => buildGo("build", BUILD && BUILD.skeletonTask({ results: st.results, topic: st.topic })),
-    "line-open": () => { st.linePick = true; render(); },
-    "line-x": () => { st.linePick = false; render(); },
-    "line-go": (i) => { const l = BUILD ? BUILD.features(st.results)[i] : ""; if (l) buildGo("line", BUILD.lineTask({ line: l, results: st.results, checksNote: checksNote() }), { line: l }); },
-    "run-go": () => { st.runOut = null; buildGo("run", BUILD && BUILD.runTask()); },
-    "run-done": () => { st.runOut = null; render(); },
-    "result-open": (k) => { const f = st.runOut && st.runOut.files[k || 0]; if (!f) return; const i = st.files && st.files.list ? st.files.list.findIndex((x) => !x.dir && x.path === f.path) : -1; if (i < 0) return say("파일 목록에서 그 파일을 못 찾았어요 — 작업실을 다시 열어요"); openQwin("quest"); openFile(i); },
-    "code-yes": () => buildGo("code", BUILD && BUILD.skeletonTask({ results: st.results, topic: st.topic, why: "code" })),
-    "code-no": () => { st.codeless = { at: ymd() }; save(); if (st.quest) st.quest = applyStates(st.quest); render(); say("코드 없이 이 단계를 해요 — 결정 기록에 '코드 없이 지남'으로 남겨요"); },
-    // C-50 멈춘 것 같을 때(A-06) — 더 기다리기(다음 단계까지 묻지 않음) · 멈추고 다시 맡기기 · 직접 하기(멈추고 맡길 글) · 멈추고 그만두기
-    "stall-wait": () => { if (!st.stall) return; st.stall.wait = st.stall.lv; render(); say("더 기다릴게요 — 소식이 오면 알려 드려요"); },
-    "stall-again": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, stall: true, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("again"); },
-    "stall-self": async () => { const s = await stallHalt(); if (!s) return; st.blocked = { at: s.at, kind: s.kind, step: 2, stall: true, b: { count: 0, kinds: [], asks: { allow: 0, deny: 0, none: 0 } }, brief: "" }; retryBlocked("brief"); },
-    "stall-stop": async () => { const s = await stallHalt(); if (!s) return; tw = null; const h = TASK_END[s.kind]; if (h && h.stop) h.stop("오래 조용해서 멈췄어요"); render(); say("멈췄어요 — 언제든 다시 맡길 수 있어요"); },
-    // F-69 막힌 일(A-03) — 다시 맡기기 · 명령 없이 파일만 · 직접 하기(맡길 글) · 글 복사 · 다 했어요 · 그만두기
-    "blocked-again": () => retryBlocked("again"),
-    "blocked-files": () => retryBlocked("files-only"),
-    "blocked-self": () => retryBlocked("brief"),
-    "blocked-copy": async () => { const t = st.blocked && st.blocked.brief; if (!t) return; try { await navigator.clipboard.writeText(t); say("복사했어요 — Claude Code에 붙여 넣어요"); } catch { say("복사하지 못했어요 — 글을 골라 직접 복사해요"); } },
-    "blocked-done": () => endBlocked("직접 해 보세요 — 그 폴더에서 Claude Code가 일하면 플로로가 진행을 따라가요", "직접 하기로 했어요"),
-    "blocked-stop": () => endBlocked("그만뒀어요 — 언제든 다시 맡길 수 있어요", "허락을 못 받아 그만뒀어요"),
     "first-notyet": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, x = i >= 0 ? qstates(q)[i] : null; if (!x || x.state !== "first") return; fillNow(`아직 못 함 — ${x.why}`, "me"); },   // 비워 두지 않고 적되 관문 규칙(evidence)이 막는다
     "draft-again": async () => {
       const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex.length < 2) return;
@@ -3570,80 +3705,6 @@
       const q = st.quest, pk = q ? QU.pickOf(q, QU.curIdx(q)) : null, x = QU.DOC_PICKS[i]; if (!pk || !x) return;
       fillNow(`기획서: ${x[1]}${x[0] === pk.pick && pk.why ? ` — ${pk.why}` : ""}`, "pick");
     },
-    // 문서 올리기(C-37) — 올리기 · 나중에(도전과제 지도에서 다시) · 확인 · 지도에서 열기
-    "ship-go": () => shipGo(),
-    "ship-public": () => shipGo(true),   // C-52 공개 저장소 — 저장소마다 처음 한 번
-    // C-48 가져갈 것 — 8단계 초안(AI 한 번) · 채택 · 반려(까닭) · 보류, 단계에 들어서면 지난 프로젝트에서 가져온 것 고르기
-    "carry-draft": async () => {
-      if (!st.carry || st.carry.phase !== "offer") return;
-      const r = await callAI("/api/carry/draft", { topic: st.topic || "", lessons: learnedList() });
-      if (!r.ok) { render(); return say(r.reason || "초안을 만들지 못했어요"); }
-      const tag = Date.now().toString(36);
-      st.carry = { phase: "drafts", drafts: r.drafts.map((d, k) => ({ id: `c${tag}${k}`, text: d.text, why: d.why || "", stage: Number.isInteger(d.stage) ? d.stage : -1, review: d.review || "", from: Array.isArray(d.from) ? d.from : [] })), say: r.say || "" };
-      st.tokens = r.tokens || 0; fetchUsage(); render();
-    },
-    "carry-adopt": (i) => carryDecide(i, "adopt"),
-    "carry-hold": (i) => carryDecide(i, "hold"),
-    "carry-reject": (i) => {
-      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state) return;
-      if (!d.rejecting) { d.rejecting = true; return render(); }
-      if (!String(d.reason || "").trim()) return say("버리는 까닭을 한 줄 적어 주세요 — 반려도 지우지 않고 남겨요");
-      carryDecide(i, "reject", d.reason.trim());
-    },
-    "carry-from": (i, el) => { const d = st.carry && st.carry.drafts && st.carry.drafts[i], v = Number(el && el.dataset.v); if (!d || d.state || !N.STAGES[v]) return; d.from = d.from.includes(v) ? d.from.filter((x) => x !== v) : [...d.from, v].sort((a, b) => a - b); render(); },
-    "carry-hold-rest": async () => { const C = st.carry; if (!C || !C.drafts) return; for (let k = 0; k < C.drafts.length; k++) if (!C.drafts[k].state) await carryDecide(k, "hold"); },   // 미루면 보류(지식 퀘스트 9절 2번) — 다음 프로젝트를 시작할 때 다시 묻는다
-    "carry-later": () => set({ carry: null }),
-    "carry-use": (i) => { const O = st.carryOffer, x = O && O.items[i]; if (!x) return; O.pick = O.pick.includes(x.id) ? O.pick.filter((y) => y !== x.id) : [...O.pick, x.id]; render(); },
-    "carry-held-adopt": async (i) => {
-      const O = st.carryOffer, x = O && O.held[i]; if (!x || x.saving) return;
-      x.saving = true;
-      const r = await carryPost({ action: "adopt", item: x, id: x.id });
-      x.saving = false;
-      if (!r.ok) return say(r.reason || "남기지 못했어요");
-      O.held = O.held.filter((y) => y.id !== x.id);
-      if (!O.items.length && !O.held.length) st.carryOffer = null;
-      render(); say("채택했어요 — 다음 프로젝트부터 그 단계에서 보여요");
-    },
-    "carry-use-done": () => { const O = st.carryOffer; if (!O) return; st.carryUse = { ...st.carryUse, [O.n]: O.items.filter((x) => O.pick.includes(x.id)).map((x) => ({ id: x.id, text: x.text })) }; st.carryOffer = null; save(); render(); },
-    "carry-use-none": () => { const O = st.carryOffer; if (O) st.carryUse = { ...st.carryUse, [O.n]: [] }; st.carryOffer = null; save(); render(); },
-    // C-49 폴더의 기록 — 되살리기(이 브라우저에 기록이 없을 때) · 다시 읽기(낡음) · 나중에(다음에 열 때 다시)
-    "restore-go": () => {
-      const R = st.restore; if (!R || R.phase !== "offer") return;
-      const d = R.data, nx = resumeStage(d.stages);
-      st.results = Object.fromEntries(R.got.map((n) => [n, { chap: n, title: d.topic || "", ...d.stages[n].result }]));
-      if (!st.topic && d.topic) st.topic = d.topic;
-      if (!st.idea && d.idea) st.idea = d.idea;   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰)
-      if (!st.source && d.source) st.source = d.source;
-      const all = Object.entries(d.stages);   // 읽을 수 없는 문서(result null)도 — 사람 것으로 두고 덮지 않는다
-      st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
-      const t = tierOf(st.results[0]); if (t) st.tier = t;
-      st.restore = null;
-      if (nx > 0) resumeAt(nx);
-      save(); render(); say(`${R.got.map((n) => LB(n)).join(" · ")} 기록을 폴더에서 되살렸어요.`);
-      if (N.STAGES[nx]) carryLoad(nx);   // C-48
-      if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1]) stageDraft(nx); else if (st.j && st.j.stage === nx) questText();
-    },
-    "restore-read": () => {
-      const R = st.restore; if (!R || R.phase !== "stale") return;
-      const d = R.data, read = R.stale.filter((n) => d.stages[n].result && st.results[n]), P = DP(), wrote = { ...(P.wrote || {}) }, own = { ...(P.own || {}) };
-      // 그 단계 기록을 폴더의 글로 바꾼다(문서에 없는 칸 — 제목 · 코드 없이 지남 — 만 남긴다). 사람이 칸을 비웠으면 비운 대로
-      st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result }]; })) };
-      for (const n of R.stale) { if (d.stages[n].lossless) { wrote[n] = d.stages[n].print; delete own[n]; } else { own[n] = d.stages[n].print; delete wrote[n]; } }   // 다시 써도 같은 글일 때만 Floe가 덮는다 — 아니면 그 문서는 사람 것(올릴 때 keep → kept)
-      st.docPrints = { ...P, wrote, own, seen: { ...(P.seen || {}), ...Object.fromEntries(R.stale.map((n) => [n, d.stages[n].print])) }, dirty: !!read.length || !!P.dirty };
-      st.restore = null;
-      if (read.length && st.results[0] && st.results[1]) st.ship = { phase: "offer" };   // 그 글로 만든 기획서 · 결정 기록도 같은 파일에 고쳐 쓸지(새 파일을 쌓지 않는다)
-      save(); render(); if (read.length) say(`${read.map((n) => LB(n)).join(" · ")} 기록을 폴더의 글로 다시 읽었어요.`);
-    },
-    "restore-later": () => {   // 새로 시작(되살리기를 고르지 않음)이면 이 폴더에서는 다시 묻지 않는다. 낡음 · 근거 없음은 다음에 열 때 다시
-      const R = st.restore;
-      if (R && R.phase === "offer") { st.docPrints = { project: R.data.key || "", wrote: {}, seen: {}, own: {}, declined: true }; save(); }
-      set({ restore: null });
-      if (R && R.phase === "offer") carryLoad(0);   // C-48 새로 시작 — 1단계에 가져온 것 · 보류한 것
-    },
-    "ship-later": () => { st.ship = null; render(); say("나중에 도전과제의 한눈에 보기에서 올릴 수 있어요"); },
-    "ship-done": () => set({ ship: null }),
-    "ship-peek": (i) => { if (st.ship) set({ ship: { ...st.ship, peek: st.ship.peek === i ? null : i } }); },   // 기획서 · 결정 기록 미리 보기(C-39) — 다시 그려도 펼친 채로(<details>는 다시 그릴 때마다 닫혔다)
-    "ship-open": () => set({ ship: { phase: "offer" }, qfocus: "stage", pane: "" }),
     "draft-size": (i) => {
       const q = st.quest, k = QU.SIZE_KEYS[i]; if (!k || !q || !q.draft || QU.curIdx(q) !== QU.SIZE_AT) return;
       setTier(QU.SIZE_TIER[k]);
@@ -3715,26 +3776,6 @@
     "tu-sel": (i, el) => { const v = (el && el.dataset.v) || ""; set({ tuSel: st.tuSel === v ? "" : v }); },   // 다시 누르면 접는다
     "rb-sel": (i) => set({ rbSel: i | 0 }),
     "rb-reload": () => loadReadme(),
-    // 문서 지도(C-45) · 맡기기 틀(C-44)
-    "map-open": (i, el) => { const p = el && el.dataset.v; if (!p || !st.files || !st.files.list) return; const k = st.files.list.findIndex((x) => !x.dir && (x.path === p || (window.NavSensitive && window.NavSensitive.redact(p) === x.path))); if (k >= 0) openFile(k); else say(`'${p}'은 파일 목록에 없어요 — 깊이 3 · 200개 안의 글 파일만 열어요`); },
-    "preset-open": () => { const n = st.finished ? N.STAGES.length - 1 : atStage(); st.presetPick = { path: nowDocPath(n) }; render(); },
-    "preset-x": () => { st.presetPick = null; render(); },
-    "preset-go": (i, el) => { const id = el && el.dataset.i; if (st.presetPick) presetGo(id, { path: st.presetPick.path }); },
-    "preset-pick": () => {},
-    // 파일 보기 · 고치기(C-43)
-    "fn-open": (i, el) => { if (el && el.dataset.v !== undefined) openFile(el.dataset.v); },
-    ftab: (i, el) => { const k = Number(el && el.dataset.v); if (st.openFiles[k]) { st.fileSel = k; st.qtab = "file"; render(); } },
-    fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (k < st.fileSel) st.fileSel--; if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "canvas"; render(); },
-    fedit: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.edit = !f.edit; render(); } },
-    fraw: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.raw = !f.raw; render(); } },
-    fsave: (i, el) => { const k = el && el.dataset.v !== undefined ? Number(el.dataset.v) : st.fileSel; const f = st.openFiles[k]; if (f) { f.closing = false; saveFile(k); } },
-    "fsave-force": (i, el) => saveFile(Number(el && el.dataset.v), { force: true }),
-    "fsave-over": (i, el) => saveFile(Number(el && el.dataset.v), { overwrite: true }),   // 연 뒤 바뀐 파일을 덮어쓴다(비밀값 검사는 그대로 — 깃발을 나눴다, 새 맥락 리뷰)
-    "fsave-busy": (i, el) => saveFile(Number(el && el.dataset.v), { ignoreBusy: true }),
-    freload: (i, el) => reloadFile(Number(el && el.dataset.v)),
-    fundo: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (!f || !f.hist.length) return; const h = f.hist.pop(); f.text = h.text; f.dirty = f.text !== f.saved; f.edit = true; f.note = { kind: "ok", text: "마지막으로 저장하기 전 글로 되돌렸어요 — 저장을 누르면 그대로 써요" }; render(); },
-    "fnote-x": (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.note = null; f.closing = false; render(); } },
-    "fn-dir": (i, el) => { const v = el && el.dataset.v; if (!v) return; const s = new Set(st.fnOpen); if (s.has(v)) s.delete(v); else s.add(v); st.fnOpen = [...s]; render(); },   // 파일 칸의 폴더 접고 펼치기(R-8)
     "quest-edit": () => { if (st.quest) set({ quest: { ...st.quest, edit: true } }); },
     "quest-cancel": () => { if (st.quest) set({ quest: { ...st.quest, edit: false } }); },
     "quest-save": () => { if (!st.quest) return; const was = st.quest.phase; st.quest = { ...st.quest, edit: false }; if (was === "draft") return ACT["quest-ok"](); render(); say("퀘스트를 고쳐 적었어요 — 보상은 그대로예요"); },
@@ -3742,19 +3783,6 @@
     "quest-hint": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1; say(i >= 0 ? `힌트: ${QU.question(q, i)}` : "힌트: 다 적었으면 완료 보고를 눌러요"); },
     "tree-chap": (i) => { treeChap = i; render(); },
     "tree-map": () => { treeChap = null; render(); },   // 도전과제의 한눈에 보기(C-37)
-    // C-54 지도 — 보기 셋 · 기획서로 그리기 · 맞아요(한 번에) · 고칠래요 · 카드 누름(오른쪽 칸 + 문서가 있으면 파일 보기)
-    "tree-view": (i, el) => { const v = el && el.dataset.v; if (["cards", "flow", "box"].includes(v)) treeView = v; render(); },
-    "prep-draw": async () => { if (!SM || !st.results[1] || st.prep || st.busy) return;   // 바쁠 때 누르면 바쁨을 실패로 읽어 규칙 카드를 저장하던 것(F-103-5 새 맥락 리뷰)
-      const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits });
-      let ai = null;   // C-56 R-2(2026-10-28): 진짜 AI면 한 번에 이 프로젝트의 말로(/api/prepare) — 못 받으면 규칙(기획서의 절)으로만, 연습은 규칙
-      if (st.mode === "live" && canLive) { const r = await callAI("/api/prepare", { tier: st.tier, idea: ideaNow(), prev: prevOf(2), base: baseText() }); if (r.ok && r.prepare) { ai = r.prepare.cards; st.tokens = r.tokens || 0; fetchUsage(); } else say(`AI가 맞춰 짓지는 못했어요 — ${r.reason || "연결하지 못했어요"}. 기획서의 절에서 규칙으로 그렸어요`); }
-      st.prep = { cards: mergePrepared(rule.cards, ai), ok: false, fix: false, at: ymd(), ...(ai ? { ai: true } : {}) }; save(); render(); say(ai ? "이 프로젝트의 말로 3단계부터 8단계까지 그렸어요 — 카드마다 근거 절을 적었어요. 맞으면 '맞아요'로 한 번에 넘어가요" : "기획서로 3단계부터 8단계까지 그렸어요 — 카드마다 어느 절에서 왔는지 적었어요. 맞으면 '맞아요'로 한 번에 넘어가요"); },
-    "prep-ok": () => { if (!st.prep) return; st.prep = { ...st.prep, ok: true, fix: false }; save(); render(); say("준비된 퀘스트로 가요 — 그 단계에 들어서면 준비한 칸으로 시작해요"); },
-    "prep-fix": () => { if (!st.prep) return; st.prep = { ...st.prep, fix: true }; render(); },
-    "map-line": (i, el) => { const k = Number(el && el.dataset.k); if (!Number.isInteger(k)) return; st.mapLine = st.mapLine && st.mapLine.n === Number(i) && st.mapLine.k === k ? null : { n: Number(i), k }; if (st.mapLine && !wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); },   // C-54 ⑧ 줄 하나 → 오른쪽 칸
-    "map-chat": () => { st.qtab = "quest"; ACT["draft-fix"](); },   // C-54 ⑧ 빈 칸 — 채팅에서 같이 적기(공책을 열고 채팅 칸에 커서)
-    "pair-sel": (_, el) => { const v = el && el.dataset.v; if (!SM || !SM.PAIRS.some(([k]) => k === v)) return; st.pair = st.pair === v ? null : v; render(); },   // C-54 ⑨ 두 칸 나란히
-    "map-card": (i) => { const m = stageMap(), c = m && m.cards[i]; if (!c) return; st.mapSel = st.mapSel === i ? null : i; if (!st.mapLine || st.mapLine.n !== i) st.mapLine = null; if (st.mapSel != null && !wsideOpen) { wsideOpen = true; writeLS("floe:ws-side", "1"); } render(); if (st.mapSel != null && c.doc.has) ACT["map-open"](null, { dataset: { act: "map-open", v: c.doc.path } }); },
     // 빈 칸 채우기 — 지금 장의 칸은 채팅에서 차례로. 받기 전이면 퀘스트 탭(받기 화면)으로, 섬이 접혀 있으면 펼친다(앱의 옆 창에서 눌러도 섬에서 이어진다)
     "jmap-fill": () => {
       if (st.qfocus === "plan") st.qfocus = "stage";
@@ -3948,7 +3976,7 @@
     // 연결 끊기 — 끊은 동안 들어온 알림은 받지 않는다(alerts.js accept). 다시 연결하면 그 뒤의 알림부터 받는다
     unplug: () => { set({ unplug: !st.unplug, ping: st.unplug ? st.ping : "" }); say(st.unplug ? "연결을 끊었어요. 작업 알림을 받지 않아요" : "다시 연결했어요"); },
     "alog-clear": () => clearAlerts(),
-  };
+  });
   // iPhone — 아래 막대 뒤나 스크롤 밖에 생긴 칸(잠시 멈추기 권유·적는 칸)을 보이는 곳으로 옮긴다. 없으면 아무것도 안 한다
   const reveal = (sel) => { if (isPhone()) requestAnimationFrame(() => { const el = $phone.querySelector(sel); if (el) el.scrollIntoView({ block: "center", behavior: STILL ? "auto" : "smooth" }); }); };
   // 넘어가기 전 확인의 마지막 — 다음 단계 할 일로 순서 정하기를 연다(꼭/나중에는 처음엔 모두 꼭)

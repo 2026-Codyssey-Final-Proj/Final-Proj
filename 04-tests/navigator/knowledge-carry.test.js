@@ -143,8 +143,8 @@ test("C-48 서버 — 장부(이 컴퓨터의 Floe 폴더 파일 하나, 600): �
 test("C-48 화면 — 8단계에 오면 초안 카드(기준 다섯 · 고쳐 채택 · 반려는 까닭 · 보류), 단계에 들어서면 지난 프로젝트에서 가져온 것 최대 3개(이번에 쓸지 고르기 → carryUse)", () => {
   const app = fs.readFileSync(path.join(FRONT, "app.js"), "utf8");
   for (const a of ["carry-draft", "carry-adopt", "carry-reject", "carry-hold", "carry-hold-rest", "carry-from", "carry-later", "carry-use", "carry-use-done"]) assert.match(app, new RegExp(`"${a}": `), a);
-  assert.match(app, /"carryDone", "carryUse", "docPrints", "results"/, "다 정했는지도 남긴다");
+  assert.match(app, /keep\(\["carryDone", "carryUse", "docPrints"\]/, "다 정했는지도 남긴다(45-knowledge 조각이 keep으로 — app.js 나누기 2차)");
   assert.match(app, /restart: \(\) => \{ Object\.assign\(st, \{ j: null[^\n]*carryUse: \{\}, carryDone: false/, "처음부터 하면 고른 것을 비운다");
   assert.match(app, /callAI\("\/api\/carry\/draft"/); assert.match(app, /fetch\(`\/api\/carry\?stage=\$\{n\}`/);
-  assert.match(app, /"carryUse", "docPrints", "results"/, "고른 것을 저장한다(C-51 계획의 근거)");
+  assert.match(app, /keep\(\[[^\]]*"carryUse"/, "고른 것을 저장한다(C-51 계획의 근거)");
 });

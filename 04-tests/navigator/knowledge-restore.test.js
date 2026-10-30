@@ -158,7 +158,7 @@ test("C-49 서버 — POST /api/docs가 쓴 단계 문서의 글 지문(prints)�
 
 test("C-49 화면 — 지문을 기억하고(KEEP docPrints), 폴더를 알면 한 번 묻고, 되살리기 · 다시 읽기 · 근거 없음은 지우지 않는다", () => {
   const app = fs.readFileSync(path.join(FRONT, "app.js"), "utf8");
-  assert.match(app, /"docPrints", "results"/, "지문을 저장한다");
+  assert.match(app, /keep\(\[[^\]]*"docPrints"/, "지문을 저장한다(45-knowledge 조각이 keep으로)");
   assert.match(app, /wrote: \{ \.\.\.\(same \? P\.wrote : \{\}\), \.\.\.w \}/, "올린 뒤 Floe가 쓴 지문을 기억");
   assert.match(app, /\.\.\.\(known \? \{ prints: known\.prints, keep: known\.keep \} : \{\}\)/, "올릴 때 아는 지문 · 사람 것을 준다 — 서버가 사람이 고친 문서는 덮지 않는다");
   assert.match(app, /if \(!st\.idea && d\.idea\) st\.idea = d\.idea;/, "처음 말한 것도 되살린다");

@@ -3,6 +3,10 @@
   //   본 뒤 글 지문이 바뀐 문서는 '낡음' — 다시 읽을지 묻는다(나중에면 다음에 열 때 다시). 없어진 문서의 기록은 지우지 않고 '근거 없음'(nosrc).
   //   지문 st.docPrints = { project: 폴더 열쇠(실제 경로의 지문 — 이름이 같은 다른 폴더와 견주지 않게), wrote: {단계: Floe가 마지막에 쓴 글 — 이것과 같을 때만 다시 덮는다},
   //     own: {단계: 사람 것 — 되읽어 다시 쓰면 다른 글 · 읽을 수 없는 글, 덮지 않는다}, seen: {단계: 마지막으로 본 폴더 글}, dirty: 다시 읽은 기록으로 기획서 · 결정 기록을 아직 안 고침, declined: 되살리지 않고 새로 시작 }
+  keep(["carryDone", "carryUse", "docPrints"]);   // C-48 가져갈 것 · C-49 글 지문 — 고장 난 기록은 빈 값으로
+  if (!st.docPrints || typeof st.docPrints !== "object" || Array.isArray(st.docPrints)) st.docPrints = {};
+  if (!st.carryUse || typeof st.carryUse !== "object" || Array.isArray(st.carryUse)) st.carryUse = {};
+  st.carryDone = st.carryDone === true;
   let docsFor = "", docsKey = "";
   const DP = () => (st.docPrints && typeof st.docPrints === "object" && !Array.isArray(st.docPrints) ? st.docPrints : {});
   const stageOfPath = (p) => N.STAGES.findIndex((_, i) => FDOCS.stagePath(i) === p);
@@ -259,3 +263,73 @@
     } catch { st.files = { src: "example", why: "서버에 닿지 않았어요" }; }
     render();
   }
+  // 이 조각의 누르기 — 00-base의 누르기 표(ACT)에 더한다. 공통 누르기는 90-acts.js(2026-10-29 나누기 2차)
+  Object.assign(ACT, {
+    // C-48 가져갈 것 — 8단계 초안(AI 한 번) · 채택 · 반려(까닭) · 보류, 단계에 들어서면 지난 프로젝트에서 가져온 것 고르기
+    "carry-draft": async () => {
+      if (!st.carry || st.carry.phase !== "offer") return;
+      const r = await callAI("/api/carry/draft", { topic: st.topic || "", lessons: learnedList() });
+      if (!r.ok) { render(); return say(r.reason || "초안을 만들지 못했어요"); }
+      const tag = Date.now().toString(36);
+      st.carry = { phase: "drafts", drafts: r.drafts.map((d, k) => ({ id: `c${tag}${k}`, text: d.text, why: d.why || "", stage: Number.isInteger(d.stage) ? d.stage : -1, review: d.review || "", from: Array.isArray(d.from) ? d.from : [] })), say: r.say || "" };
+      st.tokens = r.tokens || 0; fetchUsage(); render();
+    },
+    "carry-adopt": (i) => carryDecide(i, "adopt"),
+    "carry-hold": (i) => carryDecide(i, "hold"),
+    "carry-reject": (i) => {
+      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state) return;
+      if (!d.rejecting) { d.rejecting = true; return render(); }
+      if (!String(d.reason || "").trim()) return say("버리는 까닭을 한 줄 적어 주세요 — 반려도 지우지 않고 남겨요");
+      carryDecide(i, "reject", d.reason.trim());
+    },
+    "carry-from": (i, el) => { const d = st.carry && st.carry.drafts && st.carry.drafts[i], v = Number(el && el.dataset.v); if (!d || d.state || !N.STAGES[v]) return; d.from = d.from.includes(v) ? d.from.filter((x) => x !== v) : [...d.from, v].sort((a, b) => a - b); render(); },
+    "carry-hold-rest": async () => { const C = st.carry; if (!C || !C.drafts) return; for (let k = 0; k < C.drafts.length; k++) if (!C.drafts[k].state) await carryDecide(k, "hold"); },   // 미루면 보류(지식 퀘스트 9절 2번) — 다음 프로젝트를 시작할 때 다시 묻는다
+    "carry-later": () => set({ carry: null }),
+    "carry-use": (i) => { const O = st.carryOffer, x = O && O.items[i]; if (!x) return; O.pick = O.pick.includes(x.id) ? O.pick.filter((y) => y !== x.id) : [...O.pick, x.id]; render(); },
+    "carry-held-adopt": async (i) => {
+      const O = st.carryOffer, x = O && O.held[i]; if (!x || x.saving) return;
+      x.saving = true;
+      const r = await carryPost({ action: "adopt", item: x, id: x.id });
+      x.saving = false;
+      if (!r.ok) return say(r.reason || "남기지 못했어요");
+      O.held = O.held.filter((y) => y.id !== x.id);
+      if (!O.items.length && !O.held.length) st.carryOffer = null;
+      render(); say("채택했어요 — 다음 프로젝트부터 그 단계에서 보여요");
+    },
+    "carry-use-done": () => { const O = st.carryOffer; if (!O) return; st.carryUse = { ...st.carryUse, [O.n]: O.items.filter((x) => O.pick.includes(x.id)).map((x) => ({ id: x.id, text: x.text })) }; st.carryOffer = null; save(); render(); },
+    "carry-use-none": () => { const O = st.carryOffer; if (O) st.carryUse = { ...st.carryUse, [O.n]: [] }; st.carryOffer = null; save(); render(); },
+    // C-49 폴더의 기록 — 되살리기(이 브라우저에 기록이 없을 때) · 다시 읽기(낡음) · 나중에(다음에 열 때 다시)
+    "restore-go": () => {
+      const R = st.restore; if (!R || R.phase !== "offer") return;
+      const d = R.data, nx = resumeStage(d.stages);
+      st.results = Object.fromEntries(R.got.map((n) => [n, { chap: n, title: d.topic || "", ...d.stages[n].result }]));
+      if (!st.topic && d.topic) st.topic = d.topic;
+      if (!st.idea && d.idea) st.idea = d.idea;   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰)
+      if (!st.source && d.source) st.source = d.source;
+      const all = Object.entries(d.stages);   // 읽을 수 없는 문서(result null)도 — 사람 것으로 두고 덮지 않는다
+      st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
+      const t = tierOf(st.results[0]); if (t) st.tier = t;
+      st.restore = null;
+      if (nx > 0) resumeAt(nx);
+      save(); render(); say(`${R.got.map((n) => LB(n)).join(" · ")} 기록을 폴더에서 되살렸어요.`);
+      if (N.STAGES[nx]) carryLoad(nx);   // C-48
+      if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1]) stageDraft(nx); else if (st.j && st.j.stage === nx) questText();
+    },
+    "restore-read": () => {
+      const R = st.restore; if (!R || R.phase !== "stale") return;
+      const d = R.data, read = R.stale.filter((n) => d.stages[n].result && st.results[n]), P = DP(), wrote = { ...(P.wrote || {}) }, own = { ...(P.own || {}) };
+      // 그 단계 기록을 폴더의 글로 바꾼다(문서에 없는 칸 — 제목 · 코드 없이 지남 — 만 남긴다). 사람이 칸을 비웠으면 비운 대로
+      st.results = { ...st.results, ...Object.fromEntries(read.map((n) => { const old = st.results[n]; return [n, { chap: n, title: old.title, ...(old.nocode ? { nocode: true } : {}), ...d.stages[n].result }]; })) };
+      for (const n of R.stale) { if (d.stages[n].lossless) { wrote[n] = d.stages[n].print; delete own[n]; } else { own[n] = d.stages[n].print; delete wrote[n]; } }   // 다시 써도 같은 글일 때만 Floe가 덮는다 — 아니면 그 문서는 사람 것(올릴 때 keep → kept)
+      st.docPrints = { ...P, wrote, own, seen: { ...(P.seen || {}), ...Object.fromEntries(R.stale.map((n) => [n, d.stages[n].print])) }, dirty: !!read.length || !!P.dirty };
+      st.restore = null;
+      if (read.length && st.results[0] && st.results[1]) st.ship = { phase: "offer" };   // 그 글로 만든 기획서 · 결정 기록도 같은 파일에 고쳐 쓸지(새 파일을 쌓지 않는다)
+      save(); render(); if (read.length) say(`${read.map((n) => LB(n)).join(" · ")} 기록을 폴더의 글로 다시 읽었어요.`);
+    },
+    "restore-later": () => {   // 새로 시작(되살리기를 고르지 않음)이면 이 폴더에서는 다시 묻지 않는다. 낡음 · 근거 없음은 다음에 열 때 다시
+      const R = st.restore;
+      if (R && R.phase === "offer") { st.docPrints = { project: R.data.key || "", wrote: {}, seen: {}, own: {}, declined: true }; save(); }
+      set({ restore: null });
+      if (R && R.phase === "offer") carryLoad(0);   // C-48 새로 시작 — 1단계에 가져온 것 · 보류한 것
+    },
+  });

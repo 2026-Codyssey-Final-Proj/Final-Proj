@@ -31,7 +31,7 @@ test("app.js — 모드는 st.place(mode · home이라는 이름은 쓰지 않�
   assert.doesNotMatch(app, /st\.place === "home"|place: "home"|placeMode/, "이름 겹침(넘김 문서 10절)");
   assert.match(app, /const PLACE_KEY = "floe:place", SEEN_KEY = "floe:alerts-seen";/);
   assert.match(app, /st\.place = N\.nextPlace\(SESS && SESS\.getItem\(PLACE_KEY\) === "vibe" \? "vibe" : "base", ""\);/, "켤 때 — 이 창에 남은 것만, 없으면 기본");
-  const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
+  const keep = [...app.matchAll(/const KEEP = \[[^\]]*\]|^  keep\(\[[^\]]*\]/gm)].map((m) => m[0]).join(" ");   // 공통 KEEP + 조각의 keep([...])(app.js 나누기 2차)
   assert.ok(!keep.includes('"place"') && !keep.includes('"pane"'), "기록(localStorage)에는 넣지 않는다 — 다음에 켤 때는 늘 기본");
   assert.match(app, /base: \(\) => \{ setPlace\("home"\); set\(\{ settings: false, pane: "" \}\); \}/, "집 — 열어 둔 판도 닫는다");
   assert.match(app, /"go-vibe": \(\) => \{ setPlace\("vibe"\); set\(\{ tab: "today"/, "바이브 코딩 단추 → 이번 단계");
