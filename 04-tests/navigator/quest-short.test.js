@@ -114,3 +114,11 @@ test("준비된 퀘스트 카드(/api/prepare) · 2단계 기획서 칸의 까�
   const d = N.parseStageDraft({ say: "네", prep: [], items: todo.map((c, i) => ({ text: i === prd ? `상세 기획서로 — ${long("까닭")}` : "글" })) }, 1, "Full", []);
   assert.ok(d.items[prd].why.length <= S.why, d.items[prd].why);
 });
+
+test("카드가 확인한 칸 · 기준 카드의 전문을 다시 늘어놓지 않는다 — 미리보기 한 줄(확인한 칸 24자 · 기준 칸 60자), 전문은 마우스를 올리면", () => {
+  const q = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app/40-quest.js"), "utf8");
+  assert.match(q, /<span title="\$\{esc\(line\)\}">\$\{esc\(preview1\(line, 24\)\)\}<\/span>/);
+  const b = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app/92-basecard.js"), "utf8");
+  assert.match(b, /<span title="\$\{esc\(f\.text\)\}">\$\{esc\(preview1\(f\.text, 60\)\)\}<\/span>/);
+  assert.match(b, /받은 글 \$\{f\.lines\[0\]\.line\}줄\$\{f\.lines\.length > 1 \? ` 외 /, "줄 번호를 다 늘어놓지 않는다");
+});
