@@ -8,32 +8,30 @@
   const node = typeof module !== "undefined" && module.exports;
   const N = node ? require("./navigator.js") : root.NavRules;
   const G = node ? require("./glossary.js") : root.NavGlossary;
-  // 칸마다 누가 정했나 — 단계 문서 · 결정 기록(docs.js)과 같은 말
-  const HOW_WORDS = { ok: "플로로 초안을 그대로", edit: "고침", me: "직접 적음(초안 없이)", pick: "고름", chat: "플로로와 나눈 대화를 정리해 적음(작업실 개편 C-61)", moved: "지난 칸 · 파일에서 옮겨 적음", skip: "조건이 안 맞아 건너뜀" };
+  const Q = node ? require("./quest.js") : root.NavQuest;   // 누가 정했나 — 짧은 말(BY_WORD). 문서(docs.js)는 긴 말(HOW_WORDS)을 how로 넘긴다
   const TITLES = ["전체 그림 — 지금 자리", "이번 단계에서 한 일", "정한 것 · 배운 말", "다음 단계 — 할 일과 끝 조건", "공부할 말"];
   const LINE_MAX = 160;
   const label = (n) => `${n + 1}단계`;
   const one = (t) => String(t == null ? "" : t).replace(/\s+/g, " ").trim();
   const clip = (t) => { const s = one(t); return s.length > LINE_MAX ? `${s.slice(0, LINE_MAX - 1)}…` : s; };
-  const firstLine = (it) => (Array.isArray(it && it.lines) ? it.lines : []).map(one).find(Boolean) || "";
+  const firstLine = (it) => (Array.isArray(it && it.lines) ? it.lines : []).map((l) => String(l == null ? "" : l)).find((l) => l.trim()) || "";   // 원문 그대로 — 펴기 · 자르기는 가린 뒤(red)
   // 기준의 용어 → 풀이가 있는 것만. '보안 점검 — 보안 요구(EARS Unwanted)'처럼 긴 이름은 풀이가 없으면 뺀다
   const termRows = (crit) => { const seen = new Set(), out = [];
     for (const c of crit) { const t = c && c.term; if (!t || seen.has(t)) continue; seen.add(t); const line = G ? G.explain(t) : ""; if (line) out.push(`${t} — ${line}`); }
     return out; };
 
   // n — 관문에 선 단계(0 ~ 7). results — 단계 결과({ n: { items, passed, learned, … } }), tier — 등급(끝 조건), hide — 가리기(sensitive.js redact)
-  function build(n, { results = {}, tier, hide = (t) => t } = {}) {
+  function build(n, { results = {}, tier, hide = (t) => t, how = (Q && Q.BY_WORD) || {} } = {}) {
     const R = (k) => (results && (results[k] || results[String(k)])) || null, r = R(n), s = N.STAGES[n] || { title: "" }, nx = N.STAGES[n + 1];
-    const red = (t) => clip(hide(one(t)));
+    const red = (t) => clip(String(hide(String(t == null ? "" : t))));   // 가린 뒤 펴고 자른다 — 먼저 자르거나 줄을 펴면 경계 · 여러 줄의 키가 패턴을 빠져나간다(새 맥락 리뷰 2026-10-30)
     const id = (k) => `gp-${n + 1}-${k}`;
     const big = N.STAGES.map((x, k) => { const rk = R(k);
-      return k === n ? `▶ ${label(k)} · ${x.title} — 지금` : rk && rk.passed ? `✓ ${label(k)} · ${x.title} — 지남 ${String(rk.passed).slice(0, 10)}` : `· ${label(k)} · ${x.title}`; });
+      return k === n ? `▶ ${label(k)} · ${x.title} — 이 관문` : rk && rk.passed ? `✓ ${label(k)} · ${x.title} — 지남 ${String(rk.passed).slice(0, 10)}` : `· ${label(k)} · ${x.title}`; });
     const items = r && Array.isArray(r.items) ? r.items : [];
-    const did = items.length ? items.map((it) => `${one(it.name)} — ${red(firstLine(it)) || "비었어요"}`) : ["아직 적은 칸이 없어요"];
-    const decided = items.filter((it) => firstLine(it)).map((it) => `${red(firstLine(it))}${HOW_WORDS[it.by] ? ` (${HOW_WORDS[it.by]})` : ""}`);
+    const did = items.length ? items.map((it) => `${red(it.name)} — ${red(firstLine(it)) || "비었어요"}`) : ["아직 적은 칸이 없어요"];   // 칸 이름도 가린다(주제가 들어갈 수 있다)
+    const decided = items.filter((it) => firstLine(it)).map((it) => `${red(firstLine(it))}${how[it.by] ? ` (${how[it.by]})` : ""}`);
     const learned = r && one(r.learned) ? [`배운 것: ${red(r.learned)}`] : [];
-    const words = termRows(N.criteriaFor(n, tier)).map((x) => `이 단계의 말: ${x}`);
-    const mine = [...decided, ...learned, ...words];
+    const mine = [...decided, ...learned];   // 이 단계의 말은 ⑤ 공부할 말에 — 겹치지 않게
     const next = nx ? [`${label(n + 1)} · ${nx.title} — ${nx.does}`, ...N.criteriaFor(n + 1, tier).map((c) => `끝 조건: ${c.text}`)] : ["마무리 — 이 단계를 지나면 프로젝트의 한 바퀴가 끝나요. 돌아보기에서 가져갈 것을 골라요"];
     const study = [...new Set([...termRows(nx ? N.criteriaFor(n + 1, tier) : []), ...termRows(N.criteriaFor(n, tier))])];
     const rows = [big, did, mine.length ? mine : ["아직 정한 것이 없어요"], next, study.length ? study : ["새로 배울 말이 없어요"]];
@@ -43,10 +41,11 @@
   // 파일로 — 목차 줄이 절 이름표(<a id>)로 이어진다. 글은 build에서 이미 가렸다
   function toMarkdown(b) {
     const toc = b.toc.map((t, k) => `${k + 1}. [${t.title}](#${t.id})`).join("\n");
-    const body = b.sections.map((s, k) => `<a id="${s.id}"></a>\n## ${k + 1}. ${s.title}\n\n${s.rows.map((r) => `- ${r}`).join("\n")}\n`).join("\n");
-    return `# ${b.title}\n\nFloe가 관문에서 만든 계획서예요 — 지금까지 한 것과 다음에 할 것. 목차를 누르면 그 절로 가요.\n\n## 목차\n\n${toc}\n\n${body}`;
+    const md = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;");   // <!-- 가 뒤의 절을 숨기지 않게(단계 문서 stageDoc과 같이)
+    const body = b.sections.map((s, k) => `<a id="${s.id}"></a>\n## ${k + 1}. ${s.title}\n\n${s.rows.map((r) => `- ${md(r)}`).join("\n")}\n`).join("\n");
+    return `# ${md(b.title)}\n\nFloe가 관문에서 만든 계획서예요 — 지금까지 한 것과 다음에 할 것. 목차를 누르면 그 절로 가요.\n\n## 목차\n\n${toc}\n\n${body}`;
   }
-  const api = { HOW_WORDS, TITLES, build, toMarkdown };
+  const api = { TITLES, build, toMarkdown };
   if (node) module.exports = api;
   else root.FloeGatePlan = api;
 })(typeof window !== "undefined" ? window : globalThis);

@@ -37,11 +37,12 @@
   //   글은 규칙으로(AI 없음). 가리기(sensitive.js)를 거친다. 어느 단계를 펼쳤나(st.gpSel)는 이 켜짐 동안만
   const GPL = window.FloeGatePlan;
   const gpStages = () => N.STAGES.map((s) => s.n).filter((n) => st.results[n] || (st.j && st.j.stage === n));
+  const gpNow = (list = gpStages()) => (list.includes(st.gpSel) ? st.gpSel : list[list.length - 1]);   // 펼친 단계 — 고른 것, 없으면 마지막
   const gpBook = (n) => GPL.build(n, { results: st.results, tier: st.tier, hide: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) });
   function gatePlanBox() {
     if (!GPL) return "";
     const list = gpStages(); if (!list.length) return "";
-    const sel = list.includes(st.gpSel) ? st.gpSel : list[list.length - 1], b = gpBook(sel);
+    const sel = gpNow(list), b = gpBook(sel);
     return `<section class="gplan" aria-label="관문 계획서"><div class="stg">관문 계획서 — 지금까지 한 것과 다음에 할 것</div>
       <div class="gp-pick" role="group" aria-label="어느 단계">${list.map((n) => `<button type="button" class="b${n === sel ? " pri" : " ghost"}" data-act="gp-sel" data-i="${n}" aria-pressed="${n === sel}">${LB(n)}</button>`).join("")}</div>
       <h4>${esc(b.title)}</h4><nav class="gp-toc" aria-label="계획서 목차">${b.toc.map((t, k) => `<button type="button" class="lnk" data-act="gp-toc" data-v="${esc(t.id)}">${k + 1}. ${esc(t.title)}</button>`).join("")}</nav>
@@ -316,21 +317,21 @@
     a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
   // C-27 관문 계획서 — 관문 카드의 '계획서 보기' · 단계 고르기 · 목차 → 그 절 · 파일로 받기 / C-24 공부 묶음 — 열기 · 고르기 · 받기 · 닫기
   Object.assign(ACT, {
-    "study-open": (i, el) => { if (!SPK) return; st.study = { term: (el && el.dataset && el.dataset.term) || "", pick: [...SPK.DEFAULT_PICK], got: null }; openQwin("lib"); render(); },
+    "study-open": (i, el) => { if (!SPK) return; st.study = { term: (el && el.dataset && el.dataset.term) || "", pick: [...SPK.DEFAULT_PICK], got: null }; st.libSel = null; openQwin("lib"); render(); },
     "study-pick": (i) => { const d = st.study, k = SPK && SPK.SOURCES[i] && SPK.SOURCES[i][0]; if (!d || !k) return; st.study = { ...d, got: null, pick: d.pick.includes(k) ? d.pick.filter((x) => x !== k) : [...d.pick, k] }; render(); },
     "study-get": () => {
       if (!SPK || !st.study) return;
       if (!window.NavSensitive) return say("가리는 도구(sensitive.js)를 불러오지 못해서 묶지 않았어요 — 화면을 다시 열어 주세요");
       const p = studyPack(); if (!p) return say("넣을 것을 하나 이상 골라요");
       download(p.file, p.text); st.study = { ...st.study, got: { file: p.file, questions: p.questions, masked: p.masked } }; render();
-      say(p.masked.length ? `받았어요 — ${p.masked.join(", ")} 모양은 가렸어요` : "받았어요 — 내 NotebookLM에 직접 올려 질문 다섯부터 물어봐요");
+      say(p.masked.length ? `받았어요 — 가린 것: ${p.masked.join(", ")}` : "받았어요 — 내 NotebookLM에 직접 올려 질문 다섯부터 물어봐요");
     },
     "study-close": () => { st.study = null; render(); },
-    "gp-open": () => { const n = st.j ? st.j.stage : atStage(); st.gpSel = n; openQwin("lib"); render(); },
+    "gp-open": () => { const n = st.j ? st.j.stage : atStage(); st.gpSel = n; st.libSel = null; openQwin("lib"); render(); },   // libSel — 서고 책을 펼쳐 두었으면 책 탭이 그 책만 그린다
     "gp-sel": (i) => { st.gpSel = i | 0; render(); },
     "gp-toc": (i, el) => { const id = el && el.dataset.v, t = id && document.getElementById(id); if (t) { t.scrollIntoView({ block: "start", behavior: "smooth" }); t.focus({ preventScroll: true }); } },
     "gp-file": () => {
-      if (!GPL) return; const list = gpStages(), n = list.includes(st.gpSel) ? st.gpSel : list[list.length - 1]; if (n == null) return;
+      if (!GPL) return; const n = gpNow(); if (n == null) return;
       download(`${String(n + 1).padStart(2, "0")}-gate-plan.md`, GPL.toMarkdown(gpBook(n)));
       say("계획서를 파일로 내려받았어요 — 공부 묶음이나 NotebookLM에 같이 넣을 수 있어요");
     },

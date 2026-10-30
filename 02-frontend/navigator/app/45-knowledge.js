@@ -135,7 +135,7 @@
     if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "ship";
     const known = shipKnown();
-    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
+    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, tier: st.tier, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
     st.planBusy = "";
     // C-52(2026-10-29): 공개(또는 모름) 저장소 — 저장소마다 처음 한 번 더 묻는다. 서버는 아직 아무것도 쓰지 않았다
     if (!r.ok && r.why === "public") { st.ship = { ...st.ship, phase: "public", reason: r.reason || "" }; return render(); }
@@ -227,9 +227,9 @@
     const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
     const fl = files.length ? `<ul class="cv-files">${files.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
     const save = docDone(n) ? cell("c4", "done", "④", "저장", "단계 문서를 확정했어요", "", fl) : FDOCS && st.results[0] && st.results[1] ? cell("c4", "now", "④", "저장", "문서로 묶어 GitHub에", "도전과제 탭의 한눈에 보기에서", fl) : cell("c4", "later", "④", "저장", "아직 — 관문 뒤에", "", fl);
-    // C-23 ⑤ 버전(2026-10-30): 관문을 넘을 때마다 V.n이 하나 — 단계 결과에서 센다(docs.js versionsOf), README 맨 앞 '버전 기록'에 줄로
+    // C-23 ⑤ 버전(2026-10-30): 관문을 넘을 때마다 V.n이 하나 — 단계 결과에서 센다(docs.js versionsOf), README의 Floe 절 맨 앞 '버전 기록'에 줄로
     const vers = FDOCS && FDOCS.versionsOf ? FDOCS.versionsOf(st.results) : [], vi = vers.find((x) => x.n === n);
-    const ver = vi ? cell("c5", "done", "⑤", "버전", `V.${vi.v} · ${vi.passed.slice(5)}`, "README 맨 앞 '버전 기록'에") : cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 V.${vers.length + 1}`, "관문을 넘을 때마다 하나씩");
+    const ver = vi ? cell("c5", "done", "⑤", "버전", `V.${vi.v} · ${vi.passed.slice(5)}`, "README의 Floe 절 맨 앞 '버전 기록'에") : cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 V.${vers.length + 1}`, "관문을 넘을 때마다 하나씩");
     // R-5 관문(C-42): 남은 기준 수와 '안 됨'인 기준 이름(짧은 이름) — 셋까지, 나머지는 +n
     const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met).map((x) => QU.shortOf(x.text)) : [];
     const ul = unmet.length ? `<details class="cv-unmet-d"><summary>남은 기준 ${unmet.length}</summary><ul class="cv-unmet">${unmet.slice(0, 3).map((x) => `<li>안 됨 · ${esc(x)}</li>`).join("")}${unmet.length > 3 ? `<li>+${unmet.length - 3}</li>` : ""}</ul></details>` : "";   // C-60: 처음엔 접혀 있다
@@ -280,10 +280,13 @@
       st.carry = { phase: "drafts", drafts: r.drafts.map((d, k) => ({ id: `c${tag}${k}`, text: d.text, why: d.why || "", stage: Number.isInteger(d.stage) ? d.stage : -1, review: d.review || "", from: Array.isArray(d.from) ? d.from : [] })), say: r.say || "" };
       st.tokens = r.tokens || 0; fetchUsage(); render();
     },
-    "carry-adopt": async (i) => { await carryDecide(i, "adopt"); if (canLive && st.sbReady == null) sbCheck(); },   // 채택하면 지식 창고 폴더가 있는지 한 번 묻는다
+    "carry-adopt": async (i) => { await carryDecide(i, "adopt"); if (canLive && !st.sbReady) sbCheck(); },   // 채택할 때마다(아직 몰랐거나 없었으면) 지식 창고 폴더가 있는지 묻는다 — 켜 둔 사이 폴더를 정해도 따라간다
     "carry-sb": async (i) => {
-      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state !== "adopted" || !d.id || d.sb) return;
+      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state !== "adopted" || !d.id || d.sb || d.sbBusy) return;
+      d.sbBusy = true;   // 두 번 눌러 두 번 보내지 않게
       let r; try { r = await (await fetch("/api/knowledge-store", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) })).json(); } catch { r = null; }
+      d.sbBusy = false;
+      if (r && r.why === "exists") { d.sb = true; render(); return say("이미 지식 창고에 있어요 — 덮지 않았어요"); }
       if (!r || !r.ok) return say((r && r.reason) || "지식 창고에 넣지 못했어요");
       d.sb = true; render(); say("지식 창고에 넣었어요 — 세컨드 브레인의 '지식 · 작업'에서 찾아요");
     },

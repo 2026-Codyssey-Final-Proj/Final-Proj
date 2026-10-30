@@ -12,7 +12,8 @@
   const Q = node ? require("./quest.js") : root.NavQuest;
   const BC = node ? require("./basecard.js") : root.NavBaseCard;   // 기준 카드(C-56 R-1, 2026-10-28) — docs/base.md
   const SHT = node ? require("./sheet.js") : root.FloeSheet;
-  const GP = node ? require("./gateplan.js") : root.FloeGatePlan;   // C-27 관문 계획서(2026-10-30) — 관문을 지난 단계 폴더의 gate-plan.md   // C-47 한 장(2026-10-30) — 단계 문서의 '한 장' 절 · README의 그 단계 절
+   // C-47 한 장(2026-10-30) — 단계 문서의 '한 장' 절 · README의 그 단계 절
+  const GP = node ? require("./gateplan.js") : root.FloeGatePlan;   // C-27 관문 계획서(2026-10-30) — 관문을 지난 단계 폴더의 gate-plan.md. 없으면 그 파일만 빠진다
   const SLUGS = ["01-idea", "02-plan", "03-requirements", "04-design", "05-skeleton", "06-build", "07-measure", "08-retro"];
   const PRD_PART = ["문제와 목표", "아이디어와 범위", "꼭 필요한 기능", "만드는 방법", "뼈대와 할 일", "만든 것과 확인", "잰 결과", "배운 것"];   // 기획서에서 그 단계가 맡는 절
   const MARK_START = "<!-- floe:start -->", MARK_END = "<!-- floe:end -->";
@@ -31,7 +32,7 @@
   }
 
   // 칸을 누가 어떻게 정했나 — 단계 문서의 '어떻게:' 줄(stageDoc)과 다시 읽기(parseStage)가 같은 표를 쓴다. moved · skip은 C-49(2026-10-29) — 다시 읽을 때 누가 정했나가 남게
-  const HOW_WORDS = GP.HOW_WORDS;   // 누가 정했나 — 관문 계획서(gateplan.js)와 같은 말이라 그쪽에 둔다(2026-10-30)
+  const HOW_WORDS = { ok: "플로로 초안을 그대로", edit: "고침", me: "직접 적음(초안 없이)", pick: "고름", chat: "플로로와 나눈 대화를 정리해 적음(작업실 개편 C-61)", moved: "지난 칸 · 파일에서 옮겨 적음", skip: "조건이 안 맞아 건너뜀" };
 
   // 확인한 한 장(C-47) — 모양이 맞을 때만, 칸마다 가려 한 줄로
   const sheetOf = (r, red) => (SHT && r && SHT.ok(r.sheet) ? Object.fromEntries(Object.entries(r.sheet).filter(([, v]) => v !== undefined).map(([k, v]) => [k, k === "at" ? v : oneLine(red(v))])) : null);
@@ -128,11 +129,11 @@
       const r = R(n); if (!r || !r.passed) return;
       const first = (Array.isArray(r.items) ? r.items : []).map((x) => (Array.isArray(x && x.lines) ? x.lines : []).find((l) => String(l).trim())).find(Boolean) || "";
       const what = String(hide(String(r.learned || "").trim() || String(first).trim())).replace(/\s+/g, " ").trim().slice(0, 80);
-      out.push({ v: out.length + 1, n, passed: String(r.passed).slice(0, 10), line: `${label(n)} ${N.STAGES[n].title} 관문${what ? ` — ${what}` : ""}` });
+      out.push({ v: out.length + 1, n, passed: String(r.passed).slice(0, 10), line: `${label(n)} ${N.STAGES[n].title} 관문${what ? ` — ${what.replace(/&/g, "&amp;").replace(/</g, "&lt;")}` : ""}` });   // <는 &lt; — <!-- 가 README의 Floe 절을 숨기지 않게(stageDoc과 같이)
     });
     return out;
   }
-  function files({ topic = "", idea = "", source = "", results = {}, card = null, redact: hide = (t) => t } = {}) {
+  function files({ topic = "", idea = "", source = "", results = {}, card = null, tier, redact: hide = (t) => t } = {}) {
     // 받은 글 안의 표시(<!-- floe:… -->)는 지운다 — 남겨 두면 mergeSection이 그 자리를 절의 끝으로 보고 올릴 때마다 꼬리가 쌓였다(2026-10-25 리뷰)
     const redact = (t) => String(hide(t)).replace(/<!--\s*floe:(?:start|end)\s*-->/gi, "");
     const R = (n) => results[n] || results[String(n)] || null;
@@ -157,7 +158,7 @@
     return [{ path: "docs/README.md", text: index, merge: true }, ...(hasSrc ? [{ path: SOURCE_DOC, text: sourceDoc(src, name) }] : []), ...(card && BC ? [{ path: CARD_DOC, text: redact(BC.toMarkdown(card, name)) }] : []), ...SLUGS.map((_, n) => ({ path: docOf(n), text: R(n) ? stageDoc(n, R(n), name, ctx) : placeholder(n) })),
       { path: MAIN_DOC, text: prdDoc(name, ctx), merge: true }, { path: LOG_DOC, text: decisionsDoc(name, ctx), merge: true },
       { path: "README.md", text: readme, merge: true }, { path: "CLAUDE.md", text: claude, merge: true },
-      ...SLUGS.map((s, n) => n).filter((n) => R(n) && R(n).passed).map((n) => ({ path: `docs/${SLUGS[n]}/gate-plan.md`, text: GP.toMarkdown(GP.build(n, { results, hide: redact })) }))];   // C-27 — 관문을 지난 단계마다, 덮어쓴다(Floe가 만든 글)
+      ...(GP ? SLUGS.map((s, n) => n).filter((n) => R(n) && R(n).passed).map((n) => ({ path: `docs/${SLUGS[n]}/gate-plan.md`, text: GP.toMarkdown(GP.build(n, { results, tier, hide: redact, how: HOW_WORDS })) })) : [])];   // C-27 — 관문을 지난 단계마다, 덮어쓴다(Floe가 만든 글)
   }
 
   // ── 지식 퀘스트 C-49(2026-10-29 — PRD 6절 · 9절 3 · 4번): 기록의 원본은 내 프로젝트 폴더. Floe가 쓴 단계 문서(stageDoc)를 다시 읽어 단계 결과로 ──
@@ -264,7 +265,7 @@
 
   // 끝에 Claude Code가 이 둘마다 해냈는지 보고한다(server.js startTask의 checks — C-32 보고). 화면은 둘째(푸시)를 보고 '올라갔다'고 말한다
   const SHIP_CHECKS = ["위 파일들만 커밋했다", "지금 브랜치를 원격(origin)에 푸시했다"];
-  const api = { versionsOf, SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, CARD_DOC, SHIP_CHECKS, files, mergeSection, shipRequest, stagePath, parseStage, parseSource };
+  const api = { versionsOf, HOW_WORDS, SLUGS, PRD_PART, MARK_START, MARK_END, MAIN_DOC, LOG_DOC, SOURCE_DOC, CARD_DOC, SHIP_CHECKS, files, mergeSection, shipRequest, stagePath, parseStage, parseSource };
   if (node) module.exports = api;
   else root.FloeDocs = api;
 })(typeof window !== "undefined" ? window : globalThis);

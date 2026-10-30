@@ -39,7 +39,7 @@ test("질문 다섯 — 늘 다섯, 겹치지 않고, 묶음 끝에 붙는다. �
   assert.equal(p.questions.length, 5); assert.equal(new Set(p.questions).size, 5);
   assert.match(p.text, /## 먼저 물을 질문 다섯\n\n1\. /);
   const t = SP.build({ n: 2, pick: ["terms"], results: RESULTS, term: "EARS" });
-  assert.equal(t.questions.length, 5); assert.ok(t.questions[0].includes("EARS")); assert.match(t.name, /EARS/);
+  assert.equal(t.questions.length, 5); assert.ok(t.questions[0].startsWith("'EARS'란 "), "조사가 낱말에 따라 틀리지 않게"); assert.match(t.name, /EARS/);
   assert.ok(t.text.includes("EARS — "), "그 용어의 풀이가 맨 앞에");
 });
 
@@ -67,4 +67,21 @@ test("화면 — 용어 풀이 · 관문의 '어디가 헷갈렸나요?' 뒤에 
   assert.match(lib, /function studyBox\(\)/);
   for (const a of ["study-open", "study-pick", "study-get", "study-close"]) assert.match(lib, new RegExp(`"${a}": `), a);
   assert.ok(html.indexOf("navigator/studypack.js") > html.indexOf("navigator/gateplan.js") && html.indexOf("navigator/studypack.js") < html.indexOf('<script src="app.js"'));
+});
+
+test("새 맥락 리뷰 막힘 — 자르기 · 줄 펴기 전에 가린다: 계획서 칸의 160자 경계에 걸친 키, 여러 줄에 걸친 개인키 본문도 남지 않고 '가린 것'에 나온다", () => {
+  const key = "sk-" + "Q".repeat(30);
+  const edge = { 1: { ...RESULTS[1], items: [{ name: "a", lines: ["가".repeat(140) + key] }] } };
+  const p = SP.build({ n: 1, pick: ["plan"], results: edge, scan: S.scan, hide: S.redact });
+  assert.ok(!p.text.includes("QQQQ"), "경계의 키 조각이 남지 않는다"); assert.deepEqual(p.masked, ["키·토큰 모양"]);
+  const pem = ["-----BEGIN PRIVATE KEY-----", "MIIEowIBAAKCAQEAsecretbodyline1", "MIIEowIBAAKCAQEAsecretbodyline2", "-----END PRIVATE KEY-----"];
+  const q = SP.build({ n: 1, pick: ["mine"], results: { 1: { ...RESULTS[1], items: [{ name: "키", lines: pem }] } }, scan: S.scan, hide: S.redact });
+  assert.ok(!q.text.includes("secretbody"), "개인키 본문이 남지 않는다"); assert.ok(q.masked.length >= 1);
+});
+
+test("개인적인 내용으로 보이는 줄(먹이 주기와 같은 말 목록)은 내 기록에서 빼고 몇 줄인지 알린다", () => {
+  const r = { 1: { ...RESULTS[1], items: [{ name: "a", lines: ["병원 진료 일기 — 오늘 아팠다", "신청 화면 하나"] }] } };
+  const p = SP.build({ n: 1, pick: ["mine"], results: r, scan: S.scan, hide: S.redact });
+  assert.ok(!p.text.includes("병원")); assert.ok(p.text.includes("신청 화면 하나"));
+  assert.ok(p.masked.some((m) => /개인적인 내용으로 보이는 줄 1개/.test(m)));
 });

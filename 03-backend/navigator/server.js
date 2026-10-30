@@ -859,7 +859,8 @@ async function shipDocs(body) {   // async — 공개 저장소 확인(gh)을 �
     || !Array.isArray(keep) || keep.length > Docs.SLUGS.length || !keep.every((k) => typeof k === "string" && isStagePath(k)))
     return [400, { ok: false, reason: "문서 지문의 모양이 맞지 않음" }];
   const ex = excludeOf(s.dir);   // C-52 — 빼 둔 문서는 읽지도(지문 · 절 합치기) 쓰지도 맡기지도 않는다. 되살리기도 빼 두므로 지문이 없어 '모르는 문서 = Floe 것'으로 덮는 일이 없게(새 맥락 리뷰)
-  const all = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
+  const tier = body && Nav.TIERS.includes(body.tier) ? body.tier : undefined;   // 관문 계획서(C-27)의 끝 조건 — 화면과 같은 등급으로
+  const all = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, tier, redact: Sensitive.redact });
   const excluded = all.filter((f) => ex(f.path)).map((f) => f.path), files = all.filter((f) => !ex(f.path));
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
@@ -963,7 +964,9 @@ function carryGet(q) {
 function sbData() {
   const v = String(process.env.SECOND_BRAIN_DATA || "").trim(); if (!v) return "";
   const d = v === "~" || v.startsWith("~/") ? path.join(os.homedir(), v.slice(1)) : v;
-  try { return fs.statSync(d).isDirectory() ? path.resolve(d) : ""; } catch { return ""; }
+  let real; try { real = fs.realpathSync(d); if (!fs.statSync(real).isDirectory()) return ""; } catch { return ""; }
+  const repo = fs.realpathSync(path.join(__dirname, "../.."));
+  return real === repo || real.startsWith(repo + path.sep) ? "" : real;   // 이 레포 안이면 쓰지 않는다 — 개인 데이터는 레포에 두지 않는다(CLAUDE.md)
 }
 function sbPost(body) {
   const id = body && body.id;
@@ -975,7 +978,13 @@ function sbPost(body) {
   if (Sensitive.scan(k.text).blocked) return [409, { ok: false, why: "sensitive", reason: "비밀번호 · 키 모양이 있어 지식 창고에 넣지 않았어요" }];   // 장부의 글은 이미 가렸다 — 한 번 더
   const base = path.join(dir, "vault", "지식", k.purpose), file = path.join(base, `${k.name}.md`);
   if (path.dirname(file) !== base) return [400, { ok: false, reason: "이름을 읽을 수 없어요" }];   // 이름이 폴더 밖을 가리키지 않게(sbknow.js nameOf가 이미 막는다 — 한 번 더)
-  try { fs.mkdirSync(base, { recursive: true }); fs.writeFileSync(file, k.text, { flag: "wx" }); }
+  // 바로가기(심볼릭 링크) 너머에 쓰지 않는다 — 만들기 전에 이미 있는 가장 가까운 위 폴더가 데이터 폴더 안인지 보고, 만든 뒤 한 번 더(mkdir은 링크를 따라간다)
+  const inside = (p) => { try { let q = p; while (!fs.existsSync(q)) q = path.dirname(q); const r = fs.realpathSync(q); return r === dir || r.startsWith(dir + path.sep); } catch { return false; } };
+  const LINK = [409, { ok: false, why: "link", reason: "지식 창고의 폴더가 다른 곳을 가리켜요 — 쓰지 않았어요" }];
+  if (!inside(base)) return LINK;
+  try { fs.mkdirSync(base, { recursive: true }); } catch { return [500, { ok: false, reason: "지식 창고에 쓰지 못했어요" }]; }
+  if (!inside(base)) return LINK;
+  try { fs.writeFileSync(file, k.text, { flag: "wx" }); }
   catch (e) { return e && e.code === "EEXIST" ? [409, { ok: false, why: "exists", reason: "같은 지식이 이미 있어요 — 덮지 않았어요" }] : [500, { ok: false, reason: "지식 창고에 쓰지 못했어요" }]; }
   return [200, { ok: true, name: k.name, purpose: k.purpose }];
 }

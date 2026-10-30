@@ -58,5 +58,5 @@ test("튜토리얼 — '기록 한 장'은 있음(C-47 한 장), 버전과 레�
   const card = T.LIST ? T.LIST.find((t) => t.id === "card") : T.byId("card");
   assert.equal(card.state, "ready");
   const level = T.LIST ? T.LIST.find((t) => t.id === "level") : T.byId("level");
-  assert.ok(!/만드는 중/.test(level.stuck)); assert.match(level.stuck, /README/);
+  assert.ok(!/만드는 중/.test(level.stuck)); assert.match(level.stuck, /README의 Floe 절 맨 앞/);
 });

@@ -78,7 +78,7 @@ test("C-27 — 책 탭의 관문 계획서: 결과가 있는 단계를 고르고
     if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
     await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
     const c5 = await page.$eval(".cv-c.c5", (e) => e.textContent);
-    assert.match(c5, /버전/);
+    assert.match(c5, /V\.1 · 10-25/, `⑤ 칸이 그 장의 버전 · 날짜(캔버스는 1단계 — 첫 관문 = V.1): ${c5}`);
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });

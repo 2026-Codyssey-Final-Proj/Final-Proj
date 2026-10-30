@@ -33,6 +33,9 @@ test("이름은 저장소 밖 경로 · 숨김 파일이 되지 못한다 — �
   assert.ok(!n(".숨김").startsWith("."));
   assert.ok(n("가".repeat(200)).length <= 80);
   assert.equal(n("줄\n바꿈\t탭"), "줄 바꿈 탭");
+  assert.equal(n("a:b?c*d\"e<f>g|h"), "a b c d e f g h", "Windows가 받지 않는 글자");
+  assert.equal(n("폭\u200b없는\u0085글자"), "폭 없는 글자", "못 찍는 글자(isprintable)");
+  const emo = n("가".repeat(79) + "😀끝"); assert.equal(Array.from(emo).length, 80); assert.ok(emo.endsWith("😀"), "글자 단위로 자른다(반쪽 없음)");
 });
 
 test("세컨드 브레인의 파이썬(knowledge.py)이 그대로 읽는다 — 찾기 · 세 칸 · 인용 세기(python3이 없으면 건너뜀)", (t) => {
@@ -75,6 +78,8 @@ test("서버 — 데이터 폴더(SECOND_BRAIN_DATA)가 없으면 ready: false �
   assert.equal((await call("GET", "/api/knowledge-store", null, false)).status, 403);
   assert.deepEqual((await call("GET", "/api/knowledge-store")).json, { ok: true, ready: false });
   assert.equal((await call("POST", "/api/knowledge-store", { id })).status, 409, "폴더를 모르면 쓰지 않는다");
+  process.env.SECOND_BRAIN_DATA = path.join(__dirname, "../..");
+  assert.deepEqual((await call("GET", "/api/knowledge-store")).json, { ok: true, ready: false }, "이 레포 안이면 쓰지 않는다(개인 데이터는 레포에 두지 않는다)");
   const data = path.join(TMP, "sb-data"); fs.mkdirSync(data); process.env.SECOND_BRAIN_DATA = data;
   assert.deepEqual((await call("GET", "/api/knowledge-store")).json, { ok: true, ready: true });
   assert.equal((await call("POST", "/api/knowledge-store", { id: "c없음" })).status, 400);
@@ -86,6 +91,13 @@ test("서버 — 데이터 폴더(SECOND_BRAIN_DATA)가 없으면 ready: false �
   assert.match(fs.readFileSync(f, "utf8"), /^# 기능은 숫자로 끝 조건을 먼저 적는다\n- 목적: 작업\n- 출처: Floe 가져갈 것 · /);
   assert.ok(!JSON.stringify(w.json).includes(data), "폴더 경로는 화면에 주지 않는다");
   assert.equal((await call("POST", "/api/knowledge-store", { id })).status, 409, "같은 지식이 이미 있으면 덮지 않는다");
+  if (process.platform !== "win32") {   // '지식' 폴더가 바로가기(심볼릭 링크)로 바깥을 가리키면 쓰지 않는다
+    const data2 = path.join(TMP, "sb-data2"), out = path.join(TMP, "outside"); fs.mkdirSync(path.join(data2, "vault"), { recursive: true }); fs.mkdirSync(out);
+    fs.symlinkSync(out, path.join(data2, "vault", "지식")); process.env.SECOND_BRAIN_DATA = data2;
+    const a2 = await call("POST", "/api/carry", { action: "adopt", item: { text: "다른 배움", why: "x", stage: 1, from: [0, 1] } });
+    const l = await call("POST", "/api/knowledge-store", { id: a2.json.id });
+    assert.equal(l.status, 409, l.text); assert.equal(l.json.why, "link"); assert.deepEqual(fs.readdirSync(out), [], "바깥에 쓰지 않았다");
+  }
 });
 
 test("화면 — 채택한 가져갈 것에 '지식 창고로' 단추(서버가 ready일 때만), 채택하면 장부 번호를 기억한다", () => {

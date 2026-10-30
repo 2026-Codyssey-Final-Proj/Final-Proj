@@ -6,12 +6,13 @@
 (function (root) {
   const PURPOSE = "작업";   // knowledge.py PURPOSES 중 — Floe에서 온 배움은 '작업'
   const NAME_MAX = 80;
-  const one = (t) => String(t == null ? "" : t).replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
+  // 못 찍는 글자(제어 · C1 · 폭 없는 글자 · 방향 표시)는 빈칸으로 — knowledge.py _name의 isprintable()이 받지 않는다
+  const one = (t) => String(t == null ? "" : t).replace(/[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u2028-\u202e\u2060-\u2064\ufeff]+/g, " ").replace(/\s+/g, " ").trim();
   const label = (n) => `${n + 1}단계`;
   // 이름 — knowledge.py _name이 받는 꼴로: 슬래시 · 역슬래시 없음, 점으로 시작하지 않음, 80자까지, 찍을 수 있는 글자
   function nameOf(text) {
-    const parts = one(String(text || "").replace(/[\/\\]+/g, " ")).split(" ").filter((x) => x && !/^\.+$/.test(x));
-    return parts.join(" ").replace(/^\.+/, "").trim().slice(0, NAME_MAX).trim();
+    const parts = one(String(text || "").replace(/[\/\\:?*"<>|]+/g, " ")).split(" ").filter((x) => x && !/^\.+$/.test(x));   // : ? * " < > | — Windows가 파일 이름에 받지 않는다
+    return Array.from(parts.join(" ").replace(/^\.+/, "").trim()).slice(0, NAME_MAX).join("").trim();   // 글자 단위로 자른다 — 이모지 반쪽이 남지 않게
   }
   // item — 장부의 한 줄(carry.js decide) · today — YYYY-MM-DD. 채택한 것만, 이름이 비면 null
   function toKnowledge(item, { today = "" } = {}) {

@@ -24,19 +24,21 @@ test("목차 다섯 절 — 순서 · 이름은 늘 같다(같은 입력이면 �
   assert.match(b.title, /^2단계 관문 계획서 · /);
 });
 
-test("① 전체 그림 — 여덟 단계에 지남(날짜) · 지금 · 아직", () => {
+test("① 전체 그림 — 여덟 단계에 지남(날짜) · 이 관문 · 아직(올릴 때마다 다시 만들어도 맞는 말)", () => {
   const rows = GP.build(1, { results: RESULTS }).sections[0].rows;
   assert.equal(rows.length, 8);
   assert.match(rows[0], /^✓ 1단계 · .+ — 지남 2026-10-25$/);
-  assert.match(rows[1], /^▶ 2단계 · .+ — 지금$/);
+  assert.match(rows[1], /^▶ 2단계 · .+ — 이 관문$/);
   assert.match(rows[2], /^· 3단계 · /);
 });
 
-test("② 한 일 — 칸마다 첫 줄(빈 칸은 '비었어요'), ③ 정한 것은 누가 정했나와 함께 · 배운 말은 배운 것과 이 단계의 용어 풀이", () => {
+test("② 한 일 — 칸마다 첫 줄(빈 칸은 '비었어요'), ③ 정한 것은 누가 정했나와 함께 · 배운 것(용어는 ⑤에만 — 겹치지 않게)", () => {
   const b = GP.build(0, { results: RESULTS });
   assert.deepEqual(b.sections[1].rows, ["어떤 불편 — 신청을 종이로 받아 헷갈려요", "누가 쓰나 — 동아리 운영진"]);
   const decided = b.sections[2].rows.join("\n");
-  assert.match(decided, /신청을 종이로 받아 헷갈려요 \(직접 적음/); assert.match(decided, /동아리 운영진 \(플로로 초안을 그대로/);
+  assert.match(decided, /신청을 종이로 받아 헷갈려요 \(직접\)/); assert.match(decided, /동아리 운영진 \(그대로\)/, "화면은 짧은 말(quest.js BY_WORD)");
+  assert.match(GP.build(0, { results: RESULTS, how: D.HOW_WORDS }).sections[2].rows.join("\n"), /\(직접 적음\(초안 없이\)\)/, "문서는 긴 말(docs.js HOW_WORDS)");
+  assert.ok(!/이 단계의 말/.test(decided));
   assert.match(decided, /배운 것: 불편을 한 문장으로 쓰니 범위가 보였다/);
   assert.deepEqual(GP.build(1, { results: RESULTS }).sections[1].rows, ["아이디어 — 신청 화면 하나와 목록 하나", "범위 — 비었어요"]);
 });
@@ -79,4 +81,14 @@ test("화면 — 관문 카드에 '계획서 보기', 책 탭에 단계마다 �
   assert.match(lib, /"gp-toc": \(i, el\) => \{/); assert.match(lib, /scrollIntoView/);
   assert.match(lib, /"gp-file": \(\) => \{/);
   assert.ok(html.indexOf("navigator/gateplan.js") > 0 && html.indexOf("navigator/gateplan.js") < html.indexOf("navigator/docs.js") && html.indexOf("navigator/docs.js") < html.indexOf('<script src="app.js"'), "docs.js보다 먼저, app.js보다 먼저");
+});
+
+test("새 맥락 리뷰 — <!-- 가 파일 계획서 · README 버전 줄의 뒤를 숨기지 않는다(&lt;), 파일 계획서의 끝 조건은 화면과 같은 등급, 칸 이름도 가린다", () => {
+  const leaky = { 0: { ...RESULTS[0], learned: "메모 <!-- 숨김", items: [{ name: "sk-name", lines: ["x"] }] } };
+  const md = GP.toMarkdown(GP.build(0, { results: leaky, hide: (t) => String(t).replace(/sk-\w+/g, "[비밀값]") }));
+  assert.ok(!md.includes("<!--") && md.includes("&lt;!-- 숨김")); assert.ok(!md.includes("sk-name"));
+  const readme = D.files({ results: leaky }).find((f) => f.path === "README.md").text;
+  assert.ok(!/메모 <!--/.test(readme) && readme.includes("메모 &lt;!-- 숨김"));
+  const lite = (t) => D.files({ results: { 1: { ...RESULTS[1], passed: "2026-10-27" } }, tier: t }).find((f) => f.path === "docs/02-plan/gate-plan.md").text.split("끝 조건:").length - 1;
+  assert.equal(lite("Lite"), N.criteriaFor(2, "Lite").length); assert.equal(lite("Full"), N.criteriaFor(2, "Full").length);
 });

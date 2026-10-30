@@ -1327,7 +1327,7 @@
   //    "Floe가 만들고, 커밋 · 푸시는 Claude Code") — 파일은 docs.js(서버가 같은 것으로 작업 폴더에 쓴다 — 화면은 결과만 보낸다), 커밋 · 푸시는 사용자의 Claude Code(허락 카드는 채팅에) ──
   //   C-39: 결과 그대로(칸마다 누가 · 플로로 초안 · 재료, 준비할 것 · 확인한 날 · 관문 지난 날 · 완료 기준) + 처음 말한 것 — 서버가 증빙 칸 · 기획서 · 결정 기록을 만든다
   const shipResults = () => Object.fromEntries(Object.entries(st.results).map(([k, { chap, ...r }]) => [k, r]));
-  const shipFiles = () => (FDOCS ? FDOCS.files({ topic: st.topic, idea: st.idea || "", results: st.results, redact: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) }) : []);
+  const shipFiles = () => (FDOCS ? FDOCS.files({ topic: st.topic, idea: st.idea || "", results: st.results, tier: st.tier, redact: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) }) : []);
   const nosrcAt = (p) => { const n = FDOCS.SLUGS ? N.STAGES.findIndex((_, i) => FDOCS.stagePath(i) === p) : -1; return n >= 0 && st.results[n] && st.results[n].nosrc; };   // C-49 근거 없음 — 올리기 카드의 파일 목록에 보인다
   function momentShip() {
     if (st.ship.phase === "sent") return { tone: "green", mood: "happy", meta: `<span class="mm-stage">문서 올리기</span>`, title: "올리기를 Claude Code에 맡겼어요",
@@ -1491,7 +1491,7 @@
     if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "ship";
     const known = shipKnown();
-    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
+    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, tier: st.tier, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
     st.planBusy = "";
     // C-52(2026-10-29): 공개(또는 모름) 저장소 — 저장소마다 처음 한 번 더 묻는다. 서버는 아직 아무것도 쓰지 않았다
     if (!r.ok && r.why === "public") { st.ship = { ...st.ship, phase: "public", reason: r.reason || "" }; return render(); }
@@ -1583,9 +1583,9 @@
     const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
     const fl = files.length ? `<ul class="cv-files">${files.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
     const save = docDone(n) ? cell("c4", "done", "④", "저장", "단계 문서를 확정했어요", "", fl) : FDOCS && st.results[0] && st.results[1] ? cell("c4", "now", "④", "저장", "문서로 묶어 GitHub에", "도전과제 탭의 한눈에 보기에서", fl) : cell("c4", "later", "④", "저장", "아직 — 관문 뒤에", "", fl);
-    // C-23 ⑤ 버전(2026-10-30): 관문을 넘을 때마다 V.n이 하나 — 단계 결과에서 센다(docs.js versionsOf), README 맨 앞 '버전 기록'에 줄로
+    // C-23 ⑤ 버전(2026-10-30): 관문을 넘을 때마다 V.n이 하나 — 단계 결과에서 센다(docs.js versionsOf), README의 Floe 절 맨 앞 '버전 기록'에 줄로
     const vers = FDOCS && FDOCS.versionsOf ? FDOCS.versionsOf(st.results) : [], vi = vers.find((x) => x.n === n);
-    const ver = vi ? cell("c5", "done", "⑤", "버전", `V.${vi.v} · ${vi.passed.slice(5)}`, "README 맨 앞 '버전 기록'에") : cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 V.${vers.length + 1}`, "관문을 넘을 때마다 하나씩");
+    const ver = vi ? cell("c5", "done", "⑤", "버전", `V.${vi.v} · ${vi.passed.slice(5)}`, "README의 Floe 절 맨 앞 '버전 기록'에") : cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 V.${vers.length + 1}`, "관문을 넘을 때마다 하나씩");
     // R-5 관문(C-42): 남은 기준 수와 '안 됨'인 기준 이름(짧은 이름) — 셋까지, 나머지는 +n
     const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met).map((x) => QU.shortOf(x.text)) : [];
     const ul = unmet.length ? `<details class="cv-unmet-d"><summary>남은 기준 ${unmet.length}</summary><ul class="cv-unmet">${unmet.slice(0, 3).map((x) => `<li>안 됨 · ${esc(x)}</li>`).join("")}${unmet.length > 3 ? `<li>+${unmet.length - 3}</li>` : ""}</ul></details>` : "";   // C-60: 처음엔 접혀 있다
@@ -1636,10 +1636,13 @@
       st.carry = { phase: "drafts", drafts: r.drafts.map((d, k) => ({ id: `c${tag}${k}`, text: d.text, why: d.why || "", stage: Number.isInteger(d.stage) ? d.stage : -1, review: d.review || "", from: Array.isArray(d.from) ? d.from : [] })), say: r.say || "" };
       st.tokens = r.tokens || 0; fetchUsage(); render();
     },
-    "carry-adopt": async (i) => { await carryDecide(i, "adopt"); if (canLive && st.sbReady == null) sbCheck(); },   // 채택하면 지식 창고 폴더가 있는지 한 번 묻는다
+    "carry-adopt": async (i) => { await carryDecide(i, "adopt"); if (canLive && !st.sbReady) sbCheck(); },   // 채택할 때마다(아직 몰랐거나 없었으면) 지식 창고 폴더가 있는지 묻는다 — 켜 둔 사이 폴더를 정해도 따라간다
     "carry-sb": async (i) => {
-      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state !== "adopted" || !d.id || d.sb) return;
+      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state !== "adopted" || !d.id || d.sb || d.sbBusy) return;
+      d.sbBusy = true;   // 두 번 눌러 두 번 보내지 않게
       let r; try { r = await (await fetch("/api/knowledge-store", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) })).json(); } catch { r = null; }
+      d.sbBusy = false;
+      if (r && r.why === "exists") { d.sb = true; render(); return say("이미 지식 창고에 있어요 — 덮지 않았어요"); }
       if (!r || !r.ok) return say((r && r.reason) || "지식 창고에 넣지 못했어요");
       d.sb = true; render(); say("지식 창고에 넣었어요 — 세컨드 브레인의 '지식 · 작업'에서 찾아요");
     },
@@ -2472,11 +2475,12 @@
   //   글은 규칙으로(AI 없음). 가리기(sensitive.js)를 거친다. 어느 단계를 펼쳤나(st.gpSel)는 이 켜짐 동안만
   const GPL = window.FloeGatePlan;
   const gpStages = () => N.STAGES.map((s) => s.n).filter((n) => st.results[n] || (st.j && st.j.stage === n));
+  const gpNow = (list = gpStages()) => (list.includes(st.gpSel) ? st.gpSel : list[list.length - 1]);   // 펼친 단계 — 고른 것, 없으면 마지막
   const gpBook = (n) => GPL.build(n, { results: st.results, tier: st.tier, hide: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) });
   function gatePlanBox() {
     if (!GPL) return "";
     const list = gpStages(); if (!list.length) return "";
-    const sel = list.includes(st.gpSel) ? st.gpSel : list[list.length - 1], b = gpBook(sel);
+    const sel = gpNow(list), b = gpBook(sel);
     return `<section class="gplan" aria-label="관문 계획서"><div class="stg">관문 계획서 — 지금까지 한 것과 다음에 할 것</div>
       <div class="gp-pick" role="group" aria-label="어느 단계">${list.map((n) => `<button type="button" class="b${n === sel ? " pri" : " ghost"}" data-act="gp-sel" data-i="${n}" aria-pressed="${n === sel}">${LB(n)}</button>`).join("")}</div>
       <h4>${esc(b.title)}</h4><nav class="gp-toc" aria-label="계획서 목차">${b.toc.map((t, k) => `<button type="button" class="lnk" data-act="gp-toc" data-v="${esc(t.id)}">${k + 1}. ${esc(t.title)}</button>`).join("")}</nav>
@@ -2751,21 +2755,21 @@
     a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
   // C-27 관문 계획서 — 관문 카드의 '계획서 보기' · 단계 고르기 · 목차 → 그 절 · 파일로 받기 / C-24 공부 묶음 — 열기 · 고르기 · 받기 · 닫기
   Object.assign(ACT, {
-    "study-open": (i, el) => { if (!SPK) return; st.study = { term: (el && el.dataset && el.dataset.term) || "", pick: [...SPK.DEFAULT_PICK], got: null }; openQwin("lib"); render(); },
+    "study-open": (i, el) => { if (!SPK) return; st.study = { term: (el && el.dataset && el.dataset.term) || "", pick: [...SPK.DEFAULT_PICK], got: null }; st.libSel = null; openQwin("lib"); render(); },
     "study-pick": (i) => { const d = st.study, k = SPK && SPK.SOURCES[i] && SPK.SOURCES[i][0]; if (!d || !k) return; st.study = { ...d, got: null, pick: d.pick.includes(k) ? d.pick.filter((x) => x !== k) : [...d.pick, k] }; render(); },
     "study-get": () => {
       if (!SPK || !st.study) return;
       if (!window.NavSensitive) return say("가리는 도구(sensitive.js)를 불러오지 못해서 묶지 않았어요 — 화면을 다시 열어 주세요");
       const p = studyPack(); if (!p) return say("넣을 것을 하나 이상 골라요");
       download(p.file, p.text); st.study = { ...st.study, got: { file: p.file, questions: p.questions, masked: p.masked } }; render();
-      say(p.masked.length ? `받았어요 — ${p.masked.join(", ")} 모양은 가렸어요` : "받았어요 — 내 NotebookLM에 직접 올려 질문 다섯부터 물어봐요");
+      say(p.masked.length ? `받았어요 — 가린 것: ${p.masked.join(", ")}` : "받았어요 — 내 NotebookLM에 직접 올려 질문 다섯부터 물어봐요");
     },
     "study-close": () => { st.study = null; render(); },
-    "gp-open": () => { const n = st.j ? st.j.stage : atStage(); st.gpSel = n; openQwin("lib"); render(); },
+    "gp-open": () => { const n = st.j ? st.j.stage : atStage(); st.gpSel = n; st.libSel = null; openQwin("lib"); render(); },   // libSel — 서고 책을 펼쳐 두었으면 책 탭이 그 책만 그린다
     "gp-sel": (i) => { st.gpSel = i | 0; render(); },
     "gp-toc": (i, el) => { const id = el && el.dataset.v, t = id && document.getElementById(id); if (t) { t.scrollIntoView({ block: "start", behavior: "smooth" }); t.focus({ preventScroll: true }); } },
     "gp-file": () => {
-      if (!GPL) return; const list = gpStages(), n = list.includes(st.gpSel) ? st.gpSel : list[list.length - 1]; if (n == null) return;
+      if (!GPL) return; const n = gpNow(); if (n == null) return;
       download(`${String(n + 1).padStart(2, "0")}-gate-plan.md`, GPL.toMarkdown(gpBook(n)));
       say("계획서를 파일로 내려받았어요 — 공부 묶음이나 NotebookLM에 같이 넣을 수 있어요");
     },
