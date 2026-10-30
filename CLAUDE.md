@@ -113,7 +113,7 @@ AI로 바이브 코딩을 하는 사람이 프로그램을 **끝까지 만들고
 | `block-claude-main.sh` | **Claude가** `main`으로 `git push`, `main` 위에서 `git commit`, `gh pr merge` (사람의 터미널은 막지 않는다) |
 | `block-dangerous-git.sh` | `git push --force`, `git reset --hard`, `git clean -f` |
 | `block-merged-branch-push.sh` | 이미 병합된 PR의 브랜치에 새 커밋을 푸시하는 것 |
-| `require-tests-before-commit.sh` | 테스트가 실패한 상태에서 `git commit` |
+| `require-tests-before-commit.sh` | 테스트가 실패한 상태에서 `git commit` — main에 이미 있고 고칠 목록 번호 · 기한이 붙은 실패([04-tests/known-failures.json](04-tests/known-failures.json))는 기한까지 보이되 막지 않는다. 목록에 넣는 것은 사람이 확인한 뒤(기한은 14일 안) <!-- claude-drafted: 2026-10-30 --> |
 | `check-secrets.sh` | 비밀값 파일(`.env`·`*.pem` 등)이나 키·토큰·비밀번호로 보이는 줄이 든 채로 `git commit` |
 | `check-links.sh` / `check-mermaid.sh` / `check-skills.sh` | `*.md`·`SKILL.md` 편집 후 깨진 링크·그려지지 않는 Mermaid·명세 위반 |
 | `calendar-owner-guard.sh` | 이 컴퓨터에 캘린더 소유자 표시(`.claude/calendar-owner.local`, 저장소에 안 올라감)가 없을 때 일정 만들기·고치기 — **기본이 막힘**이라 가져간 사본이 다른 사람의 캘린더에 일정을 등록하지 못한다 (이재엽의 개인 프로젝트에서 가져옴) |
