@@ -50,7 +50,7 @@ const judged = (stage, tier) => ({ stage, reason: `${stage + 1}단계 할 일을
   next: { what: "다음", why: "다 했어요", question: "다음은 무엇부터 할까요?", action: "고르면 적어 둬요", options: ["가", "나"] } });
 const stageDraft = (stage, tier) => ({ items: Nav.criteriaFor(stage, tier).map((c) => (c.term === "PRD" ? { pick: "light", why: "짧게", from: [] } : { text: `${c.text} — 초안`, from: stage === 2 ? [{ s: 1, i: 0 }] : [{ s: 0, i: 0 }] })), prep: ["준비 하나"], say: `${stage + 1}단계 초안이에요` });
 
-const click = async (page, sel) => { await page.waitForSelector(sel, { timeout: 5000 }); await page.click(sel); await wait(300); };
+const click = async (page, sel) => { if (sel.startsWith(".qwin") && await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); } await page.waitForSelector(sel, { timeout: 5000 }); await page.click(sel); await wait(300); };   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 작업실 안을 누르기 전에 섬을 옆으로
 const nowSay = (page) => page.evaluate(() => document.querySelector(".msg.now")?.textContent || "");
 // 지난 말 — 단계 구분선(.stage, C-63 #250)과 답을 기다리는 카드(③ 기록 한 장 .sh · C-47 #286, 넘김 카드 .ho · C-38)는 말이 아니라 빼고 센다(F-102 고침 2026-10-30)
 const past = (page) => page.evaluate(() => [...document.querySelectorAll(".mc.chat .log .msg:not(.now):not(.sys):not(.stage):not(.sh):not(.ho)")].map((m) => `${m.classList.contains("me") ? "me" : "floro"}: ${m.textContent.trim()}`));
@@ -99,7 +99,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.ok(p.length <= 5, `1단계 뒤 지난 말은 다섯 줄 안: ${p.length} ${JSON.stringify(p)}`);
     // 도전과제 지도 — 기본이 '한눈에', 1단계 칸이 다 차고 2단계는 아직
     if (!(await page.$(".qwin"))) await click(page, ".tb [data-act=qwin-toggle]");   // 초안을 받으면 퀘스트 창이 이미 떠 있다
-    await click(page, "[data-act=qtab][data-tab=tree]"); await click(page, '[data-act="tree-view"][data-v="flow"]');   // C-54: 기본은 카드 지도, 흐름(한눈에 보기)은 보기 단추로
+    await click(page, "[data-act=qtab][data-tab=quest]"); await click(page, '[data-act="tree-view"][data-v="flow"]');   // C-54: 기본은 카드 지도, 흐름(한눈에 보기)은 보기 단추로
     assert.ok(await page.$(".qwin .jmap"), "도전과제의 흐름 보기");
     assert.equal(await page.$eval('.jmap .jm-stage[data-n="0"] .jm-count', (e) => e.textContent.trim()), "4/4");
     assert.ok((await page.$eval('.jmap .jm-stage[data-n="0"]', (e) => e.textContent)).includes("동아리 행사 신청을 종이로"), "채운 칸에는 적은 글");
@@ -122,7 +122,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.ok(!(await page.$(".qwin .ev")), "받기 화면 없이");
     const s1 = await saved(page);
     assert.equal(s1.results["0"].items.length, 4, "1단계 결과를 남긴다(한곳에서 보기 · 문서)");
-    await click(page, "[data-act=qtab][data-tab=tree]"); if (!(await page.$(".qwin .jmap"))) await click(page, '[data-act="tree-view"][data-v="flow"]');
+    await click(page, "[data-act=qtab][data-tab=quest]"); if (!(await page.$(".qwin .jmap"))) await click(page, '[data-act="tree-view"][data-v="flow"]');
     assert.ok((await page.$$('.jmap .jm-stage[data-n="1"] .jm-miss')).length >= 1, "2단계의 빈 칸이 보인다");
     await click(page, '.jmap .jm-stage[data-n="1"] [data-act=jmap-fill]');
     assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.dataset.act), "say", "채우기 — 채팅 칸으로");
@@ -159,7 +159,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     assert.equal(s2.results["0"].items[0].by, "ok", "맞아요 = 플로로 초안 그대로"); assert.equal(s2.results["0"].items[3].by, "pick", "크기는 고름");
     assert.ok(s2.results["0"].check.length === 4, "완료 기준과 근거");
     // 도전과제 — 네 칸 흐름 · 누가 정했나 · 재료(올리면 그 칸이 빛남)
-    await click(page, "[data-act=qtab][data-tab=tree]"); if (!(await page.$(".qwin .jmap"))) await click(page, '[data-act="tree-view"][data-v="flow"]');   // C-54: 흐름 보기
+    await click(page, "[data-act=qtab][data-tab=quest]"); if (!(await page.$(".qwin .jmap"))) await click(page, '[data-act="tree-view"][data-v="flow"]');   // C-54: 흐름 보기
     for (const k of ["in", "ai", "me", "gate"]) assert.ok(await page.$(`.jmap .jm-stage[data-n="0"] .jm-step.${k}`), `1단계 흐름 ${k}`);
     assert.match(await page.$eval('.jmap .jm-stage[data-n="0"] .jm-step.in', (e) => e.textContent), /처음 말한 것/);
     assert.match(await page.$eval('.jmap .jm-stage[data-n="1"] .jm-step.gate', (e) => e.textContent), /지났어요/);
@@ -189,8 +189,8 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     await click(page, '.msg.now .dalt [data-act=draft-alt][data-i="1"]');
     assert.equal((await saved(page)).quest.by[0], "pick", "예시를 고르면 고름");
     await click(page, "[data-act=qtab][data-tab=quest]");
-    const toc = await page.$$eval(".qwin .toc button", (bs) => bs.map((b) => b.textContent));
-    assert.ok(toc[0].includes("후보 찾기") && !toc[0].includes("흔히 쓰는 방법 목록에서"), `목차는 짧은 이름: ${toc[0]}`);
+    const toc = await page.$$eval(".qwin .qcard .ln .lt b", (bs) => bs.map((b) => b.textContent));
+    assert.ok(toc[0].includes("후보 찾기") && !toc[0].includes("흔히 쓰는 방법 목록에서"), `줄 이름은 짧은 이름(C-68 한 목록): ${toc[0]}`);
     assert.ok(await page.$(".qwin .ln .easy"), "쉬운 한 줄"); assert.equal(await page.$(".qwin .ln .full"), null, "원래 문장은 접혀 있다");
     await click(page, ".qwin details.qdesc summary");   // C-60(#248): '자세히 보기 · 왜 하나요'는 접혀 있다 — 펼친 뒤 원래 문장 단추(F-102 고침 2026-10-30)
     await click(page, ".qwin [data-act=qmore]");
@@ -329,7 +329,8 @@ test("진짜 AI(가로챔): 관문을 지나면 1단계 결과 · 받은 글로 
     await page.waitForFunction(() => document.querySelector(".mc.chat .log")?.textContent.includes("올리기를 마쳤어요"), { timeout: 9000 });
     // 도전과제 지도에서 다시 묶기 — 이번엔 Claude Code가 푸시를 못 했다고 보고하면 '마쳤어요'라고 하지 않는다(2026-10-25 리뷰)
     if (!(await page.$(".qwin"))) await click(page, ".tb [data-act=qwin-toggle]");
-    await click(page, "[data-act=qtab][data-tab=tree]");
+    await click(page, "[data-act=qtab][data-tab=quest]");
+    if (await page.$("[data-act=quest-down]")) await click(page, ".qwin [data-act=quest-down]");   // C-69: 카드가 올라와 있으면 지도는 띠 한 줄 — 문서 · 묶기 단추는 내렸을 때
     await click(page, ".qwin [data-act=ship-open]");   // C-54: 카드 지도에도 '문서로 묶어 GitHub에'가 있다
     assert.match(await nowSay(page), /GitHub에 올릴까요/); assert.match(await nowSay(page), /test-1|작업 폴더\(/, "어느 폴더에 쓰는지 보인다");
     await click(page, ".mc.chat [data-act=ship-go]");
@@ -345,7 +346,7 @@ test("2단계 초안을 못 받으면: 까닭을 말하고 전처럼 2단계 받
     const { page, seen } = await openLive(browser, { stageFail: true });
     await stageOne(page);
     assert.match(await page.evaluate(() => document.querySelector(".mc.chat .log")?.textContent || ""), /2단계 초안은 만들지 못했어요/);
-    assert.ok(await page.$(".qwin .ev"), "전처럼 받기 화면");
+    assert.ok(await page.$(".qwin .qpre"), "전처럼 받기 전 카드(C-70)");
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /2단계 · 독서 모임 알림 앱/, "제목은 주제 그대로");
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }

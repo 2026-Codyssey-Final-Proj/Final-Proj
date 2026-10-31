@@ -57,7 +57,7 @@
     "draft-alt": (k) => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex[k]) fillNow(ex[k], "pick"); },
     // 1단계에서 크기 칸까지 채우면 만드는 크기도 권한 크기로 — 크기 칩(draft-size)과 같게(2026-10-26 리뷰: 줄만 '보통'이고 등급은 Full로 남아 다음 장이 Full 할 일 수로 열렸다)
     "card-edit": () => { if (!BC || !st.card) return; st.card = BC.withEdits(st.card, st.cardEdits); st.cardEdits = {}; if (st.prep && SM) { const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits }); st.prep = { ...st.prep, cards: st.prep.ai ? mergePrepared(rule.cards, st.prep.cards) : rule.cards, fix: false }; } save(); render(); say("기준을 고쳤어요 — 아직 안 한 단계의 퀘스트를 이 기준으로 다시 지어요"); },   // C-56 R-1: 카드를 고치면 아직 안 한 퀘스트를 다시(지금은 준비된 퀘스트 — AI 맞춤은 ⓓ)
-    "first-go": () => { treeChap = null; treeView = "flow"; openQwin("tree"); render(); say("한눈에 보기에서 그 칸을 찾아 채워요 — 지난 장의 칸은 '채우기'로 채팅에서 같이 적어요"); },   // C-56 먼저 → 갈 곳
+    "first-go": () => { treeView = "flow"; openQwin("quest"); render(); say("한눈에 보기에서 그 칸을 찾아 채워요 — 지난 장의 칸은 '채우기'로 채팅에서 같이 적어요"); },   // C-56 먼저 → 갈 곳
     "first-notyet": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, x = i >= 0 ? qstates(q)[i] : null; if (!x || x.state !== "first") return; fillNow(`아직 못 함 — ${x.why}`, "me"); },   // 비워 두지 않고 적되 관문 규칙(evidence)이 막는다
     "draft-again": async () => {
       const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex.length < 2) return;
@@ -97,9 +97,9 @@
       setTier(QU.SIZE_TIER[k]);
       fillNow(`크기: ${QU.SIZE_WORD[k]}${k === q.draft.size ? ` — ${q.draft.sizeWhy}` : ""}`, "pick");
     },
-    "quest-ok": () => { const q = st.quest; if (!q || q.phase !== "draft") return; st.quest = { ...q, phase: "quest", edit: false, sel: 0 }; st.qtab = "quest"; render(); say("받았어요! 퀘스트 창이 공책으로 바뀌었어요"); },
-    "quest-fix": () => { if (!st.quest) return; st.quest = { ...st.quest, edit: true }; openQwin("quest"); render(); say("퀘스트 창에서 이름과 할 일 수를 고친 뒤 '이대로 받기'를 눌러요"); },
-    "quest-later": () => { closeQwin(); say("그럼 쉬어요. 다시 오면 여기서 이어서 해요"); },
+    "quest-ok": () => { const q = st.quest; if (!q || q.phase !== "draft") return; st.quest = { ...q, phase: "quest", edit: false, sel: 0 }; st.qtab = "quest"; set({ questUp: true }); say("받았어요! 퀘스트 카드에 다섯 칸이 열렸어요"); },
+    "quest-fix": () => { if (!st.quest) return; st.quest = { ...st.quest, edit: true }; openQwin("quest"); render(); set({ questUp: true }); say("퀘스트 카드에서 이름과 할 일 수를 고친 뒤 '이대로 받기'를 눌러요"); },
+    "quest-later": () => { set({ questUp: false }); say("그럼 쉬어요 — 지도를 보다가 지금 장 카드를 누르면 다시 올라와요"); },   // C-69: 작업실을 닫지 않고 카드를 내린다(S4)
     "quest-example": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.example(q, i) : null; if (ex === null) return; if (q.draft) { st.say = ex; return send(); } logMe(ex); fillNow(ex, "ok"); },   // 예시는 플로로가 낸 것 그대로(ok) — C-61 뒤로 send()는 대화라 여기서 바로 적는다
     "quest-report": () => questReport(),
     "tidy-fill": () => { const t = st.tidy; if (!t || !st.quest) return; st.tidy = null; st.islBig = false; let q = st.quest; for (const f of t.fills) q = QU.fill(q, f.i, f.text, "chat"); st.quest = q; afterFill(); },   // 서버는 안 적은 칸만 제안한다(3-31)   // C-61 — 누가 정했나 '대화', 섬은 옆 칸으로(사람이 눌렀을 때만)
@@ -160,7 +160,6 @@
       const i = QU.curIdx(q); say(i >= 0 ? `남은 할 일 — ${q.objs[i].name}` : "다 적었어요! 완료 보고를 눌러요");
     },
     "cmd-book": () => { openQwin("lib"); set({ settings: false, libSel: null, libConfirm: false, libDoc: null }); loadReadme(); },
-    "tu-sel": (i, el) => { const v = (el && el.dataset.v) || ""; set({ tuSel: st.tuSel === v ? "" : v }); },   // 다시 누르면 접는다
     "rb-sel": (i) => set({ rbSel: i | 0 }),
     "rb-reload": () => loadReadme(),
     "quest-edit": () => { if (st.quest) set({ quest: { ...st.quest, edit: true } }); },
@@ -168,8 +167,6 @@
     "quest-save": () => { if (!st.quest) return; const was = st.quest.phase; st.quest = { ...st.quest, edit: false }; if (was === "draft") return ACT["quest-ok"](); render(); say("퀘스트를 고쳐 적었어요 — 보상은 그대로예요"); },
     "quest-sel": (i) => { if (st.quest) set({ quest: { ...st.quest, sel: i, edit: false } }); },
     "quest-hint": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1; say(i >= 0 ? `힌트: ${QU.question(q, i)}` : "힌트: 다 적었으면 완료 보고를 눌러요"); },
-    "tree-chap": (i) => { treeChap = i; render(); },
-    "tree-map": () => { treeChap = null; render(); },   // 도전과제의 한눈에 보기(C-37)
     // 빈 칸 채우기 — 지금 장의 칸은 채팅에서 차례로. 받기 전이면 퀘스트 탭(받기 화면)으로, 섬이 접혀 있으면 펼친다(앱의 옆 창에서 눌러도 섬에서 이어진다)
     "jmap-fill": () => {
       if (st.qfocus === "plan") st.qfocus = "stage";
@@ -184,7 +181,7 @@
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
     qwin: () => closeQwin(),
     // R-10 관문 앞 멈춤(2026-10-27)
-    "gate-fill": () => { if (!st.quest) return; st.quest = { ...st.quest, phase: "quest", edit: false }; st.skip = null; openQwin("quest"); render(); say("공책에서 '안 됨'인 칸을 고치고 다시 완료 보고를 눌러요"); },
+    "gate-fill": () => { if (!st.quest) return; st.quest = { ...st.quest, phase: "quest", edit: false }; st.skip = null; openQwin("quest"); set({ questUp: true }); say("퀘스트 카드에서 '안 됨'인 칸을 고치고 다시 완료 보고를 눌러요"); },
     "gate-skip": () => { st.skip = { reason: "" }; render(); },
     "goal-same": () => set({ goalDraft: st.goalDraft && st.goalDraft.same ? null : { same: true } }),   // C-47 처음 뜻 — 다시 누르면 고르지 않음
     "goal-changed": () => set({ goalDraft: st.goalDraft && st.goalDraft.changed != null ? null : { changed: "" } }),
@@ -198,7 +195,7 @@
       if (allDone()) { view("alert"); return; } render();
     },   // 퀘스트 창의 ×(닫기만 — 옆 창에서 두 번 눌러도 다시 열리지 않게)
     "qwin-toggle": () => { if (st.qwin) return closeQwin(); openQwin("canvas"); render(); },   // 위 줄의 '퀘스트' 단추(C-35, 이재엽 그림 2026-10-24) — 작업실은 캔버스 탭부터(C-41, 2026-10-26)
-    "qwin-quest": () => { openQwin("quest"); render(); }, "qwin-tree": () => { openQwin("tree"); render(); }, "qwin-lib": () => { openQwin("lib"); render(); },
+    "qwin-quest": () => { openQwin("quest"); set({ questUp: true }); }, "qwin-tree": () => { openQwin("quest"); render(); },   // 섬 칩 '퀘스트 보기' — 합친 탭을 열고 카드를 올린다(C-65) "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
     // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기
@@ -344,7 +341,7 @@
     },
     // 자동 살펴보기 · 다음 장 미리 보기(퀘스트 창의 도전과제) · 느낀 점 열기
     "auto-toggle": () => { set({ auto: !st.auto }); say(st.auto ? "AI 코딩 도구가 일을 마치면 저절로 살펴볼게요" : "이제 눌러야 살펴봐요"); },
-    peek: () => { treeChap = nextStage() ? nextStage().n : null; openQwin("tree"); set({ settings: false }); },
+    peek: () => { const nx = nextStage() ? nextStage().n : null; st.qview = nx; st.mapSel = null; openQwin("quest"); set({ settings: false, questUp: true }); },   // 다음 장 미리 보기 — 합친 탭의 그 장 카드(C-66 장 화면 대신)
     "notes-open": () => set({ settings: true, notesOpen: true }),
     // Electron 앱(2026-10-19) — 폴더를 골라 훅을 더하거나 빼고, .env를 두는 설정 폴더를 연다. 앱 밖에서는 단추가 없다
     "app-connect": async () => {   // 고른 폴더가 곧 플로로가 움직이는 자리(C-31) — 앱이 서버에도 알린다. 경로 대신 폴더 이름만 말한다

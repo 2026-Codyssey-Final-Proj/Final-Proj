@@ -41,11 +41,11 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     await page.evaluateOnNewDocument((seed) => { try { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); if (!sessionStorage.getItem("seeded")) { localStorage.setItem("navigator-prototype:v1", JSON.stringify(seed)); sessionStorage.setItem("seeded", "1"); } } catch {} }, seed);
     await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await wait(400);
     if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
-    // C-61(#249): 3단계 칸이 비어 섬이 작업 칸 전체를 덮는다 — 머리 줄 '옆으로'(isl-big)로 옆 칸에 두고 지도를 본다(F-102 고침 2026-10-30)
-    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await page.waitForSelector(".isl-col:not(.center)", { timeout: 5000 }); await wait(300); }
-    await page.click("[data-act=qtab][data-tab=tree]"); await wait(300);
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 시험은 섬을 옆으로
+    await page.click("[data-act=qtab][data-tab=quest]"); await wait(300);
     const tabs = await page.$$eval(".wsx > .wh .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent));
-    assert.ok(!tabs.includes("문서 지도") && tabs.includes("도전과제"), `문서 지도 탭은 도전과제 안으로: ${tabs.join(",")}`);
+    assert.ok(!tabs.includes("문서 지도") && !tabs.includes("도전과제") && tabs.includes("퀘스트"), `문서 지도 · 도전과제는 퀘스트 탭 안으로(C-54 · C-65): ${tabs.join(",")}`);
+    if (await page.$("[data-act=quest-down]")) { await page.click("[data-act=quest-down]"); await wait(300); }   // C-69: 카드가 올라와 있으면 지도는 한 줄 — 여덟 장을 보려고 내린다
     const cards = () => page.$$eval(".sm-grid .sm-card", (cs) => cs.map((c) => ({ n: c.dataset.i, state: ([...c.classList].find((k) => /^st-(done|now|later|ready|pending)$/.test(k)) || "").slice(3), text: c.textContent.replace(/\s+/g, " ").trim() })));
     let cs = await cards();
     assert.equal(cs.length, 8, "카드 여덟"); assert.deepEqual(cs.map((c) => c.state), ["done", "done", "now", "later", "later", "later", "later", "later"]);
@@ -73,15 +73,23 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
     assert.match(await page.$eval(".cv-c.c1", (e) => e.textContent), /기획서 3절의 줄|준비된/, "준비된 ① 생각");
     // 보기 셋
-    await page.click("[data-act=qtab][data-tab=tree]"); await wait(200);
+    await page.click("[data-act=qtab][data-tab=quest]"); await wait(200);
+    if (await page.$("[data-act=quest-down]")) { await page.click("[data-act=quest-down]"); await wait(300); }
     // C-54 ⑧ 얼음 조각 가까이(2026-10-28 버튼 "둘다 할것" — 누르기 + 확대): 끝난 카드(1단계)를 누르면 커져 줄마다 할 일 → 문서 ← 재료, 줄을 누르면 오른쪽 칸에 누가 정했나 · 다음 단계
+    // C-69(2026-10-30 목업 확정본 S4): 끝낸 카드를 누르면 그 장의 읽기만 카드가 올라온다 — 줄을 누르면 오른쪽 칸(이 탭에서는 접혀 있다가 켜진다)에 누가 정했나 · 재료
     await page.click('.sm-card[data-i="0"]'); await wait(350);
-    assert.ok(await page.$(".sm-cell.big .sm-card.big"), "고른 끝난 카드가 커진다"); const rows = await page.$$(".sm-cell.big .sm-row"); assert.ok(rows.length >= 1, "줄 하나 = 할 일");
-    await page.click('.sm-cell.big .sm-row [data-act="map-line"]'); await wait(300);
+    assert.ok(await page.$(".qcard.readonly"), "고른 끝난 카드 → 읽기만 카드"); const rows = await page.$$('.qcard.readonly .ln[data-act="map-line"]'); assert.ok(rows.length >= 1, "줄 하나 = 할 일");
+    assert.ok(!(await page.$(".qcard.readonly [data-act=quest-edit]")) && !(await page.$(".qcard.readonly [data-act=quest-report]")), "읽기만 — 고치기 · 완료 보고 없음");
+    await page.click('.qcard.readonly .ln[data-act="map-line"]'); await wait(300);
     const line = await page.$eval(".wside .ws-line", (el) => el.textContent.replace(/\s+/g, " ")); assert.match(line, /누가 정했나/); assert.match(line, /종이 신청이 헷갈려요/);
-    await page.click('.sm-card[data-i="0"]'); await wait(350); assert.ok(!(await page.$(".sm-card.big")), "다시 누르면 작아진다");
-    if (SHOTS) { await page.click('.sm-card[data-i="0"]'); await wait(350); await shot(page, "map-zoom"); await page.click('.sm-card[data-i="0"]'); await wait(200); }
+    if (SHOTS) await shot(page, "map-readonly");
+    await page.click("[data-act=quest-view-off]"); await wait(300); assert.ok(!(await page.$(".qcard.readonly")), "'지금 퀘스트로'면 읽기만 카드가 내려간다");
     await page.click('[data-act="tree-view"][data-v="flow"]'); await wait(200); assert.ok(await page.$(".qwin .jmap"), "흐름 = 한눈에 보기(C-39)");
+    // C-67(2026-10-30): 흐름이면 지도 띠 · 퀘스트 카드가 접히고 작업 칸 가득, 돌아가는 길은 '퀘스트로' 알약 하나(지금 줄 · 진행)
+    assert.ok(!(await page.$(".qwin .sm-grid")) && !(await page.$(".qwin .qstack")) && await page.$(".qwin .qboard.full") && await page.$(".qwin .q-back"), "흐름 보기 — 지도 띠 · 카드 없음 · 알약 있음");
+    assert.match(await page.$eval(".qwin .q-back", (e) => e.textContent), /퀘스트로/);
+    await page.click(".qwin .q-back"); await wait(300); assert.ok(await page.$(".qwin .sm-grid.one") && await page.$(".qwin .qstack"), "알약 → 퀘스트 카드가 올라온 지도(S2)");
+    await page.click('[data-act="tree-view"][data-v="flow"]'); await wait(200);
     // C-54 ⑨ 짝 선(버튼 "'흐름 따라가기'에서만"): 1↔8 · 2↔7 · 3↔6 길 셋, 짝 단추 → 두 칸 나란히
     assert.ok((await page.$$(".jmap .jm-rails")).length === 8, "단계마다 길 자리"); assert.ok((await page.$$(".jmap .jm-rails i.a")).length === 8, "1↔8 길은 여덟 단계를 다 지난다");
     await page.click('.jmap [data-act="pair-sel"][data-v="a"]'); await wait(250);

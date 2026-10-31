@@ -75,7 +75,7 @@ async function openLive(browser, hash = "#base&plan") {
   await page.waitForSelector(".mc.chat [data-act=say]", { timeout: 8000 });
   return { page, seen };
 }
-const click = async (page, sel) => { await page.waitForSelector(sel, { timeout: 5000 }); await page.click(sel); await wait(250); };
+const click = async (page, sel) => { if (sel.startsWith(".qwin") && await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); } await page.waitForSelector(sel, { timeout: 5000 }); await page.click(sel); await wait(250); };   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 작업실 안을 누르기 전에 섬을 옆으로
 const nowSay = (page) => page.evaluate(() => document.querySelector(".msg.now")?.textContent || "");
 // 채팅 칸에 붙여 넣고 보내기(Enter)
 async function paste(page, text) {
@@ -118,7 +118,8 @@ test("채팅에서 한 바퀴: 붙여 넣기 → 계획 → 줄마다 맞아요 
     await click(page, ".mc.chat [data-act=plan-confirm]");
     // 확정 → 퀘스트 창에 '맡길 일' 퀘스트 · 채팅은 지금 줄(Ⅰ)
     await page.waitForSelector(".qwin .qsel [data-v=plan][aria-pressed=true]", { timeout: 5000 });
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .toc button")].map((b) => b.querySelector("small")?.textContent)), ["지금", "★ 아직"], "순서대로 — 지금 줄만 열린다");
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .qcard .ln .n")].map((e) => e.textContent.trim())), ["지금", "앞 줄 뒤에"], "순서대로 — 지금 줄만 열린다(C-73 한 목록, 2026-10-30)");
+    assert.ok((await page.$$(".qwin .qsel button")).length === 2 && !(await page.$(".qwin .book")), "지금 할 퀘스트 고르기 둘 · 공책 없음(C-73)");
     assert.match(await page.$eval(".tb-stage", (e) => e.textContent), /맡길 일/);
     assert.match(await page.$eval(".isl", (e) => e.textContent), /2개 중 1번째/, "진행은 섬 카드에(머리 줄의 단계 띠는 이름만 — C-58, PR ② 2026-10-29)");
     assert.match(await nowSay(page), /회원이 신청 단추를 누르면/);
@@ -130,7 +131,7 @@ test("채팅에서 한 바퀴: 붙여 넣기 → 계획 → 줄마다 맞아요 
     assert.match(await nowSay(page), /신청하는 종이를 화면으로 만들었어요/, "쉬운 말 요약이 플로로의 말");
     await click(page, ".mc.chat [data-act=plan-accept]");
     assert.match(await nowSay(page), /운영진이 목록을 보면/, "맞아요 → 다음 줄이 지금 줄");
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .toc button")].map((b) => b.querySelector("small")?.textContent)), ["끝냄 ✓", "지금"]);
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .qcard .ln .n")].map((e) => e.textContent.trim())), ["끝냄", "지금"]);
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")));
     assert.equal(saved.plan.work.p1.state, "done", "판은 이 컴퓨터에 남는다(다시 켜도 이어진다)");
     assert.equal(saved.qfocus, "plan", "지금 할 퀘스트도");

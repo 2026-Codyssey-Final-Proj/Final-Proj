@@ -58,7 +58,7 @@ test("누르기 표 ACT — 00-base에 하나, 조각은 Object.assign(ACT, { �
 test("옮긴 기능의 누르기는 제 조각에", () => {
   const own = { "40-quest.js": ["ship-go", "ship-public"], "45-knowledge.js": ["carry-draft", "carry-use-none", "restore-go"],
     "55-files.js": ["build-skeleton", "code-no", "map-open", "preset-go", "fn-open", "fsave", "fn-dir"],
-    "58-workspace.js": ["wnav-toggle", "ffmt", "tree-view", "prep-draw", "map-card"], "70-tasks.js": ["stall-wait", "stall-stop", "blocked-again", "blocked-stop"] };
+    "58-workspace.js": ["wnav-toggle", "ffmt", "tree-view", "prep-draw", "map-card", "quest-down", "quest-up"], "70-tasks.js": ["stall-wait", "stall-stop", "blocked-again", "blocked-stop"] };
   for (const [f, ks] of Object.entries(own)) { const got = actKeys(parts[f]); for (const k of ks) assert.ok(got.includes(k), `${k}는 ${f}`); }
   const core = actKeys(parts["90-acts.js"]);
   for (const k of Object.values(own).flat()) assert.ok(!core.includes(k), `${k}는 90-acts에서 뺐다`);

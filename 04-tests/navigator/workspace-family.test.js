@@ -22,8 +22,7 @@ test("C-62 테마 — 섬의 어두운 토큰은 :root가 아니라 섬 카드(.
 
 test("C-62 — 글꼴 · 주 단추 · 색의 메아리(두승현 결정 · 이재엽 승인 2026-10-29): 노트북 '완료 보고' · 퀘스트 받기도 같은 하늘색 알약, 고른 탭 · 단계 칩 · 파일 칸 '지금' · 지도의 장 탭은 섬 색", () => {
   assert.match(c, /\.pacts button\.pri\{background:var\(--acc-btn\);border-color:var\(--acc-btn\);color:var\(--acc-ink\)\}/, "완료 보고 = 하늘색 알약");
-  assert.match(c, /\.ev \.join\{[^}]*background:var\(--acc-btn\)[^}]*color:var\(--acc-ink\)/, "퀘스트 받기 = 하늘색");
-  for (const s of [".wtabs button[aria-selected=true]", ".wnav .fn li.st-now", ".vtabs button[aria-selected=true]"]) assert.match(c, new RegExp(`${s.replace(/[.[\]*+?]/g, "\\$&")}\\{[^}]*background:var\\(--isl\\)`), `${s} — 메아리`);
+  for (const s of [".wtabs button[aria-selected=true]", ".wnav .fn li.st-now"]) assert.match(c, new RegExp(`${s.replace(/[.[\]*+?]/g, "\\$&")}\\{[^}]*background:var\\(--isl\\)`), `${s} — 메아리`);
   assert.match(c, /\.wtabs button\[aria-selected=true\]\{[^}]*color:#EEF1FA/, "메아리 위 글자는 눈색(대비 9.20)");
 });
 
@@ -48,7 +47,7 @@ test("C-59 상태는 한 가지 모양 — st-now · st-done · st-ready · st-l
   assert.match(c, /^\.st-gate\{box-shadow:inset 0 0 0 2px #C9A43A\}/m, "관문 = 금색 테두리");
   assert.match(c, /^\.st-bad\{color:#8E3A52\}/m, "문제 = 볼색 글자");
   assert.match(a, /<div class="cv-c \$\{pos\} \$\{k\} st-\$\{k\}\$\{pos === "c6" \? " st-gate" : ""\}">/, "캔버스 칸");
-  assert.match(a, /class="st-\$\{cls === "done" \? "done" : cls === "lock" \? "later" : "now"\}"/, "노트북 목차");
+  assert.match(a, /class="ln st-\$\{r\.state\}/, "퀘스트 카드의 줄(C-68 한 목록 — 공책 목차 대신, 2026-10-30)");
   assert.match(a, /class="sm-card st-\$\{c\.state\}\$\{sel \? " sel" : ""\}\$\{c\.state === "pending" \? " pending" : ""\}"/, "지도 카드");
   assert.match(a, /<li class="\$\{x\.dir \? "dir" : tag === "지금" \? "st-now" : ""\}/, "파일 칸 '지금'");
   assert.match(a, /<p class="sm-legend">\$\{\["done", "now", "ready", "later"\]\.map\(\(k\) => `<span><i class="st-\$\{k\}" aria-hidden="true"><\/i>\$\{STATE_WORD\[k\]\}<\/span>`\)/, "범례도 같은 class");
@@ -99,7 +98,7 @@ test("섬 글은 Gowun Dodum · 섬 글자 세 단계(제목 #EEF1FA · 본문 #
   const isl = c.match(/\n\.isl,\.pill\{([\s\S]*?)\n\s*background:var\(--isl\)/)[1];
   assert.match(isl, /--ink:#EEF1FA; --ink2:#E1E6F4; --mute:#D3E0F3; --sub:#D3E0F3;/, "섬 글자 세 단계");
   assert.ok(!/#C6D5EE|#AAB3D4/.test(isl), "섬 안 글자색에 4.5:1 미만 색이 없다");
-  assert.match(c, /\.page h4\{[^}]*color:#2B3463;/, "노트북 '목차 · n단계'");
+  assert.match(c, /\.qhead h3\{[^}]*color:var\(--ink\)/, "퀘스트 카드 제목(C-68 한 목록 — 공책 '목차 · n단계' 대신, 2026-10-30)");
   assert.match(c, /\.sm-views button\{[^}]*color:#2B3463;/, "도전과제 보기 단추");
   assert.match(c, /\.rb-toc button\[aria-current=true\]\{[^}]*color:var\(--acc-ink\);/, "책 목차의 지금 줄");
 });

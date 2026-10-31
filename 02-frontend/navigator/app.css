@@ -29,7 +29,7 @@
 
 *{box-sizing:border-box}
 /* C-57 제목 · 단계 숫자는 Bagel Fat One(굵기 하나라 font-weight는 400), 선 아이콘 .ic은 글자 높이에 맞춤, '지금'은 글자 기호(●) 대신 작은 점 */
-.wh .ttl,.sm-no,.mc-title,.hb-hi,.ev .ttl>span:nth-child(2),.jm-top b,.board .bt,.tb-stage b,.cv-now b,.pill b{font-family:var(--font-disp);font-weight:400;letter-spacing:.01em}
+.wh .ttl,.sm-no,.mc-title,.hb-hi,.jm-top b,.tb-stage b,.cv-now b,.pill b{font-family:var(--font-disp);font-weight:400;letter-spacing:.01em}
 .ic{width:1em;height:1em;vertical-align:-.12em;display:inline-block;flex:none}
 .ic.lg{width:22px;height:22px}
 body{margin:0;background:var(--desk);color:var(--ink);font:calc(15px * var(--ui-scale,1))/1.55 var(--font-text);-webkit-font-smoothing:antialiased}
@@ -313,7 +313,7 @@ ol.steps li.now{color:var(--ink);font-weight:700;box-shadow:inset 0 0 0 2px var(
 .flowline{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--tink)}
 
 /* 레벨 오버레이(2026-10-19 lvc — LV · EXP · 명령 네 칸)는 2026-10-21 C-22로 채팅 중심 섬(.mc.chat, 맨 아래)이 됐다 */
-@media (prefers-reduced-motion:reduce){.bn.cur{animation:none}.feedlayer.show{animation:none}}
+@media (prefers-reduced-motion:reduce){.feedlayer.show{animation:none}}
 .flowline>span{padding:2px 10px;border-radius:999px;background:var(--card);color:var(--sub);font-size:calc(13px * var(--ui-scale,1))}
 .flowline>span.meta{background:none;padding:0}
 .okchip,.nowchip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;font-size:calc(12px * var(--ui-scale,1));font-weight:600}
@@ -823,7 +823,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .fv-code li::before{content:counter(ln);flex:none;width:44px;text-align:right;padding-right:8px;color:var(--sub);border-right:1px solid var(--line);user-select:none}
 .fv-code li.chg{background:var(--okbg)}.fv-code li.chg::before{color:var(--ok);font-weight:700}
 .fpreset{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-size:calc(12.5px * var(--ui-scale,1));padding:0 8px}   /* 틀로 맡기기(C-44) */
-.docmap{flex:1;min-height:360px;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}   /* 문서 지도(C-45) */
+.docmap{flex:1;min-height:0;height:100%;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}   /* 문서 지도(C-45) — C-67(2026-10-30): 작업 칸 가득(min-height 360 → 칸 높이) */
 .fv-edit{flex:1;min-height:240px;resize:none;font:calc(13px * var(--ui-scale,1))/1.6 var(--font-code);color:var(--ink);background:var(--card);border:1px solid var(--acc-mid);border-radius:12px;padding:10px 12px;white-space:pre;overflow:auto;tab-size:2}
 .wnav .fn li.st-now{background:var(--isl);color:#EEF1FA;font-weight:600}   /* 색의 메아리(C-62) */
 .wnav .fn li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -898,87 +898,64 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 /* 퀘스트 판 — 없음 · 받기 화면(이벤트 창 짜임) · 공책 */
 .qempty{border:1.5px dashed var(--line);border-radius:16px;padding:26px 16px;text-align:center;color:var(--sub);font-size:calc(13.5px * var(--ui-scale,1));line-height:1.6}
 .qempty b{color:var(--ink);display:block;margin-bottom:4px}
-.ev{display:grid;gap:8px}
-.ev .ttl{display:grid;grid-template-columns:32px minmax(0,1fr) 32px;align-items:center;background:var(--soft);border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;text-align:center;font-weight:800;color:var(--ink);font-size:calc(16px * var(--ui-scale,1))}
-.ev .ttl input{width:100%;font:inherit;font-weight:800;text-align:center;color:var(--ink);background:var(--card);border:1.5px solid var(--warn);border-radius:8px;padding:4px 8px}
-.ev .ttl .q{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);font-size:calc(13px * var(--ui-scale,1));font-weight:800;color:var(--mute);cursor:help}
-.ev .pic{position:relative;border-radius:14px;overflow:hidden;border:1.5px solid var(--line);aspect-ratio:16/7;max-width:100%}
-.ev .pic svg{width:100%;height:100%;display:block}
-.ev .pic .cap{position:absolute;left:0;right:0;bottom:0;padding:8px 12px;text-align:center;font-size:calc(13px * var(--ui-scale,1));color:#fff;background:linear-gradient(transparent,rgba(6,11,51,.85))}
-.ev .box{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center;background:var(--soft)}
-.ev .box h4{margin:0 0 4px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink)}
-.ev .box p{margin:0;font-size:calc(13px * var(--ui-scale,1));color:var(--ink2);line-height:1.5}
-.ev .box.edit{border-color:var(--warn)}.ev .box.edit h4{color:var(--warn)}
-.ev .box input{font:inherit;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:5px 8px;width:64px;text-align:center}
 .slots{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:6px}
 .slots>i{aspect-ratio:1;border-radius:8px;background:rgba(0,0,0,.25);border:1.5px solid var(--line);display:grid;place-items:center;font-style:normal;font-size:calc(20px * var(--ui-scale,1))}
 .slots>i.has{border-color:var(--warn);background:var(--warnbg);cursor:help}
 .slots i .coin{width:24px;height:24px}   /* 칸(.slots>i)의 상자 모양은 바로 아래 i만 — 안쪽 조개 그림(i.coin)에는 겹치지 않게(2026-10-23) */
-.ev .join{border:0;border-radius:999px;background:var(--acc-btn);color:var(--acc-ink);font-size:calc(17px * var(--ui-scale,1));font-weight:900;padding:13px;box-shadow:0 6px 0 #8FA4D6}
-.ev .join:active{translate:0 3px;box-shadow:0 3px 0 #8FA4D6}
-.ev .sub{display:flex;gap:6px}
-.ev .sub button{flex:1;border:1.5px solid var(--line);background:var(--soft);color:var(--ink);border-radius:10px;padding:7px;font-size:calc(13px * var(--ui-scale,1));font-weight:700}
-/* 공책 — 종이 색은 일부러 고정(밝은 · 어두운 설정과 상관없이 공책은 공책) */
-.book{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);border-radius:16px;overflow:hidden;border:2px solid #5B6491;background:#E2E9F4;color:#2B3463;min-height:400px}
-.wbody>.book{flex:none}   /* 공책은 내용 높이 그대로 — overflow:hidden인 상자는 창 높이에 맞춰 줄어들어 아래가 잘리고 바깥이 스크롤되지 않았다(F-58-4) */ /* claude-drafted: 2026-10-25 */
-.page{padding:14px 14px 16px;position:relative;min-width:0}
-.page.l{background:#E9DFC6;border-right:2px dashed #C6D5EE;padding-left:26px}
-.page.l::before{content:"";position:absolute;left:6px;top:24px;bottom:24px;width:8px;background:repeating-linear-gradient(180deg,#2B3463 0 14px,transparent 14px 60px);border-radius:4px}
-.page h4{margin:0 0 10px;text-align:center;font-size:calc(14px * var(--ui-scale,1));color:#2B3463;letter-spacing:.1em}
-.toc{display:grid;gap:8px}
-.toc button{border:0;border-radius:10px;padding:10px 8px;font-size:calc(13px * var(--ui-scale,1));font-weight:800;text-align:center;box-shadow:inset 0 0 0 2px #fff;line-height:1.35}
-.toc button[aria-pressed=true]{outline:2px solid #7A5E1E;outline-offset:1px}
-.toc button small{display:block;font-weight:500;font-size:calc(11.5px * var(--ui-scale,1));color:#5B6491}
-.ln{display:flex;align-items:flex-start;gap:8px;padding:8px 2px;border-bottom:1.5px solid #C6D5EE;font-size:calc(13.5px * var(--ui-scale,1))}
-.ln.sel{background:#F2F5FA}
-.ln .ck{width:20px;height:20px;border-radius:6px;border:2px solid #7A5E1E;display:grid;place-items:center;font-size:calc(12px * var(--ui-scale,1));flex:none;background:#fff;margin-top:1px}
-.ln.done .ck{background:#2B3463;border-color:#2B3463;color:#fff}
+/* 퀘스트 카드 — 한 목록(C-68, 2026-10-30 두승현 목업 확정본 "공책 모양 — 모양까지 바꿈"): 공책 두 쪽 · 갈색 · 금색을 뺐다. 끝낸 줄은 체크 · 한 줄, 지금 줄만 펼침(면의 색으로만 — 막대 · 테두리 없음), 아직 줄은 흐리게. 맡길 일(70-tasks planQuestPane)도 같은 모양. 색은 C-57 토큰만 */
+.qcard{border-radius:16px;background:var(--card);color:var(--ink);padding:16px 18px 14px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line)}
+.wbody>.qcard,.wbody>.qboard{flex:none}   /* 내용 높이 그대로 — overflow:hidden 상자는 창 높이에 맞춰 줄어 아래가 잘렸다(F-58-4) */
+.qhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.qhead h3{margin:0;font-family:var(--font-disp);font-weight:400;font-size:calc(19px * var(--ui-scale,1));color:var(--ink);line-height:1.3}
+.qhead h3 input{width:100%;font:inherit;font-size:calc(16px * var(--ui-scale,1));font-weight:800;color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:6px;padding:4px 6px}
+.qhead .meta{font-size:calc(12px * var(--ui-scale,1));color:var(--sub);margin-top:2px}
+.qprog{font-size:calc(12px * var(--ui-scale,1));color:var(--sub);text-align:right;white-space:nowrap;flex:none}
+.qprog b{color:var(--ink);font-family:var(--font-disp);font-weight:400;font-size:calc(15px * var(--ui-scale,1))}
+.qprog .dots{display:flex;gap:4px;justify-content:flex-end;margin-top:5px}
+.qprog .dots i{width:22px;height:5px;border-radius:3px;background:var(--line)}
+.qprog .dots i.on{background:var(--isl)}.qprog .dots i.now{background:var(--acc)}
+.qrows{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.ln{display:flex;align-items:flex-start;gap:10px;width:100%;padding:10px 12px;border:0;border-radius:12px;background:var(--soft);color:var(--ink);text-align:left;font:inherit;font-size:calc(13.5px * var(--ui-scale,1));line-height:1.45}
+button.ln{cursor:pointer}
+.ln.st-now{background:var(--acc-soft)}
+.ln.st-later{background:transparent;color:var(--sub);padding-top:7px;padding-bottom:7px}
+.ln.st-done,.ln.st-now,.ln.st-later{box-shadow:none}   /* C-59의 상태 테두리(지금 = 바다색 선)는 카드 · 칩용 — 퀘스트 줄은 면의 색으로만(목업 확정본 S2 ④) */
+.ln.sel:not(.st-now){box-shadow:inset 0 0 0 1.5px var(--acc-mid)}   /* 고른 줄(채팅이 따라가는 줄)만 옅은 선 — 지금 줄은 면의 색뿐 */
+.ln .ck{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;flex:none;margin-top:1px;font-size:calc(11px * var(--ui-scale,1));font-weight:700;background:var(--card);color:var(--sub);border:1.5px solid var(--line)}
+.ln .ck .ic{width:14px;height:14px}
+.ln.st-done .ck{background:var(--okbg);border-color:var(--okbg);color:var(--ink)}
+.ln.st-now .ck{background:var(--isl);border-color:var(--isl);color:#EEF1FA}
 .ln .lt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
-.ln .lt b{font-weight:800}
+.ln .lt b{font-weight:700}
+.ln.st-later .lt b{font-weight:600}
 /* C-56 R-2(2026-10-28): 이름은 이 프로젝트의 말로 크게, 방법 이름(EARS · Planguage …)은 회색 꼬리표 */
-.method{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--soft);color:var(--sub);font-size:calc(11px * var(--ui-scale,1));font-weight:500;vertical-align:1px}
+.method{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--card);color:var(--sub);font-size:calc(11px * var(--ui-scale,1));font-weight:500;vertical-align:1px}
+.ln.st-now .method{background:var(--card)}
 .done-when{display:block;margin-top:2px;color:var(--sub);font-size:calc(12px * var(--ui-scale,1))}
-/* C-56 상태 넷(2026-10-28) — 공책 줄의 꼬리표: 옮겨 옴(바다) · 건너뜀(금) · 먼저(볼) */
+/* C-56 상태 넷(2026-10-28) — 줄의 꼬리표: 옮겨 옴(바다) · 건너뜀(경고 토큰) · 먼저(볼) */
 .ln .qs{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;font-size:calc(11px * var(--ui-scale,1));font-weight:600;vertical-align:1px}
-.ln .qs-moved{background:#D3E0F3;color:#2B3463}.ln .qs-skip{background:#EFE3C0;color:#7A5E1E}.ln .qs-first{background:#EFC3CB;color:#8E3A52}
-.ln .lw{color:#2B3463;overflow-wrap:anywhere}
-.ln .lw.empty{color:#5B6491;font-style:italic}
+.ln .qs-moved{background:var(--t-blue);color:var(--t-blue-ink)}.ln .qs-skip{background:var(--warnbg);color:var(--warn)}.ln .qs-first{background:var(--t-red);color:var(--t-red-ink)}
+.ln .lw{color:var(--ink);overflow-wrap:anywhere}
+.ln .lw.empty{color:var(--sub);font-style:italic}
 /* C-40 퀘스트 창 쉬운 말 — 짧은 이름 아래 쉬운 한 줄, '자세히 보기'를 누르면 원래 할 일 문장 · 용어 */
-.ln .lt .easy{color:#2B3463;font-size:calc(12.5px * var(--ui-scale,1))}
-.ln .lt .full{color:#5B6491;font-size:calc(11.5px * var(--ui-scale,1));overflow-wrap:anywhere}
-.qmore{margin:4px 0 2px;color:#2B3463}
+.ln .lt .easy{color:var(--sub);font-size:calc(12.5px * var(--ui-scale,1))}
+.ln .lt .full{color:var(--sub);font-size:calc(11.5px * var(--ui-scale,1));overflow-wrap:anywhere}
+.ln.st-now .lw.empty,.ln.st-now .lt .easy,.ln.st-now .lt .full,.ln.st-now .done-when,.ln.st-now .n{color:var(--ink)}   /* 얼음 면 위 글은 모두 진한 남색 — 흐린 글자(#5B6491)는 얼음 위에서 4.3:1(목업 확정본 13쪽) */
+.qmore{margin:4px 0 2px;color:var(--ink)}
 .qmore:hover{color:#1F5BA8}
-.ln .n{margin-left:auto;color:#5B6491;font-variant-numeric:tabular-nums;font-size:calc(12.5px * var(--ui-scale,1));display:inline-flex;gap:4px;align-items:center;flex:none}
-.ln input{min-width:0;font:inherit;font-size:calc(13px * var(--ui-scale,1));color:#2B3463;background:#fff;border:1.5px solid #7A5E1E;border-radius:6px;padding:3px 6px}
+.ln .n{margin-left:auto;color:var(--sub);font-variant-numeric:tabular-nums;font-size:calc(12px * var(--ui-scale,1));display:inline-flex;gap:6px;align-items:center;flex:none;padding-top:2px}
+.ln .n .now-badge{background:var(--isl);color:#EEF1FA;border-radius:999px;padding:2px 9px;font-size:calc(11px * var(--ui-scale,1));font-weight:700}
+.ln input{min-width:0;font:inherit;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);background:#fff;border:1.5px solid var(--line);border-radius:6px;padding:3px 6px}
 .ln input[type=number]{width:52px}
-.page.r h3{margin:0 0 6px;font-size:calc(16px * var(--ui-scale,1));color:#2B3463}
-.page.r h3 input{width:100%;font:inherit;font-size:calc(16px * var(--ui-scale,1));font-weight:800;color:#2B3463;background:#fff;border:1.5px solid #7A5E1E;border-radius:6px;padding:4px 6px}
-.page.r .meta{font-size:calc(12px * var(--ui-scale,1));color:#5B6491;margin-bottom:8px}
-.page.r p{font-size:calc(13px * var(--ui-scale,1));line-height:1.55;margin:10px 0 0;color:#2B3463}
-.page.r .rw{margin-top:10px;font-size:calc(13px * var(--ui-scale,1));display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.page.r .piece{background:#F2F5FA;border:1px solid #7A5E1E;color:#7A5B12}
-.piece{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-weight:700;font-size:calc(12.5px * var(--ui-scale,1))}
-.piece .coin{width:16px;height:16px}
-.pacts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}
-.pacts button{border:2px solid #7A5E1E;background:#F2F5FA;color:#2B3463;border-radius:10px;padding:8px 4px;font-size:calc(12.5px * var(--ui-scale,1));font-weight:800}
+.ln .pl-rep{background:rgba(255,255,255,.55);color:var(--ink);border-radius:8px;padding:6px 8px;font-size:calc(12.5px * var(--ui-scale,1))}.ln .pl-rep ul{margin:4px 0 0;padding-left:16px}.ln .pl-rep li.y{color:#2F6B2F}.ln .pl-rep li.n,.ln .pl-rep .meta{color:var(--sub)}
+.qside{margin:0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}.qside small{display:block}
+.qcard .rw{font-size:calc(12.5px * var(--ui-scale,1));color:var(--sub);margin:0}
+.qfoot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px}
+.pacts{display:flex;gap:8px;margin-left:auto}
+.pacts button{border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 16px;font-size:calc(12.5px * var(--ui-scale,1));font-weight:700}
+.pacts button:disabled{opacity:.55}
 .pacts button.pri{background:var(--acc-btn);border-color:var(--acc-btn);color:var(--acc-ink)}
-/* 도전과제 — 세로 탭(장) · 그림만 크게 · 설명 풍선. 양피지 색은 C-57(2026-10-28)에서 웹사이트 토큰(종이 · 눈 · 서리 · 선 · 글자 · 금)으로 바꿨다 */
-.adv{display:grid;grid-template-columns:56px minmax(0,1fr);border-radius:16px;overflow:hidden;border:2px solid #5B6491;min-height:400px}
-.vtabs{background:#454E77;display:flex;flex-direction:column;gap:4px;padding:8px 4px}
-.vtabs button{width:48px;height:48px;border-radius:10px 0 0 10px;border:2px solid #363E62;background:#6B5E48;font-size:calc(22px * var(--ui-scale,1));display:grid;place-items:center;position:relative;padding:0}
-.vtabs button[aria-selected=true]{background:var(--isl);border-color:var(--isl);width:52px;margin-right:-4px;z-index:1}
-.vtabs button.done::after{content:"";position:absolute;right:4px;top:4px;width:8px;height:8px;border-radius:50%;background:#E6CB86}
-.vtabs button.lock{filter:grayscale(1);opacity:.6}
 .board{background:radial-gradient(circle at 20% 20%,rgba(255,255,255,.25),transparent 40%),repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 1px,transparent 1px 16px),repeating-linear-gradient(90deg,rgba(0,0,0,.04) 0 1px,transparent 1px 16px),#D3E0F3;padding:14px;overflow:auto;color:#2B3463}
-.board .bt{font-size:calc(12px * var(--ui-scale,1));color:#2B3463;font-weight:800;margin:0 0 10px}
-.chain{display:grid;grid-template-columns:72px;justify-items:center;gap:4px}
-.bn{width:64px;height:64px;border-radius:12px;border:3px solid #5B6491;background:linear-gradient(180deg,#E2E9F4,#C6D5EE);display:grid;place-items:center;font-size:calc(30px * var(--ui-scale,1));position:relative;cursor:help;font-style:normal}
-.bn.done{border-color:#7A5E1E;background:linear-gradient(180deg,#EFE3C0,#E6CB86);box-shadow:0 0 12px rgba(255,217,138,.55)}
-.bn.cur{border-color:#4D66B5;background:linear-gradient(180deg,#D3E0F3,#B8C9F0);box-shadow:0 0 0 4px rgba(47,123,214,.25);animation:bnpulse 1.6s ease-in-out infinite}
-.bn.lock{filter:grayscale(1) opacity(.5)}
-.bn.gate{border-radius:50%;border-style:double;border-width:6px}
-@keyframes bnpulse{50%{box-shadow:0 0 0 8px rgba(47,123,214,.12)}}
-.vline{width:4px;height:22px;background:#5B6491}
 .tt{position:fixed;z-index:40;max-width:240px;background:var(--ink);color:var(--win);border-radius:10px;padding:8px 10px;font-size:calc(12.5px * var(--ui-scale,1));line-height:1.45;box-shadow:0 10px 30px rgba(0,0,0,.4);pointer-events:none;display:none}
 .tt.on{display:block}
 .tt b{display:block;font-size:calc(13px * var(--ui-scale,1))}
@@ -990,12 +967,6 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .qwin .cover .due.late{color:#6E1226}.qwin .cover .due.soon,.qwin .cover .due.today{color:#4A3300}
 .qwin .minispread{grid-template-columns:1fr}
 .qwin .docx{grid-template-columns:1fr}
-.toc .side-h{font-size:calc(11.5px * var(--ui-scale,1));color:#5B6491;text-align:center;margin-top:6px}
-.chain{grid-template-columns:72px minmax(0,1fr);justify-items:start;align-items:center;gap:4px 12px}
-.chain>div:first-child{display:grid;justify-items:center}
-.sides{display:flex;gap:10px;align-items:center}
-.sides .hl{width:22px;height:4px;background:#5B6491}
-.bn.sidebn{width:50px;height:50px;font-size:calc(22px * var(--ui-scale,1));border-radius:50%}
 /* 꾸미기 — 입은 것을 플로로 위에(모자 · 목). 크기는 플로로 크기(--fs)를 따른다 */
 .pet{position:relative}
 .deco{position:absolute;left:50%;translate:-50% 0;line-height:1;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
@@ -1022,7 +993,7 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .odds span b{display:block;color:var(--ink2);font-size:calc(12.5px * var(--ui-scale,1))}
 .gacha .fine{font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);margin:0}
 @media (min-width:601px){.gacha{background:var(--isl)}}
-@media (prefers-reduced-motion:reduce){.bn.cur,.win.winpop,.gacha .stage .big,.gacha.rolling .bigshell{animation:none}}
+@media (prefers-reduced-motion:reduce){.win.winpop,.gacha .stage .big,.gacha.rolling .bigshell{animation:none}}
 @media (min-width:601px){.tt{background:#2B3463;color:#EEF1FA;border:1px solid rgba(255,255,255,.25)}}
 
 /* 앱의 설정 창 · 퀘스트 창(win.html, C-22) — 창 폭이 601px보다 좁아도 섬과 같은 네이비(위 PC 팔레트와 같은 값 — 바꾸면 둘 다). 글자 크기 설정은 섬의 값을 따르지 않는다(창은 1배) */
@@ -1116,19 +1087,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .qsel button small{font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub)}
 .qsel button[aria-pressed=true]{border-color:var(--acc);background:var(--acc-soft)}
 .qsel button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-.learnbox{display:grid;gap:8px;margin:0 0 14px;padding:10px 12px;border-radius:12px;border:2px solid #C5CEE2;background:#F2F5FA;color:#2B3463;box-shadow:inset 0 0 0 2px #fff}   /* 도전과제 판(양피지) 위의 카드 — 테마 색 대신 공책 색(어두운 테마의 카드 색은 비쳐서 글이 안 보였다) */
-.learnbox h4{margin:0;font-size:calc(13.5px * var(--ui-scale,1));color:#2B3463}
-.learnbox .tu,.learnbox .tu-h b{color:#2B3463}.learnbox .tu h5,.learnbox .tu-ex i,.learnbox .meta{color:#5B6491}.learnbox .tu-ex{border-color:#C5CEE2}
-.learnbox .tu-st.ready{background:#DDEFD5;color:#2F6B2F}.learnbox .tu-st.soon{background:#F6E3B8;color:#7A5200}
-.tu-chips{display:flex;flex-wrap:wrap;gap:6px}
-.tu-chips button{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;border:1.5px solid #C5CEE2;background:#E2E9F4;color:#2B3463;font-size:calc(13px * var(--ui-scale,1));cursor:pointer}
-.tu-chips button small{color:#5B6491;font-size:calc(11px * var(--ui-scale,1))}
-.tu-chips button[aria-pressed=true]{border-color:#7A5E1E;background:#F2F5FA;font-weight:800}
-.tu-chips button:focus-visible{outline:2px solid #4D66B5;outline-offset:2px}
-.learnbox button.tag.term{color:#2B3463;border-color:#CDBB8E}.learnbox button.tag.term[aria-expanded=true]{background:#F2F5FA;color:#2B3463;border-color:#7A5E1E}.learnbox .term-say{background:#E2E9F4;color:#2B3463}
-.lb-terms{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:6px 0;font-size:calc(12.5px * var(--ui-scale,1))}
-.lb-terms .term-say{flex-basis:100%}
-.book .pl-rep{background:rgba(255,255,255,.55);color:#2B3463}.book .pl-rep li.y{color:#2F6B2F}.book .pl-rep li.n,.book .pl-rep .meta{color:#5B6491}   /* 퀘스트 창의 공책(양피지) — 테마 색 대신 공책 색 */
 @media (max-width:600px){.qsel{grid-template-columns:1fr}}
 /* claude-drafted: 2026-10-25 — C-37: 초안 확인 카드 안의 넷(한곳에) · 도전과제의 한눈에 보기(단계가 이어지는 흐름 — 채운 칸 · 빈 칸 · 채우기) · 문서 올리기 목록 */
 .dchk{list-style:none;margin:2px 0 0;padding:0;display:grid;gap:4px;text-align:left}
@@ -1151,7 +1109,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .jm-h b{flex:1 1 auto;font-size:calc(13.5px * var(--ui-scale,1))}
 .jm-count{font-size:calc(12px * var(--ui-scale,1));font-weight:800;padding:1px 8px;border-radius:999px;background:#E2E9F4;color:#2B3463}
 /* claude-drafted: 2026-10-28 — C-54 지도(도전과제 탭의 카드 지도, 목업 캔버스 ④ ~ ⑥): 바다 위 얼음 조각 — 파스텔 토큰(웹사이트 초안과 같은 값), 카드 4열 두 줄(둘째 줄은 돌아온다), 아래 줄 문서, 보기 셋 */
-.board.sea{background:#E2E9F4 repeating-radial-gradient(ellipse at 12% 18%,rgba(77,102,181,0) 0 46px,rgba(77,102,181,.07) 46px 47.5px);color:#2B3463}
 .sm-views{display:inline-flex;gap:2px;padding:3px;border-radius:999px;background:rgba(43,52,99,.08);margin:0 0 10px}
 .sm-views button{min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#2B3463;font:inherit;font-size:calc(13px * var(--ui-scale,1));font-weight:700;cursor:pointer}
 .sm-views button[aria-selected=true]{background:#F2F5FA;color:#2B3463;box-shadow:0 1px 0 #C5CEE2}
@@ -1176,22 +1133,8 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .sm-card.sel{outline:3px solid #4D66B5;outline-offset:3px}
 .sm-card:focus-visible{outline:3px solid #4D66B5;outline-offset:3px}
 /* C-54 ⑧ 얼음 조각 가까이(2026-10-28 버튼 "둘다 할것" — 누르기 + 확대): 고른 카드가 한 줄 전체로 커지고 줄마다 할 일 → 문서 ← 재료 */
-@keyframes sm-zoom{from{transform:scale(.86);opacity:.5}to{transform:none;opacity:1}}
-.sm-cell.big{grid-column:1/-1;animation:sm-zoom .28s cubic-bezier(.2,.8,.2,1);transform-origin:center top}
-.sm-card.big{min-height:0;flex-direction:row;align-items:baseline;gap:10px;padding:10px 16px;border-radius:22px}
-.sm-card.big .sm-line{margin-left:auto}
-.sm-rows{list-style:none;margin:0;padding:0 4px;display:grid;gap:4px}
-.sm-row button{width:100%;display:grid;grid-template-columns:auto minmax(0,.9fr) minmax(0,1.6fr);gap:2px 10px;align-items:baseline;text-align:left;min-height:44px;padding:6px 12px;border:1.5px solid #C5CEE2;border-left-width:5px;border-radius:12px;background:#F2F5FA;color:#2B3463;font:inherit;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
-.sm-row button b{color:#5B6491;font-weight:800}
-.sm-row button .sm-rn{font-weight:700;overflow-wrap:anywhere}
-.sm-row button .sm-rl{color:#2B3463;overflow-wrap:anywhere}
-.sm-row button small{grid-column:2/-1;color:#5B6491;font-size:calc(11px * var(--ui-scale,1))}
-.sm-row.miss button .sm-rl{color:#5B6491;font-style:italic}
-.sm-row.by-ok button{border-left-color:#4D66B5}.sm-row.by-edit button{border-left-color:#E6CB86}.sm-row.by-me button{border-left-color:#363E62}.sm-row.by-pick button{border-left-color:#B8C9F0}.sm-row.by-moved button{border-left-color:#A9E2C4}.sm-row.by-skip button{border-left-color:#C5CEE2}   /* 토큰 값만(금 · 민트 · 볼 · 바다 · 섬 · 단추 · 선 — 새 색을 지어내지 않는다, 새 맥락 리뷰 2026-10-28) */
-.sm-row.sel button,.sm-row button:focus-visible{outline:3px solid #4D66B5;outline-offset:1px}
 .ws-line h4{margin:0 0 4px}
 .ws-line .b.sm{min-height:34px;padding:0 12px;font-size:calc(12.5px * var(--ui-scale,1));margin:2px 6px 2px 0}
-@media (prefers-reduced-motion:reduce){.sm-cell.big{animation:none}}
 /* C-54 ⑨ 짝 선(버튼 "'흐름 따라가기'에서만") — 흐름 보기 오른쪽의 세로 길 셋: a 1↔8 · b 2↔7 · c 3↔6. 정한 곳(s)에서 시작해 확인하는 곳(e)에서 끝난다, 사이 단계는 지나간다 */
 .jmap{padding-right:30px}
 .jm-stage{position:relative}
@@ -1276,7 +1219,6 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .dprep ul{margin:2px 0 0;padding-left:18px}
 .jm-arrow{text-align:center;font-size:calc(12px * var(--ui-scale,1));color:#2B3463;font-weight:700}
 .jm-arrow span{font-weight:500}
-.vtabs button.map{font-size:calc(20px * var(--ui-scale,1))}
 .ship-files{list-style:none;margin:0;padding:8px 10px;border-radius:10px;background:var(--soft);display:grid;gap:2px;font:calc(12.5px * var(--ui-scale,1)) var(--font-code);text-align:left}
 .ship-files small{font-family:inherit;color:var(--mute)}
 .ship-peek{text-align:left;font-size:calc(12.5px * var(--ui-scale,1))}
@@ -1445,3 +1387,59 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .wside .ws-card .b.sm{margin-top:8px;min-height:44px}
 
 .pane-body .st.done,.pane-body .when,.mc .st.done{color:var(--ink)}   /* 섬 위 '마쳤어요' · 때 — 흐린 글자는 섬 위 겹친 면에서 4.5에 못 미친다(C-57 axe) */
+/* 퀘스트 판(C-65 · C-69, 2026-10-30 두승현 목업 확정본): 보기 고르기 + 지도 띠(지금 장이 있는 줄) + 그 장 카드에서 올라오는 퀘스트 카드(꼬리 · 손잡이). 내리면 여덟 장 + 아래 띠. 세로 줄 · 장 화면(C-66) · 받기 화면(.ev, C-70) 규칙은 뺐다 */
+.qboard{display:flex;flex-direction:column;gap:10px}
+.qtop{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.qtop .sm-views{margin:0}
+.qtop-hint{margin-left:auto;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.qtop .lnk{font-size:calc(12.5px * var(--ui-scale,1));color:var(--ink);font-weight:700}
+.qtop .sm-legend{margin-left:auto;flex:none}
+.sm-legend.by i{background:var(--by,var(--line))}
+.sm.sm-strip{gap:0}
+.sm-grid.one{direction:ltr}
+.sm.sm-strip .sm-card{min-height:96px}
+.sm-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.sm-chips i{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:999px;background:var(--card);color:var(--ink);font-size:calc(11px * var(--ui-scale,1));font-style:normal;box-shadow:inset 0 0 0 1px var(--line)}
+.sm-chips i::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--by,var(--line))}
+.sm-chips i.miss{color:var(--sub)}
+.sm-gives{display:block;margin-top:4px;font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub)}
+.qstack{position:relative;margin-top:6px}
+.qstack::before{content:"";position:absolute;left:var(--q-tail,12.5%);top:-9px;width:18px;height:18px;transform:translateX(-50%) rotate(45deg);background:var(--card);border-left:1px solid var(--line);border-top:1px solid var(--line)}   /* 꼬리 — 지금 장 카드를 가리킨다 */
+.qhandle{position:absolute;left:50%;top:6px;transform:translateX(-50%);width:64px;height:18px;border:0;background:transparent;padding:0;z-index:1}
+.qhandle i{display:block;width:40px;height:5px;margin:0 auto;border-radius:3px;background:var(--line)}
+.qhandle:hover i,.qhandle:focus-visible i{background:var(--acc)}
+.qstack .qcard{padding-top:22px}
+.qdown{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.qdown>div{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.qdown b{font-family:var(--font-disp);font-weight:400;font-size:calc(15px * var(--ui-scale,1));color:var(--ink)}
+.qdown span{font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.qdown .b{flex:none;min-height:40px;padding:0 16px;border:0;border-radius:999px;background:var(--isl);color:#EEF1FA;font-weight:700;font-size:calc(12.5px * var(--ui-scale,1))}
+.qpre .qwhy{margin:0;font-size:calc(13px * var(--ui-scale,1));color:var(--ink)}
+.qfirst{margin:0;padding:10px 12px;border-radius:12px;background:var(--acc-soft);color:var(--ink);font-size:calc(12.5px * var(--ui-scale,1))}   /* '처음 쓰는 기능' 한 줄 — 얼음 면 위 글은 진한 남색 */
+.qcard.readonly .ln{cursor:default}
+.qcard.readonly .qhead .lnk{flex:none;font-size:calc(12.5px * var(--ui-scale,1));color:var(--ink);font-weight:700}
+/* C-67 · C-71(2026-10-30 목업 확정본 S5 · S6 · S3): 흐름 · 상자는 작업 칸 가득 + '퀘스트로' 알약, 완료 보고 뒤 관문 칸 */
+.wbody>.qboard.full{flex:1;min-height:0}
+.qboard.full .board{flex:1;min-height:0;overflow:auto}
+.qboard.full.box .board{padding:0;background:none;display:flex;flex-direction:column}
+.q-back{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:calc(12.5px * var(--ui-scale,1));font-weight:700}
+.q-back b{font-family:var(--font-disp);font-weight:400;font-size:calc(14px * var(--ui-scale,1))}
+.q-back:hover{border-color:var(--acc);color:var(--acc)}
+.gatebox{margin-top:4px;padding:14px 16px;border-radius:14px;background:var(--soft);display:flex;flex-direction:column;gap:10px}
+.gb-head{display:flex;align-items:baseline;gap:10px}
+.gb-head b{font-family:var(--font-disp);font-weight:400;font-size:calc(15px * var(--ui-scale,1));color:var(--ink)}
+.gb-head small{color:var(--sub);font-size:calc(12px * var(--ui-scale,1))}
+.gb-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:calc(13px * var(--ui-scale,1));color:var(--ink)}
+.gb-list li{display:flex;align-items:center;gap:8px}
+.gb-list .ck{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--card);border:1.5px solid var(--line);color:var(--ink)}
+.gb-list li.ok .ck{background:var(--okbg);border-color:var(--okbg)}
+.gb-list .ck .ic{width:13px;height:13px}
+.gb-list li.no{color:var(--sub)}
+.gb-h{margin:0 0 4px;font-size:calc(12.5px * var(--ui-scale,1));font-weight:700;color:var(--ink)}
+.gb-learn .learn{display:grid;gap:6px}
+.gb-learn .mc-sub{margin:0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.gb-learn .mc-input{width:100%;min-height:52px;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;font-size:calc(13px * var(--ui-scale,1));color:var(--ink);background:var(--card);resize:vertical}
+.gb-note{margin:0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
+.piece.gold{background:var(--t-amber);color:var(--t-amber-ink);border:0}   /* 금 토큰은 '받았다'는 이 한 곳만(C-68) */
+.sm-card .sm-line.next{color:var(--acc);font-weight:700}
+@media (max-width:1280px){.sm.sm-strip .sm-card{min-height:80px}.qstack .qcard{padding-top:18px}}   /* 1280 × 800 — 배치는 같고 크기만(PRD 3-2절) */

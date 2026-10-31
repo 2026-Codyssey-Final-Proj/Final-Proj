@@ -53,9 +53,9 @@ test("C-45 · C-44 — 문서 지도 탭에 보드(문서 상자 · 재료 선),
     await page.click(".tb [data-act=qwin-toggle]"); await wait(700);
     if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 1단계 시작은 ① 화면이 작업 칸을 덮는다(F-88) — 섬을 옆으로
     const tabs = await page.$$eval(".wsx > .wh .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent));
-    assert.deepEqual(tabs, ["캔버스", "노트북", "도전과제", "책"], "문서 지도는 도전과제 안(C-54)");
-    await page.click("[data-act=qtab][data-tab=tree]"); await wait(200); await page.click('[data-act="tree-view"][data-v="box"]'); await wait(300);   // C-54: 문서 지도는 도전과제 안의 '상자' 보기
-    const frame = await (await page.waitForSelector("iframe.docmap", { timeout: 5000 })).contentFrame();
+    assert.deepEqual(tabs, ["캔버스", "퀘스트", "책"], "문서 지도는 퀘스트 탭 안의 상자 보기(C-54 · C-65)");
+    await page.click("[data-act=qtab][data-tab=quest]"); await wait(200); await page.click('[data-act="tree-view"][data-v="box"]'); await wait(300);   // C-54: 문서 지도는 도전과제 안의 '상자' 보기
+    let frame = await (await page.waitForSelector("iframe.docmap", { timeout: 5000 })).contentFrame();
     await frame.waitForSelector("#panel, .floe-empty", { timeout: 8000 }); await wait(800);
     const s = await frame.evaluate(() => ({ title: document.querySelector("h1")?.textContent || "", boxes: window.BOARD ? window.BOARD.elements.map((e) => e.c) : [], rels: window.BOARD ? window.BOARD.relations.length : -1, empty: !!document.querySelector(".floe-empty") }));
     assert.ok(!s.empty, "보드가 그려졌다"); assert.equal(s.title, "my-club-app 문서 지도");
@@ -64,6 +64,23 @@ test("C-45 · C-44 — 문서 지도 탭에 보드(문서 상자 · 재료 선),
     assert.ok(s.rels >= 5, `선 ${s.rels}`);
     assert.deepEqual(outside, [], "밖으로 요청하지 않는다(엔진 사본)");
     if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, "docmap.png") }); }
+    // C-67(2026-10-30 목업 확정본 S6): 문서 지도는 작업 칸 가득(높이 ≥ 85% [해석]) · 상자 이름의 계산 글자(배율 곱) ≥ 12px [해석] — 1440 × 900과 1280 × 800 둘 다. 판 안의 판(.board 격자 칸) 없음
+    const measure = async () => {
+      const box = await page.evaluate(() => { const m = document.querySelector(".qwin iframe.docmap").getBoundingClientRect(), b = document.querySelector(".qwin .wbody").getBoundingClientRect(); return { w: innerWidth, ratio: m.height / b.height }; });
+      const fr = await (await page.$("iframe.docmap")).contentFrame();   // 보기를 다시 열면 iframe이 새로 생긴다 — 매번 다시 잡는다
+      const font = await fr.evaluate(() => { const el = [...document.querySelectorAll("*")].find((n) => n.textContent.trim() === "plan.md" && n.children.length <= 2); if (!el) return 0;
+        const px = parseFloat(getComputedStyle(el).fontSize); let k = 1, w = el; while (w && w !== document.body) { const t = getComputedStyle(w).transform; if (t && t !== "none") { const m = /matrix\(([^,]+),/.exec(t); if (m) k *= parseFloat(m[1]); } w = w.parentElement; } return px * k; });
+      console.log(`docmap 잰 값 ${JSON.stringify({ ...box, font: Math.round(font * 10) / 10 })}`); return { ...box, font };
+    };
+    await wait(1400);   // 엔진의 처음 맞춤(0.7초) 뒤 docmap.html이 100%로 올린다(0.8초 뒤)
+    let mm = await measure();
+    assert.ok(mm.ratio >= 0.85, `1440 — 문서 지도 높이 / 작업 칸 ${mm.ratio.toFixed(2)} ≥ 0.85`); assert.ok(mm.font >= 12, `1440 — 상자 이름 ${mm.font.toFixed(1)}px ≥ 12`);
+    assert.ok(await page.$(".qwin .q-back"), "'퀘스트로' 알약");
+    await page.setViewport({ width: 1280, height: 800 }); await wait(600); await page.click('[data-act="tree-view"][data-v="cards"]'); await wait(200); await page.click('[data-act="tree-view"][data-v="box"]'); await wait(2400); mm = await measure();
+    assert.ok(mm.ratio >= 0.85, `1280 — 높이 비율 ${mm.ratio.toFixed(2)} ≥ 0.85`); assert.ok(mm.font >= 12, `1280 — 상자 이름 ${mm.font.toFixed(1)}px ≥ 12`);
+    if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "docmap-1280.png") });
+    await page.setViewport({ width: 1440, height: 900 }); await wait(400);
+    frame = await (await page.$("iframe.docmap")).contentFrame(); await frame.waitForSelector("#panel, .floe-empty", { timeout: 8000 }); await wait(600);   // 보기를 다시 열어 iframe이 새로 생겼다
     // 상자를 누르면 오른쪽 판 → '파일 보기에서 열기' → 작업실에 파일이 열린다
     const planId = await frame.evaluate(() => window.BOARD.elements.find((e) => e.c === "docs/02-plan/plan.md").id);
     await frame.evaluate((id) => { const box = [...document.querySelectorAll("[data-id], .el, .box")].find((b) => b.dataset.id === id || b.id === id); if (box) box.click(); else throw new Error("상자를 못 찾음"); }, planId).catch(async () => {
