@@ -154,8 +154,8 @@
       body: todoList(true), acts: [{ label: "이 순서로 시작하기", act: "go", key: "Enter", pri: true }] };
     return { tone: "amber", mood: face()[0], meta, title: s.n === 0 && BC ? "이 프로젝트의 기준 — 맞나요?" : "이번 단계에서 한 일, 이해되셨나요?",
       sub: s.n === 0 && BC ? "1단계 칸과 받은 글로 기준 한 장을 만들었어요. 옮겨 온 줄은 어디서 왔는지 적혀 있고, 사람만 아는 칸(성공)은 비워 두었어요 — 채워 주면 다음 단계 퀘스트가 이 기준으로 지어져요." : `잘 모르겠으면 헷갈린 곳을 골라 같이 풀어요. 몇 번이고 괜찮아요.${st.noCount ? ` (다시 물어본 횟수 ${st.noCount}번)` : ""}`,
-      body: `${s.n === 0 && BC ? baseCardHTML(BC.withEdits(BC.build({ results: st.results, source: st.source }), st.cardEdits), true) : ""}${learnBox(s.n)}`,   // C-56 R-1 기준 카드(목업 ③) + C-47 배운 것
-      acts: [yes, no, ...(window.FloeGatePlan ? [{ label: "계획서 보기", act: "gp-open", kind: "ghost" }] : [])] };   // C-27 관문 계획서 — 작업실 책 탭의 그 단계 자리
+      body: `${s.n === 0 && BC ? baseCardHTML(BC.withEdits(BC.build({ results: st.results, source: st.source }), st.cardEdits), true) : ""}${learnBox(s.n)}${window.FloeGatePlan ? `<p class="mc-fine"><button type="button" class="lnk" data-act="gp-open">계획서 보기 — 지금까지 한 것과 다음에 할 것</button></p>` : ""}`,   // C-56 R-1 기준 카드(목업 ③) + C-47 배운 것 + C-27 관문 계획서(칩이 아니라 본문의 작은 단추 — 칩은 네 / 아니요 둘, C-60 주 행동 하나)
+      acts: [yes, no] };
   }
   // 가로 카드 하나 — 왼쪽 플로로, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
   function card(v) {

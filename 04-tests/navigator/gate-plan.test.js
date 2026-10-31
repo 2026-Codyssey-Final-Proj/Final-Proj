@@ -75,7 +75,8 @@ test("마크다운 — 목차 줄이 절 이름표로 이어진다(누르면 그
 test("화면 — 관문 카드에 '계획서 보기', 책 탭에 단계마다 계획서 · 목차 단추가 그 절로 · 파일로 받기", () => {
   const read = (p) => fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator", p), "utf8");
   const feed = read("app/20-feed.js"), lib = read("app/60-library.js"), html = read("index.html");
-  assert.match(feed, /\{ label: "계획서 보기", act: "gp-open", kind: "ghost" \}/);
+  assert.match(feed, /<button type="button" class="lnk" data-act="gp-open">계획서 보기/, "본문의 작은 단추 — 칩은 네 / 아니요 둘(C-60)");
+  assert.ok(!/act: "gp-open"/.test(feed), "칩으로는 두지 않는다");
   assert.match(lib, /function gatePlanBox\(\)/);
   assert.match(lib, /data-act="gp-toc" data-v="\$\{esc\(t\.id\)\}"/);
   assert.match(lib, /"gp-toc": \(i, el\) => \{/); assert.match(lib, /scrollIntoView/);
