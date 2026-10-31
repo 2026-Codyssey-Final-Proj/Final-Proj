@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v59.1 | 2026-10-31 | 이재엽 | 멘토링 2(10/31) 준비 한 장 — 달라진 것 · 보여 줄 장면 다섯 · 물을 것 다섯 · 확인받을 결정 · 위험 (#301) | `01-docs/00-overview/기록/` |
 | v59.0 | 2026-10-31 | 이재엽 | 대회 뒤로 미뤘던 넷을 만듦 — C-23 ⑤ 버전(관문마다 V.n · README 버전 기록) · C-27 관문 계획서(목차 → 그 절 · 파일로) · C-24 공부 묶음(파일 + 질문 다섯 · NotebookLM 안내, 내려받기만) · 지식 창고(세컨드 브레인) 연결(채택한 가져갈 것을 지식 문서로) (#300) | `02-frontend/navigator/`(담당 임유정 — 이 줄이 알림) · `03-backend/navigator/` · `04-tests/` · `01-docs/00-overview/requirements.md` · `01-docs/features/` |
 | v58.1 | 2026-10-31 | 이재엽 | F-102 알려진 e2e 실패의 나머지 13개를 고침(③의 둘은 #292) — 10개는 작업실 개편(C-60 · C-61 · C-62 · C-63) · 시작 화면(F-85 · F-88) 뒤 시험이 옛 화면을 찾던 것을 지금 화면의 같은 뜻으로, 3개(접근성)는 섬 카드 안 처음 설정 제목 · 허락 카드 글 · 휴대폰 처음 설정 단추의 글자 대비를 고침. 알려진 실패 목록이 빔 (#295) | `04-tests/e2e/`(10개 파일 — chat-list는 전체 시험 때만 나던 시간 문제) · `04-tests/known-failures.json` · `02-frontend/navigator/`(app.css · setup.css — 담당 임유정 · 두승현) · `01-docs/07-maintenance/fix-map.md` |
 | v58.0 | 2026-10-30 | 두승현 | 퀘스트 탭 합치기 PR ⓒ — 흐름 · 상자(문서 지도)를 작업 칸 가득 + '퀘스트로' 알약, 문서 지도 처음 배율 100% · 지금 장 가운데(C-67), 완료 보고 뒤 관문 칸을 퀘스트 카드 아래로 · 지도 카드 '관문 앞' · '다음'(C-71); e2e docmap · stage-map · gate-stop 보강 (TASK T20 ~ T27) (#299) | `02-frontend/navigator/`(담당 임유정 — app/58-workspace.js · app.css · app.js · docmap.html) · `03-backend/navigator/board/`(엔진 사본에 centerOn 한 줄 · README) · `04-tests/e2e/` · `01-docs/features/`(PRD 11절 · TASK 진행 · 사진) |
