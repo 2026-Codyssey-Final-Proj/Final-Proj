@@ -38,6 +38,7 @@ const Presets = require("./presets.js");   // C-44 맡기기 틀 — 번호로 �
 const RB = require("./readme-book.js");   // C-26 내 작업 책 — README를 책으로 나눈다(읽기만) — claude-drafted: 2026-10-23
 const PublicOk = require("./publicok.js");   // C-52 공개 저장소면 저장소마다 처음 한 번 묻는다(2026-10-29)
 const GH = require("./github.js");   // 설정의 GitHub 칸(C-25, 2026-10-24) — git · gh에게 읽기만 묻는다 — claude-drafted: 2026-10-24
+const SBK = require("./sbknow.js");   // 지식 창고(세컨드 브레인) 연결 — 채택한 가져갈 것을 지식 문서 한 장으로(순수, 2026-10-30)
 const Carry = require("./carry.js");   // 지식 퀘스트 C-48 가져갈 것 — 기준 다섯 · 장부의 규칙(순수, 2026-10-29)
 const Plan = require("./plan.js");   // C-51 앞의 결정과 다름(규칙) — 계획판 규칙(순수)과 같은 파일
 const Quest = require("./quest.js");   // C-51 근거 줄의 칸 이름(짧은 이름)
@@ -82,6 +83,10 @@ const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 
 // 지식 퀘스트 C-48(2026-10-29) — 따로 더해 둔다(다른 갈래가 고치는 위 목록 줄과 부딪치지 않게). 가져갈 것 초안(AI 한 번) · 장부(이 컴퓨터) 모두 확인 값
 TOKEN_ROUTES.push("/api/carry/draft", "/api/carry");
 POST_ROUTES.push("/api/carry/draft");
+
+// 지식 창고(세컨드 브레인) 연결(2026-10-30) — 따로 더해 둔다. 데이터 폴더가 있는지 · 쓰기 모두 확인 값
+TOKEN_ROUTES.push("/api/knowledge-store");
+POST_ROUTES.push("/api/knowledge-store");
 
 // C-52 빼 둘 곳(2026-10-30) — 따로 더해 둔다(다른 갈래와 부딪치지 않게). 폴더 이름 · 목록이 나가고 저장하므로 확인 값
 TOKEN_ROUTES.push("/api/exclude");
@@ -169,7 +174,7 @@ const STATIC = {
   // steps.js — AI 진행(C-12, 2026-10-20): 섬(내비게이터)이 `../../03-backend/navigator/steps.js`로 부른다(한 줄 글 · 서버 없이 보일 예시)
   // approve.js — 승인 카드(FR-17, 2026-10-20): 섬이 서버 없이 보일 예시 카드와 모양을 읽는다
   "03-backend/navigator": ["navigator.js", "scenario.js", "glossary.js", "understand.js", "priority.js", "alerts.js", "tiers.js", "token-view.js", "sensitive.js", "steps.js", "feed.js", "approve.js", "quest.js", "readme-book.js", "md-view.js", "stagemap.js", "queststate.js", "basecard.js", "build.js", "presets.js", "handoff.js", "tutorial.js", "plan.js", "docs.js", "carry.js",
-    "sheet.js"]   // sheet.js — C-47 한 장(2026-10-30), 화면이 ../../03-backend/navigator/sheet.js로 부른다,   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
+    "sheet.js", "gateplan.js", "studypack.js"]   // gateplan.js — C-27 관문 계획서(2026-10-30)   // sheet.js — C-47 한 장(2026-10-30), 화면이 ../../03-backend/navigator/sheet.js로 부른다,   // plan.js — 준비 계획판 규칙(C-34, 2026-10-24)   // quest.js — 퀘스트 규칙(C-22, 2026-10-21)
 };
 const FILES = {};
 for (const [dir, names] of Object.entries(STATIC)) for (const f of names) {
@@ -854,7 +859,8 @@ async function shipDocs(body) {   // async — 공개 저장소 확인(gh)을 �
     || !Array.isArray(keep) || keep.length > Docs.SLUGS.length || !keep.every((k) => typeof k === "string" && isStagePath(k)))
     return [400, { ok: false, reason: "문서 지문의 모양이 맞지 않음" }];
   const ex = excludeOf(s.dir);   // C-52 — 빼 둔 문서는 읽지도(지문 · 절 합치기) 쓰지도 맡기지도 않는다. 되살리기도 빼 두므로 지문이 없어 '모르는 문서 = Floe 것'으로 덮는 일이 없게(새 맥락 리뷰)
-  const all = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, redact: Sensitive.redact });
+  const tier = body && Nav.TIERS.includes(body.tier) ? body.tier : undefined;   // 관문 계획서(C-27)의 끝 조건 — 화면과 같은 등급으로
+  const all = Docs.files({ topic, idea, source, results, card: card ? cardClean(card) : null, tier, redact: Sensitive.redact });
   const excluded = all.filter((f) => ex(f.path)).map((f) => f.path), files = all.filter((f) => !ex(f.path));
   const t = docTargets(s.dir, files);
   if (t.why) return [400, { ok: false, reason: t.why }];
@@ -952,6 +958,35 @@ function carryGet(q) {
   if (q == null || q === "" || !Number.isInteger(stage) || stage < 0 || stage >= Nav.STAGES.length) return { ok: false, why: "stage", reason: "단계 번호(0 ~ 7)가 필요해요" };
   const s = projectNow(), key = s ? folderKey(s.dir) : "", book = carryBook();
   return { ok: true, items: Carry.forStage(book, stage, key), held: Carry.held(book, key) };
+}
+// ── 지식 창고(세컨드 브레인) 연결(2026-10-30, API.md 3-35) — 얇은 경계: 파일 모양만(sbknow.js — knowledge.py save_knowledge와 같은 모양) ──
+//   데이터 폴더는 SECOND_BRAIN_DATA(ADR-0010)가 있고 폴더일 때만. 채택한 가져갈 것 하나 → <데이터>/vault/지식/작업/<이름>.md. 덮지 않는다(같은 이름은 409), 폴더 경로는 화면에 주지 않는다
+function sbData() {
+  const v = String(process.env.SECOND_BRAIN_DATA || "").trim(); if (!v) return "";
+  const d = v === "~" || v.startsWith("~/") ? path.join(os.homedir(), v.slice(1)) : v;
+  let real; try { real = fs.realpathSync(d); if (!fs.statSync(real).isDirectory()) return ""; } catch { return ""; }
+  const repo = fs.realpathSync(path.join(__dirname, "../.."));
+  return real === repo || real.startsWith(repo + path.sep) ? "" : real;   // 이 레포 안이면 쓰지 않는다 — 개인 데이터는 레포에 두지 않는다(CLAUDE.md)
+}
+function sbPost(body) {
+  const id = body && body.id;
+  if (typeof id !== "string" || !/^c[0-9a-z]{1,30}$/.test(id)) return [400, { ok: false, reason: "가져갈 것 번호의 모양이 맞지 않음" }];
+  const dir = sbData();
+  if (!dir) return [409, { ok: false, why: "nodata", reason: "지식 창고 폴더를 몰라요 — SECOND_BRAIN_DATA를 정하면 거기에 써요" }];
+  const it = carryBook().items.find((x) => x.id === id && x.state === "adopted"), k = it && SBK.toKnowledge(it, { today: Carry.today() });
+  if (!k) return [404, { ok: false, reason: "채택한 가져갈 것을 찾지 못했어요" }];
+  if (Sensitive.scan(k.text).blocked) return [409, { ok: false, why: "sensitive", reason: "비밀번호 · 키 모양이 있어 지식 창고에 넣지 않았어요" }];   // 장부의 글은 이미 가렸다 — 한 번 더
+  const base = path.join(dir, "vault", "지식", k.purpose), file = path.join(base, `${k.name}.md`);
+  if (path.dirname(file) !== base) return [400, { ok: false, reason: "이름을 읽을 수 없어요" }];   // 이름이 폴더 밖을 가리키지 않게(sbknow.js nameOf가 이미 막는다 — 한 번 더)
+  // 바로가기(심볼릭 링크) 너머에 쓰지 않는다 — 만들기 전에 이미 있는 가장 가까운 위 폴더가 데이터 폴더 안인지 보고, 만든 뒤 한 번 더(mkdir은 링크를 따라간다)
+  const inside = (p) => { try { let q = p; while (!fs.existsSync(q)) q = path.dirname(q); const r = fs.realpathSync(q); return r === dir || r.startsWith(dir + path.sep); } catch { return false; } };
+  const LINK = [409, { ok: false, why: "link", reason: "지식 창고의 폴더가 다른 곳을 가리켜요 — 쓰지 않았어요" }];
+  if (!inside(base)) return LINK;
+  try { fs.mkdirSync(base, { recursive: true }); } catch { return [500, { ok: false, reason: "지식 창고에 쓰지 못했어요" }]; }
+  if (!inside(base)) return LINK;
+  try { fs.writeFileSync(file, k.text, { flag: "wx" }); }
+  catch (e) { return e && e.code === "EEXIST" ? [409, { ok: false, why: "exists", reason: "같은 지식이 이미 있어요 — 덮지 않았어요" }] : [500, { ok: false, reason: "지식 창고에 쓰지 못했어요" }]; }
+  return [200, { ok: true, name: k.name, purpose: k.purpose }];
 }
 // POST /api/carry { action: adopt | reject | hold, item, reason?, id? } — 사람이 고른 것을 장부에. 반려는 까닭과 함께, 지우지 않는다. 글은 가린 뒤
 function carryPost(body) {
@@ -1070,6 +1105,8 @@ async function handleRoute(req, res) {
   if (req.method === "GET" && route === "/api/docs") return send(res, 200, docsRead());   // C-49 폴더의 단계 문서를 다시 읽는다(API.md 3-23-1) — 읽기만
   if (req.method === "GET" && route === "/api/carry") { const r = carryGet(new URL(req.url, "http://localhost").searchParams.get("stage")); return send(res, r.ok ? 200 : 400, r); }   // C-48 그 단계에 가져온 것(API.md 3-33) — 읽기만
   if (req.method === "POST" && route === "/api/carry") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = carryPost(body || {}); return send(res, code, out); }   // C-48 채택 · 반려 · 보류
+  if (req.method === "GET" && route === "/api/knowledge-store") return send(res, 200, { ok: true, ready: !!sbData() });   // 지식 창고 연결(API.md 3-35) — 폴더가 있는지만
+  if (req.method === "POST" && route === "/api/knowledge-store") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = sbPost(body || {}); return send(res, code, out); }
   if (req.method === "GET" && route === "/api/exclude") return send(res, 200, excludeGet());   // C-52 빼 둘 곳(API.md 3-34) — 폴더마다의 줄 목록
   if (req.method === "POST" && route === "/api/exclude") { const body = await readJson(req, 16 * 1024); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = excludePost(body); return send(res, code, out); }   // C-52 저장(거절할 줄이 있으면 바꾸지 않음)
   if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만

@@ -86,10 +86,13 @@
     d.state = "saving"; render();
     const r = await carryPost({ action, id: d.id, item: { text: d.text, why: d.why, stage: d.stage, review: d.review, from: d.from }, ...(reason ? { reason } : {}) });
     if (!r.ok) { d.state = ""; render(); return say(r.reason || "남기지 못했어요"); }
+    if (r.id) d.id = r.id;   // 장부의 번호 — 지식 창고로 넣을 때 쓴다
     d.state = { adopt: "adopted", reject: "rejected", hold: "held" }[action]; d.rejecting = false;
     if (st.carry && st.carry.drafts.every((x) => x.state && x.state !== "saving")) { st.carryDone = true; save(); }   // 이 프로젝트에서 다 정했다 — 8단계 카드를 다시 띄우지 않는다. st.carry 확인: 남기는 사이 '나중에'(carry: null)로 닫았을 수 있다(F-103-11)
     render();
   }
+  // ── 지식 창고(세컨드 브레인) 연결(2026-10-30, API.md 3-35): 채택한 가져갈 것 하나를 그 데이터 폴더의 지식 문서로 — 폴더(SECOND_BRAIN_DATA)가 있을 때만 단추 ──
+  async function sbCheck() { try { const r = await (await fetch("/api/knowledge-store", { cache: "no-store" })).json(); st.sbReady = !!(r && r.ok && r.ready); } catch { st.sbReady = false; } render(); }
   function momentCarry() {
     const C = st.carry, meta = `<span class="mm-stage">${LB(7)} · 가져갈 것</span>`, n = learnedList().length;
     if (C.phase === "offer") return { tone: "blue", mood: "happy", meta, title: "다음 프로젝트에 가져갈 것을 정리해 볼까요?",
@@ -97,7 +100,8 @@
       acts: [{ label: "초안 만들기", act: "carry-draft", key: "Enter", pri: true }, { label: "나중에", act: "carry-later", kind: "ghost" }] };
     const rows = C.drafts.map((d, k) => {
       const miss = CY.missing(CY.measure(d, CY.today()));
-      if (d.state) return `<li class="carry-d"><p><b>${esc(d.text)}</b> — ${CARRY_WORD[d.state]}</p></li>`;
+      if (d.state) return `<li class="carry-d"><p><b>${esc(d.text)}</b> — ${CARRY_WORD[d.state]}</p>${d.state === "adopted" && st.sbReady && d.id
+        ? d.sb ? `<p class="mc-fine">지식 창고에 넣었어요 — 세컨드 브레인의 '지식 · 작업'에서 찾아요</p>` : `<div class="opts">${btn({ label: "지식 창고로", act: "carry-sb", i: k, kind: "opt" })}</div>` : ""}</li>`;   // 지식 창고 연결(2026-10-30) — 데이터 폴더가 있을 때만
       const stageSel = `<select data-act="carry-stage" data-i="${k}" aria-label="언제 쓰나(단계)"><option value="-1"${d.stage < 0 ? " selected" : ""}>언제 쓰나 — 고르기</option>${N.STAGES.map((x) => `<option value="${x.n}"${d.stage === x.n ? " selected" : ""}>${LB(x.n)} · ${esc(x.title)}</option>`).join("")}</select>`;
       const fromBtns = N.STAGES.map((x) => `<button type="button" class="b opt toggle" data-act="carry-from" data-i="${k}" data-v="${x.n}" aria-pressed="${d.from.includes(x.n)}">${x.n + 1}</button>`).join("");
       return `<li class="carry-d">
@@ -131,7 +135,7 @@
     if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "ship";
     const known = shipKnown();
-    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
+    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, tier: st.tier, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
     st.planBusy = "";
     // C-52(2026-10-29): 공개(또는 모름) 저장소 — 저장소마다 처음 한 번 더 묻는다. 서버는 아직 아무것도 쓰지 않았다
     if (!r.ok && r.why === "public") { st.ship = { ...st.ship, phase: "public", reason: r.reason || "" }; return render(); }
@@ -191,7 +195,7 @@
   //   1100×640 판을 칸(.cv)에 맞춰 줌한다(app.css .cvb의 --u — 컨테이너 단위라 스크립트 없이, 앱의 창이든 브라우저의 판이든). 2026-10-27 C-42 R-11(이재엽 "줌 + 모자라면 다시 배치"): 0.85배 아래로 줄어야 하면
   //   줌하지 않고 격자로 다시 배치한다 — 두 줄(① ② ③ / ④ ⑤ 관문) · 640 미만은 세로 한 줄, 글자 크기는 설정 그대로(app.css @container). 지금 하는 일 · 단계 칩 · 왼쪽에 지난 장 / 다음 장 보드 ·
   //   틀 안에 ① 생각(포스트잇) · 파일 카드 · 배울 말 · 화살표 → ② 행동 → ③ 기록(적은 칸 카드) → ④ 저장 → ⑤ 버전 → 관문, 작은 플로로는 첫 '지금' 칸 옆(FLO_AT).
-  //   칸의 글은 지금 상태에서만 — 생각: 퀘스트의 지금 칸(quest.js), 행동: 맡긴 일(plan.js), 기록: 적은 칸 · 살펴본 결과(st.results), 저장: 단계 문서(st.docs · docs.js), 버전: 대회 뒤(C-23), 관문: 지난 날.
+  //   칸의 글은 지금 상태에서만 — 생각: 퀘스트의 지금 칸(quest.js), 행동: 맡긴 일(plan.js), 기록: 적은 칸 · 살펴본 결과(st.results), 저장: 단계 문서(st.docs · docs.js), 버전: 지난 관문 수(C-23 — docs.js versionsOf), 관문: 지난 날.
   const FLO_AT = { c1: [420, 100], c2: [640, 92], c3: [1040, 92], c4: [690, 382], c5: [920, 382], c6: [1040, 382] };   // 작은 플로로가 서는 자리(판 좌표) — 목업의 FLO
   const FLO_MINI = '<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"></ellipse><circle cx="24" cy="34" r="3" fill="#1A2350"></circle><circle cx="40" cy="34" r="3" fill="#1A2350"></circle><ellipse cx="32" cy="40" rx="2.6" ry="1.8" fill="#1A2350"></ellipse><ellipse cx="20" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse><ellipse cx="44" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse></svg>';
   const ARROW = (cls, w, h, d) => `<svg class="cv-ar ${cls}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
@@ -223,7 +227,9 @@
     const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
     const fl = files.length ? `<ul class="cv-files">${files.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
     const save = docDone(n) ? cell("c4", "done", "④", "저장", "단계 문서를 확정했어요", "", fl) : FDOCS && st.results[0] && st.results[1] ? cell("c4", "now", "④", "저장", "문서로 묶어 GitHub에", "도전과제 탭의 한눈에 보기에서", fl) : cell("c4", "later", "④", "저장", "아직 — 관문 뒤에", "", fl);
-    const ver = cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 책에 V.${n + 1}`, "대회 뒤 (C-23)");
+    // C-23 ⑤ 버전(2026-10-30): 관문을 넘을 때마다 V.n이 하나 — 단계 결과에서 센다(docs.js versionsOf), README의 Floe 절 맨 앞 '버전 기록'에 줄로
+    const vers = FDOCS && FDOCS.versionsOf ? FDOCS.versionsOf(st.results) : [], vi = vers.find((x) => x.n === n);
+    const ver = vi ? cell("c5", "done", "⑤", "버전", `V.${vi.v} · ${vi.passed.slice(5)}`, "README의 Floe 절 맨 앞 '버전 기록'에") : cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 V.${vers.length + 1}`, "관문을 넘을 때마다 하나씩");
     // R-5 관문(C-42): 남은 기준 수와 '안 됨'인 기준 이름(짧은 이름) — 셋까지, 나머지는 +n
     const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met).map((x) => QU.shortOf(x.text)) : [];
     const ul = unmet.length ? `<details class="cv-unmet-d"><summary>남은 기준 ${unmet.length}</summary><ul class="cv-unmet">${unmet.slice(0, 3).map((x) => `<li>안 됨 · ${esc(x)}</li>`).join("")}${unmet.length > 3 ? `<li>+${unmet.length - 3}</li>` : ""}</ul></details>` : "";   // C-60: 처음엔 접혀 있다
@@ -274,7 +280,16 @@
       st.carry = { phase: "drafts", drafts: r.drafts.map((d, k) => ({ id: `c${tag}${k}`, text: d.text, why: d.why || "", stage: Number.isInteger(d.stage) ? d.stage : -1, review: d.review || "", from: Array.isArray(d.from) ? d.from : [] })), say: r.say || "" };
       st.tokens = r.tokens || 0; fetchUsage(); render();
     },
-    "carry-adopt": (i) => carryDecide(i, "adopt"),
+    "carry-adopt": async (i) => { await carryDecide(i, "adopt"); if (canLive && !st.sbReady) sbCheck(); },   // 채택할 때마다(아직 몰랐거나 없었으면) 지식 창고 폴더가 있는지 묻는다 — 켜 둔 사이 폴더를 정해도 따라간다
+    "carry-sb": async (i) => {
+      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state !== "adopted" || !d.id || d.sb || d.sbBusy) return;
+      d.sbBusy = true;   // 두 번 눌러 두 번 보내지 않게
+      let r; try { r = await (await fetch("/api/knowledge-store", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) })).json(); } catch { r = null; }
+      d.sbBusy = false;
+      if (r && r.why === "exists") { d.sb = true; render(); return say("이미 지식 창고에 있어요 — 덮지 않았어요"); }
+      if (!r || !r.ok) return say((r && r.reason) || "지식 창고에 넣지 못했어요");
+      d.sb = true; render(); say("지식 창고에 넣었어요 — 세컨드 브레인의 '지식 · 작업'에서 찾아요");
+    },
     "carry-hold": (i) => carryDecide(i, "hold"),
     "carry-reject": (i) => {
       const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state) return;

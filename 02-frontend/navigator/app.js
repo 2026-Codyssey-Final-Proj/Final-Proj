@@ -152,7 +152,7 @@
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
     qwin: false, qtab: "canvas", boot: null, prep: null, islBig: null, tidy: null, chatMark: 0, chatChanges: [], chatOpen: null, chatGo: null, fnAll: false, /* islBig · tidy · chatMark — C-61(2026-10-29): 섬을 크게(null이면 저절로) · 정리 카드 · 이 단계 대화가 시작된 자리 */ mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
     gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
-    plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {}, dbg: null,   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
+    plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {}, dbg: null, study: null, gpSel: null, sbReady: null,   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
     qfocus: "stage", planSel: "",                   // C-35: 지금 할 퀘스트(stage 단계 퀘스트 · plan 준비 계획과 맡길 일 — 채팅의 지금 말이 이쪽을 따른다) · 퀘스트 창에서 고른 맡길 일(이 켜짐 동안만)
   };
   // 예시 책을 지웠나(my-books.js HIDE_KEY) — 기록(save)에 넣지 않고 따로 둔다: 서고 화면과 같은 열쇠를 읽는다. 주소 끝 &noex는 이 화면만 숨긴다(저장하지 않음)
@@ -379,7 +379,7 @@
     const line = G.explain(t), open = st.termOpen === t;
     if (!line) return `<span class="tag" title="전문가들이 부르는 이름이에요">용어: ${esc(t)}</span>`;
     return `<button type="button" class="tag term" data-act="term" data-term="${esc(t)}" aria-expanded="${open}" title="${esc(line)}">용어: ${esc(t)}</button>${
-      open ? `<span class="term-say" role="note">${esc(line)}</span>` : ""}`;
+      open ? `<span class="term-say" role="note">${esc(line)}</span>${window.FloeStudyPack ? `<button type="button" class="lnk term-more" data-act="study-open" data-term="${esc(t)}">더 공부하기</button>` : ""}` : ""}`;   // C-24 — 이 말로 공부 묶음
   }
   // 넘어가기 전 확인의 한 장 요약 — [이름, 내용]. iPhone은 줄로, PC는 표로 그린다
   function planRows() {
@@ -902,7 +902,8 @@
       title: "궁금한 걸 편하게 물어보세요", sub: `헷갈린 곳: ${esc(hardTexts().join(", "))}`,
       body: `<textarea class="mc-input" data-act="question" rows="2" aria-label="궁금한 것" placeholder="예) 꼭 필요한지 표시하는 건 왜 해요?">${esc(st.question)}</textarea>${
         st.answer ? `<div class="answer"><b>플로로의 답</b>${esc(st.answer)}</div>` : ""}`,
-      acts: [{ label: "물어보기", act: "answer", key: "c-Enter", pri: !st.answer }, ...(st.answer ? [{ label: "한 장 요약 보기", act: "plan", key: "Enter", pri: true }] : []), ...holdAct] };
+      acts: [{ label: "물어보기", act: "answer", key: "c-Enter", pri: !st.answer }, ...(st.answer ? [{ label: "한 장 요약 보기", act: "plan", key: "Enter", pri: true }] : []), ...holdAct,
+        ...(window.FloeStudyPack ? [{ label: "더 공부하기", act: "study-open", kind: "ghost" }] : [])] };   // C-24 공부 묶음 — '아니요' 뒤
     if (st.step === "plan") return { tone: "amber", mood: face()[0], meta: `<span class="mm-stage">${LB(s.n)} 한 장 요약</span>`,
       title: "이렇게 정리해 봤어요. 이제 어때요?", sub: "",
       body: `<dl class="sheet">${planRows().map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`,
@@ -925,7 +926,7 @@
       body: todoList(true), acts: [{ label: "이 순서로 시작하기", act: "go", key: "Enter", pri: true }] };
     return { tone: "amber", mood: face()[0], meta, title: s.n === 0 && BC ? "이 프로젝트의 기준 — 맞나요?" : "이번 단계에서 한 일, 이해되셨나요?",
       sub: s.n === 0 && BC ? "1단계 칸과 받은 글로 기준 한 장을 만들었어요. 옮겨 온 줄은 어디서 왔는지 적혀 있고, 사람만 아는 칸(성공)은 비워 두었어요 — 채워 주면 다음 단계 퀘스트가 이 기준으로 지어져요." : `잘 모르겠으면 헷갈린 곳을 골라 같이 풀어요. 몇 번이고 괜찮아요.${st.noCount ? ` (다시 물어본 횟수 ${st.noCount}번)` : ""}`,
-      body: `${s.n === 0 && BC ? baseCardHTML(BC.withEdits(BC.build({ results: st.results, source: st.source }), st.cardEdits), true) : ""}${learnBox(s.n)}`,   // C-56 R-1 기준 카드(목업 ③) + C-47 배운 것
+      body: `${s.n === 0 && BC ? baseCardHTML(BC.withEdits(BC.build({ results: st.results, source: st.source }), st.cardEdits), true) : ""}${learnBox(s.n)}${window.FloeGatePlan ? `<p class="mc-fine"><button type="button" class="lnk" data-act="gp-open">계획서 보기 — 지금까지 한 것과 다음에 할 것</button></p>` : ""}`,   // C-56 R-1 기준 카드(목업 ③) + C-47 배운 것 + C-27 관문 계획서(칩이 아니라 본문의 작은 단추 — 칩은 네 / 아니요 둘, C-60 주 행동 하나)
       acts: [yes, no] };
   }
   // 가로 카드 하나 — 왼쪽 플로로, 오른쪽 [한마디 · 작은 줄 · 굵은 제목 · 설명 · 선택지 · 버튼]
@@ -1328,7 +1329,7 @@
   //    "Floe가 만들고, 커밋 · 푸시는 Claude Code") — 파일은 docs.js(서버가 같은 것으로 작업 폴더에 쓴다 — 화면은 결과만 보낸다), 커밋 · 푸시는 사용자의 Claude Code(허락 카드는 채팅에) ──
   //   C-39: 결과 그대로(칸마다 누가 · 플로로 초안 · 재료, 준비할 것 · 확인한 날 · 관문 지난 날 · 완료 기준) + 처음 말한 것 — 서버가 증빙 칸 · 기획서 · 결정 기록을 만든다
   const shipResults = () => Object.fromEntries(Object.entries(st.results).map(([k, { chap, ...r }]) => [k, r]));
-  const shipFiles = () => (FDOCS ? FDOCS.files({ topic: st.topic, idea: st.idea || "", results: st.results, redact: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) }) : []);
+  const shipFiles = () => (FDOCS ? FDOCS.files({ topic: st.topic, idea: st.idea || "", results: st.results, tier: st.tier, redact: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) }) : []);
   const nosrcAt = (p) => { const n = FDOCS.SLUGS ? N.STAGES.findIndex((_, i) => FDOCS.stagePath(i) === p) : -1; return n >= 0 && st.results[n] && st.results[n].nosrc; };   // C-49 근거 없음 — 올리기 카드의 파일 목록에 보인다
   function momentShip() {
     if (st.ship.phase === "sent") return { tone: "green", mood: "happy", meta: `<span class="mm-stage">문서 올리기</span>`, title: "올리기를 Claude Code에 맡겼어요",
@@ -1443,10 +1444,13 @@
     d.state = "saving"; render();
     const r = await carryPost({ action, id: d.id, item: { text: d.text, why: d.why, stage: d.stage, review: d.review, from: d.from }, ...(reason ? { reason } : {}) });
     if (!r.ok) { d.state = ""; render(); return say(r.reason || "남기지 못했어요"); }
+    if (r.id) d.id = r.id;   // 장부의 번호 — 지식 창고로 넣을 때 쓴다
     d.state = { adopt: "adopted", reject: "rejected", hold: "held" }[action]; d.rejecting = false;
     if (st.carry && st.carry.drafts.every((x) => x.state && x.state !== "saving")) { st.carryDone = true; save(); }   // 이 프로젝트에서 다 정했다 — 8단계 카드를 다시 띄우지 않는다. st.carry 확인: 남기는 사이 '나중에'(carry: null)로 닫았을 수 있다(F-103-11)
     render();
   }
+  // ── 지식 창고(세컨드 브레인) 연결(2026-10-30, API.md 3-35): 채택한 가져갈 것 하나를 그 데이터 폴더의 지식 문서로 — 폴더(SECOND_BRAIN_DATA)가 있을 때만 단추 ──
+  async function sbCheck() { try { const r = await (await fetch("/api/knowledge-store", { cache: "no-store" })).json(); st.sbReady = !!(r && r.ok && r.ready); } catch { st.sbReady = false; } render(); }
   function momentCarry() {
     const C = st.carry, meta = `<span class="mm-stage">${LB(7)} · 가져갈 것</span>`, n = learnedList().length;
     if (C.phase === "offer") return { tone: "blue", mood: "happy", meta, title: "다음 프로젝트에 가져갈 것을 정리해 볼까요?",
@@ -1454,7 +1458,8 @@
       acts: [{ label: "초안 만들기", act: "carry-draft", key: "Enter", pri: true }, { label: "나중에", act: "carry-later", kind: "ghost" }] };
     const rows = C.drafts.map((d, k) => {
       const miss = CY.missing(CY.measure(d, CY.today()));
-      if (d.state) return `<li class="carry-d"><p><b>${esc(d.text)}</b> — ${CARRY_WORD[d.state]}</p></li>`;
+      if (d.state) return `<li class="carry-d"><p><b>${esc(d.text)}</b> — ${CARRY_WORD[d.state]}</p>${d.state === "adopted" && st.sbReady && d.id
+        ? d.sb ? `<p class="mc-fine">지식 창고에 넣었어요 — 세컨드 브레인의 '지식 · 작업'에서 찾아요</p>` : `<div class="opts">${btn({ label: "지식 창고로", act: "carry-sb", i: k, kind: "opt" })}</div>` : ""}</li>`;   // 지식 창고 연결(2026-10-30) — 데이터 폴더가 있을 때만
       const stageSel = `<select data-act="carry-stage" data-i="${k}" aria-label="언제 쓰나(단계)"><option value="-1"${d.stage < 0 ? " selected" : ""}>언제 쓰나 — 고르기</option>${N.STAGES.map((x) => `<option value="${x.n}"${d.stage === x.n ? " selected" : ""}>${LB(x.n)} · ${esc(x.title)}</option>`).join("")}</select>`;
       const fromBtns = N.STAGES.map((x) => `<button type="button" class="b opt toggle" data-act="carry-from" data-i="${k}" data-v="${x.n}" aria-pressed="${d.from.includes(x.n)}">${x.n + 1}</button>`).join("");
       return `<li class="carry-d">
@@ -1488,7 +1493,7 @@
     if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "ship";
     const known = shipKnown();
-    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
+    const r = await callAI("/api/docs", { topic: st.topic, idea: st.idea || "", source: st.source || "", results: shipResults(), card: st.card || null, tier: st.tier, ...(publicOk ? { publicOk: true } : {}), ...(known ? { prints: known.prints, keep: known.keep } : {}) });   // source — 받은 글 전부(F-68), card — 기준 카드(C-56)
     st.planBusy = "";
     // C-52(2026-10-29): 공개(또는 모름) 저장소 — 저장소마다 처음 한 번 더 묻는다. 서버는 아직 아무것도 쓰지 않았다
     if (!r.ok && r.why === "public") { st.ship = { ...st.ship, phase: "public", reason: r.reason || "" }; return render(); }
@@ -1548,7 +1553,7 @@
   //   1100×640 판을 칸(.cv)에 맞춰 줌한다(app.css .cvb의 --u — 컨테이너 단위라 스크립트 없이, 앱의 창이든 브라우저의 판이든). 2026-10-27 C-42 R-11(이재엽 "줌 + 모자라면 다시 배치"): 0.85배 아래로 줄어야 하면
   //   줌하지 않고 격자로 다시 배치한다 — 두 줄(① ② ③ / ④ ⑤ 관문) · 640 미만은 세로 한 줄, 글자 크기는 설정 그대로(app.css @container). 지금 하는 일 · 단계 칩 · 왼쪽에 지난 장 / 다음 장 보드 ·
   //   틀 안에 ① 생각(포스트잇) · 파일 카드 · 배울 말 · 화살표 → ② 행동 → ③ 기록(적은 칸 카드) → ④ 저장 → ⑤ 버전 → 관문, 작은 플로로는 첫 '지금' 칸 옆(FLO_AT).
-  //   칸의 글은 지금 상태에서만 — 생각: 퀘스트의 지금 칸(quest.js), 행동: 맡긴 일(plan.js), 기록: 적은 칸 · 살펴본 결과(st.results), 저장: 단계 문서(st.docs · docs.js), 버전: 대회 뒤(C-23), 관문: 지난 날.
+  //   칸의 글은 지금 상태에서만 — 생각: 퀘스트의 지금 칸(quest.js), 행동: 맡긴 일(plan.js), 기록: 적은 칸 · 살펴본 결과(st.results), 저장: 단계 문서(st.docs · docs.js), 버전: 지난 관문 수(C-23 — docs.js versionsOf), 관문: 지난 날.
   const FLO_AT = { c1: [420, 100], c2: [640, 92], c3: [1040, 92], c4: [690, 382], c5: [920, 382], c6: [1040, 382] };   // 작은 플로로가 서는 자리(판 좌표) — 목업의 FLO
   const FLO_MINI = '<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"></ellipse><circle cx="24" cy="34" r="3" fill="#1A2350"></circle><circle cx="40" cy="34" r="3" fill="#1A2350"></circle><ellipse cx="32" cy="40" rx="2.6" ry="1.8" fill="#1A2350"></ellipse><ellipse cx="20" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse><ellipse cx="44" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse></svg>';
   const ARROW = (cls, w, h, d) => `<svg class="cv-ar ${cls}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
@@ -1580,7 +1585,9 @@
     const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
     const fl = files.length ? `<ul class="cv-files">${files.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
     const save = docDone(n) ? cell("c4", "done", "④", "저장", "단계 문서를 확정했어요", "", fl) : FDOCS && st.results[0] && st.results[1] ? cell("c4", "now", "④", "저장", "문서로 묶어 GitHub에", "도전과제 탭의 한눈에 보기에서", fl) : cell("c4", "later", "④", "저장", "아직 — 관문 뒤에", "", fl);
-    const ver = cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 책에 V.${n + 1}`, "대회 뒤 (C-23)");
+    // C-23 ⑤ 버전(2026-10-30): 관문을 넘을 때마다 V.n이 하나 — 단계 결과에서 센다(docs.js versionsOf), README의 Floe 절 맨 앞 '버전 기록'에 줄로
+    const vers = FDOCS && FDOCS.versionsOf ? FDOCS.versionsOf(st.results) : [], vi = vers.find((x) => x.n === n);
+    const ver = vi ? cell("c5", "done", "⑤", "버전", `V.${vi.v} · ${vi.passed.slice(5)}`, "README의 Floe 절 맨 앞 '버전 기록'에") : cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 V.${vers.length + 1}`, "관문을 넘을 때마다 하나씩");
     // R-5 관문(C-42): 남은 기준 수와 '안 됨'인 기준 이름(짧은 이름) — 셋까지, 나머지는 +n
     const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met).map((x) => QU.shortOf(x.text)) : [];
     const ul = unmet.length ? `<details class="cv-unmet-d"><summary>남은 기준 ${unmet.length}</summary><ul class="cv-unmet">${unmet.slice(0, 3).map((x) => `<li>안 됨 · ${esc(x)}</li>`).join("")}${unmet.length > 3 ? `<li>+${unmet.length - 3}</li>` : ""}</ul></details>` : "";   // C-60: 처음엔 접혀 있다
@@ -1631,7 +1638,16 @@
       st.carry = { phase: "drafts", drafts: r.drafts.map((d, k) => ({ id: `c${tag}${k}`, text: d.text, why: d.why || "", stage: Number.isInteger(d.stage) ? d.stage : -1, review: d.review || "", from: Array.isArray(d.from) ? d.from : [] })), say: r.say || "" };
       st.tokens = r.tokens || 0; fetchUsage(); render();
     },
-    "carry-adopt": (i) => carryDecide(i, "adopt"),
+    "carry-adopt": async (i) => { await carryDecide(i, "adopt"); if (canLive && !st.sbReady) sbCheck(); },   // 채택할 때마다(아직 몰랐거나 없었으면) 지식 창고 폴더가 있는지 묻는다 — 켜 둔 사이 폴더를 정해도 따라간다
+    "carry-sb": async (i) => {
+      const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state !== "adopted" || !d.id || d.sb || d.sbBusy) return;
+      d.sbBusy = true;   // 두 번 눌러 두 번 보내지 않게
+      let r; try { r = await (await fetch("/api/knowledge-store", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) })).json(); } catch { r = null; }
+      d.sbBusy = false;
+      if (r && r.why === "exists") { d.sb = true; render(); return say("이미 지식 창고에 있어요 — 덮지 않았어요"); }
+      if (!r || !r.ok) return say((r && r.reason) || "지식 창고에 넣지 못했어요");
+      d.sb = true; render(); say("지식 창고에 넣었어요 — 세컨드 브레인의 '지식 · 작업'에서 찾아요");
+    },
     "carry-hold": (i) => carryDecide(i, "hold"),
     "carry-reject": (i) => {
       const d = st.carry && st.carry.drafts && st.carry.drafts[i]; if (!d || d.state) return;
@@ -2493,11 +2509,43 @@
   // 책 탭(C-26, 2026-10-23) — 내 저장소 README를 받아 와 보여 주기만(고치는 곳은 README). 아래는 전부터 있던 이 화면의 책(단계 문서 · 확인할 먹이 — FR-3 · FR-15)
   // README 칸은 책을 고르지 않았을 때(책 탭의 첫 화면)만 — 단계 문서를 펼치면 그 책에 집중한다.
   //   서재를 잠시 뺀 동안은 열어 둔 책 목록(작은 서재)을 보이지 않고, 확인할 먹이와 이 프로젝트의 책 하나만 — "서재 없이 지금 프로젝트의 책 한 권"(C-26)
+  // ── C-27 관문 계획서(2026-10-30 — gateplan.js): 단계마다 한 권 — 결과가 있는 단계와 지금 관문의 단계. 목차를 누르면 그 절로, 파일로도 받는다 ──
+  //   글은 규칙으로(AI 없음). 가리기(sensitive.js)를 거친다. 어느 단계를 펼쳤나(st.gpSel)는 이 켜짐 동안만
+  const GPL = window.FloeGatePlan;
+  const gpStages = () => N.STAGES.map((s) => s.n).filter((n) => st.results[n] || (st.j && st.j.stage === n));
+  const gpNow = (list = gpStages()) => (list.includes(st.gpSel) ? st.gpSel : list[list.length - 1]);   // 펼친 단계 — 고른 것, 없으면 마지막
+  const gpBook = (n) => GPL.build(n, { results: st.results, tier: st.tier, hide: (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t) });
+  function gatePlanBox() {
+    if (!GPL) return "";
+    const list = gpStages(); if (!list.length) return "";
+    const sel = gpNow(list), b = gpBook(sel);
+    return `<section class="gplan" aria-label="관문 계획서"><div class="stg">관문 계획서 — 지금까지 한 것과 다음에 할 것</div>
+      <div class="gp-pick" role="group" aria-label="어느 단계">${list.map((n) => `<button type="button" class="b${n === sel ? " pri" : " ghost"}" data-act="gp-sel" data-i="${n}" aria-pressed="${n === sel}">${LB(n)}</button>`).join("")}</div>
+      <h4>${esc(b.title)}</h4><nav class="gp-toc" aria-label="계획서 목차">${b.toc.map((t, k) => `<button type="button" class="lnk" data-act="gp-toc" data-v="${esc(t.id)}">${k + 1}. ${esc(t.title)}</button>`).join("")}</nav>
+      ${b.sections.map((s, k) => `<article class="gp-sec" id="${esc(s.id)}" tabindex="-1"><h5>${k + 1}. ${esc(s.title)}</h5><ul>${s.rows.map((r) => `<li>${esc(r)}</li>`).join("")}</ul></article>`).join("")}
+      <div class="ob-foot"><button type="button" class="b" data-act="gp-file">파일로 받기 (.md)</button></div></section>`;
+  }
+  // ── C-24 공부 묶음(2026-10-30 — studypack.js): 고른 것(지금 단계 · 관문 계획서 · 용어 풀이 · 내 기록)을 파일 하나 + 질문 다섯으로 내려받는다 ──
+  //   '더 공부하기'(용어 풀이 · 관문의 '아니요' 뒤 · 튜토리얼)에서 열린다(st.study — 이 켜짐 동안만). 가리기가 없으면 묶지 않는다(실패하면 닫힌 쪽).
+  //   NotebookLM에는 보내지 않는다 — 올리는 법 한 장만 보인다
+  const SPK = window.FloeStudyPack;
+  const studyN = () => (st.j ? st.j.stage : atStage());
+  const studyPack = () => SPK.build({ n: studyN(), pick: st.study.pick, results: st.results, tier: st.tier, term: st.study.term, hide: (t) => window.NavSensitive.redact(t), scan: (t) => window.NavSensitive.scan(t) });
+  function studyBox() {
+    if (!SPK || !st.study) return "";
+    const d = st.study, g = d.got;
+    return `<section class="gplan study" aria-label="공부 묶음"><div class="stg">공부 묶음 — ${LB(studyN())}${d.term ? ` · ${esc(d.term)}` : ""}</div>
+      <p class="meta">넣을 것을 고르면 글 파일 하나와 먼저 물을 질문 다섯을 만들어요. 내 NotebookLM에 직접 올려 물어봐요.</p>
+      <div class="gp-pick" role="group" aria-label="넣을 것">${SPK.SOURCES.map(([k, w], i) => `<button type="button" class="b${d.pick.includes(k) ? " pri" : " ghost"}" data-act="study-pick" data-i="${i}" aria-pressed="${d.pick.includes(k)}">${w}</button>`).join("")}</div>
+      ${g ? `<p class="meta"><b>받았어요 — ${esc(g.file)}</b>${g.masked.length ? ` · 가린 것: ${esc(g.masked.join(", "))}` : " · 가린 것 없음"}</p><ol class="study-q">${g.questions.map((q) => `<li>${esc(q)}</li>`).join("")}</ol>` : ""}
+      <div class="gp-sec"><h5>NotebookLM에 올리는 법</h5><ol>${SPK.GUIDE.map((x) => `<li>${esc(x)}</li>`).join("")}</ol></div>
+      <div class="ob-foot"><button type="button" class="b pri" data-act="study-get" ${d.pick.length ? "" : "disabled"}>묶음 받기 (.md)</button><button type="button" class="b ghost" data-act="study-close">닫기</button></div></section>`;
+  }
   function bookPane() {
     if (libSelected()) return deskLib();
-    if (SHELF_ON) return `${readmeBox()}${deskLib()}`;
+    if (SHELF_ON) return `${studyBox()}${readmeBox()}${gatePlanBox()}${deskLib()}`;
     const mine = L() && SCH() ? openBooks().find((b) => b.mine) : null;
-    return `${readmeBox()}<div class="libtab">${inboxBox()}${mine ? `<div class="ob-foot"><button type="button" class="b" data-act="lib-book" data-id="${esc(mine.id)}">이 프로젝트의 단계 문서 · 정한 것 펼치기</button></div>` : ""}</div>`;
+    return `${studyBox()}${readmeBox()}${gatePlanBox()}<div class="libtab">${inboxBox()}${mine ? `<div class="ob-foot"><button type="button" class="b" data-act="lib-book" data-id="${esc(mine.id)}">이 프로젝트의 단계 문서 · 정한 것 펼치기</button></div>` : ""}</div>`;
   }
   function readmeBox() {
     if (!RB) return "";
@@ -2733,6 +2781,29 @@
         counts.length ? `<ul class="verbs">${counts.map(([v, n]) => `<li><span>${esc(v)}</span><b>${n}</b></li>`).join("")}</ul>` : ""}</div>
       <div class="main"><div class="row ph"><button type="button" class="lnk" data-act="base-back" title="단추로 돌아가기 (Esc)">${I.back}단추로</button><b class="grow">${esc(title)}</b></div><p class="meta">${esc(lead)}</p>${top}<div class="pane-body">${body}</div></div></section>`;
   }
+  const download = (name, text) => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000); };
+  // C-27 관문 계획서 — 관문 카드의 '계획서 보기' · 단계 고르기 · 목차 → 그 절 · 파일로 받기 / C-24 공부 묶음 — 열기 · 고르기 · 받기 · 닫기
+  Object.assign(ACT, {
+    "study-open": (i, el) => { if (!SPK) return; st.study = { term: (el && el.dataset && el.dataset.term) || "", pick: [...SPK.DEFAULT_PICK], got: null }; st.libSel = null; openQwin("lib"); render(); },
+    "study-pick": (i) => { const d = st.study, k = SPK && SPK.SOURCES[i] && SPK.SOURCES[i][0]; if (!d || !k) return; st.study = { ...d, got: null, pick: d.pick.includes(k) ? d.pick.filter((x) => x !== k) : [...d.pick, k] }; render(); },
+    "study-get": () => {
+      if (!SPK || !st.study) return;
+      if (!window.NavSensitive) return say("가리는 도구(sensitive.js)를 불러오지 못해서 묶지 않았어요 — 화면을 다시 열어 주세요");
+      const p = studyPack(); if (!p) return say("넣을 것을 하나 이상 골라요");
+      download(p.file, p.text); st.study = { ...st.study, got: { file: p.file, questions: p.questions, masked: p.masked } }; render();
+      say(p.masked.length ? `받았어요 — 가린 것: ${p.masked.join(", ")}` : "받았어요 — 내 NotebookLM에 직접 올려 질문 다섯부터 물어봐요");
+    },
+    "study-close": () => { st.study = null; render(); },
+    "gp-open": () => { const n = st.j ? st.j.stage : atStage(); st.gpSel = n; st.libSel = null; openQwin("lib"); render(); },   // libSel — 서고 책을 펼쳐 두었으면 책 탭이 그 책만 그린다
+    "gp-sel": (i) => { st.gpSel = i | 0; render(); },
+    "gp-toc": (i, el) => { const id = el && el.dataset.v, t = id && document.getElementById(id); if (t) { t.scrollIntoView({ block: "start", behavior: "smooth" }); t.focus({ preventScroll: true }); } },
+    "gp-file": () => {
+      if (!GPL) return; const n = gpNow(); if (n == null) return;
+      download(`${String(n + 1).padStart(2, "0")}-gate-plan.md`, GPL.toMarkdown(gpBook(n)));
+      say("계획서를 파일로 내려받았어요 — 공부 묶음이나 NotebookLM에 같이 넣을 수 있어요");
+    },
+  });
 // ━━ app/70-tasks.js ━━
   // ── 준비 계획(C-34) · 맡길 일과 보고(C-32) — claude-drafted: 2026-10-24 (이재엽 "한번에 내용들을 넣으면 어떻게 준비하고 기준들을 사람들이 확인해서 너한테 의견들을 바로바로" ·
   //    버튼 "처음 설정 새 칸 + 맡기기" · "Floe의 AI 한 번" · "Claude Code가 기준마다 보고" · "맡길 일 목록으로") ──

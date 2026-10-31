@@ -123,7 +123,7 @@
     return out;
   }
 
-  const api = { MAX_FILE, ACCEPT, TOPIC_MAX, WHY, KINDS, INBOX_MAX, split, check, pack, accept, guessKind, kindLabel, inbox, EXAMPLE };
+  const api = { PERSONAL, MAX_FILE, ACCEPT, TOPIC_MAX, WHY, KINDS, INBOX_MAX, split, check, pack, accept, guessKind, kindLabel, inbox, EXAMPLE };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.NavFeed = api;
 })(typeof window !== "undefined" ? window : globalThis);
