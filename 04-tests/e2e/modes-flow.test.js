@@ -503,6 +503,14 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#start"), { waitUntil: "load" }); await wait(400);
     assert.ok(!(await page.$(".cmd4")) && !(await page.$("[data-act=cmd-hand]")), "오버레이에 명령 네 칸이 없다");
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]")?.textContent.trim()), "퀘스트", "위 줄의 '퀘스트' 단추(이재엽 그림 2026-10-24)");
+    // F-85(#259)부터 작업실을 닫으면 알약이고 알약은 작업실을 다시 연다 — 떠 있는 섬의 칩은 작업실을 열기 전에 본다(F-102 고침 2026-10-30)
+    // 계획 — 채팅의 늘 있는 칩으로 한 번에 넣기를 열고, '한 줄만 적어 맡기기'는 전의 할 일 칸(AI 진행 판)
+    if (!(await page.$(".mc.chat [data-act=plan-open]"))) { await page.click(".mc.chat [data-act=more-toggle]"); await wait(300); }   // C-60(#248): 늘 있는 칩은 '더 보기' 안
+    await page.click(".mc.chat [data-act=plan-open]"); await wait(300);
+    assert.match(await page.evaluate(() => document.querySelector(".msg.now .say")?.textContent || ""), /한 번에/, "채팅의 지금 말이 한 번에 넣기");
+    await page.click(".mc.chat [data-act=plan-direct]"); await wait(400);
+    assert.ok(await page.$("#task-text") && !(await page.$(".cmd4")), "한 줄만 적어 맡기기 — AI 진행 판의 할 일 칸");
+    await page.click("[data-act=base-back]"); await wait(300);
     // 퀘스트 단추 → 작업실 창(탭 다섯 — C-41 ① 2026-10-26: 캔버스 · 노트북(옛 퀘스트) · 도전과제 · 책, C-45 2026-10-27: 문서 지도). 한 번 더 누르면 닫힌다
     await page.click(".tb [data-act=qwin-toggle]"); await wait(300);
     assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "퀘스트", "책"]);   // C-65(2026-10-30)   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기

@@ -72,7 +72,7 @@ test("C-62 — 1440 · 1280 · 1024 작업 중 화면: 위 줄은 하나(머리 
         const cs = (sel, prop) => { const el = document.querySelector(sel); return el ? getComputedStyle(el)[prop] : ""; };
         return { whs: whs.length, tbs: document.querySelectorAll(".isl-col .tb").length, whLeft: r.left, whRight: r.right, inner: innerWidth, hislRight: hr ? hr.right : -1, hislLeft: hr ? hr.left : -1, tabsRight: tabs.right, colLeft: col.left,
           tab: [cs(".wh .wtabs button[aria-selected=true]", "backgroundColor"), cs(".wh .wtabs button[aria-selected=true]", "color")],
-          now: [cs(".wnav .fn li.st-now", "backgroundColor"), cs(".wnav .fn li.st-now", "color")], islBg: cs(".isl-col .isl", "backgroundColor"), colBg: cs(".isl-col", "backgroundColor"), glass: cs(".isl", "backdropFilter"),
+          now: [cs(".wnav .fn li.st-now>button", "backgroundColor") || cs(".wnav .fn li.st-now", "backgroundColor"), cs(".wnav .fn li.st-now>button", "color") || cs(".wnav .fn li.st-now", "color")]   /* F-97(#269): 대화 목록의 '지금' 남색은 줄(li)이 아니라 버튼 줄에 — 펼친 파일은 보통 바탕(F-102 고침 2026-10-30) */, islBg: cs(".isl-col .isl", "backgroundColor"), colBg: cs(".isl-col", "backgroundColor"), glass: cs(".isl", "backdropFilter"),
           overflow: document.documentElement.scrollWidth > innerWidth };
       });
       const tag = `${width}×${height}`;

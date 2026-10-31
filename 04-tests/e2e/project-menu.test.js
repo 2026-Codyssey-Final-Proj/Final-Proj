@@ -72,6 +72,9 @@ test("메뉴로 다른 폴더를 이으면 섬이 이름을 다시 묻고 새 �
 
     // 켤 때는 접힌 알약(C-55, 2026-10-28) — 플로로의 말은 채팅에 쌓이니 섬을 펼쳐 둔다(전에는 펼친 섬을 가정해 이 Mac에서 늘 실패했다)
     if (await page.$(".pill")) { await page.click(".pill"); await wait(300); }
+    // F-85(#259): 알약을 누르면 작업실, F-88(#262) · C-61: 사람이 아직 말하지 않은 1단계 시작이면 섬은 가운데 첫 화면(질문 하나 · 입력 하나 — 플로로 말은 숨김, 두승현 2026-10-29) —
+    //   '옆으로'(isl-big)로 옆 칸에 두면 채팅이 보인다(F-102 고침 2026-10-30)
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await page.waitForSelector(".isl-col:not(.center)", { timeout: 5000 }); await wait(300); }
     name = "samsung-stock-ai";
     await page.evaluate(() => window.__project({ add: true, name: "samsung-stock-ai", config: false }));
     await page.waitForFunction(() => document.body.innerText.includes("samsung-stock-ai 폴더와 이었어요"), { timeout: 5000 });

@@ -94,7 +94,11 @@ async function openLive(browser, hash) {
 const click = async (page, sel) => { await page.waitForSelector(sel, { timeout: 6000 }); await page.click(sel); await wait(300); };
 const nowSay = (page) => page.evaluate(() => document.querySelector(".msg.now")?.textContent || "");
 const chatText = (page) => page.evaluate(() => document.querySelector(".mc.chat .log")?.textContent || "");
-async function openIsland(page) { if (await page.$(".pill")) { await page.click(".pill"); await wait(400); } }
+// C-61(2026-10-29, #249): 칸이 하나도 안 적힌 장에서는 섬이 작업 칸 가운데(플로로 · 질문 · 입력만, 칩 없음) — 사람처럼 머리 줄 '옆으로'(isl-big)로 옆 칸에 두고 퀘스트 카드 · 칩을 본다(F-102 고침 2026-10-30)
+async function openIsland(page) {
+  if (await page.$(".pill")) { await page.click(".pill"); await wait(400); }
+  if (await page.$(".isl-col.center")) { await page.click("[data-act=isl-big]"); await page.waitForSelector(".isl-col:not(.center)", { timeout: 5000 }); await wait(300); }
+}
 
 test("ⓑ 5단계 '뼈대 코드 맡기기' — 단계 요약 · 끝 조건 셋으로 맡기고, 보고가 채팅에", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });

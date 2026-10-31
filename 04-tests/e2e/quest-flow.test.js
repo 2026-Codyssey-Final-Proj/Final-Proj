@@ -52,7 +52,8 @@ const stageDraft = (stage, tier) => ({ items: Nav.criteriaFor(stage, tier).map((
 
 const click = async (page, sel) => { if (sel.startsWith(".qwin") && await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); } await page.waitForSelector(sel, { timeout: 5000 }); await page.click(sel); await wait(300); };   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 작업실 안을 누르기 전에 섬을 옆으로
 const nowSay = (page) => page.evaluate(() => document.querySelector(".msg.now")?.textContent || "");
-const past = (page) => page.evaluate(() => [...document.querySelectorAll(".mc.chat .log .msg:not(.now):not(.sys)")].map((m) => `${m.classList.contains("me") ? "me" : "floro"}: ${m.textContent.trim()}`));
+// 지난 말 — 단계 구분선(.stage, C-63 #250)과 답을 기다리는 카드(③ 기록 한 장 .sh · C-47 #286, 넘김 카드 .ho · C-38)는 말이 아니라 빼고 센다(F-102 고침 2026-10-30)
+const past = (page) => page.evaluate(() => [...document.querySelectorAll(".mc.chat .log .msg:not(.now):not(.sys):not(.stage):not(.sh):not(.ho)")].map((m) => `${m.classList.contains("me") ? "me" : "floro"}: ${m.textContent.trim()}`));
 async function paste(page, text) {
   await page.click(".mc.chat [data-act=say]");
   await page.evaluate((t) => { const el = document.querySelector(".mc.chat [data-act=say]"); el.value = t; el.dispatchEvent(new Event("input", { bubbles: true })); }, text);
@@ -191,6 +192,7 @@ test("연습: 1단계 확인은 카드 하나로(채팅에 쌓이지 않음 · �
     const toc = await page.$$eval(".qwin .qcard .ln .lt b", (bs) => bs.map((b) => b.textContent));
     assert.ok(toc[0].includes("후보 찾기") && !toc[0].includes("흔히 쓰는 방법 목록에서"), `줄 이름은 짧은 이름(C-68 한 목록): ${toc[0]}`);
     assert.ok(await page.$(".qwin .ln .easy"), "쉬운 한 줄"); assert.equal(await page.$(".qwin .ln .full"), null, "원래 문장은 접혀 있다");
+    await click(page, ".qwin details.qdesc summary");   // C-60(#248): '자세히 보기 · 왜 하나요'는 접혀 있다 — 펼친 뒤 원래 문장 단추(F-102 고침 2026-10-30)
     await click(page, ".qwin [data-act=qmore]");
     assert.match(await page.$eval(".qwin .ln .full", (e) => e.textContent), /흔히 쓰는 방법 목록에서/, "자세히 보기 — 원래 할 일 문장");
     // R-10(C-42, 2026-10-27): 예시 초안에 빈칸 표시가 남은 칸(7단계 '잰 값: (재고 적기)')은 '됨'이 아니라 관문 앞에서 멈춘다 — 연습에서는 까닭을 적고 넘긴다(까닭은 결정 기록에)

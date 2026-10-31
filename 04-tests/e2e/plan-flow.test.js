@@ -136,6 +136,8 @@ test("채팅에서 한 바퀴: 붙여 넣기 → 계획 → 줄마다 맞아요 
     assert.equal(saved.plan.work.p1.state, "done", "판은 이 컴퓨터에 남는다(다시 켜도 이어진다)");
     assert.equal(saved.qfocus, "plan", "지금 할 퀘스트도");
     // 단계 퀘스트로 돌아갔다가 퀘스트 창에서 다시 맡길 일로
+    // F-88(#262) · C-61(#249): 퀘스트 전 1단계 시작이면 작업실 안의 섬이 작업 칸 가운데 — 머리 줄 '옆으로'(isl-big)로 옆 칸에 두고 퀘스트 창을 누른다(F-102 고침 2026-10-30)
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await page.waitForSelector(".isl-col:not(.center)", { timeout: 5000 }); await wait(300); }
     await click(page, ".qwin .qsel [data-v=stage]");
     assert.doesNotMatch(await nowSay(page), /운영진이 목록을 보면/, "단계 퀘스트를 고르면 채팅도 그쪽");
     await click(page, ".qwin .qsel [data-v=plan]");

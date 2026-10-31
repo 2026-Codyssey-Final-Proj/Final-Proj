@@ -138,7 +138,9 @@ test("C-63 ③ 서버(진짜 AI 모드) — 앱이 고른 폴더가 없으면 �
     const until = async (fn, what) => { for (let k = 0; k < 200; k++) { if (fn()) return; await wait(100); } assert.fail(what); };   // 20초까지 — 전체 시험이 같이 돌 때 느리다
     await until(() => gets.length >= 1, "켤 때 GET으로 묻는다");
     const send = async (t) => {
-      await page.waitForSelector(".isl [data-act=say]", { timeout: 20000 }); await page.click(".isl [data-act=say]");
+      await page.waitForSelector(".isl [data-act=say]", { timeout: 20000 });
+      await page.waitForSelector(".isl [data-act=send]:not([disabled])", { timeout: 20000 });   // 앞 말의 AI 부르기(1단계 초안)가 끝나야 보낸다 — 전체 시험이 같이 돌면 느려 다음 말이 '앞의 일을 기다려요'로 버려졌다(F-102 고침 2026-10-30)
+      await page.click(".isl [data-act=say]");
       await page.evaluate((x) => { const el = document.querySelector(".isl [data-act=say]"); el.value = x; el.dispatchEvent(new Event("input", { bubbles: true })); }, t);
       await page.keyboard.press("Enter");
     };
