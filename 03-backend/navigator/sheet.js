@@ -9,6 +9,7 @@
 (function (root) {
   const KINDS = ["chat", "report", "approve", "feed"];
   const LINE_MAX = 80, PER_KIND = 6, FIELD_MAX = 300, STAGES = 8;
+  const DRAFT_MAX = 100;   // 플로로가 만드는 초안 칸의 길이 — 카드가 한눈에 읽히게(2026-10-30 이재엽 "퀘스트 내용에서 내용들이 너무 긴"). 사람이 고쳐 쓴 칸은 FIELD_MAX까지
   const FIELDS = [["think", "생각"], ["did", "한 일"], ["decided", "정한 것"], ["words", "배운 말"], ["next", "다음 할 일"]];
   const DATE = /^\d{4}-\d{2}-\d{2}$/;
   const one = (t) => String(t == null ? "" : t).replace(/\s+/g, " ").trim();
@@ -48,13 +49,15 @@
     const written = cells.filter((c) => c && one(c.line));
     const think = chat[0] ? `${title ? `${one(title)} — ` : ""}처음 한 말: “${chat[0].t}”` : written[0] ? `${one(title)} — ${one(written[0].line)}` : `${one(title) || "이 단계"}를 했어요`;
     const fileNames = [...new Set(files.map(one).filter(Boolean))];
-    const did = [rep.length ? `맡긴 일 보고 ${sum(rep)}개 — ${rep[rep.length - 1].t}` : "",
+    // 칸마다 부분이 여럿이면 몫을 나눠 자른다 — 합친 글 전체를 자르면 뒤쪽(허락 결정 · 먹인 글)이 통째로 사라졌다(2026-10-30 새 맥락 리뷰)
+    const share = (parts, sep) => { const xs = parts.filter(Boolean), per = Math.floor((DRAFT_MAX - sep.length * (xs.length - 1)) / Math.max(1, xs.length)); return xs.map((x) => clip(x, per)).join(sep); };
+    const did = share([rep.length ? `맡긴 일 보고 ${sum(rep)}개 — ${rep[rep.length - 1].t}` : "",
       fileNames.length ? `바뀐 파일 ${fileNames.length}개(${fileNames.slice(0, 3).join(", ")}${fileNames.length > 3 ? ` 외 ${fileNames.length - 3}` : ""})` : "",
-      feed.length ? `먹인 글 — ${feed.map((x) => `${x.t} ${x.c}`).join(" · ")}` : ""].filter(Boolean).join(" · ") || "맡긴 일 · 바뀐 파일은 없었어요";
-    const decided = [written.slice(0, 3).map((c) => `${clip(c.name, 30)}: ${one(c.line)}`).join(" / "),
-      allow || deny ? `허락 결정 — 허용 ${allow} · 거절 ${deny}` : ""].filter(Boolean).join(" · ") || "아직 정한 칸이 없어요";
+      feed.length ? `먹인 글 — ${feed.map((x) => `${x.t} ${x.c}`).join(" · ")}` : ""], " · ") || "맡긴 일 · 바뀐 파일은 없었어요";
+    const decided = share([written.slice(0, 3).map((c) => `${clip(c.name, 30)}: ${one(c.line)}`).join(" / "),
+      allow || deny ? `허락 결정 — 허용 ${allow} · 거절 ${deny}` : ""], " · ") || "아직 정한 칸이 없어요";
     const w = [...new Set(terms.map(one).filter(Boolean))].slice(0, 5);
-    const cut = (t) => clip(redact(one(t)), FIELD_MAX);
+    const cut = (t) => clip(redact(one(t)), DRAFT_MAX);
     return { think: cut(think), did: cut(did), decided: cut(decided), words: cut(w.length ? w.join(" · ") : "새로 쓴 말은 없어요"), next: cut(next) || "관문에서 이해했는지 확인해요" };
   }
 
@@ -77,7 +80,7 @@
     return ok(out) ? out : null;
   }
 
-  const api = { KINDS, LINE_MAX, PER_KIND, FIELD_MAX, FIELDS, add, fromSaved, draft, ok, toLines, parse };
+  const api = { KINDS, LINE_MAX, PER_KIND, FIELD_MAX, DRAFT_MAX, FIELDS, add, fromSaved, draft, ok, toLines, parse };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloeSheet = api;
 })(typeof window !== "undefined" ? window : globalThis);

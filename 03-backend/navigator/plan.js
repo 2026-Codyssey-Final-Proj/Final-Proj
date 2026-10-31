@@ -45,19 +45,48 @@
   function taskFor(b, id) {
     const x = item(b, id), w = b.work[id] || {};
     // C-50(2026-10-29): 다시 맡기면 지난번 보고 한 줄도 붙인다 — 앞에서 한 일을 다시 하지 않게(지식 퀘스트 PRD 9절 7번 '새로 맡기며 앞 보고만')
-    return { text: [x.need, ...(w.note ? [`지난번에 사용자가 다르게 본 점: ${w.note}`] : []), ...(w.prev ? [`지난번 보고: ${w.prev}`] : []), ...(w.fail ? [`지난번에 끝까지 못 했어요: ${w.fail.why} — 이미 끝낸 일은 다시 하지 말고 이어서`] : [])].join("\n"), checks: [x.check] };
+    // C-64(2026-10-30): '오류 같이 보기'로 답을 붙였으면 그 답과 고치는 순서를 붙이고, 다시 안 나는지 보는 시험 하나를 기준에 더한다
+    const d = debugOf(w), dbg = d ? ["[오류 같이 보기 — 사용자가 답한 것(모르면 '모름')]", `오류 글(고치지 않은 그대로): ${d.err}`, `바로 전에 바꾼 것: ${d.changed}`, `같은 것을 다시 하면 또 나나: ${d.again}`,
+      "재현 → 좁히기 → 원인 → 고침 순서로 하고, 고친 뒤 같은 오류가 다시 나지 않는지 보는 시험을 하나 만들어 돌려 본다"] : [];
+    return { text: [x.need, ...(w.note ? [`지난번에 사용자가 다르게 본 점: ${w.note}`] : []), ...(w.prev ? [`지난번 보고: ${w.prev}`] : []), ...(w.fail ? [`지난번에 끝까지 못 했어요: ${w.fail.why} — 이미 끝낸 일은 다시 하지 말고 이어서`] : []), ...dbg].join("\n"), checks: d ? [x.check, DEBUG_CHECK] : [x.check] };
   }
   const setWork = (b, id, w) => { const n = clone(b); n.work[id] = { ...(n.work[id] || {}), ...w }; return n; };
   // at — 서버가 알려 준 그 일의 시작 때(/api/task의 at). 끝났는지 물을 때 다른 일의 결과를 이 줄의 것으로 받지 않게
   const start = (b, id, at = null) => (!b.confirmed || !has(b, id) || running(b) || id !== next(b) ? b : setWork(b, id, { state: "running", at }));
   // verdict — 서버가 기준을 세어 준 미리 보기(/api/task의 verdict). 화면은 이 값을 쓰고 다시 만들지 않는다(없던 옛 기록만 화면이 센다)
-  const report = (b, id, rep, verdict = null) => (stateOf(b, id) === "running" ? setWork(b, id, { state: "report", report: rep || null, verdict: verdict || undefined, fail: undefined }) : b);
+  const report = (b, id, rep, verdict = null) => (stateOf(b, id) === "running" ? setWork(b, id, { state: "report", report: rep || null, verdict: verdict || undefined, fail: undefined, debug: undefined }) : b);   // debug — 그 답은 이번에 다 썼다(C-64)
   const accept = (b, id) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "done" }) : b);
   const prevOf = (r) => (r && r.easy ? `${String(r.easy).slice(0, 160)} (끝 조건 ${r.done}/${r.total})` : "");
   const reject = (b, id, why) => (stateOf(b, id) === "report" ? setWork(b, id, { state: "todo", note: String(why || "").trim().slice(0, 300), prev: prevOf((b.work[id] || {}).report), report: null }) : b);
   // 보고를 받지 못하고 끝났다(실패 · 막힘 · 멈춤 · 모양이 틀림) — 다시 맡길 수 있게 남음으로 두되, 까닭과 횟수를 남긴다(C-50 '조용히 되돌리지 않는다', 2026-10-29)
   const failed = (b, id, why = "") => { if (stateOf(b, id) !== "running") return b; const f = (b.work[id] || {}).fail;
-    return setWork(b, id, { state: "todo", fail: { why: String(why || "").trim().slice(0, 200) || "보고를 받지 못했어요", n: ((f && f.n) || 0) + 1 } }); };
+    return setWork(b, id, { state: "todo", debug: undefined, fail: { why: String(why || "").trim().slice(0, 200) || "보고를 받지 못했어요", n: ((f && f.n) || 0) + 1 } }); };   // debug — 붙인 답은 그 맡기기에서 다 썼다(C-64): 또 실패하면 다시 묻는다
+  // ── C-64 오류에 막혔을 때(2026-10-30 — 이재엽 버튼 "10/31까지 작게": 맡긴 일 실패(C-50)에서 이어지는 질문 셋만) ──
+  //   끝까지 못 간 줄에서 한 번에 하나씩 묻는다(화면 70-tasks.js). 모르면 '모름'으로 넘어간다(2-1 원칙 5). 답은 그 줄에 붙고 다음 맡기기에 실린다(taskFor).
+  //   보내기 전에 가린다 — 키 모양은 받은 가리기 함수(화면은 sensitive.js의 redact), 내 컴퓨터 이름이 든 홈 경로는 ~로(C-52 지식 · 작업의 보안).
+  //   들어오는 길은 이것 하나 — 섬에 오류 글을 붙이는 길 · C-50 · FR-5와 합치기는 대회 뒤(knowledge-work-plugins debug의 재현 → 좁히기 → 원인 → 고침 · 다시 안 나게 시험)
+  const DEBUG_QS = [
+    { key: "err", q: "오류 글을 고치지 말고 그대로 붙여 주세요", max: 1500 },
+    { key: "changed", q: "바로 전에 무엇을 바꿨나요? (파일 · 명령)", max: 200 },
+    { key: "again", q: "같은 것을 다시 하면 또 나나요?", choices: ["예", "아니요", "모름"] },
+  ];
+  const DEBUG_CHECK = "고친 뒤 같은 오류가 다시 나지 않는지 보는 시험을 하나 만들어 돌려 봤다";
+  // /Users/이름 · /home/이름 · C:\Users\이름(대소문자 무관) → ~. 이름에 띄어쓰기가 있어도 다음 / · \ 까지(40자 · 한 줄 안, 가운뎃점 · 쌍점은 넘지 않음)
+  const HOME_PATH = /(?:\/Users\/|\/home\/|[a-z]:\\Users\\)(?:[^/\\\n:·]{1,40}?(?=[/\\])|[^/\\\s]+)/gi;
+  const DEBUG_TRIES = 2;   // '오류 같이 보기'는 실패 2번째까지 — 답을 붙이면 새 글로 맡기므로 다시 맡기기 상한(C-50 2번)과 같은 수로 묶는다
+  const debugOf = (w) => (w && w.debug && typeof w.debug.err === "string" && typeof w.debug.changed === "string" && typeof w.debug.again === "string" ? w.debug : null);   // 옛 · 이상한 저장값은 없는 것으로
+  const canDebug = (b, id) => !!b && !!b.confirmed && has(b, id) && stateOf(b, id) === "todo" && !!(b.work[id] || {}).fail && (b.work[id].fail.n || 0) <= DEBUG_TRIES;
+  function withDebug(b, id, ans, redact = (t) => t) {
+    if (!canDebug(b, id)) return b;
+    const a = ans && typeof ans === "object" ? ans : {};
+    const debug = Object.fromEntries(DEBUG_QS.map((q) => {
+      let v = String(a[q.key] ?? "").trim();
+      if (q.choices && !q.choices.includes(v)) v = "";
+      v = String(redact(v)).replace(HOME_PATH, "~");   // 가린 뒤 자른다 — 자른 뒤 가리면 경계에 걸친 키가 패턴을 빠져나간다
+      return [q.key, (q.max ? v.slice(0, q.max) : v).trim() || "모름"];
+    }));
+    return setWork(b, id, { debug });
+  }
   const progress = (b) => ({ done: b.plan.items.filter((x) => stateOf(b, x.id) === "done").length, total: b.plan.items.length });
 
   // 저장했던 판(브라우저 저장소) — 모양이 틀리면 null
@@ -133,7 +162,7 @@
     return null;
   }
 
-  const api = { board, mark, note, answer, unmarked, canConfirm, feedback, hasFeedback, confirm, stateOf, running, next, taskFor, start, report, accept, reject, failed, progress, revive, EXAMPLE_PLAN, exampleReport, decisionsOf, differs };
+  const api = { DEBUG_QS, DEBUG_CHECK, DEBUG_TRIES, withDebug, canDebug, debugOf, board, mark, note, answer, unmarked, canConfirm, feedback, hasFeedback, confirm, stateOf, running, next, taskFor, start, report, accept, reject, failed, progress, revive, EXAMPLE_PLAN, exampleReport, decisionsOf, differs };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloePlan = api;
 })(typeof window !== "undefined" ? window : globalThis);

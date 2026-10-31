@@ -39,7 +39,7 @@ test("3단계 초안 읽기: 재료는 넘긴 지난 단계의 칸만({s, i} —
   assert.equal(messy.prep.length, 3);
   const bare = N.parseStageDraft({ items: N.criteriaFor(2, "Lite").map(() => ({ text: "글" })), say: "한마디" }, 2, "Lite", [S0, S1]);
   assert.deepEqual(bare.prep, []); assert.deepEqual(bare.items[0].from, [], "재료를 안 주면 빈 목록");
-  assert.equal(N.parseStageDraft({ ...answer3("Full"), prep: ["가".repeat(500)] }, 2, "Full", [S0, S1]).prep[0].length, 160);
+  assert.equal(N.parseStageDraft({ ...answer3("Full"), prep: ["가".repeat(500)] }, 2, "Full", [S0, S1]).prep[0].length, N.LEN.prep);   // 2026-10-30 퀘스트 글 짧게(quest-short.test.js)
   assert.equal(N.parseStageDraft(answer3("Full"), 8, "Full", [S0, S1]), null, "없는 단계");
 });
 
