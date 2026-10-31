@@ -101,9 +101,9 @@ test("F-36: 장면(바이브 코딩)의 퀘스트 창 서고 탭에서 갔으면
     s = await placeOf(page);
     assert.ok(s.chat && s.place === "vibe", `돌아와도 기록은 바이브 코딩: ${JSON.stringify(s)}`);
     await page.click(".tb [data-act=qwin-toggle]"); await wait(200);   // 2026-10-24 C-35: 명령 네 칸을 빼고 위 줄의 '퀘스트' 단추로 연다
-    await page.click("[data-act=qtab][data-tab=tree]"); await wait(200);
+    await page.click("[data-act=qtab][data-tab=quest]"); await wait(200);
     s = await placeOf(page);
-    assert.ok(s.qwin && s.qtab === "tree" && (await page.evaluate(() => document.querySelectorAll(".qwin .vtabs [role=tab]").length)) === 9, `도전과제 탭 — 한눈에 하나 + 장 여덟(C-37): ${JSON.stringify(s)}`);
+    assert.ok(s.qwin && s.qtab === "quest" && (await page.evaluate(() => document.querySelectorAll(".qwin .vtabs").length)) === 0 && await page.$(".qwin .qboard"), `퀘스트 탭 — 세로 줄 없이 지도 띠 + 퀘스트 카드(C-65 · C-66, 2026-10-30): ${JSON.stringify(s)}`);
   } finally { await browser.close(); }
 });
 
@@ -197,7 +197,7 @@ test("C-16: 퀘스트 창의 탭은 셋(퀘스트 · 도전과제 · 책 — 배
     const page = await fresh(browser);
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tab=doc"), { waitUntil: "load" }); await wait(400);
     const s = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.dataset.tab), head: document.querySelector(".bdoc-head b")?.textContent || "", draft: !!document.querySelector("[data-act=draft]") }));
-    assert.deepEqual(s.tabs, ["canvas", "quest", "tree", "lib"]);   // C-54(2026-10-28): 문서 지도 탭(map)은 도전과제 안의 '상자' 보기로   // C-41 ①(2026-10-26)부터 캔버스가 먼저 — 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다(2026-10-27 고침) · C-45(2026-10-27) 문서 지도 탭이 끝에
+    assert.deepEqual(s.tabs, ["canvas", "quest", "lib"]);   // C-65(2026-10-30): 노트북 + 도전과제 → 퀘스트 하나   // C-54(2026-10-28): 문서 지도 탭(map)은 도전과제 안의 '상자' 보기로   // C-41 ①(2026-10-26)부터 캔버스가 먼저 — 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다(2026-10-27 고침) · C-45(2026-10-27) 문서 지도 탭이 끝에
     assert.ok(s.head.includes("2단계") && s.draft, `단계 번호는 1~8로(코드 1 = 2단계): ${JSON.stringify(s)}`);
     await page.click("[data-act=draft]"); await wait(400);
     await page.evaluate(() => { const t = document.querySelector("textarea[data-act=doc]"); t.value = t.value.replace(/\[채워 주세요: [^\]]*\]/g, "채움"); t.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -348,7 +348,7 @@ test("C-18: 파일을 섬 위로 끌면 파란 먹이 층('플로로에게 먹�
   } finally { await browser.close(); }
 });
 
-test("C-19: 먹이를 검사하는 동안 '어디쯤인지 보기'를 누르면 하지 않고 플로로가 까닭을 말하며 화난 눈 · X 표지판(m-angry), 먹이 화면은 그대로", { skip }, async () => {
+test("C-19: 먹이를 검사하는 동안 '어디쯤인지 보기'를 누르면 하지 않고 플로로가 까닭을 말하며 화난 눈 · X 표지판(m-angry), 먹이 화면은 그대로", { skip: skip || "C-66(2026-10-30) — 장 화면의 '해 보기' 단추를 뺐다. 살피기를 누르는 길이 화면에 없다" }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser);
@@ -449,7 +449,7 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     assert.ok(!(await page.$(".qwin")), "처음엔 퀘스트 창이 없다");
     await page.type("[data-act=say]", "동아리 행사 신청 앱을 만들고 싶어요"); await page.keyboard.press("Enter"); await wait(600);
     assert.ok((await page.evaluate(() => [...document.querySelectorAll(".msg.me .b")].map((x) => x.textContent))).includes("동아리 행사 신청 앱을 만들고 싶어요"), "내 말은 오른쪽에 남는다");
-    assert.ok(await page.$(".qwin .book") && !(await page.$(".qwin .ev")), "퀘스트 창이 바로 떠서 공책 — 받기 화면 · '시작하시겠습니까'는 없다");
+    assert.ok(await page.$(".qwin .qcard") && !(await page.$(".qwin .ev")), "퀘스트 창이 바로 떠서 퀘스트 카드(C-68 한 목록) — 받기 화면 · '시작하시겠습니까'는 없다");
     assert.equal(await band().then((b) => b.split("·")[0].trim()), "1단계", `위 줄은 1단계부터: ${await band()}`);
     assert.ok((await band()).includes("동아리 행사 신청 앱"), `제목은 주제: ${await band()}`);
     assert.ok((await say()).startsWith("Ⅰ."), `칸마다 확인: ${await say()}`);
@@ -461,19 +461,20 @@ test("C-22 · C-36: 처음 실행 — 원하는 것을 플로로에게 말하면
     await page.click("[data-act=gate]"); await wait(300); await page.click("[data-act=yes]"); await wait(400);
     if (await page.$("[data-act=check-pick]")) { await page.click("[data-act=check-pick]"); await wait(400); if (await page.$("[data-act=check-go]")) { await page.click("[data-act=check-go]"); await wait(400); } }
     // 2단계는 1단계 결과로 만든 초안을 받기 화면 없이 바로 확인(C-37, 2026-10-25 — 연습은 예시 초안)
-    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".shells span")?.textContent, book: !!document.querySelector(".qwin .book"), ev: !!document.querySelector(".qwin .ev") }));
+    const after = await page.evaluate(() => ({ band: document.querySelector(".tb-stage")?.textContent || "", shells: document.querySelector(".shells span")?.textContent, book: !!document.querySelector(".qwin .qcard"), ev: !!document.querySelector(".qwin .ev") }));
     assert.ok(after.band.startsWith("2단계 · 동아리 행사 신청 앱") && after.shells === "1" && after.book && !after.ev, JSON.stringify(after));
     assert.match(await say(), /^Ⅰ\./, "2단계도 칸마다 확인");
     assert.equal(await page.evaluate(() => localStorage.getItem("floe:level")), null, "연습 모드의 관문은 영구 레벨에 남기지 않는다(C-28 — 이 켜짐 동안만 오른다, 칭호는 위처럼 바뀐다)");
     // 받기 화면(3단계부터 — 초안이 없는 장) — 보상 칸 설명 · 고쳐서 받기 · 공책. 장면 주소로 연다(2단계 퀘스트를 받기 화면으로)
+    // C-70(2026-10-30 목업 확정본 S1): 이벤트 창(그림 · REWARD 칸) 대신 다섯 칸 미리보기 카드 — 단추는 [나중에] [퀘스트 받기] 둘. 이름 · 개수 고치기는 섬 채팅의 '고쳐 주세요'로
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&q=draft"), { waitUntil: "load" }); await wait(400);
-    assert.ok((await page.evaluate(() => document.querySelector(".ev .slots i.has")?.dataset.tt || "")).includes("무지개 조개"), "REWARD 칸에 마우스 설명");
-    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".ev .slots .coin")).backgroundColor), "rgba(0, 0, 0, 0)", "보상 칸의 조개 그림에 상자가 겹치지 않는다(2026-10-23)");
-    await page.click("[data-act=quest-fix]"); await wait(300);
-    await page.evaluate(() => { const i = document.querySelector("[data-act=quest-title]"); i.value = "둘째 장 — 적어 두기"; i.dispatchEvent(new Event("input", { bubbles: true })); });
-    await page.click("[data-act=quest-save]"); await wait(500);
-    assert.ok(await page.$(".qwin .book"), "받으면 공책");
-    assert.equal(await page.evaluate(() => document.querySelector(".page.r h3")?.textContent), "둘째 장 — 적어 두기", "고친 이름 그대로");
+    assert.ok(await page.$(".qwin .qpre") && !(await page.$(".qwin .ev")), "받기 전 카드 — 이벤트 창은 없다");
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".qwin .qpre .pacts button")].map((b) => b.textContent)), ["나중에", "퀘스트 받기"], "단추 둘");
+    assert.ok((await page.$$(".qwin .qpre .ln")).length >= 4 && (await page.$(".qwin .qpre .rw")), "다섯 칸 미리보기 · 보상은 글로만");
+    const title0 = await page.$eval(".qwin .qpre .qhead h3", (e) => e.textContent);
+    await page.click("[data-act=quest-ok]"); await wait(500);
+    assert.ok(await page.$(".qwin .qcard:not(.qpre)") && (await page.$$(".qwin .qcard .ln")).length >= 4, "받으면 퀘스트 카드 — 다섯 칸(장면의 판정이 칸을 맞음으로 두면 끝낸 줄)");
+    assert.equal(await page.evaluate(() => document.querySelector(".qwin .qhead h3")?.textContent), title0, "이름 그대로");
     // 설정 — 2026-10-25(두승현): 옆 창이 아니라 섬 안의 판(채팅 자리를 바꿔 끼움). 퀘스트 창은 섬 옆 — 기본은 오른쪽, '왼쪽'을 고르면 [퀘스트][섬]. 이 컴퓨터에 남는다
     //   F-86(2026-10-29 두승현 "별도의 모달창을 중앙에"): 작업실이 열려 있으면 설정은 섬이 아니라 작업실 위 가운데 모달 — 섬의 채팅은 그대로
     await page.click("[data-act=settings]"); await wait(300);
@@ -504,27 +505,28 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]")?.textContent.trim()), "퀘스트", "위 줄의 '퀘스트' 단추(이재엽 그림 2026-10-24)");
     // 퀘스트 단추 → 작업실 창(탭 다섯 — C-41 ① 2026-10-26: 캔버스 · 노트북(옛 퀘스트) · 도전과제 · 책, C-45 2026-10-27: 문서 지도). 한 번 더 누르면 닫힌다
     await page.click(".tb [data-act=qwin-toggle]"); await wait(300);
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "노트북", "도전과제", "책"]);   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
-    assert.equal(await page.evaluate(() => document.querySelector(".tb [data-act=qwin-toggle]").getAttribute("aria-pressed")), "true");
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "퀘스트", "책"]);   // C-65(2026-10-30)   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
+    assert.ok(await page.$(".qwin"), "작업실이 열렸다(열린 동안 섬 옆 칸에는 위 줄이 없어 단추의 눌림은 볼 수 없다 — C-62)");
     // 책: 서버 없이 열었으니 연습 예시 README
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 시험은 섬을 옆으로
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(400);
     const book = await page.evaluate(() => ({ toc: [...document.querySelectorAll(".rb-toc button")].map((b) => b.textContent), vers: document.querySelectorAll(".rb-vers li").length, from: document.querySelector(".rb-head small")?.textContent || "" }));
     assert.ok(book.toc.length >= 3 && book.vers >= 2 && book.from.includes("연습 예시"), JSON.stringify(book));
     await page.click('.rb-toc button[data-i="1"]'); await wait(200);
     assert.equal(await page.evaluate(() => document.querySelector(".rb-ch h4")?.textContent), book.toc[1], "목차를 누르면 그 장");
     // 도전과제: 지금 장(1단계)의 알아 둘 것 — 퀘스트 받기 · 맡기기와 허락이 있고, 고르면 그 튜토리얼과 '해 보기'. 다른 장을 고르면 그 장의 것
-    await page.click("[data-act=qtab][data-tab=tree]"); await wait(300);
-    assert.ok(await page.$(".qwin .sm-grid"), "도전과제의 기본은 지도(C-54 카드) — 흐름 보기가 C-37 한눈에 보기");
-    await page.click('[data-act=tree-chap][data-i="0"]'); await wait(200);
-    const learn0 = await page.evaluate(() => [...document.querySelectorAll(".learnbox [data-act=tu-sel]")].map((b) => b.dataset.v));
-    assert.ok(learn0.includes("quest") && learn0.includes("handoff"), JSON.stringify(learn0));
-    await page.click('.learnbox [data-act=tu-sel][data-v="quest"]'); await wait(200);
+    await page.click("[data-act=qtab][data-tab=quest]"); await wait(300);
+    assert.ok(await page.$(".qwin .sm-grid"), "퀘스트 탭의 기본은 지도 띠 + 퀘스트 카드(C-65) — 흐름 보기가 C-37 한눈에 보기");
+    // C-66(2026-10-30): 장 화면(관문 전에 알아 둘 것 · 이 장에서 쓰는 말)은 뺐다 — 튜토리얼은 받기 전 카드의 '처음 쓰는 기능' 한 줄로(C-70)
+    assert.equal((await page.$$(".qwin .learnbox, .qwin .vtabs, .qwin .chain")).length, 0, "장 화면 없음");
+    if (false) {
     assert.deepEqual(await page.evaluate(() => ({ h: document.querySelector(".learnbox .tu-h b")?.textContent, st: document.querySelector(".learnbox .tu-st")?.textContent, tryAct: document.querySelector(".learnbox .tu [data-act=qwin-quest]") ? "qwin-quest" : "" })), { h: "퀘스트 받기", st: "있음", tryAct: "qwin-quest" });
     await page.click('[data-act=tree-chap][data-i="1"]'); await wait(200);
     assert.ok((await page.evaluate(() => [...document.querySelectorAll(".learnbox [data-act=tu-sel]")].map((b) => b.dataset.v))).includes("book"), "2단계에는 책");
     assert.match(await page.evaluate(() => document.querySelector(".learnbox h4")?.textContent || ""), /2단계/, "어느 장의 관문 전인지");
-    await page.click(".tb [data-act=qwin-toggle]"); await wait(200);
-    assert.ok(!(await page.$(".qwin")), "한 번 더 누르면 닫힌다");
+    }
+    await page.click(".wh [data-act=qwin]"); await wait(200);   // 열린 동안 섬 옆 칸에는 위 줄(.tb)이 없다(C-62) — 머리 줄의 닫기로
+    assert.ok(!(await page.$(".qwin")), "닫힌다");
     // 계획 — 채팅의 늘 있는 칩으로 한 번에 넣기를 열고, '한 줄만 적어 맡기기'는 전의 할 일 칸(AI 진행 판)
     await page.click(".mc.chat [data-act=plan-open]"); await wait(300);
     assert.match(await page.evaluate(() => document.querySelector(".msg.now .say")?.textContent || ""), /한 번에/, "채팅의 지금 말이 한 번에 넣기");
@@ -563,9 +565,8 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     await page.click(".closet [data-act=wear]"); await wait(300);
     assert.ok(!(await page.$(".pet .deco")) && (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("navigator-prototype:v1")).wear).length)) === 0, "벗으면 기록도");
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tier=Lite&q=quest"), { waitUntil: "load" }); await wait(400);
-    assert.ok(await page.$(".toc .side-h") && (await page.evaluate(() => document.querySelectorAll(".toc button.lock[disabled]").length)) >= 1, "곁 퀘스트 — 목차 아래");
-    await page.click("[data-act=qtab][data-tab=tree]"); await wait(300); await page.click('[data-act=tree-chap][data-i="1"]'); await wait(200);
-    assert.ok((await page.evaluate(() => document.querySelectorAll(".sidebn").length)) >= 1, "도전과제 옆 가지");
+    assert.ok(await page.$(".qwin .qside"), "곁 퀘스트 — 목록 아래 한 줄(C-68)");
+    if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 시험은 섬을 옆으로
     await page.click("[data-act=qtab][data-tab=lib]"); await wait(300);
     if (shelfOff) {   // 서재를 잠시 뺀 동안(2026-10-23)은 책 표지 목록 대신 이 프로젝트의 책 하나 — 펼치면 단계가 1~8
       await page.click("[data-act=lib-book]"); await wait(300);

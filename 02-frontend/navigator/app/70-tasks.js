@@ -126,18 +126,20 @@
     return `<div class="qsel" role="group" aria-label="지금 할 퀘스트">${opt("stage", stageName, qp ? `${qp.n}개 중 ${qp.k}번째 할 일` : "채팅에서 이어 해요")}${
       opt("plan", "맡길 일", p ? `${p.total}개 중 ${p.done}개 끝냄` : `계획 ${b.v}판 · 확인하는 중`)}</div>${st.qfocus === "plan" ? planQuestPane(b) : questPane()}`;
   }
-  // 맡길 일 퀘스트 — 왼쪽 목차(순서대로 끝냄 · 지금 · 아직), 오른쪽 고른 줄(요구 · 기준 · 받은 보고). 맡기기 · 보고 확인은 채팅에서 — 여기는 보기만
+  // 맡길 일 퀘스트 — 퀘스트 카드와 같은 한 목록(C-73, 2026-10-30 목업 확정본 S7): 줄마다 요구 · 다 됐는지 보는 기준 · 받은 보고(끝낸 줄). 맡기기 · 허락 · 보고 확인은 섬 채팅에서 — 여기는 보기만
   function planQuestPane(b) {
     if (!b.confirmed) return `<div class="qempty"><b>계획을 확인하는 중이에요 (${b.v}판)</b>채팅에서 줄마다 맞아요 / 고칠래요를 누르고 확정하면, 이 창에 맡길 일이 순서대로 생겨요.</div>`;
     const items = b.plan.items, cur = FP.next(b), sel = items.some((x) => x.id === st.planSel) ? st.planSel : cur || items[items.length - 1].id;
-    const word = (id) => { const s = FP.stateOf(b, id); return s === "done" ? "끝냄 ✓" : id !== cur ? "★ 아직" : s === "running" ? "맡김 중" : s === "report" ? "보고 왔어요" : (b.work[id] || {}).fail ? "다시" : "지금"; };   // 다시 — 지난번에 끝까지 못 한 줄(C-50)
-    const toc = items.map((x, i) => `<button type="button" data-act="plan-sel" data-id="${esc(x.id)}" aria-pressed="${x.id === sel}" class="${FP.stateOf(b, x.id) === "done" ? "done" : x.id === cur ? "" : "lock"}">${ROMAN(i)}. ${esc(x.need)}<small>${word(x.id)}</small></button>`).join("");
-    const k = items.findIndex((x) => x.id === sel), x = items[k], w = b.work[sel] || {};
-    return `<div class="book"><div class="page l"><h4>목차 · 맡길 일</h4><div class="toc">${toc}</div></div>
-      <div class="page r"><h3>${esc(x.need)}</h3><div class="meta">맡길 일 · ${items.length}개 중 ${k + 1}번째 · ${word(sel)}${planPractice(b) ? " · 예시예요" : ""}</div>
-        <p><b>다 됐는지 보는 기준</b> — ${esc(x.check)}</p>${w.fail ? `<p><b>지난번에 끝까지 못 했어요${w.fail.n > 1 ? `(${w.fail.n}번)` : ""}</b> — ${esc(w.fail.why)}</p>` : ""}${w.note ? `<p><b>지난번 의견</b> — ${esc(w.note)}</p>` : ""}${w.report ? `<div class="pl-rep"><p>${esc(w.report.easy)}</p>${repChecks(w.report)}</div>` : ""}
-        <p class="meta">${sel === cur ? "맡기기 · 보고 확인은 채팅에서 해요." : FP.stateOf(b, sel) === "done" ? "끝낸 줄이에요." : "앞 줄을 끝내면 열려요."}</p>
-        <p><b>풀려는 문제</b> — ${esc(b.plan.problem)}</p></div></div>`;
+    const word = (id) => { const s = FP.stateOf(b, id); return s === "done" ? "끝냄" : id !== cur ? "앞 줄 뒤에" : s === "running" ? "맡김 중" : s === "report" ? "보고 왔어요" : (b.work[id] || {}).fail ? "다시" : "지금"; };   // 다시 — 지난번에 끝까지 못 한 줄(C-50)
+    const rows = items.map((x, i) => { const w = b.work[x.id] || {}, s = FP.stateOf(b, x.id) === "done" ? "done" : x.id === cur ? "now" : "later", check = `다 됐는지 보는 기준 — ${esc(x.check)}`;
+      const rep = w.report ? `<span class="done-when">받은 보고 — ${esc(w.report.easy)}${w.report.items ? ` · 기준 ${w.report.items.length}개 중 ${w.report.items.filter((c) => c.done).length}개 맞음` : ""}</span>` : "";
+      return { no: ROMAN(i), state: s, act: "plan-sel", key: `data-id="${esc(x.id)}"`, pressed: x.id === sel, name: esc(x.need), easy: check,
+        detail: s === "done" ? `<span class="done-when">${check}</span>${rep}` : `${w.fail ? `<span class="done-when">지난번에 끝까지 못 했어요${w.fail.n > 1 ? `(${w.fail.n}번)` : ""} — ${esc(w.fail.why)}</span>` : ""}${w.note ? `<span class="done-when">지난번 의견 — ${esc(w.note)}</span>` : ""}${w.report ? `<div class="pl-rep"><p>${esc(w.report.easy)}</p>${repChecks(w.report)}</div>` : ""}`,
+        hint: s === "now" ? "맡기기 · 허락 · 보고 확인은 섬 채팅에서 해요" : "", right: s === "now" ? `<span class="now-badge">${word(x.id)}</span>` : word(x.id) }; });
+    const got = rows.filter((r) => r.state === "done").length, dots = rows.map((r) => `<i class="${r.state === "done" ? "on" : r.state === "now" ? "now" : ""}"></i>`).join("");
+    return `<div class="qcard"><div class="qhead"><div><h3>맡길 일</h3><div class="meta">${items.length}개 중 ${got}개 끝냄 · 계획 ${b.v}판${planPractice(b) ? " · 예시예요" : ""}</div></div><div class="qprog">끝낸 줄 <b>${got} / ${rows.length}</b><span class="dots">${dots}</span></div></div>
+      ${questRows(rows, "맡길 일")}
+      <p class="rw">풀려는 문제 — ${esc(b.plan.problem)}</p></div>`;
   }
   // AI에게 묻는 것들 — 무엇을 기다리는지(planBusy)를 같이 보인다
   const planId = (el) => (el && el.dataset && el.dataset.id) || (st.plan ? FP.next(st.plan) : "");   // 보고 안의 단추는 data-id, 채팅의 칩은 지금 줄

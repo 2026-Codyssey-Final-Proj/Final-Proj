@@ -28,6 +28,8 @@
     const add = () => { const code = pb.querySelector("code"); if (!code || pb.querySelector(".floe-open")) return; const p = code.textContent.trim(); if (!/\.md$/i.test(p)) return;
       const b = document.createElement("button"); b.type = "button"; b.className = "floe-open"; b.textContent = "파일 보기에서 열기"; b.addEventListener("click", () => parent.postMessage({ floe: "open", path: p }, location.origin)); code.parentElement.appendChild(b); };
     new MutationObserver(add).observe(pb, { childList: true, subtree: true }); add();
+    // C-67(2026-10-30 목업 확정본 S6): 처음 배율은 맞춤(56%)이 아니라 100% — 지금 장 상자(없으면 첫 상자)를 가운데에. 엔진이 처음 맞춤(fitAll, 0.7초)을 끝낸 뒤에
+    setTimeout(() => { if (!window.ArchiBoard || !window.ArchiBoard.centerOn) return; if (!window.ArchiBoard.centerOn((x) => x.c === now, 1)) window.ArchiBoard.centerOn(() => true, 1); }, 800);
   };
   document.body.appendChild(s);
 })();

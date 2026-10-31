@@ -43,7 +43,7 @@ test("main.js — 작업실 창: 처음은 작업 영역 가득(workBounds(wa, �
 
 test("app.js — 작업실 창: 탭은 캔버스 → 노트북(옛 퀘스트) → 도전과제 → 책, 처음 여는 탭은 캔버스. 캔버스 판에 지금 하는 일 · 단계 칩 · 지난 장 / 다음 장 · 다섯 칸(생각 → 행동 → 기록 → 저장 → 버전 → 관문) 차례로", () => {
   const a = read("navigator/app.js");
-  assert.match(a, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "노트북"\]/);
+  assert.match(a, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "퀘스트"\], \["lib"/, "탭 셋(C-65, 2026-10-30)");
   assert.match(a, /qwin: false, qtab: "canvas"/);
   assert.match(a, /<span class="ttl">작업실<\/span>/);
   assert.match(a, /st\.qtab === "canvas" \? canvasPane\(n\)/);

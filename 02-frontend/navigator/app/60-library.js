@@ -98,14 +98,6 @@
     render();
   }
   // 튜토리얼 한 장(C-30, 2026-10-23) — 어떻게 움직이나 · 예시 · 막히면. 있는 기능은 '해 보기'로 바로. 도전과제의 '관문 전에 알아 둘 것'에서 고르면 펼친다(C-35)
-  function tuCard(t) {
-    return `<article class="tu"><div class="tu-h"><b>${esc(t.name)}</b><span class="tu-st ${t.state}">${t.state === "ready" ? "있음" : "만드는 중"}</span></div><p>${esc(t.what)}</p>
-        <h5>어떻게 움직이나</h5><ol>${t.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
-        <h5>예시</h5><div class="tu-ex"><span>${esc(t.example.in)}</span><i aria-hidden="true">→</i><span>${esc(t.example.out)}</span></div>
-        <h5>막히면</h5><p>${esc(t.stuck)}</p>
-        ${!t.try ? "" : t.try.ai && st.mode !== "fixture" ? `<div class="row"><button type="button" class="b" disabled>${esc(t.try.label)}</button><span class="meta">진짜 AI 모드에서는 토큰이 들어요 — 연습 모드에서 해 봐요</span></div>`
-          : `<div class="row"><button type="button" class="b pri" data-act="${esc(t.try.act)}">${esc(t.try.label)}</button></div>`}</article>`;
-  }
   function deskLib() {
     if (!L() || !SCH()) return libMissing();
     const books = openBooks(), b = libSelected();
