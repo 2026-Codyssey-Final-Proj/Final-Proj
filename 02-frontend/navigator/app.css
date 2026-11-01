@@ -1434,7 +1434,7 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 /* C-67 · C-71(2026-10-30 목업 확정본 S5 · S6 · S3): 흐름 · 상자는 작업 칸 가득 + '퀘스트로' 알약, 완료 보고 뒤 관문 칸 */
 .wbody>.qboard.full{flex:1;min-height:0}
 .qboard.full .board{flex:1;min-height:0;overflow:auto}
-.qboard.full.box .board{padding:0;background:none;display:flex;flex-direction:column}
+.qboard.full.view-box .board{padding:0;background:none;display:flex;flex-direction:column}
 .q-back{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:1.5px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink);font-size:calc(12.5px * var(--ui-scale,1));font-weight:700}
 .q-back b{font-family:var(--font-disp);font-weight:400;font-size:calc(14px * var(--ui-scale,1))}
 .q-back:hover{border-color:var(--acc);color:var(--acc)}

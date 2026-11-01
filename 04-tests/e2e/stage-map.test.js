@@ -84,6 +84,10 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     const line = await page.$eval(".wside .ws-line", (el) => el.textContent.replace(/\s+/g, " ")); assert.match(line, /누가 정했나/); assert.match(line, /종이 신청이 헷갈려요/);
     if (SHOTS) await shot(page, "map-readonly");
     await page.click("[data-act=quest-view-off]"); await wait(300); assert.ok(!(await page.$(".qcard.readonly")), "'지금 퀘스트로'면 읽기만 카드가 내려간다");
+    // F-110(2026-11-01 임유정): 보기 줄(지도 · 흐름 · 상자)은 어느 보기에서나 같은 자리 — 흐름 판의 class 'flow'에 1단계 화면의 .flow(가운데 맞춤)가 겹쳐 흐름에서만 가운데로 밀렸다. claude-drafted: 2026-11-01
+    const barAt = () => page.$eval(".qwin .sm-views", (e) => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; });
+    const barCards = await barAt();
+    for (const v of ["flow", "box"]) { await page.click(`[data-act="tree-view"][data-v="${v}"]`); await wait(200); assert.deepEqual(await barAt(), barCards, `${v} 보기의 보기 줄 자리 = 지도`); }
     await page.click('[data-act="tree-view"][data-v="flow"]'); await wait(200); assert.ok(await page.$(".qwin .jmap"), "흐름 = 한눈에 보기(C-39)");
     // C-67(2026-10-30): 흐름이면 지도 띠 · 퀘스트 카드가 접히고 작업 칸 가득, 돌아가는 길은 '퀘스트로' 알약 하나(지금 줄 · 진행)
     assert.ok(!(await page.$(".qwin .sm-grid")) && !(await page.$(".qwin .qstack")) && await page.$(".qwin .qboard.full") && await page.$(".qwin .q-back"), "흐름 보기 — 지도 띠 · 카드 없음 · 알약 있음");

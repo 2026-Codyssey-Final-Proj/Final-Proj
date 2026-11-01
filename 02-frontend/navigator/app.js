@@ -2211,7 +2211,8 @@
     const views = [["cards", "지도"], ["flow", "흐름"], ["box", "상자"]], viewBar = `<div class="sm-views" role="tablist" aria-label="보기">${views.map(([v, l]) => `<button type="button" role="tab" data-act="tree-view" data-v="${v}" aria-selected="${treeView === v}">${l}</button>`).join("")}</div>`;
     const q = st.quest && st.quest.chap === cur && st.quest.phase !== "draft" ? st.quest : null, ci = q ? QU.curIdx(q) : -1, got = q ? q.objs.filter((_, i) => QU.filled(q, i)).length : 0;
     // C-67(2026-10-30): 흐름 · 상자를 고르면 지도 띠 · 퀘스트 카드를 접고 작업 칸 가득(판 안의 판 없음). 돌아가는 길은 보기 줄 오른쪽 알약 하나 — 지금 줄 · 진행을 같이 보인다
-    if (treeView !== "cards") return `<div class="qboard full ${treeView}"><div class="qtop">${viewBar}<button type="button" class="q-back" data-act="quest-back">퀘스트로${q ? ` · ${ci >= 0 ? `${ROMAN(ci)} ${esc(QU.nameOf(q, ci))}` : "다 적음"} <b>${got}/${q.objs.length}</b>` : ""}</button></div><div class="board">${treeView === "flow" ? treeMap(cur) : mapPane(Math.min(cur, N.STAGES.length - 1))}</div></div>`;
+    // class는 view-flow · view-box — 그냥 'flow'면 1단계 화면의 .flow(가운데 맞춤 격자)가 겹쳐 흐름에서만 보기 줄이 가운데로 밀렸다(F-110, 임유정 2026-11-01)
+    if (treeView !== "cards") return `<div class="qboard full view-${treeView}"><div class="qtop">${viewBar}<button type="button" class="q-back" data-act="quest-back">퀘스트로${q ? ` · ${ci >= 0 ? `${ROMAN(ci)} ${esc(QU.nameOf(q, ci))}` : "다 적음"} <b>${got}/${q.objs.length}</b>` : ""}</button></div><div class="board">${treeView === "flow" ? treeMap(cur) : mapPane(Math.min(cur, N.STAGES.length - 1))}</div></div>`;
     if (st.qview != null && (st.qview === cur || !N.STAGES[st.qview])) st.qview = null;   // 지금 장이 바뀌었으면 보던 지난 장 카드는 접고 지금 퀘스트로
     const up = qUp();
     // 범례(누가 정했나)는 카드를 내렸을 때만 — 올라와 있으면 지도 띠 한 줄에 칩이 없어 뜻이 없다(두승현 2026-10-30, 요구 문서 9절 7번)
