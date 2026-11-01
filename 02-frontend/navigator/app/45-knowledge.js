@@ -50,7 +50,7 @@
     const lines = [...(read.length ? [`${list(read)} 문서를 폴더에서 고쳤어요 — 이 기록과 그 글로 만든 기획서 · 결정 기록이 낡았어요.`] : []),
       ...(unread.length ? [`${list(unread)} 문서는 Floe가 읽을 수 없게 바뀌었어요 — 기록은 그대로 두고 그 문서는 덮지 않아요.`] : []),
       ...(R.gone.length ? [`${list(R.gone)} 문서가 폴더에 없어요 — 기록은 지우지 않고 '근거 없음'으로 두었어요.`] : [])];
-    return { tone: "amber", mood: "think", meta, title: read.length ? "폴더의 단계 문서가 바뀌었어요 — 다시 읽어 올까요?" : "폴더의 단계 문서가 달라졌어요",
+    return { tone: "amber", mood: "think", meta, title: read.length ? "폴더의 단계 문서가 바뀌었어요 — 다시 읽어 올까요?" : "폴더의 단계 문서가 달라졌어요.",
       sub: esc(lines.join(" ")), ...(read.length ? { foot: "다시 읽으면 기록을 폴더의 글로 바꾸고, 기획서 · 결정 기록도 같은 파일에 고쳐 쓸지 물어요. 사람이 고친 단계 문서는 Floe가 덮지 않아요." } : {}),
       acts: R.stale.length ? [{ label: read.length ? "다시 읽기" : "확인했어요", act: "restore-read", key: "Enter", pri: true }, { label: "나중에", act: "restore-later", kind: "ghost" }] : [{ label: "확인했어요", act: "restore-later", key: "Enter", pri: true }] };
   }
@@ -114,7 +114,7 @@
         <div class="opts">${btn({ label: "채택", act: "carry-adopt", i: k, kind: "opt", disabled: d.stage < 0 })}${btn({ label: "보류", act: "carry-hold", i: k, kind: "opt" })}${btn({ label: d.rejecting ? "이 까닭으로 반려" : "반려", act: "carry-reject", i: k, kind: "opt" })}</div></li>`;
     }).join("");
     const left = C.drafts.filter((d) => !d.state).length;
-    return { tone: "blue", mood: "happy", meta, title: left ? `가져갈 것 초안 ${C.drafts.length}개 — 고쳐서 고르세요` : "가져갈 것을 다 정했어요",
+    return { tone: "blue", mood: "happy", meta, title: left ? `가져갈 것 초안 ${C.drafts.length}개 — 고쳐서 고르세요.` : "가져갈 것을 다 정했어요.",
       sub: esc(C.say || ""), body: `<ol class="carry">${rows}</ol>`,
       acts: left ? [{ label: "남은 것은 보류하기", act: "carry-hold-rest", kind: "ghost" }] : [{ label: "확인했어요", act: "carry-later", key: "Enter", pri: true }] };
   }
@@ -123,7 +123,7 @@
     const whence = (x) => [x.why ? `왜: ${esc(x.why)}` : "", x.project ? esc(x.project) : "", x.from && x.from.length ? `근거 ${x.from.map((n) => LB(n)).join(" · ")} 문서` : ""].filter(Boolean).join(" · ");   // 근거 단계 문서를 잇는다(새 맥락 리뷰)
     const items = O.items.map((x, k) => `<li>${btn({ label: x.text, act: "carry-use", i: k, kind: "opt toggle", pressed: O.pick.includes(x.id) })}${whence(x) ? `<small class="mc-fine">${whence(x)}</small>` : ""}</li>`).join("");
     const held = O.held.map((x, k) => `<li>${esc(x.text)}${whence(x) ? ` <small class="mc-fine">${whence(x)}</small>` : ""} ${btn({ label: "채택", act: "carry-held-adopt", i: k, kind: "opt", disabled: !(x.stage >= 0) })}</li>`).join("");
-    return { tone: "blue", mood: "happy", meta, title: O.items.length ? "지난 프로젝트에서 가져온 것이 있어요 — 이번에 쓸까요?" : "보류해 둔 가져갈 것이 있어요",
+    return { tone: "blue", mood: "happy", meta, title: O.items.length ? "지난 프로젝트에서 가져온 것이 있어요 — 이번에 쓸까요?" : "보류해 둔 가져갈 것이 있어요.",
       sub: O.items.length ? "고른 것은 이 단계의 준비 계획에 근거로 들어가요." : "채택하면 다음 프로젝트부터 그 단계에서 보여요.",
       body: `${items ? `<ul class="carry">${items}</ul>` : ""}${held ? `<p class="mc-sub">보류한 것</p><ul class="carry">${held}</ul>` : ""}`,
       acts: [{ label: "이대로", act: "carry-use-done", key: "Enter", pri: true }, { label: "이번엔 안 써요", act: "carry-use-none", kind: "ghost" }] };

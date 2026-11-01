@@ -168,6 +168,9 @@
 
   // ── 상태에서 바로 계산하는 것 ──
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  // 플로로 말의 끝(임유정 2026-11-01 "문장이 끝나면 꼭 마침표") — 문장 끝말(요 · 다 · 죠 · 네)로 끝나면 마침표를 붙인다.
+  //   할 일 이름 같은 제목("Ⅰ. 꼭 필요한 기능 정리하기") · ? ! … · 따옴표 · 괄호 · 태그로 끝나면 그대로(새 맥락 리뷰 2026-11-02)
+  const endDot = (s) => { const t = String(s).trimEnd(); return /[요다죠네]$/.test(t) ? `${t}.` : t; };
   const met = () => (st.j ? st.j.criteria.map((c) => c.met) : []);
   const metCount = () => met().filter(Boolean).length;
   const left = () => met().length - metCount();

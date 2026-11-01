@@ -89,7 +89,7 @@ test("채팅 — '살펴보고 있어요'(기다리는 동안 경과 초가 바�
   assert.match(app, /title: `\$\{st\.planBusy \? PL_BUSY\[st\.planBusy\] : "살펴보고 있어요"\}\$\{dots\}`,\s*\n\s*sub: `<span data-wait>[^\n]*passing: true/, "기다리는 말에 passing 표시(계획을 기다릴 때는 그 말 — C-35)");
   assert.match(app, /if \(lastLive && lastLive\.key !== key\) settleLive\(\);/, "말이 바뀌면 지난 말로");
   assert.match(app, /if \(!lastLive \|\| lastLive\.passing \|\| lastLive\.logged\) return;/, "passing인 말은 쌓지 않는다(C-37 settleLive)");
-  assert.match(app, /function say\(text\) \{ if \(!text\) return; logMsg\("floro", esc\(text\)\); saidSince \+= 1;/, "안내 · 오류는 대화 기록에 — 지난 말은 그 앞에 끼운다(2026-10-25)");
+  assert.match(app, /function say\(text\) \{ if \(!text\) return; logMsg\("floro", esc\(endDot\(text\)\)\); saidSince \+= 1;/, "안내 · 오류는 대화 기록에 — 지난 말은 그 앞에 끼운다(2026-10-25)");
 });
 
 // ── C-35 오버레이는 일하는 자리(2026-10-24, 이재엽 "오버레이는 작업하는 공간이고 다른 곳들은 부가적인 기능" · 버튼 "맡길 일 퀘스트 하나로" · "채팅에서 전부") ──

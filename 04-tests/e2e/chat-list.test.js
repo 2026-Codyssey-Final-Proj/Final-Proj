@@ -65,6 +65,23 @@ test("C-63 ① 연습(파일로 연 화면) — 왼쪽 칸은 대화 목록: 프
   } finally { await shut(browser); }
 });
 
+// claude-drafted: 2026-11-02 — F-116(임유정 "2단계라고 나오는데 3단계가 미리 열려"): 관문을 넘으면 새 장 번호의 구분선 — 전에는 지난 장 번호(1단계를 넘기면 '1단계' 구분선)
+test("F-116 관문을 넘으면 대화 구분선 · 대화 목록이 새 단계 번호다", { skip }, async () => {
+  const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
+  try {
+    const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
+    await page.goto(url("navigator/index.html#base"), { waitUntil: "load" });
+    await page.evaluate(() => { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); });
+    await page.goto(url("navigator/index.html#ex=0&done&gate&q=done"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" }); await wait(500);
+    await tap(page, "button[data-act=yes]"); await wait(500);   // 관문 — 이해했어요
+    await tap(page, "button[data-act=check-pick]"); await wait(700);   // 확인 질문의 첫 답 → 다음 단계
+    const s = await page.evaluate(() => { const r = JSON.parse(localStorage.getItem("navigator-prototype:v1") || "{}"); return { j: r.j && r.j.stage, marks: [...document.querySelectorAll(".msg.stage")].map((e) => e.dataset.stage) }; });
+    assert.equal(s.j, 1, `2단계로 넘어갔다: ${JSON.stringify(s)}`);
+    assert.equal(s.marks[s.marks.length - 1], "1", `마지막 구분선은 2단계(n=1): ${JSON.stringify(s)}`);
+    assert.ok(!s.marks.includes("2"), "아직 열지 않은 단계의 구분선은 없다");
+  } finally { await shut(browser); }
+});
+
 // ② 서버로 연 화면 — 진짜 AI 모드. /api/chatlog은 가짜 답(3-32 모양), 그 밖의 AI 길은 부르지 않는다
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "floe-chatlist-e2e-"));
 fs.writeFileSync(path.join(TMP, "replay.json"), "{}");

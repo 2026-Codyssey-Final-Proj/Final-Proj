@@ -9,7 +9,7 @@
         skip ? "" : kindSelect("feed-kind", i, fd.kinds[i])}
         <button type="button" class="b ghost" data-act="feed-mark" data-i="${i}" aria-pressed="${skip}">${skip ? "먹어도 돼요" : "빼 주세요"}</button></li>`; }).join("");
     return { tone: "blue", mood: "look", meta: `<span class="mm-stage">먹이 ${fd.sections.length}구간${fd.example ? " · 예시예요 · 시연용" : ""}</span>`,
-      title: packed.kept ? `${packed.kept}구간을 먹을게요${packed.left.length ? ` — ${packed.left.length}구간은 빼요` : ""}` : "먹을 수 있는 구간이 없어요",
+      title: packed.kept ? `${packed.kept}구간을 먹을게요${packed.left.length ? ` — ${packed.left.length}구간은 빼요` : ""}.` : "먹을 수 있는 구간이 없어요.",
       sub: "빠진 구간의 글은 AI에게 보내지 않고 책에도 남기지 않아요. 구간마다 바꿀 수 있어요.",
       body: `<ol class="feedlist" aria-label="나눈 구간">${rows}</ol>`,
       acts: [{ label: "확인하고 어디쯤인지 보기", act: "feed-confirm", key: "c-Enter", pri: true }, { label: "다시 쓰기", act: "feed-back", key: "Escape", kind: "ghost" }] };
@@ -92,10 +92,10 @@
     const s = stage(), meta = `<span class="mm-stage">${LB(s.n)} · 관문 앞</span>${flowLine()}`;
     const un = st.j.criteria.filter((c) => !c.met);
     const rows = `<ul class="unmet">${un.map((c) => `<li><b>${esc(QU.shortOf(c.text))}</b>${c.why && N.GATE_WHY && N.GATE_WHY[c.why] ? ` <small>${esc(N.GATE_WHY[c.why])}</small>` : ""}</li>`).join("")}</ul>`;
-    if (st.skip) return { tone: "amber", mood: "think", meta, title: "왜 넘기는지 한 줄 적어 주세요", sub: "이 까닭은 결정 기록의 관문 줄에 남아요 — 나중에 읽는 사람이 알 수 있게",
+    if (st.skip) return { tone: "amber", mood: "think", meta, title: "왜 넘기는지 한 줄 적어 주세요.", sub: "이 까닭은 결정 기록의 관문 줄에 남아요 — 나중에 읽는 사람이 알 수 있게.",
       body: `${rows}<textarea class="mc-input" data-act="skip-reason" rows="2" aria-label="넘기는 까닭" placeholder="예) 아직 잴 수 없어요 — 발표 뒤에 재요">${esc(st.skip.reason || "")}</textarea>`,
       acts: [{ label: "이 까닭으로 넘기기", act: "gate-skip-save", key: "c-Enter", pri: true }, { label: "돌아가기", act: "gate-skip-back", key: "Escape", kind: "ghost" }] };
-    return { tone: "amber", mood: "think", meta, title: `아직 '안 됨'이 ${un.length}개 있어요 — 관문 앞에서 멈췄어요`,
+    return { tone: "amber", mood: "think", meta, title: `아직 '안 됨'이 ${un.length}개 있어요 — 관문 앞에서 멈췄어요.`,
       sub: "채우러 가면 공책에서 그 칸을 고치고 다시 완료 보고를 해요. 넘기려면 까닭 한 줄이 결정 기록에 남아요.",
       body: rows, acts: [{ label: "채우러 가기", act: "gate-fill", key: "Enter", pri: true }, { label: "까닭 적고 넘기기", act: "gate-skip" }] };
   }
@@ -127,7 +127,7 @@
       acts: [...st.j.criteria.map((c, i) => ({ label: c.text, act: "hard-t", i, key: String(i + 1), kind: "opt toggle", pressed: st.hard.includes(i) })),
         { label: "다음", act: "to-question", key: "Enter", pri: true }] };
     if (st.step === "question") return { tone: "amber", mood: face()[0], meta,
-      title: "궁금한 걸 편하게 물어보세요", sub: `헷갈린 곳: ${esc(hardTexts().join(", "))}`,
+      title: "궁금한 걸 편하게 물어보세요.", sub: `헷갈린 곳: ${esc(hardTexts().join(", "))}`,
       body: `<textarea class="mc-input" data-act="question" rows="2" aria-label="궁금한 것" placeholder="예) 꼭 필요한지 표시하는 건 왜 해요?">${esc(st.question)}</textarea>${
         st.answer ? `<div class="answer"><b>플로로의 답</b>${esc(st.answer)}</div>` : ""}`,
       acts: [{ label: "물어보기", act: "answer", key: "c-Enter", pri: !st.answer }, ...(st.answer ? [{ label: "한 장 요약 보기", act: "plan", key: "Enter", pri: true }] : []), ...holdAct,
@@ -169,8 +169,8 @@
         ${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}
         ${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}
         ${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}
-        <h2 class="mc-title" aria-live="polite">${v.title}</h2>
-        ${v.sub ? `<p class="mc-sub">${v.sub}</p>` : ""}
+        <h2 class="mc-title" aria-live="polite">${endDot(v.title)}</h2>
+        ${v.sub ? `<p class="mc-sub">${endDot(v.sub)}</p>` : ""}
         ${v.body || ""}
         ${opts.length ? `<div class="opts">${opts.map(btn).join("")}</div>` : ""}
         ${rest.length ? `<div class="acts">${rest.map(btn).join("")}</div>` : ""}

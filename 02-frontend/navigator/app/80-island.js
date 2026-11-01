@@ -320,7 +320,7 @@
   const liveCat = () => (isPhone() ? $phone : $nav).querySelector("[data-live]");
   // 플로로의 한마디 — 2026-10-25(두승현): 머리 위에 떴다 사라지던 말풍선(.pop-say)을 뺐다. 안내 · 오류는 섬의 대화 기록에 플로로의 말로 남긴다
   //   (실패를 숨기지 않는다 — security-records.md 6-1). 쓰다듬기 · 졸기 · 축하 같은 꾸밈 말은 부르지 않는다. ponytail: 휴대폰 화면은 대화 기록이 없어 보이지 않는다(PC 먼저)
-  function say(text) { if (!text) return; logMsg("floro", esc(text)); saidSince += 1; requestAnimationFrame(render); }
+  function say(text) { if (!text) return; logMsg("floro", esc(endDot(text))); saidSince += 1; requestAnimationFrame(render); }
   // 한 번 하는 움직임(seal.css · app.css). 끝나면 떼어 낸다 — 헤엄의 물방울처럼 붙어 있는 동안 계속 보이는 것이 있어서
   const playOn = (host, cls) => {
     if (STILL || !host) return;
