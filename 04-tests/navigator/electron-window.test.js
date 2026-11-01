@@ -62,7 +62,7 @@ test("앱(main.js) — 서고에 있는 동안 창을 조절할 수 있고(최�
   assert.match(restore, /libSize = \{ width: now\.width, height: now\.height \}/, "조절한 크기를 기억");
   assert.match(restore, /win\.setResizable\(false\)/);
   assert.match(restore, /win\.setContentBounds\(from, process\.platform === "darwin"\)/, "Mac은 animate");
-  assert.match(m, /else if \(main && !same && expanded\) restoreWindow\(\)/, "서고 밖 주소로 가면 되돌린다");
+  assert.match(m, /else if \(main && !same\) \{ closeSideWins\(\); if \(expanded\) restoreWindow\(\); \}/, "서고 밖 주소로 가면 되돌린다(새로 고침이면 옆 창도 닫는다 — F-109)");
   assert.match(m, /if \(expanded\) \{ if \(\/\\\/library\\\/\/\.test\(win\.webContents\.getURL\(\)\)\) return; expanded = null;/, "서고에 있는 동안 섬 크기를 따르지 않는다 — 서고가 아닌데 넓혀져 있으면(처음 설정, KAN-57) 섬 창으로 돌아온다");
   assert.match(read("preload.js"), /onExpanded: \(cb\) =>[^\n]*ipcRenderer\.on\("floe:expanded"/);
 });
