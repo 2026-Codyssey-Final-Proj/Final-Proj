@@ -149,8 +149,8 @@ test("C-49 서버 — POST /api/docs가 쓴 단계 문서의 글 지문(prints)�
   fs.writeFileSync(f1, "# 2단계: 내 마음대로\n");
   assert.equal((await call("GET", "/api/docs")).json.stages[1].result, null);
   // 바로가기 · 너무 큰 파일은 읽지 않는다
-  fs.rmSync(f1); fs.symlinkSync(path.join(TMP, "replay.json"), f1);
-  assert.equal((await call("GET", "/api/docs")).json.stages[1], undefined, "바로가기는 읽지 않는다");
+  fs.rmSync(f1); let linked = true; try { fs.symlinkSync(path.join(TMP, "replay.json"), f1); } catch { linked = false; }   // 링크를 못 만드는 컴퓨터(Windows 권한)는 이 확인만 건너뛴다(readme-api.test.js와 같다)
+  if (linked) assert.equal((await call("GET", "/api/docs")).json.stages[1], undefined, "바로가기는 읽지 않는다");
   Srv.dropProject(DIR);
   const none = await call("GET", "/api/docs");
   assert.equal(none.json.ok, true); assert.equal(none.json.why, "folder"); assert.deepEqual(none.json.stages, {});

@@ -45,7 +45,7 @@ test("세컨드 브레인의 파이썬(knowledge.py)이 그대로 읽는다 — 
     const f = path.join(vault, "지식", k.purpose, `${k.name}.md`); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, k.text);
     const code = "import sys,datetime;sys.path.insert(0,sys.argv[1]);import knowledge as K;h=K.find_knowledge(sys.argv[2],'끝 조건');t=open(h[0].path,encoding='utf-8').read();"
       + "print(len(h),h[0].purpose,h[0].cites,all(K._column(t,c) for c in K.COLUMNS),K.cite(h[0].path,'2026-10-31'))";
-    const r = spawnSync("python3", ["-I", "-c", code, path.join(__dirname, "../../05-projects/second-brain/implementations/skeleton"), vault], { encoding: "utf8" });
+    const r = spawnSync("python3", ["-X", "utf8", "-I", "-c", code, path.join(__dirname, "../../05-projects/second-brain/implementations/skeleton"), vault], { encoding: "utf8" });   // -X utf8: Windows(cp949)에서도 한글을 UTF-8로 낸다 — -I라 PYTHONIOENCODING은 듣지 않는다
     assert.equal(r.status, 0, r.stderr); assert.equal(r.stdout.trim(), "1 작업 0 True 1");
   } finally { fs.rmSync(vault, { recursive: true, force: true }); }
 });
