@@ -47,6 +47,10 @@ test("endDot — 한글로 끝나면 마침표, 이미 문장부호 · 따옴표
   assert.equal(endDot("멈췄어요"), "멈췄어요.");
   assert.equal(endDot("멈췄어요  "), "멈췄어요.");
   for (const t of ["알려 드릴까요?", "다시 같이 봐요!", "됐어요.", "살펴보고 있어요…", "새 줄 “고침”", "(docs/idea.md)", "<b>굵게</b>", "V.2"]) assert.equal(endDot(t), t);
+  assert.equal(endDot("마쳤습니다"), "마쳤습니다.");
+  // 할 일 이름 같은 제목은 문장이 아니다 — 마침표를 붙이지 않는다(새 맥락 리뷰 2026-11-02: "Ⅰ. 꼭 필요한 기능 정리하기."가 됐다)
+  for (const t of ["Ⅰ. 꼭 필요한 기능 정리하기", "지금 할 일 · 기능 목록", "1단계 · 무엇을 만들지 정하기"]) assert.equal(endDot(t), t);
+  assert.match(all, /<h2 class="mc-title" aria-live="polite">\$\{endDot\(v\.title\)\}<\/h2>/, "다른 카드 모양도 같이");
   assert.match(all, /logMsg\("floro", esc\(endDot\(text\)\)\)/, "say");
   assert.match(all, /<b class="say">\$\{endDot\(v\.title\)\}<\/b>\$\{v\.sub \? `<span class="mc-sub">\$\{endDot\(v\.sub\)\}<\/span>`/, "말풍선");
 });

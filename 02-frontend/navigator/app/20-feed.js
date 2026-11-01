@@ -169,8 +169,8 @@
         ${st.notice ? `<p class="mc-notice">${I.check}${esc(st.notice)}</p>` : ""}
         ${v.banner ? `<p class="mc-hold">${esc(v.banner)}</p>` : ""}
         ${v.meta ? `<div class="mc-meta">${v.meta}</div>` : ""}
-        <h2 class="mc-title" aria-live="polite">${v.title}</h2>
-        ${v.sub ? `<p class="mc-sub">${v.sub}</p>` : ""}
+        <h2 class="mc-title" aria-live="polite">${endDot(v.title)}</h2>
+        ${v.sub ? `<p class="mc-sub">${endDot(v.sub)}</p>` : ""}
         ${v.body || ""}
         ${opts.length ? `<div class="opts">${opts.map(btn).join("")}</div>` : ""}
         ${rest.length ? `<div class="acts">${rest.map(btn).join("")}</div>` : ""}

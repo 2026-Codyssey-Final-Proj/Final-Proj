@@ -71,7 +71,7 @@
     if (first && i === QU.WHO_AT && !text) return { ...head, sub: `글에서는 누가 쓰는지 못 찾았어요 — 누가 쓰나요? ${QU.WHO.map(([w, line]) => `${w}: ${line}`).join(" · ")}`, foot: "다르면 아래 칸에 적어요.",
       acts: quiet(QU.WHO.map(([w], n) => ({ label: w, act: "draft-who", i: n, key: String(n + 1), kind: "opt" }))) };
     if (pk) { const rec = QU.DOC_PICKS.find(([k]) => k === pk.pick);
-      return { ...head, sub: `플로로는 '${rec[1]}'을 권해요${pk.why ? ` — ${esc(pk.why)}` : ""}. 기획서로 키울지는 직접 정해요.`, foot: `고른 것이 이 칸의 답이 돼요${mat ? ` · ${mat}` : ""}`,
+      return { ...head, sub: `플로로는 '${rec[1]}'을 권해요${pk.why ? ` — ${esc(pk.why)}` : ""}. 기획서로 키울지는 직접 정해요.`, foot: `고른 것이 이 칸의 답이 돼요.${mat ? ` ${mat}` : ""}`,
         acts: quiet([...QU.DOC_PICKS.map(([k, label], n) => ({ label, act: "draft-pick", i: n, key: String(n + 1), kind: k === pk.pick ? "opt pri" : "opt" })), ...all]) }; }
     if (!text) return { ...head, sub: "이 칸은 초안이 없어요 — 아래 칸에 한 줄 적어 주세요.", acts: quiet(findChip(q, i)) };
     return { ...head, sub: `${first && i === QU.WHO_AT ? "글에서 쓰는 사람을 이렇게 봤어요 — 맞나요?" : "플로로가 생각한 내용인데 맞나요?"} “${esc(text)}”`, ...(mat ? { foot: mat } : {}),
@@ -169,7 +169,7 @@
   //   연습 · 서버 없음은 보낸 말을 지금 칸의 후보로(AI 없이). 적는 것 · 섬 자리를 옆으로 옮기는 것은 사람이 [칸 n개에 적기]를 누를 때뿐(FR-17과 같은 방향)
   //   말풍선의 제목(.say)과 아랫줄(.mc-sub)은 눈에는 두 줄이지만 글자만 뽑으면 붙었다("…드릴까요?최근 …", 임유정 2026-11-01) — 덩어리 사이에 띄어쓰기, 줄바꿈(br)은 줄바꿈으로
   const textOf = (html) => { const d = document.createElement("div"); d.innerHTML = String(html).replace(/<br\s*\/?>/gi, "\n"); d.querySelectorAll(".say, .mc-sub, .mc-hold, p, li").forEach((e) => e.after(" "));
-    return (d.textContent || "").replace(/[ \t]*\n[ \t]*/g, "\n").replace(/ {2,}/g, " ").trim(); };
+    return (d.textContent || "").trim(); };   // 띄어쓰기를 줄이지 않는다 — 내 말의 들여쓰기는 그대로(새 맥락 리뷰 2026-11-02)
   // 이 단계의 대화(3-31 talk): 사람 · 플로로의 말만(알림 · 구분선 빼고), 40줄 · 줄 1,000자 · 합 8,000자 안에서 최근 것부터, 마지막은 방금 보낸 내 말(logMe가 먼저 쌓았다)
   const talkOf = (t) => { const all = st.chat.filter((m) => (m.who === "me" || m.who === "floro") && !m.kind).map((m) => ({ who: m.who, text: textOf(m.html).slice(0, 1000) })).filter((m) => m.text);
     const me = { who: "me", text: t.slice(0, 1000) };   // 마지막 내 말은 원문으로 — 채팅에는 긴 글이 앞 200자만 보인다(send의 logMe, F-103-4)
