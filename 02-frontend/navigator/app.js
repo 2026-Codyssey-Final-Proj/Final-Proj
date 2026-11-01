@@ -2560,12 +2560,15 @@
     const r = st.rb || { book: RB.parse(RB.EXAMPLE), src: "example", why: "" };
     const b = r.book, sel = Math.min(Math.max(0, st.rbSel | 0), Math.max(0, b.chapters.length - 1)), ch = b.chapters[sel];
     const from = r.src === "mine" ? `내 저장소 README · ${esc(r.project || "")}` : `연습 예시 책${r.why ? ` — ${esc(r.why)}` : ""}`;
-    return `<section class="rbook" aria-label="내 작업 책"><div class="rb-head"><div class="grow"><b>${esc(b.title || "제목 없는 책")}</b><small>${from}</small></div>${
+    // claude-drafted: 2026-11-01 — 보여 주는 곳이라 마크다운 기호(** · > · | 표)를 그대로 두지 않고 파일 보기와 같은 변환기(md-view.js)로 그린다. 변환기가 없으면 전처럼 글 그대로
+    const md = (t) => (MDV ? MDV.toHtml(t) : `<p class="rb-plain">${esc(t)}</p>`), mdLine = (t) => (MDV ? MDV.inline(t) : esc(t));
+    const tocLine = (t) => mdLine(t).replace(/<[^>]+>/g, "");   // 목차는 단추라 안에 링크(a)를 두지 않는다 — 기호만 뗀 글(가린 글자는 그대로)
+    return `<section class="rbook" aria-label="내 작업 책"><div class="rb-head"><div class="grow"><b>${b.title ? mdLine(b.title) : "제목 없는 책"}</b><small>${from}</small></div>${
         canLive ? `<button type="button" class="b ghost" data-act="rb-reload" title="README를 다시 읽어요">다시 읽기</button>` : ""}</div>
-      ${b.intro ? `<p class="rb-intro">${esc(b.intro)}</p>` : ""}
+      ${b.intro ? `<div class="rb-intro mdv">${md(b.intro)}</div>` : ""}
       ${b.versions.length ? `<ol class="rb-vers" aria-label="버전">${[...b.versions].sort((x, y) => parseInt(x.v.slice(2), 10) - parseInt(y.v.slice(2), 10)).map((v) => `<li><b>${esc(v.v)}</b><span>${esc(v.date)}</span>${esc(v.title)}</li>`).join("")}</ol>` : ""}
-      ${ch ? `<div class="rb-body"><nav class="rb-toc" aria-label="목차">${b.chapters.map((c, i) => `<button type="button" data-act="rb-sel" data-i="${i}" aria-current="${i === sel}">${esc(c.title)}</button>`).join("")}</nav>
-        <article class="rb-ch" id="${esc(ch.id)}"><h4>${esc(ch.title)}</h4><div class="rb-text">${esc(ch.body)}</div></article></div>`
+      ${ch ? `<div class="rb-body"><nav class="rb-toc" aria-label="목차">${b.chapters.map((c, i) => `<button type="button" data-act="rb-sel" data-i="${i}" aria-current="${i === sel}">${tocLine(c.title)}</button>`).join("")}</nav>
+        <article class="rb-ch" id="${esc(ch.id)}"><h4>${mdLine(ch.title)}</h4><div class="rb-text mdv">${md(ch.body)}</div></article></div>`
       : `<p class="meta">README에 ## 제목이 아직 없어요 — 퀘스트를 마치면 한 장씩 생겨요.</p>`}
       <p class="meta">${b.cut ? "README가 길어 앞부분만 보여요. " : ""}고치는 곳은 README예요 — 책은 받아 와 보여 주기만 해요.</p></section>`;
   }

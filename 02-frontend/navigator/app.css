@@ -814,12 +814,13 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .fv-note.ok{background:var(--okbg);color:var(--ok)}.fv-note.bad{background:var(--badbg);color:var(--bad)}.fv-note.ask{background:var(--warnbg);color:var(--warn)}
 .fv-note .lnk{min-height:44px;color:inherit;font-weight:700}
 .fv-md{flex:1;min-height:0;overflow:auto;padding:12px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line);line-height:1.65;font-size:calc(14px * var(--ui-scale,1));color:var(--ink);overflow-wrap:anywhere}
-.fv-md h1,.fv-md h2,.fv-md h3,.fv-md h4{margin:14px 0 6px;line-height:1.3;text-wrap:balance}.fv-md h1{font-size:1.5em}.fv-md h2{font-size:1.25em}.fv-md h3{font-size:1.1em}.fv-md h4,.fv-md h5,.fv-md h6{font-size:1em}
-.fv-md p,.fv-md ul,.fv-md ol,.fv-md blockquote,.fv-md pre,.fv-md table{margin:6px 0}.fv-md ul,.fv-md ol{padding-left:22px}.fv-md li.task{list-style:none;margin-left:-18px}.fv-md li.task.done{color:var(--sub)}
-.fv-md blockquote{border-left:3px solid var(--seg);padding:2px 12px;color:var(--sub)}.fv-md code{background:var(--soft);border-radius:5px;padding:1px 5px;font-family:var(--font-code);font-size:.92em}
-.fv-md pre.mdv-code{background:var(--soft);border-radius:10px;padding:10px 12px;overflow:auto}.fv-md pre.mdv-code code{background:none;padding:0}
-.fv-md table{border-collapse:collapse;max-width:100%;display:block;overflow:auto}.fv-md th,.fv-md td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}.fv-md th{background:var(--soft)}
-.fv-md a{color:var(--acc)}.fv-md hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+/* md-view.js로 그린 글(.mdv) — 파일 보기와 책 탭 README(2026-11-01)가 같이 쓴다 */
+.mdv h1,.mdv h2,.mdv h3,.mdv h4{margin:14px 0 6px;line-height:1.3;text-wrap:balance}.mdv h1{font-size:1.5em}.mdv h2{font-size:1.25em}.mdv h3{font-size:1.1em}.mdv h4,.mdv h5,.mdv h6{font-size:1em}
+.mdv p,.mdv ul,.mdv ol,.mdv blockquote,.mdv pre,.mdv table{margin:6px 0}.mdv ul,.mdv ol{padding-left:22px}.mdv li.task{list-style:none;margin-left:-18px}.mdv li.task.done{color:var(--sub)}
+.mdv blockquote{border-left:3px solid var(--seg);padding:2px 12px;color:var(--sub)}.mdv code{background:var(--soft);border-radius:5px;padding:1px 5px;font-family:var(--font-code);font-size:.92em}
+.mdv pre.mdv-code{background:var(--soft);border-radius:10px;padding:10px 12px;overflow:auto}.mdv pre.mdv-code code{background:none;padding:0}
+.mdv table{border-collapse:collapse;max-width:100%;display:block;overflow:auto}.mdv th,.mdv td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top}.mdv th{background:var(--soft)}
+.mdv a{color:var(--acc)}.mdv hr{border:0;border-top:1px solid var(--line);margin:12px 0}
 .fv-code{position:relative;flex:1;min-height:0;overflow:auto;margin:0;padding:8px 0;border-radius:12px;background:var(--card);border:1px solid var(--line);font:calc(12.5px * var(--ui-scale,1))/1.6 var(--font-code);color:var(--ink)}
 .fv-code ol{list-style:none;margin:0;padding:0;counter-reset:ln}
 .fv-code li{display:flex;gap:12px;padding:0 12px 0 0;counter-increment:ln;white-space:pre;min-height:1.6em}
@@ -1024,6 +1025,7 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 .rb-head b{display:block;font-size:calc(16px * var(--ui-scale,1))}
 .rb-head small{display:block;color:var(--mute);font-size:calc(12px * var(--ui-scale,1))}
 .rb-intro{margin:0;color:var(--sub)}
+.rb-intro>:first-child,.rb-text>:first-child{margin-top:0}.rb-intro>:last-child,.rb-text>:last-child{margin-bottom:0}
 .rb-vers{list-style:none;margin:0;padding:0;display:flex;gap:6px;flex-wrap:wrap}
 .rb-vers li{display:flex;gap:6px;align-items:baseline;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
 .rb-vers li b{color:var(--acc)}
@@ -1046,7 +1048,8 @@ html.in-win .cat .c-fur,html.in-win .cat .c-paws ellipse{stroke:none}
 .rb-toc button{border:0;background:transparent;color:var(--sub);text-align:left;border-radius:8px;padding:5px 8px;font-size:calc(12.5px * var(--ui-scale,1));cursor:pointer}
 .rb-toc button[aria-current=true]{background:var(--acc-soft);color:var(--acc-ink);font-weight:700}
 .rb-ch h4{margin:0 0 6px;font-size:calc(14px * var(--ui-scale,1))}
-.rb-text{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink2);font-size:calc(13px * var(--ui-scale,1));line-height:1.6}
+.rb-text{overflow-wrap:anywhere;color:var(--ink2);font-size:calc(13px * var(--ui-scale,1));line-height:1.6}
+.rb-plain{white-space:pre-wrap;margin:0}
 .tu{display:grid;gap:6px;align-content:start;font-size:calc(13.5px * var(--ui-scale,1));line-height:1.55;color:var(--ink2)}
 .tu p{margin:0}
 .tu h5{margin:6px 0 0;font-size:calc(11.5px * var(--ui-scale,1));color:var(--mute);letter-spacing:.04em}
