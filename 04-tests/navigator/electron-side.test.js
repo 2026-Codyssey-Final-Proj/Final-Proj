@@ -97,6 +97,18 @@ test("앱(main.js) — 설정 창은 테두리 없음 · 항상 위 · 불투명
   for (const k of ["openWin", "sendWin", "sizeWin", "closeWin", "onWinEvent", "onWinClosed", "onWinHtml", "winEvent"]) assert.ok(p.includes(`${k}:`), k);
 });
 
+// F-109(2026-11-01 임유정): 작업실이 열린 채 설정 → 기록 → '기록 지우기'를 누르면 섬 페이지만 새로 읽혀(location.reload) 작업실 창이 남고,
+// 새 섬은 그 창을 몰라(st.qwin · winOpen이 처음 값) 창의 단추가 아무것도 안 했다. 처음 설정도 숨은 섬 창에 떴다 — claude-drafted: 2026-11-01
+test("앱(main.js) — 섬 페이지가 새로 읽히면(기록 지우기 · 메뉴의 새로 고침) 옆 창도 닫는다: 새 섬은 열린 창을 모른다(F-109)", () => {
+  const m = read("electron/main.js");
+  const at = m.indexOf("서고 주소로 넘어가기 시작하면"); assert.ok(at > 0);
+  const nav = m.slice(at, at + 1400);
+  assert.match(nav, /\{ closeSideWins\(\); expandWindow\(\); \}/, "서고로 갈 때는 전처럼");
+  assert.match(nav, /else if \(main && !same\) \{ closeSideWins\(\); if \(expanded\) restoreWindow\(\); \}/, "서고가 아닌 새 페이지(새로 고침)도 옆 창을 닫는다 — 같은 문서 안(#주소)은 그대로");
+  assert.match(m, /w\.on\("closed", \(\) => \{[^\n]*if \(ws\) win\.show\(\);/, "작업실이 닫히면 숨었던 섬 창이 다시 뜬다 — 처음 설정이 보이게");
+  assert.match(read("navigator/app.js"), /forget: \(\) => \{ forgotten = true;[^\n]*location\.reload\(\); \}/, "기록 지우기는 섬을 새로 읽는다 — 그래서 위 길을 탄다");
+});
+
 test("창 화면(win.html · win.js) — 섬이 보낸 내용을 보이고, 누름 · 바뀜 · 입력 · Esc를 섬으로 돌려보낸다. 머리띠로 끈다. 앱 밖(브라우저)에서는 아무것도 하지 않는다. 서버가 내준다", () => {
   const html = read("navigator/win.html"), js = read("navigator/win.js");
   assert.match(html, /<script src="win\.js"><\/script>/);
