@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v60.7 | 2026-11-01 | 임유정 | Windows에서만 실패하던 시험 셋을 고침 — files-api · knowledge-restore는 파일 링크를 권한 없이 못 만들어 EPERM(폴더는 junction, 파일 링크는 못 만들면 그 확인만 건너뜀 — readme-api · chat-store와 같은 방식), knowledge-store는 파이썬 출력이 cp949라 한글이 깨짐(-X utf8). 이 셋 때문에 Windows에서 Claude의 커밋을 커밋 전 시험 훅이 막았다 (#309) | `04-tests/navigator/` |
 | v60.6 | 2026-11-01 | 임유정 | F-111 작업실 파일 탭의 닫기 ×를 오른쪽 위 배지에서 탭 안 오른쪽 옆(세로 가운데)으로 — 웹사이트 배너의 닫기처럼, 고른 탭에서는 밝은 × (#308) | `02-frontend/navigator/`(app.css) · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/07-maintenance/` |
 | v60.5 | 2026-11-01 | 임유정 | F-110 작업실 퀘스트 탭에서 흐름 보기로 바꾸면 보기 줄(지도 · 흐름 · 상자)이 가운데로 밀리던 것 — 판 class 'flow'에 1단계 화면의 .flow가 겹쳤다, view-flow · view-box로 (#307) | `02-frontend/navigator/`(app/58-workspace.js · app.js · app.css) · `04-tests/e2e/` · `01-docs/07-maintenance/` |
 | v60.4 | 2026-11-01 | 임유정 | F-109 작업실이 열린 채 설정의 '기록 지우기'를 누르면 남은 작업실 창의 단추가 듣지 않던 것 — 섬이 새로 읽히면(기록 지우기 · 메뉴의 새로 고침) 작업실도 닫고 섬 창이 다시 떠 처음 설정이 보이게 (#306) | `02-frontend/electron/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
