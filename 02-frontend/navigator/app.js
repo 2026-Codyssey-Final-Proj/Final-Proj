@@ -4084,7 +4084,7 @@
     },
     shells: () => openGacha(),   // 위 줄의 조개 → 뽑기 창(섬이 접혀 있으면 옆 칸으로 펼친 뒤)
     gacha: () => openGacha(),
-    "gacha-close": () => set({ gacha: null }),
+    "gacha-close": () => { if (st.gacha && st.gacha.phase === "rolling") return; set({ gacha: null }); },   // 여는 중에는 닫지 않는다 — 조개만 빠지고 아이템을 못 받았다(F-120, Esc와 같이)
     "gacha-roll": () => gachaRoll(),
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
     qwin: () => closeQwin(),
