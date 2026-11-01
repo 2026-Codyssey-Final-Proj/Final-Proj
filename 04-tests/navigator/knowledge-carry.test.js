@@ -140,6 +140,21 @@ test("C-48 서버 — 장부(이 컴퓨터의 Floe 폴더 파일 하나, 600): �
   assert.deepEqual((await call("GET", `/api/carry?stage=${GOOD.stage}`)).json.held, [], "보류가 풀렸다");
 });
 
+// claude-drafted: 2026-11-02 — F-119: 장부를 못 읽으면(깨짐 · 다른 판 · 잠김) 빈 장부로 보고 다음 고르기가 모든 프로젝트의 채택 · 반려 · 보류를 덮어 지웠다
+test("장부를 못 읽으면 덮어 지우지 않는다 — 깨지거나 다른 판이면 .bak으로 남기고, 읽지 못하면 쓰지 않는다(F-119)", async () => {
+  const file = path.join(TMP, "usage-carry.json"), bak = () => fs.readdirSync(TMP).filter((x) => x.startsWith("usage-carry.json.bak-"));
+  fs.writeFileSync(file, JSON.stringify({ v: 2, items: [{ id: "c1", state: "adopted", text: "새 판의 장부" }] }));
+  assert.equal((await call("POST", "/api/carry", { action: "hold", item: { ...GOOD, text: "다른 판 뒤" } })).status, 200);
+  assert.equal(bak().length, 1, "다른 판은 .bak으로"); assert.match(fs.readFileSync(path.join(TMP, bak()[0]), "utf8"), /새 판의 장부/);
+  fs.writeFileSync(file, "{ 깨진");
+  assert.equal((await call("POST", "/api/carry", { action: "hold", item: { ...GOOD, text: "깨진 뒤" } })).status, 200);
+  assert.equal(bak().length, 2, "깨진 것도 .bak으로");
+  fs.rmSync(file); fs.mkdirSync(file);   // 파일 자리에 폴더 — 읽기가 ENOENT 아닌 오류
+  const r = await call("POST", "/api/carry", { action: "hold", item: { ...GOOD, text: "못 읽을 때" } });
+  assert.equal(r.status, 500); assert.match(r.json.reason, /읽지 못/);
+  fs.rmSync(file, { recursive: true });
+});
+
 test("C-48 화면 — 8단계에 오면 초안 카드(기준 다섯 · 고쳐 채택 · 반려는 까닭 · 보류), 단계에 들어서면 지난 프로젝트에서 가져온 것 최대 3개(이번에 쓸지 고르기 → carryUse)", () => {
   const app = fs.readFileSync(path.join(FRONT, "app.js"), "utf8");
   for (const a of ["carry-draft", "carry-adopt", "carry-reject", "carry-hold", "carry-hold-rest", "carry-from", "carry-later", "carry-use", "carry-use-done"]) assert.match(app, new RegExp(`"${a}": `), a);
