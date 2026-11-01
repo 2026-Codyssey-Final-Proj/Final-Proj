@@ -166,7 +166,9 @@
   // 틀로 맡긴 일이 끝났다 — 열린 파일의 바뀐 줄을 다시 읽고 보고 한 줄(C-44, 전에는 계획 줄을 지켜볼 때만 다시 읽었다 — F-69에서 한 지켜보기로)
   function presetEnd(t) {
     const pt = st.presetTask; st.presetTask = null; if (!pt) return;
-    const k = st.openFiles.findIndex((f) => f.path === pt.path); if (k >= 0) reloadFile(k);
+    const k = st.openFiles.findIndex((f) => f.path === pt.path), f = st.openFiles[k];
+    if (f && f.dirty) f.note = { kind: "ask", text: "맡긴 일이 이 파일을 고쳤을 수 있어요 — 저장하지 않은 고친 것이 있어 다시 읽지 않았어요", acts: [["다시 열기(고친 것 버림)", "freload"], ["그냥 둘게요", "fnote-x"]] };   // 말없이 덮지 않는다(F-121)
+    else if (f) reloadFile(k);
     say(t.state !== "done" ? `'${pt.name}' 틀로 맡긴 일이 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요` : t.report ? (t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy) : `'${pt.name}' 틀로 맡긴 일을 마쳤어요`);
   }
   function momentPreset() {

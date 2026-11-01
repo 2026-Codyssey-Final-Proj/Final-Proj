@@ -33,3 +33,16 @@ test("F-120 뽑기 — 여는 중(rolling)에 × 단추로 닫지 않는다(조�
   st.gacha = { phase: "got", item: {} }; close();
   assert.equal(st.gacha, null, "다 열린 뒤에는 닫힌다");
 });
+
+test("F-121 틀로 맡긴 일이 끝나도 저장하지 않은 고친 것은 덮지 않는다 — 다시 읽지 않고 알린다", () => {
+  const reloaded = [], said = [];
+  const st = { presetTask: { path: "a.md", name: "틀" }, openFiles: [{ path: "a.md", text: "고친 글", saved: "옛 글", dirty: true, note: null }, { path: "b.md", dirty: false }] };
+  const env = { st, reloadFile: (k) => reloaded.push(k), say: (t) => said.push(t), N: { SAY_MAX: 80 } };
+  make(fnSrc("presetEnd"), "presetEnd", env)({ state: "done" });
+  assert.deepEqual(reloaded, [], "고친 것이 있으면 다시 읽지 않는다");
+  assert.equal(st.openFiles[0].text, "고친 글");
+  assert.equal(st.openFiles[0].note.kind, "ask"); assert.ok(st.openFiles[0].note.acts.some(([, act]) => act === "freload"), "사람이 고르면 다시 연다");
+  st.presetTask = { path: "b.md", name: "틀" };
+  make(fnSrc("presetEnd"), "presetEnd", env)({ state: "done" });
+  assert.deepEqual(reloaded, [1], "고친 것이 없으면 지금처럼 다시 읽는다");
+});
