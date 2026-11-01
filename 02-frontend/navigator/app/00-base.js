@@ -168,6 +168,8 @@
 
   // ── 상태에서 바로 계산하는 것 ──
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+  // 플로로 말의 끝(임유정 2026-11-01 "문장이 끝나면 꼭 마침표") — 한글로 끝나면 마침표를 붙인다. ? ! … · 따옴표 · 괄호 · 태그로 끝나면 그대로
+  const endDot = (s) => { const t = String(s).trimEnd(); return /[가-힣]$/.test(t) ? `${t}.` : t; };
   const met = () => (st.j ? st.j.criteria.map((c) => c.met) : []);
   const metCount = () => met().filter(Boolean).length;
   const left = () => met().length - metCount();

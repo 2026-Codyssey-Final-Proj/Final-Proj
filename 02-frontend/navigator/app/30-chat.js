@@ -29,7 +29,7 @@
   const turnOf = (m) => (m.kind === "stage" ? { stage: m.n, mark: true, title: String(m.title || "").slice(0, 60) } : m.kind === "carry" ? { stage: m.n, carry: textOf(m.html).slice(0, 2000) }
     : m.who === "me" || m.who === "floro" || m.who === "sys" ? { stage: Number.isInteger(m.n) ? m.n : atStage(), who: m.who, text: textOf(m.html).slice(0, 2000) } : null);
   const fromTurn = (t) => (t.mark ? { who: "sys", kind: "stage", n: t.stage, title: t.title, at: t.at, html: `<b>${LB(t.stage)} · ${esc(t.title)}</b><span>${new Date(t.at).toLocaleDateString("sv")}</span>` }
-    : typeof t.carry === "string" ? { who: "floro", kind: "carry", n: t.stage, at: t.at, html: esc(t.carry).replace(/\n/g, "<br>") } : { who: t.who, n: t.stage, at: t.at, html: esc(t.text) });
+    : typeof t.carry === "string" ? { who: "floro", kind: "carry", n: t.stage, at: t.at, html: esc(t.carry).replace(/\n/g, "<br>") } : { who: t.who, n: t.stage, at: t.at, html: esc(t.text).replace(/\n/g, "<br>") });   // 줄바꿈은 줄바꿈으로(textOf가 br을 \n으로 남긴다)
   //   chatFolder — 서버가 대화를 둘 폴더(앱이 고른 폴더)를 아나(GET의 why). null이면 묻는 중(모아 둔다), false면 보내지 않는다 — 서버는 폴더 없이 POST를 400으로 거절한다(3-32).
   //   폴더를 고르면(connected · projectPicked) 다시 묻는다. 병합 뒤 고침(2026-10-29 — #247 서버 · #250 화면이 같이 들어간 main에서 브라우저로 연 화면이 말마다 400을 쌓았다)
   let chatQueue = [], chatFlushing = false, chatFolder = null, chatAsk = 0;

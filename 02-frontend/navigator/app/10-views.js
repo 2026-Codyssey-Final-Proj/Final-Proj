@@ -343,8 +343,8 @@
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
         acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };
     }
-    if (st.keyBad && st.mode === "live") return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "API 키가 거절됐어요", sub: "키가 맞지 않거나 쓸 수 있는 권한이 없어요. 키를 고치기 전까지 연습용 예시로 둘러볼 수 있어요 — 키는 설정의 '처음 설정 다시 하기'에서 다시 넣어요.", acts: [{ label: "연습용 예시로 둘러보기", act: "practice-now", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };   // F-106
-    if (st.error) return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요", sub: esc(st.error),
+    if (st.keyBad && st.mode === "live") return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "API 키가 거절됐어요.", sub: "키가 맞지 않거나 쓸 수 있는 권한이 없어요. 키를 고치기 전까지 연습용 예시로 둘러볼 수 있어요 — 키는 설정의 '처음 설정 다시 하기'에서 다시 넣어요.", acts: [{ label: "연습용 예시로 둘러보기", act: "practice-now", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };   // F-106
+    if (st.error) return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요.", sub: esc(st.error),
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
     if (st.blocked && !st.blocked.retrying) return momentBlocked();   // F-69 맡긴 일이 허락을 못 받아 막혔다 — 사람이 길을 고른다
     if (stallShown()) return momentStall();   // C-50 맡긴 일이 멈춘 것 같다 — 끄지 않고 사람이 고른다
@@ -369,7 +369,7 @@
     // 처음(C-22 → C-36, 2026-10-25 이재엽 "원하는 내용을 한줄로 작성해달라고 하지말고 원하는 내용을 플로로에게 받는걸로"): 원하는 것을 받으면 AI가 1단계 초안 → 제목이 주제인 1단계(startDraft).
     //   먹이 주기(파일 · 붙여 넣기)는 칩 · 끌어다 놓기로 그대로
     if (!st.j && !st.openInput && QU) {
-      return { tone: "blue", mood: f[0], meta: `<span class="mm-stage">처음 만나요</span>`, title: st.back ? "다시 오셨네요! 원하는 것을 플로로에게 알려 주세요" : "원하는 것을 플로로에게 알려 주세요",
+      return { tone: "blue", mood: f[0], meta: `<span class="mm-stage">처음 만나요</span>`, title: st.back ? "다시 오셨네요! 원하는 것을 플로로에게 알려 주세요." : "원하는 것을 플로로에게 알려 주세요.",
         sub: "만들고 싶은 것 · 필요한 기능 · 과제 글을 그대로 적거나 붙여 넣어도 돼요. 플로로가 다 읽고 1단계 초안을 만들어 와요.", foot: esc(nowLine()),
         acts: st.mode === "fixture" ? [{ label: "동아리 행사 등록 앱을 만들고 싶어요", act: "idea-example", key: "1", kind: "soft" }, ...(FD ? [{ label: "예시 먹이 주기", act: "feed-example", key: "2", kind: "soft" }] : [])] : [] };
     }
@@ -377,7 +377,7 @@
       const first = !st.j;
       // 처음 카드는 먹이 주기 화면(C-15, 2026-10-20) — 파일 · 붙여 넣기 한곳. '예시 먹이 주기'는 서버 없이 보이는 예시(FR-10). 글을 바로 보내지 않고 나눠 정리한 뒤 확인하면 보낸다
       return { tone: "blue", mood: f[0], say: first ? "" : f[1], meta: first ? `<span class="mm-stage">플로로에게 먹이 주기</span>` : stageMeta(),
-        title: first ? "플로로에게 먹이를 주세요" : "보낼 글을 확인해 주세요",
+        title: first ? "플로로에게 먹이를 주세요." : "보낼 글을 확인해 주세요.",
         sub: first ? "파일을 끌어다 놓거나 글을 붙여 넣으면 플로로가 읽고 나눠 정리해요. 비밀번호 · 개인적인 일 같은 구간은 빼고 보내요." : "AI 코딩 도구에서 가져온 작업이에요. 고칠 곳이 있으면 고친 뒤 보내 주세요.",
         body: deskInput(),
         acts: [...(first && FD && st.mode === "fixture" ? [{ label: "예시 먹이 주기", act: "feed-example", kind: "soft" }] : first ? [] : exampleActs()),
@@ -388,7 +388,7 @@
       title: END.title, sub: END.sub,
       acts: [{ label: END.more, act: END_ACT, key: "Enter", pri: true }, ...(st.mode === "fixture" ? [RESTART] : [])] };
     if (holding()) return { tone: "gray", mood: f[0], say: f[1], meta: stageMeta(), banner: U.holdLine(st.hold, ymd()),
-      title: "잠시 멈춰 뒀어요", sub: HOLD.later,
+      title: "잠시 멈춰 뒀어요.", sub: HOLD.later,
       acts: [{ label: "다시 이어 하기", act: "hold-resume", key: "Enter", pri: true }] };
     if (allDone()) return { tone: "green", mood: f[0], meta: stageMeta(), title: `${LB(s.n)} 할 일을 모두 했어요!`,
       sub: "다음 단계로 가기 전에, 이번 단계를 이해했는지 한 번만 같이 확인해요.",
@@ -400,7 +400,7 @@
       acts: [] };
     const n = st.j.next;
     if (!n) return { tone: "blue", mood: f[0], say: f[1], meta: stageMeta(), title: `지금 할 일 · ${esc(tick().now)}`, sub: WORK_NOTE, acts: [] };
-    if (st.later) return { tone: "blue", mood: f[0], meta: stageMeta(), title: "나중에 정하기로 했어요", sub: esc(n.question),
+    if (st.later) return { tone: "blue", mood: f[0], meta: stageMeta(), title: "나중에 정하기로 했어요.", sub: esc(n.question),
       acts: [{ label: "지금 고르기", act: "again", key: "Enter", pri: true }, { label: "바뀐 작업 보여 주기", act: "open-input" }] };
     // 선택지에 원하는 게 없으면 직접 쓴다 (2026-10-18 임유정 요청: '나중에'는 창을 닫는 것과 같아서 뺐다)
     if (st.own) return { tone: "blue", mood: f[0], meta: stageMeta(), title: esc(n.question), sub: "어떻게 할지 직접 적어 주세요. 한 줄이면 충분해요.",

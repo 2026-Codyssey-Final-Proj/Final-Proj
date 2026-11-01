@@ -277,7 +277,7 @@
       if (!st.gacha) return;
       const it = QU.draw(QU.ITEMS, Math.random() * 100);
       st.owned = QU.cleanOwned([...st.owned, it.id]); st.wear = { ...st.wear, [it.slot]: it.id }; st.gacha = { phase: "got", item: it };
-      logMsg("floro", `${it.emoji} <b>${esc(it.name)}</b>을 받았어요! 설정 창의 꾸미기 줄에서 벗거나 바꿀 수 있어요`);
+      logMsg("floro", `${it.emoji} <b>${esc(it.name)}</b>을 받았어요! 설정 창의 꾸미기 줄에서 벗거나 바꿀 수 있어요.`);
       render(); flash("wow", 1500);
       const host = liveCat(); if (host && !STILL) C.burst(...center(host), "star", 14, 300);
     }, STILL ? 50 : 1200);

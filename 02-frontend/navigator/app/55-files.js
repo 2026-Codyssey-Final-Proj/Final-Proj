@@ -148,7 +148,7 @@
   }
   function momentLines() {
     const lines = BUILD.features(st.results), done = st.linesDone || [], meta = `<span class="mm-stage">${LB(5)} · 기능 줄 맡기기</span>`;
-    if (!lines.length) return { tone: "amber", mood: "think", meta, title: `${LB(2)} 기능 줄이 아직 없어요`,
+    if (!lines.length) return { tone: "amber", mood: "think", meta, title: `${LB(2)} 기능 줄이 아직 없어요.`,
       sub: `${LB(2)} '꼭 필요한 기능 정리하기'에 '~하면, 앱은 ~한다' 줄을 적으면 줄마다 맡길 수 있어요.`, acts: [{ label: "닫기", act: "line-x", key: "Escape", kind: "ghost" }] };
     return { tone: "blue", mood: "look", meta, title: "어느 기능을 Claude Code에 맡길까요?",
       sub: "한 줄씩 맡겨요 — Claude Code가 그 줄의 확인 방법을 먼저 적고 만든 뒤 끝 조건마다 보고해요. 허락 카드는 여기 채팅에 떠요.",
@@ -158,8 +158,8 @@
   function momentRun() {
     const o = st.runOut, r = o.report, meta = `<span class="mm-stage">돌려 보기</span>`;
     const ok = !!(r && r.items[1] && r.items[1].done);
-    return { tone: ok ? "green" : "amber", mood: ok ? "happy" : "think", meta, title: ok ? "돌려 봤어요 — 결과가 나왔어요" : "돌려 봤는데 결과를 못 봤어요",
-      sub: r ? esc(r.easy) : "보고를 받지 못했어요 — 진행 보기에서 봐 주세요",
+    return { tone: ok ? "green" : "amber", mood: ok ? "happy" : "think", meta, title: ok ? "돌려 봤어요 — 결과가 나왔어요." : "돌려 봤는데 결과를 못 봤어요.",
+      sub: r ? esc(r.easy) : "보고를 받지 못했어요 — 진행 보기에서 봐 주세요.",
       body: `${r ? repChecks(r) : ""}${o.files.length ? `<ul class="run-out" aria-label="결과 파일">${o.files.map((f, k) => `<li><code>${esc(f.path)}</code><button type="button" class="b" data-act="result-open" data-i="${k}">열기</button></li>`).join("")}</ul>` : ""}`,
       acts: [...(o.files.length ? [{ label: "결과 파일 열기", act: "result-open", i: 0, key: "Enter", pri: true }] : []), { label: "다시 돌려 보기", act: "run-go" }, { label: "확인했어요", act: "run-done", kind: "ghost" }] };
   }

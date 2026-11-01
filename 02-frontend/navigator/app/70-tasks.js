@@ -20,7 +20,7 @@
     if (!b) {
       const has = st.planDraft.trim() !== "";
       return { tone: "blue", mood: has ? "happy" : "look", meta: `<span class="mm-stage">준비 계획</span><span>한 번에 넣기</span>`,
-        title: has ? "받은 글로 계획을 세울까요?" : "만들고 싶은 것 · 요구 · 문제 글을 한 번에 붙여 넣어요",
+        title: has ? "받은 글로 계획을 세울까요?" : "만들고 싶은 것 · 요구 · 문제 글을 한 번에 붙여 넣어요.",
         sub: has ? `글 ${st.planDraft.length.toLocaleString()}자 — 더 붙여 넣으면 이어 붙여요.` : "아래 칸에 붙여 넣고 보내요. 여러 번 나눠 보내도 하나로 모아요.",
         body: `${has ? `<blockquote class="pl-draft">${esc(st.planDraft.length > 400 ? `${st.planDraft.slice(0, 400)}…` : st.planDraft)}</blockquote>` : ""}${
           canLive ? `<label class="chk"><input type="checkbox" data-act="plan-readme" ${st.planReadme ? "checked" : ""}>작업 폴더의 README · 파일 이름 · 단계 문서에서 정한 것도 같이 읽어요</label>` : ""}<p class="mc-fine">${
@@ -30,7 +30,7 @@
     if (!b.confirmed) {
       const left = FP.unmarked(b);
       return { tone: "blue", mood: "look", meta: `<span class="mm-stage">준비 계획 · ${b.v}판</span><span>${left ? `아직 안 본 줄 ${left}개` : "다 봤어요"}</span>${ex}`,
-        title: esc(b.plan.say || "계획을 세웠어요. 줄마다 맞는지 봐 주세요"), sub: "맞으면 맞아요, 다르면 고칠래요를 누르고 어떻게 고칠지 적어요. 모두 맞아요면 확정해요.",
+        title: esc(b.plan.say || "계획을 세웠어요. 줄마다 맞는지 봐 주세요."), sub: "맞으면 맞아요, 다르면 고칠래요를 누르고 어떻게 고칠지 적어요. 모두 맞아요면 확정해요.",
         body: planReviewBody(b),
         acts: [{ label: "이대로 확정", act: "plan-confirm", key: "c-Enter", pri: true, disabled: !FP.canConfirm(b) }, { label: "의견 보내고 다시 세우기", act: "plan-again", disabled: !(FP.hasFeedback(b) && planLive()) },
           { label: "처음부터 다시 적기", act: "plan-reset" }] };
@@ -49,7 +49,7 @@
     const wd = FP.debugOf(w), dbgDone = wd ? `<p class="pl-ans"><b>오류 같이 본 것</b> ${esc(`오류: ${wd.err.length > 120 ? `${wd.err.slice(0, 119)}…` : wd.err} · 바로 전에 바꾼 것: ${wd.changed} · 다시 하면 또 나나: ${wd.again}`)} — 다시 맡기면 이 답과 '다시 안 나는지 보는 시험 하나'가 같이 가요</p>` : "";
     return { tone: "blue", mood: face()[0], meta, title: `${ROMAN(i)}. ${esc(x.need)}`, sub: `다 됐는지 보는 기준 — ${esc(x.check)}`,
       body: `${w.fail ? `<p class="pl-ans"><b>지난번에 끝까지 못 했어요${w.fail.n > 1 ? `(${w.fail.n}번)` : ""}</b> ${esc(w.fail.why)}</p>` : ""}${w.note ? `<p class="pl-ans"><b>지난번 의견</b> ${esc(w.note)}</p>` : ""}${dbgDone}`,   // C-50 실패는 남겨 보인다(조용히 '남음'으로 되돌리지 않는다)
-      foot: planPractice(b) ? "연습이라 Claude Code에 보내지 않고 예시 보고를 받아요" : "맡기면 Claude Code가 이 폴더에서 일하고, 끝나면 기준마다 해냈는지 알려 줘요",
+      foot: planPractice(b) ? "연습이라 Claude Code에 보내지 않고 예시 보고를 받아요." : "맡기면 Claude Code가 이 폴더에서 일하고, 끝나면 기준마다 해냈는지 알려 줘요.",
       acts: [{ label: w.note || w.fail ? "다시 맡기기" : "맡기기", act: "plan-hand", key: "Enter", pri: true }, ...(FP.canDebug(b, id) ? [{ label: wd ? "오류 다시 적기" : "오류 같이 보기", act: "dbg-open" }] : []), { label: "새 계획 적기", act: "plan-reset", kind: "ghost" }] };   // C-64 — 끝까지 못 간 줄에서만
   }
   // ── C-64 오류에 막혔을 때(2026-10-30 — 이재엽 버튼 "10/31까지 작게"): 끝까지 못 간 맡길 일에서 한 번에 하나씩 묻는다(plan.js DEBUG_QS) ──
@@ -266,7 +266,7 @@
   function momentStall() {
     const s = st.stall, over = s.lv === "over", min = Math.max(1, Math.floor(s.q / 60));
     return { tone: "amber", mood: "think", meta: `<span class="mm-stage">맡긴 일 · ${over ? "시간 초과" : "멈춘 것 같아요"}</span>`,
-      title: over ? `${min}분 넘게 아무 소식이 없어요` : `Claude Code가 ${min}분째 조용해요 — 멈춘 것 같아요`,
+      title: over ? `${min}분 넘게 아무 소식이 없어요.` : `Claude Code가 ${min}분째 조용해요 — 멈춘 것 같아요.`,
       sub: "허락을 기다리거나 오래 걸리는 일일 수 있어요. 끄지 않고 더 기다릴 수도, 멈추고 다시 맡기거나 직접 할 수도 있어요.",
       acts: [{ label: "더 기다리기", act: "stall-wait", key: "Enter", pri: true }, ...(s.cap ? [] : [{ label: "멈추고 다시 맡기기", act: "stall-again" }]), { label: "멈추고 직접 하기", act: "stall-self" }, { label: "멈추고 그만두기", act: "stall-stop", kind: "ghost" }] };
   }
@@ -311,7 +311,7 @@
   const askWhy = (a) => (a.deny ? "허락 카드에서 '거절'을 눌렀어요" : a.none ? "허락 카드에 답이 없었어요(90초 안에 못 누름)" : a.allow ? "허용한 뒤에도 다른 일이 막혔어요" : "허락 카드가 뜨지 않았어요");
   function momentBlocked() {
     const b = st.blocked, k = b.b, kinds = k.kinds.map((x) => `${x.what} ${x.n}`).join(" · ") || "도구", meta = `<span class="mm-stage">맡긴 일 · 막힘</span>`;
-    if (b.brief) return { tone: "blue", mood: "look", meta, title: "직접 하기 — 이 글을 Claude Code에 붙여 넣어요",
+    if (b.brief) return { tone: "blue", mood: "look", meta, title: "직접 하기 — 이 글을 Claude Code에 붙여 넣어요.",
       sub: "그 폴더에서 Claude Code를 열고 아래 글을 붙여 넣어요. 허락은 Claude Code가 직접 물어요 — 플로로는 진행을 따라가요.",
       body: `<textarea class="mc-input brief" readonly rows="6" aria-label="맡길 글">${esc(b.brief)}</textarea>`,
       acts: [{ label: "글 복사", act: "blocked-copy", key: "Enter", pri: true }, { label: "다 했어요", act: "blocked-done", kind: "ghost" }] };
@@ -325,7 +325,7 @@
         acts: [...(near ? [{ label: "명령 없이 파일만 만들기", act: "blocked-files", key: "Enter", pri: true }] : []), { label: "한 번 더 — 카드를 꼭 눌러요", act: "blocked-again", ...(near ? {} : { key: "Enter", pri: true }) },
           { label: "직접 하기", act: "blocked-self" }, { label: "그만두기", act: "blocked-stop", kind: "ghost" }] };
     }
-    return { tone: "amber", mood: "think", meta, title: `허락을 못 받아 ${k.count}번 막혔어요`, sub: `${esc(kinds)} — ${esc(askWhy(k.asks))}. 일은 끝났지만 막힌 것은 하지 못했어요.`,
+    return { tone: "amber", mood: "think", meta, title: `허락을 못 받아 ${k.count}번 막혔어요.`, sub: `${esc(kinds)} — ${esc(askWhy(k.asks))}. 일은 끝났지만 막힌 것은 하지 못했어요.`,
       acts: [{ label: "다시 맡기기", act: "blocked-again", key: "Enter", pri: true }, { label: "직접 하기", act: "blocked-self" }, { label: "그만두기", act: "blocked-stop", kind: "ghost" }] };
   }
   // ── FR-17 대화로 일 넘기기 · 섬에서 허용 · 거절(C-4, 2026-10-20 — 이재엽 버튼 "섬에서 진짜 승인" · "허락하면 세션이 진행하는 내용을 오버레이에서도") ──
