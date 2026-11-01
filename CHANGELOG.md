@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v60.11 | 2026-11-02 | 임유정 | 플로로 말 문장부호 · 띄어쓰기(F-113), 조개 뽑기 잇달아 열기(F-114) · 섬이 접혀 있어도 옆 칸으로 펼쳐 열기(F-115), 관문을 넘으면 대화 구분선이 새 단계 번호로(F-116) (#313) | `02-frontend/navigator/`, `04-tests/navigator/`, `04-tests/e2e/`, `01-docs/07-maintenance/fix-map.md` |
 | v60.10 | 2026-11-01 | 임유정 | 책 탭 README의 마크다운 기호(** · > · 표 · ---)를 보이지 않고 굵게 · 인용 · 표로 그린다 — 파일 보기와 같은 md-view.js (F-112) (#312) | `02-frontend/navigator/`, `03-backend/navigator/readme-book.js`(연습 예시 줄을 목록으로), `04-tests/navigator/` |
 | v60.9 | 2026-11-01 | 두승현 | 루트 README를 앱 11.0.0 · v60.8(11/1 동결 판) 기준으로 다시 씀 — 한 문장 · 배지 · 첫 화면 사진 → 왜 만들었나(원칙 6) → 주요 기능 10 → 어떻게 동작하나(구조 그림 · AI가 참고하는 정보 · 안전장치) → 기술 구성(이유) → 로컬 실행 · 환경 변수 8 → API 한눈에 → 품질(11/1 잰 시험 1,163 중 1,067 통과 · 실패 0) → 구조 → 시연 장면 다섯의 색 → 알려진 한계. 원시 HTML 없이, 사진은 shots/의 10/28 · 10/30 것 (#311) | `README.md` |
 | v60.8 | 2026-11-01 | 이재엽 | 외부 저장소 11개 다시 봄 — 외부 도구 표 다섯 행 갱신 · 새 다섯 행 · ponytail · Hallmark 확인 메모, impeccable-review 참고 문서를 v4.8.0으로(28개 — 누르는 칸 24px · 큰 글씨 대비 3:1 등) (#310) | `01-docs/catalog/external-tools.md`, `.claude/skills/impeccable-review/`(reference · UPSTREAM-SKILL.md · SKILL.md), `.claude/skills/VENDORED.md` |
