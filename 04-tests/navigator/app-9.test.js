@@ -78,6 +78,9 @@ test("C-22: 뽑기는 조개 셋에 한 번(quest.js SHELL_COST · draw — 확�
   assert.match(app, /const can = st\.shells >= QU\.SHELL_COST && g\.phase !== "rolling";/, "단추도 같은 조건");
   assert.match(app, /\$\{g\.phase === "got" \? "한 번 더 열기" : "조개 열기"\}/);
   assert.ok(!/g\.phase !== "ready"/.test(app), "ready에서만 열리던 조건은 없다");
+  // F-115(임유정 2026-11-02): 섬이 접혀(알약) 있을 때 머리 줄의 조개를 누르면 섬을 옆 칸 크기로 펼치고 뽑기 창 — 뽑기 창은 섬 안이라 전에는 아무것도 안 보였다
+  assert.match(app, /function openGacha\(\) \{ if \(colFolded\(\)\) \{ st\.islBig = false; st\.ui = "home"; clearIdle\(\); \} set\(\{ gacha: \{ phase: "ready" \} \}\); \}/);
+  assert.match(app, /shells: \(\) => openGacha\(\),/); assert.match(app, /gacha: \(\) => openGacha\(\),/);
   assert.match(app, /const it = QU\.draw\(QU\.ITEMS, Math\.random\(\) \* 100\);/, "확률은 quest.js의 표");
   assert.match(app, /QU\.ITEMS\.map\(\(it\) => `<span><b>\$\{it\.emoji\} \$\{esc\(it\.name\)\}<\/b>\$\{esc\(it\.rar\)\} \$\{it\.p\}%<\/span>`\)/, "확률표가 창에 있다");
   assert.ok(app.includes("돈으로 사는 것은 없어요"), "돈으로 사지 않는다");

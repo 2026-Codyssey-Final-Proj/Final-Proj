@@ -270,6 +270,9 @@
     const need = g.offsetHeight + 32;   // .gacha-layer 위아래 padding 16씩
     if (isl.offsetHeight < need) isl.style.minHeight = `${need}px`;
   }
+  // 뽑기 창은 섬 안에 뜬다 — 섬이 접혀(알약) 있으면 작업실 머리 줄의 조개를 눌러도 아무것도 안 보였다(임유정 2026-11-02 "반응이 없는 것 같으니까").
+  //   접혀 있으면 섬을 옆 칸 크기로 펼치고(가운데 크게가 아니라 — '크게 · 옆으로'의 옆) 연다. 열려 있는 동안은 저절로 접히지 않는다(pinned의 st.gacha)
+  function openGacha() { if (colFolded()) { st.islBig = false; st.ui = "home"; clearIdle(); } set({ gacha: { phase: "ready" } }); }
   function gachaRoll() {
     const g = st.gacha; if (!g || !QU || g.phase === "rolling" || st.shells < QU.SHELL_COST) return;   // 여는 중에 또 누르면 무시 — 조개가 두 번 빠지지 않게
     st.shells -= QU.SHELL_COST; st.gacha = { phase: "rolling" }; render();

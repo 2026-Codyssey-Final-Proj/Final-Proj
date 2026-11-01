@@ -174,8 +174,8 @@
       if (st.ui !== "home") go("home"); else render();
       requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); });
     },
-    shells: () => set({ gacha: { phase: "ready" } }),   // 위 줄의 조개 → 뽑기 창
-    gacha: () => set({ gacha: { phase: "ready" } }),
+    shells: () => openGacha(),   // 위 줄의 조개 → 뽑기 창(섬이 접혀 있으면 옆 칸으로 펼친 뒤)
+    gacha: () => openGacha(),
     "gacha-close": () => set({ gacha: null }),
     "gacha-roll": () => gachaRoll(),
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
