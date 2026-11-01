@@ -195,9 +195,8 @@ const CLI_SYSTEM = "Floe가 보낸 요청에만 답한다. 정해진 JSON 형식
 const cliArgs = (schema, opts = null) => ["-p", "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence",
   "--system-prompt", CLI_SYSTEM, "--output-format", "json", "--json-schema", JSON.stringify(schema),
   ...(opts && opts.fast ? ["--model", opts.model || FAST.cliModel, "--effort", FAST.effort] : [])];
-function callCli(prompt, schema, opts = null) {
+function callCli(prompt, schema, opts = null, L = claudeLaunch()) {   // L — 시험에서 바꿔 끼운다(F-117)
   return new Promise((resolve) => {
-    const L = claudeLaunch();
     const child = spawn(L.cmd, [...L.pre, ...cliArgs(schema, opts)], { env: { ...process.env, ...L.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
     let out = "";
     const timer = setTimeout(() => { child.kill(); resolve({ error: "시간 초과" }); }, TIMEOUT_MS);
@@ -214,6 +213,7 @@ function callCli(prompt, schema, opts = null) {
         resolve({ data: r.structured_output, ...paid });
       } catch { resolve({ error: "Claude 응답을 읽지 못함" }); }
     });
+    child.stdin.on("error", () => {});   // claude가 입력을 다 읽기 전에 끝나면 쓰기 오류(EOF · EPIPE) — 받는 곳이 없으면 서버째 죽었다(F-117). 결과는 close가 알린다
     child.stdin.end(prompt);
   });
 }
@@ -289,4 +289,4 @@ const makeClient = () => { const Anthropic = require("@anthropic-ai/sdk"); retur
 const ledger = Tokens.createLedger(Tokens.fileStore(Tokens.fileOf(process.env)));   // 토큰 장부(2026-10-24) — 설정의 토큰 칸 · /api/usage의 ledger
 const callClaude = createCaller({ makeClient, meter, ledger });
 
-module.exports = { RELAY_MODELS, KEY_REJECT, keyKind, apiError, cliArgs, callClaude, ledger, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, claudeLaunch, killTree, startTask };
+module.exports = { RELAY_MODELS, KEY_REJECT, keyKind, apiError, cliArgs, callClaude, ledger, usage: () => describe(process.env, meter), createCaller, createMeter, fileStore, providerOf, describe, parsePlan, DEFAULT_PLAN, claudeVersion, claudeLaunch, killTree, startTask, callCli };

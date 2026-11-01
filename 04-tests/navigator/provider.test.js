@@ -465,3 +465,16 @@ test("장부: 재생 · 토큰 없는 실패는 쌓지 않는다", async () => {
   await P.createCaller({ env: {}, callCli: async () => ({ error: "시간 초과" }), makeClient: () => null, meter: P.createMeter(null, memStore()), ledger })("질문", SCHEMA);
   assert.equal(ledger.snapshot().total.count, 0);
 });
+
+// claude-drafted: 2026-11-02 — 버그 찾기(F-117): claude가 표준 입력을 다 읽기 전에 끝나면(옛 판이 인자를 거절 · 로그인 오류) 쓰기 오류를 받는 곳이 없어 서버째 죽었다.
+//   다른 프로세스에서 부른다 — 이 시험 프로세스가 같이 죽지 않게
+test("claude가 입력을 읽기 전에 끝나도 서버가 죽지 않고 오류로 답한다(F-117)", () => {
+  const { spawnSync } = require("node:child_process"), path = require("node:path");
+  const prov = JSON.stringify(path.resolve(__dirname, "../../03-backend/navigator/provider.js"));
+  const code = `const P = require(${prov});
+    const quit = { cmd: process.execPath, pre: ["-e", "process.exit(0)"], env: {} };
+    P.callCli("가".repeat(2000000), { type: "object" }, null, quit).then((r) => { console.log(JSON.stringify(r)); });`;
+  const r = spawnSync(process.execPath, ["-e", code], { encoding: "utf8", timeout: 30000 });
+  assert.equal(r.status, 0, r.stderr);
+  assert.ok(JSON.parse(r.stdout.trim()).error);
+});
