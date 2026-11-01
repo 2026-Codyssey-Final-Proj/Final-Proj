@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v60.9 | 2026-11-01 | 두승현 | 루트 README를 앱 11.0.0 · v60.8(11/1 동결 판) 기준으로 다시 씀 — 한 문장 · 배지 · 첫 화면 사진 → 왜 만들었나(원칙 6) → 주요 기능 10 → 어떻게 동작하나(구조 그림 · AI가 참고하는 정보 · 안전장치) → 기술 구성(이유) → 로컬 실행 · 환경 변수 8 → API 한눈에 → 품질(11/1 잰 시험 1,163 중 1,067 통과 · 실패 0) → 구조 → 시연 장면 다섯의 색 → 알려진 한계. 원시 HTML 없이, 사진은 shots/의 10/28 · 10/30 것 (#311) | `README.md` |
 | v60.8 | 2026-11-01 | 이재엽 | 외부 저장소 11개 다시 봄 — 외부 도구 표 다섯 행 갱신 · 새 다섯 행 · ponytail · Hallmark 확인 메모, impeccable-review 참고 문서를 v4.8.0으로(28개 — 누르는 칸 24px · 큰 글씨 대비 3:1 등) (#310) | `01-docs/catalog/external-tools.md`, `.claude/skills/impeccable-review/`(reference · UPSTREAM-SKILL.md · SKILL.md), `.claude/skills/VENDORED.md` |
 | v60.7 | 2026-11-01 | 임유정 | Windows에서만 실패하던 시험 셋을 고침 — files-api · knowledge-restore는 파일 링크를 권한 없이 못 만들어 EPERM(폴더는 junction, 파일 링크는 못 만들면 그 확인만 건너뜀 — readme-api · chat-store와 같은 방식), knowledge-store는 파이썬 출력이 cp949라 한글이 깨짐(-X utf8). 이 셋 때문에 Windows에서 Claude의 커밋을 커밋 전 시험 훅이 막았다 (#309) | `04-tests/navigator/` |
 | v60.6 | 2026-11-01 | 임유정 | F-111 작업실 파일 탭의 닫기 ×를 오른쪽 위 배지에서 탭 안 오른쪽 옆(세로 가운데)으로 — 웹사이트 배너의 닫기처럼, 고른 탭에서는 밝은 × (#308) | `02-frontend/navigator/`(app.css) · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/07-maintenance/` |
