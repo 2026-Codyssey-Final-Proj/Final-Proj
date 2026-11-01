@@ -26,8 +26,8 @@ function makeTree() {
   w(path.join(PROJ, ".env"), "KEY=1"); w(path.join(PROJ, ".env.local"), "KEY=1"); w(path.join(PROJ, ".env.example"), "KEY="); w(path.join(PROJ, ".git/HEAD")); w(path.join(PROJ, ".claude/settings.json"));
   w(path.join(PROJ, "server.key")); w(path.join(PROJ, "cert.pem")); w(path.join(PROJ, "id_rsa")); w(path.join(PROJ, "credentials.json")); w(path.join(PROJ, "node_modules/x/index.js"));
   w(path.join(OUT, "secret.txt"), "밖");
-  fs.symlinkSync(OUT, path.join(PROJ, "link-out"));
-  fs.symlinkSync(path.join(PROJ, "README.md"), path.join(PROJ, "link-file.md"));
+  fs.symlinkSync(OUT, path.join(PROJ, "link-out"), "junction");   // Windows는 권한 없이 심볼릭 링크를 못 만든다 — 폴더는 junction(chat-store.test.js와 같다)
+  try { fs.symlinkSync(path.join(PROJ, "README.md"), path.join(PROJ, "link-file.md")); } catch {}   // 파일 링크는 junction이 없다 — 못 만드는 컴퓨터(Windows 권한)는 없는 채로(readme-api.test.js와 같다). 폴더 링크는 위에서 그대로 본다
 }
 makeTree();
 
