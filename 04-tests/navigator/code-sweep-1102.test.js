@@ -46,3 +46,17 @@ test("F-121 틀로 맡긴 일이 끝나도 저장하지 않은 고친 것은 덮
   make(fnSrc("presetEnd"), "presetEnd", env)({ state: "done" });
   assert.deepEqual(reloaded, [1], "고친 것이 없으면 지금처럼 다시 읽는다");
 });
+
+test("F-122 Ctrl+Enter — 입력 칸에서는 그 카드(.mc, 설정 판 빼고) 안의 칸일 때만 카드의 Ctrl+Enter 동작, Enter 동작으로 넘어가지 않는다(파일 편집기에서 커밋 · 푸시가 맡겨지던 것)", () => {
+  const field = (inCard) => ({ closest: (sel) => (sel === ".mc:not(.pane)" && inCard ? {} : null) });
+  const ship = { act: "ship-go" }, plan = { act: "plan-make" };
+  let deskKeys = { Enter: ship };
+  const pick = () => make(fnSrc("ctrlEnterAct"), "ctrlEnterAct", { deskKeys });
+  assert.equal(pick()(field(false), true), null, "파일 편집기 · 설정 칸: 카드의 Enter(커밋 · 푸시 맡기기)를 부르지 않는다");
+  assert.equal(pick()(field(true), true), null, "카드 안 칸이라도 Ctrl+Enter 동작이 없으면 Enter로 넘어가지 않는다");
+  assert.equal(pick()(null, false), ship, "칸 밖에서는 지금처럼 Enter 동작");
+  deskKeys = { Enter: ship, "c-Enter": plan };
+  assert.equal(pick()(field(true), true), plan, "카드 안 칸에서는 그 카드의 Ctrl+Enter(글을 쓰고 보내기)");
+  assert.equal(pick()(field(false), true), null, "카드 밖 칸에서는 아무것도");
+  assert.match(a, /const a = ctrlEnterAct\(t, writing\);/, "keydown이 이 함수로 고른다");
+});

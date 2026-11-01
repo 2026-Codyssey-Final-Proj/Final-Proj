@@ -4407,6 +4407,12 @@
 // ━━ app/95-boot.js ━━
   // ── 단축키 (PC) — 카드 버튼에 적힌 키. 글을 쓰는 중에는 Esc와 Ctrl+Enter만. 한글 자판의 ㅛ·ㅜ도 Y·N으로 ──
   const ALIAS = { "ㅛ": "y", "ㅜ": "n", "ㅗ": "h" };
+  // Ctrl+Enter가 부를 카드 동작 — 글을 쓰는 중이면 그 카드(.mc) 안의 칸일 때만 카드의 Ctrl+Enter. Enter 동작으로 넘어가지 않는다
+  //   (파일 편집기 · 설정 칸에서 Ctrl+Enter가 카드의 Enter — 커밋 · 푸시 맡기기 등 — 를 불렀다, F-122)
+  function ctrlEnterAct(t, writing) {
+    if (!writing) return deskKeys["c-Enter"] || deskKeys.Enter || null;
+    return (t && t.closest && t.closest(".mc:not(.pane)") && deskKeys["c-Enter"]) || null;   // .pane — 설정 · 서재 판도 .mc다
+  }
   document.addEventListener("keydown", (e) => {
     activity();
     if (isPhone() || e.isComposing) return;
@@ -4424,7 +4430,7 @@
     if (st.ui !== "home" && st.ui !== "greet") return;
     if (t.tagName === "BUTTON" && (e.key === "Enter" || e.key === " ")) return;   // 버튼 위의 Enter는 그 버튼을 누른 것
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      const a = deskKeys["c-Enter"] || deskKeys.Enter;
+      const a = ctrlEnterAct(t, writing);
       if (a) { e.preventDefault(); run(a); }
       return;
     }
