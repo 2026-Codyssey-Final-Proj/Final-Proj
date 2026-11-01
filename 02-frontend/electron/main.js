@@ -129,7 +129,7 @@ function createWindow() {
     const url = typeof ev.url === "string" ? ev.url : legacyUrl, main = typeof ev.isMainFrame === "boolean" ? ev.isMainFrame : legacyMain;
     const same = typeof ev.isSameDocument === "boolean" ? ev.isSameDocument : false;
     if (main && !same && /\/library\//.test(String(url || ""))) { closeSideWins(); expandWindow(); }   // 서고로 가면 옆 창 둘은 닫는다(C-22)
-    else if (main && !same && expanded) restoreWindow();   // 서고에서 작업 화면으로 — 섬 자리로 되돌린다(2026-10-20)
+    else if (main && !same) { closeSideWins(); if (expanded) restoreWindow(); }   // 서고에서 작업 화면으로 — 섬 자리로 되돌린다(2026-10-20). 새로 고침(기록 지우기 · 메뉴)도 옆 창을 닫는다 — 새 섬은 열린 작업실을 몰라 그 창의 단추가 듣지 않았다. 작업실이 닫히면 숨었던 섬 창이 다시 뜬다(F-109, 임유정 2026-11-01)
   });
   // 서버가 아직이면 '켜지는 중'(물결 선) — 서버가 켜지면 whenReady가 loadURL(URL_)로 바꾼다(C-10)
   win.loadURL(URL_ || L.bootUrl(PROBE && PROBE.notch));
