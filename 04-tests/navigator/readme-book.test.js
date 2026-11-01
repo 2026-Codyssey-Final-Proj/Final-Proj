@@ -4,6 +4,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const RB = require("../../03-backend/navigator/readme-book.js");
+const fs = require("node:fs"), path = require("node:path");
 
 const SAMPLE = [
   "# 동아리 행사 신청 앱", "부원이 행사에 신청하는 앱", "",
@@ -45,4 +46,27 @@ test("연습 예시 README(동아리 행사 등록 앱) — 버전 줄과 장 �
   assert.ok(b.title); assert.ok(b.versions.length >= 2); assert.ok(b.chapters.length >= 3);
   const Nav = require("../../03-backend/navigator/navigator.js");
   for (const w of Nav.JARGON) assert.ok(!RB.EXAMPLE.includes(w), `예시 README에 ${w}`);
+});
+
+// claude-drafted: 2026-11-01 — 임유정 "보여주는 부분이니까 ** ** 같은 표시 없이 굵은 글씨로 처리되도록 md 문법이 안보이게"
+test("책 탭은 README를 마크다운으로 그린다 — 굵게 · 인용 · 표 · 가로줄 기호가 글에 남지 않는다(파일 보기와 같은 md-view.js)", () => {
+  const Md = require("../../03-backend/navigator/md-view.js");
+  const b = RB.parse([
+    "# 📈 삼성전자 주가 AI 비서", "> **내 데이터를 아는 AI.** 일별 종가를 분석해 저장하고,", "> 그 요약으로 **실제 저장된 숫자로** 답해요.", "",
+    "## 🔗 배포 URL", "| 구분 | URL |", "|---|---|", "| 프론트엔드 | https://example.test |", "", "> ⚠️ 첫 접속은 느려요.", "", "---",
+  ].join("\n"));
+  const intro = Md.toHtml(b.intro), body = Md.toHtml(b.chapters[0].body);
+  assert.match(intro, /<blockquote><p><b>내 데이터를 아는 AI\.<\/b>/);
+  assert.match(body, /<table><thead><tr><th>구분<\/th><th>URL<\/th>/); assert.match(body, /<hr>/);
+  for (const h of [intro, body]) { const txt = h.replace(/<[^>]+>/g, ""); assert.doesNotMatch(txt, /\*\*|^\s*>|\|---|^---$/m, txt); }
+  const a = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app/60-library.js"), "utf8");
+  assert.match(a, /<div class="rb-text mdv">\$\{md\(ch\.body\)\}<\/div>/, "장 본문은 md-view.js로");
+  assert.match(a, /<div class="rb-intro mdv">\$\{md\(b\.intro\)\}<\/div>/, "머리 글도");
+  assert.doesNotMatch(a, /esc\(ch\.body\)|esc\(b\.intro\)/, "기호를 글 그대로 보이지 않는다");
+});
+
+test("연습 예시의 장 줄은 목록이라 그려도 한 문단으로 뭉치지 않는다", () => {
+  const Md = require("../../03-backend/navigator/md-view.js");
+  const h = Md.toHtml(RB.parse(RB.EXAMPLE).chapters[0].body);
+  assert.ok((h.match(/<li>/g) || []).length >= 4, h); assert.doesNotMatch(h, /<p>/);
 });
