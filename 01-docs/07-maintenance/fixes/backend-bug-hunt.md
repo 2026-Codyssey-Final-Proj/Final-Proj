@@ -11,21 +11,21 @@
 
 | ID | 무엇이 문제인가 | 고칠 곳 | 깨지는 상황 | 확신 | 상태 |
 |---|---|---|---|---|---|
-| F-104-1 | 개인키는 `-----BEGIN … PRIVATE KEY-----` 머리 줄만 가리고 본문(base64) · 끝 줄은 남긴다 | `sensitive.js` | PEM 키가 든 글을 대화 · 계획 · 가져갈 것 · 문서 쓰기에 넣으면 키 본문이 AI로 간다 | 확실 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-2 | JSON 꼴 `"password": "…"`, `github_pat_` · `gho_` 등, `Authorization: Bearer …`를 못 잡는다 | `sensitive.js` | 설정 파일을 붙여 넣으면 경고도 가림도 안 된다 | 확실 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-3 | 훅이 포트를 `NAV_PORT \|\| 4317`로 고정, 앱은 4317이 차면 옆 포트를 쓴다 | `hook.js` · `approve-hook.js` · `server.js` · `electron/main.js` | 4317에 옛 서버가 떠 있으면 허락 요청 · 알림이 엉뚱한 서버로 간다 | 그럴듯함 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-4 | 본문을 다 읽은 뒤 `req.on("close")`를 걸어 Node 16+에서는 오지 않는다 | `server.js` `holdApproval` | 사람이 터미널에서 직접 답해 훅이 끊겨도 섬에 허락 카드가 90초 남는다 | 확실 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-5 | async `handle`에 catch가 없고 정적 파일 읽기 오류를 안 본다 | `server.js` `handle` | 잠긴 · 지워진 파일을 열면 답 없이 화면 fetch가 끝없이 기다린다 | 확실(원인) | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-6 | 제목 줄 정규식 `(.+?)\s*#*\s*$`가 공백이 길면 세제곱으로 느려진다(ReDoS) | `md-view.js` · `feed.js` | `# a` + 공백 2,000개 + `b` → 0.64초, 4,000개 → 약 5초(직접 측정) | 확실 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-7 | `spawnSync`(호출마다 4초)로 이벤트 루프를 붙잡는다. 서버는 Electron 메인 안에서 돈다 | `github.js` · `server.js`(`githubNow` · `githubCreate` · `shipDocs`) | 네트워크가 느리면 설정 · 문서 올리기 동안 앱 전체가 십수 초 멈춘다 | 확실(코드) | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-8 | `runCommand`가 출력을 `trim()`해 porcelain 첫 줄의 앞 공백이 사라진다 | `project.js` `runCommand` | 첫 수정 문서가 `ocs/a.md`처럼 잘려 '고친 문서' 표시가 틀린다 | 확실 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-9 | `end`가 선언 전인 `const timer`를 읽는다(TDZ) | `project.js` `runCommand` | `spawn`이 바로 던지면 `{ missing: true }` 대신 ReferenceError로 거부 | 확실(드묾) | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-10 | 셸 없이 `spawn("claude")` — Windows는 `claude.exe`만 찾는다 | `provider.js` | npm으로만 깐 PC(`claude.cmd`) → 판정 · 일 넘기기 전부 실패 | 그럴듯함 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-11 | Windows에서 `child.kill()`은 claude만 끝내고 자식은 남긴다 | `server.js` `stopTask` · `provider.js` | '멈춤' 뒤에도 하위 명령(npm · 개발 서버)이 파일을 고치거나 포트를 붙잡는다 | 그럴듯함 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-12 | 줄 안의 줄바꿈을 그대로 `- …`로 쓴다 | `docs.js` | 다시 읽으면 둘째 줄이 사라지고 문서가 '사람이 고친 것'으로 잡혀 이후 덮지 않는다 | 그럴듯함 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-13 | 첫 줄 매칭 전에 UTF-8 BOM을 떼지 않는다 | `docs.js` `parseStage` · `parseSource` | Windows 편집기가 BOM을 붙여 저장하면 그 단계 문서를 못 읽는다 | 그럴듯함 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-14 | 폴더 안 판정을 대소문자 구분 `startsWith`로 한다 | `steps.js` | cwd `c:/…` · 파일 `C:/…`이면 바뀐 파일이 대화 목록에 안 잡힌다 | 그럴듯함 | 고치는 중 — `v2/backend-bug-hunt` |
-| F-104-15 | 폴더에서 되읽은 단계 결과를 서버 모양 검사 없이 돌려준다(F-103-9에서 넘김) | `server.js` `docsRead` | 사람이 단계 문서를 길게 고치면 화면이 그대로 보내 `/api/docs` · `/api/chat` 등이 계속 400 | 그럴듯함 | 고치는 중 — `v2/backend-bug-hunt` |
+| F-104-1 | 개인키는 `-----BEGIN … PRIVATE KEY-----` 머리 줄만 가리고 본문(base64) · 끝 줄은 남긴다 | `sensitive.js` | PEM 키가 든 글을 대화 · 계획 · 가져갈 것 · 문서 쓰기에 넣으면 키 본문이 AI로 간다 | 확실 | 고침 (#282) |
+| F-104-2 | JSON 꼴 `"password": "…"`, `github_pat_` · `gho_` 등, `Authorization: Bearer …`를 못 잡는다 | `sensitive.js` | 설정 파일을 붙여 넣으면 경고도 가림도 안 된다 | 확실 | 고침 (#282) |
+| F-104-3 | 훅이 포트를 `NAV_PORT \|\| 4317`로 고정, 앱은 4317이 차면 옆 포트를 쓴다 | `hook.js` · `approve-hook.js` · `server.js` · `electron/main.js` | 4317에 옛 서버가 떠 있으면 허락 요청 · 알림이 엉뚱한 서버로 간다 | 그럴듯함 | 고침 (#282) |
+| F-104-4 | 본문을 다 읽은 뒤 `req.on("close")`를 걸어 Node 16+에서는 오지 않는다 | `server.js` `holdApproval` | 사람이 터미널에서 직접 답해 훅이 끊겨도 섬에 허락 카드가 90초 남는다 | 확실 | 고침 (#282) |
+| F-104-5 | async `handle`에 catch가 없고 정적 파일 읽기 오류를 안 본다 | `server.js` `handle` | 잠긴 · 지워진 파일을 열면 답 없이 화면 fetch가 끝없이 기다린다 | 확실(원인) | 고침 (#282) |
+| F-104-6 | 제목 줄 정규식 `(.+?)\s*#*\s*$`가 공백이 길면 세제곱으로 느려진다(ReDoS) | `md-view.js` · `feed.js` | `# a` + 공백 2,000개 + `b` → 0.64초, 4,000개 → 약 5초(직접 측정) | 확실 | 고침 (#282) |
+| F-104-7 | `spawnSync`(호출마다 4초)로 이벤트 루프를 붙잡는다. 서버는 Electron 메인 안에서 돈다 | `github.js` · `server.js`(`githubNow` · `githubCreate` · `shipDocs`) | 네트워크가 느리면 설정 · 문서 올리기 동안 앱 전체가 십수 초 멈춘다 | 확실(코드) | 고침 (#282) |
+| F-104-8 | `runCommand`가 출력을 `trim()`해 porcelain 첫 줄의 앞 공백이 사라진다 | `project.js` `runCommand` | 첫 수정 문서가 `ocs/a.md`처럼 잘려 '고친 문서' 표시가 틀린다 | 확실 | 고침 (#282) |
+| F-104-9 | `end`가 선언 전인 `const timer`를 읽는다(TDZ) | `project.js` `runCommand` | `spawn`이 바로 던지면 `{ missing: true }` 대신 ReferenceError로 거부 | 확실(드묾) | 고침 (#282) |
+| F-104-10 | 셸 없이 `spawn("claude")` — Windows는 `claude.exe`만 찾는다 | `provider.js` | npm으로만 깐 PC(`claude.cmd`) → 판정 · 일 넘기기 전부 실패 | 그럴듯함 | 고침 (#282) |
+| F-104-11 | Windows에서 `child.kill()`은 claude만 끝내고 자식은 남긴다 | `server.js` `stopTask` · `provider.js` | '멈춤' 뒤에도 하위 명령(npm · 개발 서버)이 파일을 고치거나 포트를 붙잡는다 | 그럴듯함 | 고침 (#282) |
+| F-104-12 | 줄 안의 줄바꿈을 그대로 `- …`로 쓴다 | `docs.js` | 다시 읽으면 둘째 줄이 사라지고 문서가 '사람이 고친 것'으로 잡혀 이후 덮지 않는다 | 그럴듯함 | 고침 (#282) |
+| F-104-13 | 첫 줄 매칭 전에 UTF-8 BOM을 떼지 않는다 | `docs.js` `parseStage` · `parseSource` | Windows 편집기가 BOM을 붙여 저장하면 그 단계 문서를 못 읽는다 | 그럴듯함 | 고침 (#282) |
+| F-104-14 | 폴더 안 판정을 대소문자 구분 `startsWith`로 한다 | `steps.js` | cwd `c:/…` · 파일 `C:/…`이면 바뀐 파일이 대화 목록에 안 잡힌다 | 그럴듯함 | 고침 (#282) |
+| F-104-15 | 폴더에서 되읽은 단계 결과를 서버 모양 검사 없이 돌려준다(F-103-9에서 넘김) | `server.js` `docsRead` | 사람이 단계 문서를 길게 고치면 화면이 그대로 보내 `/api/docs` · `/api/chat` 등이 계속 400 | 그럴듯함 | 고침 (#282) |
 
 ## 어떻게 고쳤나 — 한 줄씩
 
