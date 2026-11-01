@@ -797,10 +797,12 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .wnav .fn li:has(.fn-file){padding-top:0;padding-bottom:0}
 .wnav .fn li.sel{background:var(--acc-soft);font-weight:600}
 .wtabs .ftab{position:relative;display:inline-flex;align-items:center;border-left:1px solid var(--seg);padding-left:4px;margin-left:2px}
-.wtabs .ftab button[role=tab]{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.wtabs .ftab button[role=tab]{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;padding-right:28px}
 .wtabs .ftab.dirty button[role=tab]{color:var(--warn)}
-.wtabs .ftab .ftab-x{position:absolute;top:-7px;right:-5px;z-index:1;display:grid;place-items:center;border:0;background:var(--card);color:var(--mute);border-radius:50%;width:16px;height:16px;font-size:calc(11px * var(--ui-scale,1));line-height:1;padding:0;box-shadow:0 0 0 1px var(--seg)}   /* 탭 오른쪽 위 작은 배지(임유정 2026-10-28 "기존처럼 우측 상단 작게") — 이름이 .fx(반짝이 효과 — position:fixed · translate)와 겹쳐 앞 탭 위로 밀렸던 것을 제 탭의 모서리에 둔다 */
-.wtabs .ftab .ftab-x::after{content:"";position:absolute;inset:-4px;border-radius:50%}   /* 누르는 곳은 24px — 더 넓히면 제 탭 이름 · 옆 탭 앞쪽까지 덮는다(새 맥락 리뷰) */
+.wtabs .ftab .ftab-x{position:absolute;top:50%;right:6px;transform:translateY(-50%);z-index:1;display:grid;place-items:center;border:0;background:transparent;color:var(--mute);border-radius:50%;width:18px;height:18px;font-size:calc(13px * var(--ui-scale,1));line-height:1;padding:0}   /* 탭 안 오른쪽 끝, 세로 가운데 — 웹사이트 배너의 닫기처럼(F-111, 임유정 2026-11-01 "x 표시를 웹사이트 배너같이 오른쪽 옆으로"). 그 전(2026-10-28)은 오른쪽 위 작은 배지였다. 탭 단추의 padding-right 자리에 놓여 이름을 가리지 않는다 */
+.wtabs .ftab:has(button[aria-selected=true]) .ftab-x{color:#EEF1FA}   /* 고른 탭은 진한 남색 바탕 — 밝은 × */
+.wtabs .ftab:has(button[aria-selected=true]) .ftab-x:hover{background:rgba(238,241,250,.18);color:#fff}
+.wtabs .ftab .ftab-x::after{content:"";position:absolute;inset:-4px;border-radius:50%}   /* 누르는 곳은 26px — 더 넓히면 제 탭 이름 · 옆 탭 앞쪽까지 덮는다(새 맥락 리뷰) */
 .wtabs .ftab .ftab-x:hover{background:var(--acc-soft);color:var(--acc)}
 .fv{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}
 .fv-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
