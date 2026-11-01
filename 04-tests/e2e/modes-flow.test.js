@@ -556,7 +556,7 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
   try {
     const page = await fresh(browser);
     await page.evaluate(() => localStorage.removeItem("navigator-prototype:v1"));
-    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&shells=3"), { waitUntil: "load" }); await wait(400);
+    await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&shells=6"), { waitUntil: "load" }); await wait(400);   // 여섯 — 두 번 잇달아 연다(F-114)
     // 위 줄의 조개 그림이 단추 앞에 보인다 — 2026-10-23 전에는 class 'shell'이 바탕 껍데기(.nav .shell, z-index -1)와 겹쳐 숨고 수만 보였다
     const coinSeen = await page.evaluate(() => { const c = document.querySelector(".shells .coin"); if (!c) return "none"; const r = c.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return r.width >= 16 && c.contains(hit) ? "ok" : `hidden ${r.width} ${hit && hit.tagName}`; });
     assert.equal(coinSeen, "ok", "위 줄의 무지개 조개 그림이 보인다");
@@ -566,7 +566,11 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     assert.equal(await page.evaluate(() => document.querySelectorAll(".odds span").length), 4, "확률표 넷");
     await page.click("[data-act=gacha-roll]"); await wait(1800);
     const s = await page.evaluate(() => { const r = JSON.parse(localStorage.getItem("navigator-prototype:v1")); return { got: document.querySelector(".gacha .got")?.textContent || "", deco: !!document.querySelector(".pet .deco"), shells: document.querySelector(".shells span")?.textContent, owned: r.owned, wear: r.wear }; });
-    assert.ok(s.got.includes("나왔어요") && s.deco && s.shells === "0" && s.owned.length === 1 && Object.values(s.wear)[0] === s.owned[0], JSON.stringify(s));
+    assert.ok(s.got.includes("나왔어요") && s.deco && s.shells === "3" && s.owned.length === 1 && Object.values(s.wear)[0] === s.owned[0], JSON.stringify(s));
+    // F-114(임유정 2026-11-01): 창을 닫지 않고 바로 한 번 더 — 전에는 '조개 열기'가 꺼져 있었다. 다 쓰면 꺼진다
+    assert.equal(await page.evaluate(() => { const b = document.querySelector("[data-act=gacha-roll]"); return b && !b.disabled ? b.textContent : "off"; }), "한 번 더 열기");
+    await page.click("[data-act=gacha-roll]"); await wait(1800);
+    assert.deepEqual(await page.evaluate(() => ({ shells: document.querySelector(".shells span")?.textContent, off: document.querySelector("[data-act=gacha-roll]").disabled, got: (document.querySelector(".gacha .got")?.textContent || "").includes("나왔어요") })), { shells: "0", off: true, got: true }, "두 번째도 나오고, 조개를 다 쓰면 단추가 꺼진다");
     await page.keyboard.press("Escape"); await wait(200);
     assert.ok(!(await page.$(".gacha-layer")), "Esc로 닫힌다");
     await page.click("[data-act=settings]"); await wait(300);

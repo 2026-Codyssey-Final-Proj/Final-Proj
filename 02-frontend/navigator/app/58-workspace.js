@@ -252,14 +252,14 @@
   // 뽑기(C-22, 둘째 레프런스 "무지개 조개로 확률형 아이템 · 플로로를 꾸밀 수"): 조개 셋에 한 번, 확률은 늘 화면에(quest.js ITEMS · draw). 돈으로 사는 것은 없다. 섬 위를 덮는 층
   function gachaHTML() {
     const g = st.gacha; if (!g || !QU) return "";
-    const can = st.shells >= QU.SHELL_COST && g.phase === "ready";
+    const can = st.shells >= QU.SHELL_COST && g.phase !== "rolling";   // 하나 나온 뒤(got)에도 조개가 남으면 바로 한 번 더(임유정 2026-11-01 — 전에는 창을 닫았다 열어야 했다)
     const stage = g.phase === "got" ? `<span class="big" aria-hidden="true">${g.item.emoji}</span>` : `<i class="coin bigshell" aria-hidden="true">${SHELL_ICO}</i>`;   // 열기 전의 큰 조개 — 위 줄과 같은 무지개 조개 그림(2026-10-23)
     const got = g.phase === "got" ? `<b>${esc(g.item.name)}</b>(${esc(g.item.rar)})이 나왔어요! 플로로가 바로 써 봤어요` : g.phase === "rolling" ? "조개를 여는 중…" : st.shells >= QU.SHELL_COST ? "조개를 열면 플로로를 꾸밀 것이 하나 나와요" : `조개가 ${QU.SHELL_COST - st.shells}개 더 있어야 열 수 있어요 — 장을 지나면 받아요`;
     return `<div class="gacha-layer"><section class="gacha${g.phase === "rolling" ? " rolling" : ""}" role="dialog" aria-label="무지개 조개 뽑기"><h3>무지개 조개 뽑기</h3>
       <button type="button" class="ti gx" data-act="gacha-close" aria-label="뽑기 창 닫기" title="닫기 (Esc)">${X_ICON}</button>
       <div class="have">가진 조개 <span class="shells">${coin()}${st.shells}</span> · 한 번에 ${QU.SHELL_COST}개</div>
       <div class="stage">${stage}</div><p class="got" role="status">${got}</p>
-      <div class="acts"><button type="button" class="b pri" data-act="gacha-roll" ${can ? "" : "disabled"}>조개 열기</button></div>
+      <div class="acts"><button type="button" class="b pri" data-act="gacha-roll" ${can ? "" : "disabled"}>${g.phase === "got" ? "한 번 더 열기" : "조개 열기"}</button></div>
       <div class="odds" aria-label="나올 확률">${QU.ITEMS.map((it) => `<span><b>${it.emoji} ${esc(it.name)}</b>${esc(it.rar)} ${it.p}%</span>`).join("")}</div>
       <p class="fine">나올 확률은 여기에 늘 적어 둬요. 돈으로 사는 것은 없어요 — 조개는 장을 지날 때만 받아요.</p></section></div>`;
   }
@@ -271,7 +271,7 @@
     if (isl.offsetHeight < need) isl.style.minHeight = `${need}px`;
   }
   function gachaRoll() {
-    const g = st.gacha; if (!g || !QU || g.phase !== "ready" || st.shells < QU.SHELL_COST) return;
+    const g = st.gacha; if (!g || !QU || g.phase === "rolling" || st.shells < QU.SHELL_COST) return;   // 여는 중에 또 누르면 무시 — 조개가 두 번 빠지지 않게
     st.shells -= QU.SHELL_COST; st.gacha = { phase: "rolling" }; render();
     setTimeout(() => {
       if (!st.gacha) return;
