@@ -251,6 +251,20 @@ test("C-50 멈추기 — 사람이 고를 때만(stop): 그 번호의 도는 일
   assert.equal((await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; })).state, "done");
 });
 
+// claude-drafted: 2026-11-02 — F-118: 앱(트레이 'Floe 끄기')을 꺼도 맡긴 claude와 그 자식(npm · 개발 서버)이 남아 폴더를 고치고 포트를 붙잡았다.
+//   끌 때(before-quit) 서버의 stopTasks가 도는 일을 나무째 끈다. 도는 일이 없으면 아무것도 하지 않는다
+test("앱을 끄면 도는 일을 끈다(stopTasks · F-118)", async () => {
+  Srv.stopTasks();   // 도는 일이 없을 때 — 오류 없이 지나간다
+  plan({ delay: 4000 });
+  const r = await call("POST", "/api/task/start", { text: "끄기 전에 도는 일" });
+  assert.equal(r.status, 200, r.text);
+  Srv.stopTasks();
+  const t = await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+  assert.equal(t.state, "stopped");
+  const main = fs.readFileSync(path.join(__dirname, "../../02-frontend/electron/main.js"), "utf8");
+  assert.match(main, /app\.on\("before-quit"[^\n]*stopTasks\(\)/, "앱이 끌 때 부른다");
+});
+
 test("화면: 허락 카드 · 막힌 일 · 멈춘 것 같은 일이 있으면 섬을 저절로 접지 않는다(pinned) — 사람이 고를 때까지(새 맥락 리뷰 2026-10-28 막힘 3)", () => {
   const a = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
   const pin = a.slice(a.indexOf("const pinned = () =>"), a.indexOf("\n", a.indexOf("const pinned = () =>")));

@@ -478,6 +478,12 @@ function stopTask(body) {
   killTree(task.child);   // Windows는 자식(npm · 개발 서버)까지 — child.kill()은 claude만 끝냈다(F-104-11)
   return [200, { ok: true, task: publicTask() }];
 }
+// 앱을 끌 때(main.js before-quit) — 도는 일을 나무째 끈다. 남으면 창 없이 폴더를 고치고 포트를 붙잡았다(F-118, claude-drafted: 2026-11-02)
+function stopTasks() {
+  if (!task || task.state !== "running") return;
+  task.stopped = true;
+  killTree(task.child);
+}
 // 막힌 · 실패한 · 멈춘 일을 다시(F-69) — 본문 { at, way: again | files-only | brief }. brief는 아무것도 열지 않고 맡길 글 + 끝 조건을 돌려준다(직접 하기 — 사람이 Claude Code에 붙여 넣는다)
 function retryTask(body) {
   const b = body && typeof body === "object" ? body : {};
@@ -1241,6 +1247,6 @@ if (require.main === module) {
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
   });
 }
-module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, announcePort, fitResult, mcpToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다
+module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, announcePort, stopTasks, fitResult, mcpToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다
 module.exports.topFiles = topFiles;   // C-52 시험 — 계획 AI에 가는 맨 위 이름에 빼 둔 것이 없는지
 module.exports.decisionsText = decisionsText;   // C-52 시험 — 빼 둔 결정 기록은 읽지 않는지
