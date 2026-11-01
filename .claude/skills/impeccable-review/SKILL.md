@@ -3,7 +3,7 @@ name: impeccable-review
 description: 만든 화면(웹 페이지, 대시보드, 컴포넌트, 폼, 빈 상태)을 점검하고 다듬을 방향을 말할 때 쓴다. Impeccable의 디자인 기준(시각 위계, 타이포, 색, 레이아웃, 접근성, 반응형, 오류·빈 상태 처리, 사용성 휴리스틱)을 렌즈로 "무엇이 어색한지, 왜인지, 어떻게 고칠지"를 근거와 함께 지적한다. "화면 리뷰해줘", "디자인 점검해줘", "접근성 점검", "타이포 어때", "색이 밋밋한지 봐줘", "마무리 다듬기", "critique", "audit", "polish" 같은 요청에 반응한다. 새 화면을 직접 만들어 주는 스킬이 아니다 — 사용자가 "써줘"라고 할 때만 만든다. 실행 파일·훅·브라우저 연동은 쓰지 않는다.
 license: Apache-2.0 (참고 파일은 pbakaus/impeccable 원본, NOTICE.md 참고)
 metadata:
-  source: pbakaus/impeccable plugin/skills/impeccable v4.5.2 — reference/ 폴더만 원본 그대로
+  source: pbakaus/impeccable plugin/skills/impeccable v4.8.0 — reference/ 폴더만 원본 그대로 (2026-11-01 v4.5.2에서 갱신)
   drafted: claude-drafted 2026-10-14
 ---
 
@@ -21,6 +21,9 @@ metadata:
 - `scripts/impeccable`, `npx impeccable`, `impeccable detect|live|hooks|…`를 **실행하지 않는다.** 참고 파일이 그런 단계를
   안내하면 그 단계는 건너뛰고 "실행 파일 없이 진행한다"고 한 번 말한다 — 원본 UPSTREAM-SKILL.md의 "Launcher unavailable"
   절과 같은 방식이다.
+- <!-- claude-drafted: 2026-11-01 --> `critique.md` · `audit.md`의 **Desktop apps** 절(Electron 앱을 `--remote-debugging-port`로 띄우고
+  실행 파일 `detect --cdp`를 붙임)은 따르지 않는다 — 앱에 디버그 포트를 열지 않는다. Floe 화면은 화면 파일을 읽거나 브라우저로 열어 보거나,
+  사람이 찍은 화면으로 본다(v4.8.0에서 생긴 절).
 - `.claude/settings*.json`, `CLAUDE.md`, 훅을 쓰지 않는다. `PRODUCT.md`·`DESIGN.md`를 새로 만들지 않는다(있으면 읽기만).
 - 원본의 "과감하게 다 만든다(Go all out)" 원칙은 적용하지 않는다. 이 워크스페이스에서 Claude는 리뷰어·코치이고
   디자인 결과물은 사용자의 작업물이다([review-mode.md](../../rules/review-mode.md), [skill-authoring.md](../../rules/skill-authoring.md)).
@@ -31,7 +34,7 @@ metadata:
 
 | 하고 싶은 것 | 읽을 파일 | 비고 |
 |---|---|---|
-| 화면 전체의 사용성·위계를 평가(휴리스틱 점수) | `critique.md` | 806줄. 감지기 실행 단계는 건너뛴다 |
+| 화면 전체의 사용성·위계를 평가(휴리스틱 점수) | `critique.md` | 819줄. 감지기 실행 단계는 건너뛴다 |
 | 접근성·성능·반응형 같은 기술 품질 점검 | `audit.md` (네이티브 앱이면 `audit.native.md`) | |
 | 출시 전 마무리 점검 | `polish.md` | |
 | 타이포·색·여백/리듬 | `typeset.md` · `colorize.md` · `layout.md` | |
