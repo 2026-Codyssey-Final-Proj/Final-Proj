@@ -69,6 +69,7 @@
   // 앱 창은 파일을 놓으면 그 파일 주소로 넘어가므로 섬 밖에 놓아도 먼저 막는다(넘김 문서 7절)
   document.addEventListener("dragover", (e) => { e.preventDefault(); });
   document.addEventListener("drop", async (e) => {
+    if (!hasFiles(e) && isField(e.target)) return;   // 글을 입력 칸에 놓으면 그대로 들어가게 — 먹이 주기는 파일만(F-127). 칸 밖은 아래에서 막는다(앱 창이 넘어가지 않게)
     e.preventDefault();
     dragDepth = 0; feedLayer(false);
     const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];

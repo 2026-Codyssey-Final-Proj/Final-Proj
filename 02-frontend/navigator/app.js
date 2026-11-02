@@ -249,6 +249,7 @@
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "finished", "libGone",
     "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
+  let saveWarned = false;   // 저장 칸이 가득 찼다고 이미 알렸나(F-124) — 다시 저장되면 풀린다
   // 기능 조각이 저장할 것을 더한다(새 기능은 KEEP 한 줄 대신 자기 조각 맨 위에서 — 2026-10-29 나누기 2차). load는 이미 지나갔으니
   // load가 읽어 둔 기록(saved)에서 그 키의 값을 가져온다 — 그사이 save가 있었어도 잃지 않는다. save는 KEEP 전체를 쓴다
   let saved = null;
@@ -298,8 +299,14 @@
     if (forgotten) return;
     const o = { at: Date.now() };
     for (const k of KEEP) o[k] = st[k];
-    try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
-    try { localStorage.setItem(CHAT_KEY, JSON.stringify(st.chat)); } catch { const over = st.chat.length - 100; st.chat = st.chat.slice(-100); if (over > 0) st.chatMark = Math.max(0, (st.chatMark || 0) - over); }   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로. 표시 자리도 같이 당긴다(logMsg와 같이, F-103-26)
+    const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
+    const trimChat = () => { const over = st.chat.length - 100; st.chat = st.chat.slice(-100); if (over > 0) st.chatMark = Math.max(0, (st.chatMark || 0) - over); };   // 표시 자리도 같이 당긴다(logMsg와 같이, F-103-26)
+    // 진행이 저장 칸에 안 들어가면 대화를 먼저 줄여 칸을 비우고 다시 — 그래도 못 하면 한 번 알린다. 전에는 조용히 실패해 다시 켜면 진행을 잃었다(F-124)
+    let kept = put(KEY, o);
+    if (!kept) { trimChat(); put(CHAT_KEY, st.chat); kept = put(KEY, o); }
+    if (kept) saveWarned = false;
+    else if (!saveWarned) { saveWarned = true; say("이 브라우저의 저장 칸이 가득 차 진행을 저장하지 못했어요 — 넣은 글이 길면 줄여 주세요"); }
+    if (!put(CHAT_KEY, st.chat)) trimChat();   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로
     postState();
   }
   // C-38 시험판(2026-10-25, 두승현) — 서버에 지금 상태를 알린다: MCP로 이은 AI(Claude Desktop · 터널을 연 웹 GPT · 웹 Claude)가 floe_now로 읽는다. 바뀌었을 때만 보낸다
@@ -844,6 +851,7 @@
   // 앱 창은 파일을 놓으면 그 파일 주소로 넘어가므로 섬 밖에 놓아도 먼저 막는다(넘김 문서 7절)
   document.addEventListener("dragover", (e) => { e.preventDefault(); });
   document.addEventListener("drop", async (e) => {
+    if (!hasFiles(e) && isField(e.target)) return;   // 글을 입력 칸에 놓으면 그대로 들어가게 — 먹이 주기는 파일만(F-127). 칸 밖은 아래에서 막는다(앱 창이 넘어가지 않게)
     e.preventDefault();
     dragDepth = 0; feedLayer(false);
     const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
@@ -2013,7 +2021,9 @@
   // 틀로 맡긴 일이 끝났다 — 열린 파일의 바뀐 줄을 다시 읽고 보고 한 줄(C-44, 전에는 계획 줄을 지켜볼 때만 다시 읽었다 — F-69에서 한 지켜보기로)
   function presetEnd(t) {
     const pt = st.presetTask; st.presetTask = null; if (!pt) return;
-    const k = st.openFiles.findIndex((f) => f.path === pt.path); if (k >= 0) reloadFile(k);
+    const k = st.openFiles.findIndex((f) => f.path === pt.path), f = st.openFiles[k];
+    if (f && f.dirty) f.note = { kind: "ask", text: "맡긴 일이 이 파일을 고쳤을 수 있어요 — 저장하지 않은 고친 것이 있어 다시 읽지 않았어요", acts: [["다시 열기(고친 것 버림)", "freload"], ["그냥 둘게요", "fnote-x"]] };   // 말없이 덮지 않는다(F-121)
+    else if (f) reloadFile(k);
     say(t.state !== "done" ? `'${pt.name}' 틀로 맡긴 일이 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요` : t.report ? (t.report.easy.length > N.SAY_MAX ? `${t.report.easy.slice(0, N.SAY_MAX - 1)}…` : t.report.easy) : `'${pt.name}' 틀로 맡긴 일을 마쳤어요`);
   }
   function momentPreset() {
@@ -3195,6 +3205,7 @@
   if (canLive) setInterval(pollProposals, 2000);
   // 기다리는 승인 요청(approve.js 카드) — 서버가 2초마다 알려 준다. 연습 · 주소 &approve=1이면 예시 카드
   let approvals = [], apMode = "none", apKnown = new Set();
+  const apDecided = new Set();   // 누른 카드 — 누르기 전에 출발한 목록 응답이 늦게 와도 되살리지 않게(F-125, 제안의 decided F-103-8과 같이). 보내기에 실패하면 뺀다
   const approvalsHTML = () => (!approvals.length ? "" : `<div class="aplist" role="region" aria-label="허락이 필요해요">${apMode === "example" ? `<p class="note" role="status">예시 데이터예요 · 시연용</p>` : ""}${approvals.map(apCard).join("")}</div>`);
   function apCard(a) {
     const c = a.card || {}, sure = st.apSure === a.id, lines = Array.isArray(c.lines) ? c.lines : [];
@@ -3207,14 +3218,15 @@
     const a = approvals.find((x) => x.id === id); if (!a) return;
     if (decision === "allow" && a.card && a.card.danger && st.apSure !== id) return set({ apSure: id });   // 되돌리기 어려운 일 — 한 번 더 묻는다
     const sure = st.apSure === id; st.apSure = "";
-    approvals = approvals.filter((x) => x.id !== id);
+    approvals = approvals.filter((x) => x.id !== id); apDecided.add(id);
     if (apMode !== "live") { say(decision === "allow" ? "연습이라 실제로 허용하지는 않았어요" : "연습이라 실제로 거절하지는 않았어요"); return render(); }
     mat("approve", `${decision === "allow" ? "허용" : "거절"} — ${(a.card && a.card.tool_name) || "도구"}`);   // C-47 재료 — 진짜로 보낸 결정만, 도구 이름만
     render();
     try {
       const r = await (await fetch("/api/approvals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, sig: a.sig, decision, sure }) })).json();
+      if (!(r && r.ok)) apDecided.delete(id);   // 닿지 못했으면 다시 누를 수 있게 — 다음 목록이 돌려놓는다
       say(r && r.ok ? (decision === "allow" ? "허용했어요 — Claude Code가 이어서 해요" : "거절했어요") : (r && r.reason) || "보내지 못했어요");
-    } catch { say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
+    } catch { apDecided.delete(id); say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
     pollApprovals();
   }
   // 서버에 기다리는 승인 요청이 있나 — 새 요청이 오면 한 줄로 알리고(접혀 있으면 살짝), AI 진행 판을 보이게
@@ -3224,7 +3236,7 @@
     try { j = await (await fetch("/api/approvals", { credentials: "same-origin" })).json(); } catch { return; }
     if (!j || !j.ok || !Array.isArray(j.items)) return;
     const before = approvals.map((a) => a.id).join(), fresh = j.items.filter((a) => !apKnown.has(a.id));
-    apMode = "live"; approvals = j.items.filter((a) => st.apSure !== a.id || true); st.apWait = approvals.length > 0;
+    apMode = "live"; approvals = j.items.filter((a) => !apDecided.has(a.id)); st.apWait = approvals.length > 0;
     for (const a of j.items) apKnown.add(a.id);
     if (fresh.length) {
       // 허락 카드는 채팅의 지금 말 위에(C-35, 2026-10-24 — 오버레이가 일하는 자리). AI 진행 판을 보고 있으면 거기에도 있으니 그대로, 다른 판은 닫는다
@@ -4084,7 +4096,7 @@
     },
     shells: () => openGacha(),   // 위 줄의 조개 → 뽑기 창(섬이 접혀 있으면 옆 칸으로 펼친 뒤)
     gacha: () => openGacha(),
-    "gacha-close": () => set({ gacha: null }),
+    "gacha-close": () => { if (st.gacha && st.gacha.phase === "rolling") return; set({ gacha: null }); },   // 여는 중에는 닫지 않는다 — 조개만 빠지고 아이템을 못 받았다(F-120, Esc와 같이)
     "gacha-roll": () => gachaRoll(),
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
     qwin: () => closeQwin(),
@@ -4181,7 +4193,7 @@
     "reopen-doc": () => { const x = docDone(docStage().n); if (x) set({ doc: newDoc(x.stage, x.text, "") }); },
     forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
     setup: () => { set({ settings: false, qwin: false }); if (window.FloeSetup) window.FloeSetup.open(); },   // 처음 설정은 섬 창에 뜬다 — 작업실이 열려 있으면 먼저 닫아 섬 창이 다시 보이게(C-41 ⑤, 새 맥락 리뷰 2026-10-27)
-    "setup-project": () => { set({ settings: false }); if (window.FloeSetup) window.FloeSetup.open({ step: "project" }); },   // 처음 설정의 프로젝트 칸부터(2026-10-24 리뷰 — 새 프로젝트마다 AI 연결을 다시 거치지 않게)
+    "setup-project": () => { set({ settings: false, qwin: false }); if (window.FloeSetup) window.FloeSetup.open({ step: "project" }); },   // 처음 설정의 프로젝트 칸부터(2026-10-24 리뷰 — 새 프로젝트마다 AI 연결을 다시 거치지 않게). 작업실은 먼저 닫는다 — setup과 같이(F-123)
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false, check: null }),
     "close-gate": () => set({ screen: "main" }),
     no: () => { set({ noCount: st.noCount + 1, step: "which", hard: [], answer: "", question: "" }); say("모르는 게 당연해요. 같이 풀어요"); reveal(".hold-offer"); },
@@ -4405,6 +4417,12 @@
 // ━━ app/95-boot.js ━━
   // ── 단축키 (PC) — 카드 버튼에 적힌 키. 글을 쓰는 중에는 Esc와 Ctrl+Enter만. 한글 자판의 ㅛ·ㅜ도 Y·N으로 ──
   const ALIAS = { "ㅛ": "y", "ㅜ": "n", "ㅗ": "h" };
+  // Ctrl+Enter가 부를 카드 동작 — 글을 쓰는 중이면 그 카드(.mc) 안의 칸일 때만 카드의 Ctrl+Enter. Enter 동작으로 넘어가지 않는다
+  //   (파일 편집기 · 설정 칸에서 Ctrl+Enter가 카드의 Enter — 커밋 · 푸시 맡기기 등 — 를 불렀다, F-122)
+  function ctrlEnterAct(t, writing) {
+    if (!writing) return deskKeys["c-Enter"] || deskKeys.Enter || null;
+    return (t && t.closest && t.closest(".mc:not(.pane)") && deskKeys["c-Enter"]) || null;   // .pane — 설정 · 서재 판도 .mc다
+  }
   document.addEventListener("keydown", (e) => {
     activity();
     if (isPhone() || e.isComposing) return;
@@ -4422,7 +4440,7 @@
     if (st.ui !== "home" && st.ui !== "greet") return;
     if (t.tagName === "BUTTON" && (e.key === "Enter" || e.key === " ")) return;   // 버튼 위의 Enter는 그 버튼을 누른 것
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      const a = deskKeys["c-Enter"] || deskKeys.Enter;
+      const a = ctrlEnterAct(t, writing);
       if (a) { e.preventDefault(); run(a); }
       return;
     }
@@ -4544,7 +4562,7 @@
     if (!h) return;
     const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(safeDecode)).map(([k, v]) => [k, v === undefined ? true : v]));
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
-      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, chat: [], chatMark: 0, chatChanges: [], chatOpen: null });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63)
+      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, ...(q.back ? {} : { chat: [], chatMark: 0, chatChanges: [], chatOpen: null }) });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63). 서고에서 돌아온 &back은 장면이 아니라 그대로 — 비우면 다음 저장이 대화를 지웠다(F-126)
     lastLive = null;
     // 주소로 연 장면은 바이브 코딩(녹화 · 시험이 그대로), #base(&pane=alerts|ai)만 기본 화면(C-13, 넘김 문서 9절 7번)
     // 서고에서 돌아온 주소(&back)는 장면이 아니다 — 떠난 모드 그대로(F-36, PR #139 리뷰: 기본 화면에서 서재에 다녀오면 바이브 코딩이 됐다)

@@ -48,10 +48,11 @@ function projectPath(projectDir, cwd, file) {
 }
 
 // 읽기 — 없으면 빈 기록. 다른 판 · 깨진 파일은 덮어쓰지 않게 .bak으로 옮겨 두고 빈 기록(앱을 옛 판으로 되돌려도 기록이 사라지지 않게)
+//   없는 게 아니라 못 읽으면(잠김 · 권한) 던진다 — 빈 기록으로 보면 다음 저장이 대화를 덮어 지웠다(F-119)
 function load(file, project = "") {
-  let raw; try { raw = fs.readFileSync(file, "utf8"); } catch { return blank(project); }
+  let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e && e.code === "ENOENT") return blank(project); throw e; }
   let j = null; try { j = JSON.parse(raw); } catch {}
-  if (!j || j.v !== 1 || !Array.isArray(j.turns) || !Array.isArray(j.changes)) { try { fs.renameSync(file, `${file}.bak-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`); } catch {} return blank(project); }
+  if (!j || j.v !== 1 || !Array.isArray(j.turns) || !Array.isArray(j.changes)) { fs.renameSync(file, `${file}.bak-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`); return blank(project); }   // 못 옮기면 던진다 — 빈 기록을 주면 다음 저장이 그 파일을 덮었다(F-119 새 맥락 리뷰)
   return { v: 1, project, dropped: Number.isInteger(j.dropped) && j.dropped > 0 ? j.dropped : 0, turns: j.turns.filter((t) => t && Number.isFinite(t.at)),
     changes: j.changes.filter((c) => c && typeof c.path === "string" && (c.how === "new" || c.how === "edit")) };
 }

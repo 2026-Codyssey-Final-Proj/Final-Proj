@@ -308,7 +308,8 @@ function chatlogPost(body) {
   if (!cleaned.length || cleaned.length > ChatLog.ADD_MAX || cleaned.some((t) => !t))
     return [400, { ok: false, reason: `대화 모양이 맞지 않음 — add는 1 ~ ${ChatLog.ADD_MAX}개, 말 { stage, who: me | floro | sys, text(${ChatLog.TEXT_MAX}자) } · 구분선 { stage, mark: true, title(${ChatLog.TITLE_MAX}자) } · 가져온 것 { stage, carry }` }];
   if (!s) return [400, { ok: false, reason: CHAT_NO_FOLDER }];
-  const file = ChatLog.fileOf(CHAT_DIR, s.dir), data = ChatLog.addTurns(ChatLog.load(file, s.project), cleaned);
+  const file = ChatLog.fileOf(CHAT_DIR, s.dir);
+  let data; try { data = ChatLog.addTurns(ChatLog.load(file, s.project), cleaned); } catch { return [500, { ok: false, reason: "저장된 대화를 읽지 못했어요 — 덮어쓰지 않았어요. 잠시 뒤 다시 해 주세요" }]; }   // F-119
   try { ChatLog.save(file, data); } catch { return [500, { ok: false, reason: "대화를 저장하지 못했어요 — 앱 저장 곳의 쓰기 권한을 봐 주세요" }]; }
   return [200, { ok: true, n: data.turns.length }];
 }
@@ -477,6 +478,16 @@ function stopTask(body) {
   task.stopped = true;
   killTree(task.child);   // Windows는 자식(npm · 개발 서버)까지 — child.kill()은 claude만 끝냈다(F-104-11)
   return [200, { ok: true, task: publicTask() }];
+}
+// 앱을 끌 때(main.js before-quit) — 도는 일을 나무째 끈다. 남으면 창 없이 폴더를 고치고 포트를 붙잡았다(F-118, claude-drafted: 2026-11-02)
+//   돌려주는 약속은 claude가 끝나면(늦어도 3초) 풀린다 — 앱은 그 뒤에 끈다. 먼저 끄면 Windows의 taskkill /T가 claude를 못 찾아 손자(npm · 개발 서버)가 남았다(새 맥락 리뷰). 도는 일이 없으면 null
+function stopTasks() {
+  if (!task || task.state !== "running") return null;
+  const child = task.child;
+  const ended = new Promise((resolve) => { const t = setTimeout(resolve, 3000); child.once("close", () => { clearTimeout(t); resolve(); }); });
+  task.stopped = true;
+  killTree(child);
+  return ended;
 }
 // 막힌 · 실패한 · 멈춘 일을 다시(F-69) — 본문 { at, way: again | files-only | brief }. brief는 아무것도 열지 않고 맡길 글 + 끝 조건을 돌려준다(직접 하기 — 사람이 Claude Code에 붙여 넣는다)
 function retryTask(body) {
@@ -917,7 +928,15 @@ function docsRead() {
 // ── 지식 퀘스트 C-48(2026-10-29 — PRD 6절 · 9절 1 · 2번 이재엽 버튼 "이 컴퓨터의 Floe 폴더" · "기준 다섯 · 3개 · 미루면 보류"): 다음 프로젝트로 가져가기 ──
 // 장부는 여러 프로젝트에 걸치므로 저장소가 아니라 이 컴퓨터의 파일 하나(NAV_USAGE_FILE 옆 -carry.json, 없으면 홈의 .navigator-carry.json, 600). 규칙은 carry.js
 const carryFile = () => (process.env.NAV_USAGE_FILE ? process.env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-carry.json") : path.join(os.homedir(), ".navigator-carry.json"));
-function carryBook() { try { return Carry.revive(JSON.parse(fs.readFileSync(carryFile(), "utf8"))); } catch { return Carry.blank(); } }
+// 읽기 — 없으면 빈 장부. 깨졌거나 다른 판이면 .bak으로 옮겨 두고 빈 장부, 없는 게 아니라 못 읽으면(잠김 · 권한) null — 고르기가 덮어 지우지 않게(F-119, chatlog.js load와 같은 길)
+function carryRead() {
+  const f = carryFile();
+  let raw; try { raw = fs.readFileSync(f, "utf8"); } catch (e) { return e && e.code === "ENOENT" ? Carry.blank() : null; }
+  let j = null; try { j = JSON.parse(raw); } catch {}
+  if (!j || j.v !== 1 || !Array.isArray(j.items)) { try { fs.renameSync(f, `${f}.bak-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`); } catch { return null; } return Carry.blank(); }
+  return Carry.revive(j);
+}
+const carryBook = () => carryRead() || Carry.blank();   // 보기만 할 때(GET · 지식 창고) — 못 읽으면 빈 것으로 보이되 쓰지 않는다
 function carrySave(book) {
   const f = carryFile(), tmp = `${f}.${process.pid}.tmp`;
   fs.mkdirSync(path.dirname(f), { recursive: true });
@@ -996,7 +1015,8 @@ function carryPost(body) {
   if (!it || typeof it !== "object" || !strOk(it.text, Carry.TEXT_MAX) || (it.why != null && !strOk(it.why, Carry.WHY_MAX)) || !strOk(reason, Carry.REASON_MAX) || !(id === "" || (typeof id === "string" && /^c[0-9a-z]{1,30}$/.test(id)))
     || (it.stage != null && !Number.isInteger(it.stage)) || (it.review != null && !strOk(it.review, 10)) || (it.from != null && !(Array.isArray(it.from) && it.from.length <= Nav.STAGES.length)))
     return [400, { ok: false, reason: "가져갈 것의 모양이 맞지 않음" }];
-  const s = projectNow(), book = carryBook(), from = (Carry.clean(it) || { from: [] }).from;
+  const s = projectNow(), book = carryRead(), from = (Carry.clean(it) || { from: [] }).from;
+  if (!book) return [500, { ok: false, reason: "가져갈 것 장부를 읽지 못했어요 — 덮어쓰지 않았어요. 잠시 뒤 다시 해 주세요" }];   // F-119
   const next = Carry.decide(book, { ...it, text: Sensitive.redact(it.text), why: Sensitive.redact(String(it.why || "")) }, state,
     { reason: Sensitive.redact(reason), project: s ? s.project : "", key: s ? folderKey(s.dir) : "", docs: from.map((n) => Docs.stagePath(n)), at: Carry.today(), id });   // docs — 근거 단계 문서를 잇는다(그 프로젝트 안의 경로)
   if (!next) return [400, { ok: false, reason: state === "rejected" ? "반려는 까닭을 한 줄 적어야 해요 — 반려도 지우지 않고 남겨요(이미 반려한 것은 다시 고르지 않아요)" : state === "adopted" ? "언제 쓰는지(단계)를 골라야 채택할 수 있어요" : "가져갈 것의 모양이 맞지 않음" }];
@@ -1241,6 +1261,6 @@ if (require.main === module) {
     if (!u.replay) console.log(u.provider === "api" ? `AI: 내 API 키(${u.model} · 보내는 곳 ${u.host}${u.compat ? " · 호환 모드" : ""}) — 지금까지 ${u.used.toLocaleString()} 토큰${u.budget ? ` / 한도 ${u.budget.toLocaleString()}` : " (한도 없음 — NAV_TOKEN_BUDGET으로 정할 수 있어요)"}` : "AI: 이 컴퓨터에 로그인된 Claude Code(claude -p) — 내 API 키로 쓰려면 ANTHROPIC_API_KEY를 설정하세요");
   });
 }
-module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, announcePort, fitResult, mcpToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다
+module.exports = { allowed, recent, addEvent, clearEvents, handle, eventToken, announcePort, stopTasks, fitResult, mcpToken, build, useProject, dropProject, TOKEN_FILE, DEFAULT_TOKEN_FILE, FILES };   // useProject · dropProject — 앱(main.js)만 부른다
 module.exports.topFiles = topFiles;   // C-52 시험 — 계획 AI에 가는 맨 위 이름에 빼 둔 것이 없는지
 module.exports.decisionsText = decisionsText;   // C-52 시험 — 빼 둔 결정 기록은 읽지 않는지

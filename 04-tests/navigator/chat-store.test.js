@@ -86,6 +86,21 @@ test("읽기 · 쓰기 — 없으면 빈 기록, 깨진 · 다른 판 파일은 
   assert.deepEqual(CL.load(f, "club"), CL.blank("club")); assert.equal(fs.readdirSync(dir).filter((x) => x.startsWith("x.json.bak-")).length, 2);
 });
 
+// claude-drafted: 2026-11-02 — F-119: 없는 것(ENOENT)이 아닌데 못 읽으면(Windows 백신 · 색인이 잠깐 잠금 · 권한) 빈 기록으로 보고 다음 저장이 대화를 덮어 지웠다
+test("읽기 — 없는 게 아니라 못 읽으면 던진다(빈 기록으로 덮어쓰지 않게 · F-119)", () => {
+  const f = path.join(TMP, "store-busy", "x.json");
+  fs.mkdirSync(f, { recursive: true });   // 파일 자리에 폴더 — 읽기가 ENOENT 아닌 오류(EISDIR)
+  assert.throws(() => CL.load(f, "club"));
+  assert.ok(fs.statSync(f).isDirectory(), "그대로 둔다");
+  // 깨진 · 다른 판 파일을 .bak으로 못 옮기면 빈 기록을 주지 않는다 — 주면 다음 저장이 그 파일(새 판의 대화)을 덮었다(새 맥락 리뷰 — 장부 carryRead와 같이)
+  const g = path.join(TMP, "store-busy", "y.json");
+  fs.writeFileSync(g, JSON.stringify({ v: 2, turns: [], changes: [] }));
+  const rename = fs.renameSync;
+  fs.renameSync = () => { throw Object.assign(new Error("잠김"), { code: "EBUSY" }); };
+  try { assert.throws(() => CL.load(g, "club")); } finally { fs.renameSync = rename; }
+  assert.match(fs.readFileSync(g, "utf8"), /"v":2/, "그대로 둔다");
+});
+
 // ════════ server.js ════════
 let Srv, port, srv;
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => resolve(p)); }); });

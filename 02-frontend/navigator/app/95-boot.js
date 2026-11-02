@@ -1,5 +1,11 @@
   // ── 단축키 (PC) — 카드 버튼에 적힌 키. 글을 쓰는 중에는 Esc와 Ctrl+Enter만. 한글 자판의 ㅛ·ㅜ도 Y·N으로 ──
   const ALIAS = { "ㅛ": "y", "ㅜ": "n", "ㅗ": "h" };
+  // Ctrl+Enter가 부를 카드 동작 — 글을 쓰는 중이면 그 카드(.mc) 안의 칸일 때만 카드의 Ctrl+Enter. Enter 동작으로 넘어가지 않는다
+  //   (파일 편집기 · 설정 칸에서 Ctrl+Enter가 카드의 Enter — 커밋 · 푸시 맡기기 등 — 를 불렀다, F-122)
+  function ctrlEnterAct(t, writing) {
+    if (!writing) return deskKeys["c-Enter"] || deskKeys.Enter || null;
+    return (t && t.closest && t.closest(".mc:not(.pane)") && deskKeys["c-Enter"]) || null;   // .pane — 설정 · 서재 판도 .mc다
+  }
   document.addEventListener("keydown", (e) => {
     activity();
     if (isPhone() || e.isComposing) return;
@@ -17,7 +23,7 @@
     if (st.ui !== "home" && st.ui !== "greet") return;
     if (t.tagName === "BUTTON" && (e.key === "Enter" || e.key === " ")) return;   // 버튼 위의 Enter는 그 버튼을 누른 것
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-      const a = deskKeys["c-Enter"] || deskKeys.Enter;
+      const a = ctrlEnterAct(t, writing);
       if (a) { e.preventDefault(); run(a); }
       return;
     }
@@ -139,7 +145,7 @@
     if (!h) return;
     const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(safeDecode)).map(([k, v]) => [k, v === undefined ? true : v]));
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
-      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, chat: [], chatMark: 0, chatChanges: [], chatOpen: null });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63)
+      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, ...(q.back ? {} : { chat: [], chatMark: 0, chatChanges: [], chatOpen: null }) });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63). 서고에서 돌아온 &back은 장면이 아니라 그대로 — 비우면 다음 저장이 대화를 지웠다(F-126)
     lastLive = null;
     // 주소로 연 장면은 바이브 코딩(녹화 · 시험이 그대로), #base(&pane=alerts|ai)만 기본 화면(C-13, 넘김 문서 9절 7번)
     // 서고에서 돌아온 주소(&back)는 장면이 아니다 — 떠난 모드 그대로(F-36, PR #139 리뷰: 기본 화면에서 서재에 다녀오면 바이브 코딩이 됐다)

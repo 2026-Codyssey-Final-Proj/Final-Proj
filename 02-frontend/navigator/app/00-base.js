@@ -247,6 +247,7 @@
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "finished", "libGone",
     "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
+  let saveWarned = false;   // 저장 칸이 가득 찼다고 이미 알렸나(F-124) — 다시 저장되면 풀린다
   // 기능 조각이 저장할 것을 더한다(새 기능은 KEEP 한 줄 대신 자기 조각 맨 위에서 — 2026-10-29 나누기 2차). load는 이미 지나갔으니
   // load가 읽어 둔 기록(saved)에서 그 키의 값을 가져온다 — 그사이 save가 있었어도 잃지 않는다. save는 KEEP 전체를 쓴다
   let saved = null;
@@ -296,8 +297,14 @@
     if (forgotten) return;
     const o = { at: Date.now() };
     for (const k of KEEP) o[k] = st[k];
-    try { localStorage.setItem(KEY, JSON.stringify(o)); } catch {}
-    try { localStorage.setItem(CHAT_KEY, JSON.stringify(st.chat)); } catch { const over = st.chat.length - 100; st.chat = st.chat.slice(-100); if (over > 0) st.chatMark = Math.max(0, (st.chatMark || 0) - over); }   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로. 표시 자리도 같이 당긴다(logMsg와 같이, F-103-26)
+    const put = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
+    const trimChat = () => { const over = st.chat.length - 100; st.chat = st.chat.slice(-100); if (over > 0) st.chatMark = Math.max(0, (st.chatMark || 0) - over); };   // 표시 자리도 같이 당긴다(logMsg와 같이, F-103-26)
+    // 진행이 저장 칸에 안 들어가면 대화를 먼저 줄여 칸을 비우고 다시 — 그래도 못 하면 한 번 알린다. 전에는 조용히 실패해 다시 켜면 진행을 잃었다(F-124)
+    let kept = put(KEY, o);
+    if (!kept) { trimChat(); put(CHAT_KEY, st.chat); kept = put(KEY, o); }
+    if (kept) saveWarned = false;
+    else if (!saveWarned) { saveWarned = true; say("이 브라우저의 저장 칸이 가득 차 진행을 저장하지 못했어요 — 넣은 글이 길면 줄여 주세요"); }
+    if (!put(CHAT_KEY, st.chat)) trimChat();   // 대화가 넘치면 대화만 줄인다 — 다른 저장은 그대로
     postState();
   }
   // C-38 시험판(2026-10-25, 두승현) — 서버에 지금 상태를 알린다: MCP로 이은 AI(Claude Desktop · 터널을 연 웹 GPT · 웹 Claude)가 floe_now로 읽는다. 바뀌었을 때만 보낸다

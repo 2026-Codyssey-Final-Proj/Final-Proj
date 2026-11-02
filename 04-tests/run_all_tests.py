@@ -29,10 +29,15 @@ SEARCH_DIRS = [ROOT / "04-tests", *sorted(ROOT.glob("05-projects/*/implementatio
 KNOWN_FILE = ROOT / "04-tests" / "known-failures.json"
 FAIL_LINE = re.compile(r"^✖ (.+) \([\d.]+ms\)$")
 FAIL_COUNT = re.compile(r"^ℹ fail (\d+)$", re.M)
+SKIP_LINE = re.compile(r"^\s*﹣ (.+) \([\d.]+ms\)(?: # .*)?$")  # 건너뛴 시험(spec 보고) — 하위 시험은 들여 쓴다
 
 
 def failing_names(out: str) -> set:
     return {m.group(1) for line in out.splitlines() if (m := FAIL_LINE.match(line))}
+
+
+def skipped_names(out: str) -> set:
+    return {m.group(1) for line in out.splitlines() if (m := SKIP_LINE.match(line))}
 
 
 def excuse(names: set, groups: list, today: date):
@@ -62,8 +67,12 @@ def node_ok(code: int, out: str, groups: list, today: date):
     expired = {t for g in groups if date.fromisoformat(g["until"]) < today for t in g["tests"]} & bad
     if expired:
         notes.append(f"FAIL 기한이 지난 알려진 실패 {len(expired)}개 — 고치거나 기한을 다시 정한다")
-    if fixed:
-        notes.append(f"목록에 있는데 통과한 시험 {len(fixed)}개 — known-failures.json에서 뺀다: " + " / ".join(sorted(fixed)))
+    # 건너뛴 것은 고쳐졌는지 모른다 — puppeteer가 없는 컴퓨터에서 화면 시험은 실패 이름에 없어 '통과'로 보였다(F-132)
+    skipped = fixed & skipped_names(out)
+    if fixed - skipped:
+        notes.append(f"목록에 있는데 통과한 시험 {len(fixed - skipped)}개 — known-failures.json에서 뺀다: " + " / ".join(sorted(fixed - skipped)))
+    if skipped:
+        notes.append(f"목록에 있는데 건너뛴 시험 {len(skipped)}개 — 이 컴퓨터에서는 고쳐졌는지 모른다(빼지 않는다): " + " / ".join(sorted(skipped)))
     return code == 0 or not bad, notes
 
 

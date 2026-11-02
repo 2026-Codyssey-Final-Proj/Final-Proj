@@ -114,3 +114,14 @@ test("C-56 R-5 — stageDraftPrompt에 work(방금 한 일)를 주면 <방금한
   assert.match(p1, /<방금한일>\nsrc\/apply\.js를 만들었어요 — 신청 단추\n<\/방금한일>/); assert.match(p1, /달라지는 칸만/);
   assert.ok(Number.isInteger(N.WORK_MAX) && N.WORK_MAX >= 300 && N.WORK_MAX <= 2000, "방금 한 일 글자 상한");
 });
+
+// claude-drafted: 2026-11-02 — F-129: 요청문이 '경량' · '상세' · '안 함'을 따옴표로 보여 주니 AI가 따옴표 · 굵게를 붙여 답하기도 한다 — 한 줄 때문에 초안 전체가 null(502)이었다
+test("2단계 초안 읽기 — 기획서 칸 앞뒤의 따옴표 · 굵게 표시는 걷고 고른다(F-129). 셋 밖이면 여전히 null", () => {
+  const prdAs = (t) => ({ ...answer("Full"), items: answer("Full").items.map((x, i) => (i === 3 ? { text: t } : x)) });
+  const got = (t) => { const r = N.parseStageDraft(prdAs(t), 1, "Full"); return r && r.items[3]; };
+  assert.deepEqual(got("'경량' — 기능이 몇 개뿐이에요"), { pick: "light", why: "기능이 몇 개뿐이에요", from: [] });
+  assert.equal(got("\"상세\": 사람이 여럿이에요").pick, "full");
+  assert.equal(got("**안 함** — 혼자 써요").pick, "none");
+  assert.equal(got("「경량」").pick, "light");
+  assert.equal(got("'몰라요'"), null);
+});

@@ -251,6 +251,23 @@ test("C-50 멈추기 — 사람이 고를 때만(stop): 그 번호의 도는 일
   assert.equal((await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; })).state, "done");
 });
 
+// claude-drafted: 2026-11-02 — F-118: 앱(트레이 'Floe 끄기')을 꺼도 맡긴 claude와 그 자식(npm · 개발 서버)이 남아 폴더를 고치고 포트를 붙잡았다.
+//   끌 때(before-quit) 서버의 stopTasks가 도는 일을 나무째 끈다. 도는 일이 없으면 아무것도 하지 않는다
+test("앱을 끄면 도는 일을 끈다(stopTasks · F-118)", async () => {
+  assert.equal(Srv.stopTasks(), null, "도는 일이 없으면 기다릴 것도 없다 — 끄기를 늦추지 않는다");
+  plan({ delay: 4000 });
+  const r = await call("POST", "/api/task/start", { text: "끄기 전에 도는 일" });
+  assert.equal(r.status, 200, r.text);
+  const ended = Srv.stopTasks();
+  assert.ok(ended && typeof ended.then === "function", "도는 일이 있으면 끝날 때까지 기다릴 약속");
+  await ended;   // claude가 끝난 뒤에 풀린다 — 앱은 그때 끈다(먼저 끄면 Windows의 taskkill /T가 claude를 못 찾아 손자 프로세스가 남는다, 새 맥락 리뷰)
+  assert.equal((await task()).state, "stopped", "기다림이 풀렸을 때는 이미 끝났다");
+  const main = fs.readFileSync(path.join(__dirname, "../../02-frontend/electron/main.js"), "utf8");
+  const at = main.indexOf('app.on("before-quit"');
+  assert.ok(at >= 0, "앱이 끌 때 부른다");
+  assert.match(main.slice(at, at + 600), /Server\.stopTasks\(\)[\s\S]*e\.preventDefault\(\)[\s\S]*app\.quit\(\)/, "도는 일이 있으면 끄기를 멈추고 끝난 뒤 다시 끈다");
+});
+
 test("화면: 허락 카드 · 막힌 일 · 멈춘 것 같은 일이 있으면 섬을 저절로 접지 않는다(pinned) — 사람이 고를 때까지(새 맥락 리뷰 2026-10-28 막힘 3)", () => {
   const a = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
   const pin = a.slice(a.indexOf("const pinned = () =>"), a.indexOf("\n", a.indexOf("const pinned = () =>")));

@@ -146,7 +146,7 @@
     return {
       done: done ? done.text : lastDone || "",
       now: now || "다음 단계로 넘어가기 전에 함께 확인하기",
-      after: after || (nx ? `${nx.n}단계 ${nx.title}` : "마무리"),
+      after: after || (nx ? `${nx.n + 1}단계 ${nx.title}` : "마무리"),   // 화면에 보이는 말은 1 ~ 8(F-128)
     };
   }
 
@@ -196,9 +196,10 @@
     const d = Math.round((day(now) - day(saved.at)) / 864e5);
     const when = d <= 0 ? "아까" : d === 1 ? "어제" : `${d}일 전에`;
     const met = j.criteria.filter((c) => c && c.met).length, n = j.criteria.length;
-    if (met === n) return `${when} ${s.n}단계 할 일을 다 하셨어요. 넘어가기 전 확인부터 해요!`;
-    if (!met) return `${when} ${s.n}단계를 시작하셨어요. 첫 할 일부터 해 봐요!`;
-    return `${when} ${s.n}단계 할 일 ${n}개 중 ${met}개까지 하셨어요. 이어서 해요!`;
+    const no = s.n + 1;   // 플로로가 말하는 단계는 화면처럼 1 ~ 8(F-128 — 화면이 3단계인데 "어제 2단계"라고 했다)
+    if (met === n) return `${when} ${no}단계 할 일을 다 하셨어요. 넘어가기 전 확인부터 해요!`;
+    if (!met) return `${when} ${no}단계를 시작하셨어요. 첫 할 일부터 해 봐요!`;
+    return `${when} ${no}단계 할 일 ${n}개 중 ${met}개까지 하셨어요. 이어서 해요!`;
   }
 
   // 응답 모양(JSON 스키마) — 칸은 모두 꼭 있어야 한다
@@ -507,8 +508,9 @@
       const title = hasJargon(String(x.title || "")) ? "" : fit(x.title, TITLE_MAX), ask = fit(x.ask, ASK_MAX), done = fit(x.done, LEN.done);   // 전문 용어는 자르기 전 원문으로 본다   // C-56 R-2 — 전문 용어가 든 이름은 버린다(화면은 할 일 이름으로)
       const words = { ...(title && !hasJargon(title) ? { title } : {}), ...(ask ? { ask } : {}), ...(done ? { done } : {}) };
       if (todo[i].term !== "PRD") { items.push({ text: fit(t, LEN.line), from, ...(alts.length ? { alts } : {}), ...words }); continue; }
-      const hit = PRD_PICK.find(([w]) => t.startsWith(w)); if (!hit) return null;
-      items.push({ pick: hit[1], why: fit(t.slice(hit[0].length).replace(/^\s*(?:—|-|:)?\s*/, ""), LEN.why), from });
+      const bare = t.replace(/^[\s"'“”‘’「『*\[(]+/, "");   // 요청문이 셋을 따옴표로 보여 줘 AI가 '경량' · **경량**처럼 답하기도 한다 — 그 한 줄로 초안 전체를 버렸다(F-129)
+      const hit = PRD_PICK.find(([w]) => bare.startsWith(w)); if (!hit) return null;
+      items.push({ pick: hit[1], why: fit(bare.slice(hit[0].length).replace(/^["'“”‘’」』*\])]*\s*(?:—|-|:)?\s*/, ""), LEN.why), from });
     }
     const prep = (Array.isArray(o.prep) ? o.prep : []).filter(filled).slice(0, PREP_MAX).map((x) => fit(x, LEN.prep));
     return { items, prep, say: fit(o.say, LEN.say) };
@@ -559,7 +561,7 @@
   // 답의 모양 — 요구 줄의 id(p1…)는 코드가 붙인다(화면의 맞아요 / 고칠래요 · 맡기기가 이 id로 가리킨다). 긴 글은 잘라 쓴다
   function parsePlan(o) {
     if (!has(o, ["problem", "have", "missing", "say"]) || !Array.isArray(o.items) || !o.items.length || !o.items.every((x) => has(x, ["need", "check"]))) return null;
-    const prep = strs(o.prep, 6, 100), ask = strs(o.ask, 4, 120);
+    const prep = strs(o.prep == null ? [] : o.prep, 6, 100), ask = strs(o.ask == null ? [] : o.ask, 4, 120);   // 빠졌으면 빈 목록 — 호환 모드(중계 서버)는 모양을 글로만 알려 빠뜨리기도 한다(F-129). 모양이 틀리면 그대로 버린다
     if (!prep || !ask) return null;
     const cut = (s, n) => s.trim().slice(0, n);
     return { problem: cut(o.problem, 200), have: cut(o.have, 200), missing: cut(o.missing, 200),
