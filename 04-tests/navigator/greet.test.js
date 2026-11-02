@@ -110,11 +110,11 @@ test("greet.js bootPlan — 켤 때 무엇을 여나: 작업실 · 말풍선 · 
   const still = G.bootPlan({ ...base, still: true }); assert.ok(still.workspace && still.bubble && !still.greet, "움직임 줄이기 — 작업실 · 말풍선은 열고 인사 움직임만 없음");
   assert.ok(G.BUBBLE_MS >= 5000 && G.BUBBLE_MS <= 15000, "말풍선은 몇 초 뒤 사라진다(시간 미정 — 5 ~ 15초 사이로 둠)");
 });
-test("app.js — 켤 때 bootPlan대로 작업실을 열고(캔버스 = 지금 단계의 퀘스트 보드) 섬은 접힌 알약, 말풍선에 인사 · 멈춘 곳 · 섬 펼치기 / 나중에", () => {
+test("app.js — 켤 때 bootPlan대로 작업실을 열고(퀘스트 탭 — 캔버스 탭은 2026-11-02에 뺌) 섬은 접힌 알약, 말풍선에 인사 · 멈춘 곳 · 섬 펼치기 / 나중에", () => {
   const a = read("navigator/app.js");
   assert.match(a, /GR\.bootPlan\(bootArgs\)/, "규칙은 greet.js bootPlan 하나"); assert.match(a, /const bootArgs = \{ hash: location\.hash, still: STILL, phone: isPhone\(\), lastDay: readLS\(GREET_DAY, ""\), today: ymd\(\),/);
   assert.match(a, /setupNeeded: !!\(window\.FloeSetup && window\.FloeSetup\.shouldOpen\(/, "처음 설정이 필요한지는 setup.js의 규칙으로");
-  assert.match(a, /if \(boot\.workspace\) \{ openQwin\("canvas"\); st\.ui = "petit";/, "작업실(캔버스) + 접힌 알약");
+  assert.match(a, /if \(boot\.workspace\) \{ openQwin\("quest"\); st\.ui = "petit";/, "작업실(퀘스트 탭) + 접힌 알약");
   assert.match(a, /data-act="boot-later"/, "나중에"); assert.match(a, /class="hello-bub/, "말풍선");
   assert.match(a, /"boot-later": \(\) => \{ st\.boot = null;/, "나중에 → 말풍선만 사라진다");
 });

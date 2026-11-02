@@ -199,12 +199,12 @@
   // C-46 R-1(2026-10-27 이재엽 "플로가 켜지면 … 알약" · 버튼 "알약 안에서 인사" · "하루에 한 번"): 켜면 큰 인사 카드 없이 알약(petit)으로, 인사는 알약 안에서(startGreeting — greet.js PILL_TIMELINE).
   //   같은 날 다시 켜면 인사 없이 알약만(floe:greet-day). 주소 끝 장면(시험 · 녹화)은 전처럼 기본 화면. 움직임 줄이기 · 휴대폰은 알약만
   const GREET_DAY = "floe:greet-day";
-  // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선" · "켤 때마다"): 켜면 바로 작업실(캔버스 = 지금 단계의 퀘스트 보드) + 접힌 알약 + 알약 옆 말풍선(greet.js bootPlan). 처음 설정이 필요하면 전처럼(알약 안 인사 → 설정)
+  // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선" · "켤 때마다"): 켜면 바로 작업실(퀘스트 탭 — 캔버스 탭은 2026-11-02 뺌) + 접힌 알약 + 알약 옆 말풍선(greet.js bootPlan). 처음 설정이 필요하면 전처럼(알약 안 인사 → 설정)
   const bootArgs = { hash: location.hash, still: STILL, phone: isPhone(), lastDay: readLS(GREET_DAY, ""), today: ymd(),
     setupNeeded: !!(window.FloeSetup && window.FloeSetup.shouldOpen(window.FloeSetup.readSaved(localStorage), location.hash)) };
   const boot = GR && st.ui === "greet" ? GR.bootPlan(bootArgs) : { workspace: false, bubble: false, greet: false };
   const greetNow = !!GR && st.ui === "greet" && !boot.workspace && GR.shouldGreet(bootArgs).greet;
-  if (boot.workspace) { openQwin("canvas"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); }
+  if (boot.workspace) { openQwin("quest"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); }
   else if (greetNow) { document.documentElement.classList.add("greeting"); st.ui = "petit"; }
   else if (st.ui === "greet") st.ui = location.hash && location.hash !== "#" ? "home" : "petit";
   function startGreeting() {
@@ -242,7 +242,7 @@
   // 작업 폴더가 바뀌면 옛 폴더에서 받아 둔 것을 잊고 다시 받는다 — 이름표(st.gh) · 파일 칸(작업실이 열려 있으면 바로). 처음 설정의 가져오기 · 새로 만들기와 앱 메뉴(F-72)가 같이 쓴다
   const forgetFolder = () => {
     docsFor = "";   // C-49 새 폴더의 단계 문서를 다시 읽게
-    st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "canvas";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
+    st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "quest";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
     if (canLive && !ghLoading) loadGithub();
     if (st.qwin) loadFiles();
   };

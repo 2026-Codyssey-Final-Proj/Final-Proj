@@ -69,9 +69,6 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     await page.click('.sm-card[data-i="3"]'); await wait(300);
     const side = await page.$eval(".wside", (el) => el.textContent.replace(/\s+/g, " "));
     assert.match(side, /4단계/); assert.match(side, /① 생각/); assert.match(side, /design\.md/); assert.match(side, /기획서 \d절/);
-    // 캔버스의 ① 생각 — 지금 장(3단계)은 준비된 생각이 초안 자리에
-    await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
-    assert.match(await page.$eval(".cv-c.c1", (e) => e.textContent), /기획서 3절의 줄|준비된/, "준비된 ① 생각");
     // 보기 셋
     await page.click("[data-act=qtab][data-tab=quest]"); await wait(200);
     if (await page.$("[data-act=quest-down]")) { await page.click("[data-act=quest-down]"); await wait(300); }

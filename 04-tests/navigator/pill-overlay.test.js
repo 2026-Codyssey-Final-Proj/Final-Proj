@@ -12,7 +12,7 @@ test("app.js — 섬이 접혀 있으면(petit · hidden) 옆 칸은 알약(fold
   assert.match(a, /const colFolded = \(\) => st\.ui === "petit" \|\| st\.ui === "hidden";/);
   assert.match(a, /\$\{colFolded\(\) \? pillHTML\(\) \+ bootBubble\(\) : islandHTML\("", true\)\}<\/div>`;/, "접힘이면 알약 하나(+ 켤 때 말풍선 C-55), 펼침이면 위 줄 없는 섬(C-62 inCol)");
   assert.match(a, /\|\| st\.settings \|\| \(st\.qwin && !WINS\) \|\| !!st\.gacha/, "앱의 작업실은 섬을 붙들지 않는다(설정의 시간대로) — 브라우저의 옆 판은 전처럼");
-  assert.match(a, /pill: \(\) => \(QU && !st\.qwin \? \(openQwin\("canvas"\), render\(\)\) : st\.ui === "hidden" \? go\("home"\) : view\("click"\)\)/, "알약 누름 = 작업실 밖이면 바로 작업실(F-85), 안이면 펼침(hidden이어도)"); assert.match(a, /fold: \(\) => go\(colFolded\(\) \? "home" : "petit"\)/, "접기 단추 — 알약이면 다시 펼침(F-100)");
+  assert.match(a, /pill: \(\) => \(QU && !st\.qwin \? \(openQwin\("quest"\), render\(\)\) : st\.ui === "hidden" \? go\("home"\) : view\("click"\)\)/, "알약 누름 = 작업실 밖이면 바로 작업실(F-85), 안이면 펼침(hidden이어도)"); assert.match(a, /fold: \(\) => go\(colFolded\(\) \? "home" : "petit"\)/, "접기 단추 — 알약이면 다시 펼침(F-100)");
   // 새 맥락 리뷰(2026-10-27) 막힘 둘 · 보완: 접힌 알약은 더 접히지 않는다, 옆 칸에 마우스 · 글 쓰는 중에는 안 접힌다, 알릴 일이 오면 펼친다, Esc는 먼저 접기
   assert.match(a, /if \(WINS && st\.qwin && st\.ui === "petit"\) return;   \/\/ 작업실 안의 접힌 알약은 더 접히지\(hidden\) 않는다/);
   assert.match(a, /\|\| st\.openInput \|\| typing\(\) \|\| colTyping;/, "옆 칸에 글 쓰는 중은 pinned"); assert.match(a, /hovering \|\| colHover \|\|/, "옆 칸에 마우스가 있으면 접히는 시계를 걸지 않는다");

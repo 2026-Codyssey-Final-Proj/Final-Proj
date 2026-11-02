@@ -44,7 +44,7 @@ test("C-57 — 글꼴 셋이 앱 파일에서 실리고(밖으로 요청 0) 글 
       if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(400); }
       const s = await page.evaluate(async () => { await document.fonts.ready; for (const n of ["Gowun Dodum", "Bagel Fat One", "Nanum Gothic Coding"]) { try { await document.fonts.load(`16px "${n}"`); } catch {} }   // 쓰이기 전엔 안 실린다(font-display) — 불러서 본다
         const f = (sel, prop = "fontFamily") => { const el = document.querySelector(sel); return el ? getComputedStyle(el)[prop] : ""; };
-        return { fonts: ["Gowun Dodum", "Bagel Fat One", "Nanum Gothic Coding"].map((n) => [n, document.fonts.check(`16px "${n}"`)]), body: f("body"), title: f(".wh .ttl"), code: f(".fv-code, .cv-files li, .fv-h b"),
+        return { fonts: ["Gowun Dodum", "Bagel Fat One", "Nanum Gothic Coding"].map((n) => [n, document.fonts.check(`16px "${n}"`)]), body: f("body"), title: f(".wh .ttl"), code: f(".fv-code, .fv-h b"),
           isl: f(".isl", "backgroundColor"), win: f(".qwin", "backgroundColor"), btn: f(".b.pri", "backgroundColor"), btnInk: f(".b.pri", "color"), hasIsl: !!document.querySelector(".isl") }; });
       assert.ok(s.fonts.every(([, ok]) => ok), `글꼴 셋이 실렸다: ${JSON.stringify(s.fonts)}`);
       assert.match(s.body, /^"?Gowun Dodum/, `글: ${s.body}`); assert.match(s.title, /^"?Bagel Fat One/, `제목: ${s.title}`);

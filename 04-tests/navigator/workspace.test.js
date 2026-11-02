@@ -1,4 +1,4 @@
-// claude-drafted: 2026-10-26 — 작업실 창(C-41 PR①, 두승현 · 이재엽 · 두승현 결정 2026-10-26): 퀘스트 창을 테두리 있는 보통 창(늘 위 아님 · 파스텔)으로, 첫 탭 캔버스(지금 하는 일 · 단계 칩 · 지난 장 / 다음 장 · 다섯 칸).
+// claude-drafted: 2026-10-26 — 작업실 창(C-41 PR①, 두승현 · 이재엽 · 두승현 결정 2026-10-26): 퀘스트 창을 테두리 있는 보통 창(늘 위 아님 · 파스텔)으로, 첫 탭 캔버스(지금 하는 일 · 단계 칩 · 지난 장 / 다음 장 · 다섯 칸) — 캔버스 탭은 2026-11-02 두승현 결정으로 뺐다.
 // 기준은 스토리보드 01-docs/04-pattern-implementation/stage-storyboard/index.html(화면 기준 1 · 2 · 7 · 9). 글자 모양으로 본다 — electron 없이 돈다.
 // 실행: node --test 04-tests/navigator/workspace.test.js
 const test = require("node:test");
@@ -41,34 +41,28 @@ test("main.js — 작업실 창: 처음은 작업 영역 가득(workBounds(wa, �
   assert.ok(!m.includes("floeSize: opt.size"), "작업실 · 설정 창 모두 S/M/L 크기 기억(floeSize)은 없다 — 설정 창은 2026-10-25부터 열리지 않고, 작업실은 자리 · 크기를 workspace.json에");
 });
 
-test("app.js — 작업실 창: 탭은 캔버스 → 노트북(옛 퀘스트) → 도전과제 → 책, 처음 여는 탭은 캔버스. 캔버스 판에 지금 하는 일 · 단계 칩 · 지난 장 / 다음 장 · 다섯 칸(생각 → 행동 → 기록 → 저장 → 버전 → 관문) 차례로", () => {
-  const a = read("navigator/app.js");
-  assert.match(a, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "퀘스트"\], \["lib"/, "탭 셋(C-65, 2026-10-30)");
-  assert.match(a, /qwin: false, qtab: "canvas"/);
+test("app.js — 작업실 창: 탭은 퀘스트 → 책, 처음 여는 탭은 퀘스트. 캔버스 탭(C-41 · C-42 · C-23 ⑤ 버전 칸)은 2026-11-02 두승현 결정으로 뺐다 — canvasPane · canvas-pan.js · .cv 모양이 남아 있지 않고, 저장된 옛 탭 값 canvas는 quest로", () => {
+  const a = read("navigator/app.js"), c = read("navigator/app.css");
+  assert.match(a, /const QTABS = \[\["quest", "퀘스트"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "탭 둘");
+  assert.match(a, /qwin: false, qtab: "quest"/, "처음 여는 탭은 퀘스트");
   assert.match(a, /<span class="ttl">작업실<\/span>/);
-  assert.match(a, /st\.qtab === "canvas" \? canvasPane\(n\)/);
-  const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("function qwinHTML"));
-  const marks = ['"①", "생각"', '"②", "행동"', '"③", "기록"', '"④", "저장"', '"⑤", "버전"', '"", "관문"'];
-  for (const s of marks.concat(['class="cv-now">지금 하는 일'])) assert.ok(cv.includes(s), s);   // 단계 칩 · 지난 장 / 다음 장 보드는 C-58(2026-10-29)로 캔버스에서 뺐다 — 칩은 머리 줄(stageChips)
-  for (const s of ['class="cv-stg"', "관문을 넘으면 열려요", "지난 장 없음"]) assert.ok(!cv.includes(s), `${s} 없음`);
-  const at = marks.map((s) => cv.lastIndexOf(s));   // 마지막 자리(칸은 셋 중 하나로 그려서 같은 이름이 여러 번) — 그래도 차례는 같다
-  for (let i = 1; i < at.length; i++) assert.ok(at[i - 1] < at[i], `${marks[i - 1]} 다음에 ${marks[i]}`);
+  assert.match(a, /if \(st\.qtab === "tree" \|\| st\.qtab === "canvas"\) st\.qtab = "quest";/, "저장된 옛 탭 값(도전과제 · 캔버스)은 퀘스트로");
+  for (const s of ["canvasPane", "FloeCanvas", "canvas-pan", 'openQwin("canvas")', 'class="cv-', "cv-stg", "stageChips", "prepThink"]) assert.ok(!a.includes(s), `${s} 없음`);
+  assert.ok(!/\.cv\b|\.cvb|\.cvw|\.cvp|\.cv-/.test(c), "캔버스 모양(.cv*) 없음");
+  assert.ok(!c.includes("@container (min-width:935px) and (min-height:544px)"), "판 1100×640 줌 블록 없음");
+  assert.ok(!fs.existsSync(path.join(__dirname, "../../02-frontend/navigator/canvas-pan.js")), "canvas-pan.js 삭제");
+  for (const f of ["navigator/index.html", "navigator/win.html", "navigator/win.js"]) assert.ok(!read(f).includes("canvas-pan") && !read(f).includes("FloeCanvas"), `${f}에 캔버스 없음`);
+  assert.ok(!fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/server.js"), "utf8").includes("canvas-pan"), "서버 STATIC 목록에 없음");
 });
 
 // ⑥(2026-10-27 두승현 "의도했던 것은 첨부한 이미지처럼 펼쳐져 있는 환경 … 3번은 이재엽 몫으로 남기고 더미 데이터로 UI 출력만"): 머리 한 줄(단계 · 탭 · LV · 조개) · 왼쪽 파일 칸(예시) · 캔버스는 목업의 1100×640 판을 줌
-test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · 탭 · LV · 조개, 왼쪽 파일 칸은 예시 데이터(API는 이재엽 몫), 캔버스 판은 1100×640을 --u로 줌(바닥 .75) · 포스트잇 · 파일 카드 · 배울 말 · 화살표 · 작은 플로로", () => {
+test("app.js · app.css — ⑥ 펼쳐진 환경: 머리 한 줄에 단계 · 탭 · LV · 조개, 왼쪽 파일 칸은 예시 데이터(API는 이재엽 몫), (캔버스 판은 2026-11-02에 뺐다)", () => {
   const a = read("navigator/app.js"), c = read("navigator/app.css");
   assert.match(a, /<span class="tb-stage" aria-live="polite">\$\{stageHead\(\)\}<\/span>/, "머리에 단계 이름 한 번(C-58) — 단계 칩은 2026-10-29에 뺐다");
   assert.match(a, /<span class="wlv" title="칭호 · \$\{esc\(QU\.rankOf\(Math\.min\(level, 7\)\)\)\}">LV \$\{level\} · <button type="button" class="shells" data-act="shells"/, "머리에 LV · 조개(조개는 뽑기 단추 — 섬 위 줄이 머리 줄로 합쳐진 뒤, C-62)");
   assert.match(a, /<div class="wmain">\$\{wnavOpen \? `<nav class="wnav" aria-label="대화 · 파일">\$\{chatNav\(\)\}<\/nav>` : ""\}<div class="wbody"/, "왼쪽 칸은 탭에 상관없이 — C-63(PR ④)부터 대화 목록, 파일 칸은 그 안의 '전체 파일'");
   assert.match(a, /const FILES_DUMMY = \[\["README\.md", 0, "고침 · 책", "fix"\]/, "예시 데이터 — API가 생기면 지운다"); assert.match(a, /\$\{esc\(project\(\) \|\| "예시 프로젝트"\)\}/, "더미 이름이 진짜 프로젝트처럼 보이지 않게(새 맥락 리뷰 2026-10-27)");
   assert.match(a, /폴더를 연결하면 진짜 목록이 와요"\)\}">예시<\/em>/, "서버 없이 · 연습 · 폴더를 모르면 화면에 예시 표시(R-8)");
-  const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("// 파일 칸(C-41 ⑥"));   // 칸(canvasPane) — 단계 칩(stageChips)은 2026-10-29에 뺐다
-  for (const s of ['<div class="cvp"><div class="cvb" style="--fa:', 'class="cv-frame"', 'class="cv-bh"', "${think}${ARROWS}", 'class="cv-flo" style="--fx:${fx};--fy:${fy}"']) assert.ok(cv.includes(s), s);   // 칩은 앱 번호(R-9, 2026-10-27 — 전에는 코드 번호만이었다)터 판 밖(새 맥락 리뷰 2026-10-27)
-  assert.match(cv, /if \(k === "now" && !floAt\) floAt = pos;/, "작은 플로로는 첫 '지금' 칸 옆");
-  assert.match(c, /\.cv\{flex:1;min-height:0;min-width:0;overflow:auto;container-type:size;/);
-  assert.match(c, /@container \(min-width:935px\) and \(min-height:544px\)\{\.cvb\{--u:min\(calc\(100cqw \/ 1100\),calc\(100cqh \/ 640\),1px\);display:block;width:calc\(1100 \* var\(--u\)\);height:calc\(640 \* var\(--u\)\)/, "판 1100×640을 칸에 맞춰 줌하는 것은 0.85배 이상 담을 수 있을 때만(935 = 1100 × .85 · 544 = 640 × .85) — R-11(이재엽 버튼 \"줌 + 모자라면 다시 배치\")");
-  for (const s of [".cv-c.c1{left:calc(226 * var(--u));top:calc(110 * var(--u))", ".cv-c.c3{left:calc(716 * var(--u))", ".cv-c.c6{left:calc(962 * var(--u))", ".cv-ar.a3{left:calc(640 * var(--u));top:calc(362 * var(--u))"]) assert.ok(c.includes(s), `${s} — 목업 좌표`);
   assert.match(c, /\.wnav\{width:200px;flex:none;/); assert.match(c, /\.qwin\{min-width:260px;container-type:inline-size\}/); assert.match(c, /@container \(max-width:760px\)\{:is\(#root,\.wsx\):not\(:has\(>\.isl-col\.center\)\) \.wnav\{display:none\}\}/, "좁은 작업실은 파일 칸을 숨긴다(단계 칩은 2026-10-29에 뺐다) — 섬이 가운데일 때는 파일 칸을 숨기지 않는다(F-81)(760은 두승현 확인 전 — 출처 없는 값)");
   assert.ok(!c.includes("@container cvboard"), "너비로 칸 배치를 다시 잡던 길(① · 900)은 뺐다 — 줌이 대신한다");
   assert.ok(!a.includes('data-act="qsize"') && !a.includes("작업실 처음 크기"), "S/M/L 단추 · 설정 줄은 없다(R-1, 이재엽 버튼 2026-10-27 \"'화면 가득' 하나로\")");
@@ -87,40 +81,10 @@ test("app.css · win.html — 작업실은 파스텔(네이비 면 없음). 설�
   assert.match(read("electron/main.js"), /backgroundColor: ws \? "#E9EEF6"/, "창 바탕색이 셋 다 같다");
 });
 
-// R-11(C-42, 이재엽 2026-10-27 버튼 "줌 + 모자라면 다시 배치"): 캔버스 칸이 판을 0.85배 이상으로 담지 못하면 줌하지 않고 칸 배치를 다시 잡는다 — 두 줄(① ② ③ / ④ ⑤ 관문), 640 미만은 세로 한 줄(스토리보드 기준 7), 글자 크기는 그대로(--ui-scale). 어느 쪽이든 옆으로 넘치지 않는다
-test("app.css — R-11 다시 배치: 기본은 격자(두 줄 — 640 미만은 한 열), 줌은 935×544 이상의 컨테이너 질의 안에서만. 쪽지 · 화살표 · 플로로 · 파일 카드 · 배울 말은 다시 배치에서도 남는다", () => {
-  const c = read("navigator/app.css"), a = read("navigator/app.js");
-  const zoom = c.indexOf("@container (min-width:935px) and (min-height:544px){");
-  assert.ok(zoom > 0, "줌 블록");
-  const base = c.slice(c.indexOf(".cvb{"), zoom);
-  assert.match(base, /\.cvb\{--u:calc\(1px \* var\(--ui-scale,1\)\);position:relative;display:grid;/, "기본(다시 배치)은 격자 · 글자 크기 설정 그대로");
-  assert.match(base, /grid-template-areas:"now now now now now" "bh bh bh bh bh" "c1 a1 c2 a2 c3" "\. \. a3 a3 a3" "c4 a4 c5 a5 c6"/, "두 줄 — ① ② ③ / ④ ⑤ 관문(파일 카드 · 배울 말 · 보드는 C-58로 뺐다)");
-  assert.match(base, /@container \(max-width:639px\)\{\.cvb\{grid-template-columns:minmax\(0,1fr\);grid-template-areas:"now" "bh" "c1" "a1" "c2" "a2" "c3" "a3" "c4" "a4" "c5" "a5" "c6"\}/, "640 미만은 세로 한 줄(칩 · 파일 카드 · 배울 말 · 보드는 C-58로 뺌)");
-  for (const s of [".cv-frame{display:none}", ".cv-flo{grid-area:var(--fa,c1)", "max-width:100%", "overflow-wrap:anywhere"]) assert.ok(base.includes(s), s);
-  assert.match(a, /<div class="cvb" style="--fa:\$\{floAt \|\| "c1"\}"/, "작은 플로로가 설 칸은 격자 영역 이름으로도(다시 배치에서 '지금' 칸 모서리에)");
-  const zb = c.slice(zoom);
-  for (const s of [".cvb>*{position:absolute}", ".cv-frame{display:block;left:calc(204 * var(--u))", ".cv-c.c1{left:calc(226 * var(--u));top:calc(110 * var(--u))", ".cv-flo{left:calc(var(--fx) * var(--u))"]) assert.ok(zb.includes(s), `줌 블록 안: ${s}`);
-  assert.ok(!c.includes(".75px"), "0.75 바닥은 없다 — 그 아래는 다시 배치가 맡는다");
-});
-
 test("app.js render — 브라우저 판의 작업실 몸통(.qwin .wbody)은 같은 화면이면 스크롤을 되돌린다(마우스가 섬에 들어오면 mouseenter가 다시 그린다 — 받기 화면이 맨 위로 튀던 것, 2026-10-27)", () => {
   const a = read("navigator/app.js");
   assert.match(a, /const ob = \$nav\.querySelector\("\.qwin \.wbody"\), bodyWas = ob \? \{ view: ob\.dataset\.view, top: ob\.scrollTop \} : null;/);
   assert.match(a, /const nb = bodyWas && \$nav\.querySelector\("\.qwin \.wbody"\); if \(nb && nb\.dataset\.view === bodyWas\.view\) nb\.scrollTop = bodyWas\.top;/);
-});
-
-// R-9(단계 칩은 앱 번호로) · R-5(칸에는 상태 대신 내용) — C-42, 넘김 문서 3절 ② 묶음(2026-10-27)
-test("app.js canvasPane — R-9 단계 칩: '시작 ✓' · 지난 장 'n ✓ V.n' · 지금 장 'n 짧은 이름' · 뒤 장 'n+1 ~ 8'(머리와 같은 번호 1~8). R-5: ② 맡길 일 이름, ③ 정한 줄, ④ 올라갈 파일 이름, 관문에 남은 기준 수와 '안 됨'인 기준 이름", () => {
-  const a = read("navigator/app.js"), c = read("navigator/app.css");
-  const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("// 파일 칸(C-41 ⑥"));   // 칸은 canvasPane — 단계 칩(stageChips)은 2026-10-29에 뺐다
-  assert.ok(!cv.includes(">${x.n}${k"), "코드 번호(0~7)는 화면에 없다");
-  assert.ok(cv.includes("const curItem = ") && cv.includes("맡긴 일 ${pg.done}/${pg.total}"), "② 행동 — 지금 맡긴 일의 이름과 진행");
-  assert.ok(cv.includes('class="cv-files"') && cv.includes("`docs/${slug}/${slug.slice(3)}.md`") && cv.includes("FDOCS.MAIN_DOC, FDOCS.LOG_DOC"), "④ 저장 — 올라갈 파일 이름(단계 문서 · 기획서 · 결정 기록)");
-  assert.ok(cv.includes("const unmet = ") && cv.includes("남은 기준 ${left()}") && cv.includes('class="cv-unmet"'), "관문 — 남은 기준 수와 '안 됨'인 기준 이름");
-  assert.ok(cv.includes("정한 줄 ${") && cv.includes("QU.filled(q, i) && ln ? ln : QU.nameOf(q, i)"), "③ 기록 — 적은 칸은 그 줄(정한 것), 빈 칸은 이 프로젝트의 말로 된 이름(C-56 R-2)을 보인다");
-  assert.match(c, /\.cv-files,\.cv-unmet\{list-style:none;padding:0;/); assert.match(c, /\.cv-unmet li\{color:var\(--bad\)/);
-  // 단계 칩(시작 · 1 · 2 ~ 8)은 2026-10-29 두승현 결정으로 머리 줄에서도 뺐다 — 단계는 옆의 단계 띠(tb-stage) 한 번, 지난 단계로 가는 길은 왼쪽 단계 바로가기(C-63)
-  assert.ok(!/cv-stg/.test(c) && !/cv-stg|stageChips/.test(read("navigator/app.js")), "단계 칩 · 그 모양이 남아 있지 않다");
 });
 
 // R-8(C-42, 2026-10-27 이재엽 버튼 "전부" · "깊이 3 · 200개") — 진짜 파일 목록: 서버 GET /api/files(이름만 · 읽기만, API.md 3-25), 화면은 작업실을 열 때 받는다

@@ -97,8 +97,8 @@ test("app.js — C-35: 명령 네 칸은 오버레이에서 뺐다. 퀘스트 �
   for (const gone of ["const CMD4", "cmd4HTML", "function planPane", "function learnPane", '["teach", "배우기"]']) assert.ok(!app.includes(gone), `${gone}가 없어야`);
   assert.ok(!/\.cmd4\b/.test(read("navigator/app.css")), "명령 네 칸 CSS도 없다");
   assert.match(app, /<button type="button" class="tb-q" data-act="qwin-toggle" aria-pressed="\$\{st\.qwin\}"[^>]*>퀘스트<\/button>/, "위 줄의 '퀘스트' 단추 — 이재엽 그림(2026-10-24)");
-  assert.match(app, /"qwin-toggle": \(\) => \{ if \(st\.qwin\) return closeQwin\(\); openQwin\("canvas"\); render\(\); \}/, "켜고 끈다 — 작업실은 캔버스 탭부터(C-41, 2026-10-26)");
-  assert.match(app, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "퀘스트"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "작업실 창의 탭 셋 — 캔버스 · 퀘스트(노트북 + 도전과제, C-65 2026-10-30) · 책");
+  assert.match(app, /"qwin-toggle": \(\) => \{ if \(st\.qwin\) return closeQwin\(\); openQwin\("quest"\); render\(\); \}/, "켜고 끈다 — 작업실은 퀘스트 탭부터(캔버스 탭은 2026-11-02에 뺌)");
+  assert.match(app, /const QTABS = \[\["quest", "퀘스트"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "작업실 창의 탭 둘 — 퀘스트(노트북 + 도전과제, C-65 2026-10-30) · 책. 캔버스는 2026-11-02에 뺌");
   assert.match(app, /if \(planNow\(\)\) return momentPlan\(\);/, "맡길 일 퀘스트를 고르면 채팅의 지금 말이 계획 · 맡기기 · 보고");
   assert.match(app, /const body = st\.settings && QU && !st\.qwin \? settingsPane\(\) : st\.pane \? basePane\(st\.pane\) : chatCard\(momentToday\(\)\);/, "판은 알림 · AI 진행 둘 — 계획판은 채팅으로 옮겼다");
   const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
@@ -243,12 +243,12 @@ test("app.js — 얼음 조각 가까이: 고른 끝난 · 지금 카드는 big 
 });
 
 // claude-drafted: 2026-10-30 — 퀘스트 탭 합치기 TASK T08(C-65 · C-66): 탭 셋, 세로 줄 · 장 화면 없음, 옛 길(tree · tab=learn)은 합친 탭으로
-test("app.js — C-65 · C-66: 탭 셋(캔버스 · 퀘스트 · 책), 세로 줄(.vtabs) · 장 화면(.learnbox · .tu-chips · .chain · .bn) · treeChap · tuCard 없음, tree-chap · tree-map · tu-sel 누르기 없음, openQwin(\"tree\") 0곳, 옛 값 tree · tab=learn · tab=map은 quest로", () => {
+test("app.js — C-65 · C-66: 탭 둘(퀘스트 · 책 — 캔버스는 2026-11-02에 뺌), 세로 줄(.vtabs) · 장 화면(.learnbox · .tu-chips · .chain · .bn) · treeChap · tuCard 없음, tree-chap · tree-map · tu-sel 누르기 없음, openQwin(\"tree\") 0곳, 옛 값 tree · tab=learn · tab=map은 quest로", () => {
   const a = read("navigator/app.js");
-  assert.match(a, /const QTABS = \[\["canvas", "캔버스"\], \["quest", "퀘스트"\], \["lib"/, "탭 셋");
+  assert.match(a, /const QTABS = \[\["quest", "퀘스트"\], \["lib", SHELF_ON \? "서고" : "책"\]\];/, "탭 둘");
   for (const gone of ['class="vtabs', 'class="learnbox', 'class="tu-chips', 'class="chain', 'class="bn ', "treeChap", "tuCard", "function treePane", 'openQwin("tree")', '"tree-chap": ', '"tree-map": ', '"tu-sel": ', 'class="ev"', "rewardSlots"]) assert.ok(!a.includes(gone), `${gone} — 뺐다(C-66 · C-70)`);
   assert.match(a, /st\.qtab = \(tab === "tree" \? "quest" : tab\) \|\| st\.qtab;/, "openQwin: 옛 도전과제는 합친 탭으로");
-  assert.match(a, /if \(st\.qtab === "tree"\) st\.qtab = "quest";/, "저장된 옛 탭 값도");
+  assert.match(a, /if \(st\.qtab === "tree" \|\| st\.qtab === "canvas"\) st\.qtab = "quest";/, "저장된 옛 탭 값도(캔버스 2026-11-02)");
   assert.match(a, /st\.qtab = q\.tab === "map" \? "quest" : "lib";/, "#tab=map도");
   assert.match(a, /function questBoard\(\)/); assert.match(a, /data-act="quest-down"/); assert.match(a, /data-act="quest-up"/); assert.match(a, /keep\(\["questUp", "qview"\]\)/, "카드 올림 · 내림은 이 컴퓨터에 기억(두승현 2026-10-30)");
   assert.match(a, /class="qcard qpre"/, "받기 전 카드(C-70)"); assert.match(a, /TU \? TU\.forChap\(n\)/, "'처음 쓰는 기능' 한 줄(PRD 9절 3번 기본값)");
