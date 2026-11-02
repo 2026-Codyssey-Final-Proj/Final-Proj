@@ -129,3 +129,11 @@ test("F-127 끌어다 놓기 — 파일이 아닌 글을 입력 칸에 놓으면
   const head = a.slice(i, a.indexOf("e.preventDefault();", i));
   assert.match(head, /if \(!hasFiles\(e\) && isField\(e\.target\)\) return;/, "preventDefault 전에 — 글은 칸에 들어간다");
 });
+
+test("F-129 준비 계획 읽기 — 준비할 것(prep) · 물을 것(ask)이 빠진 답은 빈 목록으로 읽는다(계획 전체를 버려 502이던 것). 모양이 틀리면 여전히 null", () => {
+  const N = require("../../03-backend/navigator/navigator.js");
+  const base = { problem: "p", have: "h", missing: "m", items: [{ need: "n", check: "c" }], say: "s" };
+  const r = N.parsePlan(base);
+  assert.ok(r, "빠졌으면 읽는다"); assert.deepEqual([r.prep, r.ask], [[], []]);
+  assert.equal(N.parsePlan({ ...base, prep: "한 줄" }), null, "목록이 아니면 버린다");
+});

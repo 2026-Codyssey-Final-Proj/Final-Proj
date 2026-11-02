@@ -508,8 +508,9 @@
       const title = hasJargon(String(x.title || "")) ? "" : fit(x.title, TITLE_MAX), ask = fit(x.ask, ASK_MAX), done = fit(x.done, LEN.done);   // 전문 용어는 자르기 전 원문으로 본다   // C-56 R-2 — 전문 용어가 든 이름은 버린다(화면은 할 일 이름으로)
       const words = { ...(title && !hasJargon(title) ? { title } : {}), ...(ask ? { ask } : {}), ...(done ? { done } : {}) };
       if (todo[i].term !== "PRD") { items.push({ text: fit(t, LEN.line), from, ...(alts.length ? { alts } : {}), ...words }); continue; }
-      const hit = PRD_PICK.find(([w]) => t.startsWith(w)); if (!hit) return null;
-      items.push({ pick: hit[1], why: fit(t.slice(hit[0].length).replace(/^\s*(?:—|-|:)?\s*/, ""), LEN.why), from });
+      const bare = t.replace(/^[\s"'“”‘’「『*\[(]+/, "");   // 요청문이 셋을 따옴표로 보여 줘 AI가 '경량' · **경량**처럼 답하기도 한다 — 그 한 줄로 초안 전체를 버렸다(F-129)
+      const hit = PRD_PICK.find(([w]) => bare.startsWith(w)); if (!hit) return null;
+      items.push({ pick: hit[1], why: fit(bare.slice(hit[0].length).replace(/^["'“”‘’」』*\])]*\s*(?:—|-|:)?\s*/, ""), LEN.why), from });
     }
     const prep = (Array.isArray(o.prep) ? o.prep : []).filter(filled).slice(0, PREP_MAX).map((x) => fit(x, LEN.prep));
     return { items, prep, say: fit(o.say, LEN.say) };
@@ -560,7 +561,7 @@
   // 답의 모양 — 요구 줄의 id(p1…)는 코드가 붙인다(화면의 맞아요 / 고칠래요 · 맡기기가 이 id로 가리킨다). 긴 글은 잘라 쓴다
   function parsePlan(o) {
     if (!has(o, ["problem", "have", "missing", "say"]) || !Array.isArray(o.items) || !o.items.length || !o.items.every((x) => has(x, ["need", "check"]))) return null;
-    const prep = strs(o.prep, 6, 100), ask = strs(o.ask, 4, 120);
+    const prep = strs(o.prep == null ? [] : o.prep, 6, 100), ask = strs(o.ask == null ? [] : o.ask, 4, 120);   // 빠졌으면 빈 목록 — 호환 모드(중계 서버)는 모양을 글로만 알려 빠뜨리기도 한다(F-129). 모양이 틀리면 그대로 버린다
     if (!prep || !ask) return null;
     const cut = (s, n) => s.trim().slice(0, n);
     return { problem: cut(o.problem, 200), have: cut(o.have, 200), missing: cut(o.missing, 200),
