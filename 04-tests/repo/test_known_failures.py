@@ -51,6 +51,20 @@ def test_node_run_passes_only_when_every_failure_is_excused():
     assert R.node_ok(0, "ℹ fail 0\n", KNOWN, date(2026, 10, 30))[0] is True
 
 
+# claude-drafted: 2026-11-02 — F-132: puppeteer가 없는 컴퓨터에서는 화면 시험이 건너뛰어지는데(﹣), 실패 이름에 없으니 '통과했다 — 목록에서 뺀다'고 알렸다
+def test_skipped_listed_tests_are_not_called_fixed():
+    out = ("﹣ C-35 · 퀘스트 창 (0.4ms) # 건너뜀 — puppeteer를 찾지 못했어요\n"
+           "  ﹣ C-53 · 세 칸 (0.1ms) # SKIP\n"
+           "ℹ tests 2\nℹ fail 0\n")
+    assert R.skipped_names(out) == {"C-35 · 퀘스트 창", "C-53 · 세 칸"}
+    ok, notes = R.node_ok(0, out, KNOWN, date(2026, 10, 30))
+    assert ok is True
+    assert not any("통과한 시험" in n for n in notes), "건너뛴 것을 고쳐졌다고 하지 않는다"
+    assert any("건너뛴" in n and "2개" in n for n in notes), "건너뛰어 고쳐졌는지 모른다고 알린다"
+    _, notes = R.node_ok(0, "✔ C-35 · 퀘스트 창 (3ms)\nℹ fail 0\n", KNOWN, date(2026, 10, 30))
+    assert any("통과한 시험 2개" in n for n in notes), "정말 돌아서 통과했으면 지금처럼 빼라고 알린다"
+
+
 def test_the_list_file_is_well_formed():
     data = json.loads((ROOT / "04-tests" / "known-failures.json").read_text(encoding="utf-8"))
     fixmap = (ROOT / "01-docs" / "07-maintenance" / "fix-map.md").read_text(encoding="utf-8")
