@@ -145,7 +145,7 @@
     if (!h) return;
     const q = Object.fromEntries(h.split("&").map((kv) => kv.split("=").map(safeDecode)).map(([k, v]) => [k, v === undefined ? true : v]));
     Object.assign(st, { ui: "home", userPin: true, screen: "main", settings: false, warn: null, error: "", ping: "", showCrit: false, libSel: null, libConfirm: false, openInput: false,
-      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, chat: [], chatMark: 0, chatChanges: [], chatOpen: null });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63)
+      termOpen: "", check: null, undo: [], own: false, meal: null, libDoc: null, qwin: false, ...(q.back ? {} : { chat: [], chatMark: 0, chatChanges: [], chatOpen: null }) });   // 장면은 대화 · 대화 표시 자리도 처음부터(C-63). 서고에서 돌아온 &back은 장면이 아니라 그대로 — 비우면 다음 저장이 대화를 지웠다(F-126)
     lastLive = null;
     // 주소로 연 장면은 바이브 코딩(녹화 · 시험이 그대로), #base(&pane=alerts|ai)만 기본 화면(C-13, 넘김 문서 9절 7번)
     // 서고에서 돌아온 주소(&back)는 장면이 아니다 — 떠난 모드 그대로(F-36, PR #139 리뷰: 기본 화면에서 서재에 다녀오면 바이브 코딩이 됐다)

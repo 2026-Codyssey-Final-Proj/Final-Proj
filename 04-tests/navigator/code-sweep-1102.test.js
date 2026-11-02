@@ -110,3 +110,15 @@ test("F-125 허락 카드 — 누른 카드를 누르기 전에 출발한 목록
   await m2.decideApproval("a1", "deny"); await tick(); await m2.pollApprovals();
   assert.deepEqual(m2.list().map((x) => x.id), ["a1"], "서버에 닿지 못했으면 다시 누를 수 있게 돌아온다");
 });
+
+test("F-126 주소 장면 — 서고에서 돌아온 주소(&back)는 장면이 아니라 대화를 비우지 않는다. 장면(#crit · #ex= 등)은 지금처럼 처음부터", () => {
+  const run = (hash) => {
+    const st = { chat: [{ text: "지난 대화" }], chatMark: 1, chatChanges: [{ path: "a" }], chatOpen: 0 };
+    const env = { st, location: { hash }, safeDecode: (s) => s, setPlace() {}, lastLive: 1, FP: null, AP: null, TIERS: [], FD: null, S: { first: { text: "" } }, T: null,
+      exHidden: false, applyEx() {}, openBooks: () => [], allDone: () => false, approvals: [], apMode: "none", TABS: [], SHELF_ON: false, save() {} };
+    make(fnSrc("fromHash"), "fromHash", env)();
+    return st;
+  };
+  assert.equal(run("#back").chat.length, 1, "&back — 대화가 그대로");
+  assert.equal(run("#crit").chat.length, 0, "장면은 대화도 처음부터(C-63)");
+});
