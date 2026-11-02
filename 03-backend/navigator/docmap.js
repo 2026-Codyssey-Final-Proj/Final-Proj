@@ -25,9 +25,12 @@ const stageNo = (p) => { const m = /^docs\/(\d\d)-/.exec(p); return m ? Number(m
 function build(docs, opt = {}) {
   const list = (docs || []).filter((d) => d && /\.md$/i.test(d.path)).sort((a, b) => stageNo(a.path) - stageNo(b.path) || a.path.localeCompare(b.path));
   const have = new Set(list.map((d) => d.path)), changed = opt.changed instanceof Set ? opt.changed : new Set(opt.changed || []);
-  const elements = list.map((d) => ({ f: frameOf(d.path), id: idOf(d.path), t: "dobject", n: d.name || d.path.split("/").pop(), d: d.path === opt.now ? "지금 장의 문서예요" : changed.has(d.path) ? "고친 뒤 아직 저장하지 않은 문서예요" : "", s: d.path === opt.now ? "part" : changed.has(d.path) ? "cand" : "done", c: d.path }));
+  // 경로마다 id 하나 — idOf는 한글 · 기호를 모두 '_'로 바꿔 겹친다(docs/메모.md · docs/노트.md → do_docs_md). 겹치면 _2, _3 … (F-130)
+  const ids = new Map(), used = new Set();
+  for (const d of list) { let id = idOf(d.path); for (let k = 2; used.has(id); k++) id = `${idOf(d.path)}_${k}`; used.add(id); ids.set(d.path, id); }
+  const elements = list.map((d) => ({ f: frameOf(d.path), id: ids.get(d.path), t: "dobject", n: d.name || d.path.split("/").pop(), d: d.path === opt.now ? "지금 장의 문서예요" : changed.has(d.path) ? "고친 뒤 아직 저장하지 않은 문서예요" : "", s: d.path === opt.now ? "part" : changed.has(d.path) ? "cand" : "done", c: d.path }));
   const seen = new Set(), relations = [];
-  for (const d of list) for (const l of linksOf(d)) { if (!have.has(l.to)) continue; const key = `${d.path}>${l.to}`; if (seen.has(key)) continue; seen.add(key); relations.push([idOf(d.path), idOf(l.to), l.kind === "material" ? "realization" : "association"]); }
+  for (const d of list) for (const l of linksOf(d)) { if (!have.has(l.to)) continue; const key = `${d.path}>${l.to}`; if (seen.has(key)) continue; seen.add(key); relations.push([ids.get(d.path), ids.get(l.to), l.kind === "material" ? "realization" : "association"]); }
   const frames = [
     { id: "stages", kicker: "단계 문서", title: "1단계부터 8단계까지", weight: 5, w: 1100, main: true, sub: "장마다 한 장 — 재료 줄이 앞 장을 가리킨다", desc: "상자를 누르면 오른쪽에 이 문서가 어디서 왔고 어디로 이어지는지 나와요. '파일 보기에서 열기'로 열어요.", why: "문서가 이어진 모습을 한눈에 보려고" },
     { id: "plan", kicker: "기획서 · 결정 기록", title: "한 장으로 모은 것", weight: 3, w: 700, sub: "기획서 · 결정 기록 · 목차", desc: "단계 문서를 모아 한 장으로 만든 문서들이에요." },

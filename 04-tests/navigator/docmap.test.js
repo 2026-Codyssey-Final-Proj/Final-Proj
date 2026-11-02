@@ -42,3 +42,13 @@ test("board.css — 주석을 빼면 첫 규칙이 :root다(@import를 뺀 자�
   const css = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../03-backend/navigator/board/board.css"), "utf8");
   assert.match(css.replace(/\/\*[\s\S]*?\*\//g, "").trimStart(), /^:root\{/);
 });
+
+// claude-drafted: 2026-11-02 — F-130: 이름의 한글 · 기호가 모두 '_'가 되어 docs/메모.md · docs/노트.md가 같은 상자 id(do_docs_md) — 한 상자가 다른 상자를 덮고 둘 사이 링크는 제자리 선이 됐다
+test("문서 지도 — 이름이 한글이라 id가 겹쳐도 상자마다 다른 id, 링크는 제자리 선이 되지 않는다(F-130)", () => {
+  const b = D.build([{ path: "docs/메모.md", text: "[노트](노트.md)" }, { path: "docs/노트.md", text: "" }, { path: "a-b.md", text: "" }, { path: "a_b.md", text: "" }]);
+  const ids = b.elements.map((e) => e.id);
+  assert.equal(new Set(ids).size, ids.length, ids.join(" "));
+  assert.equal(b.relations.length, 1); assert.notEqual(b.relations[0][0], b.relations[0][1]);
+  const byPath = Object.fromEntries(b.elements.map((e) => [e.c, e.id]));
+  assert.deepEqual(b.relations[0].slice(0, 2), [byPath["docs/메모.md"], byPath["docs/노트.md"]]);
+});
