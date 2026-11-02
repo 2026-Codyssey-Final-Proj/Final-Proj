@@ -60,3 +60,12 @@ test("F-122 Ctrl+Enter — 입력 칸에서는 그 카드(.mc, 설정 판 빼고
   assert.equal(pick()(field(false), true), null, "카드 밖 칸에서는 아무것도");
   assert.match(a, /const a = ctrlEnterAct\(t, writing\);/, "keydown이 이 함수로 고른다");
 });
+
+test("F-123 '프로젝트 바꾸기' — 작업실이 열려 있으면 먼저 닫는다(처음 설정은 섬 창에 떠서, 숨은 섬 위에 떠 보이지 않던 것). '처음 설정'과 같다", () => {
+  for (const name of ["setup", "setup-project"]) {
+    const st = { settings: true, qwin: true }, opened = [];
+    const set = (o) => Object.assign(st, o), window = { FloeSetup: { open: (o) => opened.push(o) } };
+    makeAct(name, { st, set, window })();
+    assert.equal(st.qwin, false, `${name}: 작업실을 닫는다`); assert.equal(opened.length, 1);
+  }
+});
