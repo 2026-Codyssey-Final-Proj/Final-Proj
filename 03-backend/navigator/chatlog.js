@@ -52,7 +52,7 @@ function projectPath(projectDir, cwd, file) {
 function load(file, project = "") {
   let raw; try { raw = fs.readFileSync(file, "utf8"); } catch (e) { if (e && e.code === "ENOENT") return blank(project); throw e; }
   let j = null; try { j = JSON.parse(raw); } catch {}
-  if (!j || j.v !== 1 || !Array.isArray(j.turns) || !Array.isArray(j.changes)) { try { fs.renameSync(file, `${file}.bak-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`); } catch {} return blank(project); }
+  if (!j || j.v !== 1 || !Array.isArray(j.turns) || !Array.isArray(j.changes)) { fs.renameSync(file, `${file}.bak-${Date.now()}-${crypto.randomBytes(3).toString("hex")}`); return blank(project); }   // 못 옮기면 던진다 — 빈 기록을 주면 다음 저장이 그 파일을 덮었다(F-119 새 맥락 리뷰)
   return { v: 1, project, dropped: Number.isInteger(j.dropped) && j.dropped > 0 ? j.dropped : 0, turns: j.turns.filter((t) => t && Number.isFinite(t.at)),
     changes: j.changes.filter((c) => c && typeof c.path === "string" && (c.how === "new" || c.how === "edit")) };
 }

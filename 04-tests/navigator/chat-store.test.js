@@ -92,6 +92,13 @@ test("읽기 — 없는 게 아니라 못 읽으면 던진다(빈 기록으로 �
   fs.mkdirSync(f, { recursive: true });   // 파일 자리에 폴더 — 읽기가 ENOENT 아닌 오류(EISDIR)
   assert.throws(() => CL.load(f, "club"));
   assert.ok(fs.statSync(f).isDirectory(), "그대로 둔다");
+  // 깨진 · 다른 판 파일을 .bak으로 못 옮기면 빈 기록을 주지 않는다 — 주면 다음 저장이 그 파일(새 판의 대화)을 덮었다(새 맥락 리뷰 — 장부 carryRead와 같이)
+  const g = path.join(TMP, "store-busy", "y.json");
+  fs.writeFileSync(g, JSON.stringify({ v: 2, turns: [], changes: [] }));
+  const rename = fs.renameSync;
+  fs.renameSync = () => { throw Object.assign(new Error("잠김"), { code: "EBUSY" }); };
+  try { assert.throws(() => CL.load(g, "club")); } finally { fs.renameSync = rename; }
+  assert.match(fs.readFileSync(g, "utf8"), /"v":2/, "그대로 둔다");
 });
 
 // ════════ server.js ════════
