@@ -105,7 +105,7 @@ test("ticker: 방금 한 일 / 지금 할 일 / 그다음", () => {
   const mine = Nav.ticker({ ...j, next: null }, ["나", "가"], "");
   assert.deepEqual([mine.now, mine.after], ["나", "가"], "사용자가 정한 순서를 따른다");
   const done = Nav.ticker(Nav.parseJudgement(S.examples[1].judgement, S.examples[1].text, 2), null, "");
-  assert.equal(done.after, "3단계 만드는 방법 고르기");
+  assert.equal(done.after, "4단계 만드는 방법 고르기", "화면처럼 1 ~ 8로(F-128 — 코드 단계 3)");
 });
 
 test("canAdvance: 완료 기준을 다 채우고 '예'일 때만 다음 단계로", () => {
@@ -562,12 +562,12 @@ test("설계도 플로로: 상황마다 말이 짧고 쉬운 말이며, 표정�
 test("다시 왔을 때 인사: 언제였는지와 몇 개까지 했는지 말하고, 기록이 이상하면 말하지 않는다", () => {
   const j = Nav.parseJudgement(S.examples[0].judgement, S.examples[0].text, 2), now = new Date(2026, 9, 14, 21).getTime();
   const at = (d, h) => new Date(2026, 9, d, h).getTime();
-  assert.equal(Nav.welcome({ j, at: at(13, 23) }, now), "어제 2단계 할 일 5개 중 1개까지 하셨어요. 이어서 해요!");
+  assert.equal(Nav.welcome({ j, at: at(13, 23) }, now), "어제 3단계 할 일 5개 중 1개까지 하셨어요. 이어서 해요!", "화면처럼 1 ~ 8로(F-128 — 코드 단계 2)");
   assert.match(Nav.welcome({ j, at: at(14, 9) }, now), /^아까 /);
   assert.match(Nav.welcome({ j, at: at(11, 9) }, now), /^3일 전에 /);
   assert.match(Nav.welcome({ j: Nav.parseJudgement(S.examples[1].judgement, S.examples[1].text, 2), at: at(13, 9) }, now), /다 하셨어요/);
   const none = { ...j, criteria: j.criteria.map((c) => ({ ...c, met: false })) };
-  assert.equal(Nav.welcome({ j: none, at: at(13, 9) }, now), "어제 2단계를 시작하셨어요. 첫 할 일부터 해 봐요!", "0개까지 하셨어요라고 하지 않는다");
+  assert.equal(Nav.welcome({ j: none, at: at(13, 9) }, now), "어제 3단계를 시작하셨어요. 첫 할 일부터 해 봐요!", "0개까지 하셨어요라고 하지 않는다");
   for (const bad of [null, {}, { j, at: 0 }, { j: { stage: 9, criteria: [] }, at: at(13, 9) }, { j: { stage: 2 }, at: at(13, 9) }]) assert.equal(Nav.welcome(bad, now), "");
   assert.ok(Nav.welcome({ j, at: at(1, 9) }, now).length <= Nav.SAY_MAX);
   assert.deepEqual(Nav.face({ back: "어제 …", reason: "r" }), ["happy", "어제 …"], "돌아온 인사가 평소 말보다 먼저");

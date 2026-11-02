@@ -146,7 +146,7 @@
     return {
       done: done ? done.text : lastDone || "",
       now: now || "다음 단계로 넘어가기 전에 함께 확인하기",
-      after: after || (nx ? `${nx.n}단계 ${nx.title}` : "마무리"),
+      after: after || (nx ? `${nx.n + 1}단계 ${nx.title}` : "마무리"),   // 화면에 보이는 말은 1 ~ 8(F-128)
     };
   }
 
@@ -196,9 +196,10 @@
     const d = Math.round((day(now) - day(saved.at)) / 864e5);
     const when = d <= 0 ? "아까" : d === 1 ? "어제" : `${d}일 전에`;
     const met = j.criteria.filter((c) => c && c.met).length, n = j.criteria.length;
-    if (met === n) return `${when} ${s.n}단계 할 일을 다 하셨어요. 넘어가기 전 확인부터 해요!`;
-    if (!met) return `${when} ${s.n}단계를 시작하셨어요. 첫 할 일부터 해 봐요!`;
-    return `${when} ${s.n}단계 할 일 ${n}개 중 ${met}개까지 하셨어요. 이어서 해요!`;
+    const no = s.n + 1;   // 플로로가 말하는 단계는 화면처럼 1 ~ 8(F-128 — 화면이 3단계인데 "어제 2단계"라고 했다)
+    if (met === n) return `${when} ${no}단계 할 일을 다 하셨어요. 넘어가기 전 확인부터 해요!`;
+    if (!met) return `${when} ${no}단계를 시작하셨어요. 첫 할 일부터 해 봐요!`;
+    return `${when} ${no}단계 할 일 ${n}개 중 ${met}개까지 하셨어요. 이어서 해요!`;
   }
 
   // 응답 모양(JSON 스키마) — 칸은 모두 꼭 있어야 한다
