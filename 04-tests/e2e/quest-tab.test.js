@@ -42,7 +42,7 @@ test("C-65 · C-70 · C-69 · C-72 — 탭 셋 · 받기 전 카드(단추 둘) 
   try {
     const page = await fresh(browser);
     await scene(page, "ex=1&q=draft");   // 2단계 퀘스트 받기 전
-    assert.deepEqual(await page.$$eval(".wsx > .wh .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent)), ["캔버스", "퀘스트", "책"], "탭 셋");
+    assert.deepEqual(await page.$$eval(".wsx > .wh .wtabs [data-act=qtab]", (bs) => bs.map((b) => b.textContent)), ["퀘스트", "책"], "탭 둘(캔버스는 2026-11-02에 뺌)");
     assert.equal(await n(page, ".qwin .vtabs, .qwin .learnbox, .qwin .chain, .qwin .bn"), 0, "세로 줄 · 장 화면 없음(C-66)");
     // ② 받기 전 카드
     assert.ok(await page.$(".qwin .qboard.up .qstack .qcard.qpre") && !(await page.$(".qwin .ev")), "지도 띠 위에 받기 전 카드 — 이벤트 창 없음");
@@ -51,10 +51,10 @@ test("C-65 · C-70 · C-69 · C-72 — 탭 셋 · 받기 전 카드(단추 둘) 
     assert.ok((await n(page, ".qwin .qpre .ln")) >= 4, "다섯 칸 미리보기");
     assert.equal(await n(page, ".qwin .sm-grid.one .sm-card"), 4, "카드가 올라와 있으면 지도는 지금 장이 있는 줄 하나");
     assert.ok(!(await page.$(".qwin .sm-legend")), "카드가 올라와 있을 땐 범례 없음(PRD 9절 7번)");
-    // ⑨ 오른쪽 칸은 이 탭에서 접힘 → 단추로 켬 → 캔버스 탭은 전 상태
+    // ⑨ 오른쪽 칸은 이 탭에서 접힘 → 단추로 켬 → 책 탭은 전 상태
     assert.equal(await n(page, ".qwin .wside"), 0, "오른쪽 칸 접힘(C-72)");
     await page.click("[data-act=wside-toggle]"); await wait(300); assert.equal(await n(page, ".qwin .wside"), 1, "단추로 켠다");
-    await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300); assert.equal(await n(page, ".qwin .wside"), 1, "캔버스 탭은 전 상태(열림)");
+    await page.click("[data-act=qtab][data-tab=lib]"); await wait(300); assert.equal(await n(page, ".qwin .wside"), 1, "책 탭은 전 상태(열림)");
     await page.click("[data-act=qtab][data-tab=quest]"); await wait(300);
     // ④ '나중에' → 작업실은 열린 채 카드 내림 — 여덟 장 · 아래 띠 · 범례 · 끝낸 카드에 누가 정했나 칩
     await page.click("[data-act=quest-later]"); await wait(400);

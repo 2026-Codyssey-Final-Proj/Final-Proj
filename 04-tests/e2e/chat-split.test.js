@@ -67,8 +67,6 @@ test("C-61 — 칸 0개 · 섬 펼침: 섬은 작업 칸 전체 · 플로로 · 
     s = await state(page);
     assert.equal(s.lines, 1, "정한 줄 1/5"); assert.equal(s.by[0], "chat", "누가 정했나 '대화'"); assert.ok(!s.center && s.wbody, "섬은 옆 칸으로, 작업 칸이 돌아온다");
     assert.equal(s.colW, 420, `옆 칸 420 — ${s.colW}`);
-    await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);   // 장면은 노트북 탭으로 열린다 — 캔버스의 ③ 기록 칸으로 본다
-    assert.match(await page.$eval(".cv-c.c3", (e) => e.textContent), /정한 줄 1\/5/);
     assert.ok((await page.$eval(".wh [data-act=isl-big]", (e) => e.getAttribute("aria-pressed"))) === "false", "머리 줄 단추는 '크게'");
     await page.click(".wh [data-act=isl-big]"); await wait(400);
     s = await state(page); assert.ok(s.center && !s.wbody, "사람이 '크게'를 누르면 다시 가운데");

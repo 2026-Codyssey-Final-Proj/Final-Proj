@@ -107,7 +107,7 @@ test("F-103-5 AI 호출 — 기다리는 동안 단추를 또 눌러도(더블�
 
 test("F-103-6 파일 열기 — 파일 칸을 빠르게 두 번 눌러도 같은 파일 탭은 하나", async () => {
   const waiting = [];
-  const st = { files: { list: [{ path: "docs/a.md", name: "a.md" }] }, openFiles: [], fileSel: -1, qtab: "canvas" };
+  const st = { files: { list: [{ path: "docs/a.md", name: "a.md" }] }, openFiles: [], fileSel: -1, qtab: "quest" };
   const env = { st, render() {}, say() {},
     fetch: async () => { await new Promise((r) => waiting.push(r)); return { json: async () => ({ ok: true, path: "docs/a.md", name: "a.md", kind: "md", text: "글", mtime: 1 }) }; } };
   const openFile = make(fnSrc("openFile"), "openFile", env);
@@ -193,9 +193,7 @@ test("F-103-19 옆 창 손잡이 — 끄는 도중 손잡이가 숨어 pointerup
   assert.match(w, /hd\.addEventListener\("lostpointercapture", endDrag\)/);
 });
 
-test("F-103-20 캔버스 — '남은 기준' 같은 접힘(summary)을 누르면 끌기가 아니라 펼쳐진다", () => {
-  assert.match(nav("canvas-pan.js"), /e\.target\.closest\("a,button,input,textarea,select,summary,\[contenteditable\]"\)/);
-});
+// F-103-20(캔버스의 접힘을 누르면 끌기가 아니라 펼쳐진다)은 캔버스 탭을 2026-11-02에 빼면서 시험도 뺐다
 
 test("F-103-21 옆 창 — 창을 좁혔다 넓히면 고른 칸 너비로 돌아온다(창 크기가 바뀔 때 기억한 값을 덮지 않는다)", () => {
   const w = nav("win.js"), lay = w.slice(w.indexOf("function layoutCol() {"), w.indexOf("const setCol ="));

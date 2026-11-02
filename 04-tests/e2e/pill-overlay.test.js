@@ -29,7 +29,7 @@ if (skip) console.log(`⚠️ e2e/pill-overlay: ${skip}`);
 const SHOTS = process.env.FLOE_SHOTS || "";
 const shot = async (page, name) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, `${name}.png`) }); } };
 
-// C-55(2026-10-28): R-1(켤 때 위 가운데 알약 + 알약 안 인사)을 바꿈 — 켜면 바로 작업실(.qwin, 캔버스) + 접힌 알약 + 알약 옆 말풍선(.hello-bub). 인사 줄은 하루 한 번, 말풍선은 켤 때마다(8초 뒤 사라짐)
+// C-55(2026-10-28): R-1(켤 때 위 가운데 알약 + 알약 안 인사)을 바꿈 — 켜면 바로 작업실(.qwin, 퀘스트 탭 — 캔버스 탭은 2026-11-02에 뺌) + 접힌 알약 + 알약 옆 말풍선(.hello-bub). 인사 줄은 하루 한 번, 말풍선은 켤 때마다(8초 뒤 사라짐)
 test("C-55 — 주소 없이 켜면 작업실이 바로 열리고 섬은 접힌 알약, 알약 옆 말풍선(시간대 인사 · 멈춘 곳 · 섬 펼치기 / 나중에). 같은 날 다시 켜면 인사 줄 없이. 주소 끝 장면 · 처음 설정 전은 전처럼", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
@@ -38,11 +38,11 @@ test("C-55 — 주소 없이 켜면 작업실이 바로 열리고 섬은 접힌 
     await page.evaluate(() => { localStorage.clear(); localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); });
     await page.goto(url("navigator/index.html"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" });
     await page.evaluate(() => localStorage.removeItem("floe:greet-day")); await page.reload({ waitUntil: "load" }); await wait(400);   // 첫 켬 — 인사 줄은 켤 때 바로 '오늘 했다'로 적힌다(C-55)
-    const look = () => page.evaluate(() => ({ qwin: !!document.querySelector(".qwin"), canvas: !!document.querySelector(".qwin .cv"), pill: !!document.querySelector(".pill"), isl: !!document.querySelector(".isl"),
+    const look = () => page.evaluate(() => ({ qwin: !!document.querySelector(".qwin"), quest: !!document.querySelector(".qwin .qboard"), pill: !!document.querySelector(".pill"), isl: !!document.querySelector(".isl"),
       bub: document.querySelector(".hello-bub")?.textContent.replace(/\s+/g, " ").trim() || "", greeting: document.documentElement.classList.contains("greeting"),
       later: !!document.querySelector(".hello-bub [data-act=boot-later]"), open: !!document.querySelector(".hello-bub [data-act=pill]"), day: localStorage.getItem("floe:greet-day") }));
     let s = await look();
-    assert.ok(s.qwin && s.canvas && s.pill && !s.isl, `켜면 작업실(캔버스) + 접힌 알약: ${JSON.stringify(s)}`);
+    assert.ok(s.qwin && s.quest && s.pill && !s.isl, `켜면 작업실(퀘스트 탭) + 접힌 알약: ${JSON.stringify(s)}`);
     assert.ok(/아침|점심|오후|수고|밤/.test(s.bub), `말풍선에 시간대 인사 한 줄: ${s.bub}`); assert.match(s.bub, /멈춘 곳|시작 전/, "멈춘 곳 한 줄");
     assert.ok(s.later && s.open, "섬 펼치기 / 나중에 단추"); assert.ok(!s.greeting, "알약 안 인사 움직임은 없다(말풍선으로)");
     assert.match(s.day || "", /^\d{4}-\d{2}-\d{2}$/, "오늘 인사했다");
@@ -77,7 +77,7 @@ test("작업실 밖의 알약을 누르면 바로 작업실 — 섬은 접힌 �
     let s = await look(); assert.ok(s.pill && !s.qwin && !s.isl, `작업실 밖의 알약: ${JSON.stringify(s)}`);
     await page.click(".pill"); await wait(500);
     s = await look(); assert.ok(s.qwin && s.pill && !s.isl, `누르면 작업실 + 접힌 알약(섬 대화창은 안 펼침): ${JSON.stringify(s)}`);
-    assert.ok(await page.$(".qwin .cv"), "작업실은 캔버스 탭부터");
+    assert.ok(await page.$(".qwin .qboard"), "작업실은 퀘스트 탭부터");
     await page.click(".pill"); await wait(500);
     s = await look(); assert.ok(s.qwin && s.isl && !s.pill, `작업실 안의 알약은 섬을 펼친다: ${JSON.stringify(s)}`);
     await page.click("[data-act=qwin]"); await wait(500);   // 작업실 닫기(×) — 펼친 섬 대화창이 남지 않고 알약으로(두승현 2026-10-29 "복귀할 때 기존 UI가 그대로")
@@ -122,7 +122,6 @@ async function islandHTML(browser) {
   await page.evaluate(() => { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); });
   await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" }); await wait(400);
   if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
-  await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
   const qwin = await page.evaluate(() => document.querySelector(".wsx > .wh").outerHTML + document.querySelector(".qwin").outerHTML), isl = await page.evaluate(() => document.querySelector(".isl").outerHTML);   // C-62(PR ②): 머리 줄 + 판
   await page.click("[data-act=fold]"); await wait(400);   // 접기 → 알약
   const pill = await page.evaluate(() => document.querySelector(".pill")?.outerHTML || "");
@@ -138,7 +137,7 @@ async function measure(browser, h, side, folded) {
   const BUB = '<div class="hello-bub" role="status"><b class="hb-hi">좋은 오후예요!</b><span class="hb-now">멈춘 곳: 3단계 꼭 필요한 기능 정리하기 · 지금: 나온 곳 잇기</span><div class="hb-acts"><button type="button" data-act="pill">섬 펼치기</button><button type="button" class="ghost" data-act="boot-later">나중에</button></div></div>';   // C-55 켤 때 말풍선(app.js bootBubble과 같은 모양)
   await page.evaluate((html) => window.__h(html), `${h.qwin}<div class="isl-col ${cls}${folded ? " has-bub" : ""}">${folded ? h.pill + BUB : h.isl}</div>`);
   await wait(900);   // 0.3초 움직임 뒤 — 전체 시험(81개 파일)과 같이 돌 때 450ms로는 가끔 덜 끝났다(2026-10-28)
-  const m = await page.evaluate(() => { const c = document.querySelector(".isl-col").getBoundingClientRect(), cv = document.querySelector(".cv"), p = document.querySelector(".isl-col .pill"), hd = document.getElementById("hd");
+  const m = await page.evaluate(() => { const c = document.querySelector(".isl-col").getBoundingClientRect(), cv = document.querySelector(".qwin .wbody"), p = document.querySelector(".isl-col .pill"), hd = document.getElementById("hd");
     const pr = p && p.getBoundingClientRect(), inside = !!pr && pr.top >= c.top - 0.5 && pr.bottom <= c.bottom + 0.5 && pr.left >= c.left - 0.5 && pr.right <= c.right + 0.5;
     const col = document.querySelector(".isl-col"), bb = document.querySelector(".hello-bub"), br = bb && bb.getBoundingClientRect();
     const bub = br ? { w: Math.round(br.width), in: br.left >= 0 && br.right <= innerWidth && br.top >= 0 && br.bottom <= innerHeight, over: !(br.right <= c.left || br.left >= c.right || br.bottom <= c.top || br.top >= c.bottom) && !(br.left >= c.left && br.right <= c.right && br.top >= c.top && br.bottom <= c.bottom) } : null;
@@ -148,7 +147,7 @@ async function measure(browser, h, side, folded) {
   return m;
 }
 
-test("R-2 — 작업실 창 안에서 섬을 접으면 옆 칸이 알약(두께 56 · 손잡이 없음 · 세로 알약)이고 캔버스가 넓어진다, 오른쪽(2026-10-28 합의로 자리는 하나) · 넘침 0", { skip }, async () => {
+test("R-2 — 작업실 창 안에서 섬을 접으면 옆 칸이 알약(두께 56 · 손잡이 없음 · 세로 알약)이고 작업 칸이 넓어진다, 오른쪽(2026-10-28 합의로 자리는 하나) · 넘침 0", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
     const h = await islandHTML(browser);
@@ -158,7 +157,7 @@ test("R-2 — 작업실 창 안에서 섬을 접으면 옆 칸이 알약(두께 
       const vertical = side === "left" || side === "right";
       assert.equal(vertical ? f.w : f.h, 56, `${side} 접힘 — 칸 두께 56: ${JSON.stringify(f)}`);
       assert.ok(!f.hd && o.hd, `${side} — 접히면 손잡이 없음`);
-      assert.ok(vertical ? f.cvw > o.cvw + 200 : f.cvh > o.cvh + 200, `${side} — 캔버스가 넓어진다: 펼침 ${o.cvw}×${o.cvh} → 접힘 ${f.cvw}×${f.cvh}`);
+      assert.ok(vertical ? f.cvw > o.cvw + 200 : f.cvh > o.cvh + 200, `${side} — 작업 칸이 넓어진다: 펼침 ${o.cvw}×${o.cvh} → 접힘 ${f.cvw}×${f.cvh}`);
       assert.ok(f.pill && (vertical ? f.pill.wm === "vertical-rl" && f.pill.w <= 56 : f.pill.wm === "horizontal-tb" && f.pill.h <= 56), `${side} — ${vertical ? "세로" : "가로"} 알약: ${JSON.stringify(f.pill)}`);
       assert.equal(f.bg, "rgb(226, 233, 244)", `${side} — 접힌 칸의 바탕은 오른쪽 칸과 같은 옆 칸 색(F-90, 2026-10-29 두승현) — 남색 띠는 아니다(F-65): ${f.bg}`); assert.notEqual(o.bg, "rgba(0, 0, 0, 0)", `${side} — 펼친 칸은 바탕이 있다(C-62부터 파스텔, 남색은 섬 카드만)`);
       assert.ok(f.pillBg && f.pillBg !== "rgba(0, 0, 0, 0)", `${side} — 남색은 알약 하나: ${f.pillBg}`);

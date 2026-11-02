@@ -250,7 +250,6 @@
     const sideWas = WS_PANES.map((c) => { const e = $nav.querySelector(`.qwin ${c}`); return e ? e.scrollTop : null; });   // 파일 칸 · 오른쪽 칸 — 아래쪽 목차를 누르면 칸이 맨 위로 올라갔다(임유정 2026-10-28)
     if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); fitGacha(); }
     const nb = bodyWas && $nav.querySelector(".qwin .wbody"); if (nb && nb.dataset.view === bodyWas.view) nb.scrollTop = bodyWas.top;
-    if (CVP) CVP.apply($nav);
     fvScroll($nav.querySelector(".qwin .fv"), fvWas);
     WS_PANES.forEach((c, j) => { const e = $nav.querySelector(`.qwin ${c}`); if (e && sideWas[j] != null) e.scrollTop = sideWas[j]; });
     const go = $nav.querySelector(".qwin [data-go]"); if (go && go.dataset.go !== goShown) { goShown = go.dataset.go; const p = go.closest(".fv-code"); if (p) p.scrollTop = go.offsetTop - (p.clientHeight - go.offsetHeight) / 2; }   // 목차로 고른 제목 줄로 한 번만(ftoc-go) — 다음 그리기에서 다시 끌어가지 않게. 글 칸만 옮긴다(scrollIntoView는 바깥 칸 · 페이지까지 움직였다 — 새 맥락 리뷰)

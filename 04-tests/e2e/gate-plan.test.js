@@ -1,5 +1,5 @@
 // claude-drafted: 2026-10-30 — C-27 관문 계획서 · C-23 ⑤ 버전(이재엽 "보드에서 없음 부분 전부 제작"). 실제 브라우저로: 단계 결과를 저장소에 심고 작업실 책 탭(#tab=lib)을 열면
-// 관문 계획서 판이 보이고, 단계를 고르고, 목차를 누르면 그 절로 간다. 캔버스 ⑤ 칸은 지난 장의 버전(V.n)을 보인다. 서버는 이 시험 안에서 켠다(AI는 부르지 않는다).
+// 관문 계획서 판이 보이고, 단계를 고르고, 목차를 누르면 그 절로 간다. (캔버스 ⑤ 칸의 버전 확인은 2026-11-02에 탭을 빼면서 뺐다.) 서버는 이 시험 안에서 켠다(AI는 부르지 않는다).
 // puppeteer · Chrome이 없으면 건너뛴다. 실행: node --test 04-tests/e2e/gate-plan.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -60,7 +60,7 @@ async function open(browser, hash) {
   return { page, errors };
 }
 
-test("C-27 — 책 탭의 관문 계획서: 결과가 있는 단계를 고르고, 목차 다섯을 누르면 그 절로. C-23 — 캔버스 ⑤ 칸이 지난 장의 버전", { skip }, async () => {
+test("C-27 — 책 탭의 관문 계획서: 결과가 있는 단계를 고르고, 목차 다섯을 누르면 그 절로", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new" });
   try {
     const { page, errors } = await open(browser, "#tab=lib");
@@ -76,9 +76,6 @@ test("C-27 — 책 탭의 관문 계획서: 결과가 있는 단계를 고르고
     await page.click('.gplan [data-act=gp-toc][data-v="gp-1-5"]'); await wait(700);
     assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), "gp-1-5", "목차를 누르면 그 절로(초점도)");
     if (process.env.SHOT) await page.screenshot({ path: process.env.SHOT });
-    await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
-    const c5 = await page.$eval(".cv-c.c5", (e) => e.textContent);
-    assert.match(c5, /V\.1 · 10-25/, `⑤ 칸이 그 장의 버전 · 날짜(캔버스는 1단계 — 첫 관문 = V.1): ${c5}`);
     assert.deepEqual(errors, []);
   } finally { await browser.close(); }
 });

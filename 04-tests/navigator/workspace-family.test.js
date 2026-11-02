@@ -39,14 +39,13 @@ test("C-62 — 머리 줄 하나: 작업실 머리(.wh)가 창 전체 폭(격자
   assert.ok(!h.includes('html[data-side="left"]') && !h.includes("flex-direction:row-reverse"), "위 · 아래 · 왼쪽 자리 규칙 없음");
 });
 
-test("C-59 상태는 한 가지 모양 — st-now · st-done · st-ready · st-later · st-gate · st-bad를 한 번 정의하고 캔버스 칸 · 노트북 목차 · 지도 카드 · 파일 칸이 같은 class를 쓴다. 포스트잇 · 연두 칩 · 점은 없다", () => {
+test("C-59 상태는 한 가지 모양 — st-now · st-done · st-ready · st-later · st-gate · st-bad를 한 번 정의하고 노트북 목차 · 지도 카드 · 파일 칸이 같은 class를 쓴다(캔버스 칸은 2026-11-02에 뺌). 포스트잇 · 연두 칩 · 점은 없다", () => {
   for (const k of ["now", "done", "ready", "later", "gate", "bad"]) assert.equal((c.match(new RegExp(`^\\.st-${k}\\{`, "gm")) || []).length, 1, `.st-${k} 한 번`);
   assert.match(c, /^\.st-now\{background:#F2F5FA;box-shadow:inset 0 0 0 2px #4D66B5/m, "지금 = 바다색 테두리");
   assert.match(c, /^\.st-done\{background:#F2F5FA;box-shadow:inset 0 0 0 1px #C5CEE2/m, "끝남 = 종이 카드");
   assert.match(c, /^\.st-later\{background:#E2E9F4;[^}]*color:#5B6491/m, "아직 = 흐린 면");
   assert.match(c, /^\.st-gate\{box-shadow:inset 0 0 0 2px #C9A43A\}/m, "관문 = 금색 테두리");
   assert.match(c, /^\.st-bad\{color:#8E3A52\}/m, "문제 = 볼색 글자");
-  assert.match(a, /<div class="cv-c \$\{pos\} \$\{k\} st-\$\{k\}\$\{pos === "c6" \? " st-gate" : ""\}">/, "캔버스 칸");
   assert.match(a, /class="ln st-\$\{r\.state\}/, "퀘스트 카드의 줄(C-68 한 목록 — 공책 목차 대신, 2026-10-30)");
   assert.match(a, /class="sm-card st-\$\{c\.state\}\$\{sel \? " sel" : ""\}\$\{c\.state === "pending" \? " pending" : ""\}"/, "지도 카드");
   assert.match(a, /<li class="\$\{x\.dir \? "dir" : tag === "지금" \? "st-now" : ""\}/, "파일 칸 '지금'");
@@ -57,19 +56,13 @@ test("C-59 상태는 한 가지 모양 — st-now · st-done · st-ready · st-l
   assert.ok(!/\.cv-c\.now\{background:#DCE8F8/.test(c) && !/\.sm-card\.now\{box-shadow/.test(c) && !/\.toc button\.lock\{color:#5E543F/.test(c), "옛 상태 모양(세 곳의 제각각)은 지웠다");
 });
 
-test("C-58 정보마다 집 하나 — 캔버스에서 지난 · 다음 보드 · 배울 말 · 파일 카드를 지우고, '지금 하는 일' 줄 · 작은 플로로는 섬이 접혔을 때만. 단계 칩은 머리 줄(한 번)", () => {
-  const cv = a.slice(a.indexOf("function canvasPane"), a.indexOf("// 파일 칸(C-41 ⑥"));
-  for (const s of ["cv-bd", "cv-learn", "fileCard()", 'class="cv-file"']) assert.ok(!cv.includes(s), `${s} 없음`);   // cv-files(④ 저장의 파일 이름, R-5)는 남는다
+test("C-58 정보마다 집 하나 — 단계 칩은 머리 줄(한 번), 파일 카드 함수 없음. 캔버스(지금 하는 일 · 작은 플로로 · 다섯 칸)는 2026-11-02에 통째로 뺐다", () => {
   assert.ok(!a.includes("function fileCard"), "파일 카드 함수도 지웠다 — 바뀐 파일은 왼쪽 대화 목록(C-63)으로");
-  assert.match(cv, /\$\{colFolded\(\) \? `<div class="cv-now">지금 하는 일 <b>\$\{esc\(now\)\}<\/b><\/div>` : ""\}/, "섬이 접혔을 때만");
-  assert.match(cv, /\$\{colFolded\(\) \? `<div class="cv-flo"/, "작은 플로로도");
-  assert.ok(!cv.includes('class="cv-stg"'), "단계 칩은 캔버스에 없다");
+  assert.ok(!a.includes("function canvasPane") && !a.includes('class="cv-now"') && !a.includes('class="cv-flo"'), "캔버스 판 없음(2026-11-02)");
   assert.ok(!/function stageChips/.test(a), "단계 칩은 뺐다(2026-10-29 두승현) — 단계는 머리 줄의 단계 띠 한 번");
   assert.match(a, /<span class="tb-stage" aria-live="polite">\$\{stageHead\(\)\}<\/span>/, "머리 줄: 단계 이름 한 번(단계 칩은 2026-10-29에 뺐다)");
   assert.ok(!a.includes('<span class="wst">'), "머리 줄의 단계 이름 둘째 자리(wst)는 뺐다");
-  assert.match(cv, /<div class="cv-bh"><span>퀘스트 한 바퀴 — 다섯 칸<\/span><\/div>/, "판 제목에는 단계 이름을 다시 쓰지 않는다");
-  assert.ok(!c.includes(".cv-bd{") && !c.includes(".cv-learn{") && !c.includes(".cv-file{"), "css도");
-  assert.match(c, /grid-template-areas:"now now now now now" "bh bh bh bh bh" "c1 a1 c2 a2 c3" "\. \. a3 a3 a3" "c4 a4 c5 a5 c6"/, "격자에서도 빠진 자리 없음");
+  assert.ok(!c.includes(".cv-bd{") && !c.includes(".cv-learn{") && !c.includes(".cv-file{") && !c.includes(".cvb{"), "css도");
 });
 
 test("C-60 주 단추 하나 · 덜 펼치기 — 섬 칩은 '더 보기' 하나로 접히고, 노트북 '완료 보고'는 다 채우기 전엔 보조 단추, '자세히 보기 · 왜 하나요' · 남은 기준 · 안 그려진 단계의 할 일은 details로 접힘", () => {
@@ -78,7 +71,6 @@ test("C-60 주 단추 하나 · 덜 펼치기 — 섬 칩은 '더 보기' 하나
   assert.ok(!a.includes('<div class="opts fixed">'), "옛 고정 칩 줄 없음");
   assert.match(a, /<button type="button" class="\$\{done \? "pri" : ""\}" data-act="quest-report" \$\{done \? "" : "disabled"\}>완료 보고<\/button>/, "완료 보고는 다 채웠을 때만 주 단추");
   assert.match(a, /<details class="qdesc"><summary>자세히 보기 · 왜 하나요<\/summary>/, "노트북");
-  assert.match(a, /<details class="cv-unmet-d"><summary>남은 기준 \$\{unmet\.length\}<\/summary><ul class="cv-unmet">/, "관문의 남은 기준");
   assert.match(a, /<details class="jm-peek"><summary>할 일 미리 보기<\/summary><ul class="jm-cells">/, "안 그려진 단계");
 });
 

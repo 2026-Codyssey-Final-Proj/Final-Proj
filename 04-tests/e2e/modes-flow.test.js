@@ -197,7 +197,7 @@ test("C-16: 퀘스트 창의 탭은 셋(퀘스트 · 도전과제 · 책 — 배
     const page = await fresh(browser);
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tab=doc"), { waitUntil: "load" }); await wait(400);
     const s = await page.evaluate(() => ({ tabs: [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.dataset.tab), head: document.querySelector(".bdoc-head b")?.textContent || "", draft: !!document.querySelector("[data-act=draft]") }));
-    assert.deepEqual(s.tabs, ["canvas", "quest", "lib"]);   // C-65(2026-10-30): 노트북 + 도전과제 → 퀘스트 하나   // C-54(2026-10-28): 문서 지도 탭(map)은 도전과제 안의 '상자' 보기로   // C-41 ①(2026-10-26)부터 캔버스가 먼저 — 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다(2026-10-27 고침) · C-45(2026-10-27) 문서 지도 탭이 끝에
+    assert.deepEqual(s.tabs, ["quest", "lib"]);   // 캔버스 탭은 2026-11-02에 뺌   // C-65(2026-10-30): 노트북 + 도전과제 → 퀘스트 하나   // C-54(2026-10-28): 문서 지도 탭(map)은 도전과제 안의 '상자' 보기로   // C-41 ①(2026-10-26)부터 캔버스가 먼저 — 이 단언은 #212까지 e2e를 못 돌려 낡아 있었다(2026-10-27 고침) · C-45(2026-10-27) 문서 지도 탭이 끝에
     assert.ok(s.head.includes("2단계") && s.draft, `단계 번호는 1~8로(코드 1 = 2단계): ${JSON.stringify(s)}`);
     await page.click("[data-act=draft]"); await wait(400);
     await page.evaluate(() => { const t = document.querySelector("textarea[data-act=doc]"); t.value = t.value.replace(/\[채워 주세요: [^\]]*\]/g, "채움"); t.dispatchEvent(new Event("input", { bubbles: true })); });
@@ -511,9 +511,9 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
     await page.click(".mc.chat [data-act=plan-direct]"); await wait(400);
     assert.ok(await page.$("#task-text") && !(await page.$(".cmd4")), "한 줄만 적어 맡기기 — AI 진행 판의 할 일 칸");
     await page.click("[data-act=base-back]"); await wait(300);
-    // 퀘스트 단추 → 작업실 창(탭 다섯 — C-41 ① 2026-10-26: 캔버스 · 노트북(옛 퀘스트) · 도전과제 · 책, C-45 2026-10-27: 문서 지도). 한 번 더 누르면 닫힌다
+    // 퀘스트 단추 → 작업실 창(탭 둘 — 퀘스트 · 책. 캔버스 탭은 2026-11-02에 뺌). 한 번 더 누르면 닫힌다
     await page.click(".tb [data-act=qwin-toggle]"); await wait(300);
-    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.textContent)), ["캔버스", "퀘스트", "책"]);   // C-65(2026-10-30)   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
+    assert.deepEqual(await page.evaluate(() => [...document.querySelectorAll(".wsx > .wh .wtabs [role=tab]")].map((t) => t.textContent)), ["퀘스트", "책"]);   // C-65(2026-10-30)   // C-54(2026-10-28): 문서 지도 탭은 도전과제 안의 '상자' 보기
     assert.ok(await page.$(".qwin"), "작업실이 열렸다(열린 동안 섬 옆 칸에는 위 줄이 없어 단추의 눌림은 볼 수 없다 — C-62)");
     // 책: 서버 없이 열었으니 연습 예시 README
     if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 시험은 섬을 옆으로

@@ -47,7 +47,6 @@
   const BV = window.FloeBookView;   // 책 보기 설정(C-9 · C-3, 2026-10-20) — ../library/book-view.js, 서고와 같은 설정을 읽는다
   // 기본 화면 · 섬의 움직임(2026-10-20): 알림 · AI 진행 판의 순수 함수(hub.js) · AI 진행의 한 줄 글(steps.js) · 움직임 규칙(morph.js). 없어도 화면은 돈다
   const HUB = window.FloeHub, STEPS = window.NavSteps, MO = window.FloeMorph;
-  const CVP = window.FloeCanvas || null;   // 캔버스 끌어서 옮기기 · 크게 작게(F-66, canvas-pan.js) — 브라우저 판은 다시 그린 뒤 apply
   const FD = window.NavFeed;
   const QU = window.NavQuest;   // 퀘스트 규칙(C-22, 2026-10-21 — 03-backend/navigator/quest.js). 없으면 퀘스트 없이 전처럼 돈다
   // claude-drafted: 2026-10-23 — 이재엽 결정(C-26 · C-28 · C-29 · C-30): 책은 README를 받아 와 보여 주기만 · 레벨은 관문마다 +1 누적 · 명령 네 칸 맡기기 · 살피기 · 책 · 배우기 · 서재 잠시 뺌
@@ -150,7 +149,7 @@
     carry: null, carryOffer: null, carryUse: {}, carryDone: false,   // C-48(2026-10-29): carryDone — 이 프로젝트에서 가져갈 것을 다 정함. 8단계 가져갈 것 카드 · 단계에 들어설 때 지난 프로젝트에서 가져온 것 카드(이 켜짐 동안만) · 이번에 쓰기로 고른 것 {단계: [{id, text}]} — C-51 계획의 근거
     owned: [], wear: {}, gacha: null,               // 뽑기 · 꾸미기(C-22): 얻은 것(아이디) · 입은 것 {자리: 아이디} · 뽑기 창 {phase: ready|rolling|got, item}
     // 창 둘(설정 창 st.settings · 퀘스트 창 st.qwin) · 퀘스트 창의 탭 · 채팅 기록(이 켜짐 동안만 — 기록에는 안 남긴다) · 채팅 칸의 글
-    qwin: false, qtab: "canvas", boot: null, prep: null, islBig: null, tidy: null, chatMark: 0, chatChanges: [], chatOpen: null, chatGo: null, fnAll: false, /* islBig · tidy · chatMark — C-61(2026-10-29): 섬을 크게(null이면 저절로) · 정리 카드 · 이 단계 대화가 시작된 자리 */ mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
+    qwin: false, qtab: "quest", boot: null, prep: null, islBig: null, tidy: null, chatMark: 0, chatChanges: [], chatOpen: null, chatGo: null, fnAll: false, /* islBig · tidy · chatMark — C-61(2026-10-29): 섬을 크게(null이면 저절로) · 정리 카드 · 이 단계 대화가 시작된 자리 */ mapSel: null, card: null, cardEdits: {}, chat: [], say: "", rb: null, rbSel: 0, tuSel: "", files: null, fnOpen: [], fnFind: "", openFiles: [], fileSel: -1,   // files · fnOpen — 작업실 파일 칸(R-8)의 목록과 펼친 폴더, fnFind · openFiles · fileSel — 파일 찾기 · 열린 파일(C-43)(이 켜짐 동안만)   // rb · tuSel — 책 탭의 README · 도전과제의 '알아 둘 것'에서 펼친 기능(이 켜짐 동안만)
     gh: null, ghVis: "private", ghNote: "",         // 설정의 GitHub 칸(C-25, 2026-10-24): 서버가 본 상태(/api/github) · 새 저장소의 공개 범위 · 맡긴 뒤 한 줄(이 켜짐 동안만)
     plan: null, planDraft: "", planReadme: true, planRej: "", planRejNote: "", planBusy: "", planAsk: "", planQ: "", planAns: {}, planReply: {}, dbg: null, study: null, gpSel: null, sbReady: null,   // planBusy: 무엇을 기다리나(make · hand · ask) · planAsk/planQ: 물어보는 줄과 질문 · planAns: 줄마다 받은 답 · planReply: Claude Code가 물은 것에 적는 답(이 켜짐 동안만)   // 준비 계획판(C-34 · C-32, 2026-10-24): 판(plan.js) · 한 번에 넣은 글 · README도 읽나 · '다르게 봐요'를 여는 줄과 그 의견
     qfocus: "stage", planSel: "",                   // C-35: 지금 할 퀘스트(stage 단계 퀘스트 · plan 준비 계획과 맡길 일 — 채팅의 지금 말이 이쪽을 따른다) · 퀘스트 창에서 고른 맡길 일(이 켜짐 동안만)
@@ -1561,55 +1560,7 @@
   let qpop = false;
   const openQwin = (tab) => { if (!st.qwin) { qpop = true; loadFiles(); } st.qwin = true; st.qtab = (tab === "tree" ? "quest" : tab) || st.qtab; };   // 열 때 파일 칸의 목록도(R-8). "tree"(옛 도전과제)는 합친 퀘스트 탭으로(C-65, 2026-10-30)
   const closeQwin = () => { st.qwin = false; go("petit"); };   // 작업실을 닫으면 섬은 알약으로 — 펼친 섬 대화창이 따로 남지 않게(F-85, 두승현 2026-10-29). 처음 설정 · 서고 · 장면 바꾸기는 섬이 필요하거나 화면을 떠나 그대로
-  const QTABS = [["canvas", "캔버스"], ["quest", "퀘스트"], ["lib", SHELF_ON ? "서고" : "책"]];   // C-65(2026-10-30 두승현 목업 확정본): 노트북 + 도전과제 → '퀘스트' 하나(지도 카드 위에 퀘스트 카드)   // 문서 지도 탭(C-45)은 2026-10-28 C-54로 도전과제 안의 '상자' 보기가 됐다(이재엽 버튼 "'도전과제' 그대로")   // 문서 지도 — C-45(2026-10-27, 이재엽 버튼 "작업실의 새 탭")   // 작업실 창(C-41, 2026-10-26): 캔버스가 먼저, 옛 퀘스트 탭은 노트북. 책 — C-26(2026-10-23). 배우기 탭은 2026-10-24 C-35로 도전과제의 장마다
-  // 캔버스 판 — 작업실 창의 첫 탭(C-41 ① 2026-10-26 · ⑥ 2026-10-27 두승현 "의도했던 것은 첨부한 이미지처럼 펼쳐져 있는 환경" — 디자인 캔버스 DockPrototype의 판 그대로):
-  //   1100×640 판을 칸(.cv)에 맞춰 줌한다(app.css .cvb의 --u — 컨테이너 단위라 스크립트 없이, 앱의 창이든 브라우저의 판이든). 2026-10-27 C-42 R-11(이재엽 "줌 + 모자라면 다시 배치"): 0.85배 아래로 줄어야 하면
-  //   줌하지 않고 격자로 다시 배치한다 — 두 줄(① ② ③ / ④ ⑤ 관문) · 640 미만은 세로 한 줄, 글자 크기는 설정 그대로(app.css @container). 지금 하는 일 · 단계 칩 · 왼쪽에 지난 장 / 다음 장 보드 ·
-  //   틀 안에 ① 생각(포스트잇) · 파일 카드 · 배울 말 · 화살표 → ② 행동 → ③ 기록(적은 칸 카드) → ④ 저장 → ⑤ 버전 → 관문, 작은 플로로는 첫 '지금' 칸 옆(FLO_AT).
-  //   칸의 글은 지금 상태에서만 — 생각: 퀘스트의 지금 칸(quest.js), 행동: 맡긴 일(plan.js), 기록: 적은 칸 · 살펴본 결과(st.results), 저장: 단계 문서(st.docs · docs.js), 버전: 지난 관문 수(C-23 — docs.js versionsOf), 관문: 지난 날.
-  const FLO_AT = { c1: [420, 100], c2: [640, 92], c3: [1040, 92], c4: [690, 382], c5: [920, 382], c6: [1040, 382] };   // 작은 플로로가 서는 자리(판 좌표) — 목업의 FLO
-  const FLO_MINI = '<svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"></ellipse><circle cx="24" cy="34" r="3" fill="#1A2350"></circle><circle cx="40" cy="34" r="3" fill="#1A2350"></circle><ellipse cx="32" cy="40" rx="2.6" ry="1.8" fill="#1A2350"></ellipse><ellipse cx="20" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse><ellipse cx="44" cy="42" rx="3" ry="1.6" fill="#F4C9CF"></ellipse></svg>';
-  const ARROW = (cls, w, h, d) => `<svg class="cv-ar ${cls}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>`;
-  const ARROWS = ARROW("a1", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a2", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a3", 130, 60, "M120 4 C 110 40, 60 46, 14 48 M22 41 L12 48 L22 55") + ARROW("a4", 40, 20, "M2 10h30M26 4l7 6-7 6") + ARROW("a5", 30, 20, "M2 10h20M17 4l7 6-7 6");
-  // F-66(2026-10-27 이재엽 "캔버스가 움직이는것도 안되고"): 캔버스를 끌어서 옮기고 크게 · 작게 — canvas-pan.js가 작업실 안에서 한다(단추는 data-cv라 섬으로 보내지 않는다).
-  //   처음은 '맞춤'(줌 · 다시 배치, R-11). 가운데 단추의 글(맞춤 · n%)은 canvas-pan.js가 바꾼다
-  const CV_HINT = "캔버스 — 끌어서 옮겨요. ⌘ 또는 Ctrl을 누른 채 휠(트랙패드는 두 손가락 오므리기)로 크게 · 작게, 키보드는 + − 0과 화살표";
-  const CV_TOOLS = `<div class="cv-tools" role="group" aria-label="캔버스 크기"><button type="button" data-cv="out" aria-label="작게" title="작게 (−)">−</button><button type="button" class="cv-z" data-cv="fit" aria-pressed="true" aria-label="화면에 맞춤 (지금 맞춤)" title="화면에 맞춤 (0)">맞춤</button><button type="button" data-cv="in" aria-label="크게" title="크게 (+)">+</button></div>`;
-  function canvasPane(n) {
-    const q = st.quest && st.quest.chap === n ? st.quest : null, r = st.results[n], ci = q ? QU.curIdx(q) : -1;
-    let floAt = "";
-    const cell = (pos, k, no, name, body, ft, extra) => { if (k === "now" && !floAt) floAt = pos; return `<div class="cv-c ${pos} ${k} st-${k}${pos === "c6" ? " st-gate" : ""}"><p class="ch">${no ? `${no} ` : ""}${name}<em>${{ now: "지금", done: "끝" }[k] || ""}</em></p><p>${esc(body)}</p>${extra || ""}${ft ? `<p class="ft">${esc(ft)}</p>` : ""}</div>`; };
-    const p = q ? QU.progress(q) : null;
-    const now = st.busy ? "플로로가 살펴보는 중" : st.finished ? "모든 장을 끝냈어요" : !q && !st.j ? "채팅에서 원하는 것을 말하면 1단계 초안을 만들어요" : q && q.phase === "draft" ? "퀘스트를 받기 전 — 노트북 탭에서 받아요" : q && q.phase === "done" ? "보고했어요 — 넘어가기 전 확인은 섬에서" : q && ci >= 0 ? `${p.n}개 중 ${p.k}번째 칸 — ${QU.shortOf(q.objs[ci].name)}` : q ? "칸을 다 적었어요 — 완료 보고" : progress();
-    const line = q && ci >= 0 ? (q.lines[ci] || [])[0] : "", draft = q && ci >= 0 ? QU.proposalOf(q, ci) : "";
-    const prepC = st.prep && st.prep.ok && st.prep.cards ? st.prep.cards[n] : null, prepThink = prepC ? prepC.think : "";   // C-54 준비된 퀘스트 — 그 장에 들어서면 ① 생각의 초안 자리에
-    const think = q && ci >= 0 ? cell("c1", "now", "①", "생각", line || draft || prepThink || "비었어요 — 채팅에서 같이 적어요", !line && draft ? "플로로 초안 — 채팅에서 맞는지 봐요" : !line && prepThink ? `준비된 퀘스트 — ${prepC.from}` : "")
-      : q || r ? cell("c1", "done", "①", "생각", "칸을 다 적었어요") : cell("c1", st.idea ? "done" : "now", "①", "생각", st.idea ? st.idea.slice(0, 80) : "무엇을 만들고 싶은지 말해요");
-    const b = FP && st.plan, run = b && FP.running(b), pg = b ? FP.progress(b) : null;
-    // R-5 ② 행동(C-42, 2026-10-27): 지금 맡긴(또는 다음에 맡길) 일의 이름과 진행 n/m — 상태 글 대신 내용
-    const wst = (id) => (b && b.work && b.work[id] ? b.work[id].state : "todo");
-    const curItem = b ? b.plan.items.find((x) => wst(x.id) === "running") || b.plan.items.find((x) => wst(x.id) === "todo") : null, itemName = curItem ? String(curItem.need || curItem.check || "").slice(0, 60) : "";
-    const act = run ? cell("c2", "now", "②", "행동", `${itemName ? `${itemName} — ` : ""}Claude Code가 하는 중 · 맡긴 일 ${pg.done}/${pg.total}`, "다 되면 채팅에 보고가 와요") : b && b.confirmed ? cell("c2", pg.done === pg.total ? "done" : "later", "②", "행동", `${itemName ? `다음: ${itemName} · ` : ""}맡긴 일 ${pg.done}/${pg.total}`, "채팅의 '맡기기'로 다음 줄을") : cell("c2", "later", "②", "행동", "Claude Code에 맡김", "준비 계획을 확정하면 맡겨요");
-    const ck = r && r.check;
-    // R-5 ③ 기록(C-42): 적은 칸은 카드에 그 줄(정한 것)을 보인다 — 아직인 칸은 짧은 이름. 3단계의 '꼭 / 있으면 좋음'은 한 칸(Ⅲ)에 적는다 [해석: 스토리보드의 두 칸 → 한 줄]
-    const cards = q ? `<div class="cv-cards">${q.objs.map((o, i) => { const ln = (q.lines[i] || [])[0] || ""; return `<span class="${QU.filled(q, i) ? "y" : ""}" title="${ROMAN(i)} ${esc(QU.nameOf(q, i))}">${ROMAN(i)} ${esc(QU.filled(q, i) && ln ? ln : QU.nameOf(q, i))}</span>`; }).join("")}</div>` : "";
-    const rec = r ? cell("c3", "done", "③", "기록", `확인 ${r.at || ""}${ck ? ` · 기준 ${ck.filter((x) => x.met).length}/${ck.length}` : ""}`, !SH ? "도전과제 탭에서 칸마다 누가 정했는지" : r.sheet ? (r.nosrc ? "한 장 낡음 — 폴더에 단계 문서가 없어요" : st.restore && st.restore.phase === "stale" && st.restore.stale.includes(n) ? "한 장 낡음 — 폴더의 글이 바뀌었어요" : `한 장 확인함 ${r.sheet.at || ""}`) : "한 장 — 섬에서 맞아요 / 고칠래요") : q ? cell("c3", QU.isDone(q) ? "now" : "later", "③", "기록", `정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}`, QU.isDone(q) ? "완료 보고를 하면 플로로가 살펴봐요" : "", cards) : cell("c3", "later", "③", "기록", "① 생각이 끝나면 칸이 생겨요");
-    // R-5 ④ 저장(C-42): 올라갈 파일 이름 — 이 장의 단계 문서 · 기획서 · 결정 기록(docs.js가 만드는 것과 같은 이름)
-    const slug = FDOCS ? FDOCS.SLUGS[n] : "", files = slug ? [`docs/${slug}/${slug.slice(3)}.md`, FDOCS.MAIN_DOC, FDOCS.LOG_DOC] : [];
-    const fl = files.length ? `<ul class="cv-files">${files.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : "";
-    const save = docDone(n) ? cell("c4", "done", "④", "저장", "단계 문서를 확정했어요", "", fl) : FDOCS && st.results[0] && st.results[1] ? cell("c4", "now", "④", "저장", "문서로 묶어 GitHub에", "도전과제 탭의 한눈에 보기에서", fl) : cell("c4", "later", "④", "저장", "아직 — 관문 뒤에", "", fl);
-    // C-23 ⑤ 버전(2026-10-30): 관문을 넘을 때마다 V.n이 하나 — 단계 결과에서 센다(docs.js versionsOf), README의 Floe 절 맨 앞 '버전 기록'에 줄로
-    const vers = FDOCS && FDOCS.versionsOf ? FDOCS.versionsOf(st.results) : [], vi = vers.find((x) => x.n === n);
-    const ver = vi ? cell("c5", "done", "⑤", "버전", `V.${vi.v} · ${vi.passed.slice(5)}`, "README의 Floe 절 맨 앞 '버전 기록'에") : cell("c5", "later", "⑤", "버전", `${LB(n)}를 넘으면 V.${vers.length + 1}`, "관문을 넘을 때마다 하나씩");
-    // R-5 관문(C-42): 남은 기준 수와 '안 됨'인 기준 이름(짧은 이름) — 셋까지, 나머지는 +n
-    const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met).map((x) => QU.shortOf(x.text)) : [];
-    const ul = unmet.length ? `<details class="cv-unmet-d"><summary>남은 기준 ${unmet.length}</summary><ul class="cv-unmet">${unmet.slice(0, 3).map((x) => `<li>안 됨 · ${esc(x)}</li>`).join("")}${unmet.length > 3 ? `<li>+${unmet.length - 3}</li>` : ""}</ul></details>` : "";   // C-60: 처음엔 접혀 있다
-    const gate = r && r.passed ? cell("c6", "done", "", "관문", `지났어요 ${r.passed.slice(5)}`) : holding() ? cell("c6", "later", "", "관문", "멈춰 둔 단계 — 섬에서 다시 열어요") : allDone() ? cell("c6", "now", "", "관문", "넘어가기 전 확인 — 섬에서") : cell("c6", "later", "", "관문", st.j ? (unmet.length ? "넘어가기 전 확인" : `남은 기준 ${left()}`) : "할 일을 다 하면 열려요", "", ul);   // 남은 기준 수는 접힌 줄(details)에 한 번만
-    const [fx, fy] = FLO_AT[floAt || "c1"];
-    // C-58(2026-10-29): 정보마다 집 하나 — 단계 이름은 머리 줄(stageHead — 단계 칩은 2026-10-29 두승현 결정으로 뺐다), '지금 하는 일' · 작은 플로로는 섬 카드가 보이는 동안 그리지 않는다(섬이 접혔을 때만), 보드 · 배울 말 · 파일 카드는 뺐다
-    return `<div class="cvw"><div class="cv" tabindex="0" role="region" aria-label="${CV_HINT}"><div class="cvp"><div class="cvb" style="--fa:${floAt || "c1"}">${colFolded() ? `<div class="cv-now">지금 하는 일 <b>${esc(now)}</b></div>` : ""}<div class="cv-frame"></div><div class="cv-bh"><span>퀘스트 한 바퀴 — 다섯 칸</span></div>
-      ${think}${ARROWS}${act}${rec}${save}${ver}${gate}${colFolded() ? `<div class="cv-flo" style="--fx:${fx};--fy:${fy}" title="플로로 — 지금 칸 옆에">${FLO_MINI}</div>` : ""}</div></div></div>${CV_TOOLS}</div>`;
-  }
+  const QTABS = [["quest", "퀘스트"], ["lib", SHELF_ON ? "서고" : "책"]];   // 캔버스 탭은 2026-11-02 뺐다(두승현 — 퀘스트 탭이 같은 다섯 칸을 보인다).   // C-65(2026-10-30 두승현 목업 확정본): 노트북 + 도전과제 → '퀘스트' 하나(지도 카드 위에 퀘스트 카드)   // 문서 지도 탭(C-45)은 2026-10-28 C-54로 도전과제 안의 '상자' 보기가 됐다(이재엽 버튼 "'도전과제' 그대로")   // 문서 지도 — C-45(2026-10-27, 이재엽 버튼 "작업실의 새 탭")   // 작업실 창(C-41, 2026-10-26): 캔버스가 먼저, 옛 퀘스트 탭은 노트북. 책 — C-26(2026-10-23). 배우기 탭은 2026-10-24 C-35로 도전과제의 장마다
   // 파일 칸(C-41 ⑥ → C-42 R-8, 2026-10-27 이재엽 버튼 "전부" · "깊이 3 · 200개"): 작업실 왼쪽의 폴더 트리. 서버로 연 화면은 GET /api/files(API.md 3-25 — 연결한 폴더의 이름만, 읽기만)로 진짜 목록을,
   //   서버 없이 · 연습 모드 · 폴더를 모르면 아래 예시 그대로(목업의 예시 — [이름, 안쪽인가, 상태 글, 모양])에 '예시' 표시. 지금 장 문서는 '● 지금', 지난 장 문서는 '읽음', 폴더는 눌러 접고 펼친다
   //   예시 한 줄 = [이름, 안쪽인가, 상태 글, 모양, 펼친 폴더인가]
@@ -2055,7 +2006,7 @@
     // 파일 보기 · 고치기(C-43)
     "fn-open": (i, el) => { if (el && el.dataset.v !== undefined) openFile(el.dataset.v); },
     ftab: (i, el) => { const k = Number(el && el.dataset.v); if (st.openFiles[k]) { st.fileSel = k; st.qtab = "file"; render(); } },
-    fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (k < st.fileSel) st.fileSel--; if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "canvas"; render(); },
+    fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (k < st.fileSel) st.fileSel--; if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "quest"; render(); },
     fedit: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.edit = !f.edit; render(); } },
     fraw: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.raw = !f.raw; render(); } },
     fsave: (i, el) => { const k = el && el.dataset.v !== undefined ? Number(el.dataset.v) : st.fileSel; const f = st.openFiles[k]; if (f) { f.closing = false; saveFile(k); } },
@@ -2116,8 +2067,8 @@
     if (!st.qwin || !QU) return "";
     const pop = qpop ? " winpop" : ""; qpop = false;   // 처음 열 때 한 번의 움직임. 이름은 winpop — "pop"은 말풍선 판(.pop — 14px 안쪽 여백 · 아래 정렬)의 이름이라 작업실 창이 처음 열릴 때 그 모양을 뒤집어썼다(⑥ 2026-10-27, 앱에서 처음 열면 창이 아래에 148px로 붙었다)
     const n = st.finished ? N.STAGES.length - 1 : atStage();
-    if (st.qtab === "tree") st.qtab = "quest";   // 저장된 옛 탭 값(도전과제)은 합친 탭으로(C-65)
-    const pane = st.qtab === "canvas" ? canvasPane(n) : st.qtab === "lib" ? bookPane() : st.qtab === "file" ? filePane() : st.qtab === "map" ? mapPane(n) : questBoard();
+    if (st.qtab === "tree" || st.qtab === "canvas") st.qtab = "quest";   // 저장된 옛 탭 값(도전과제 C-65 · 캔버스 2026-11-02)은 퀘스트 탭으로
+    const pane = st.qtab === "lib" ? bookPane() : st.qtab === "file" ? filePane() : st.qtab === "map" ? mapPane(n) : questBoard();
     // 머리 한 줄(⑥, 목업): 프로젝트 · 단계 이름 · 탭 · LV · 조개 · 크기 · 닫기. 왼쪽 파일 칸(.wnav)은 탭에 상관없이 — 펼쳐진 환경
     // 크기(R-1, 2026-10-27 이재엽 버튼 "'화면 가득' 하나로"): 앱에서는 창이 작업 영역 가득 · 사람이 바꾼 크기를 기억(main.js) — 아래 style은 브라우저 판에서만 쓰인다(win.html은 auto!important로 덮는다). S/M/L은 뺐다
     // C-62 머리 줄 하나(2026-10-29): 머리(.wh)는 판(.win) 밖의 형제 — 창 전체 폭의 첫 줄(win.html #root · 브라우저 .wsx 격자). 단계 이름 한 번 + 단계 칩(C-58), 탭, LV · 조개, 섬 단추 묶음(hisl — 집 · 설정 · 열어 두기 · 접기)은 섬 쪽(오른쪽) 끝
@@ -3531,7 +3482,6 @@
     const sideWas = WS_PANES.map((c) => { const e = $nav.querySelector(`.qwin ${c}`); return e ? e.scrollTop : null; });   // 파일 칸 · 오른쪽 칸 — 아래쪽 목차를 누르면 칸이 맨 위로 올라갔다(임유정 2026-10-28)
     if (isPhone()) renderPhone(); else { renderDesk(); holdSize(); fitGacha(); }
     const nb = bodyWas && $nav.querySelector(".qwin .wbody"); if (nb && nb.dataset.view === bodyWas.view) nb.scrollTop = bodyWas.top;
-    if (CVP) CVP.apply($nav);
     fvScroll($nav.querySelector(".qwin .fv"), fvWas);
     WS_PANES.forEach((c, j) => { const e = $nav.querySelector(`.qwin ${c}`); if (e && sideWas[j] != null) e.scrollTop = sideWas[j]; });
     const go = $nav.querySelector(".qwin [data-go]"); if (go && go.dataset.go !== goShown) { goShown = go.dataset.go; const p = go.closest(".fv-code"); if (p) p.scrollTop = go.offsetTop - (p.clientHeight - go.offsetHeight) / 2; }   // 목차로 고른 제목 줄로 한 번만(ftoc-go) — 다음 그리기에서 다시 끌어가지 않게. 글 칸만 옮긴다(scrollIntoView는 바깥 칸 · 페이지까지 움직였다 — 새 맥락 리뷰)
@@ -3927,7 +3877,7 @@
     strip: () => view("enter"),
     open: () => view("click"),
     pin: () => { clearIdle(); set({ userPin: !st.userPin }); say(st.userPin ? "여기 열어 둘게요" : "이제 잠시 뒤 작게 접힐게요"); },
-    pill: () => (QU && !st.qwin ? (openQwin("canvas"), render()) : st.ui === "hidden" ? go("home") : view("click")),   // 작업실 밖의 알약은 누르면 바로 작업실(섬은 접힌 알약 그대로 — 두승현 2026-10-29). 작업실 안의 알약은 어느 상태든 누르면 펼침(C-46, 새 맥락 리뷰)
+    pill: () => (QU && !st.qwin ? (openQwin("quest"), render()) : st.ui === "hidden" ? go("home") : view("click")),   // 작업실 밖의 알약은 누르면 바로 작업실(섬은 접힌 알약 그대로 — 두승현 2026-10-29). 작업실 안의 알약은 어느 상태든 누르면 펼침(C-46, 새 맥락 리뷰)
     fold: () => go(colFolded() ? "home" : "petit"),   // 머리 줄의 접기 단추는 오고 가는 단추 — 알약이면 접기 전 모습으로(크게 · 옆으로는 st.islBig 그대로, F-100 임유정 2026-10-29). 섬 위 줄(tbRight)의 접기는 펼친 섬에만 보여 그대로 접기
     "boot-later": () => { st.boot = null; render(); },   // C-55 말풍선의 '나중에' — 말풍선만 사라진다(작업실 · 알약은 그대로)
     pet: () => pet("tap"),
@@ -4114,7 +4064,7 @@
       st.skip = null; logMe(`넘겨요 — ${reason}`); save();
       if (allDone()) { view("alert"); return; } render();
     },   // 퀘스트 창의 ×(닫기만 — 옆 창에서 두 번 눌러도 다시 열리지 않게)
-    "qwin-toggle": () => { if (st.qwin) return closeQwin(); openQwin("canvas"); render(); },   // 위 줄의 '퀘스트' 단추(C-35, 이재엽 그림 2026-10-24) — 작업실은 캔버스 탭부터(C-41, 2026-10-26)
+    "qwin-toggle": () => { if (st.qwin) return closeQwin(); openQwin("quest"); render(); },   // 위 줄의 '퀘스트' 단추(C-35, 이재엽 그림 2026-10-24) — 작업실은 퀘스트 탭부터(캔버스 탭은 2026-11-02 뺌)
     "qwin-quest": () => { openQwin("quest"); set({ questUp: true }); }, "qwin-tree": () => { openQwin("quest"); render(); },   // 섬 칩 '퀘스트 보기' — 합친 탭을 열고 카드를 올린다(C-65) "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
@@ -4616,12 +4566,12 @@
   // C-46 R-1(2026-10-27 이재엽 "플로가 켜지면 … 알약" · 버튼 "알약 안에서 인사" · "하루에 한 번"): 켜면 큰 인사 카드 없이 알약(petit)으로, 인사는 알약 안에서(startGreeting — greet.js PILL_TIMELINE).
   //   같은 날 다시 켜면 인사 없이 알약만(floe:greet-day). 주소 끝 장면(시험 · 녹화)은 전처럼 기본 화면. 움직임 줄이기 · 휴대폰은 알약만
   const GREET_DAY = "floe:greet-day";
-  // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선" · "켤 때마다"): 켜면 바로 작업실(캔버스 = 지금 단계의 퀘스트 보드) + 접힌 알약 + 알약 옆 말풍선(greet.js bootPlan). 처음 설정이 필요하면 전처럼(알약 안 인사 → 설정)
+  // C-55(2026-10-28 이재엽 버튼 "접힌 알약 + 말풍선" · "켤 때마다"): 켜면 바로 작업실(퀘스트 탭 — 캔버스 탭은 2026-11-02 뺌) + 접힌 알약 + 알약 옆 말풍선(greet.js bootPlan). 처음 설정이 필요하면 전처럼(알약 안 인사 → 설정)
   const bootArgs = { hash: location.hash, still: STILL, phone: isPhone(), lastDay: readLS(GREET_DAY, ""), today: ymd(),
     setupNeeded: !!(window.FloeSetup && window.FloeSetup.shouldOpen(window.FloeSetup.readSaved(localStorage), location.hash)) };
   const boot = GR && st.ui === "greet" ? GR.bootPlan(bootArgs) : { workspace: false, bubble: false, greet: false };
   const greetNow = !!GR && st.ui === "greet" && !boot.workspace && GR.shouldGreet(bootArgs).greet;
-  if (boot.workspace) { openQwin("canvas"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); }
+  if (boot.workspace) { openQwin("quest"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); }
   else if (greetNow) { document.documentElement.classList.add("greeting"); st.ui = "petit"; }
   else if (st.ui === "greet") st.ui = location.hash && location.hash !== "#" ? "home" : "petit";
   function startGreeting() {
@@ -4659,7 +4609,7 @@
   // 작업 폴더가 바뀌면 옛 폴더에서 받아 둔 것을 잊고 다시 받는다 — 이름표(st.gh) · 파일 칸(작업실이 열려 있으면 바로). 처음 설정의 가져오기 · 새로 만들기와 앱 메뉴(F-72)가 같이 쓴다
   const forgetFolder = () => {
     docsFor = "";   // C-49 새 폴더의 단계 문서를 다시 읽게
-    st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "canvas";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
+    st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "quest";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
     if (canLive && !ghLoading) loadGithub();
     if (st.qwin) loadFiles();
   };

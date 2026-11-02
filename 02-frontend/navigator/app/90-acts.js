@@ -7,7 +7,7 @@
     strip: () => view("enter"),
     open: () => view("click"),
     pin: () => { clearIdle(); set({ userPin: !st.userPin }); say(st.userPin ? "여기 열어 둘게요" : "이제 잠시 뒤 작게 접힐게요"); },
-    pill: () => (QU && !st.qwin ? (openQwin("canvas"), render()) : st.ui === "hidden" ? go("home") : view("click")),   // 작업실 밖의 알약은 누르면 바로 작업실(섬은 접힌 알약 그대로 — 두승현 2026-10-29). 작업실 안의 알약은 어느 상태든 누르면 펼침(C-46, 새 맥락 리뷰)
+    pill: () => (QU && !st.qwin ? (openQwin("quest"), render()) : st.ui === "hidden" ? go("home") : view("click")),   // 작업실 밖의 알약은 누르면 바로 작업실(섬은 접힌 알약 그대로 — 두승현 2026-10-29). 작업실 안의 알약은 어느 상태든 누르면 펼침(C-46, 새 맥락 리뷰)
     fold: () => go(colFolded() ? "home" : "petit"),   // 머리 줄의 접기 단추는 오고 가는 단추 — 알약이면 접기 전 모습으로(크게 · 옆으로는 st.islBig 그대로, F-100 임유정 2026-10-29). 섬 위 줄(tbRight)의 접기는 펼친 섬에만 보여 그대로 접기
     "boot-later": () => { st.boot = null; render(); },   // C-55 말풍선의 '나중에' — 말풍선만 사라진다(작업실 · 알약은 그대로)
     pet: () => pet("tap"),
@@ -194,7 +194,7 @@
       st.skip = null; logMe(`넘겨요 — ${reason}`); save();
       if (allDone()) { view("alert"); return; } render();
     },   // 퀘스트 창의 ×(닫기만 — 옆 창에서 두 번 눌러도 다시 열리지 않게)
-    "qwin-toggle": () => { if (st.qwin) return closeQwin(); openQwin("canvas"); render(); },   // 위 줄의 '퀘스트' 단추(C-35, 이재엽 그림 2026-10-24) — 작업실은 캔버스 탭부터(C-41, 2026-10-26)
+    "qwin-toggle": () => { if (st.qwin) return closeQwin(); openQwin("quest"); render(); },   // 위 줄의 '퀘스트' 단추(C-35, 이재엽 그림 2026-10-24) — 작업실은 퀘스트 탭부터(캔버스 탭은 2026-11-02 뺌)
     "qwin-quest": () => { openQwin("quest"); set({ questUp: true }); }, "qwin-tree": () => { openQwin("quest"); render(); },   // 섬 칩 '퀘스트 보기' — 합친 탭을 열고 카드를 올린다(C-65) "qwin-lib": () => { openQwin("lib"); render(); },
     qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },

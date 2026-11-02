@@ -184,7 +184,7 @@ test("화면 — 가리기가 없으면 모으지도 카드를 띄우지도 않�
   assert.ok(ap.indexOf('mat("approve"') > ap.indexOf('if (apMode !== "live")'), "연습의 허락 결정은 재료로 세지 않는다");
   const rr = know.slice(know.indexOf('"restore-read": () =>'));
   assert.match(rr.slice(0, 1200), /old\.sheet/, "폴더의 글로 다시 읽어도 맞아요 한 한 장(아직 안 올림)은 남는다");
-  assert.match(know, /한 장 낡음/, "캔버스 ③ 칸 — 단계 문서가 낡음 · 근거 없음이면 그렇게");
+  assert.ok(!know.includes("한 장 낡음"), "캔버스 ③ 칸('한 장 낡음' 표시)은 2026-11-02에 뺐다 — 낡음은 되살리기 카드(restore)가 말한다");
   assert.match(read(path.join(FRONT, "app/20-feed.js")), /\$\{sheetGate\(n\)\}/, "관문의 배운 것 칸에 그 단계의 한 장(또는 확인하기)");
   assert.match(frag, /"sheet-open"/);
 });

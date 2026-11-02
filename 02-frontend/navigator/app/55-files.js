@@ -200,7 +200,7 @@
     // 파일 보기 · 고치기(C-43)
     "fn-open": (i, el) => { if (el && el.dataset.v !== undefined) openFile(el.dataset.v); },
     ftab: (i, el) => { const k = Number(el && el.dataset.v); if (st.openFiles[k]) { st.fileSel = k; st.qtab = "file"; render(); } },
-    fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (k < st.fileSel) st.fileSel--; if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "canvas"; render(); },
+    fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (k < st.fileSel) st.fileSel--; if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "quest"; render(); },
     fedit: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.edit = !f.edit; render(); } },
     fraw: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.raw = !f.raw; render(); } },
     fsave: (i, el) => { const k = el && el.dataset.v !== undefined ? Number(el.dataset.v) : st.fileSel; const f = st.openFiles[k]; if (f) { f.closing = false; saveFile(k); } },

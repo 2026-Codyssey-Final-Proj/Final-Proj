@@ -1,6 +1,6 @@
 // claude-drafted: 2026-10-30 — C-23 퀘스트 한 바퀴의 ⑤ 버전(이재엽 "보드에서 없음 부분 전부 제작"). ①~④는 C-42 · C-47부터 있고 ⑤만 남았다.
 // 규칙: 관문을 하나 넘을 때마다 V.n이 하나 오른다 — 새 상태 없이 단계 결과(passed)에서 센다. README의 Floe 절 맨 앞에 '지금 버전'과 '버전 기록'.
-// 규칙은 03-backend/navigator/docs.js versionsOf, 화면은 02-frontend/navigator/app/45-knowledge.js 캔버스 ⑤ 칸. 코드보다 먼저 썼다(code.md 1번).
+// 규칙은 03-backend/navigator/docs.js versionsOf, 화면의 캔버스 ⑤ 칸은 2026-11-02에 뺐다(두승현) — 지금은 README의 버전 기록만. 코드보다 먼저 썼다(code.md 1번).
 // 실행: node --test 04-tests/navigator/version.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -46,17 +46,15 @@ test("README의 Floe 절 — '지금 버전: V.n'과 '버전 기록' 줄, 관문
   assert.ok(!hidden.includes("sk-xyz"));
 });
 
-test("화면 — 캔버스 ⑤ 칸이 지난 장은 그 버전 · 날짜, 아직이면 '넘으면 V.(지난 수 + 1)'. '대회 뒤' 글은 없다", () => {
-  const k = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app/45-knowledge.js"), "utf8");
-  assert.match(k, /const vers = FDOCS && FDOCS\.versionsOf \? FDOCS\.versionsOf\(st\.results\) : \[\], vi = vers\.find\(\(x\) => x\.n === n\);/);
-  assert.match(k, /cell\("c5", "done", "⑤", "버전", `V\.\$\{vi\.v\}/);
-  assert.match(k, /V\.\$\{vers\.length \+ 1\}/);
-  assert.ok(!k.includes('"대회 뒤 (C-23)"'), "'대회 뒤' 꼬리표를 뗐다");
-});
-
 test("튜토리얼 — '기록 한 장'은 있음(C-47 한 장), 버전과 레벨은 '만드는 중'이라 말하지 않는다", () => {
   const card = T.LIST ? T.LIST.find((t) => t.id === "card") : T.byId("card");
   assert.equal(card.state, "ready");
   const level = T.LIST ? T.LIST.find((t) => t.id === "level") : T.byId("level");
   assert.ok(!/만드는 중/.test(level.stuck)); assert.match(level.stuck, /README의 Floe 절 맨 앞/);
+});
+
+test("화면 — 캔버스 ⑤ 칸은 2026-11-02에 뺐다(두승현). 화면에서 versionsOf를 읽는 곳이 없고, 버전은 README의 '버전 기록'(docs.js)에만", () => {
+  const k = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  assert.ok(!k.includes("versionsOf"), "화면에 ⑤ 버전 칸 없음");
+  assert.ok(!k.includes('"대회 뒤 (C-23)"'), "'대회 뒤' 꼬리표도 없다");
 });

@@ -35,13 +35,11 @@
     const lg = root.querySelector("[data-log]"), lgTop = lg ? lg.scrollTop : null, lgEnd = !lg || lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 4;
     const fvWas = fvScroll(root.querySelector(".fv")), sideWas = WS_PANES.map((c) => { const e = root.querySelector(c); return e ? e.scrollTop : null; });   // 파일 칸 · 오른쪽 칸도 — 아래쪽 목차를 누르면 맨 위로 올라갔다
     root.innerHTML = html || "";
-    if (window.FloeCanvas) window.FloeCanvas.apply(root);   // 캔버스를 옮겼거나 키웠으면 그 자리 · 배율로(F-66, canvas-pan.js) — 섬은 모른다
     if (S && eyeAt) S.follow(root, eyeAt);   // 다시 그려도 눈은 마지막 커서 쪽
     fvScroll(root.querySelector(".fv"), fvWas);
     WS_PANES.forEach((c, j) => { const e = root.querySelector(c); if (e && sideWas[j] != null) e.scrollTop = sideWas[j]; });
     if (key) { const b = [...root.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.i || ""}|${x.dataset.k || ""}` === key); if (b) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; } }
     const body = root.querySelector(".wbody"); if (body) body.scrollTop = body.dataset.view === view ? scroll : 0;
-    const now = body && body.dataset.view !== view && !root.querySelector(".cv.free") && root.querySelector(".cv-c.now"); if (now) now.scrollIntoView({ block: "nearest" });   // 캔버스 탭으로 올 때 '지금' 칸이 보이게(C-41 기준 7, 2026-10-26)
     const lg2 = root.querySelector("[data-log]"); if (lg2) lg2.scrollTop = lgTop === null || lgEnd ? lg2.scrollHeight : lgTop;
     const gs = root.querySelector("[data-log][data-go-stage]"), gv = gs ? gs.dataset.goStage : ""; if (gv && gv !== goStageShown) { goStageShown = gv; const el = gs.querySelector(`[data-stage="${gv.split(":")[0]}"]`); if (el) { el.scrollIntoView({ block: "start" }); el.classList.add("hl"); setTimeout(() => el.classList.remove("hl"), 1200); } }   // C-63 대화 목록의 바로가기 — 그 단계 구분선으로(섬 app.js goStage와 같다)
     const go = root.querySelector("[data-go]"); if (go && go.dataset.go !== goShown) { goShown = go.dataset.go; const p = go.closest(".fv-code"); if (p) p.scrollTop = go.offsetTop - (p.clientHeight - go.offsetHeight) / 2; }   // 목차로 고른 제목 줄로 한 번만(섬의 ftoc-go — 섬의 render와 같은 뜻)

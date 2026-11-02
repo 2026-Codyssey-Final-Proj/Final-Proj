@@ -46,8 +46,8 @@
     if (!st.qwin || !QU) return "";
     const pop = qpop ? " winpop" : ""; qpop = false;   // 처음 열 때 한 번의 움직임. 이름은 winpop — "pop"은 말풍선 판(.pop — 14px 안쪽 여백 · 아래 정렬)의 이름이라 작업실 창이 처음 열릴 때 그 모양을 뒤집어썼다(⑥ 2026-10-27, 앱에서 처음 열면 창이 아래에 148px로 붙었다)
     const n = st.finished ? N.STAGES.length - 1 : atStage();
-    if (st.qtab === "tree") st.qtab = "quest";   // 저장된 옛 탭 값(도전과제)은 합친 탭으로(C-65)
-    const pane = st.qtab === "canvas" ? canvasPane(n) : st.qtab === "lib" ? bookPane() : st.qtab === "file" ? filePane() : st.qtab === "map" ? mapPane(n) : questBoard();
+    if (st.qtab === "tree" || st.qtab === "canvas") st.qtab = "quest";   // 저장된 옛 탭 값(도전과제 C-65 · 캔버스 2026-11-02)은 퀘스트 탭으로
+    const pane = st.qtab === "lib" ? bookPane() : st.qtab === "file" ? filePane() : st.qtab === "map" ? mapPane(n) : questBoard();
     // 머리 한 줄(⑥, 목업): 프로젝트 · 단계 이름 · 탭 · LV · 조개 · 크기 · 닫기. 왼쪽 파일 칸(.wnav)은 탭에 상관없이 — 펼쳐진 환경
     // 크기(R-1, 2026-10-27 이재엽 버튼 "'화면 가득' 하나로"): 앱에서는 창이 작업 영역 가득 · 사람이 바꾼 크기를 기억(main.js) — 아래 style은 브라우저 판에서만 쓰인다(win.html은 auto!important로 덮는다). S/M/L은 뺐다
     // C-62 머리 줄 하나(2026-10-29): 머리(.wh)는 판(.win) 밖의 형제 — 창 전체 폭의 첫 줄(win.html #root · 브라우저 .wsx 격자). 단계 이름 한 번 + 단계 칩(C-58), 탭, LV · 조개, 섬 단추 묶음(hisl — 집 · 설정 · 열어 두기 · 접기)은 섬 쪽(오른쪽) 끝

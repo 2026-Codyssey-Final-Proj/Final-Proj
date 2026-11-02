@@ -1,5 +1,5 @@
 // claude-drafted: 2026-10-29 — 작업실 개편 TASK PR ②(T05 · T03 · T13): C-62 머리 줄 하나 · 섬 단추 묶음은 섬 쪽 끝 · 메아리 색 대비, F-77 섬 옆 칸 420에서 칩이 잘리지 않는다(C-60 '더 보기' 하나),
-//   C-58 섬이 펼쳐져 있으면 캔버스에 '지금 하는 일' · 작은 플로로 · 보드 · 배울 말 · 파일 카드가 없다. 작업실 창(win.html#quest)에 섬이 보내는 HTML을 넣어 1440 × 900 · 1280 × 800 · 1024 × 768에서 잰다.
+//   (C-58의 캔버스 쪽 — 섬이 펼쳐져 있으면 '지금 하는 일' · 작은 플로로가 없다 — 는 캔버스 탭을 2026-11-02에 빼면서 시험에서도 뺐다.) 작업실 창(win.html#quest)에 섬이 보내는 HTML을 넣어 1440 × 900 · 1280 × 800 · 1024 × 768에서 잰다.
 //   FLOE_SHOTS=<폴더>를 주면 사진을 남긴다(PRD 3절과 맞대기). puppeteer · Chrome이 없으면 건너뛴다. 실행: node --test 04-tests/e2e/workspace-family.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -32,19 +32,18 @@ const SHOTS = process.env.FLOE_SHOTS || "";
 const lum = (rgb) => { const c = rgb.match(/\d+/g).slice(0, 3).map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
 const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
 
-// 섬이 작업실에 보내는 HTML — 3단계 연습 장면(#ex=2&q=quest)의 캔버스 탭: 머리 줄(.wh) · 판(.qwin) · 섬(.isl) · 접은 알약(.pill)
+// 섬이 작업실에 보내는 HTML — 3단계 연습 장면(#ex=2&q=quest)의 퀘스트 탭: 머리 줄(.wh) · 판(.qwin) · 섬(.isl) · 접은 알약(.pill)
 async function islandHTML(browser) {
   const page = await browser.newPage(); await page.setViewport({ width: 1440, height: 900 });
   await page.goto(url("navigator/index.html#base"), { waitUntil: "load" });
   await page.evaluate(() => { localStorage.setItem("floe:setup:v1", JSON.stringify({ done: true })); sessionStorage.clear(); });
   await page.goto(url("navigator/index.html#ex=2&q=quest"), { waitUntil: "load" }); await page.reload({ waitUntil: "load" }); await wait(400);
   if (!(await page.$(".qwin"))) { await page.click(".tb [data-act=qwin-toggle]"); await wait(300); }
-  await page.click("[data-act=qtab][data-tab=canvas]"); await wait(300);
   if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(400); }   // C-61(PR ③): 칸이 비어 섬이 가운데면 '옆으로' — 이 시험은 옆 칸의 섬을 잰다
   const h = await page.evaluate(() => ({ wh: document.querySelector(".wsx > .wh").outerHTML, qwin: document.querySelector(".qwin").outerHTML, isl: document.querySelector(".isl").outerHTML }));
   await page.click("[data-act=fold]"); await wait(400);
   h.pill = await page.evaluate(() => document.querySelector(".pill")?.outerHTML || "");
-  // 접힌 섬(알약)일 때의 캔버스 — colFolded()가 참이면 '지금 하는 일' 줄이 돌아온다
+  // 접힌 섬(알약)일 때의 판
   h.qwinFolded = await page.evaluate(() => document.querySelector(".qwin")?.outerHTML || "");
   await page.close();
   return h;
@@ -89,7 +88,7 @@ test("C-62 — 1440 · 1280 · 1024 작업 중 화면: 위 줄은 하나(머리 
   } finally { await browser.close(); }
 });
 
-test("F-77 · C-60 — 섬 옆 칸 420(그리고 320)에서 칩 줄은 '더 보기' 하나라 글자가 잘리지 않고 넘치지 않는다. C-58 — 섬이 펼쳐져 있으면 캔버스에 '지금 하는 일' · 작은 플로로 · 보드 · 배울 말 · 파일 카드가 없고, 접히면 '지금 하는 일'이 돌아온다", { skip }, async () => {
+test("F-77 · C-60 — 섬 옆 칸 420(그리고 320)에서 칩 줄은 '더 보기' 하나라 글자가 잘리지 않고 넘치지 않는다. 접힌 칸은 56", { skip }, async () => {
   const browser = await puppeteer.launch({ executablePath: chrome, headless: "new", args: ["--allow-file-access-from-files"] });
   try {
     const h = await islandHTML(browser);
@@ -99,17 +98,16 @@ test("F-77 · C-60 — 섬 옆 칸 420(그리고 320)에서 칩 줄은 '더 보�
         const col = document.querySelector(".isl-col"), more = document.querySelector(".isl-col .opts.more"), btn = more && more.querySelector(".mtg");
         const clipped = [...document.querySelectorAll(".isl-col .opts .b")].filter((b) => b.scrollWidth > b.clientWidth + 1).map((b) => b.textContent.trim());
         return { colW: Math.round(col.getBoundingClientRect().width), more: !!more, chips: more ? more.querySelectorAll(".b:not(.mtg)").length : -1, btn: btn ? btn.textContent.trim() : "", clipped, over: more ? more.scrollWidth > more.clientWidth + 1 : false,
-          gone: ["cv-now", "cv-flo", "cv-bd", "cv-learn", "cv-file"].filter((c) => document.querySelector(`.cvb .${c}`)), tbOver: !![...document.querySelectorAll(".wh .ti")].find((b) => { const r = b.getBoundingClientRect(); return r.right > innerWidth; }) };
+          tbOver: !![...document.querySelectorAll(".wh .ti")].find((b) => { const r = b.getBoundingClientRect(); return r.right > innerWidth; }) };
       });
       assert.ok(m.more && m.chips === 0 && /더 보기/.test(m.btn), `옆 칸 ${colW} — 칩은 '더 보기' 하나로 접힘: ${JSON.stringify(m)}`);
       assert.deepEqual(m.clipped, [], `옆 칸 ${colW} — 잘린 칩: ${m.clipped.join(", ")}`); assert.ok(!m.over, `옆 칸 ${colW} — 칩 줄이 넘치지 않는다`);
-      assert.deepEqual(m.gone, [], `옆 칸 ${colW} — 섬이 펼쳐져 있으면 캔버스에 없어야 할 것: ${m.gone.join(", ")}`);
       assert.ok(!m.tbOver, "머리 줄 단추가 창 밖으로 나가지 않는다");
       await page.close();
     }
     const page = await openWin(browser, h, { width: 1440, height: 900, folded: true });
-    const f = await page.evaluate(() => ({ now: !!document.querySelector(".cvb .cv-now"), flo: !!document.querySelector(".cvb .cv-flo"), colW: Math.round(document.querySelector(".isl-col").getBoundingClientRect().width) }));
-    assert.ok(f.now && f.flo && f.colW === 56, `접히면 '지금 하는 일' 줄 · 작은 플로로가 돌아오고 칸은 56: ${JSON.stringify(f)}`);
+    const f = await page.evaluate(() => ({ colW: Math.round(document.querySelector(".isl-col").getBoundingClientRect().width) }));
+    assert.ok(f.colW === 56, `접히면 칸은 56: ${JSON.stringify(f)}`);
     if (SHOTS) await page.screenshot({ path: path.join(SHOTS, "family-1440-folded.png") });
     await page.close();
   } finally { await browser.close(); }
