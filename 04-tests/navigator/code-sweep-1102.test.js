@@ -88,3 +88,25 @@ test("F-124 저장 칸이 가득 차면 — 대화를 먼저 줄여 진행을 �
   save(); save();
   assert.equal(said.length, 1, "한 번만 알린다"); assert.match(said[0], /저장/);
 });
+
+// 기다렸다가 풀어 주는 약속 — 늦게 오는 응답을 흉내 낸다
+const later = () => { let go; const p = new Promise((r) => (go = r)); return { wait: () => p, go }; };
+const tick = () => new Promise((r) => setTimeout(r, 0));
+
+test("F-125 허락 카드 — 누른 카드를 누르기 전에 출발한 목록 응답이 되살리지 않는다(또 누르면 실패). 보내기에 실패하면 다시 보인다", async () => {
+  const card = { id: "a1", sig: "s", tool: "claude", card: { tool_name: "Write" } }, poll = later();
+  let decideOk = true;
+  const st = { apSure: "", ui: "home", pane: "", place: "" };
+  const env = { st, canLive: true, render() {}, say() {}, mat() {}, set: (o) => Object.assign(st, o), activity() {}, go() {}, toolName: (x) => x,
+    fetch: async (url) => url === "/api/approvals" ? { json: async () => { await poll.wait(); return { ok: true, items: [card] }; } } : { json: async () => (decideOk ? { ok: true } : { ok: false, reason: "보내지 못했어요" }) } };
+  const m = new Function(...Object.keys(env), `let approvals = [${JSON.stringify(card)}], apMode = "live"; const apKnown = new Set(["a1"]), apDecided = new Set(); ${fnSrc("decideApproval")} ${fnSrc("pollApprovals")}; return { decideApproval, pollApprovals, list: () => approvals };`)(...Object.values(env));
+  const polling = m.pollApprovals(); await tick();   // 목록을 묻는 중
+  const deciding = m.decideApproval("a1", "deny");   // 그사이 '거절'
+  poll.go(); await polling; await deciding;
+  assert.deepEqual(m.list().map((x) => x.id), [], "누른 카드가 되살아나지 않는다");
+
+  decideOk = false;
+  const m2 = new Function(...Object.keys(env), `let approvals = [${JSON.stringify(card)}], apMode = "live"; const apKnown = new Set(["a1"]), apDecided = new Set(); ${fnSrc("decideApproval")} ${fnSrc("pollApprovals")}; return { decideApproval, pollApprovals, list: () => approvals };`)(...Object.values(env));
+  await m2.decideApproval("a1", "deny"); await tick(); await m2.pollApprovals();
+  assert.deepEqual(m2.list().map((x) => x.id), ["a1"], "서버에 닿지 못했으면 다시 누를 수 있게 돌아온다");
+});

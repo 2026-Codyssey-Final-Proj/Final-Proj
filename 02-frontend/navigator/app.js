@@ -3204,6 +3204,7 @@
   if (canLive) setInterval(pollProposals, 2000);
   // 기다리는 승인 요청(approve.js 카드) — 서버가 2초마다 알려 준다. 연습 · 주소 &approve=1이면 예시 카드
   let approvals = [], apMode = "none", apKnown = new Set();
+  const apDecided = new Set();   // 누른 카드 — 누르기 전에 출발한 목록 응답이 늦게 와도 되살리지 않게(F-125, 제안의 decided F-103-8과 같이). 보내기에 실패하면 뺀다
   const approvalsHTML = () => (!approvals.length ? "" : `<div class="aplist" role="region" aria-label="허락이 필요해요">${apMode === "example" ? `<p class="note" role="status">예시 데이터예요 · 시연용</p>` : ""}${approvals.map(apCard).join("")}</div>`);
   function apCard(a) {
     const c = a.card || {}, sure = st.apSure === a.id, lines = Array.isArray(c.lines) ? c.lines : [];
@@ -3216,14 +3217,15 @@
     const a = approvals.find((x) => x.id === id); if (!a) return;
     if (decision === "allow" && a.card && a.card.danger && st.apSure !== id) return set({ apSure: id });   // 되돌리기 어려운 일 — 한 번 더 묻는다
     const sure = st.apSure === id; st.apSure = "";
-    approvals = approvals.filter((x) => x.id !== id);
+    approvals = approvals.filter((x) => x.id !== id); apDecided.add(id);
     if (apMode !== "live") { say(decision === "allow" ? "연습이라 실제로 허용하지는 않았어요" : "연습이라 실제로 거절하지는 않았어요"); return render(); }
     mat("approve", `${decision === "allow" ? "허용" : "거절"} — ${(a.card && a.card.tool_name) || "도구"}`);   // C-47 재료 — 진짜로 보낸 결정만, 도구 이름만
     render();
     try {
       const r = await (await fetch("/api/approvals/decide", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, sig: a.sig, decision, sure }) })).json();
+      if (!(r && r.ok)) apDecided.delete(id);   // 닿지 못했으면 다시 누를 수 있게 — 다음 목록이 돌려놓는다
       say(r && r.ok ? (decision === "allow" ? "허용했어요 — Claude Code가 이어서 해요" : "거절했어요") : (r && r.reason) || "보내지 못했어요");
-    } catch { say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
+    } catch { apDecided.delete(id); say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
     pollApprovals();
   }
   // 서버에 기다리는 승인 요청이 있나 — 새 요청이 오면 한 줄로 알리고(접혀 있으면 살짝), AI 진행 판을 보이게
@@ -3233,7 +3235,7 @@
     try { j = await (await fetch("/api/approvals", { credentials: "same-origin" })).json(); } catch { return; }
     if (!j || !j.ok || !Array.isArray(j.items)) return;
     const before = approvals.map((a) => a.id).join(), fresh = j.items.filter((a) => !apKnown.has(a.id));
-    apMode = "live"; approvals = j.items.filter((a) => st.apSure !== a.id || true); st.apWait = approvals.length > 0;
+    apMode = "live"; approvals = j.items.filter((a) => !apDecided.has(a.id)); st.apWait = approvals.length > 0;
     for (const a of j.items) apKnown.add(a.id);
     if (fresh.length) {
       // 허락 카드는 채팅의 지금 말 위에(C-35, 2026-10-24 — 오버레이가 일하는 자리). AI 진행 판을 보고 있으면 거기에도 있으니 그대로, 다른 판은 닫는다
