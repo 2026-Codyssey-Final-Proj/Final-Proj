@@ -342,7 +342,7 @@ test("F-103-25 할 일을 다 끝낸 판정에서도 '새 말을 배웠어요'�
 });
 
 test("F-103-26 저장 칸이 넘쳐 대화를 100줄로 줄일 때 표시 자리(chatMark)도 같이 당긴다", () => {
-  assert.match(part("00-base.js"), /catch \{ const over = st\.chat\.length - 100; st\.chat = st\.chat\.slice\(-100\); if \(over > 0\) st\.chatMark = Math\.max\(0, \(st\.chatMark \|\| 0\) - over\); \}/);
+  assert.match(part("00-base.js"), /const trimChat = \(\) => \{ const over = st\.chat\.length - 100; st\.chat = st\.chat\.slice\(-100\); if \(over > 0\) st\.chatMark = Math\.max\(0, \(st\.chatMark \|\| 0\) - over\); \};/);   // F-124에서 도우미로 — 동작은 code-sweep-1102.test.js F-124가 돌려 본다
 });
 
 test("F-103-27 저장소 만들기를 두 번 눌러도 한 번만 맡기고, 두 번째 409가 성공 문구를 덮지 않는다", async () => {

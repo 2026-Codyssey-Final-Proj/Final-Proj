@@ -69,3 +69,22 @@ test("F-123 '프로젝트 바꾸기' — 작업실이 열려 있으면 먼저 �
     assert.equal(st.qwin, false, `${name}: 작업실을 닫는다`); assert.equal(opened.length, 1);
   }
 });
+
+test("F-124 저장 칸이 가득 차면 — 대화를 먼저 줄여 진행을 다시 저장하고, 그래도 못 하면 한 번 알린다(조용히 잃지 않게)", () => {
+  const box = {}, said = [];
+  let room = 0;   // 남은 칸(글자 수) — 넘치면 setItem이 던진다(QuotaExceededError)
+  const localStorage = { setItem(k, v) { const used = Object.entries(box).reduce((n, [kk, vv]) => n + (kk === k ? 0 : vv.length), 0); if (used + v.length > room) throw new Error("QuotaExceededError"); box[k] = v; } };
+  const chat = Array.from({ length: 300 }, (_, i) => ({ text: `말 ${i}`.padEnd(40, "·") }));
+  const st = { text: "넣은 글", chat: chat.slice(), chatMark: 250 };
+  const env = { forgotten: false, KEEP: ["text"], st, KEY: "k", CHAT_KEY: "k:chat", localStorage, postState() {}, say: (t) => said.push(t), saveWarned: false };
+  room = JSON.stringify(chat).length + 10;   // 대화가 칸을 거의 다 차지했다
+  box["k:chat"] = JSON.stringify(chat);
+  make(fnSrc("save"), "save", env)();
+  assert.ok(box.k && JSON.parse(box.k).text === "넣은 글", "대화를 줄여 진행을 저장한다");
+  assert.equal(st.chat.length, 100); assert.equal(st.chatMark, 50, "표시 자리도 같이 당긴다(F-103-26)");
+  assert.deepEqual(said, []);
+  room = 5; delete box.k; delete box["k:chat"];   // 대화를 줄여도 모자라다
+  const save = make(fnSrc("save"), "save", env);
+  save(); save();
+  assert.equal(said.length, 1, "한 번만 알린다"); assert.match(said[0], /저장/);
+});
