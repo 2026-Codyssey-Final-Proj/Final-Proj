@@ -122,3 +122,10 @@ test("F-126 주소 장면 — 서고에서 돌아온 주소(&back)는 장면이 
   assert.equal(run("#back").chat.length, 1, "&back — 대화가 그대로");
   assert.equal(run("#crit").chat.length, 0, "장면은 대화도 처음부터(C-63)");
 });
+
+test("F-127 끌어다 놓기 — 파일이 아닌 글을 입력 칸에 놓으면 막지 않는다(먹이 주기는 파일만)", () => {
+  const i = a.indexOf('document.addEventListener("drop", async (e) => {');
+  assert.ok(i >= 0);
+  const head = a.slice(i, a.indexOf("e.preventDefault();", i));
+  assert.match(head, /if \(!hasFiles\(e\) && isField\(e\.target\)\) return;/, "preventDefault 전에 — 글은 칸에 들어간다");
+});
