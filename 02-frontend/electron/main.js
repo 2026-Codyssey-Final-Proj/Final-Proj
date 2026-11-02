@@ -406,4 +406,12 @@ app.whenReady().then(async () => {
   app.on("activate", showIsland);   // Mac Dock 클릭 → 섬 창
 });
 app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(); });
-app.on("before-quit", () => { try { if (Server && Server.stopTasks) Server.stopTasks(); } catch {} });   // 맡긴 일(claude와 그 자식)을 남기지 않는다 — Windows는 부모가 끝나도 자식이 돈다(F-118)
+// 맡긴 일(claude와 그 자식)을 남기지 않는다 — Windows는 부모가 끝나도 자식이 돈다(F-118). 도는 일이 있으면 끄기를 멈추고, 끝난 뒤(늦어도 3초) 다시 끈다
+let quitting = false;
+app.on("before-quit", (e) => {
+  if (quitting) return;
+  let ended = null; try { ended = Server && Server.stopTasks ? Server.stopTasks() : null; } catch {}
+  if (!ended) return;
+  e.preventDefault(); quitting = true;
+  ended.then(() => app.quit(), () => app.quit());
+});

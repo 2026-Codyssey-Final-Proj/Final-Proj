@@ -480,10 +480,14 @@ function stopTask(body) {
   return [200, { ok: true, task: publicTask() }];
 }
 // 앱을 끌 때(main.js before-quit) — 도는 일을 나무째 끈다. 남으면 창 없이 폴더를 고치고 포트를 붙잡았다(F-118, claude-drafted: 2026-11-02)
+//   돌려주는 약속은 claude가 끝나면(늦어도 3초) 풀린다 — 앱은 그 뒤에 끈다. 먼저 끄면 Windows의 taskkill /T가 claude를 못 찾아 손자(npm · 개발 서버)가 남았다(새 맥락 리뷰). 도는 일이 없으면 null
 function stopTasks() {
-  if (!task || task.state !== "running") return;
+  if (!task || task.state !== "running") return null;
+  const child = task.child;
+  const ended = new Promise((resolve) => { const t = setTimeout(resolve, 3000); child.once("close", () => { clearTimeout(t); resolve(); }); });
   task.stopped = true;
-  killTree(task.child);
+  killTree(child);
+  return ended;
 }
 // 막힌 · 실패한 · 멈춘 일을 다시(F-69) — 본문 { at, way: again | files-only | brief }. brief는 아무것도 열지 않고 맡길 글 + 끝 조건을 돌려준다(직접 하기 — 사람이 Claude Code에 붙여 넣는다)
 function retryTask(body) {
