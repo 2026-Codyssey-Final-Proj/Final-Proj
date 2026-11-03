@@ -1300,9 +1300,11 @@
   let startText = "";
   async function startDraft(text, skipCheck) {
     if (st.busy) return say("앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 해 주세요");   // 다른 호출이 도는 중(웹 AI 제안 '시작' 등) — 빈 퀘스트를 만들지 않는다(F-103-5)
-    startText = text; st.source = text;   // F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
-    if (st.mode !== "live" || !canLive) return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true });
+    startText = text;   // st.source는 비밀값 경고(guard)를 지난 뒤에 — 전에는 '그만둘게요'를 골라도 보내지 않기로 한 원문이 기록(KEEP)에 남아 idea.md를 덮을 수 있었다(F-144-11)
+    //   F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
+    if (st.mode !== "live" || !canLive) { st.source = text; return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true }); }
     if (!skipCheck && guard(text, "start")) return;
+    st.source = text;
     Object.assign(st, { warn: null, error: "" });
     const r = await callAI("/api/start", { text });
     if (r.ok && r.start) { st.tokens = r.tokens || 0; fetchUsage(); return beginQuest(r.start); }

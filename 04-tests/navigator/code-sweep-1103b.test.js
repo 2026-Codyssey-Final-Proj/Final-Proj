@@ -182,3 +182,16 @@ test("F-144-10 확인할 먹이 — 두 번 눌러도 확인하지 않은 다음
 test("F-144-18 경고 카드의 '보낼게요'를 두 번 눌러도 TypeError가 나지 않는다", () => {
   assert.match(lineOf(/"send-anyway": [^\n]*/), /if \(st\.warn && RETRY\[st\.warn\.then\]\)/);
 });
+
+test("F-144-11 비밀값 경고에서 '그만둘게요'면 보내지 않기로 한 원문을 기록(st.source)에 남기지 않는다", async () => {
+  const make = new Function("st", "canLive", "guard", "callAI", "say", "beginQuest", "QU", "N",
+    `let startText = ""; const fetchUsage = () => {}; ${fnSrc("startDraft")} return startDraft;`);
+  const st = { mode: "live", busy: false };
+  const stop = make(st, true, () => true, async () => { throw new Error("부르면 안 돼요"); }, () => {}, () => {}, {}, {});
+  await stop("내 메일 a@b.com 으로 알림");
+  assert.equal(st.source, undefined, "경고에서 멈췄으면 기록하지 않는다");
+  const st2 = { mode: "live", busy: false };
+  const go = make(st2, true, () => false, async () => ({ ok: true, start: {} }), () => {}, () => {}, {}, {});
+  await go("할 일 앱");
+  assert.equal(st2.source, "할 일 앱", "지나간 글은 기록한다");
+});
