@@ -158,3 +158,12 @@ test("F-144-8 앱의 작업실 창 — 단추 켜고 끄기 · 칸에 커서 두
   assert.match(lineOf(/const focusTag = [^\n]*/), /data-want-focus/);
   assert.match(WIN, /\[data-want-focus\]/, "작업실 창이 그 신호로 커서를 둔다");
 });
+
+test("F-144-9 다시 그린 뒤 커서는 같은 이름의 여러 칸 중 쓰던 칸으로 돌아간다(data-id · data-v)", () => {
+  const keyOf = new Function(`${lineOf(/const keyOf = [^\n]*/, WIN)}; return keyOf;`)();
+  const el = (d) => ({ dataset: d });
+  assert.notEqual(keyOf(el({ act: "card-field", v: "who" })), keyOf(el({ act: "card-field", v: "size" })));
+  assert.notEqual(keyOf(el({ act: "plan-note", id: "p1" })), keyOf(el({ act: "plan-note", id: "p2" })));
+  assert.match(WIN, /find\(\(x\) => keyOf\(x\) === key\)/);
+  assert.match(lineOf(/const a = document\.activeElement, keep = [^\n]*/), /\["i", "k", "v"\]/, "섬 창도 data-k · data-v까지");
+});

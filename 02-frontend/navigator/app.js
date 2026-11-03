@@ -3488,7 +3488,8 @@
     save();
     if (!timer) scheduleIdle();
     // 같은 이름의 칸이 여럿이면(계획판의 줄마다 의견 · 물을 것마다 답 — 2026-10-24 리뷰) data-id · data-i까지 맞춰 그 칸으로 돌아간다
-    const a = document.activeElement, keep = isField(a) && a.dataset.act ? `[data-act="${a.dataset.act}"]${a.dataset.id ? `[data-id="${CSS.escape(a.dataset.id)}"]` : ""}${a.dataset.i !== undefined ? `[data-i="${CSS.escape(a.dataset.i)}"]` : ""}` : "";
+    //   data-k(퀘스트 줄) · data-v(기준 카드의 빈칸 · 열린 파일)도 — 빼면 두 번째 칸을 쓰다가 다시 그려지면 첫 칸으로 튀었다(F-144-9)
+    const a = document.activeElement, keep = isField(a) && a.dataset.act ? `[data-act="${a.dataset.act}"]${a.dataset.id ? `[data-id="${CSS.escape(a.dataset.id)}"]` : ""}${["i", "k", "v"].map((d) => (a.dataset[d] !== undefined ? `[data-${d}="${CSS.escape(a.dataset[d])}"]` : "")).join("")}` : "";
     const sel = keep ? [a.selectionStart, a.selectionEnd, a.scrollTop] : null;
     // 채팅 칸의 스크롤 — 다시 그리면 칸이 새로 생겨 맨 위로 간다. 1초마다 바뀌는 '살펴보고 있어요 16초' 때문에 올려 둔 스크롤이 계속 아래로 끌려갔다(임유정 2026-10-22)
     const og = $nav.querySelector("[data-log]");
