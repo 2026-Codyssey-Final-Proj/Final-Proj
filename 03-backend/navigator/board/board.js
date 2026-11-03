@@ -1266,5 +1266,7 @@ const mainF = FRAMES.find(f => f.main);
 if (innerWidth <= 720 && mainF) { cam = camFor(fbox(mainF), 12); apply(); }
 window.ArchiBoard = {version: VERSION, format: FORMAT, openFrame, openObj: id => OBJ[id] && openObj(id), openData: id => DMI[id] && openData(id)};
 // Floe 더함(2026-10-30, C-67 — 사본에만 있는 줄): 고른 상자를 가운데에 두고 배율 k로 — 처음 배율이 맞춤(fitAll)이라 상자 이름이 안 읽히던 것을 docmap.html이 켠 뒤 100%로 올린다
-window.ArchiBoard.centerOn = (match, k = 1) => { const it = E.find(x => match(x)); if (!it || !it.dom) return false; const r = it.dom.getBoundingClientRect(), b = board.getBoundingClientRect(), v = viewBox(); const wx = (r.left + r.width / 2 - b.left - cam.x) / cam.k, wy = (r.top + r.height / 2 - b.top - cam.y) / cam.k; k = clamp(k, KMIN, KMAX); cancelAnimationFrame(anim); cam = {k, x: v.w / 2 - wx * k, y: v.h / 2 - wy * k}; apply(); return true; };
+//   2026-11-03(임유정 "부드럽게 이동해서 마지막엔 가운데"): 한 번에 건너뛰지 않고 fly(0.7초 — 움직임 줄이기 설정이면 바로)로 옮긴다.
+//   whole이면 상자가 든 틀 전체를 가운데에(F-134 — 지금 장 문서가 없을 때 상자 하나만 가운데면 틀이 한쪽으로 치우쳐 보였다). 자리는 세계 좌표(it · fbox)에서 바로
+window.ArchiBoard.centerOn = (match, k = 1, whole = false) => { const it = E.find(x => match(x)); if (!it) return false; const r = whole ? fbox(FR[it.f]) : it, v = viewBox(); k = clamp(k, KMIN, KMAX); fly({k, x: v.w / 2 - (r.x + r.w / 2) * k, y: v.h / 2 - (r.y + r.h / 2) * k}); return true; };
 })();

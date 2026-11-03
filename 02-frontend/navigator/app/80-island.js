@@ -111,9 +111,10 @@
     placeFrom = st.place; paneFrom = st.pane;
     deskKeys = {};
     document.documentElement.classList.toggle("ws-away", WINS && !!st.qwin);   // 앱: 작업실이 열린 동안 섬은 작업실 옆 칸에 — 섬 창은 숨기 전 첫 그림부터 보이지 않게(F-101 켤 때 깜박임)
+    const put = (h) => { if (window.FloeKeepFrame) window.FloeKeepFrame.put($nav, h); else $nav.innerHTML = h; };   // 문서 지도 iframe은 그대로 — 다시 불러오면 움직임이 처음부터(F-135)
     if (st.ui === "hidden") { $nav.innerHTML = stripHTML(); }
-    else if (st.ui === "petit") $nav.innerHTML = !WINS && st.qwin ? `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow folded${st.boot ? " has-bub" : ""}">${pillHTML()}${bootBubble()}</div></div>` : `<div class="${enter.trim()}">${pillHTML()}${bootBubble()}</div>`;   // 브라우저 판(C-55): 켤 때 작업실이 열린 채 알약이면 작업실 판도 함께(앱은 창으로 — syncWins)
-    else $nav.innerHTML = islandHTML(enter);
+    else if (st.ui === "petit") put(!WINS && st.qwin ? `<div class="wsx">${qwinHTML()}<div class="isl-col side-right narrow folded${st.boot ? " has-bub" : ""}">${pillHTML()}${bootBubble()}</div></div>` : `<div class="${enter.trim()}">${pillHTML()}${bootBubble()}</div>`);   // 브라우저 판(C-55): 켤 때 작업실이 열린 채 알약이면 작업실 판도 함께(앱은 창으로 — syncWins)
+    else put(islandHTML(enter));
     $nav.classList.toggle("side", !!$nav.querySelector(":scope > .win, :scope > .wsx"));   // 창(설정 · 퀘스트)이 열리면 섬 옆에 나란히(C-22) — 아래에 열리면 글자를 키웠을 때 바로 안 보였다(6.2.0)
     $nav.classList.toggle("peekroom", !!window.floeApp && (st.ui === "hidden" || st.ui === "petit"));   // 접힌 창의 여유 — 올리면 커질 자리(C-14)
     if (prev) morphFrom(prev);
