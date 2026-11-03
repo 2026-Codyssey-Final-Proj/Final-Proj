@@ -723,7 +723,18 @@ ol.steps li small{font-size:11px;color:var(--mute);margin-left:2px}
 .isl-col.center .isl{width:100%;border-radius:28px}
 .isl-col.center .isl-body{align-self:stretch;width:auto;margin-inline:-8px}   /* F-143(2026-11-03 두승현 "스크롤바 클로드 데스크탑처럼 최우측에"): 스크롤 칸(채팅 기록)은 섬 폭 전체 — 막대가 섬 오른쪽 끝에 붙는다. 글은 아래 두 줄로 가운데 660px에 모은다 */
 .isl-col.center .isl-body>:not(.mc.chat),.isl-col.center .mc.chat>:not(.main),.isl-col.center .mc.chat .main>:not(.log){width:min(660px,100%);margin-inline:auto;box-sizing:border-box}
-.isl-col.center .mc.chat .log{--pad:max(8px,calc((100% - 660px) / 2));padding-left:var(--pad);padding-right:calc(var(--pad) + 20px);margin-right:-20px}   /* 막대를 섬 끝 쪽으로 20px 더 — 글의 가운데는 그대로 */
+.isl-col.center .isl-body>.mc.chat{padding-inline:0;border-inline-width:0}   /* 채팅 기록 칸이 섬 본체 끝까지 — 넘치면 본체가 자르므로 밖으로 밀지 않는다(앱에서 막대가 잘려 안 보였다) */
+.isl-col.center .mc.chat .log{padding-inline:max(8px,calc((100% - 660px) / 2))}
+/* 같은 날 "스크롤바가 최하단까지 이동할 수 있어야 하는데 중간에 멈춘다": 채팅 기록 칸을 섬 바닥까지 늘리고(막대도 바닥까지), 버튼 줄 · 입력 칸은 그 위에 겹쳐 띄운다 — Claude 데스크톱처럼.
+   .main을 한 칸짜리 격자로 — 기록은 세 줄을 다 차지하고, 버튼 줄(2줄) · 입력 칸(3줄)이 그 아래쪽에 겹친다. 맨 아래까지 내리면 마지막 말이 입력 칸 위에 오도록 기록 아래에 빈자리를 둔다.
+   ponytail: 빈자리 214px = 버튼 줄 44 + 입력 칸 154(최소 132 + 위아래 틈, 앱 화면에서 잼 2026-11-03) + 틈 16 — 입력 칸을 길게 써서 커지면(최대 240) 마지막 줄 일부가 입력 칸 뒤로 간다. 늘 맞추려면 입력 칸 높이를 재서 변수로 넘긴다 */
+.isl-col.center .isl-body{overflow:hidden;display:flex;flex-direction:column}
+.isl-col.center .isl-body>.mc.chat:not(.hello){flex:1 1 auto;min-height:0;grid-template-rows:minmax(0,1fr);padding-bottom:0}
+.isl-col.center .mc.chat:not(.hello) .main{display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto auto;gap:0;min-height:0}
+.isl-col.center .mc.chat:not(.hello) .main>.log{grid-area:1/1/-1/2;max-height:none;min-height:0;padding-bottom:214px}
+.isl-col.center .mc.chat:not(.hello) .main>.opts{grid-row:2;grid-column:1;z-index:1;background:var(--isl);padding-top:8px;box-shadow:0 -14px 14px var(--isl)}
+.isl-col.center .mc.chat:not(.hello) .main>.cin{grid-row:3;grid-column:1;z-index:1;background:var(--isl);padding:8px 0 14px;box-shadow:0 -14px 14px var(--isl)}
+.isl-col.center .mc.chat:not(.hello) .main>.opts+.cin{box-shadow:none}   /* 버튼 줄이 있으면 그림자는 버튼 줄 위에만 — 입력 칸 그림자가 단추를 덮지 않게 */
 .isl-col.center .isl-body>.mc{background:transparent;border-color:transparent}   /* 카드 안의 카드가 되지 않게 — 섬 카드 하나만 */
 .isl-col.center .mc.chat{grid-template-columns:minmax(0,1fr)}
 .isl-col.center .mc.chat:not(.hello) .who{display:none}
