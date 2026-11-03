@@ -303,6 +303,11 @@
     const cut = ch.slice(0, n - 1).join(""), sp = cut.lastIndexOf(" "), w = (sp >= cut.length * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,·—\-“"'(:/]+$/, "");
     return `${w || cut}…`;   // 낱말 사이에서, 이모지 같은 짝 글자는 반으로 자르지 않는다(새 맥락 리뷰)
   };
+  // 줄바꿈은 지키는 fit — 플로로의 대화 답(번호 목록 · 순서)이 한 줄로 펴져 '이래요: 1. 신청 2. 목록'이 됐다(F-144-23). 줄 안의 공백만 하나로, 빈 줄은 하나까지
+  const fitLines = (v, n) => {
+    const t = String(v || "").replace(/\r\n?/g, "\n").split("\n").map((l) => l.replace(/\s+/g, " ").trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim(), ch = Array.from(t);
+    return ch.length <= n ? t : `${ch.slice(0, n - 1).join("").trimEnd()}…`;
+  };
   const QUEST_SCHEMA = obj({ desc: str, why: str, qa: list(obj({ question: str, examples: list(str, 1, QA_EX_MAX) }), 1, 8) });
   function questPrompt(stage, idea, tier) {
     const s = STAGES[stage], todo = criteriaFor(stage, tier);
@@ -459,7 +464,7 @@
       out.push({ i, text: fit(x.text, SLOT_LINE_MAX) });
     }
     out.sort((a, b) => a.i - b.i);
-    return { reply: fit(o.reply, CHAT_REPLY_MAX), slots: out, n: out.length };
+    return { reply: fitLines(o.reply, CHAT_REPLY_MAX), slots: out, n: out.length };
   }
   // 재료 번호("단계-칸", 1부터) → { s, i }(0부터) — 넘긴 지난 단계의 있는 칸만, 한 번씩, FROM_MAX개까지
   function fromRefs(list, stage, prev) {

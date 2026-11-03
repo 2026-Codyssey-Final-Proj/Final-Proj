@@ -288,3 +288,12 @@ test("F-144-22 파일 보기(md-view) — 링크 주소 안의 * · ~~를 꾸밈
   assert.equal(M.inline("*기울임* · **굵게** · ~~지움~~"), "<i>기울임</i> · <b>굵게</b> · <s>지움</s>", "꾸밈은 전과 같다");
   assert.match(M.inline("[**굵은 링크**](https://ex.com)"), /<a [^>]*><b>굵은 링크<\/b><\/a>/, "링크 글의 꾸밈도 그대로");
 });
+
+test("F-144-23 플로로 대화 답의 줄바꿈을 지키고, 채팅에 줄로 보인다", () => {
+  const N = require(path.join(BACK, "navigator.js"));
+  const c = N.parseChat({ reply: "순서는 이래요:\n1. 신청   화면\n\n\n\n2. 목록", slots: [] }, 0, "Full", []);
+  assert.equal(c.reply, "순서는 이래요:\n1. 신청 화면\n\n2. 목록");
+  assert.ok(Array.from(N.parseChat({ reply: "가\n".repeat(600), slots: [] }, 0, "Full", []).reply).length <= 400, "길이 상한은 그대로");
+  assert.match(fnSrc("sayLines"), /esc\(endDot\(text\)\)\.split\("\\n"\)\.join\("<br>"\)/, "esc한 뒤 줄바꿈만 <br>로");
+  assert.match(fnSrc("chatSend"), /else sayLines\(r\.reply\)/, "대화 답은 줄로");
+});
