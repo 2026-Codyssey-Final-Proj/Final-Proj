@@ -1,0 +1,41 @@
+// claude-drafted: 2026-11-03 — 코드 훑어보기 2차(임유정 "전체 코드 살펴보면서 오류 날만한 부분들 체크해줘" → "먼저 볼 것에서 4, 8, 9번 빼고 수정해줘"). F-135 ~
+// 실행: node --test 04-tests/navigator/code-sweep-1103.test.js
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const path = require("node:path");
+const S = require(path.join(__dirname, "../../03-backend/navigator/sensitive.js"));
+
+test("F-135 비밀값 — 환경 변수 이름 앞뒤에 붙은 키 · 접속 주소의 비밀번호 · Stripe 키도 가린다", () => {
+  const leaks = [
+    ["AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY", "wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY"],
+    ['SECRET_KEY = "django-insecure-abc123xyz"', "django-insecure-abc123xyz"],
+    ["SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZSJ9.abc", "eyJhbGciOiJIUzI1NiJ9"],
+    ["PRIVATE_KEY=0x4c0883a69102937d6231471b5dbb6204fe512961", "0x4c0883a69102937d6231471b5dbb6204fe512961"],
+    ["clientSecret: abcd1234efgh", "abcd1234efgh"],
+    ["DATABASE_URL=postgres://admin:S3cretPw@localhost:5432/app", "S3cretPw"],
+    ["mongodb://root:hunter22@db:27017", "hunter22"],
+    ["stripe sk_live_51HxYzAbCdEfGhIjKlMnOp", "sk_live_51HxYzAbCdEfGhIjKlMnOp"],
+  ];
+  for (const [text, secret] of leaks) {
+    assert.ok(S.scan(text).blocked, `막아야 해요: ${text}`);
+    assert.ok(!S.redact(text).includes(secret), `가려야 해요: ${S.redact(text)}`);
+  }
+});
+
+test("F-135 비밀값 — 흔한 코드 · 문장은 걸지 않는다", () => {
+  for (const t of ["const tokenCount = 5", "secretary: 김비서", "https://example.com:8080/path", "http://localhost:3000/@user", "키보드(KEY) 배치", "PRIMARY KEY (id)"]) {
+    assert.equal(S.scan(t).blocked, false, `걸면 안 돼요: ${t}`);
+  }
+});
+
+test("F-135 전화번호 — 띄어 쓴 번호 · +82 꼴도 가린다", () => {
+  for (const t of ["010 1234 5678", "+82-10-1234-5678", "+82 10 1234 5678"]) {
+    assert.ok(!/\d{4}\D?\d{4}$/.test(S.redact(t)), `가려야 해요: ${S.redact(t)}`);
+  }
+});
+
+test("F-135 비밀값 — 밑줄만 이어진 512KB 한 줄도 1초 안에 끝난다", () => {
+  const long = "A_".repeat(256 * 1024);
+  const t0 = Date.now(); S.scan(long); S.redact(long);
+  assert.ok(Date.now() - t0 < 1000, `${Date.now() - t0}ms`);
+});
