@@ -178,3 +178,7 @@ test("F-144-10 확인할 먹이 — 두 번 눌러도 확인하지 않은 다음
   assert.match(lineOf(/"inbox-drop": [^\n]*/), /inboxSame\(/);
   assert.match(fnSrc("inboxBox"), /data-act="inbox-ok" data-i="\$\{i\}" data-k="\$\{inboxSig\(x\)\}"/);
 });
+
+test("F-144-18 경고 카드의 '보낼게요'를 두 번 눌러도 TypeError가 나지 않는다", () => {
+  assert.match(lineOf(/"send-anyway": [^\n]*/), /if \(st\.warn && RETRY\[st\.warn\.then\]\)/);
+});
