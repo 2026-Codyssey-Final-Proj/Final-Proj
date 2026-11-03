@@ -159,6 +159,19 @@ test("F-144-8 앱의 작업실 창 — 단추 켜고 끄기 · 칸에 커서 두
   assert.match(WIN, /\[data-want-focus\]/, "작업실 창이 그 신호로 커서를 둔다");
 });
 
+test("F-144-8 새 맥락 리뷰 — 다른 일로 창에 다시 보내면 단추 상태 기억을 잊는다(남기기 뒤 둘째 느낌도 남길 수 있다)", () => {
+  const make = new Function("winOpen", "$nav", "document", "send",
+    `const lastOff = {}; function syncWins() { send(); clearLive(); } ${fnSrc("liveBtn")} ${fnSrc("clearLive")} return { liveBtn, syncWins };`);
+  let sent = 0; const btn = { disabled: false }, none = { querySelector: () => null };
+  const f = make({ quest: true }, { querySelector: () => btn }, none, () => sent++);
+  f.liveBtn("note-add", false);                 // 글자를 쳐서 켰다
+  f.syncWins();                                  // '남기기' — 빈 칸으로 다시 그려 보냈다(창의 단추는 꺼짐)
+  const before = sent; f.liveBtn("note-add", false);   // 다음 글자
+  assert.equal(sent, before + 1, "창의 단추를 다시 켜 보낸다 — 전에는 기억이 그대로라 보내지 않았다");
+  assert.match(fnSrc("syncWins"), /winHtml\[kind\] = html; clearLive\(\); window\.floeApp\.sendWin/);
+  assert.doesNotMatch(APP, /getElementById\("task-text"\); if \(t\) t\.focus\(\)|querySelector\("\[data-act=note-text\]"\)\?\.focus\(\)/, "남은 두 곳도 focusAct로");
+});
+
 test("F-144-9 다시 그린 뒤 커서는 같은 이름의 여러 칸 중 쓰던 칸으로 돌아간다(data-id · data-v)", () => {
   const keyOf = new Function(`${lineOf(/const keyOf = [^\n]*/, WIN)}; return keyOf;`)();
   const el = (d) => ({ dataset: d });

@@ -21,11 +21,12 @@
   };
   // F-144-8(2026-11-03): 앱에서 작업실이 열려 있으면 보이는 칸은 작업실 창(win.js)에 있고 섬 창은 숨는다 — 섬의 요소를 켜거나 focus()해도 아무 일이 없었다.
   //   단추 켜고 끄기(liveBtn)는 상태가 바뀔 때만 다시 그려 보내고, 칸에 커서 두기(focusAct)는 보낼 내용 끝에 한 번만 쓰는 신호(data-want-focus)를 실어 창이 그 칸에 둔다
+  //   lastOff — 창에 마지막으로 보낸 단추 상태. 다른 일로 다시 보내면(남기기 뒤 빈 칸 등) 잊는다 — 남아 있으면 다음 글자에 단추가 다시 켜지지 않았다(새 맥락 리뷰)
   let focusSeq = 0, focusWant = "";
   const lastOff = {};
   function liveBtn(act, off) {
     const b = $nav.querySelector(`[data-act=${act}]`) || document.querySelector(`[data-act=${act}]`); if (b) b.disabled = off;
-    if (winOpen.quest && lastOff[act] !== off) { lastOff[act] = off; syncWins(); }
+    if (winOpen.quest && lastOff[act] !== off) { syncWins(); lastOff[act] = off; }
   }
   function focusAct(sel) {
     requestAnimationFrame(() => {
@@ -37,15 +38,17 @@
   function syncWins() {
     if (!WINS || !QU) return;
     for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() + focusTag() : ""]]) {
-      if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
-      else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
-      else if (on && html !== winHtml[kind]) { winHtml[kind] = html; window.floeApp.sendWin(kind, html); }
+      if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; clearLive(); window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
+      else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; focusWant = ""; window.floeApp.closeWin(kind); }
+      else if (on && html !== winHtml[kind]) { winHtml[kind] = html; clearLive(); window.floeApp.sendWin(kind, html); }
     }
   }
+  // 보낸 뒤 — 단추 상태 기억을 비운다. 창을 닫으면 커서 신호도(다시 열린 창이 옛 칸으로 커서를 옮기지 않게, 새 맥락 리뷰)
+  function clearLive() { for (const k of Object.keys(lastOff)) delete lastOff[k]; }
   if (WINS) {
     window.floeApp.onWinClosed((kind) => {
       if (winClosing[kind]) { winClosing[kind] = false; return; }   // 내가 닫은 것
-      winOpen[kind] = false; winHtml[kind] = "";
+      winOpen[kind] = false; winHtml[kind] = ""; focusWant = "";
       if (kind === "quest" && st.qwin) closeQwin();
     });
     window.floeApp.onWinEvent((p) => winEvent(p));

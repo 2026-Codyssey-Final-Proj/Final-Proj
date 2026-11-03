@@ -3287,11 +3287,12 @@
   };
   // F-144-8(2026-11-03): 앱에서 작업실이 열려 있으면 보이는 칸은 작업실 창(win.js)에 있고 섬 창은 숨는다 — 섬의 요소를 켜거나 focus()해도 아무 일이 없었다.
   //   단추 켜고 끄기(liveBtn)는 상태가 바뀔 때만 다시 그려 보내고, 칸에 커서 두기(focusAct)는 보낼 내용 끝에 한 번만 쓰는 신호(data-want-focus)를 실어 창이 그 칸에 둔다
+  //   lastOff — 창에 마지막으로 보낸 단추 상태. 다른 일로 다시 보내면(남기기 뒤 빈 칸 등) 잊는다 — 남아 있으면 다음 글자에 단추가 다시 켜지지 않았다(새 맥락 리뷰)
   let focusSeq = 0, focusWant = "";
   const lastOff = {};
   function liveBtn(act, off) {
     const b = $nav.querySelector(`[data-act=${act}]`) || document.querySelector(`[data-act=${act}]`); if (b) b.disabled = off;
-    if (winOpen.quest && lastOff[act] !== off) { lastOff[act] = off; syncWins(); }
+    if (winOpen.quest && lastOff[act] !== off) { syncWins(); lastOff[act] = off; }
   }
   function focusAct(sel) {
     requestAnimationFrame(() => {
@@ -3303,15 +3304,17 @@
   function syncWins() {
     if (!WINS || !QU) return;
     for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() + focusTag() : ""]]) {
-      if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
-      else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
-      else if (on && html !== winHtml[kind]) { winHtml[kind] = html; window.floeApp.sendWin(kind, html); }
+      if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; clearLive(); window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
+      else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; focusWant = ""; window.floeApp.closeWin(kind); }
+      else if (on && html !== winHtml[kind]) { winHtml[kind] = html; clearLive(); window.floeApp.sendWin(kind, html); }
     }
   }
+  // 보낸 뒤 — 단추 상태 기억을 비운다. 창을 닫으면 커서 신호도(다시 열린 창이 옛 칸으로 커서를 옮기지 않게, 새 맥락 리뷰)
+  function clearLive() { for (const k of Object.keys(lastOff)) delete lastOff[k]; }
   if (WINS) {
     window.floeApp.onWinClosed((kind) => {
       if (winClosing[kind]) { winClosing[kind] = false; return; }   // 내가 닫은 것
-      winOpen[kind] = false; winHtml[kind] = "";
+      winOpen[kind] = false; winHtml[kind] = ""; focusWant = "";
       if (kind === "quest" && st.qwin) closeQwin();
     });
     window.floeApp.onWinEvent((p) => winEvent(p));
@@ -4047,7 +4050,7 @@
     // 한 줄만 적어 맡기기 — 전의 맡기기(FR-17): 적은 생각을 할 일 칸에 넣어 AI 진행 판에서 정리 → 고치기 → 허락
     "plan-direct": () => {
       if (!st.task.text.trim() && !st.task.lines && !st.task.sent) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.task.text = t.slice(0, 4000); }
-      ACT["base-ai"](); requestAnimationFrame(() => { const t = document.getElementById("task-text"); if (t) t.focus(); });
+      ACT["base-ai"](); focusAct("[data-act=task-text]");   // 앱의 작업실 창에서도(F-144-8 새 맥락 리뷰)
     },
     "plan-make": () => makePlan(false),
     "plan-ok": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "ok"); save(); render(); },
@@ -4256,7 +4259,7 @@
       if (!NT || !st.noteText.trim()) return;
       noteList = NT.add(noteList, { text: st.noteText, ...noteCtx() }); NT.write(STORE, noteList);
       set({ noteText: "", noteCopy: "" }); say("남겨 뒀어요. 고마워요!");
-      requestAnimationFrame(() => document.querySelector("[data-act=note-text]")?.focus());
+      focusAct("[data-act=note-text]");
     },
     "note-del": (i, el) => { if (!NT || !el) return; noteList = NT.remove(noteList, el.dataset.id); NT.write(STORE, noteList); render(); },
     "notes-clear": () => { if (!NT) return; noteList = []; NT.write(STORE, noteList); set({ noteCopy: "" }); say("느낀 점을 모두 지웠어요"); },

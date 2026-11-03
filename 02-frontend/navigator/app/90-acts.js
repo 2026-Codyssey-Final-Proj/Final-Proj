@@ -120,7 +120,7 @@
     // 한 줄만 적어 맡기기 — 전의 맡기기(FR-17): 적은 생각을 할 일 칸에 넣어 AI 진행 판에서 정리 → 고치기 → 허락
     "plan-direct": () => {
       if (!st.task.text.trim() && !st.task.lines && !st.task.sent) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.task.text = t.slice(0, 4000); }
-      ACT["base-ai"](); requestAnimationFrame(() => { const t = document.getElementById("task-text"); if (t) t.focus(); });
+      ACT["base-ai"](); focusAct("[data-act=task-text]");   // 앱의 작업실 창에서도(F-144-8 새 맥락 리뷰)
     },
     "plan-make": () => makePlan(false),
     "plan-ok": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "ok"); save(); render(); },
@@ -329,7 +329,7 @@
       if (!NT || !st.noteText.trim()) return;
       noteList = NT.add(noteList, { text: st.noteText, ...noteCtx() }); NT.write(STORE, noteList);
       set({ noteText: "", noteCopy: "" }); say("남겨 뒀어요. 고마워요!");
-      requestAnimationFrame(() => document.querySelector("[data-act=note-text]")?.focus());
+      focusAct("[data-act=note-text]");
     },
     "note-del": (i, el) => { if (!NT || !el) return; noteList = NT.remove(noteList, el.dataset.id); NT.write(STORE, noteList); render(); },
     "notes-clear": () => { if (!NT) return; noteList = []; NT.write(STORE, noteList); set({ noteCopy: "" }); say("느낀 점을 모두 지웠어요"); },
