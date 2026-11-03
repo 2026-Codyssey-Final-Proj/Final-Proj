@@ -15,6 +15,11 @@ test("F-135 비밀값 — 환경 변수 이름 앞뒤에 붙은 키 · 접속 �
     ["DATABASE_URL=postgres://admin:S3cretPw@localhost:5432/app", "S3cretPw"],
     ["mongodb://root:hunter22@db:27017", "hunter22"],
     ["stripe sk_live_51HxYzAbCdEfGhIjKlMnOp", "sk_live_51HxYzAbCdEfGhIjKlMnOp"],
+    // 새 맥락 리뷰 보완 — 사용자 이름이 빈 꼴 · 비밀번호 안의 @ · 소문자 private_key · privateKey
+    ["redis://:r3disPassw0rd@cache:6379", "r3disPassw0rd"],
+    ["postgres://app:pa@ss9word@db/app", "ss9word"],
+    ['private_key = "0x4c0883a69102937d6231471b5dbb6204fe512961"', "4c0883a69102937d6231471b5dbb6204fe512961"],
+    ['"privateKey": "9f2c4e7a1b3d5f6e8a0c2e4f6a8b0d1c"', "9f2c4e7a1b3d5f6e8a0c2e4f6a8b0d1c"],
   ];
   for (const [text, secret] of leaks) {
     assert.ok(S.scan(text).blocked, `막아야 해요: ${text}`);
@@ -23,9 +28,14 @@ test("F-135 비밀값 — 환경 변수 이름 앞뒤에 붙은 키 · 접속 �
 });
 
 test("F-135 비밀값 — 흔한 코드 · 문장은 걸지 않는다", () => {
-  for (const t of ["const tokenCount = 5", "secretary: 김비서", "https://example.com:8080/path", "http://localhost:3000/@user", "키보드(KEY) 배치", "PRIMARY KEY (id)"]) {
-    assert.equal(S.scan(t).blocked, false, `걸면 안 돼요: ${t}`);
-  }
+  // 새 맥락 리뷰 막힘 — 상수 이름 · 설정 이름에 KEY · TOKEN · PASSWORD가 든 평범한 대입(허락 카드 위험 표시 · 파일 저장 409 · 먹이 구간 빼기가 됐다)
+  const plain = ["const tokenCount = 5", "secretary: 김비서", "https://example.com:8080/path", "http://localhost:3000/@user", "키보드(KEY) 배치", "PRIMARY KEY (id)",
+    'const STORAGE_KEY = "todo-app"', 'CACHE_KEY: "users-list"', 'FOREIGN_KEY = "user_id"', "ENV_KEY: process.env.X", 'const FOLD_KEY = "floe-fold-v2"',
+    'token_type: "Bearer"', "const TOKEN_EXPIRY = 3600", "token_count = 1234", "password_hash = bcrypt.hash(pw)", 'password-reset: "/auth/reset"',
+    'api_key_header: "X-Api-Key"', "const TOKEN_FILE = path.join(os.homedir(), '.floe-token')", "http://localhost:3000?redirect=a@b.com"];
+  for (const t of plain) assert.equal(S.scan(t).blocked, false, `걸면 안 돼요: ${t} → ${JSON.stringify(S.scan(t).findings.map((f) => f.match))}`);
+  // 이름 · 해시 속의 숫자는 전화번호로 가리지 않는다
+  for (const t of ["user01012345678", "9f01012345678ab"]) assert.equal(S.redact(t), t);
 });
 
 test("F-135 전화번호 — 띄어 쓴 번호 · +82 꼴도 가린다", () => {
