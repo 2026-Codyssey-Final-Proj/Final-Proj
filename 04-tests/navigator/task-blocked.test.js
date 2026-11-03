@@ -274,3 +274,24 @@ test("화면: 허락 카드 · 막힌 일 · 멈춘 것 같은 일이 있으면 
   assert.match(pin, /st\.apWait/); assert.match(pin, /st\.blocked && !st\.blocked\.retrying/); assert.match(pin, /st\.stall && st\.stall\.lv !== "calm"/);
   assert.match(a, /st\.apWait = approvals\.length > 0;/, "허락 카드가 있는 동안");
 });
+
+// claude-drafted: 2026-11-03 — F-139 다시 맡기기는 처음 맡긴 폴더에서만. 전에는 그때 연결된 폴더(projectNow)를 다시 골라 A 폴더의 요구가 B 저장소에서 돌았다
+test("F-139 그사이 연결한 폴더가 바뀌면 다시 맡기지 않는다(409) — 처음 폴더로 돌아오면 다시 맡긴다", async () => {
+  await until(async () => { const x = await task(); return !x || x.state !== "running"; });
+  const a = hooked(fs.mkdtempSync(path.join(TMP, "proj-a-"))), b = hooked(fs.mkdtempSync(path.join(TMP, "proj-b-")));
+  assert.equal(Srv.useProject(a), true);
+  plan({ delay: 100, exit: 1 });
+  const r = await call("POST", "/api/task/start", { text: "A 폴더 일" });
+  assert.equal(r.status, 200, r.text);
+  const t = await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+  assert.equal(t.state, "failed");
+  assert.equal(Srv.useProject(b), true);
+  plan({ delay: 100 });
+  const moved = await call("POST", "/api/task/retry", { at: t.at, way: "again" });
+  assert.equal(moved.status, 409, moved.text); assert.match(moved.json.reason, /폴더/);
+  assert.equal((await task()).state, "failed", "B 폴더에서 열지 않았다");
+  assert.equal(Srv.useProject(a), true);
+  const back = await call("POST", "/api/task/retry", { at: t.at, way: "again" });
+  assert.equal(back.status, 200, back.text);
+  await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+});
