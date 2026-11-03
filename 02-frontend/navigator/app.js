@@ -3074,8 +3074,13 @@
   // 사람이 고르면 멈춘다 — 지켜보기를 잠시 세우고(멈춘 결과를 끝으로 읽지 않게) 서버가 그 일을 끌 때까지 기다린다
   async function stallHalt() {
     const s = st.stall; if (!s) return null;
-    st.stall = null; await taskHalt(s.at);
-    return s;
+    st.stall = null;
+    if (await taskHalt(s.at)) return s;
+    // 멈추지 못했다(F-144-16, 2026-11-03) — 지켜보기를 다시 켜고 그렇다고 말한다(plan-unwait과 같게). 전에는 '멈췄어요'라 하고 지켜보기를 끊어
+    //   Claude Code가 아무도 지켜보지 않는 채 계속 고쳤고, 다시 맡기면 409로 거절됐다
+    st.stall = s; if (tw && !twTimer) twTimer = setInterval(twTick, 3000);
+    render(); say("Claude Code를 멈추지 못했어요 — 아직 일하는 중이라 조금 뒤 다시 눌러 주세요.");
+    return null;
   }
   //   멈춘 것을 확인할 때까지(최대 10초) 기다린다 — 그 전에 다시 맡기면 서버가 '아직 진행 중'(409)으로 거절한다. '멈추기'(plan-unwait)도 같이 쓴다
   //   돌려주는 값: 멈춘 것을 서버의 답으로 확인했나(못 닿았거나 10초 뒤에도 running이면 false — 그때 다시 맡기면 409)

@@ -246,3 +246,19 @@ test("F-144-15 퀘스트를 다 적은 뒤 · 관문에서 친 말은 작업 글
   // 퀘스트 없이 마친 뒤(진짜 AI)는 전처럼 바뀐 작업을 판정한다
   assert.deepEqual(run({ say: "고쳤어요", busy: false, quest: null, j: { stage: 7 }, mode: "live", text: "a", screen: "main" }, true), ["judge"]);
 });
+
+test("F-144-16 '멈추고 그만두기'가 멈추지 못하면 '멈췄어요'라 하지 않고 지켜보기를 다시 켠다", async () => {
+  const make = (halted) => {
+    const said = [], env = { st: { stall: { at: 7, kind: "plan" } }, tw: { at: 7 }, twTimer: null };
+    const f = new Function("env", "taskHalt", "render", "say", "setInterval", "twTick",
+      `let { st, tw, twTimer } = env; ${fnSrc("stallHalt")} return async () => { const r = await stallHalt(); return { r, st, twTimer }; };`)(env, async () => halted, () => {}, (m) => said.push(m), () => 99, () => {});
+    return { f, said };
+  };
+  const no = make(false), r = await no.f();
+  assert.equal(r.r, null, "멈춘 뒤의 일(그만두기 · 다시 맡기기)로 가지 않는다");
+  assert.ok(r.st.stall, "멈춘 것 같아요 카드를 다시 둔다");
+  assert.equal(r.twTimer, 99, "지켜보기를 다시 켠다");
+  assert.match(no.said[0], /멈추지 못했어요/);
+  const ok = await make(true).f();
+  assert.deepEqual(ok.r, { at: 7, kind: "plan" });
+});
