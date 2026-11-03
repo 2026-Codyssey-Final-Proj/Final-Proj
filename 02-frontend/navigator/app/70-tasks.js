@@ -400,6 +400,8 @@
     } catch { apDecided.delete(id); say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
     pollApprovals();
   }
+  // F-136(2026-11-03): 진짜 AI로 바꾸면 연습의 예시 카드를 내린다 — 남아 있으면 pollApprovals가 예시라서 서버에 묻지 않아, 다시 켜기 전까지 진짜 허락 카드가 오지 않았다
+  function liveApprovals() { if (apMode !== "example") return; approvals = []; apMode = "none"; st.apWait = false; }
   // 서버에 기다리는 승인 요청이 있나 — 새 요청이 오면 한 줄로 알리고(접혀 있으면 살짝), AI 진행 판을 보이게
   async function pollApprovals() {
     if (!canLive || apMode === "example") return;

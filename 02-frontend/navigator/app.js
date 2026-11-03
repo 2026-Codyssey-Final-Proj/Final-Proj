@@ -3180,6 +3180,8 @@
     } catch { apDecided.delete(id); say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
     pollApprovals();
   }
+  // F-136(2026-11-03): 진짜 AI로 바꾸면 연습의 예시 카드를 내린다 — 남아 있으면 pollApprovals가 예시라서 서버에 묻지 않아, 다시 켜기 전까지 진짜 허락 카드가 오지 않았다
+  function liveApprovals() { if (apMode !== "example") return; approvals = []; apMode = "none"; st.apWait = false; }
   // 서버에 기다리는 승인 요청이 있나 — 새 요청이 오면 한 줄로 알리고(접혀 있으면 살짝), AI 진행 판을 보이게
   async function pollApprovals() {
     if (!canLive || apMode === "example") return;
@@ -4628,7 +4630,7 @@
   document.addEventListener("floe:setup-done", (e) => {
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });
-    else if ((d.via === "cli" || d.via === "api") && canLive) set({ mode: "live", error: "", warn: null });
+    else if ((d.via === "cli" || d.via === "api") && canLive) { liveApprovals(); set({ mode: "live", error: "", warn: null }); }   // F-136 연습에서 띄운 예시 카드를 내리고 진짜로 묻는다
     chatRecheck();   // 처음 설정에서 폴더를 골랐을 수 있다 — 대화를 둘 폴더를 다시 묻는다(병합 뒤 고침 새 맥락 리뷰: 첫 실행에서 고른 폴더에 대화가 쌓이지 않았다)
     if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
     st.gh = null;   // 처음 설정에서 프로젝트를 골랐으면 GitHub 칸을 다시 묻는다

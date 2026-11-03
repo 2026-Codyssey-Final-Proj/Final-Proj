@@ -39,3 +39,27 @@ test("F-135 비밀값 — 밑줄만 이어진 512KB 한 줄도 1초 안에 끝�
   const t0 = Date.now(); S.scan(long); S.redact(long);
   assert.ok(Date.now() - t0 < 1000, `${Date.now() - t0}ms`);
 });
+
+// ── 화면(app.js) — code-sweep-1102.test.js처럼 함수를 글자에서 떼어 가짜 상태로 돌린다 ──
+const fs = require("node:fs");
+const a = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+function fnSrc(name) {
+  const at = a.search(new RegExp(`(async )?function ${name}\\(`));
+  assert.ok(at >= 0, `${name}를 찾지 못했어요`);
+  let i = a.indexOf(") {", at) + 2, d = 0;
+  for (; i < a.length; i++) { if (a[i] === "{") d++; else if (a[i] === "}" && --d === 0) break; }
+  return a.slice(at, i + 1);
+}
+
+test("F-136 진짜 AI로 바꾸면 연습의 예시 허락 카드를 내려 서버에 다시 묻는다", () => {
+  const run = new Function("st", `let approvals = [{ id: "ex1" }], apMode = "example"; ${fnSrc("liveApprovals")}; liveApprovals(); return { approvals, apMode };`);
+  const st = { apWait: true };
+  const r = run(st);
+  assert.deepEqual(r.approvals, []);
+  assert.notEqual(r.apMode, "example", "example이면 pollApprovals가 끝까지 서버에 묻지 않는다");
+  assert.equal(st.apWait, false);
+  const keep = new Function("st", `let approvals = [{ id: "live1" }], apMode = "live"; ${fnSrc("liveApprovals")}; liveApprovals(); return { approvals, apMode };`)({});
+  assert.deepEqual(keep, { approvals: [{ id: "live1" }], apMode: "live" }, "진짜 카드는 그대로");
+  const at = a.indexOf('addEventListener("floe:setup-done", (e)'), done = a.slice(at, at + 600);
+  assert.match(done, /d\.via === "cli" \|\| d\.via === "api"\) && canLive\) \{[^}]*liveApprovals\(\)/, "처음 설정에서 진짜 AI를 고르면 부른다");
+});
