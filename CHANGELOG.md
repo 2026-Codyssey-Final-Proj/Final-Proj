@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v61.2 | 2026-11-03 | 임유정 | 코드 훑어보기 2차 고침 여섯 — 흔한 비밀값 꼴 가리기(F-136) · 연습 뒤 허락 카드(F-137) · 마지막 단계 구분선(F-138) · 문서 지도 흐름 따라가기(F-139) · 다시 맡기기 폴더(F-140) · 옆 창 새로 고침(F-141) (#317) | `02-frontend/navigator/app/` · `02-frontend/electron/` · `03-backend/navigator/`(sensitive.js · server.js · docmap.js · API.md — 담당 이재엽, 이 줄이 알림) · `04-tests/navigator/` · `01-docs/07-maintenance/fix-map.md` |
 | v61.1 | 2026-11-03 | 임유정 | 상자 보기(문서 지도)를 열면 지금 장 상자(없으면 그 틀 전체)로 부드럽게 옮겨 가운데에 둔다 (F-134) · 작업실이 다시 그려져도 지도를 다시 불러오지 않는다 (F-135) (#316) | `02-frontend/navigator/` · `03-backend/navigator/board/`(엔진 사본의 Floe 줄) · `03-backend/navigator/server.js`(내보내는 파일 목록) · `04-tests/e2e/` |
 | v61.0 | 2026-11-02 | 두승현 | 작업실 캔버스 탭을 뺌 — canvasPane · canvas-pan.js · .cv 모양 삭제, 첫 탭은 퀘스트, 옛 탭 값 돌리기 (F-133 · C-69) (#315) | `02-frontend/navigator/`(담당 임유정) · `03-backend/navigator/server.js`(담당 이재엽) · `04-tests/` · `01-docs/` |
 | v60.12 | 2026-11-02 | 임유정 | 코드 훑어보기에서 찾은 오류 고침 — AI 호출 때 서버가 죽던 것 · 앱을 꺼도 맡긴 일이 남던 것 · 기록이 빈 것으로 덮이던 것 · 화면 8가지 · AI 답 읽기 · 단계 번호 · 문서 지도 id · 시험 러너 (F-117 ~ F-132, F-131은 열림) (#314) | `03-backend/navigator/` · `02-frontend/electron/` · `02-frontend/navigator/`(담당 임유정) · `01-docs/07-maintenance/fix-map.md` |
