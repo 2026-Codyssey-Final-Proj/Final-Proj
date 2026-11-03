@@ -133,7 +133,11 @@ async function cloneRepo(home, text, { ghReady = false, run = runCommand } = {})
     if (!same) return { ok: false, message: TAKEN };
     // 받다 만 폴더(앞에서 시간 초과) — origin은 clone 처음에 적혀 같은 저장소로 보이지만 HEAD가 아직 없다. 성공으로 잇지 않는다(F-144-7)
     const head = await run("git", ["rev-parse", "--verify", "-q", "HEAD"], { cwd: dir, timeout: LIST_MS, env: quietEnv() });
-    if (head.code !== 0) return { ok: false, message: "그 자리의 폴더가 다 받아지지 않았거나 비어 있어요 — 폴더를 지운 뒤 다시 가져오거나, '이 컴퓨터에 있는 폴더'로 골라요" };
+    if (head.code !== 0) {
+      // 커밋이 아직 없는 새 저장소는 다 받아도 HEAD가 없다 — 원격에도 브랜치가 없으면(빈 저장소) 그대로 잇는다(F-144-7 새 맥락 리뷰)
+      const heads = await run("git", ["ls-remote", "--heads", "origin"], { cwd: dir, timeout: LIST_MS, env: quietEnv() });
+      if (!(heads.code === 0 && !String(heads.out || "").trim())) return { ok: false, message: "그 자리의 폴더가 다 받아지지 않았어요 — 폴더를 지운 뒤 다시 가져오거나, '이 컴퓨터에 있는 폴더'로 골라요" };
+    }
     return { ok: true, dir, name: r.repo, repo, made: false, config: hasClaudeConfig(dir) };
   }
   const parent = path.dirname(dir);

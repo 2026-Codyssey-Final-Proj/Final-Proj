@@ -120,10 +120,14 @@ test("F-144-7 저장소 받기가 시간 초과되면 프로세스 나무째 끄
     if (args[0] === "api") return { code: 0, out: "true" };   // canPush — 내가 쓸 수 있는 저장소
     if (args[0] === "remote") return { code: 0, out: "https://github.com/me/app.git" };
     if (args[0] === "rev-parse") return { code: 128, out: "" };
+    if (args[0] === "ls-remote") return { code: 0, out: "abc123\trefs/heads/main" };   // 원격에는 커밋이 있다
     return { code: 0, out: "" };
   };
   const half = await PR.cloneRepo(home, "me/app", { ghReady: true, run });
   assert.equal(half.ok, false, JSON.stringify(half));
+  // 새 맥락 리뷰 — 커밋이 없는 새 저장소(원격도 비었다)는 HEAD가 없어도 다시 고를 수 있다
+  const empty = await PR.cloneRepo(home, "me/app", { ghReady: true, run: async (c, a) => (a[0] === "ls-remote" ? { code: 0, out: "" } : run(c, a)) });
+  assert.equal(empty.ok, true, JSON.stringify(empty));
   const whole = await PR.cloneRepo(home, "me/app", { ghReady: true, run: async (c, a) => (a[0] === "rev-parse" ? { code: 0, out: "abc" } : run(c, a)) });
   assert.equal(whole.ok, true, JSON.stringify(whole));
   assert.equal(whole.made, false);
