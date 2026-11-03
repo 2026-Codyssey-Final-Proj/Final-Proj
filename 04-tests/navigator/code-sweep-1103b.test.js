@@ -317,6 +317,7 @@ test("F-144-17 작업 폴더 · 보기 방식을 바꾸면 옛 README 책과 찾
   assert.equal(run({ rb: {}, qwin: true, qtab: "quest" }).loaded, 0, "책 탭이 아니면 열 때 읽는다(qtab 손잡이)");
   assert.match(fnSrc("toMode"), /readmeAgain\(\)/, "연습 모드로 바꾸면 진짜 README가 남지 않게");
   assert.match(lineOf(/const forgetFolder = \(\) => \{[\s\S]*?\n {2}\};/), /readmeAgain\(\)/, "폴더가 바뀌면");
+  assert.match(lineOf(/addEventListener\("floe:setup-done", \(e\) => \{[\s\S]*?chatRecheck\(\);/), /readmeAgain\(\);/, "처음 설정에서 모드를 바꾸는 길도(새 맥락 리뷰 — toMode를 거치지 않는다)");
 });
 
 test("F-144-21 파일 보기(md-view) — '<!-- … -->' 뒤에 같은 줄로 쓴 본문을 지우지 않는다", () => {
