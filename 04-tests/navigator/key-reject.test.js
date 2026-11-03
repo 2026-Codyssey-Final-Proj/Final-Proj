@@ -33,7 +33,7 @@ test("서버 — AI 오류(r.error)는 모두 refuse로 나가고, refuse가 key
 test("화면 — 답마다 표시를 다시 정하고, 진짜 AI 모드에서만 키 카드, 연습으로 가는 길은 설정과 하나", () => {
   const ai = read("02-frontend/navigator/app/85-ai.js");
   assert.match(ai, /st\.keyBad = !!j && j\.kind === "key";/, "성공하면 꺼진다");
-  assert.match(ai, /function toMode\(m\) \{ set\(\{ mode: m, keyBad: false, error: "", warn: null \}\); chatRecheck\(\); \}/);
+  assert.match(ai, /function toMode\(m\) \{ if \(m === "live"\) liveApprovals\(\); set\(\{ mode: m, keyBad: false, error: "", warn: null \}\); chatRecheck\(\); \}/);   // liveApprovals — 연습의 예시 허락 카드를 내린다(F-136)
   assert.match(ai, /"practice-now": \(\) => toMode\("fixture"\)/);
   assert.match(read("02-frontend/navigator/app/92-basecard.js"), /if \(a === "mode"\) toMode\(t\.value\);/, "설정의 보기 방식도 같은 길");
   assert.match(read("02-frontend/navigator/app/90-acts.js"), /dismiss: \(\) => set\(\{ error: "", keyBad: false \}\)/, "닫기 한 번에");
