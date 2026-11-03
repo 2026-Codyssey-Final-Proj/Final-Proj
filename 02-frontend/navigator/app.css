@@ -35,6 +35,9 @@
 body{margin:0;background:var(--desk);color:var(--ink);font:calc(15px * var(--ui-scale,1))/1.55 var(--font-text);-webkit-font-smoothing:antialiased}
 /* F-76(2026-10-29): 섬 · 작업실 · 섬 옆 칸 · 말풍선의 한국어는 낱말 사이에서만 줄을 바꾼다 — '적 / 어요' · '정 / 하기'가 지도 카드 · 섬 제목에서 났다. 긴 영문 · 경로는 칸 안에서 끊는다 */
 .isl,.pill,.win,.isl-col,.hello-bub{word-break:keep-all;overflow-wrap:anywhere}
+/* F-142(2026-11-03 두승현 "우측에 스크롤바 부분 안보기에 숨김처리가 필요함"): 섬 안(채팅 기록 · 섬 본체 · 작업실 옆 칸)과 작업실(앱 창 html.win-quest · 브라우저 판 .nav .wsx — 파일 칸 · 작업 칸 · 오른쪽 칸 · 파일 보기)의 스크롤바를 숨긴다(같은 날 "작업실 스크롤바도 숨겨줘") — 휠 · 키 · 터치로는 그대로 내려간다 */
+.isl,.isl *,.isl-col .isl-body,html.win-quest,html.win-quest *,.nav .wsx,.nav .wsx *{scrollbar-width:none}
+.isl::-webkit-scrollbar,.isl *::-webkit-scrollbar,.isl-col .isl-body::-webkit-scrollbar,html.win-quest::-webkit-scrollbar,html.win-quest *::-webkit-scrollbar,.nav .wsx::-webkit-scrollbar,.nav .wsx *::-webkit-scrollbar{display:none}
 button{font:inherit;color:inherit;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
