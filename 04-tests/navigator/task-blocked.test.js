@@ -290,8 +290,14 @@ test("F-139 그사이 연결한 폴더가 바뀌면 다시 맡기지 않는다(4
   const moved = await call("POST", "/api/task/retry", { at: t.at, way: "again" });
   assert.equal(moved.status, 409, moved.text); assert.match(moved.json.reason, /폴더/);
   assert.equal((await task()).state, "failed", "B 폴더에서 열지 않았다");
-  assert.equal(Srv.useProject(a), true);
+  // 같은 폴더를 다른 글자로(Windows의 대소문자 · 끝의 구분자) 연결해도 같은 폴더다 — 글자 그대로 견주면 409가 났다(새 맥락 리뷰 보완)
+  assert.equal(Srv.useProject(process.platform === "win32" ? `${a.toUpperCase()}${path.sep}` : `${a}${path.sep}`), true);
   const back = await call("POST", "/api/task/retry", { at: t.at, way: "again" });
   assert.equal(back.status, 200, back.text);
   await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+});
+
+test("F-139 화면 — 계획 줄의 다시 맡기기가 폴더가 바뀌어 거절되면(why folder) 그 글을 새 폴더에 새로 맡기지 않는다", () => {
+  const app = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  assert.match(app, /if \(r && !r\.ok && \(r\.why === "cap" \|\| r\.why === "folder"\)\) \{ render\(\); return say\(r\.reason\); \}/);
 });

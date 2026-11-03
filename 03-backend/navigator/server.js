@@ -504,8 +504,9 @@ function retryTask(body) {
   if (auto && !(task.state === "blocked" && !task.try && task.asks && task.asks.none > 0 && !task.asks.deny)) return [409, { ok: false, reason: "카드 다시 띄우기는 처음 막혔고 카드에 답이 없었을 때 한 번만이에요" }];
   if (!auto && (task.retries || 0) >= RETRY_MAX) return [409, { ok: false, why: "cap", reason: `다시 맡기기는 ${RETRY_MAX}번까지예요 — 직접 하기로 이어 가요` }];
   // F-139(2026-11-03): 처음 맡긴 폴더에서만 — startTask는 그때 연결된 폴더를 다시 골라, 그사이 폴더를 바꾸면 A 폴더의 요구(저장 커밋 · 문서 올리기)가 B 저장소에서 돌았다
+  //   견주기는 실제 경로로(realDir — Windows 대소문자 · 끝의 구분자 · 바로 가기). 글자 그대로면 같은 폴더도 다르다고 했다(새 맥락 리뷰 보완)
   const s = projectNow();
-  if (!s || s.dir !== task.dir) return [409, { ok: false, why: "folder", reason: "그사이 작업 폴더가 바뀌었어요 — 처음 폴더를 다시 연결하거나 새로 맡겨요" }];
+  if (!s || path.relative(realDir(task.dir), realDir(s.dir)) !== "") return [409, { ok: false, why: "folder", reason: "그사이 작업 폴더가 바뀌었어요 — 처음 폴더를 다시 연결하거나 새로 맡겨요" }];
   return startTask(task.req.text, task.req.label, task.req.checks, { at: task.at, try: (task.try || 0) + 1, retries: (task.retries || 0) + (auto ? 0 : 1), note: prevNote(task) + (b.way === "files-only" ? FILES_ONLY : "") });
 }
 
