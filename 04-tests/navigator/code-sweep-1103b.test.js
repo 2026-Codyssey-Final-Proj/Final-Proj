@@ -227,3 +227,22 @@ test("F-144-14 폴더 기록 되살리기 — 모두 지났으면 마친 모습�
   assert.deepEqual(first.quest.lines, [["줄 하나"], []], "되살린 줄로 칸을 채운다");
   assert.match(lineOf(/if \(nx > 0 \|\| st\.results\[0\]\) \{ resumeAt\(nx\); if \(st\.quest\) questStarted\(\); \}/), /questStarted/);
 });
+
+test("F-144-15 퀘스트를 다 적은 뒤 · 관문에서 친 말은 작업 글에 붙여 다시 판정하지 않는다", () => {
+  const run = (st, canLive) => {
+    const calls = [];
+    const send = new Function("st", "QU", "canLive", "logMe", "activity", "mat", "planNow", "planSay", "startDraft", "render", "say", "ACT", "fillNow", "chatSend", "answer", "decide", "judge",
+      `${fnSrc("send")} return send;`)(st, { curIdx: () => -1, pickOf: () => null, SIZE_AT: 3 }, canLive, () => {}, () => {}, () => {}, () => false, () => {}, () => calls.push("start"),
+      () => {}, (m) => calls.push(`say:${m}`), {}, () => calls.push("fill"), (t) => calls.push(`chat:${t}`), () => calls.push("answer"), () => calls.push("decide"), () => calls.push("judge"));
+    send(); return calls;
+  };
+  const live = { say: "완료", busy: false, quest: { phase: "quest", chap: 1 }, j: { stage: 1 }, mode: "live", text: "지난 단계의 보고 글", screen: "main" };
+  assert.deepEqual(run(live, true), ["chat:완료"], "플로로와의 대화로");
+  assert.equal(live.text, "지난 단계의 보고 글", "작업 글은 그대로");
+  const gate = { say: "네 알겠어요", busy: false, quest: null, j: { stage: 2 }, mode: "live", text: "글", screen: "gate", step: "ask" };
+  const g = run(gate, true);
+  assert.ok(!g.includes("judge") && g.some((c) => c.startsWith("say:")), JSON.stringify(g));
+  assert.equal(gate.text, "글");
+  // 퀘스트 없이 마친 뒤(진짜 AI)는 전처럼 바뀐 작업을 판정한다
+  assert.deepEqual(run({ say: "고쳤어요", busy: false, quest: null, j: { stage: 7 }, mode: "live", text: "a", screen: "main" }, true), ["judge"]);
+});

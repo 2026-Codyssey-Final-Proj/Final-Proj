@@ -143,6 +143,12 @@
     if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (q.draft) return fillNow(t); return chatSend(t); }   // C-61(2026-10-29): 보내기는 칸에 적지 않는다 — 플로로가 정리 카드로 돌려주고 사람이 [칸 n개에 적기]를 누른다. 초안 확인(draft)은 C-36대로 그 줄 고쳐 적기
     if (st.screen === "gate" && st.step === "question") { st.question = t; return answer(); }
     if (st.j && st.j.next && st.screen !== "gate" && !st.todos) { st.ownText = t; return decide(t); }
+    // F-144-15(2026-11-03): 퀘스트를 다 적었거나(완료 보고 앞) 관문에서 묻는 동안 친 말을 작업 글(st.text — 지난 단계의 보고 글)에 붙여 다시 판정하지 않는다 —
+    //   전에는 "완료"를 치면 그 글이 지금 단계 기준으로 다시 판정돼 '안 됨'이 남았다. 진짜 AI면 플로로와의 대화로, 아니면 단추를 가리킨다
+    if (q || st.screen === "gate") {
+      if (q && st.mode === "live" && canLive) return chatSend(t);
+      render(); return say("지금은 위 카드의 단추로 해요 — 적은 말은 작업 글에 붙이지 않아요");
+    }
     if (st.j && st.mode === "live") { st.text = `${st.text.trim()}\n${t}`; return judge(false); }
     render(); say(st.j ? "연습에서는 칩으로 해요 — 진짜 AI면 적은 글을 보고 어디쯤인지 봐요" : "먼저 무엇을 만들고 싶은지 말해 주세요");
   }
