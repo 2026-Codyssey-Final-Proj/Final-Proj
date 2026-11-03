@@ -90,6 +90,7 @@ test("F-138 문서 지도 — 단계 문서가 아직 없으면 '흐름 따라�
   const m = D.build([{ path: "README.md", text: "# 앱" }, { path: "docs/PRD.md", text: "# PRD" }]);
   const ids = new Set(m.frames.map((f) => f.id));
   assert.ok(m.tour.length > 0);
+  assert.ok(ids.has(m.start), `처음 보일 틀(${m.start})도 있는 틀로`);
   for (const s of m.tour) {
     for (const f of s.f) assert.ok(ids.has(f), `투어가 없는 틀(${f})을 가리켜요 — 있는 틀: ${[...ids]}`);
     assert.ok(s.ids.length > 0, "비춰 줄 상자가 하나는 있다");
