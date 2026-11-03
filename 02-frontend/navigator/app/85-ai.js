@@ -192,5 +192,5 @@
   const focusText = () => requestAnimationFrame(() => { const t = document.querySelector("[data-act=text]"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } });
   // F-106(FR-14, 2026-10-30 이재엽 버튼 "오류에 연습 단추"): 키 거절 카드의 단추 둘 — 저절로 바꾸지 않고 사람이 고른다. 연습으로는 설정의 보기 방식과 같은 길
   //   보기 방식을 바꾸는 길은 하나(toMode) — 설정의 '보기 방식'(92-basecard)도 같이 쓴다. 닫기는 공통 '닫기'(dismiss)가 키 카드까지 닫는다
-  function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-137)
+  function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); readmeAgain(); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-137)
   Object.assign(ACT, { "practice-now": () => toMode("fixture") });

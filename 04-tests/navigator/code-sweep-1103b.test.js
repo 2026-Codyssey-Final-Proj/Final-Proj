@@ -262,3 +262,13 @@ test("F-144-16 '멈추고 그만두기'가 멈추지 못하면 '멈췄어요'라
   const ok = await make(true).f();
   assert.deepEqual(ok.r, { at: 7, kind: "plan" });
 });
+
+test("F-144-17 작업 폴더 · 보기 방식을 바꾸면 옛 README 책과 찾은 줄을 잊고, 책 탭이 열려 있으면 다시 읽는다", () => {
+  const run = (st) => { let loaded = 0; const r = new Function("st", "loadReadme", `let found = { list: [1] }; ${fnSrc("readmeAgain")} readmeAgain(); return found;`)(st, () => loaded++); return { found: r, loaded }; };
+  const st = { rb: { src: "mine", project: "옛-프로젝트" }, qwin: true, qtab: "lib" };
+  const r = run(st);
+  assert.equal(st.rb, null); assert.equal(r.found, null); assert.equal(r.loaded, 1);
+  assert.equal(run({ rb: {}, qwin: true, qtab: "quest" }).loaded, 0, "책 탭이 아니면 열 때 읽는다(qtab 손잡이)");
+  assert.match(fnSrc("toMode"), /readmeAgain\(\)/, "연습 모드로 바꾸면 진짜 README가 남지 않게");
+  assert.match(lineOf(/const forgetFolder = \(\) => \{[\s\S]*?\n {2}\};/), /readmeAgain\(\)/, "폴더가 바뀌면");
+});

@@ -2553,6 +2553,12 @@
       <p class="meta">${b.cut ? "README가 길어 앞부분만 보여요. " : ""}고치는 곳은 README예요 — 책은 받아 와 보여 주기만 해요.</p></section>`;
   }
   // README 읽기(API.md 3-18) — 서버로 연 화면에서만. 서버 없이 · 폴더를 모름 · README 없음이면 연습 예시 책과 까닭 한 줄
+  // 폴더 · 보기 방식이 바뀌면 받아 둔 README 책과 찾은 줄을 잊는다(F-144-17, 2026-11-03) — 전에는 옛 프로젝트의 README가 '내 저장소 README'로 남고,
+  //   연습 모드에도 진짜 README가 섞였으며(API.md 3-18), 옛 '찾은 줄'의 열기가 옛 목록 번호로 새 폴더의 엉뚱한 파일을 열었다. 책 탭이 열려 있으면 바로 다시 읽는다
+  function readmeAgain() {
+    st.rb = null; found = null;
+    if (st.qwin && st.qtab === "lib") loadReadme();
+  }
   async function loadReadme() {
     if (!RB) return;
     const example = (why) => ({ book: RB.parse(RB.EXAMPLE), src: "example", why });
@@ -3914,7 +3920,7 @@
   const focusText = () => requestAnimationFrame(() => { const t = document.querySelector("[data-act=text]"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } });
   // F-106(FR-14, 2026-10-30 이재엽 버튼 "오류에 연습 단추"): 키 거절 카드의 단추 둘 — 저절로 바꾸지 않고 사람이 고른다. 연습으로는 설정의 보기 방식과 같은 길
   //   보기 방식을 바꾸는 길은 하나(toMode) — 설정의 '보기 방식'(92-basecard)도 같이 쓴다. 닫기는 공통 '닫기'(dismiss)가 키 카드까지 닫는다
-  function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-137)
+  function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); readmeAgain(); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-137)
   Object.assign(ACT, { "practice-now": () => toMode("fixture") });
 // ━━ app/90-acts.js ━━
   // ── 누르기 — data-act 이름 → 할 일. (i: data-i, el: 누른 것) ──
@@ -4663,6 +4669,7 @@
     st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "quest";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
     if (canLive && !ghLoading) loadGithub();
     if (st.qwin) loadFiles();
+    readmeAgain();   // 옛 폴더의 README 책 · 찾은 줄도(F-144-17)
   };
   window.floeUnsaved = () => st.openFiles.filter((f) => f.dirty).length;   // 앱(main.js pickAndConnect)이 폴더를 고르기 전에 묻는다 — 저장 안 한 파일이 있으면 한 번 더 확인(F-72)
   const projectPicked = (d) => {

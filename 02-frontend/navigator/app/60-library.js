@@ -89,6 +89,12 @@
       <p class="meta">${b.cut ? "README가 길어 앞부분만 보여요. " : ""}고치는 곳은 README예요 — 책은 받아 와 보여 주기만 해요.</p></section>`;
   }
   // README 읽기(API.md 3-18) — 서버로 연 화면에서만. 서버 없이 · 폴더를 모름 · README 없음이면 연습 예시 책과 까닭 한 줄
+  // 폴더 · 보기 방식이 바뀌면 받아 둔 README 책과 찾은 줄을 잊는다(F-144-17, 2026-11-03) — 전에는 옛 프로젝트의 README가 '내 저장소 README'로 남고,
+  //   연습 모드에도 진짜 README가 섞였으며(API.md 3-18), 옛 '찾은 줄'의 열기가 옛 목록 번호로 새 폴더의 엉뚱한 파일을 열었다. 책 탭이 열려 있으면 바로 다시 읽는다
+  function readmeAgain() {
+    st.rb = null; found = null;
+    if (st.qwin && st.qtab === "lib") loadReadme();
+  }
   async function loadReadme() {
     if (!RB) return;
     const example = (why) => ({ book: RB.parse(RB.EXAMPLE), src: "example", why });
