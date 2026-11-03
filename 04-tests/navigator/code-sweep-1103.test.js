@@ -82,3 +82,15 @@ test("F-138 문서 지도 — 단계 문서가 아직 없으면 '흐름 따라�
   const withStages = D.build([{ path: "docs/01-idea/a.md", text: "# a" }, { path: "README.md", text: "# 앱" }]);
   assert.deepEqual(withStages.tour[0].f, ["stages"], "단계 문서가 있으면 전처럼 단계 차례로");
 });
+
+test("F-140 앱 — 작업실 · 설정 창을 새로 고치면 처음 열 때의 내용이 아니라 섬이 마지막으로 보낸 내용을 다시 보낸다", () => {
+  const m = fs.readFileSync(path.join(__dirname, "../../02-frontend/electron/main.js"), "utf8");
+  const load = (m.match(/w\.webContents\.on\("did-finish-load"[^\n]*/) || [""])[0];
+  assert.ok(load, "did-finish-load 줄");
+  assert.doesNotMatch(load, /opt\.html/, "만들 때 잡은 opt.html이면 새로 고친 뒤 옛 파일 목록 · 옛 단추가 남았다");
+  assert.match(load, /w\.floeHtml/);
+  const ipc = (m.match(/ipcMain\.on\("floe:win-html"[^\n]*/) || [""])[0];
+  assert.match(ipc, /floeHtml = /, "섬이 새로 보낸 내용을 기억한다");
+  const reuse = (m.match(/if \(w && !w\.isDestroyed\(\)\) \{ if \(opt\.place\)[^\n]*/) || [""])[0];
+  assert.match(reuse, /floeHtml = /, "이미 열린 창을 다시 보일 때 보낸 내용도");
+});
