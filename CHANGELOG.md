@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v61.5 | 2026-11-03 | 두승현 | 최종 프로젝트 소개 페이지 — 02-frontend/intro/index.html 한 파일(서버 · AI 없이 열림, 앱 글꼴 · 색 그대로) (#320) | `02-frontend/intro/`(새 폴더, 담당 임유정) |
 | v61.4 | 2026-11-03 | 이재엽 | 앱 안 문서 지도의 archi-board 엔진 사본을 1.0.0 → 1.4.0으로(사본에만 있는 centerOn · 글꼴 뺌은 그대로), 작은 칸을 가리던 '30초 흐름 따라가기' 띠 · '발표 모드' 단추는 숨김 (#319) | `03-backend/navigator/board/` · `02-frontend/navigator/docmap.html`(담당 임유정 — 이 줄이 알림) · `04-tests/navigator/docmap.test.js` · `04-tests/e2e/docmap.test.js` |
 | v61.3 | 2026-11-03 | 이재엽 | 외부 도구 표에 이미 쓰는 Playwright(시연 GIF 스크립트) 기록 · Playwright MCP와 playwright-cli 판단 · Aside 행 — Electron 앱 자체를 시험하는 후보는 11/8 뒤로 메모 (#318) | `01-docs/catalog/external-tools.md` |
 | v61.2 | 2026-11-03 | 임유정 | 코드 훑어보기 2차 고침 여섯 — 흔한 비밀값 꼴 가리기(F-136) · 연습 뒤 허락 카드(F-137) · 마지막 단계 구분선(F-138) · 문서 지도 흐름 따라가기(F-139) · 다시 맡기기 폴더(F-140) · 옆 창 새로 고침(F-141) (#317) | `02-frontend/navigator/app/` · `02-frontend/electron/` · `03-backend/navigator/`(sensitive.js · server.js · docmap.js · API.md — 담당 이재엽, 이 줄이 알림) · `04-tests/navigator/` · `01-docs/07-maintenance/fix-map.md` |
