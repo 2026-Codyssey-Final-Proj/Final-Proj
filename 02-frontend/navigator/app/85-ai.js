@@ -174,7 +174,7 @@
     else st.finished = true;
     // 퀘스트(C-22): 장을 지나면 무지개 조개 하나, 다음 장 퀘스트(받기 화면)를 만들고 퀘스트 창이 바로 뜬다(설정 '바로 뜨기'). 마지막이면 퀘스트 없이 마무리
     if (QU) { st.shells += 1; level = QU.levelUp(level); if (st.mode !== "fixture") writeLS(LEVEL_KEY, level); st.quest = nx ? QU.retitle(QU.makeQuest(nx, crits(nx.n)), st.topic) : null; if (nx && qauto) openQwin("quest"); }   // 다음 장도 주제를 제목으로(C-36)
-    questStarted();   // C-61 — 새 단계: 섬은 가운데부터. 다음 장 퀘스트를 만든 뒤에 — 전에는 앞에서 불러 구분선 · '가져온 것'이 지난 장 번호였다(F-116)
+    if (nx) questStarted();   // C-61 — 새 단계: 섬은 가운데부터. 다음 장 퀘스트를 만든 뒤에 — 전에는 앞에서 불러 구분선 · '가져온 것'이 지난 장 번호였다(F-116). 마지막 장이면 부르지 않는다 — 8단계 구분선이 한 번 더 붙고 8단계에서 바꾼 파일이 비어 보였다(F-137)
     // 관문을 지난 날(C-39 — 문서의 증빙 · 결정 기록) + C-47 배운 것(비우면 '' — '비어 있음') · 처음 뜻(고르지 않았으면 남기지 않는다, 바뀌었어요인데 비우면 고르지 않은 것)
     const learned = String(st.learnDraft || "").trim().slice(0, 400), gd = st.goalDraft, goal = gd && gd.same ? { same: true } : gd && gd.changed && gd.changed.trim() ? { changed: gd.changed.trim().slice(0, 200) } : null;
     if (st.results[s.n]) st.results = { ...st.results, [s.n]: { ...st.results[s.n], passed: ymd(), learned, ...(goal && s.n >= 1 ? { goal } : {}) } };

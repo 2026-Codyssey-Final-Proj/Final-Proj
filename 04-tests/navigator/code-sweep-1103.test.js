@@ -63,3 +63,9 @@ test("F-136 진짜 AI로 바꾸면 연습의 예시 허락 카드를 내려 서�
   const at = a.indexOf('addEventListener("floe:setup-done", (e)'), done = a.slice(at, at + 600);
   assert.match(done, /d\.via === "cli" \|\| d\.via === "api"\) && canLive\) \{[^}]*liveApprovals\(\)/, "처음 설정에서 진짜 AI를 고르면 부른다");
 });
+
+test("F-137 마지막 단계를 마치면 새 단계 구분선 · '가져온 것'을 다시 붙이지 않는다", () => {
+  const src = fnSrc("advance");
+  assert.doesNotMatch(src, /^\s*questStarted\(\);/m, "다음 단계가 없어도 부르면 8단계 구분선이 한 번 더 쌓이고 8단계 파일 목록이 비어 보였다");
+  assert.match(src, /if \(nx\) questStarted\(\)/, "다음 단계가 있을 때만");
+});
