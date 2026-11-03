@@ -212,6 +212,7 @@ function callCli(prompt, schema, opts = null, L = claudeLaunch()) {   // L — �
     const child = spawn(L.cmd, [...L.pre, ...cliArgs(schema, opts)], { env: { ...process.env, ...L.env, ENABLE_CLAUDEAI_MCP_SERVERS: "false" }, windowsHide: true });
     let out = "";
     const timer = setTimeout(() => { child.kill(); resolve({ error: "시간 초과" }); }, TIMEOUT_MS);
+    child.stdout.setEncoding("utf8");   // 조각마다 따로 풀면 64KB 경계의 한글이 '�'로 깨진 채 JSON.parse를 지났다(F-144-6)
     child.stdout.on("data", (d) => (out += d));
     child.on("error", () => { clearTimeout(timer); resolve({ error: "claude 명령을 찾지 못함 — Claude Code가 설치·로그인됐는지 확인하거나, ANTHROPIC_API_KEY를 설정하세요" }); });
     child.on("close", () => {
@@ -241,6 +242,7 @@ function startTask({ dir, text, bin = process.env.NAV_CLAUDE_BIN || "claude", on
   const L = !js && bin === "claude" ? claudeLaunch() : { cmd: bin, pre: [], env: {} };   // npm으로만 깐 Windows도(F-104-10)
   const child = spawn(js ? process.execPath : L.cmd, js ? [bin, ...args] : [...L.pre, ...args], { cwd: dir, stdio: ["pipe", "pipe", "ignore"], windowsHide: true, ...(Object.keys(L.env).length ? { env: { ...process.env, ...L.env } } : {}) });
   let out = "";
+  child.stdout.setEncoding("utf8");   // F-144-6 — callCli와 같다
   child.stdout.on("data", (d) => { if (out.length < TASK_OUT_MAX) out += d; });
   child.on("close", () => { if (!onResult) return; const j = Tokens.resultOf(out); onResult(j ? { ...Tokens.summarize(j), output: j.structured_output ?? null, denials: Tokens.denialsOf(j), isError: j.is_error === true } : null); });   // denials — 허락을 못 받은 도구의 이름 · 개수, isError — 결과가 오류(F-69)
   child.stdin.on("error", () => {});

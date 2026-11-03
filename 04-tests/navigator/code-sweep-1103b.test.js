@@ -84,3 +84,20 @@ test("F-144-5 claude --version은 기다리는 동안 서버를 붙잡지 않는
   const server = fs.readFileSync(path.join(BACK, "server.js"), "utf8");
   assert.match(server, /await setupNow\(\)/);
 });
+
+test("F-144-6 claude 출력이 64KB 조각 경계에서 한글 가운데로 잘려도 '�'가 생기지 않는다", async () => {
+  const P = require(path.join(BACK, "provider.js"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "floe-enc-")), fake = path.join(dir, "fake-claude.js");
+  // 앞 65,537바이트를 먼저 보내고(한글 세 바이트 가운데) 나머지는 조금 뒤에 — 조각마다 따로 글자로 풀면 깨진다
+  fs.writeFileSync(fake, `const b = Buffer.from(JSON.stringify({ type: "result", structured_output: { t: "가".repeat(30000) }, usage: {} }));
+process.stdin.resume(); process.stdin.on("end", () => { process.stdout.write(b.subarray(0, 65537)); setTimeout(() => process.stdout.write(b.subarray(65537)), 50); });`);
+  const r = await P.callCli("글", { type: "object" }, null, { cmd: process.execPath, pre: [fake], env: {} });
+  fs.rmSync(dir, { recursive: true, force: true });
+  assert.ok(r.data, JSON.stringify(r).slice(0, 200));
+  assert.equal(r.data.t, "가".repeat(30000));
+  const src = fs.readFileSync(path.join(BACK, "provider.js"), "utf8");
+  for (const fn of ["function callCli", "function startTask"]) {
+    const body = src.slice(src.indexOf(fn), src.indexOf("\n}\n", src.indexOf(fn)));
+    assert.match(body, /stdout\.setEncoding\("utf8"\)/, `${fn} — 판정 · 맡긴 일 둘 다`);
+  }
+});

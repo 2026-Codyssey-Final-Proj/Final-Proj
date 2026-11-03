@@ -72,6 +72,7 @@ function runCommand(cmd, args, { cwd, timeout = LIST_MS, env = quietEnv() } = {}
     try { child = spawn(cmd, args, { cwd, env, shell: false, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] }); }
     catch { return end({ code: -1, out: "", missing: true }); }
     timer = setTimeout(() => { try { child.kill(); } catch {} end({ code: -1, out: "", timeout: true }); }, timeout);
+    child.stdout.setEncoding("utf8");   // 조각 경계의 한글이 깨지지 않게(F-144-6과 같은 까닭)
     child.stdout.on("data", (d) => { if (out.length < OUT_MAX) out += d; });
     child.on("error", (e) => end({ code: -1, out: "", missing: e && e.code === "ENOENT" }));
     child.on("close", (code) => end({ code: code == null ? -1 : code, out: out.trimEnd() }));   // 끝만 — 앞 공백은 뜻이 있다(git status --porcelain의 ' M'). 전에는 trim이라 첫 파일 이름의 첫 글자가 잘렸다(F-104-8)
