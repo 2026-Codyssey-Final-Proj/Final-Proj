@@ -337,3 +337,8 @@ test("F-144-26 문서 지도의 '고침' 표시 — 새 폴더 안 문서도 하
   fs.rmSync(dir, { recursive: true, force: true });
   assert.deepEqual(PR.porcelainPaths(g.out).sort(), ["docs/02-plan/b.md", "docs/new.md"]);
 });
+
+test("F-144-28 녹화 도구(record-demo.js)의 안내 줄에 '\\n'이 글자 그대로 찍히지 않는다", () => {
+  const src = fs.readFileSync(path.join(BACK, "record-demo.js"), "utf8");
+  assert.doesNotMatch(src.replace(/\/\/[^\n]*/g, ""), /console\.log\([^\n]*\\\\n/, "console.log 안의 \\\\n은 역슬래시와 n 두 글자");
+});

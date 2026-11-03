@@ -43,7 +43,7 @@ async function main() {
   delete process.env.NAV_REPLAY;
   const { callClaude, usage } = require("./provider.js");
   const u0 = usage();
-  console.log(`공급자: ${u0.provider === "api" ? `내 API 키 (${u0.model}) · 보내는 곳 ${u0.host}${u0.compat ? " · 호환 모드" : ""}` : "이 컴퓨터에 로그인된 Claude Code"} · 저장: ${path.relative(process.cwd(), file)}\\n`);
+  console.log(`공급자: ${u0.provider === "api" ? `내 API 키 (${u0.model}) · 보내는 곳 ${u0.host}${u0.compat ? " · 호환 모드" : ""}` : "이 컴퓨터에 로그인된 Claude Code"} · 저장: ${path.relative(process.cwd(), file)}\n`);   // \n — 전에는 \\n이라 글자 그대로 찍혔다(F-144-28)
 
   const again = args.includes("--again");
   const labels = REC.loadLabels(file);
@@ -75,8 +75,8 @@ async function main() {
     }
   }
   REC.save(file, REC.load(file), labels);
-  if (stop) console.log("\\n⏹ 같은 오류가 되풀이될 것 같아 멈췄어요");
-  console.log(`\\n새로 녹화 ${done} · 건너뜀 ${skipped} · 실패 ${failed} — 이번에 ${tokens.toLocaleString()}토큰 (${process.env.NAV_PURPOSE} 통)`);
+  if (stop) console.log("\n⏹ 같은 오류가 되풀이될 것 같아 멈췄어요");
+  console.log(`\n새로 녹화 ${done} · 건너뜀 ${skipped} · 실패 ${failed} — 이번에 ${tokens.toLocaleString()}토큰 (${process.env.NAV_PURPOSE} 통)`);
   console.log(`재생: NAV_REPLAY=${path.relative(process.cwd(), file)} node server.js   (키·토큰 없이 진짜 AI 답으로 시연)`);
   process.exit(failed ? 1 : 0);
 }
