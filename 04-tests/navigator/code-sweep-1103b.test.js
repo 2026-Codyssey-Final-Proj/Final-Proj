@@ -29,3 +29,15 @@ test("F-144-1 mergeSection — 끝 표시가 없거나 시작보다 앞에 있�
   // 짝이 맞으면 전과 같다
   assert.equal(D.mergeSection(`앞\n${block("v1")}\n뒤`, block("v2")), `앞\n${block("v2")}\n뒤`);
 });
+
+test("F-144-2 허락 카드 — 강제 푸시 · 원격 지우기 · 긴 옵션의 rm · Windows rd /s도 '한 번 더'를 건다", () => {
+  const AP = require(path.join(BACK, "approve.js"));
+  const why = (command) => AP.card({ hook_event_name: "PermissionRequest", session_id: "s", cwd: "/p", tool_name: "Bash", tool_input: { command } }).danger;
+  for (const c of ["git push origin +main", "git push origin +HEAD:main", "git push --mirror", "git push origin --delete feature", "git push origin :feature", "git push -d origin x",
+    "rm --recursive --force src", "rm -R src", "rd /s /q src", "rmdir /s build", "Remove-Item -Recurse -Force src", "del /f /s *.js"]) {
+    assert.ok(why(c), `위험 표시가 있어야 해요: ${c}`);
+  }
+  for (const c of ["git push origin feature", "git push -u origin main", "git push origin HEAD:main", "npm run build", "git status", "echo a+b"]) {
+    assert.equal(why(c), "", `보통 일: ${c}`);
+  }
+});
