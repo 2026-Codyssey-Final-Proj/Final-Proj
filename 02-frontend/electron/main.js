@@ -315,18 +315,18 @@ function openSideWin(kind, opt = {}) {
   const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
   const b = boundsFor(kind, opt.side, isl, wa, opt.size);
   let w = wins[kind];
-  if (w && !w.isDestroyed()) { if (opt.place) { w.setBounds(b); Object.assign(w, { floeSide: opt.side, floeMoved: false }); } w.show(); if (typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); return; }
+  if (w && !w.isDestroyed()) { if (opt.place) { w.setBounds(b); Object.assign(w, { floeSide: opt.side, floeMoved: false }); } w.show(); if (typeof opt.html === "string") { w.floeHtml = opt.html; w.webContents.send("floe:win-html", opt.html); } return; }
   const ws = kind === "quest";   // 작업실(C-41) — 보통 창. 바탕색은 win.html · app.css(html.win-quest)와 같은 값
   w = wins[kind] = new BrowserWindow({ ...ICON_OPT, ...b, frame: ws, transparent: false, backgroundColor: ws ? "#E9EEF6" : "#363E62", alwaysOnTop: !ws, resizable: ws, minimizable: ws, hasShadow: true, show: false,
     minWidth: ws ? 640 : 260, minHeight: ws ? 480 : 200, title: ws ? "Floe — 작업실" : "Floe — 설정",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   if (!ws) w.setAlwaysOnTop(true, "floating");
-  Object.assign(w, { floeSide: opt.side, floeMoved: false });   // 다시 둘 때(placeSideWins · floe:win-size) 같은 규칙으로
+  Object.assign(w, { floeSide: opt.side, floeMoved: false, floeHtml: typeof opt.html === "string" ? opt.html : null });   // 다시 둘 때(placeSideWins · floe:win-size) 같은 규칙으로. floeHtml — 섬이 마지막으로 보낸 내용(F-141)
   if (ws) { w.on("will-resize", () => { w.floeUser = true; }); w.on("resize", rememberWork); w.on("move", rememberWork); }   // 작업실 — 사람이 바꾼 크기 · 자리를 기억(R-1). 앱이 둔 자리(setBounds)는 will-* 없이 와서 적히지 않는다
   w.on("will-move", () => { w.floeMoved = true; w.floeUser = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
   w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
   if (ws && win && !win.isDestroyed()) win.hide();   // 작업실을 만들면 섬 창은 바로 숨는다 — 섬은 작업실 안의 옆 칸에(C-41 ⑤). 작업실이 뜰 때(ready-to-show)까지 기다리면 켤 때 섬 창의 알약 · 말풍선이 흐리게 깜박였다(F-101, 임유정 2026-10-29)
-  w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof opt.html === "string") w.webContents.send("floe:win-html", opt.html); });
+  w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof w.floeHtml === "string") w.webContents.send("floe:win-html", w.floeHtml); });   // 새로 고침(메뉴 · Ctrl+R)에도 마지막 내용을 — 창을 만들 때 받은 내용이면 옛 파일 목록 · 옛 단추가 남았다. 섬은 바뀔 때만 보낸다(F-141)
   w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (win && !win.isDestroyed()) { if (ws) win.show(); win.webContents.send("floe:win-closed", kind); } });   // 작업실이 닫히면 섬 창이 다시 뜬다(C-41 ⑤)
   w.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\//.test(url)) shell.openExternal(url); return { action: "deny" }; });
   w.webContents.on("will-navigate", keepInApp);   // F-103-22
@@ -348,7 +348,7 @@ const closeSideWins = () => { for (const k of Object.keys(wins)) { const w = win
 const fromIsland = (e) => !!win && !win.isDestroyed() && e.sender === win.webContents;
 const fromSide = (e) => Object.values(wins).some((w) => w && !w.isDestroyed() && e.sender === w.webContents);
 ipcMain.on("floe:win-open", (e, kind, opt) => { if (fromIsland(e) && sideKind(kind)) openSideWin(kind, opt || {}); });
-ipcMain.on("floe:win-html", (e, kind, html) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.webContents.send("floe:win-html", String(html || "")); });
+ipcMain.on("floe:win-html", (e, kind, html) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) { w.floeHtml = String(html || ""); w.webContents.send("floe:win-html", w.floeHtml); } });
 ipcMain.on("floe:win-close", (e, kind) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.close(); });
 ipcMain.on("floe:win-size", (e, kind, size) => {
   const w = sideKind(kind) && wins[kind];

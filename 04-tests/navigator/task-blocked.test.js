@@ -274,3 +274,30 @@ test("화면: 허락 카드 · 막힌 일 · 멈춘 것 같은 일이 있으면 
   assert.match(pin, /st\.apWait/); assert.match(pin, /st\.blocked && !st\.blocked\.retrying/); assert.match(pin, /st\.stall && st\.stall\.lv !== "calm"/);
   assert.match(a, /st\.apWait = approvals\.length > 0;/, "허락 카드가 있는 동안");
 });
+
+// claude-drafted: 2026-11-03 — F-140 다시 맡기기는 처음 맡긴 폴더에서만. 전에는 그때 연결된 폴더(projectNow)를 다시 골라 A 폴더의 요구가 B 저장소에서 돌았다
+test("F-140 그사이 연결한 폴더가 바뀌면 다시 맡기지 않는다(409) — 처음 폴더로 돌아오면 다시 맡긴다", async () => {
+  await until(async () => { const x = await task(); return !x || x.state !== "running"; });
+  const a = hooked(fs.mkdtempSync(path.join(TMP, "proj-a-"))), b = hooked(fs.mkdtempSync(path.join(TMP, "proj-b-")));
+  assert.equal(Srv.useProject(a), true);
+  plan({ delay: 100, exit: 1 });
+  const r = await call("POST", "/api/task/start", { text: "A 폴더 일" });
+  assert.equal(r.status, 200, r.text);
+  const t = await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+  assert.equal(t.state, "failed");
+  assert.equal(Srv.useProject(b), true);
+  plan({ delay: 100 });
+  const moved = await call("POST", "/api/task/retry", { at: t.at, way: "again" });
+  assert.equal(moved.status, 409, moved.text); assert.match(moved.json.reason, /폴더/);
+  assert.equal((await task()).state, "failed", "B 폴더에서 열지 않았다");
+  // 같은 폴더를 다른 글자로(Windows의 대소문자 · 끝의 구분자) 연결해도 같은 폴더다 — 글자 그대로 견주면 409가 났다(새 맥락 리뷰 보완)
+  assert.equal(Srv.useProject(process.platform === "win32" ? `${a.toUpperCase()}${path.sep}` : `${a}${path.sep}`), true);
+  const back = await call("POST", "/api/task/retry", { at: t.at, way: "again" });
+  assert.equal(back.status, 200, back.text);
+  await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
+});
+
+test("F-140 화면 — 계획 줄의 다시 맡기기가 폴더가 바뀌어 거절되면(why folder) 그 글을 새 폴더에 새로 맡기지 않는다", () => {
+  const app = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  assert.match(app, /if \(r && !r\.ok && \(r\.why === "cap" \|\| r\.why === "folder"\)\) \{ render\(\); return say\(r\.reason\); \}/);
+});
