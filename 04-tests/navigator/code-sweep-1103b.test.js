@@ -212,3 +212,18 @@ test("F-144-13 섬 화면 — 한글을 조합하는 동안의 입력은 다시 
   assert.match(APP, /addEventListener\("input", \(e\) => \{ activity\(\); if \(!e\.isComposing\) return onInput\(e\.target\); imeHold = true;/);
   assert.match(APP, /addEventListener\("compositionend", \(e\) => \{ if \(!imeSkipped\) return; imeSkipped = false; onInput\(e\.target\); \}\)/);
 });
+
+test("F-144-14 폴더 기록 되살리기 — 모두 지났으면 마친 모습으로, 1단계(관문 전)는 되살린 줄로 칸을 채운다", () => {
+  const QU = require(path.join(BACK, "quest.js"));
+  const STAGES = [{ n: 0, title: "아이디어", criteria: [{ text: "가" }, { text: "나" }] }, { n: 1, title: "요구", criteria: [{ text: "다" }] }];
+  const make = (st) => new Function("st", "N", "QU", "LB", "crits", `${fnSrc("resumeAt")} return resumeAt;`)(st, { STAGES }, QU, (n) => `${n + 1}단계`, (n) => STAGES[n].criteria);
+  const done = { results: {} }; make(done)(2);
+  assert.equal(done.finished, true);
+  assert.equal(done.j && done.j.stage, 1, "st.j가 비면 시작 화면이 떴다 — 마지막 단계를 마친 모습");
+  assert.equal(done.quest, null);
+  const first = { results: { 0: { items: [{ name: "가", lines: ["줄 하나"] }, { name: "나", lines: [] }] } }, topic: "앱" }; make(first)(0);
+  assert.equal(first.j.stage, 0);
+  assert.equal(first.quest.phase, "quest");
+  assert.deepEqual(first.quest.lines, [["줄 하나"], []], "되살린 줄로 칸을 채운다");
+  assert.match(lineOf(/if \(nx > 0 \|\| st\.results\[0\]\) \{ resumeAt\(nx\); if \(st\.quest\) questStarted\(\); \}/), /questStarted/);
+});

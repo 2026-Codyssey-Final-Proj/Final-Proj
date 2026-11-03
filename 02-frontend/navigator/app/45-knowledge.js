@@ -55,11 +55,21 @@
       acts: R.stale.length ? [{ label: read.length ? "다시 읽기" : "확인했어요", act: "restore-read", key: "Enter", pri: true }, { label: "나중에", act: "restore-later", kind: "ghost" }] : [{ label: "확인했어요", act: "restore-later", key: "Enter", pri: true }] };
   }
   // 되살린 단계부터 — advance처럼 그 장의 할 일 · 퀘스트를 세운다(레벨 · 조개는 올리지 않는다 — 이미 지난 관문)
+  //   F-144-14(2026-11-03): 모두 지난 폴더면 마지막 단계를 마친 모습(advance의 끝과 같게 — st.j는 마지막 단계, 퀘스트 없음). 전에는 st.j가 비어 시작 화면이 떠
+  //   글을 치면 새 1단계가 옛 2 ~ 8단계 기록과 섞였다. 1단계(관문 전)는 되살린 줄로 칸을 채운다 — 전에는 빈 퀘스트도 만들지 않았다
   function resumeAt(n) {
     const s = N.STAGES[n];
-    if (!s) { st.finished = true; return; }
+    if (!s) {
+      const L = N.STAGES.length - 1;
+      st.j = { stage: L, reason: `폴더의 기록으로 ${LB(L)}까지 마친 것을 되살렸어요.`, criteria: crits(L).map((c) => ({ text: c.text, term: c.term, met: true, evidence: "" })), next: null };
+      st.quest = null; st.finished = true; return;
+    }
     st.j = { stage: n, reason: `폴더의 기록으로 ${LB(n)} "${s.title}"부터 이어서 해요.`, criteria: crits(n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
-    if (QU) st.quest = QU.retitle(QU.makeQuest(s, crits(n)), st.topic);
+    if (!QU) return;
+    const q = QU.retitle(QU.makeQuest(s, crits(n)), st.topic), r = n === 0 && st.results[0];
+    st.quest = r && Array.isArray(r.items)
+      ? { ...q, phase: "quest", lines: q.objs.map((o, i) => { const it = r.items.find((x) => x && x.name === o.name); return it && Array.isArray(it.lines) ? it.lines.filter((x) => typeof x === "string" && x.trim()) : q.lines[i]; }) }
+      : q;
   }
 
   // ── 지식 퀘스트 C-48(2026-10-29 — PRD 6절 · 9절 1 · 2번): 다음 프로젝트로 가져가기 ──
@@ -277,7 +287,7 @@
       st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
       const t = tierOf(st.results[0]); if (t) st.tier = t;
       st.restore = null;
-      if (nx > 0) resumeAt(nx);
+      if (nx > 0 || st.results[0]) { resumeAt(nx); if (st.quest) questStarted(); }   // 1단계만 있어도(F-144-14) — 대화 구분선 · '가져온 것'도 새 단계처럼
       save(); render(); say(`${R.got.map((n) => LB(n)).join(" · ")} 기록을 폴더에서 되살렸어요.`);
       if (N.STAGES[nx]) carryLoad(nx);   // C-48
       if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1]) stageDraft(nx); else if (st.j && st.j.stage === nx) questText();
