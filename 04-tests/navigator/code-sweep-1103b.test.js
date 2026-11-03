@@ -195,3 +195,14 @@ test("F-144-11 비밀값 경고에서 '그만둘게요'면 보내지 않기로 �
   await go("할 일 앱");
   assert.equal(st2.source, "할 일 앱", "지나간 글은 기록한다");
 });
+
+test("F-144-12 '기록 지우기'는 진짜 AI 모드의 서버 대화도 지운 뒤 다시 읽는다", async () => {
+  const src = lineOf(/forget: async \(\) => \{[^\n]*?location\.reload\(\); \}/);
+  const calls = [];
+  const acts = new Function("chatFolder", "fetch", "localStorage", "location", "KEY", "BOUND_KEY", `let forgotten = false; return ({ ${src} });`)(
+    true, async (u, o) => { calls.push(["fetch", u, JSON.parse(o.body)]); return {}; }, { removeItem: (k) => calls.push(["rm", k]) }, { reload: () => calls.push(["reload"]) }, "k", "b");
+  await acts.forget();
+  assert.deepEqual(calls[0], ["fetch", "/api/chatlog", { clear: true }]);
+  assert.deepEqual(calls[calls.length - 1], ["reload"], "지운 뒤에 다시 읽는다");
+  assert.doesNotMatch(APP, /기록은 이 컴퓨터의 브라우저에만 남아요/, "문구도 서버 쪽을 말한다");
+});
