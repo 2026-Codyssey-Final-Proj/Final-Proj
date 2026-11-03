@@ -1,0 +1,816 @@
+<!doctype html>
+<!-- claude-drafted: 2026-11-03 — 두승현 요청("새로운 브랜치 파서, 최종 프로젝트 소개 페이지를 만들어줘, HTML로")으로 Claude가 썼다.
+     서버 · AI · 저장 없음 — 이 파일 하나를 브라우저로 연다. 글꼴 · 그림 · 사진은 저장소 안의 것만 쓴다(밖으로 요청하지 않는다, security-records 3절).
+     재료: README.md(2026-11-01 판) · 기획안 final-project-plan.md · 시연 한 줄기(2026-11-01) · 기능 전체 목록(2026-10-31) · navigator.js STAGES · TEAM.md · schedule.md · CHANGELOG(v61.3).
+     숫자는 전부 잰 날짜와 함께 적었다. 색 · 글꼴은 앱(app.css · fonts.css)의 팀 토큰 그대로다.
+     2026-11-03 2차(두승현 "지금 존재하는 기능을 중심으로, 지어내지 말고 근거를 잡고"): 여덟 단계 · 완료 기준 · 용어 풀이 · 연습 예시는 손으로 옮기지 않고
+     앱의 규칙 파일(navigator.js STAGES · glossary.js · quest.js 연습 예시)을 이 페이지가 직접 읽는다. 옛 소개 초안(website/floe-site.html, 10/21)에서 가져온 것은
+     지금 앱에 있는 것 넷뿐 — 용어 풀이 · 예시 셋 중 고르기 · 가져갈 것(앱 문구 그대로) · 운영체제별 처음 열기(README 11.0.0 판). -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floe — 얼음 위 작업실에서, 플로로와 함께 · 최종 프로젝트 소개</title>
+<meta name="description" content="AI에게 코드를 맡기는 사람이 끝까지 만들고, 이해하고, 배움을 쌓도록 곁에서 길을 안내하는 데스크톱 앱 Floe. 2026 코디세이 AI 네이티브 Final-Project.">
+<style>
+/* ── 글꼴: 앱과 같은 셋(저장소 안 파일, SIL OFL) ── */
+@font-face{font-family:"Gowun Dodum";src:url("../assets/fonts/GowunDodum-Regular.woff") format("woff");font-weight:400;font-display:swap}
+@font-face{font-family:"Bagel Fat One";src:url("../assets/fonts/BagelFatOne-Regular.woff") format("woff");font-weight:400;font-display:swap}
+@font-face{font-family:"Nanum Gothic Coding";src:url("../assets/fonts/NanumGothicCoding-Regular.woff") format("woff");font-weight:400;font-display:swap}
+@font-face{font-family:"Nanum Gothic Coding";src:url("../assets/fonts/NanumGothicCoding-Bold.woff") format("woff");font-weight:700;font-display:swap}
+
+/* ── 토큰: 앱(app.css C-57)의 팀 색 그대로 — 바다(남색) · 바탕 · 종이 · 얼음 · 선 · 글자 · 흐린 글자 · 단추 · 금 · 민트 · 볼 ── */
+:root{
+  --sea:#363E62; --sea-2:#454E77; --sea-deep:#2A3150;
+  --desk:#E9EEF6; --paper:#F2F5FA; --ice:#E2E9F4; --line:#C5CEE2;
+  --ink:#2B3463; --mute:#5B6491;
+  --acc:#4D66B5; --acc-soft:#D3E0F3; --acc-btn:#B8C9F0; --acc-mid:#C6D5EE;
+  --gold:#C9A43A; --gold-bg:#EFE3C0; --gold-ink:#7A5E1E;
+  --mint:#A9E2C4; --rose:#8E3A52; --rose-bg:#F3DCE3;
+  --font-text:"Gowun Dodum","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --font-disp:"Bagel Fat One",var(--font-text);
+  --font-code:"Nanum Gothic Coding",ui-monospace,Menlo,Consolas,monospace;
+  --w:1080px; --r:22px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--desk);color:var(--ink);font:16px/1.7 var(--font-text);word-break:keep-all;overflow-wrap:anywhere;-webkit-font-smoothing:antialiased}
+a{color:var(--acc)}
+a:focus-visible,button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--acc);outline-offset:3px;border-radius:6px}
+img{max-width:100%;height:auto;display:block}
+h1,h2,h3{font-family:var(--font-disp);font-weight:400;line-height:1.25;margin:0;letter-spacing:.01em}
+h2{font-size:clamp(26px,3.2vw,36px)}
+h3{font-size:20px}
+p{margin:0 0 1em}
+code{font-family:var(--font-code);font-size:.92em;background:var(--ice);padding:1px 6px;border-radius:6px;color:var(--ink)}
+.wrap{max-width:var(--w);margin:0 auto;padding:0 24px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ── 위 줄: 머리말 — 앱의 머리 줄처럼 한 줄 ── */
+.top{position:sticky;top:0;z-index:5;background:rgba(242,245,250,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:18px;min-height:56px}
+.top .brand{font-family:var(--font-disp);font-size:20px;color:var(--sea);text-decoration:none;display:flex;align-items:center;gap:8px}
+.top nav{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.top nav a{text-decoration:none;color:var(--mute);font-size:14px;padding:6px 10px;border-radius:999px}
+.top nav a:hover{background:var(--ice);color:var(--ink)}
+
+/* ── 바다: 첫 화면 ── */
+.hero{background:var(--sea);color:#EEF2FA;position:relative;overflow:hidden;padding:72px 0 0}
+.hero .wrap{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;position:relative}
+.hero h1{font-size:clamp(44px,7vw,88px);color:#F2F5FA;line-height:1.05}
+.hero h1 small{display:block;font-family:var(--font-text);font-size:clamp(17px,2vw,22px);color:#C6D5EE;margin-top:14px;line-height:1.55;letter-spacing:0}
+.hero .lead{font-size:18px;color:#DCE4F3;max-width:34em;margin:22px 0 28px}
+.hero .acts{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 20px;border-radius:999px;border:1px solid transparent;text-decoration:none;font-size:15px;font-weight:700;color:var(--ink);background:var(--acc-btn)}
+.btn:hover{background:#C9D7F3}
+.btn.ghost{background:transparent;color:#E2E9F4;border-color:#6E78A6}
+.btn.ghost:hover{background:rgba(255,255,255,.08)}
+.hero .floe{position:relative;display:grid;place-items:center;min-height:360px}
+.hero .floe .slab{border:0;padding:0;position:absolute;width:78%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(226,233,244,.22),rgba(226,233,244,0) 70%)}
+.hero .floe img{position:relative;width:min(320px,72%);border-radius:22%;filter:drop-shadow(0 16px 28px rgba(0,0,0,.35))}
+.hero .facts{position:relative;margin:56px 0 0;background:rgba(242,245,250,.08);border-top:1px solid rgba(197,206,226,.25)}
+.hero .facts .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:0;padding:0 24px;align-items:start}
+.hero .facts .wrap>div{padding:18px 16px 18px 0;border-right:1px solid rgba(197,206,226,.2)}
+.hero .facts .wrap>div:last-child{border-right:0}
+.hero .facts b{display:block;font-family:var(--font-disp);font-size:24px;color:#F2F5FA}
+.hero .facts span{font-size:13.5px;color:#C6D5EE}
+.wave{display:block;width:100%;height:54px;background:var(--sea)}
+.wave svg{display:block;width:100%;height:100%}
+
+/* ── 본문 묶음 ── */
+section{padding:72px 0}
+section+section{padding-top:0}
+.head{margin-bottom:28px;max-width:40em}
+.head p{color:var(--mute);margin:10px 0 0;font-size:17px}
+.floes{display:grid;gap:18px}
+.floes.two{grid-template-columns:repeat(2,1fr)}
+.floes.three{grid-template-columns:repeat(3,1fr)}
+.slab{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:24px 26px}
+.slab h3{margin-bottom:8px}
+.slab p:last-child{margin-bottom:0}
+.quote{font-size:clamp(22px,2.6vw,30px);font-family:var(--font-disp);color:var(--sea);line-height:1.4;max-width:24em}
+.quote small{display:block;font-family:var(--font-text);font-size:14px;color:var(--mute);margin-top:12px}
+
+/* 왜 — 문제 셋을 종이 세 장으로 */
+.why .floes{margin-top:30px}
+.why .slab b{color:var(--sea)}
+
+/* 약속 셋 */
+.promise{counter-reset:p}
+.promise .slab{position:relative;padding-top:30px}
+.promise .slab::before{counter-increment:p;content:counter(p);position:absolute;top:-16px;left:22px;width:36px;height:36px;border-radius:50%;background:var(--sea);color:#F2F5FA;font-family:var(--font-disp);display:grid;place-items:center;font-size:18px}
+.promise .slab em{font-style:normal;color:var(--mute);font-size:14px;display:block;margin-top:10px}
+
+/* ── 여덟 단계 길 — 이 페이지의 하나뿐인 큰 장면 ── */
+.path{background:linear-gradient(180deg,var(--desk),#DCE5F2 60%,var(--desk));padding:72px 0}
+.stages{position:relative;display:grid;grid-template-columns:repeat(8,1fr);gap:10px;margin:30px 0 22px;padding:0;list-style:none}
+.stages::before{content:"";position:absolute;left:4%;right:4%;top:42px;border-top:3px dotted var(--line);z-index:0}
+.stage{position:relative;z-index:1}
+.stage button{all:unset;cursor:pointer;display:block;width:100%;text-align:center;padding:10px 4px 8px}
+.stage .floe-s{position:relative;width:76px;height:64px;margin:0 auto 10px;background:var(--paper);border:1px solid var(--line);border-radius:48% 52% 46% 54%/58% 42% 58% 42%;display:grid;place-items:center;font-family:var(--font-disp);font-size:24px;color:var(--sea);transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
+.stage:nth-child(2n) .floe-s{border-radius:52% 48% 56% 44%/44% 56% 44% 56%}
+.stage button:hover .floe-s{transform:translateY(-3px);box-shadow:0 10px 24px rgba(43,52,99,.15)}
+.stage button[aria-selected="true"] .floe-s{background:var(--sea);color:#F2F5FA;box-shadow:inset 0 0 0 3px var(--acc-mid),0 12px 28px rgba(43,52,99,.25)}
+.stage .nm{font-size:14px;color:var(--ink);font-weight:700}
+.stage .seal{position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:44px;height:44px;opacity:0;transition:opacity .2s}
+.stage button[aria-selected="true"] .seal{opacity:1}
+@media (prefers-reduced-motion:reduce){.stage .floe-s,.stage .seal{transition:none}}
+.stage-panel{background:var(--sea);color:#E9EEF6;border-radius:var(--r);padding:28px 30px;display:grid;grid-template-columns:1.1fr .9fr;gap:30px;min-height:230px}
+.stage-panel h3{color:#F2F5FA;font-size:26px;margin-bottom:6px}
+.stage-panel .k{font-size:14px;color:#C6D5EE;margin:0 0 14px}
+.stage-panel ul{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.stage-panel li{display:grid;grid-template-columns:22px 1fr;gap:8px;align-items:start;font-size:15px}
+.stage-panel li i{width:18px;height:18px;margin-top:4px;border-radius:50%;border:2px solid var(--mint);display:block}
+.stage-panel li small{display:block;color:#9FB0DB;font-size:12.5px;font-family:var(--font-code)}
+.stage-panel .hint{font-size:13.5px;color:#C6D5EE;border-top:1px solid rgba(197,206,226,.25);padding-top:12px;margin-top:14px}
+
+/* 용어 풀이 — 앱의 '용어: …' 단추와 같은 모양(10-views.js) */
+.term{all:unset;cursor:pointer;display:inline-block;font-size:12.5px;padding:1px 9px;border-radius:999px;background:rgba(198,213,238,.18);color:#C6D5EE;border:1px solid rgba(198,213,238,.35);margin-top:3px}
+.term[aria-expanded="true"]{background:var(--acc-mid);color:var(--ink);border-color:var(--acc-mid)}
+.term-def{display:block;font-size:13.5px;color:#E9EEF6;background:rgba(242,245,250,.08);border-radius:10px;padding:6px 10px;margin-top:6px}
+.slab .term{background:var(--acc-soft);color:var(--ink);border-color:var(--acc-mid)}
+.slab .term[aria-expanded="true"]{background:var(--sea);color:#F2F5FA;border-color:var(--sea)}
+.slab .term-def{background:var(--ice);color:var(--ink)}
+.stage-panel .tier{font-size:11.5px;color:#9FB0DB;margin-left:6px}
+/* 연습 예시 — quest.js의 예시 그대로 */
+.ex{grid-column:1/-1;border-top:1px solid rgba(197,206,226,.25);padding-top:16px;margin-top:4px}
+.ex .k{margin-bottom:8px}
+.ex .q{font-size:15px;color:#F2F5FA;margin:0 0 10px}
+.ex .lines{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:14.5px}
+.ex .lines li{background:rgba(242,245,250,.08);border-radius:10px;padding:8px 12px}
+.ex .lines li b{display:block;font-size:12.5px;color:#9FB0DB;font-weight:400}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.choices button{all:unset;cursor:pointer;box-sizing:border-box;padding:10px 12px;border-radius:12px;background:rgba(242,245,250,.08);border:1px solid rgba(197,206,226,.3);font-size:14px;line-height:1.55;color:#E9EEF6}
+.choices button:hover{border-color:var(--acc-mid)}
+.choices button[aria-pressed="true"]{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.ex .after{font-size:13px;color:#C6D5EE;margin:10px 0 0}
+/* 가져갈 것 — 앱 문구 그대로 */
+.app-say{margin:12px 0 0;padding:10px 12px;border-left:3px solid var(--acc-mid);background:var(--ice);border-radius:0 10px 10px 0;font-size:14px;color:var(--ink)}
+.app-say small{display:block;color:var(--mute);font-size:12px;margin-top:4px}
+/* 내려받기 */
+.dl{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.dl .slab b{display:block;font-family:var(--font-disp);font-size:22px;color:var(--sea)}
+.dl .slab code{font-size:13px}
+.dl .slab p{font-size:14.5px;color:var(--mute);margin:8px 0 0}
+.setup{list-style:none;margin:18px 0 0;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;counter-reset:su}
+.setup li{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px;font-size:13.5px;color:var(--mute)}
+.setup li b{display:block;font-size:15px;color:var(--sea);margin-bottom:2px}
+.setup li b::before{counter-increment:su;content:counter(su) ". ";color:var(--acc)}
+
+/* 퀘스트 한 바퀴 다섯 칸 */
+.loop{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;align-items:stretch;margin-top:26px}
+.loop .cell{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px 14px;min-height:150px;position:relative}
+.loop .cell b{display:block;font-family:var(--font-disp);font-size:17px;color:var(--sea);margin-bottom:6px}
+.loop .cell p{font-size:14px;color:var(--mute);margin:0}
+.loop .cell.now{box-shadow:inset 0 0 0 2px var(--acc)}
+.loop .cell.gate{box-shadow:inset 0 0 0 2px var(--gold);background:#F7F2E3}
+.loop .cell+.cell::before{content:"";position:absolute;left:-12px;top:50%;width:12px;border-top:2px solid var(--line)}
+.loop .cell .st{position:absolute;right:10px;top:10px;font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--ice);color:var(--mute)}
+.loop .cell.now .st{background:var(--acc-soft);color:var(--ink)}
+
+/* 장면 다섯 */
+.scenes{display:grid;grid-template-columns:200px 1fr;gap:24px;align-items:start}
+.scene-list{list-style:none;margin:0;padding:0;display:grid;gap:6px;position:sticky;top:72px}
+.scene-list button{all:unset;cursor:pointer;display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--paper);width:100%}
+.scene-list button i{font-family:var(--font-disp);color:var(--sea);font-size:18px;text-align:center;font-style:normal}
+.scene-list button span{font-size:14px}
+.scene-list button small{display:block;color:var(--mute);font-size:12px}
+.scene-list button[aria-selected="true"]{background:var(--sea);border-color:var(--sea);color:#F2F5FA}
+.scene-list button[aria-selected="true"] i,.scene-list button[aria-selected="true"] small{color:#C6D5EE}
+.scene-view{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:26px 28px;min-height:360px}
+.scene-view h3{font-size:24px;margin-bottom:4px}
+.scene-view .t{color:var(--mute);font-size:14px;margin-bottom:14px}
+.scene-view ol{margin:0 0 16px;padding-left:1.2em;display:grid;gap:6px}
+.scene-view .see{display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:14px;margin-top:14px}
+.scene-view .see div{background:var(--ice);border-radius:14px;padding:12px 14px}
+.scene-view .see b{display:block;margin-bottom:4px;color:var(--sea)}
+.scene-view figure{margin:16px 0 0}
+.scene-view figure img{border-radius:14px;border:1px solid var(--line)}
+.scene-view figcaption{font-size:13px;color:var(--mute);margin-top:8px}
+
+/* 기능 10 */
+.feats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 28px;margin:0;padding:0;list-style:none;counter-reset:f}
+.feats li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.feats li::before{counter-increment:f;content:counter(f,decimal-leading-zero);font-family:var(--font-disp);font-size:22px;color:var(--acc);line-height:1.2}
+.feats b{display:block;font-size:17px;color:var(--sea);margin-bottom:2px}
+.feats p{margin:0;font-size:15px;color:var(--mute)}
+
+/* 동작 — 상자와 선을 HTML로 */
+.flow{display:grid;grid-template-columns:1fr 36px 1.2fr 36px 1fr;gap:12px;align-items:start;margin-top:26px}
+.flow .box{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:14.5px}
+.flow .box b{display:block;font-family:var(--font-disp);font-size:17px;color:var(--sea);margin-bottom:4px}
+.flow .box code{font-size:12.5px;background:rgba(43,52,99,.06);padding:1px 5px;color:var(--ink)}
+.flow .col{display:grid;gap:12px}
+.flow .arr{display:grid;place-items:center;color:var(--line)}
+.flow .arr svg{width:30px;height:20px}
+.flow .box.ai{background:#EEF3FB;border-color:var(--acc-mid)}
+.flow .box.you{background:var(--gold-bg);border-color:#E3D3A2}
+.rules{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:26px}
+.rules .slab{padding:20px 22px}
+.rules .slab b{display:block;font-size:17px;color:var(--sea);margin-bottom:6px}
+.rules .slab p{font-size:14.5px;color:var(--mute)}
+
+/* 안전장치 · 기술 — 표 */
+table{width:100%;border-collapse:collapse;font-size:15px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+th,td{text-align:left;vertical-align:top;padding:12px 14px;border-top:1px solid var(--line)}
+thead th{background:var(--ice);border-top:0;font-weight:700;color:var(--ink)}
+td:first-child{white-space:nowrap;font-weight:700;color:var(--sea)}
+.tbl{border-radius:var(--r);overflow:auto}
+
+/* 숫자 */
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.nums .slab{text-align:left;padding:20px 22px}
+.nums b{display:block;font-family:var(--font-disp);font-size:34px;color:var(--sea);line-height:1.1}
+.nums span{font-size:14px;color:var(--mute)}
+.nums small{display:block;font-size:12px;color:var(--mute);margin-top:6px;font-family:var(--font-code)}
+
+/* 플로로 */
+.floro .wrap{display:grid;grid-template-columns:.8fr 1.2fr;gap:36px;align-items:center}
+.floro img{max-width:420px}
+.moods{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 0;padding:0;list-style:none}
+.moods li{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:14px}
+
+/* 팀 */
+.team{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.team .slab{padding:20px 20px}
+.team b{display:block;font-family:var(--font-disp);font-size:22px;color:var(--sea)}
+.team span{display:block;font-size:14px;color:var(--mute);margin:4px 0 8px}
+.team p{font-size:14.5px;margin:0}
+.team code{font-size:12.5px}
+.howwork{margin-top:18px;background:var(--sea);color:#E9EEF6;border-radius:var(--r);padding:22px 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:18px;font-size:14.5px}
+.howwork b{display:block;color:#F2F5FA;font-family:var(--font-disp);font-size:17px;margin-bottom:4px}
+
+/* 일정 · 배점 */
+.cal{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+.score{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.score li{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;font-size:15px}
+.score li .bar{grid-column:1/-1;height:10px;border-radius:999px;background:var(--ice);overflow:hidden}
+.score li .bar i{display:block;height:100%;background:var(--acc);border-radius:999px}
+.score li b{font-family:var(--font-disp);color:var(--sea);font-size:18px}
+.dates{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.dates li{display:grid;grid-template-columns:110px 1fr;gap:12px;align-items:baseline;font-size:15px}
+.dates li b{font-family:var(--font-disp);color:var(--sea);font-size:18px}
+.dates li.now b{color:var(--acc)}
+
+/* 한계 */
+.limits ul{margin:0;padding-left:1.2em;display:grid;gap:8px;font-size:15px}
+
+/* 더 읽기 · 바닥 */
+.links{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0;padding:0;list-style:none}
+.links a{display:block;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-decoration:none;color:var(--ink);font-size:14.5px}
+.links a:hover{border-color:var(--acc)}
+.links a small{display:block;color:var(--mute);font-size:12.5px;margin-top:2px}
+footer{background:var(--sea);color:#C6D5EE;padding:40px 0 60px;font-size:14px;margin-top:40px}
+footer .wrap{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end}
+footer b{color:#F2F5FA;font-family:var(--font-disp);font-size:22px;display:block;margin-bottom:6px}
+footer a{color:#E2E9F4}
+
+/* ── 좁은 화면 ── */
+@media (max-width:980px){
+  .hero .wrap{grid-template-columns:1fr}
+  .hero .floe{min-height:280px}
+  .hero .facts .wrap{grid-template-columns:repeat(2,1fr)}
+  .hero .facts .wrap>div{border-right:0;border-bottom:1px solid rgba(197,206,226,.2)}
+  .floes.three,.rules,.nums,.team,.links{grid-template-columns:repeat(2,1fr)}
+  .stages{grid-template-columns:repeat(4,1fr);gap:14px 10px}
+  .stages::before{display:none}
+  .stage-panel,.scenes,.floro .wrap,.cal,.flow,.howwork{grid-template-columns:1fr}
+  .dl{grid-template-columns:1fr}
+  .setup{grid-template-columns:repeat(3,1fr)}
+  .choices{grid-template-columns:1fr}
+  .flow .arr svg{transform:rotate(90deg)}
+  .scene-list{position:static;grid-template-columns:repeat(2,1fr)}
+  .loop{grid-template-columns:repeat(3,1fr)}
+  .loop .cell+.cell::before{display:none}
+  .feats{grid-template-columns:1fr}
+}
+@media (max-width:600px){
+  .floes.two,.floes.three,.rules,.nums,.team,.links,.scene-list,.loop,.setup{grid-template-columns:1fr}
+  .top nav{display:none}
+  section{padding:52px 0}
+  .scene-view .see{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Floe 맨 위로">🧊 Floe</a>
+    <nav aria-label="페이지 안 이동">
+      <a href="#why">왜</a><a href="#promise">약속</a><a href="#path">여덟 단계</a><a href="#scenes">시연</a><a href="#features">기능</a><a href="#how">동작</a><a href="#numbers">숫자</a><a href="#team">팀</a><a href="#download">내려받기</a><a href="#limits">한계</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ════ 첫 화면 ════ -->
+<section class="hero" aria-labelledby="h-title">
+  <div class="wrap">
+    <div>
+      <h1 id="h-title">Floe
+        <small>얼음 위 작업실에서, 플로로와 함께.<br>AI에게 코드를 맡기는 사람이 <strong>끝까지 만들고, 이해하고, 배움을 쌓도록</strong> 곁에서 길을 안내하는 데스크톱 앱</small>
+      </h1>
+      <p class="lead">바이브 코딩은 결과물은 내 주지만, 지금 몇 단계인지 · 다음에 무엇을 할지 · 무엇을 정했는지는 세션이 쌓일수록 사라집니다. Floe는 그 빈자리를 채우는 쪽이 AI가 아니라 <strong>사람</strong>이도록 만듭니다.</p>
+      <div class="acts">
+        <a class="btn" href="#download">앱 내려받기</a>
+        <a class="btn ghost" href="https://github.com/2026-Codyssey-Final-Proj/Final-Proj">GitHub 저장소</a>
+        <a class="btn ghost" href="../index.html">시연 입구 열기</a>
+      </div>
+    </div>
+    <div class="floe" aria-hidden="true">
+      <div class="slab"></div>
+      <img src="../assets/mascot/floro.svg" alt="">
+    </div>
+  </div>
+  <div class="facts" aria-label="지금 상태">
+    <div class="wrap">
+      <div><b>11.0.0</b><span>앱 버전 — 2026-10-31, 11/1 기능 동결 판 · Mac · Windows · 우분투</span></div>
+      <div><b>v61.3</b><span>버전 기록 — 2026-11-03, PR마다 한 줄이 쌓인 것</span></div>
+      <div><b>11 / 8</b><span>제출 마감 18:00 — 코디세이 AI 네이티브 Final-Project</span></div>
+      <div><b>11 / 12 · 13</b><span>발표 10분 + 질의응답 10분</span></div>
+    </div>
+  </div>
+</section>
+<div class="wave" aria-hidden="true"><svg viewBox="0 0 1440 54" preserveAspectRatio="none"><path d="M0 20 C 180 54 360 54 540 28 C 720 2 900 2 1080 28 C 1260 54 1350 54 1440 30 L1440 54 L0 54 Z" fill="#E9EEF6"/></svg></div>
+
+<!-- ════ 왜 ════ -->
+<section id="why" class="why" aria-labelledby="h-why">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-why">왜 만들었나</h2>
+      <p>팀장이 학생으로서 겪은 문제에서 시작했지만, 이 문제는 학생에게만 있지 않습니다. 대상은 AI로 프로그램을 만드는 모든 사람입니다.</p>
+    </div>
+    <p class="quote">"AI가 일하는 시대에도,<br>성장하는 건 사람이어야 한다."<small>기획안의 목표 한 문장 — 이재엽 확정, 2026-10-12</small></p>
+    <div class="floes three">
+      <div class="slab">
+        <h3>코드는 늘고, 이해는 비어 간다</h3>
+        <p>AI 코딩 도구 덕분에 누구나 말로 서비스를 만들 수 있게 됐습니다. 그런데 <b>코드를 생성하는 것</b>과 <b>프로젝트를 완성하고 돌아보며 실력을 키우는 것</b>은 다른 문제입니다.</p>
+      </div>
+      <div class="slab">
+        <h3>어디쯤인지 몰라 멈춘다</h3>
+        <p>AI가 만든 결과가 맞는지, 지금 어느 단계이고 다음에 무엇을 해야 하는지 판단하지 못해 개발이 중간에 멈춥니다. 세션이 쌓일수록 결정은 흩어집니다.</p>
+      </div>
+      <div class="slab">
+        <h3>끝내도 설명하지 못한다</h3>
+        <p>끝까지 만들어도 내 코드를 설명하지 못하고, 배운 것이 다음 프로젝트로 이어지지 않습니다. 실력이 늘었는지 체감하기 어렵습니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 약속 셋 ════ -->
+<section id="promise" aria-labelledby="h-promise">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-promise">약속 셋</h2>
+      <p>시연 장면 다섯이 보여 줘야 하는 것은 이 셋뿐입니다(시연 한 줄기, 2026-11-01).</p>
+    </div>
+    <div class="floes three promise">
+      <div class="slab">
+        <h3>지금 어디고, 다음에 무엇을</h3>
+        <p>1~8단계 중 지금 몇 단계인지, 이번 단계에서 어디까지 해야 하는지, 다음 할 일 한 줄을 늘 보입니다.</p>
+        <em>사용자가 느끼는 것 — 길을 잃지 않는다</em>
+      </div>
+      <div class="slab">
+        <h3>AI가 쓰고, 사람이 정하고, 이해하고 넘어간다</h3>
+        <p>초안은 플로로가 내고 확정은 사람이 누릅니다. 관문에서 "이해하셨나요?"에 예라고 답하기 전에는 다음 단계로 가지 않습니다.</p>
+        <em>사용자가 느끼는 것 — 맡기되 내가 결정한다</em>
+      </div>
+      <div class="slab">
+        <h3>배움이 남는다</h3>
+        <p>관문마다 배운 것 한 줄, 단계마다 한 장, 8단계에서 다음 프로젝트로 가져갈 것. 문서는 사용자의 GitHub 저장소에 쌓입니다.</p>
+        <em>사용자가 느끼는 것 — 끝나면 기록과 배운 것이 내 폴더에</em>
+        <p class="app-say">"단계마다 적은 배운 것과 결정 기록으로 초안을 1 ~ 3개 만들어요. 고쳐서 채택하거나 버려도 돼요 — 정하는 건 나예요."<small>8단계 · 가져갈 것 — 앱 문구 그대로</small></p>
+        <p class="app-say">"채택하면 다음 프로젝트부터 그 단계에서 보여요." "고른 것은 이 단계의 준비 계획에 근거로 들어가요."<small>다음 프로젝트의 그 단계 · 지난 프로젝트에서 — 앱 문구 그대로</small></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 여덟 단계 길 ════ -->
+<section id="path" class="path" aria-labelledby="h-path">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-path">여덟 단계, 한 길</h2>
+      <p>개인 프로젝트에서 쓰던 7단계 개발 방법론에 코딩마라톤 루틴(의도명세 → 요구 문장 → 계획 → 작업)을 합쳐 쉬운 말로 바꾼 길입니다. 얼음을 누르면 그 단계의 완료 기준과 앱의 연습 예시가 보입니다. 아래 글은 이 페이지가 앱의 규칙 파일을 직접 읽어 그린 것이라 앱과 같습니다.</p>
+    </div>
+    <ol class="stages" role="tablist" aria-label="여덟 단계">
+      <li class="stage"><button role="tab" data-stage="0" aria-selected="true" aria-controls="stage-panel"><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"/><circle cx="24" cy="34" r="3" fill="#1A2350"/><circle cx="40" cy="34" r="3" fill="#1A2350"/><ellipse cx="32" cy="42" rx="3.5" ry="2.5" fill="#1A2350"/></svg><span class="floe-s">1</span><span class="nm">정하기</span></button></li>
+      <li class="stage"><button role="tab" data-stage="1" aria-selected="false" aria-controls="stage-panel"><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"/><circle cx="24" cy="34" r="3" fill="#1A2350"/><circle cx="40" cy="34" r="3" fill="#1A2350"/><ellipse cx="32" cy="42" rx="3.5" ry="2.5" fill="#1A2350"/></svg><span class="floe-s">2</span><span class="nm">적어 두기</span></button></li>
+      <li class="stage"><button role="tab" data-stage="2" aria-selected="false" aria-controls="stage-panel"><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"/><circle cx="24" cy="34" r="3" fill="#1A2350"/><circle cx="40" cy="34" r="3" fill="#1A2350"/><ellipse cx="32" cy="42" rx="3.5" ry="2.5" fill="#1A2350"/></svg><span class="floe-s">3</span><span class="nm">기능 정리</span></button></li>
+      <li class="stage"><button role="tab" data-stage="3" aria-selected="false" aria-controls="stage-panel"><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"/><circle cx="24" cy="34" r="3" fill="#1A2350"/><circle cx="40" cy="34" r="3" fill="#1A2350"/><ellipse cx="32" cy="42" rx="3.5" ry="2.5" fill="#1A2350"/></svg><span class="floe-s">4</span><span class="nm">방법 고르기</span></button></li>
+      <li class="stage"><button role="tab" data-stage="4" aria-selected="false" aria-controls="stage-panel"><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"/><circle cx="24" cy="34" r="3" fill="#1A2350"/><circle cx="40" cy="34" r="3" fill="#1A2350"/><ellipse cx="32" cy="42" rx="3.5" ry="2.5" fill="#1A2350"/></svg><span class="floe-s">5</span><span class="nm">뼈대</span></button></li>
+      <li class="stage"><button role="tab" data-stage="5" aria-selected="false" aria-controls="stage-panel"><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"/><circle cx="24" cy="34" r="3" fill="#1A2350"/><circle cx="40" cy="34" r="3" fill="#1A2350"/><ellipse cx="32" cy="42" rx="3.5" ry="2.5" fill="#1A2350"/></svg><span class="floe-s">6</span><span class="nm">만들기</span></button></li>
+      <li class="stage"><button role="tab" data-stage="6" aria-selected="false" aria-controls="stage-panel"><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"/><circle cx="24" cy="34" r="3" fill="#1A2350"/><circle cx="40" cy="34" r="3" fill="#1A2350"/><ellipse cx="32" cy="42" rx="3.5" ry="2.5" fill="#1A2350"/></svg><span class="floe-s">7</span><span class="nm">재 보기</span></button></li>
+      <li class="stage"><button role="tab" data-stage="7" aria-selected="false" aria-controls="stage-panel"><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="38" rx="22" ry="20" fill="#EEF5FD" stroke="#9FB5D9" stroke-width="2"/><circle cx="24" cy="34" r="3" fill="#1A2350"/><circle cx="40" cy="34" r="3" fill="#1A2350"/><ellipse cx="32" cy="42" rx="3.5" ry="2.5" fill="#1A2350"/></svg><span class="floe-s">8</span><span class="nm">돌아보기</span></button></li>
+    </ol>
+    <div class="stage-panel" id="stage-panel" role="tabpanel" aria-live="polite">
+      <div>
+        <h3 id="sp-title">무엇을 만들지 정하기</h3>
+        <p class="k" id="sp-k">1단계 · 정하기</p>
+        <p id="sp-desc"></p>
+        <p id="sp-flow" class="k"></p>
+        <p class="hint">"용어: …"를 누르면 앱의 용어 풀이가 그대로 펼쳐집니다. 화면에는 쉬운 말만 크게, 전문 용어는 작게 붙습니다(FR-13 — 시험으로 강제).</p>
+      </div>
+      <div>
+        <p class="k">관문을 넘으려면 — 완료 기준</p>
+        <ul id="sp-crit"></ul>
+      </div>
+      <div class="ex" id="sp-ex"></div>
+    </div>
+    <noscript><p>이 칸은 앱의 규칙 파일을 읽어 그립니다. 자바스크립트를 켜야 보입니다.</p></noscript>
+
+    <div class="head" style="margin-top:56px">
+      <h3 style="font-size:26px">단계마다 퀘스트 한 바퀴</h3>
+      <p>어느 단계에 있든 같은 다섯 칸을 돌고 관문을 넘습니다. 아래는 3단계 "기능 정리"에서 ③ 기록을 하는 중인 모습입니다.</p>
+    </div>
+    <div class="loop" aria-label="퀘스트 한 바퀴 — 다섯 칸과 관문">
+      <div class="cell"><span class="st">끝남</span><b>① 생각</b><p>원하는 것을 말하면 플로로 초안. 채팅에서 맞는지 봅니다.</p></div>
+      <div class="cell"><span class="st">끝남</span><b>② 행동</b><p>확정한 줄을 내 Claude Code에 맡깁니다. 다 되면 보고가 옵니다.</p></div>
+      <div class="cell now"><span class="st">지금</span><b>③ 기록</b><p>정한 줄 Ⅰ ~ Ⅴ. 완료 보고 뒤 한 장(생각 · 한 일 · 정한 것 · 배운 말 · 다음 할 일).</p></div>
+      <div class="cell"><span class="st">아직</span><b>④ 저장</b><p>단계 문서 · 기획서 · 결정 기록이 내 GitHub 저장소에.</p></div>
+      <div class="cell"><span class="st">아직</span><b>⑤ 버전</b><p>관문을 넘을 때마다 V.n. README 맨 앞 버전 기록에.</p></div>
+      <div class="cell gate"><span class="st">넘어가기 전</span><b>관문</b><p>빈칸 · 증거 없는 칸은 안 됨. "이해하셨나요?"에 예라야 다음 장.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 시연 장면 다섯 ════ -->
+<section id="scenes" aria-labelledby="h-scenes">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-scenes">3분 시연 — 장면 다섯</h2>
+      <p>11/1 기능 동결 뒤 제출까지는 이 장면만 봅니다. 연습 판(AI 호출 없음, 전송 0)으로 끝까지 돌아가고, 진짜 AI로는 녹화본을 재생합니다.</p>
+    </div>
+    <div class="scenes">
+      <ol class="scene-list" role="tablist" aria-label="장면">
+        <li><button role="tab" data-scene="0" aria-selected="true"><i>0</i><span>켜기<small>0:00 – 0:10</small></span></button></li>
+        <li><button role="tab" data-scene="1" aria-selected="false"><i>1</i><span>1단계 초안<small>0:10 – 0:45</small></span></button></li>
+        <li><button role="tab" data-scene="2" aria-selected="false"><i>2</i><span>퀘스트 탭<small>0:45 – 1:05</small></span></button></li>
+        <li><button role="tab" data-scene="3" aria-selected="false"><i>3</i><span>관문<small>1:05 – 1:40</small></span></button></li>
+        <li><button role="tab" data-scene="4" aria-selected="false"><i>4</i><span>맡기기<small>1:40 – 2:25</small></span></button></li>
+        <li><button role="tab" data-scene="5" aria-selected="false"><i>5</i><span>기록<small>2:25 – 3:00</small></span></button></li>
+      </ol>
+      <div class="scene-view" id="scene-view" role="tabpanel" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 기능 10 ════ -->
+<section id="features" aria-labelledby="h-feat">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-feat">주요 기능 열</h2>
+      <p>있는 기능은 81개입니다(2026-10-31 기능 전체 목록). 그중 사용자가 처음 2분 안에 만나는 것만 골랐습니다.</p>
+    </div>
+    <ol class="feats">
+      <li><div><b>1~8단계 길 안내</b><p>정하기 → 적어 두기 → 기능 정리 → 방법 고르기 → 뼈대 → 만들기 → 재 보기 → 돌아보기. 지금 단계와 다음 할 일 한 줄을 늘 보입니다.</p></div></li>
+      <li><div><b>초안은 플로로, 확정은 나</b><p>원하는 것을 한 단락 말하면 1단계 초안이 오고, 2~8단계는 앞 단계 결과로 초안을 만듭니다. 4~8단계는 칸마다 예시 셋 중 고릅니다.</p></div></li>
+      <li><div><b>퀘스트 탭 하나</b><p>위에 여덟 장 지도, 아래에 지금 퀘스트 다섯 칸. 지금 줄만 펼쳐지고, 흐름 · 문서 상자 보기로 바꿀 수 있습니다.</p></div></li>
+      <li><div><b>관문</b><p>빈칸 · 증거 없는 칸은 안 됨. 넘기려면 채우거나 까닭을 적고, 까닭은 결정 기록에 남습니다. "이해하셨나요?"에 아니요면 헷갈린 곳을 고르고 한 장 요약을 받습니다.</p></div></li>
+      <li><div><b>계획 → 맡기기 → 보고</b><p>붙여 넣은 글로 계획을 세우고 줄마다 확정하면 내 Claude Code가 이어서 합니다. 기준마다 해냈는지 보고가 옵니다.</p></div></li>
+      <li><div><b>섬의 허락 카드</b><p>Claude Code가 파일을 고치거나 명령을 돌리기 전에 허락을 구하면 섬에 카드가 뜹니다. 답이 없으면 허용되지 않은 채 도구 자신의 확인으로 넘어갑니다.</p></div></li>
+      <li><div><b>문서를 내 GitHub에</b><p>관문을 지나면 단계 문서 · 기획서 · 결정 기록 · CLAUDE.md를 작업 폴더에 씁니다. 커밋 · 푸시는 허락을 받은 Claude Code가. 비밀값 모양은 쓰기 전에 가립니다.</p></div></li>
+      <li><div><b>파일을 작업실에서</b><p>파일 칸에서 누르면 열립니다. md는 보기 좋게, 코드는 줄 번호와 git과 다른 줄. 고쳐 저장하고 되돌리며, 문서 고치기는 틀로 맡깁니다.</p></div></li>
+      <li><div><b>배운 것을 다음 프로젝트로</b><p>관문마다 배운 것 한 줄, 단계마다 한 장, 8단계에서 가져갈 것을 골라 다음 프로젝트의 그 단계에서 다시 봅니다. 지식 창고(세컨드 브레인)로도 넣습니다.</p></div></li>
+      <li><div><b>플로로</b><p>표정 11가지 · 고개 돌리기 · 둥실 · 잠수 · 쓰다듬기. 섬을 접으면 가장자리의 알약 안에서 얼굴만 내밉니다. 움직임 줄이기를 켠 사람에게는 움직이지 않습니다.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- ════ 어떻게 동작하나 ════ -->
+<section id="how" aria-labelledby="h-how">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-how">어떻게 동작하나</h2>
+      <p>앱 하나에 셋이 들어 있습니다 — 섬(플로로와 채팅) · 작업실(지도 · 퀘스트 · 책 · 파일) · 로컬 서버. 서버는 앱이 켤 때 같이 켜지고 이 컴퓨터 안에서만 듣습니다.</p>
+    </div>
+    <div class="flow" aria-label="동작 구조">
+      <div class="col">
+        <div class="box you"><b>사용자</b>원하는 것을 말하고, 칸마다 맞아요를 누르고, 관문에서 이해했다고 답합니다.</div>
+        <div class="box"><b>Electron 앱</b>섬(<code>index.html</code>)과 작업실(<code>win.html</code>)을 한 창에. 화면은 바닐라 JavaScript, 프레임워크 없음.</div>
+      </div>
+      <div class="arr" aria-hidden="true"><svg viewBox="0 0 30 20"><path d="M2 10h22M18 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="col">
+        <div class="box"><b>server.js</b>로컬 API 43개. <code>127.0.0.1:4317</code>에서만 듣고, 요청마다 출처와 확인 값을 봅니다.</div>
+        <div class="box"><b>navigator.js</b>단계 · 관문 판정 규칙. 같은 입력이면 같은 답 — AI가 아닙니다.</div>
+        <div class="box ai"><b>provider.js</b>외부 AI를 부르는 유일한 곳. 다른 파일이 AI를 부르면 시험이 실패합니다.</div>
+      </div>
+      <div class="arr" aria-hidden="true"><svg viewBox="0 0 30 20"><path d="M2 10h22M18 4l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="col">
+        <div class="box ai"><b>Claude</b>내 API 키로 Claude API, 없으면 이 컴퓨터의 Claude Code 구독, 그것도 없으면 연습 모드.</div>
+        <div class="box"><b>Claude Code</b>사용자의 프로젝트 폴더에서 돕니다. 훅 둘(<code>hook.js</code> · <code>approve-hook.js</code>)이 한 일과 허락 요청을 섬으로 보냅니다.</div>
+        <div class="box you"><b>사용자의 GitHub 저장소</b>단계 문서 · 기획서 · 결정 기록이 쌓이는 곳. 키 · 글은 여기 가지 않습니다.</div>
+      </div>
+    </div>
+
+    <div class="rules" aria-label="지키는 원칙">
+      <div class="slab"><b>판정은 코드 규칙</b><p>지금 몇 단계인지, 관문을 넘어도 되는지는 AI가 아니라 규칙이 정합니다. AI는 초안과 설명만 냅니다(ADR-0003).</p></div>
+      <div class="slab"><b>AI는 한 곳에서만</b><p>외부 AI를 부르는 파일은 하나. 키 · 실패 처리 · 비용을 한곳에서 봅니다(ADR-0009).</p></div>
+      <div class="slab"><b>확정은 사람이 누른다</b><p>초안의 칸마다 맞아요 / 고칠래요 / 직접, 관문의 "이해하셨나요?", Claude Code의 허락 요청 — 전부 사람의 단추입니다. 대신 허용하는 자동 길은 없습니다(FR-17).</p></div>
+      <div class="slab"><b>쉬운 말</b><p>화면의 말에 전문 용어를 쓰지 않습니다. 용어는 작게 붙이고 "배운 말"로 모읍니다(FR-13 — 시험이 지킵니다). 눌러 보세요 — <span data-term-demo="EARS"></span></p></div>
+      <div class="slab"><b>배움이 남는다</b><p>관문마다 배운 것 한 줄, 단계마다 한 장, 8단계에서 가져갈 것. 문서는 사용자의 저장소에 쌓입니다.</p></div>
+      <div class="slab"><b>내 것으로 돈다</b><p>내 키 → 내 Claude Code 구독 → 연습 모드. 서버는 이 컴퓨터에서만 열리고, 밖으로 나가는 요청은 AI 호출뿐입니다.</p></div>
+    </div>
+
+    <div class="head" style="margin-top:56px">
+      <h3 style="font-size:26px">운영 안전장치</h3>
+      <p>AI에게 폴더를 맡기는 앱이라, 무엇이 밖으로 나가고 누가 허락하는지를 먼저 정했습니다.</p>
+    </div>
+    <div class="tbl">
+    <table>
+      <thead><tr><th>무엇</th><th>어떻게</th></tr></thead>
+      <tbody>
+        <tr><td>서버</td><td><code>127.0.0.1</code>에서만 열리고, 요청마다 출처와 확인 값(화면은 쿠키, 훅은 머리글)을 봅니다. 맞지 않으면 403.</td></tr>
+        <tr><td>허락은 사람만</td><td>허락 훅은 섬의 답을 기다리고(기본 90초), 답이 없거나 서버가 꺼져 있으면 허용되지 않은 채 Claude Code 자신의 확인으로 넘깁니다. 결정은 그 요청의 지문과 짝이 맞을 때만 받습니다. 되돌리기 어려운 일(<code>git push --force</code> 같은)은 빨간 카드로 한 번 더 묻습니다.</td></tr>
+        <tr><td>비밀값 가리기</td><td>AI로 보내는 글 · 저장소에 쓰는 글은 키 · 메일 · 전화 모양을 먼저 가립니다(<code>sensitive.js</code>). 모아서 4,000자까지만, 자료로만 보냅니다 — 그 안의 지시는 따르지 않습니다.</td></tr>
+        <tr><td>토큰 장부</td><td>어느 AI로 얼마나 썼는지 보이고, 한도를 넘으면 멈춥니다. 호출 기록은 녹화해 두고 실제 AI 없이 재생합니다 — 시험 전부가 이 길로 돕니다.</td></tr>
+        <tr><td>연습 모드</td><td>키가 거절되거나 서버가 없으면 '연습용 예시로 둘러보기'로 바로 갑니다. 시연 · 사용 테스트는 이 판으로도 끝까지 됩니다.</td></tr>
+        <tr><td>공개 저장소 확인</td><td>문서를 올리기 전에 저장소가 공개인지 <code>gh</code>로 묻고, 공개(또는 모름)면 저장소마다 처음 한 번 더 묻습니다.</td></tr>
+        <tr><td>밖으로 나가는 요청</td><td>AI 호출뿐입니다. 글꼴 · 그림은 앱 안에 있고, Claude Desktop 같이 쓰기 · 원격 MCP는 기본 꺼짐(시험판)입니다.</td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <div class="head" style="margin-top:56px">
+      <h3 style="font-size:26px">기술 구성</h3>
+      <p>프레임워크 없이, 의존성은 Anthropic SDK 하나. 서버 없이도 <code>index.html</code> 하나로 열립니다.</p>
+    </div>
+    <div class="tbl">
+    <table>
+      <thead><tr><th>영역</th><th>선택</th><th>이유</th></tr></thead>
+      <tbody>
+        <tr><td>앱</td><td>Electron 44.9.0 · electron-builder</td><td>섬 · 작업실 · 서버를 한 설치 파일로. Mac <code>.dmg</code> · Windows <code>.exe</code> · 우분투 <code>.AppImage</code> / <code>.deb</code></td></tr>
+        <tr><td>화면</td><td>Vanilla JavaScript · CSS</td><td>섬은 조각 19개를 <code>app-parts.js</code>로 묶어 <code>app.js</code> 하나. 글꼴 셋은 앱 안 파일</td></tr>
+        <tr><td>서버</td><td>Node.js 내장 <code>http</code></td><td>이 컴퓨터 안에서만 듣는 로컬 API 43개</td></tr>
+        <tr><td>판정</td><td>코드 규칙 <code>navigator.js</code></td><td>단계 · 관문 · 칸 상태를 AI 바깥에 둬 같은 입력이면 같은 답</td></tr>
+        <tr><td>AI</td><td>Claude — API 키 또는 이 컴퓨터의 Claude Code</td><td>각자 자기 키 · 구독으로. 호출은 <code>provider.js</code> 한 곳, 녹화 · 재생으로 시험</td></tr>
+        <tr><td>코딩 도구 연동</td><td>Claude Code 훅 + <code>claude -p</code></td><td>사용자의 폴더에서 도는 Claude Code를 바꾸지 않고 곁에서 듣고 묻는다</td></tr>
+        <tr><td>문서 지도</td><td>archi-board 엔진 v1 사본(ArchiMate 표기, MIT)</td><td>문서가 어떻게 이어지는지 상자와 선으로</td></tr>
+        <tr><td>시험</td><td>node <code>--test</code> · python · Puppeteer e2e</td><td>실제 AI · 실제 GitHub 없이 돈다. 커밋 전 훅이 전체 시험을 요구한다</td></tr>
+        <tr><td>CI</td><td>GitHub Actions 4개</td><td>조각 ↔ app.js 일치 · PR base는 main · 변경 조각 → CHANGELOG · Jira 릴리스 · 앱 버전이 오르면 세 OS 빌드</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 숫자 ════ -->
+<section id="numbers" aria-labelledby="h-num">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-num">숫자로 보면</h2>
+      <p>문서의 숫자를 믿지 않고 직접 재서 적었습니다. 잰 날짜가 숫자마다 붙어 있습니다.</p>
+    </div>
+    <div class="nums">
+      <div class="slab"><b>81</b><span>있는 기능 — 사용자가 만나는 자리 여덟 묶음으로</span><small>2026-10-31 기능 전체 목록</small></div>
+      <div class="slab"><b>43</b><span>로컬 API 주소 — 전부 127.0.0.1, 시험이 그대로 대조</span><small>2026-10-31 API.md</small></div>
+      <div class="slab"><b>1,168</b><span>시험 수 — 23개 파일 전체 통과, 실패 0 (puppeteer 없는 컴퓨터라 94개는 건너뜀)</span><small>2026-11-02 run_all_tests.py</small></div>
+      <div class="slab"><b>292</b><span>병합된 PR 수 — 커밋 제목에 F-번호 · C-번호, PR마다 변경 조각 한 장</span><small>2026-11-03 gh pr list</small></div>
+      <div class="slab"><b>4,646</b><span>섬 화면 조각 19개의 줄 수</span><small>2026-10-31 wc -l</small></div>
+      <div class="slab"><b>6,414</b><span>서버 54 파일의 줄 수 + 문서 지도 엔진 1,270</span><small>2026-10-31 wc -l</small></div>
+      <div class="slab"><b>8</b><span>단계 — 관문마다 완료 기준 4~5개, 전문 용어는 작게</span><small>navigator.js STAGES</small></div>
+      <div class="slab"><b>11</b><span>플로로의 표정 — 기본 · 기쁨 · 생각 · 하트 · 깜짝 · 잠 …</span><small>seal.js</small></div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 플로로 ════ -->
+<section class="floro" aria-labelledby="h-floro">
+  <div class="wrap">
+    <div>
+      <img src="../assets/mascot/floro-moods.svg" alt="플로로의 표정 — 기본 · 기쁨 · 생각 · 하트 · 깜짝 · 잠">
+    </div>
+    <div>
+      <h2 id="h-floro">🦭 플로로를 소개합니다</h2>
+      <p style="margin-top:12px">물에서 고개를 내민 길잡이 물범. 지금 단계를 알려 주고, 기다리는 동안 곁을 지킵니다. 눈 · 코가 마우스 쪽으로 돌고, 둥실 · 빼꼼 · 잠수 · 물 뿜기를 하고, 쓰다듬으면 하트가 뜹니다. 섬을 접으면 가장자리의 알약 안에서 얼굴만 내밉니다.</p>
+      <p>이름 Floe(얼음 조각)와 Floro(플로로)는 2026-10-17에 확정했습니다. 캐릭터는 고한결이 그렸고, 그림 코드(<code>seal.js</code>)와 표정 · 움직임은 섬 · 서고가 같이 씁니다.</p>
+      <ul class="moods" aria-label="플로로가 하는 것">
+        <li>표정 11가지</li><li>고개 돌리기</li><li>둥실</li><li>빼꼼</li><li>잠수</li><li>물 뿜기</li><li>쓰다듬으면 하트</li><li>졸다가 잠들기</li><li>별 튀는 축하</li><li>움직임 줄이기 존중</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 팀 ════ -->
+<section id="team" aria-labelledby="h-team">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-team">네 사람</h2>
+      <p>역할은 경계가 아니라 책임자입니다. 모두 <code>main</code>에 직접 올릴 수 있고, 남의 담당 폴더를 고쳐도 동의를 기다리지 않습니다 — 버전 기록 한 줄과 PR이 담당에게 가는 알림입니다(팀 결정 2026-10-18).</p>
+    </div>
+    <div class="team">
+      <div class="slab"><b>이재엽</b><span>팀장 · 총괄 · 제출 · AI 에이전트 · API 연동</span><p>방향 · 일정 · 멘토링, 11/8 제출, 워크 프로세스의 판정 규칙 · 프롬프트, 세컨드 브레인</p></div>
+      <div class="slab"><b>고한결</b><span>UI/UX · 인터뷰 · 발표 흐름 · 캐릭터</span><p>화면 설계, 인터뷰 설계 · 기록, 발표 스토리와 자료 디자인, 플로로</p></div>
+      <div class="slab"><b>임유정</b><span>프론트엔드 · 시연 화면</span><p>시연 화면, 구동 GIF, API를 호출하는 화면 쪽 연결 — <code>02-frontend/</code> 담당</p></div>
+      <div class="slab"><b>두승현</b><span>시연 프로토타입 · 테스트 · 검증 · 문서 · 협업 증빙</span><p>섬 · 플로로 · 설정 프로토타입 참여, 수용 테스트 채점표와 직접 시험, 기획서 취합, 이슈 · 리뷰 기록</p></div>
+    </div>
+    <div class="howwork" aria-label="같이 일하는 방식">
+      <div><b>PR마다 조각 한 장</b>CHANGELOG를 직접 고치지 않습니다. <code>changes/</code>에 네 줄(종류 · 누가 · 무엇 · 건드린 곳)을 넣으면 병합될 때 Action이 다음 번호를 붙입니다. 동시에 열린 PR이 한 줄에서 부딪치지 않습니다.</div>
+      <div><b>Claude는 브랜치에만</b>Claude Code는 <code>main</code>에 올리거나 병합하지 않습니다 — 훅이 기계적으로 막습니다. 병합은 사람이 하고, Claude가 쓴 글에는 <code>claude-drafted</code> 표시가 남습니다.</div>
+      <div><b>고칠 목록 F-번호</b>문제는 증상으로 고칠 곳을 찾아 한 줄 적고(F-1 ~ F-141), 커밋 · PR 제목에 그 번호를 붙입니다. 요구 후보는 C-번호(C-1 ~ C-69), 할 일은 Jira 프로젝트 Floe.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 일정 · 배점 ════ -->
+<section aria-labelledby="h-cal">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-cal">일정과 평가</h2>
+      <p>대회가 정한 것은 바꿀 수 없습니다. 기획 30과 협업 30이 합계의 60%라, 시연은 기획(AI 적용의 합리성 20)과 기술(실행 가능성 10)을 직접 보여 주고 협업은 PR · 버전 기록 · 리뷰 증빙으로 보입니다.</p>
+    </div>
+    <div class="cal">
+      <div class="slab">
+        <h3>일정</h3>
+        <ul class="dates" style="margin-top:12px">
+          <li><b>9월 5주</b><span>프로젝트 시작 — 기획안 · 역할 · 일정 조율(10/12)</span></li>
+          <li><b>10/17</b><span>이름 확정 — Floe · 플로로</span></li>
+          <li><b>10/26 ~ 30</b><span>작업실 개편 — 세 칸 · 퀘스트 탭 · 관문 · 맡기기 · 문서 올리기</span></li>
+          <li><b>10/31</b><span>앱 11.0.0, 11/1 기능 동결</span></li>
+          <li class="now"><b>11/4 ~ 7</b><span>사용 테스트 — 5명 이상, 사용 전후 비교</span></li>
+          <li><b>11/8 18:00</b><span>제출 마감 — 팀장만 제출, 제출 뒤 수정 불가</span></li>
+          <li><b>11/12 · 13</b><span>발표 10분 + 질의응답 10분, 60점 이상 통과</span></li>
+        </ul>
+      </div>
+      <div class="slab">
+        <h3>평가 배점 100</h3>
+        <ul class="score" style="margin-top:12px">
+          <li><span>기획 및 창의성 — 문제 정의 10 · AI 적용의 합리성 20</span><b>30</b><div class="bar"><i style="width:30%"></i></div></li>
+          <li><span>팀 구성 및 협업 — 균형 있는 기여 20 · 협업 증빙 10</span><b>30</b><div class="bar"><i style="width:30%"></i></div></li>
+          <li><span>기술 완성도 — 구현 10 · 구조와 실행 가능성 10</span><b>20</b><div class="bar"><i style="width:20%"></i></div></li>
+          <li><span>실용 가능성</span><b>10</b><div class="bar"><i style="width:10%"></i></div></li>
+          <li><span>발표 및 전달력</span><b>10</b><div class="bar"><i style="width:10%"></i></div></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════ 내려받기 ════ -->
+<section id="download" aria-labelledby="h-dl">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-dl">내려받고 처음 열기</h2>
+      <p><a href="https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases">GitHub Releases</a>에서 내 컴퓨터에 맞는 파일을 받습니다. 지금 판은 앱 11.0.0(2026-10-31)입니다. 앱에 서명이 없어 처음 열 때 경고를 한 번 지나야 합니다.</p>
+    </div>
+    <div class="dl">
+      <div class="slab"><b>Mac</b><code>.dmg</code><p>우클릭 → 열기. 서명이 없어 그냥 더블클릭하면 막힙니다.</p></div>
+      <div class="slab"><b>Windows</b><code>.exe</code><p>설치 뒤 실행. SmartScreen 경고가 뜨면 지나가야 합니다.</p></div>
+      <div class="slab"><b>우분투</b><code>.AppImage</code> 또는 <code>.deb</code><p>실행 권한을 주고 더블클릭. AppImage가 FUSE를 찾으면 24.04는 <code>libfuse2t64</code>, 22.04는 <code>libfuse2</code>를 설치합니다.</p></div>
+    </div>
+    <ol class="setup" aria-label="처음 설정 여섯 칸">
+      <li><b>반기기</b>플로로가 맞아 줍니다</li>
+      <li><b>AI</b>Claude Code로 잇기 · API 키 넣기 · AI 없이 연습용 예시로</li>
+      <li><b>같이 쓸 앱</b>Claude Desktop과 잇기</li>
+      <li><b>GitHub</b>gh 찾기 · 로그인 안내</li>
+      <li><b>프로젝트</b>내 저장소 가져오기 · 새로 만들기 · 이 컴퓨터의 폴더</li>
+      <li><b>준비 끝</b>요약 세 줄</li>
+    </ol>
+    <p style="margin-top:14px;color:var(--mute);font-size:15px">처음 설정에서 AI 연결과 프로젝트 폴더를 고른 뒤, 그 폴더에서 Claude Code를 새로 엽니다. 키는 앱이 설정 폴더에만 두고 화면 · 브라우저 저장소에는 남기지 않습니다. 다시 고르려면 톱니 → 처음 설정 다시 하기.</p>
+  </div>
+</section>
+
+<!-- ════ 한계 ════ -->
+<section id="limits" class="limits" aria-labelledby="h-lim">
+  <div class="wrap">
+    <div class="head">
+      <h2 id="h-lim">아직 못한 것</h2>
+      <p>확인한 것만 확인했다고 적는 팀입니다. 안 되는 것도 그대로 둡니다.</p>
+    </div>
+    <div class="floes two">
+      <div class="slab">
+        <h3>알려진 한계</h3>
+        <ul>
+          <li>PC용입니다. 휴대폰 화면은 맞추지 않았습니다.</li>
+          <li>AI는 Claude만 — API 키 또는 Claude Code 구독. 다른 AI는 '다른 AI에 넘기기'(복사할 글)로만.</li>
+          <li>앱 서명이 없습니다. Mac은 우클릭 → 열기, Windows는 SmartScreen 경고를 지나야 합니다.</li>
+          <li>진짜 AI로 한 바퀴는 아직 노랑 · 빨강 — 연습 판은 끝까지 되지만, 10/30 진짜 AI 기록에서 허락 카드가 안 뜬 채 커밋된 일(#294)을 찾는 중입니다.</li>
+          <li>Claude Desktop 같이 쓰기 · 원격 MCP는 시험판, 기본 꺼짐.</li>
+        </ul>
+      </div>
+      <div class="slab">
+        <h3>대회 뒤에</h3>
+        <ul>
+          <li>숨겨 둔 것 — 서재(1,554줄) · 지식 은하 · 뽑기 확률 표시 · 먹이 주기의 시연 노출. 지울 코드 약 3,300줄.</li>
+          <li>2026-11-02에 작업실의 캔버스 탭을 코드째 뺐습니다(F-133). 퀘스트 탭이 같은 다섯 칸을 보입니다.</li>
+          <li>성공 수치(완주율 · 설명 성공률)는 인터뷰 뒤에 정하기로 했고 아직 미정입니다. 지어내지 않습니다.</li>
+          <li>장기 비전 — 나에게 맞춰 돕는 개인 지식 저장소. 결정 기록과 배움은 특정 AI 도구에 묶이지 않고 사용자가 소유합니다.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="head" style="margin-top:56px">
+      <h3 style="font-size:26px">더 읽기</h3>
+      <p>저장소를 받아 이 파일을 열었다면 아래 링크가 그대로 열립니다.</p>
+    </div>
+    <ul class="links">
+      <li><a href="../../README.md">README<small>한 문장부터 한계까지, 2026-11-01 판</small></a></li>
+      <li><a href="../../01-docs/00-overview/requirements.md">요구사항<small>FR-1 ~ 17 · 후보 C-1 ~ 69</small></a></li>
+      <li><a href="../../01-docs/00-overview/시연-한-줄기.md">시연 한 줄기<small>큰 그림 한 장과 장면 표</small></a></li>
+      <li><a href="../../01-docs/features/2026-10-31-기능-전체-목록.md">기능 전체 목록<small>81개, MECE</small></a></li>
+      <li><a href="../../01-docs/00-overview/schedule.md">일정과 역할<small>대회가 정한 것 · 평가 배점</small></a></li>
+      <li><a href="../../01-docs/04-pattern-implementation/stage-storyboard/README.md">0~8단계 스토리보드<small>디자인 첫 판</small></a></li>
+      <li><a href="../../01-docs/03-pattern-analysis/adr/">설계 결정 기록<small>ADR — 왜 그렇게 정했나</small></a></li>
+      <li><a href="../../CHANGELOG.md">버전 기록<small>v1.0부터 v61.3까지 한 줄씩</small></a></li>
+      <li><a href="../../01-docs/07-maintenance/fix-map.md">고칠 곳 지도<small>F-1 ~ F-141</small></a></li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <b>🧊 Floe — 얼음 위 작업실에서, 플로로와 함께 🦭</b>
+      2026 코디세이 AI 네이티브 응용 학습 Final-Project · 작업 이름 Project Navigator · 라이선스 MIT<br>
+      이 페이지는 2026-11-03에 <code style="background:rgba(255,255,255,.1);color:#E2E9F4">main</code> v61.3 · 앱 11.0.0 기준으로 썼습니다. 서버 · AI · 저장 없이 이 파일 하나로 열립니다.
+    </div>
+    <div><a href="https://github.com/2026-Codyssey-Final-Proj/Final-Proj">github.com/2026-Codyssey-Final-Proj/Final-Proj</a></div>
+  </div>
+</footer>
+
+<script src="../../03-backend/navigator/navigator.js"></script>
+<script src="../../03-backend/navigator/glossary.js"></script>
+<script src="../../03-backend/navigator/quest.js"></script>
+<script>
+// 여덟 단계 · 완료 기준 · 용어 풀이 · 연습 예시 — 앱의 규칙 파일에서 그대로 읽는다(손으로 옮겨 적지 않는다)
+//   navigator.js STAGES(title · short · does · gets · gives · criteria[text · term · tiers]) · glossary.js explain · quest.js 연습 예시(EXAMPLE_DRAFT · exampleStageDraft)
+const N = window.NavRules, G = window.NavGlossary, Q = window.NavQuest;
+const TIER = "Xpress";   // 앱의 연습 예시는 크기 '보통'(quest.js EXAMPLE_DRAFT.size = medium → SIZE_TIER Xpress)
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const termBtn = (t, dark) => { const line = G ? G.explain(t) : ""; if (!line) return `<small>${esc(t)}</small>`;
+  return `<button type="button" class="term" data-term="${esc(t)}" aria-expanded="false">용어: ${esc(t)}</button><span class="term-def" hidden>${esc(line)}</span>`; };
+const tierNote = (c) => (!c.tiers ? "" : c.tiers.length === 1 ? `<span class="tier">크게 만들 때만</span>` : !c.tiers.includes("Lite") ? `<span class="tier">작게 만들 때는 빠짐</span>` : "");
+function exampleHTML(i) {
+  if (!Q || !N) return "";
+  const head = `<p class="k">앱의 연습 예시 — ${esc(Q.EXAMPLE_DRAFT.topic)}</p>`;
+  if (i === 0) { const d = Q.EXAMPLE_DRAFT, rows = [["불편", d.pain], ["달라지는 것", d.change], ["누가", d.who], ["크기", `${Q.SIZE_WORD[d.size]} — ${d.sizeWhy}`]];
+    return `${head}<p class="q">원하는 것을 말하면 플로로가 네 칸을 채우고, 사람은 칸마다 "맞아요 / 고칠래요"를 누릅니다.</p><ul class="lines">${rows.map(([k, v]) => `<li><b>${k}</b>${esc(v)}</li>`).join("")}</ul>`; }
+  const crit = N.criteriaFor(i, TIER), d = Q.exampleStageDraft(i, crit); if (!d) return "";
+  const k = d.items.findIndex((x) => x.alts && x.alts.length >= 2);
+  if (k < 0) return `${head}<p class="q">앞 단계 결과로 플로로가 초안을 만들고, 사람은 칸마다 "맞아요 / 고칠래요"를 누릅니다.</p><ul class="lines">${d.items.slice(0, 3).map((x, n) => `<li><b>${esc(crit[n].text)}</b>${esc(x.text)}</li>`).join("")}</ul>`;
+  const it = d.items[k], opts = [it.text, ...it.alts.slice(0, 2)];
+  return `${head}<p class="q">${esc(crit[k].text)}</p><div class="choices" role="group" aria-label="예시 셋">${opts.map((o, n) => `<button type="button" aria-pressed="false" data-pick="${n}">${esc(o)}</button>`).join("")}</div>
+    <p class="after">4 ~ 8단계는 칸마다 예시 셋 중 고릅니다. 하나를 누르면 그 줄이 적히고(누가 정했나: 고름), 다 아니면 '다른 예시'로 그 칸만 다시 받거나 '고칠래요'로 직접 씁니다.</p>`;
+}
+function showStage(i) {
+  if (!N) return;
+  const s = N.STAGES[i];
+  document.getElementById("sp-title").textContent = s.title;
+  document.getElementById("sp-k").textContent = `${i + 1}단계 · ${s.short}`;
+  document.getElementById("sp-desc").textContent = s.does;
+  document.getElementById("sp-flow").textContent = `받는 것: ${s.gets} → 만드는 것: ${s.gives}`;
+  document.getElementById("sp-crit").innerHTML = s.criteria.map((c) => `<li><i aria-hidden="true"></i><span>${esc(c.text)}${tierNote(c)}${c.term ? `<br>${termBtn(c.term)}` : ""}</span></li>`).join("");
+  document.getElementById("sp-ex").innerHTML = exampleHTML(i);
+  document.querySelectorAll(".stage button").forEach((b) => b.setAttribute("aria-selected", String(Number(b.dataset.stage) === i)));
+}
+document.addEventListener("click", (e) => {
+  const t = e.target.closest && e.target.closest(".term[data-term]");
+  if (t) { const def = t.nextElementSibling, open = t.getAttribute("aria-expanded") !== "true"; t.setAttribute("aria-expanded", String(open)); if (def) def.hidden = !open; return; }
+  const p = e.target.closest && e.target.closest(".choices button");
+  if (p) p.parentElement.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === p)));
+});
+document.querySelectorAll("[data-term-demo]").forEach((el) => { el.innerHTML = termBtn(el.dataset.termDemo); });
+document.querySelectorAll(".stage button").forEach((b) => b.addEventListener("click", () => showStage(Number(b.dataset.stage))));
+document.querySelector(".stages").addEventListener("keydown", (e) => {
+  if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+  const cur = Number(document.querySelector('.stage button[aria-selected="true"]').dataset.stage);
+  const next = (cur + (e.key === "ArrowRight" ? 1 : 7)) % 8; showStage(next); document.querySelector(`.stage button[data-stage="${next}"]`).focus(); e.preventDefault();
+});
+showStage(0);
+
+// 시연 장면 다섯 — 시연 한 줄기(2026-11-01) 2절과 3분 시연 스토리에서
+const SCENES = [
+  { t: "켜기 — 처음 설정", time: "0:00 – 0:10", steps: ["앱을 켜면 플로로가 반기고 같이 준비합니다.", "AI 연결(Claude Code 찾기 · 로그인, 또는 API 키, 또는 '연습용 예시로 둘러보기') → GitHub → 프로젝트 폴더.", "키는 앱이 설정 폴더에만 두고 화면 · 브라우저 저장소에는 남기지 않습니다."],
+    shows: [["기능", "가-03 처음 설정 · 가-09 앱 묶기"], ["평가 칸", "기술 — 실행 가능성 10"]], img: "../../01-docs/features/shots/setup.webp", cap: "처음 설정 — 준비 시작하기 / 나중에 할게요 (2026-10-28 사진)" },
+  { t: "켜면 작업실 → 1단계 초안", time: "0:10 – 0:45", steps: ["켜면 바로 작업실. 왼쪽 파일 칸, 가운데 퀘스트 탭, 오른쪽 섬에는 접힌 알약과 말풍선.", "\"동아리 행사 등록 앱을 만들고 싶어요\" 한 단락을 말하면 1단계 초안 카드가 옵니다.", "칸마다 맞아요 / 고칠래요. Ⅳ 크기는 '보통'을 고르고, 한 장이 뜨면 맞아요."],
+    shows: [["기능", "가-06 켤 때 바로 작업실 · 라-02 1단계 초안 · 나-04 확인 카드"], ["평가 칸", "기획 — 문제 정의 10 · AI 적용의 합리성 20"]], img: "../../01-docs/features/shots/2026-10-30-quest-tab/after-b-s2-1440.png", cap: "작업실 — 왼쪽 파일 칸, 가운데 퀘스트 탭(위 여덟 장 지도 · 아래 지금 퀘스트), 오른쪽 섬 (2026-10-30, 연습 예시, 1440×900)" },
+  { t: "퀘스트 탭", time: "0:45 – 1:05", steps: ["위에 여덟 장 지도 — 지난 장은 끝남, 지금 장은 바다색 테두리, 뒤 장은 2단계를 다 채우면 그려집니다.", "아래에 지금 퀘스트 다섯 칸. 지금 줄만 펼쳐지고, 끝낸 줄은 체크 한 줄.", "2단계 초안이 오면 네 칸을 맞아요로 확인합니다."],
+    shows: [["기능", "다-04 퀘스트 탭 · 라-03 지도 · 라-04 2~8단계 초안"], ["평가 칸", "기획 20 · 실용 10"]], img: "../../01-docs/features/shots/2026-10-30-quest-tab/after-b-s4-1440.png", cap: "퀘스트 탭 — 카드를 내리면 여덟 장 지도와 범례 (2026-10-30, 연습 예시)" },
+  { t: "관문 — 이해하셨나요?", time: "1:05 – 1:40", steps: ["다섯 칸을 다 채우면 플로로가 완료 기준을 맞춰 봅니다. 빈칸 · 증거 없는 칸은 안 됨.", "\"이해하셨나요?\"에 아니요 → 헷갈린 곳을 고르고 플로로에게 물어보기 → 한 장 요약 → 네, 이해했어요 → 확인 질문 하나.", "배운 것 한 줄을 적고 넘어가면 조개 하나와 다음 장. 생각 · 한 일 · 정한 것 · 배운 말 · 다음 할 일 한 장이 문서가 됩니다."],
+    shows: [["기능", "라-07 관문 · 라-09 이해 확인 · 바-02 한 장"], ["평가 칸", "기획 — AI 적용의 합리성 20 (판정은 코드 규칙)"]], img: "../../01-docs/features/shots/2026-10-30-quest-tab/after-c-s3-1440.png", cap: "관문 — 왼쪽은 기준 다섯 중 다섯이 맞았다는 확인, 오른쪽 섬은 한 장. 사람이 맞아요를 눌러야 문서가 된다 (2026-10-30)" },
+  { t: "맡기기 — 계획 → Claude Code → 허락 카드 → 보고", time: "1:40 – 2:25", steps: ["더 보기 → 계획 세우기. 붙여 넣은 글로 계획이 서고 줄마다 맞아요 → 확정.", "확정한 줄을 내 Claude Code에 맡깁니다. Claude Code가 파일을 고치기 전 섬에 허락 카드 — 허용. git push --force 같은 빨간 카드 — 거절.", "기준마다 해냈는지 보고가 채팅에 옵니다. 답이 없으면 허용되지 않은 채 도구 자신의 확인으로 넘어갑니다."],
+    shows: [["기능", "마-01 계획 · 마-02 맡기기 · 나-09 허락 카드 · 마-03 보고"], ["평가 칸", "기술 20 · 기획 20 — 사람이 허락한다"]], img: "../../01-docs/features/shots/2026-10-28/island-approve.webp", cap: "섬의 허락 카드 — 고친 줄을 보고 허용 · 거절 (2026-10-28 사진, 섬의 겉모양은 그 뒤 바뀌었고 카드는 같다)" },
+  { t: "기록 — 문서가 내 GitHub에", time: "2:25 – 3:00", steps: ["관문을 지나면 단계 문서 · 기획서 · 결정 기록 · CLAUDE.md가 작업 폴더에 쓰입니다. 비밀값 모양은 쓰기 전에 가립니다.", "커밋 · 푸시는 허락을 받은 Claude Code가. 공개 저장소면 처음 한 번 더 묻습니다.", "책 탭의 README 책에 V.1 · V.2 … 버전 기록과 단계마다 한 장이 쌓입니다."],
+    shows: [["기능", "바-01 문서 올리기 · 다-08 책 탭"], ["평가 칸", "실용 10 — 배움이 남는다"]], img: "../../01-docs/features/shots/2026-10-28/workspace-book.webp", cap: "책 탭 — 내 README 책 (2026-10-28 사진, 탭 이름은 그 뒤 바뀌었다)" },
+];
+function showScene(i) {
+  const s = SCENES[i];
+  document.getElementById("scene-view").innerHTML = `<h3>장면 ${i} — ${esc(s.t)}</h3><p class="t">${esc(s.time)}</p>
+    <ol>${s.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
+    <div class="see">${s.shows.map(([k, v]) => `<div><b>${esc(k)}</b>${esc(v)}</div>`).join("")}</div>
+    <figure><img src="${s.img}" alt="${esc(s.cap)}" loading="lazy"><figcaption>${esc(s.cap)}</figcaption></figure>`;
+  document.querySelectorAll(".scene-list button").forEach((b) => b.setAttribute("aria-selected", String(Number(b.dataset.scene) === i)));
+}
+document.querySelectorAll(".scene-list button").forEach((b) => b.addEventListener("click", () => showScene(Number(b.dataset.scene))));
+showScene(1);
+</script>
+</body>
+</html>
