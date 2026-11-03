@@ -58,6 +58,8 @@
   // 장(단계) 하나를 퀘스트로 — stage: 단계 표의 한 줄(navigator.js STAGES[n]), criteria: 그 단계 · 그 등급의 할 일(criteriaFor)
   // 돌려주는 것: {chap, title, objs:[{icon, name, term, need}], lines:[[줄…]…], phase, edit, sel, cond, when, desc, why}
   // side(곁 퀘스트): 그 단계의 할 일 가운데 이 등급의 목록(criteria)에 없는 것 — 안 해도 관문은 열린다. 공책 목차 아래 · 도전과제 옆 가지에 잠긴 채 보인다 [정할 것 3]
+  // 받침에 따라 조사 — [받침 있을 때, 없을 때]. 한글이 아니면 없을 때 쪽(화면 app.js의 eul과 같은 셈). F-144-25: "'정리된 아이디어'이 책에 남아요" · "1단계을"
+  const josa = (w, [a, b]) => { const t = String(w), c = t.charCodeAt(t.length - 1); return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? a : b; };
   function makeQuest(stage, criteria) {
     const n = stage.n, list = Array.isArray(criteria) ? criteria : [];
     const side = (stage.criteria || []).filter((c) => !list.some((x) => x.text === c.text)).map((c, i) => ({ icon: iconOf(n, list.length + i), name: c.text, term: c.term || "" }));
@@ -65,10 +67,10 @@
       chap: n, title: stage.title, phase: "draft", edit: false, sel: 0,
       objs: list.map((c, i) => ({ icon: iconOf(n, i), name: c.text, term: c.term || "", need: 1 })),
       lines: list.map(() => []), side,
-      cond: n === 0 ? "처음 시작하는 사람 — 만드는 크기는 나중에 정해도 돼요" : `${LABEL(n - 1)}을 지난 사람`,
+      cond: n === 0 ? "처음 시작하는 사람 — 만드는 크기는 나중에 정해도 돼요" : `${LABEL(n - 1)}${josa(LABEL(n - 1), ["을", "를"])} 지난 사람`,
       when: "마감 없음 — 이 세션을 끝낼 때까지",
       desc: `${stage.does}. 할 일 ${list.length}개를 한 줄씩 저와 이야기하면 돼요.`,
-      why: `이 장을 지나면 '${stage.gives}'이 책에 남아요`,
+      why: `이 장을 지나면 '${stage.gives}'${josa(stage.gives, ["이", "가"])} 책에 남아요`,
     };
   }
   const total = (q) => q.objs.reduce((n, o) => n + o.need, 0);

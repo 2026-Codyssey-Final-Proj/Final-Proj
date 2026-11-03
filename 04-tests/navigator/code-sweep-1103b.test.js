@@ -312,3 +312,11 @@ test("F-144-24 글을 자를 때 이모지(짝 글자)를 반으로 가르지 �
     assert.match(fs.readFileSync(path.join(BACK, f), "utf8"), /const head = \(s, n\) => \{[^\n]*0xd800 && c <= 0xdbff/, `${f} — 앞 n자를 짝 글자를 지켜 자른다`);
   }
 });
+
+test("F-144-25 퀘스트의 '왜 하나요' · 조건 글 — 받침에 맞는 조사", () => {
+  const QU = require(path.join(BACK, "quest.js"));
+  const q = (n, gives) => QU.makeQuest({ n, title: "t", does: "d", gives, criteria: [] }, []);
+  assert.equal(q(1, "정리된 아이디어").why, "이 장을 지나면 '정리된 아이디어'가 책에 남아요");
+  assert.equal(q(1, "할 일 목록").why, "이 장을 지나면 '할 일 목록'이 책에 남아요");
+  assert.match(q(1, "x").cond, /^\S+단계를 지난 사람$/, q(1, "x").cond);
+});
