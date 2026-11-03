@@ -84,8 +84,9 @@
   const BY_WORD = { ok: "그대로", edit: "고침", me: "직접", pick: "고름", moved: "옮김", skip: "건너뜀", chat: "대화" };
   const byFor = (q, i, t, by) => (BY.includes(by) ? by : proposalOf(q, i) ? (t === proposalOf(q, i) ? "ok" : "edit") : "me");
   const withBy = (q, i, b) => ({ ...q, by: q.objs.map((_, k) => (k === i ? b : (q.by || [])[k] || null)) });
+  const head = (s, n) => { const t = String(s).slice(0, n), c = t.charCodeAt(t.length - 1); return c >= 0xd800 && c <= 0xdbff ? t.slice(0, -1) : t; };   // 앞 n자 — 끝에 짝 글자(이모지)의 반쪽이 남으면 뗀다(F-144-24: 화면 · 클립보드에 �로 보였다)
   function fill(q, i, text, by) {
-    const t = String(text || "").trim().slice(0, LINE_MAX);
+    const t = head(String(text || "").trim(), LINE_MAX);
     if (!q || !q.objs[i] || !t) return q;
     const lines = q.lines.map((l, k) => (k === i ? [...l, t] : l));
     return withBy({ ...q, lines, sel: i }, i, byFor(q, i, t, by));

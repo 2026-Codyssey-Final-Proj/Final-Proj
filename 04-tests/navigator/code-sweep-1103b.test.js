@@ -297,3 +297,18 @@ test("F-144-23 플로로 대화 답의 줄바꿈을 지키고, 채팅에 줄로 
   assert.match(fnSrc("sayLines"), /esc\(endDot\(text\)\)\.split\("\\n"\)\.join\("<br>"\)/, "esc한 뒤 줄바꿈만 <br>로");
   assert.match(fnSrc("chatSend"), /else sayLines\(r\.reply\)/, "대화 답은 줄로");
 });
+
+test("F-144-24 글을 자를 때 이모지(짝 글자)를 반으로 가르지 않는다", () => {
+  const lone = (t) => /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(String(t));
+  const N = require(path.join(BACK, "navigator.js")), CY = require(path.join(BACK, "carry.js"));
+  const at = (n) => "가".repeat(n) + "🎉🎉🎉";   // n번째 칸 뒤에 이모지 — 상한이 그 가운데에 걸리게
+  // say 상한 60(navigator.js SAY_MAX) · text 160 · why 200
+  const c = N.parseCarry({ say: at(59), items: [{ text: at(159), why: at(199), stage: 1, from: [] }] });
+  assert.ok(c, "모양이 맞는 답");
+  for (const v of [c.say, c.items[0].text, c.items[0].why]) assert.ok(!lone(v), JSON.stringify(v.slice(-3)));
+  const d = CY.clean({ text: at(CY.TEXT_MAX - 1), why: at(CY.WHY_MAX - 1), stage: 0, review: "", from: [] });
+  assert.ok(!lone(d.text) && !lone(d.why));
+  for (const f of ["quest.js", "steps.js", "alerts.js", "handoff.js", "gateplan.js", "carry.js", "navigator.js"]) {
+    assert.match(fs.readFileSync(path.join(BACK, f), "utf8"), /const head = \(s, n\) => \{[^\n]*0xd800 && c <= 0xdbff/, `${f} — 앞 n자를 짝 글자를 지켜 자른다`);
+  }
+});

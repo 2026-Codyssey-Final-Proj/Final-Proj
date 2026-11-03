@@ -8,7 +8,8 @@
   const MAX = 80;   // 한 줄 최대 글자 수 [제안 2026-10-20]
 
   const str = (v) => (typeof v === "string" ? v : "");
-  const cut = (t) => (t.length > MAX ? `${t.slice(0, MAX - 1)}…` : t);
+  const head = (s, n) => { const t = String(s).slice(0, n), c = t.charCodeAt(t.length - 1); return c >= 0xd800 && c <= 0xdbff ? t.slice(0, -1) : t; };   // 앞 n자 — 끝에 짝 글자(이모지)의 반쪽이 남으면 뗀다(F-144-24: 화면 · 클립보드에 �로 보였다)
+  const cut = (t) => (t.length > MAX ? `${head(t, MAX - 1)}…` : t);
   // 글의 줄 수 — 빈 글은 0, 끝의 줄바꿈 하나는 줄로 세지 않는다
   const lines = (v) => { const t = str(v); return t ? t.replace(/\r?\n$/, "").split(/\r?\n/).length : 0; };
   const slashes = (p) => str(p).replace(/\\/g, "/");

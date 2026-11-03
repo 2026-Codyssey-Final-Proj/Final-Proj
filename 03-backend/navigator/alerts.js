@@ -6,7 +6,8 @@
   const MAX = 20, LINE_MAX = 80;
   const KIND = { stop: "작업을 마쳤어요", prompt: "새 작업을 시작했어요" };
   const squash = (t) => String(t || "").replace(/\s+/g, " ").trim();
-  const cut = (t) => (t.length > LINE_MAX ? `${t.slice(0, LINE_MAX - 1)}…` : t);
+  const head = (s, n) => { const t = String(s).slice(0, n), c = t.charCodeAt(t.length - 1); return c >= 0xd800 && c <= 0xdbff ? t.slice(0, -1) : t; };   // 앞 n자 — 끝에 짝 글자(이모지)의 반쪽이 남으면 뗀다(F-144-24: 화면 · 클립보드에 �로 보였다)
+  const cut = (t) => (t.length > LINE_MAX ? `${head(t, LINE_MAX - 1)}…` : t);
   function summary(ev) {
     const own = squash(ev && ev.summary);
     if (own) return cut(own);

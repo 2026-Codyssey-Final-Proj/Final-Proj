@@ -6,7 +6,8 @@
 // 순수 함수 — 섬(app/47-handoff.js)이 쓰고 Node에서 시험한다(04-tests/navigator/handoff.test.js).
 (function (root) {
   const MAX = 6000, IDEA_MAX = 300, LINE_MAX = 200, PLAN_MAX = 8;
-  const clip = (s, n) => { const t = String(s || "").replace(/\s+/g, " ").trim(); return t.length > n ? `${t.slice(0, n - 1)}…` : t; };
+  const head = (s, n) => { const t = String(s).slice(0, n), c = t.charCodeAt(t.length - 1); return c >= 0xd800 && c <= 0xdbff ? t.slice(0, -1) : t; };   // 앞 n자 — 끝에 짝 글자(이모지)의 반쪽이 남으면 뗀다(F-144-24: 화면 · 클립보드에 �로 보였다)
+  const clip = (s, n) => { const t = String(s || "").replace(/\s+/g, " ").trim(); return t.length > n ? `${head(t, n - 1)}…` : t; };
 
   const ASK = [
     "- 쉬운 말로, 초등학교 고학년도 알아듣게 답해 주세요. 어려운 말은 나오자마자 풀어 주세요.",
@@ -55,7 +56,7 @@
     }
     out.push("", "부탁", ...ASK, "");
     const text = out.join("\n"), tail = "\n…(길어서 줄였어요)";
-    return text.length > MAX ? text.slice(0, MAX - tail.length) + tail : text;
+    return text.length > MAX ? head(text, MAX - tail.length) + tail : text;
   }
 
   const api = { MAX, build, cellsFrom };

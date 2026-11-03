@@ -29,11 +29,12 @@
   const passes = (m) => CRITERIA.every(([k]) => m[k]);
   const missing = (m) => CRITERIA.filter(([k]) => !m[k]).map(([, w]) => w);
   // 초안 하나를 다듬는다 — 모양이 틀리면 null. 긴 글은 잘라 쓰고, 단계는 0 ~ 7만(아니면 -1 — 정하지 않음), 날짜는 YYYY-MM-DD만(아니면 ""), 근거 단계는 겹치지 않게
+  const head = (s, n) => { const t = String(s).slice(0, n), c = t.charCodeAt(t.length - 1); return c >= 0xd800 && c <= 0xdbff ? t.slice(0, -1) : t; };   // 앞 n자 — 끝에 짝 글자(이모지)의 반쪽이 남으면 뗀다(F-144-24: 화면 · 클립보드에 �로 보였다)
   function clean(d) {
     if (!d || typeof d !== "object") return null;
     const from = Array.isArray(d.from) ? [...new Set(d.from.filter((n) => Number.isInteger(n) && n >= 0 && n < STAGES))].sort((a, b) => a - b) : [];
     const review = typeof d.review === "string" && DATE.test(d.review.trim()) ? d.review.trim() : "";
-    return { text: String(d.text || "").trim().slice(0, TEXT_MAX), why: String(d.why || "").trim().slice(0, WHY_MAX), stage: Number.isInteger(d.stage) && d.stage >= 0 && d.stage < STAGES ? d.stage : -1, review, from };
+    return { text: head(String(d.text || "").trim(), TEXT_MAX), why: head(String(d.why || "").trim(), WHY_MAX), stage: Number.isInteger(d.stage) && d.stage >= 0 && d.stage < STAGES ? d.stage : -1, review, from };
   }
   // 장부(이 컴퓨터의 Floe 폴더 파일 하나) — { v: 1, items: [{ id, text, why, stage, review, from, project, state, reason?, at }] }. state: adopted · rejected · held. 깨졌으면 빈 장부
   const blank = () => ({ v: 1, items: [] });
