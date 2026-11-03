@@ -438,7 +438,7 @@ function prevNote(t) {
   // 안내 문장은 늘 남기고 앞부분만 자른다(가린 뒤에) — 허락을 못 받았던 일은 다시 하면 카드가 뜬다고 적는다(①의 목적 — 카드를 다시 띄우기, 새 맥락 리뷰 2026-10-29)
   const tail = " — 이미 끝낸 일은 다시 하지 말고 못 한 것부터 이어서 해 주세요. 허락을 못 받았던 일은 다시 하면 허락 카드가 떠요.";
   const head = hide(`[앞에서 한 일] ${parts.join(" · ")}`, t.dir);
-  return `\n\n${head.length > 600 ? `${head.slice(0, 599)}…` : head}${tail}`;
+  return `\n\n${head.length > 600 ? `${head.slice(0, 599).replace(/[\uD800-\uDBFF]$/, "")}…` : head}${tail}`;
 }
 const FILES_ONLY = "\n\n[다시 맡김 — 명령 없이] 터미널 명령(Bash)은 쓰지 말고 파일만 만들거나 고쳐 주세요. 실행 · 설치 명령이 필요하면 README의 '실행하는 법'에 적기만 해요.";
 // opts.at · opts.try — 다시 맡기기는 같은 번호(at)로(지켜보던 화면 — 계획 줄 · 문서 올리기 — 이 그대로 따라간다), opts.note — 글 끝에 더할 한 줄(길이 제한 밖)

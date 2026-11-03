@@ -131,7 +131,7 @@
     SLUGS.forEach((_, n) => {
       const r = R(n); if (!r || !r.passed) return;
       const first = (Array.isArray(r.items) ? r.items : []).map((x) => (Array.isArray(x && x.lines) ? x.lines : []).find((l) => String(l).trim())).find(Boolean) || "";
-      const what = String(hide(String(r.learned || "").trim() || String(first).trim())).replace(/\s+/g, " ").trim().slice(0, 80);
+      const what = String(hide(String(r.learned || "").trim() || String(first).trim())).replace(/\s+/g, " ").trim().slice(0, 80).replace(/[\uD800-\uDBFF]$/, "");   // 짝 글자 반쪽은 뗀다(F-144-24 새 맥락 리뷰 — GitHub에 커밋되는 글)
       out.push({ v: out.length + 1, n, passed: String(r.passed).slice(0, 10), line: `${label(n)} ${N.STAGES[n].title} 관문${what ? ` — ${what.replace(/&/g, "&amp;").replace(/</g, "&lt;")}` : ""}` });   // <는 &lt; — <!-- 가 README의 Floe 절을 숨기지 않게(stageDoc과 같이)
     });
     return out;

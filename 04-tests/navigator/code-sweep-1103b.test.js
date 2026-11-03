@@ -355,6 +355,13 @@ test("F-144-24 글을 자를 때 이모지(짝 글자)를 반으로 가르지 �
   for (const v of [c.say, c.items[0].text, c.items[0].why]) assert.ok(!lone(v), JSON.stringify(v.slice(-3)));
   const d = CY.clean({ text: at(CY.TEXT_MAX - 1), why: at(CY.WHY_MAX - 1), stage: 0, review: "", from: [] });
   assert.ok(!lone(d.text) && !lone(d.why));
+  // 새 맥락 리뷰 — 해낸 것 보고(근거 200 · 쉬운 말 240 · 물을 것 200)와 문서 초안(4000)도
+  const r = N.parseReport({ items: [{ done: true, evidence: at(199) }], easy: at(239), ask: at(199) }, ["확인할 것"]);
+  for (const v of [r.items[0].evidence, r.easy, r.ask]) assert.ok(!lone(v), JSON.stringify(v.slice(-3)));
+  assert.ok(!lone(N.parseDraft({ draft: at(3999), say: "s" }).draft));
+  for (const [f, re] of [["docs.js", /\.slice\(0, 80\)\.replace\(\/\[\\uD800-\\uDBFF\]\$\/, ""\)/], ["server.js", /head\.slice\(0, 599\)\.replace\(\/\[\\uD800-\\uDBFF\]\$\/, ""\)/]]) {
+    assert.match(fs.readFileSync(path.join(BACK, f), "utf8"), re, `${f} — 커밋 · 맡기는 글도`);
+  }
   for (const f of ["quest.js", "steps.js", "alerts.js", "handoff.js", "gateplan.js", "carry.js", "navigator.js"]) {
     assert.match(fs.readFileSync(path.join(BACK, f), "utf8"), /const head = \(s, n\) => \{[^\n]*0xd800 && c <= 0xdbff/, `${f} — 앞 n자를 짝 글자를 지켜 자른다`);
   }

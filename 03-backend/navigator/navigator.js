@@ -625,8 +625,8 @@
   function parseReport(o, checks) {
     const c = (checks || []).filter(filled);
     if (!c.length || !o || !filled(o.easy) || typeof o.ask !== "string" || !Array.isArray(o.items) || !o.items.length || o.items.some((x) => !x || typeof x.done !== "boolean")) return null;
-    const items = c.map((check, i) => { const x = o.items[i], ev = x && typeof x.evidence === "string" ? x.evidence.trim().slice(0, 200) : ""; return { check, done: !!(x && x.done && ev), evidence: ev }; });
-    return { items, easy: o.easy.trim().slice(0, 240), ask: o.ask.trim().slice(0, 200), done: items.filter((x) => x.done).length, total: items.length };
+    const items = c.map((check, i) => { const x = o.items[i], ev = x && typeof x.evidence === "string" ? head(x.evidence.trim(), 200) : ""; return { check, done: !!(x && x.done && ev), evidence: ev }; });
+    return { items, easy: head(o.easy.trim(), 240), ask: head(o.ask.trim(), 200), done: items.filter((x) => x.done).length, total: items.length };
   }
 
   // ── Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함") ──
@@ -635,7 +635,7 @@
   const pick = (o, keys) => Object.fromEntries(keys.map((k) => [k, o[k]])); // 그 칸만 옮긴다(다른 칸은 버린다)
   const NEXT = ["what", "why", "question", "action"], FIX = ["where", "why", "hint"];
 
-  const parseDraft = (o) => (has(o, ["draft", "say"]) ? { draft: o.draft.slice(0, 4000), say: o.say } : null);
+  const parseDraft = (o) => (has(o, ["draft", "say"]) ? { draft: head(o.draft, 4000), say: o.say } : null);
   // 고칠 곳이 하나라도 있으면 ready는 우리 쪽에서 false로 둔다
   function parseReview(o) {
     if (!has(o, ["say"]) || typeof o.ready !== "boolean" || !Array.isArray(o.good) || !Array.isArray(o.fix)) return null;
