@@ -65,7 +65,7 @@
       acts: q.choices ? [...q.choices.map((c, j) => ({ label: c, act: "dbg-pick", i: j, ...(j === 0 ? { pri: true } : {}) })), { label: "그만두기", act: "dbg-close", key: "Escape", kind: "ghost" }]
         : [{ label: last ? "다 됐어요" : "다음", act: "dbg-next", key: "c-Enter", pri: true }, { label: "모름", act: "dbg-skip" }, { label: "그만두기", act: "dbg-close", key: "Escape", kind: "ghost" }] };
   }
-  const dbgFocus = () => requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=dbg-text]"); if (t) t.focus(); });
+  const dbgFocus = () => focusAct("[data-act=dbg-text]");   // 앱의 작업실 창에서도(F-144-8)
   function dbgStep() {
     const d = st.dbg; if (!d) return;
     if (d.i < FP.DEBUG_QS.length - 1) { st.dbg = { ...d, i: d.i + 1 }; render(); dbgFocus(); return; }

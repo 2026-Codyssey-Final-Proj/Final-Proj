@@ -19,9 +19,24 @@
     return `<div class="hello-bub" role="status" aria-live="polite">${st.boot.greet ? `<b class="hb-hi">${esc(C.greeting(new Date().getHours()))}</b>` : ""}<span class="hb-now">${now}</span>
       <div class="hb-acts"><button type="button" data-act="pill">섬 펼치기</button><button type="button" class="ghost" data-act="boot-later">나중에</button></div></div>`;
   };
+  // F-144-8(2026-11-03): 앱에서 작업실이 열려 있으면 보이는 칸은 작업실 창(win.js)에 있고 섬 창은 숨는다 — 섬의 요소를 켜거나 focus()해도 아무 일이 없었다.
+  //   단추 켜고 끄기(liveBtn)는 상태가 바뀔 때만 다시 그려 보내고, 칸에 커서 두기(focusAct)는 보낼 내용 끝에 한 번만 쓰는 신호(data-want-focus)를 실어 창이 그 칸에 둔다
+  let focusSeq = 0, focusWant = "";
+  const lastOff = {};
+  function liveBtn(act, off) {
+    const b = $nav.querySelector(`[data-act=${act}]`) || document.querySelector(`[data-act=${act}]`); if (b) b.disabled = off;
+    if (winOpen.quest && lastOff[act] !== off) { lastOff[act] = off; syncWins(); }
+  }
+  function focusAct(sel) {
+    requestAnimationFrame(() => {
+      if (winOpen.quest) { focusWant = `${++focusSeq}|${sel}`; syncWins(); return; }
+      const t = $nav.querySelector(sel) || document.querySelector(sel); if (t) t.focus();
+    });
+  }
+  const focusTag = () => (focusWant ? `<i hidden data-want-focus="${esc(focusWant)}"></i>` : "");
   function syncWins() {
     if (!WINS || !QU) return;
-    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() : ""]]) {
+    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() + focusTag() : ""]]) {
       if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
       else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
       else if (on && html !== winHtml[kind]) { winHtml[kind] = html; window.floeApp.sendWin(kind, html); }

@@ -124,3 +124,37 @@ test("F-144-7 저장소 받기가 시간 초과되면 프로세스 나무째 끄
   assert.equal(whole.made, false);
   fs.rmSync(home, { recursive: true, force: true });
 });
+
+// ── 화면(app.js) — code-sweep-1103.test.js처럼 함수를 글자에서 떼어 가짜 상태로 돌린다 ──
+const APP = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+const WIN = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/win.js"), "utf8");
+function fnSrc(name, a = APP) {
+  const at = a.search(new RegExp(`(async )?function ${name}\\(`));
+  assert.ok(at >= 0, `${name}를 찾지 못했어요`);
+  let i = a.indexOf(") {", at) + 2, d = 0;
+  for (; i < a.length; i++) { if (a[i] === "{") d++; else if (a[i] === "}" && --d === 0) break; }
+  return a.slice(at, i + 1);
+}
+const lineOf = (re, a = APP) => { const m = a.match(re); assert.ok(m, `${re} 줄이 없어요`); return m[0]; };
+
+test("F-144-8 앱의 작업실 창 — 단추 켜고 끄기 · 칸에 커서 두기가 숨은 섬 창이 아니라 작업실 창에 닿는다", () => {
+  const make = new Function("winOpen", "syncWins", "$nav", "document", "requestAnimationFrame",
+    `let focusSeq = 0, focusWant = ""; const lastOff = {}; ${fnSrc("liveBtn")} ${fnSrc("focusAct")} return { liveBtn, focusAct, want: () => focusWant };`);
+  let synced = 0; const btn = { disabled: false }, none = { querySelector: () => null };
+  const f = make({ quest: true }, () => synced++, { querySelector: () => btn }, none, (cb) => cb());
+  f.liveBtn("task-tidy", true); f.liveBtn("task-tidy", true);
+  assert.equal(synced, 1, "상태가 바뀔 때만 다시 그려 보낸다(글자마다가 아니라)");
+  assert.equal(btn.disabled, true);
+  f.liveBtn("task-tidy", false); assert.equal(synced, 2);
+  f.focusAct("[data-act=say]");
+  assert.match(f.want(), /^\d+\|\[data-act=say\]$/); assert.equal(synced, 3);
+  // 브라우저(작업실 창 없음)는 전처럼 그 자리에서
+  let focused = 0; const g = make({ quest: false }, () => synced++, { querySelector: () => ({ focus: () => focused++ }) }, none, (cb) => cb());
+  g.focusAct("[data-act=say]"); assert.equal(focused, 1);
+  // 섬 창의 요소를 직접 고르던 줄이 남지 않았다
+  assert.doesNotMatch(APP, /\$nav\.querySelector\("\[data-act=(say|dbg-text|plan-rej-note|plan-q|task-tidy|plan-again)\]"\)/);
+  assert.doesNotMatch(APP, /document\.querySelector\("\[data-act=note-add\]"\)/);
+  assert.match(fnSrc("syncWins"), /islCol\(\) \+ focusTag\(\)/);
+  assert.match(lineOf(/const focusTag = [^\n]*/), /data-want-focus/);
+  assert.match(WIN, /\[data-want-focus\]/, "작업실 창이 그 신호로 커서를 둔다");
+});

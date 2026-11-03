@@ -86,7 +86,7 @@
     "find-use": (k) => { const q = st.quest, x = found && q && found.chap === q.chap && found.list[k]; if (!x || QU.curIdx(q) !== found.i) return;
       logMsg("floro", `<b>옮겼어요</b> — ${esc(x.path)} ${x.line}줄: ${esc(x.text)}`); found = null; fillNow(x.text, "moved"); },   // 원문 그대로 · 누가 = 옮김(quest.js BY) · 어디서 왔는지 한 줄 남긴다
     "find-open": (k) => { const x = found && found.list[k]; if (x && Number.isInteger(x.i)) { if (!st.qwin) st.qwin = true; openFile(x.i); } },   // 원문은 파일 보기(C-43)로
-    "draft-fix": () => { render(); requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); }); },
+    "draft-fix": () => { render(); focusAct("[data-act=say]"); },   // 앱의 작업실 창에서도(F-144-8)
     "draft-who": (i) => { const w = QU.WHO[i]; if (w && st.quest && QU.curIdx(st.quest) === QU.WHO_AT) fillNow(`쓰는 사람: ${w[0]} — ${w[1]}`, "pick"); },
     "draft-pick": (i) => {   // 기획서로 키울지(2단계, C-37) — 고른 것이 그 줄. 플로로가 권한 것을 고르면 까닭도
       const q = st.quest, pk = q ? QU.pickOf(q, QU.curIdx(q)) : null, x = QU.DOC_PICKS[i]; if (!pk || !x) return;
@@ -111,7 +111,7 @@
       if (!FP) return ACT["plan-direct"]();
       if (!st.plan && !st.planDraft.trim()) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.planDraft = t.slice(0, N.PLAN_MAX); }
       set({ qfocus: "plan", pane: "", settings: false });
-      requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); });
+      focusAct("[data-act=say]");   // 앱의 작업실 창에서도(F-144-8)
     },
     "plan-later": () => set({ qfocus: "stage" }),   // 나중에 · 단계 퀘스트로 — 계획 · 맡길 일은 그대로 남는다
     "plan-clear": () => set({ planDraft: "" }),
@@ -129,14 +129,14 @@
       const old = (st.plan.notes[id] || "").trim(), add = `앞의 결정('${x.diff.was}')에 맞춰 고쳐 주세요`;   // 이미 적은 의견은 지우지 않고 뒤에 붙인다
       st.plan = FP.note(FP.mark(st.plan, id, "fix"), id, old.includes(add) ? old : old ? `${old} / ${add}` : add); save(); render();
     },
-    "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); requestAnimationFrame(() => { const t = $nav.querySelector(`[data-act=plan-note][data-id="${el && el.dataset.id}"]`); if (t) t.focus(); }); },
+    "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); focusAct(`[data-act=plan-note][data-id="${CSS.escape(String(el && el.dataset.id))}"]`); },
     "plan-confirm": () => { if (!FP.canConfirm(st.plan)) return; st.plan = FP.confirm(st.plan); st.qfocus = "plan"; st.planSel = ""; if (qauto) openQwin("quest"); save(); render(); say("확정했어요! 퀘스트 창에 맡길 일이 생겼어요"); },
     "plan-again": () => revisePlan(),
     "plan-reset": () => { st.plan = null; st.dbg = null; st.planRej = ""; st.qfocus = "plan"; save(); render(); },
     // 지금 줄에 하는 일 — 채팅의 칩에는 줄 이름이 없다(순서대로라 지금 줄 하나 — FP.next). 보고 안의 단추는 data-id
     "plan-hand": () => handPlan(),
     "plan-accept": (i, el) => { st.plan = FP.accept(st.plan, planId(el)); save(); const p = FP.progress(st.plan); render(); say(p.done === p.total ? "계획을 다 끝냈어요! 정말 멋져요." : `끝냈어요! ${p.done} / ${p.total}`); },
-    "plan-rej-open": (i, el) => { st.planRej = planId(el); st.planRejNote = ""; render(); requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=plan-rej-note]"); if (t) t.focus(); }); },
+    "plan-rej-open": (i, el) => { st.planRej = planId(el); st.planRejNote = ""; render(); focusAct("[data-act=plan-rej-note]"); },
     "plan-rej-close": () => { st.planRej = ""; render(); },
     "plan-reject": (i, el) => { const id = planId(el); st.plan = FP.reject(st.plan, id, st.planRejNote); st.planRej = ""; st.planRejNote = ""; save(); handPlan(id); },
     // Claude Code가 물은 것에 답하고 이어서 맡기기(C-33) — 그 질문과 답을 다음 맡김 글에 붙인다
@@ -145,7 +145,7 @@
       if (!w || !w.report || !ans) return say("답을 먼저 적어 주세요");
       st.plan = FP.reject(st.plan, id, `Claude Code가 "${w.report.ask}"라고 물었고, 사용자의 답: ${ans}`); st.planReply = { ...st.planReply, [id]: "" }; save(); handPlan(id);
     },
-    "plan-ask-open": (i, el) => { st.planAsk = planId(el); st.planQ = ""; render(); requestAnimationFrame(() => { const q = $nav.querySelector("[data-act=plan-q]"); if (q) q.focus(); }); },
+    "plan-ask-open": (i, el) => { st.planAsk = planId(el); st.planQ = ""; render(); focusAct("[data-act=plan-q]"); },
     "plan-ask-close": () => { st.planAsk = ""; render(); },
     "plan-ask-send": (i, el) => askPlan(planId(el)),
     "plan-unwait": async () => { const id = FP.running(st.plan); if (!id || st.halting) return; const w = tw && tw.kind === "plan" ? tw : null; if (w) { st.halting = true; render(); const ok = await taskHalt(w.at); st.halting = false; if (!ok) { if (tw === w) twTimer = setInterval(twTick, 3000); render(); return say("Claude Code를 멈추지 못했어요 — 아직 일하는 중이라 조금 뒤 다시 눌러 주세요."); } if (tw === w) tw = null; st.stall = null; } if (FP.running(st.plan) !== id) return render(); st.plan = FP.failed(st.plan, id, "멈췄어요"); save(); render(); say(w ? "Claude Code도 멈췄어요 — 바로 다시 맡길 수 있어요." : "멈췄어요 — 다시 맡길 수 있어요."); },   // F-103-7(임유정 2026-10-30 '클로드 코드도 멈추는 거로'): 서버의 일을 끄고(taskHalt — 꺼진 걸 확인할 때까지) 그 줄을 끝맺는다. 그사이 보고가 와서 끝났으면 그대로 둔다
@@ -172,7 +172,7 @@
       if (st.qfocus === "plan") st.qfocus = "stage";
       if (st.quest && st.quest.phase === "draft") { openQwin("quest"); st.qtab = "quest"; return render(); }
       if (st.ui !== "home") go("home"); else render();
-      requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); });
+      focusAct("[data-act=say]");   // 앱의 작업실 창에서도(F-144-8)
     },
     shells: () => openGacha(),   // 위 줄의 조개 → 뽑기 창(섬이 접혀 있으면 옆 칸으로 펼친 뒤)
     gacha: () => openGacha(),

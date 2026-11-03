@@ -9,7 +9,7 @@
   document.title = kind === "quest" ? "Floe — 작업실" : "Floe — 설정";   // 테두리 있는 작업실 창(C-41, 2026-10-26)은 OS 제목 줄에 이 글이 보인다 — main.js의 title을 페이지가 덮어쓴다
   if (!F || !F.onWinHtml) return;
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-  let goShown = "", goStageShown = "";   // 마지막으로 옮겨 간 목차 차례 번호(data-go) · 대화 구분선(data-go-stage, C-63)
+  let goShown = "", goStageShown = "", focusShown = "";   // 마지막으로 옮겨 간 목차 차례 번호(data-go) · 대화 구분선(data-go-stage, C-63) · 커서를 둔 신호(data-want-focus)
   const WS_PANES = [".wnav", ".wside"];   // 다시 그려도 스크롤을 지키는 작업실 옆 칸 — 섬(app.js)의 WS_PANES와 같다
   // 파일 보기(.fv)의 글 칸 스크롤 — 섬(app.js)의 fvScroll과 같다: was 없이 부르면 읽고, 주면 같은 파일 · 같은 보기일 때 되돌린다
   const fvScroll = (fv, was) => { const b = fv && fv.querySelector(".fv-code, .fv-md"); if (!was) return b ? { f: fv.dataset.f, c: b.className, top: b.scrollTop, left: b.scrollLeft } : null; if (b && b.className === was.c && fv.dataset.f === was.f) { b.scrollTop = was.top; b.scrollLeft = was.left; } };
@@ -39,6 +39,9 @@
     fvScroll(root.querySelector(".fv"), fvWas);
     WS_PANES.forEach((c, j) => { const e = root.querySelector(c); if (e && sideWas[j] != null) e.scrollTop = sideWas[j]; });
     if (key) { const b = [...root.querySelectorAll("[data-act]")].find((x) => `${x.dataset.act}|${x.dataset.i || ""}|${x.dataset.k || ""}` === key); if (b) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; } }
+    // 섬이 '이 칸에 커서'를 실어 보냈으면 한 번만(F-144-8) — 섬 창은 숨어 있어 섬의 focus()가 닿지 않았다
+    const wf = root.querySelector("[data-want-focus]"), want = wf ? wf.dataset.wantFocus : "";
+    if (want && want !== focusShown) { focusShown = want; let t = null; try { t = root.querySelector(want.slice(want.indexOf("|") + 1)); } catch {} if (t) { t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch {} } }
     const body = root.querySelector(".wbody"); if (body) body.scrollTop = body.dataset.view === view ? scroll : 0;
     const lg2 = root.querySelector("[data-log]"); if (lg2) lg2.scrollTop = lgTop === null || lgEnd ? lg2.scrollHeight : lgTop;
     const gs = root.querySelector("[data-log][data-go-stage]"), gv = gs ? gs.dataset.goStage : ""; if (gv && gv !== goStageShown) { goStageShown = gv; const el = gs.querySelector(`[data-stage="${gv.split(":")[0]}"]`); if (el) { el.scrollIntoView({ block: "start" }); el.classList.add("hl"); setTimeout(() => el.classList.remove("hl"), 1200); } }   // C-63 대화 목록의 바로가기 — 그 단계 구분선으로(섬 app.js goStage와 같다)

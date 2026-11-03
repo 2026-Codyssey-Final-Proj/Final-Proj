@@ -89,12 +89,12 @@
     if (a === "prep-think") { const c = st.prep && st.prep.cards && st.prep.cards[Number(t.dataset.i)]; if (c) c.think = t.value.slice(0, 120); return; }   // C-54 고칠래요 — ① 생각(다시 그리지 않는다, '맞아요'에서 저장)
     if (a === "ffind") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.find = t.value.slice(0, 60); if (f.kind === "md" && !f.edit && !f.raw && f.find) f.raw = true; render(); return; }   // C-53 문서 안 찾기 — 그 글이 든 줄 표시(원문 · 코드 보기)   // R-10 넘기는 까닭 — 다시 그리지 않는다(글 칸이 흔들리지 않게)
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다
-    if (a === "task-text") { st.task.text = t.value; const b = $nav.querySelector("[data-act=task-tidy]"); if (b) b.disabled = !st.task.text.trim(); }
+    if (a === "task-text") { st.task.text = t.value; liveBtn("task-tidy", !st.task.text.trim()); }   // 앱의 작업실 창에서도(F-144-8)
     if (a === "task-lines") st.task.lines = t.value.split("\n");
     // 준비 계획(C-34) — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) 단추만 켠다
     if (st.plan && FP && /^plan-(note|answer|general)$/.test(a || "")) {
       st.plan = a === "plan-note" ? FP.note(st.plan, t.dataset.id, t.value) : a === "plan-answer" ? FP.answer(st.plan, Number(t.dataset.i), t.value) : { ...st.plan, general: t.value.slice(0, 300) };
-      const b = $nav.querySelector("[data-act=plan-again]"); if (b) b.disabled = !(FP.hasFeedback(st.plan) && planLive());
+      liveBtn("plan-again", !(FP.hasFeedback(st.plan) && planLive()));
       save();
     }
     if (a === "plan-rej-note") st.planRejNote = t.value.slice(0, 300);
@@ -111,7 +111,7 @@
       save();
     }
     // 느낀 점 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '남기기' 단추만 켠다
-    if (a === "note-text") { st.noteText = t.value; const b = document.querySelector("[data-act=note-add]"); if (b) b.disabled = !st.noteText.trim(); }
+    if (a === "note-text") { st.noteText = t.value; liveBtn("note-add", !st.noteText.trim()); }
     if (a === "doc" && st.doc) {
       st.doc.text = t.value; save(); if (t instanceof Element) grow(t);   // 글자를 칠 때는 다시 그리지 않는다(커서가 튄다) — 빈칸 개수만 바꾼다
       if (st.askConfirm) { st.askConfirm = 0; document.querySelector("[data-ask-confirm]")?.remove(); }   // 고치기 시작하면 다시 묻지 않는다
