@@ -645,7 +645,7 @@ async function docmapNow(nowPath) {
     docs.push({ path: e.raw, text, name: e.name });
   }
   let changed = [];
-  try { const g = await Project.runCommand("git", ["-c", "core.quotepath=false", "status", "--porcelain", "-z", "--", "docs", "README.md", "CLAUDE.md"], { cwd: s.dir, timeout: 4000 }); if (g.code === 0) changed = g.out.split("\0").map((l) => l.slice(3).trim()).filter(Boolean); } catch {}   // -z · quotepath=false — 한글 이름이 "\354…"로 인용되지 않게(새 맥락 리뷰)
+  try { const g = await Project.runCommand("git", ["-c", "core.quotepath=false", "status", "--porcelain", "-z", "--untracked-files=all", "--", "docs", "README.md", "CLAUDE.md"], { cwd: s.dir, timeout: 4000 }); if (g.code === 0) changed = Project.porcelainPaths(g.out); } catch {}   // F-144-26: 새 폴더 안 문서도 하나씩(--untracked-files=all), 이름 바꿈의 옛 이름 칸은 건너뛴다   // -z · quotepath=false — 한글 이름이 "\354…"로 인용되지 않게(새 맥락 리뷰)
   const board = Docmap.build(docs, { now: typeof nowPath === "string" ? nowPath : "", changed, project: s.project });
   if (cut) board.sub += ` · ${DOCMAP_MAX}개까지만 보여요`;
   return [200, { ok: true, project: s.project, board, cut }];

@@ -81,6 +81,18 @@ function runCommand(cmd, args, { cwd, timeout = LIST_MS, env = quietEnv(), kill 
   });
 }
 
+// git status --porcelain -z의 경로들 — 칸마다 'XY 경로', 이름 바꿈 · 복사(R · C)는 다음 칸이 옛 이름이라 건너뛴다(F-144-26, 2026-11-03).
+//   전에는 칸마다 앞 세 글자를 떼어 옛 이름 칸('docs/old.md')이 's/old.md'로 들어갔다
+function porcelainPaths(out) {
+  const parts = String(out || "").split("\0"), paths = [];
+  for (let i = 0; i < parts.length; i++) {
+    const e = parts[i]; if (e.length < 4) continue;
+    paths.push(e.slice(3));
+    if (/[RC]/.test(e.slice(0, 2))) i++;
+  }
+  return paths;
+}
+
 // 폴더 상태 — none: 없음 · empty: 빈 폴더 · full: 뭔가 있음 · file: 폴더가 아님
 function folderState(dir) {
   try {
@@ -163,4 +175,4 @@ async function ghReady(run = runCommand) {
   return r.code === 0;
 }
 
-module.exports = { LOCAL_SETTINGS, excludeLocal, ghReady, hasClaudeConfig, BASE, badName, folderFor, parseRepo, cloneCommand, parseRepoList, REPO_LIST_ARGS, quietEnv, runCommand, newFolder, cloneRepo, myRepos };
+module.exports = { LOCAL_SETTINGS, excludeLocal, ghReady, hasClaudeConfig, BASE, badName, folderFor, parseRepo, cloneCommand, parseRepoList, REPO_LIST_ARGS, quietEnv, runCommand, porcelainPaths, newFolder, cloneRepo, myRepos };

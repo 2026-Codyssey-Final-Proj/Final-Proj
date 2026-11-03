@@ -320,3 +320,20 @@ test("F-144-25 퀘스트의 '왜 하나요' · 조건 글 — 받침에 맞는 �
   assert.equal(q(1, "할 일 목록").why, "이 장을 지나면 '할 일 목록'이 책에 남아요");
   assert.match(q(1, "x").cond, /^\S+단계를 지난 사람$/, q(1, "x").cond);
 });
+
+test("F-144-26 문서 지도의 '고침' 표시 — 새 폴더 안 문서도 하나씩, 이름 바꿈의 옛 이름은 넣지 않는다", async () => {
+  const PR = require(path.join(BACK, "project.js"));
+  assert.deepEqual(PR.porcelainPaths(" M docs/a.md\0R  docs/new.md\0docs/old.md\0?? docs/02-plan/b.md\0"), ["docs/a.md", "docs/new.md", "docs/02-plan/b.md"]);
+  assert.deepEqual(PR.porcelainPaths(""), []);
+  const server = fs.readFileSync(path.join(BACK, "server.js"), "utf8");
+  assert.match(server, /"status", "--porcelain", "-z", "--untracked-files=all"[^\n]*Project\.porcelainPaths\(g\.out\)/);
+  // 진짜 git으로 — 새 폴더가 '?? docs/'로 접히지 않는다
+  const { spawnSync } = require("node:child_process");
+  if (spawnSync("git", ["--version"]).status !== 0) return;
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "floe-st-")), git = (...a) => spawnSync("git", ["-C", dir, "-c", "user.email=t@example.com", "-c", "user.name=t", ...a], { encoding: "utf8" });
+  git("init", "-q"); fs.mkdirSync(path.join(dir, "docs")); fs.writeFileSync(path.join(dir, "docs/old.md"), "# a"); git("add", "."); git("commit", "-qm", "a");
+  git("mv", "docs/old.md", "docs/new.md"); fs.mkdirSync(path.join(dir, "docs/02-plan")); fs.writeFileSync(path.join(dir, "docs/02-plan/b.md"), "# b");
+  const g = await PR.runCommand("git", ["-c", "core.quotepath=false", "status", "--porcelain", "-z", "--untracked-files=all", "--", "docs"], { cwd: dir, timeout: 4000 });
+  fs.rmSync(dir, { recursive: true, force: true });
+  assert.deepEqual(PR.porcelainPaths(g.out).sort(), ["docs/02-plan/b.md", "docs/new.md"]);
+});
