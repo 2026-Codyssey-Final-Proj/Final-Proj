@@ -167,3 +167,14 @@ test("F-144-9 다시 그린 뒤 커서는 같은 이름의 여러 칸 중 쓰던
   assert.match(WIN, /find\(\(x\) => keyOf\(x\) === key\)/);
   assert.match(lineOf(/const a = document\.activeElement, keep = [^\n]*/), /\["i", "k", "v"\]/, "섬 창도 data-k · data-v까지");
 });
+
+test("F-144-10 확인할 먹이 — 두 번 눌러도 확인하지 않은 다음 항목을 넣거나 빼지 않는다", () => {
+  const { inboxSig, inboxSame } = new Function(`${lineOf(/const inboxSig = [^\n]*/)}; ${lineOf(/const inboxSame = [^\n]*/)}; return { inboxSig, inboxSame };`)();
+  const a = { topic: "회의", text: "가" }, b = { topic: "회의", text: "나" };
+  const clicked = { dataset: { k: inboxSig(a) } };
+  assert.equal(inboxSame(a, clicked), true);
+  assert.equal(inboxSame(b, clicked), false, "당겨져 온 다음 항목은 다른 단추로 본다");
+  assert.match(lineOf(/"inbox-ok": [^\n]*/), /inboxSame\(x, el\)/);
+  assert.match(lineOf(/"inbox-drop": [^\n]*/), /inboxSame\(/);
+  assert.match(fnSrc("inboxBox"), /data-act="inbox-ok" data-i="\$\{i\}" data-k="\$\{inboxSig\(x\)\}"/);
+});

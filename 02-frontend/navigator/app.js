@@ -2581,10 +2581,13 @@
   }
   // 확인할 먹이(FR-15 더함 2026-10-20 — 이재엽 버튼 "먹이 주기에 더하기"): 종류를 붙였지만 아직 확인하지 않은 구간. 도서관 탭 맨 위 [제안 ⑦]. 맞아요 → 그 종류로 내 책의 칸(my-books.js), 빼기 → 버림.
   //   이름은 '확인할 먹이' [제안 ⑧] — C-21의 '분류 안 함' 책장(책을 꽂는 곳)과 헷갈리지 않게. 예시 먹이의 것은 '예시'라고 표시
+  // 누른 단추의 항목이 아직 그 자리에 있나 — 번호로만 찾으면 두 번 누를 때 둘째가 당겨진 다음 항목(확인하지 않은 것)을 넣거나 뺐다(F-144-10)
+  const inboxSig = (x) => { let h = 0; for (const c of `${x.topic}\n${x.text}`) h = (h * 31 + c.codePointAt(0)) | 0; return String(h >>> 0); };
+  const inboxSame = (x, el) => !!x && !!el && !!el.dataset && el.dataset.k === inboxSig(x);
   function inboxBox() {
     if (!FD || !st.inbox.length) return "";
     const rows = st.inbox.slice(0, 5).map((x, i) => `<li><span class="ft"><b>${esc(x.topic)}</b>${x.example ? " <small>· 예시</small>" : ""}<small>${esc(String(x.text || "").replace(/\s+/g, " ").slice(0, 90))}</small></span>${kindSelect("inbox-kind", i, x.kind)}
-      <button type="button" class="b pri" data-act="inbox-ok" data-i="${i}">맞아요 → 책에</button><button type="button" class="b ghost" data-act="inbox-drop" data-i="${i}">빼기</button></li>`).join("");
+      <button type="button" class="b pri" data-act="inbox-ok" data-i="${i}" data-k="${inboxSig(x)}">맞아요 → 책에</button><button type="button" class="b ghost" data-act="inbox-drop" data-i="${i}" data-k="${inboxSig(x)}">빼기</button></li>`).join("");
     return `<section class="inbox" aria-label="확인할 먹이"><div class="stg">확인할 먹이 ${st.inbox.length}개 — 종류가 맞는지 보고 책에 넣어요</div><ol class="inboxlist">${rows}</ol>${st.inbox.length > 5 ? `<p class="meta">먼저 온 5개만 보여요 — 확인하면 다음 것이 올라와요</p>` : ""}</section>`;
   }
   // 책 안의 단계 문서 목록(C-16) — 단계마다 문서 이름 · 상태(아직 · 초안 · 다시 봐 줌 · 확정). 받은 먹이(C-15)도 여기에
@@ -4121,8 +4124,8 @@
       set({ tab: id, error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false, libDoc: null }); },
     // 먹이 주기(C-15) — 예시 · 나눠 정리 · 구간 표시 바꾸기 · 확인 · 다시 쓰기
     // 확인할 먹이(FR-15 더함) — 맞아요: 그 종류로 책의 칸에, 빼기: 버림. 종류 고치기는 change 손잡이
-    "inbox-ok": (i) => { const x = st.inbox[i]; if (!x) return; st.sorted = [{ at: ymd(), kind: x.kind, text: x.text, topic: x.topic }, ...st.sorted].slice(0, 200); st.inbox.splice(i, 1); render(); say(`'${FD ? FD.kindLabel(x.kind) : x.kind}' 칸에 넣었어요`); },
-    "inbox-drop": (i) => { if (!st.inbox[i]) return; st.inbox.splice(i, 1); render(); say("뺐어요"); },
+    "inbox-ok": (i, el) => { const x = st.inbox[i]; if (!x || !inboxSame(x, el)) return; st.sorted = [{ at: ymd(), kind: x.kind, text: x.text, topic: x.topic }, ...st.sorted].slice(0, 200); st.inbox.splice(i, 1); render(); say(`'${FD ? FD.kindLabel(x.kind) : x.kind}' 칸에 넣었어요`); },
+    "inbox-drop": (i, el) => { if (!st.inbox[i] || !inboxSame(st.inbox[i], el)) return; st.inbox.splice(i, 1); render(); say("뺐어요"); },
     "feed-example": () => { if (refuse(busyWhy())) return; if (FD) { st.text = FD.EXAMPLE; feedSort(FD.EXAMPLE, true); } },
     "feed-sort": () => feedSort(st.text),
     "feed-mark": (i) => { const fd = st.meal; if (!fd || !fd.checks[i]) return; fd.marks[i] = feedSkip(fd, i) ? "keep" : "skip"; render(); },
