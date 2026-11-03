@@ -41,3 +41,22 @@ test("F-144-2 허락 카드 — 강제 푸시 · 원격 지우기 · 긴 옵션�
     assert.equal(why(c), "", `보통 일: ${c}`);
   }
 });
+
+test("F-144-3 app-link — 설정 파일을 읽지 못하면(없는 것이 아니면) 덮어쓰지 않는다", () => {
+  const Link = require(path.join(BACK, "app-link.js"));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "floe-link-"));
+  // 읽기 오류 — Claude Desktop이 파일을 잡고 있다(EBUSY · EPERM). 전에는 빈 설정으로 보고 백업 없이 { mcpServers: { floe } }만 썼다
+  const file = path.join(dir, "claude_desktop_config.json"), orig = JSON.stringify({ mcpServers: { other: { command: "x" } }, theme: "dark" });
+  fs.writeFileSync(file, orig);
+  const read = fs.readFileSync;
+  fs.readFileSync = (f, ...a) => { if (f === file) throw Object.assign(new Error("busy"), { code: "EBUSY" }); return read(f, ...a); };
+  let r;
+  try { r = Link.link(file, { command: "node" }); } finally { fs.readFileSync = read; }
+  assert.equal(r.ok, false);
+  assert.equal(fs.readFileSync(file, "utf8"), orig, "다른 MCP 서버 · 설정을 그대로 둔다");
+  // 없는 파일이면 전처럼 새로 만든다
+  const fresh = path.join(dir, "new.json");
+  assert.equal(Link.link(fresh, { command: "node" }).ok, true);
+  assert.equal(JSON.parse(fs.readFileSync(fresh, "utf8")).mcpServers.floe.command, "node");
+  fs.rmSync(dir, { recursive: true, force: true });
+});

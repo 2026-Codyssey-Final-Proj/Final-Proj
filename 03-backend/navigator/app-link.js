@@ -27,7 +27,8 @@ function entry({ execPath = process.execPath, electron = !!process.versions.elec
   return { command: execPath, args: [path.join(dir, "mcp-stdio.js")],
     env: { ...(electron ? { ELECTRON_RUN_AS_NODE: "1" } : {}), NAV_PORT: String(port), NAV_MCP_TOKEN_FILE: tokenFile } };
 }
-const read = (file) => { try { return fs.readFileSync(file, "utf8"); } catch { return null; } };
+// 없는 파일은 null, 읽지 못한 파일(잠김 · 권한)은 undefined — F-144-3(2026-11-03): 전에는 둘 다 null이라 읽지 못한 설정을 백업 없이 덮어썼다
+const read = (file) => { try { return fs.readFileSync(file, "utf8"); } catch (e) { return e && e.code === "ENOENT" ? null : undefined; } };
 const parse = (text) => { const j = JSON.parse(text); if (!j || typeof j !== "object" || Array.isArray(j)) throw new Error("모양"); return j; };
 function status(file) {
   if (!file) return { found: false, linked: false };
@@ -37,6 +38,7 @@ function status(file) {
 function link(file, e) {
   if (!file) return { ok: false, message: "Claude Desktop을 찾지 못했어요 — 설치하고 한 번 켠 뒤 다시 해 주세요" };
   const t = read(file);
+  if (t === undefined) return { ok: false, message: "Claude Desktop 설정 파일을 읽지 못해 건드리지 않았어요 — Claude Desktop을 끈 뒤 다시 해 주세요" };
   let j = {};
   if (t && t.trim()) { try { j = parse(t); } catch { return { ok: false, message: "Claude Desktop 설정 파일이 깨져 있어 건드리지 않았어요" }; } }
   try {
