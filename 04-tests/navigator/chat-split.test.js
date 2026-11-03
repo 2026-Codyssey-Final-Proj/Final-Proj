@@ -14,7 +14,7 @@ test("보내기는 칸에 적지 않는다 — 퀘스트 중(초안 확인이 �
   assert.ok(!a.includes('if (!q.draft) say("적었어요!"); return fillNow(t);'), "옛 '보내면 곧바로 적힘' 길은 없다");
   assert.match(a, /async function chatSend\(t, skipCheck\)/);
   assert.match(a, /callAI\("\/api\/chat", \{ stage: q\.chap, tier: st\.tier, idea: ideaNow\(\), talk: talkOf\(t\), lines: q\.lines \}\)/, "진짜 AI는 /api/chat(API.md 3-31 — 이재엽 쪽 서버)에 이 단계의 대화 · 적은 줄 · 처음 말한 것");
-  assert.match(a, /if \(r\.ok && typeof r\.reply === "string"\) \{[^\n]*if \(slots\.length\) st\.tidy = \{ fills: slots, reply: r\.reply \}; else say\(r\.reply\);/, "답은 reply · slots · n — 칸 제안이 있으면 정리 카드, 없으면 말만");
+  assert.match(a, /if \(r\.ok && typeof r\.reply === "string"\) \{[^\n]*if \(slots\.length\) st\.tidy = \{ fills: slots, reply: r\.reply \}; else sayLines\(r\.reply\);/, "답은 reply · slots · n — 칸 제안이 있으면 정리 카드, 없으면 말만");
   assert.match(a, /const talkOf = \(t\) => \{[^\n]*\(m\.who === "me" \|\| m\.who === "floro"\) && !m\.kind/, "대화는 사람 · 플로로의 말만(알림 · 구분선 빼고), 마지막은 내 말");
   assert.match(a, /if \(st\.mode !== "live" \|\| !canLive\) \{ st\.tidy = \{ fills: \[\{ i: QU\.curIdx\(q\), text: t \}\]/, "연습 · 서버 없음은 보낸 말을 지금 칸의 후보로(AI 없이)");
   assert.match(a, /if \(!skipCheck && guard\(t, "chat"\)\) return;/, "비밀값처럼 보이면 먼저 묻는다(받은 글과 같은 규칙)"); assert.match(a, /chat: \(\) => chatSend\(chatText, true\)/, "'괜찮아요, 보낼게요'로 이어진다");

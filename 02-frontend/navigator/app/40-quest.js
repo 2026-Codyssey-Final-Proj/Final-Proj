@@ -32,7 +32,7 @@
       sub: `적어 둔 줄 “${esc((q.lines[rv.i] || [])[0] || "")}” · ${esc(st.refit.tool)}가 한 일로 본 새 줄 “${esc(rv.text)}”`, foot: "새 줄로 바꾸거나 적어 둔 줄을 그대로 둬요 — 플로로는 적은 줄을 덮지 않아요.",
       acts: [{ label: "새 줄로", act: "refit-use", i: rv.i, key: "Enter", pri: true }, { label: "그대로 둘래요", act: "refit-keep", i: rv.i, key: "Escape" }] };
     if (q.draft) { const c = momentConfirm(q, i, meta); return { ...c, ...refitBanner(q), acts: [...c.acts, ...buildActs(q.chap)] }; }   // F-70 — 초안을 확인하는 중에도 코드 맡기기(A-02)   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
-    if (st.tidy && st.tidy.fills.length) { const n = st.tidy.fills.length; return { tone: "green", mood: "happy", meta, title: `칸 ${n}개로 정리했어요.`, sub: esc(st.tidy.reply),
+    if (st.tidy && st.tidy.fills.length) { const n = st.tidy.fills.length; return { tone: "green", mood: "happy", meta, title: `칸 ${n}개로 정리했어요.`, sub: esc(st.tidy.reply).split("\n").join("<br>"),
       body: `<ol class="tidy">${st.tidy.fills.map((f) => `<li><b>${ROMAN(f.i)} ${esc(QU.nameOf(q, f.i))}</b><span>${esc(f.text)}</span></li>`).join("")}</ol>`, foot: "맞으면 적고, 아니면 더 이야기해요 — 플로로가 먼저 적지 않아요.",
       acts: [{ label: `칸 ${n}개에 적기`, act: "tidy-fill", key: "Enter", pri: true }, { label: "더 이야기하기", act: "tidy-more", key: "Escape", kind: "ghost" }] }; }   // C-61 정리 카드
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
@@ -143,6 +143,12 @@
     if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (q.draft) return fillNow(t); return chatSend(t); }   // C-61(2026-10-29): 보내기는 칸에 적지 않는다 — 플로로가 정리 카드로 돌려주고 사람이 [칸 n개에 적기]를 누른다. 초안 확인(draft)은 C-36대로 그 줄 고쳐 적기
     if (st.screen === "gate" && st.step === "question") { st.question = t; return answer(); }
     if (st.j && st.j.next && st.screen !== "gate" && !st.todos) { st.ownText = t; return decide(t); }
+    // F-144-15(2026-11-03): 퀘스트를 다 적었거나(완료 보고 앞) 관문에서 묻는 동안 친 말을 작업 글(st.text — 지난 단계의 보고 글)에 붙여 다시 판정하지 않는다 —
+    //   전에는 "완료"를 치면 그 글이 지금 단계 기준으로 다시 판정돼 '안 됨'이 남았다. 진짜 AI면 플로로와의 대화로, 아니면 단추를 가리킨다
+    if (q || st.screen === "gate") {
+      if (q && st.mode === "live" && canLive) return chatSend(t);
+      render(); return say("지금은 위 카드의 단추로 해요 — 적은 말은 작업 글에 붙이지 않아요");
+    }
     if (st.j && st.mode === "live") { st.text = `${st.text.trim()}\n${t}`; return judge(false); }
     render(); say(st.j ? "연습에서는 칩으로 해요 — 진짜 AI면 적은 글을 보고 어디쯤인지 봐요" : "먼저 무엇을 만들고 싶은지 말해 주세요");
   }
@@ -191,7 +197,7 @@
     st.warn = null;   // 보낸 뒤 경고 카드를 걷는다 — 남으면 '보낼게요'를 또 눌러 같은 글이 두 번 간다(startDraft와 같이, 새 맥락 리뷰 2026-10-29 막힘)
     const r = await callAI("/api/chat", { stage: q.chap, tier: st.tier, idea: ideaNow(), talk: talkOf(t), lines: q.lines });   // API.md 3-31(이재엽 쪽 서버 #246): 이 단계의 대화 · 적은 줄 · 처음 말한 것 → { reply, slots, n }
     if (!st.quest || st.quest.chap !== q.chap) return render();
-    if (r.ok && typeof r.reply === "string") { st.tokens = r.tokens || 0; fetchUsage(); const slots = Array.isArray(r.slots) ? r.slots : []; if (slots.length) st.tidy = { fills: slots, reply: r.reply }; else say(r.reply); return render(); }
+    if (r.ok && typeof r.reply === "string") { st.tokens = r.tokens || 0; fetchUsage(); const slots = Array.isArray(r.slots) ? r.slots : []; if (slots.length) st.tidy = { fills: slots, reply: r.reply }; else sayLines(r.reply); return render(); }
     render(); say(`답을 받지 못했어요 — ${r.reason || "AI에 연결하지 못했어요"}`);
   }
   // ── 다음 단계 초안 미리(C-40, 2026-10-26 — 이재엽 "보통길이이고 작업들을 하나씩 하는건데 왜 그냥 넣었을때 보다 너무 느려" · 버튼 "다음 단계 초안 미리") ──
@@ -265,9 +271,11 @@
   let startText = "";
   async function startDraft(text, skipCheck) {
     if (st.busy) return say("앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 해 주세요");   // 다른 호출이 도는 중(웹 AI 제안 '시작' 등) — 빈 퀘스트를 만들지 않는다(F-103-5)
-    startText = text; st.source = text;   // F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
-    if (st.mode !== "live" || !canLive) return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true });
+    startText = text;   // st.source는 비밀값 경고(guard)를 지난 뒤에 — 전에는 '그만둘게요'를 골라도 보내지 않기로 한 원문이 기록(KEEP)에 남아 idea.md를 덮을 수 있었다(F-144-11)
+    //   F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
+    if (st.mode !== "live" || !canLive) { st.source = text; return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true }); }
     if (!skipCheck && guard(text, "start")) return;
+    st.source = text;
     Object.assign(st, { warn: null, error: "" });
     const r = await callAI("/api/start", { text });
     if (r.ok && r.start) { st.tokens = r.tokens || 0; fetchUsage(); return beginQuest(r.start); }

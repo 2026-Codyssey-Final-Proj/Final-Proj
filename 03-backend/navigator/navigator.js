@@ -282,7 +282,7 @@
     ], tag("적은글", text));
   }
   const parseTask = (o) => (o && has(o, ["say"]) && Array.isArray(o.lines) && o.lines.length && o.lines.every((l) => typeof l === "string")
-    ? (() => { const lines = o.lines.filter(filled).slice(0, TASK_MAX).map((l) => l.trim().slice(0, TASK_LINE_MAX)); return lines.length ? { lines, say: o.say } : null; })() : null);
+    ? (() => { const lines = o.lines.filter(filled).slice(0, TASK_MAX).map((l) => head(l.trim(), TASK_LINE_MAX)); return lines.length ? { lines, say: o.say } : null; })() : null);
   // 서버 없이(FR-10) — 적은 글을 줄 · 문장으로만 나눈다(지어내지 않는다), 6줄까지
   function taskLines(text) {
     const lines = String(text || "").split(/\r?\n|(?<=[.!?。])\s+/).map((l) => l.trim().replace(/[.!?。]$/, "")).filter(Boolean).slice(0, 6);
@@ -302,6 +302,12 @@
     const t = String(v || "").replace(/\s+/g, " ").trim(), ch = Array.from(t); if (ch.length <= n) return t;
     const cut = ch.slice(0, n - 1).join(""), sp = cut.lastIndexOf(" "), w = (sp >= cut.length * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,·—\-“"'(:/]+$/, "");
     return `${w || cut}…`;   // 낱말 사이에서, 이모지 같은 짝 글자는 반으로 자르지 않는다(새 맥락 리뷰)
+  };
+  const head = (s, n) => { const t = String(s).slice(0, n), c = t.charCodeAt(t.length - 1); return c >= 0xd800 && c <= 0xdbff ? t.slice(0, -1) : t; };   // 앞 n자 — 끝에 짝 글자(이모지)의 반쪽이 남으면 뗀다(F-144-24: 화면 · 클립보드에 �로 보였다)
+  // 줄바꿈은 지키는 fit — 플로로의 대화 답(번호 목록 · 순서)이 한 줄로 펴져 '이래요: 1. 신청 2. 목록'이 됐다(F-144-23). 줄 안의 공백만 하나로, 빈 줄은 하나까지
+  const fitLines = (v, n) => {
+    const t = String(v || "").replace(/\r\n?/g, "\n").split("\n").map((l) => l.replace(/\s+/g, " ").trim()).join("\n").replace(/\n{3,}/g, "\n\n").trim(), ch = Array.from(t);
+    return ch.length <= n ? t : `${ch.slice(0, n - 1).join("").trimEnd()}…`;
   };
   const QUEST_SCHEMA = obj({ desc: str, why: str, qa: list(obj({ question: str, examples: list(str, 1, QA_EX_MAX) }), 1, 8) });
   function questPrompt(stage, idea, tier) {
@@ -459,7 +465,7 @@
       out.push({ i, text: fit(x.text, SLOT_LINE_MAX) });
     }
     out.sort((a, b) => a.i - b.i);
-    return { reply: fit(o.reply, CHAT_REPLY_MAX), slots: out, n: out.length };
+    return { reply: fitLines(o.reply, CHAT_REPLY_MAX), slots: out, n: out.length };
   }
   // 재료 번호("단계-칸", 1부터) → { s, i }(0부터) — 넘긴 지난 단계의 있는 칸만, 한 번씩, FROM_MAX개까지
   function fromRefs(list, stage, prev) {
@@ -563,7 +569,7 @@
     if (!has(o, ["problem", "have", "missing", "say"]) || !Array.isArray(o.items) || !o.items.length || !o.items.every((x) => has(x, ["need", "check"]))) return null;
     const prep = strs(o.prep == null ? [] : o.prep, 6, 100), ask = strs(o.ask == null ? [] : o.ask, 4, 120);   // 빠졌으면 빈 목록 — 호환 모드(중계 서버)는 모양을 글로만 알려 빠뜨리기도 한다(F-129). 모양이 틀리면 그대로 버린다
     if (!prep || !ask) return null;
-    const cut = (s, n) => s.trim().slice(0, n);
+    const cut = (s, n) => head(s.trim(), n);
     return { problem: cut(o.problem, 200), have: cut(o.have, 200), missing: cut(o.missing, 200),
       items: o.items.slice(0, PLAN_ITEMS).map((x, i) => ({ id: `p${i + 1}`, need: cut(x.need, PLAN_LINE), check: cut(x.check, PLAN_LINE), ...(filled(x.basis) ? { basis: cut(x.basis, 80) } : {}) })), prep, ask, say: cut(o.say, 120) };   // basis — C-51
   }
@@ -593,9 +599,9 @@
   function parseCarry(o) {
     if (!o || !filled(o.say) || !Array.isArray(o.items) || !o.items.length) return null;
     const inStage = (n) => Number.isInteger(n) && n >= 1 && n <= STAGES.length;   // 사람에게 보이는 1 ~ 8 → 코드의 0 ~ 7, 밖이면 버린다
-    const items = o.items.slice(0, 3).filter((x) => x && filled(x.text)).map((x) => ({ text: String(x.text).trim().slice(0, 160), why: String(x.why || "").trim().slice(0, 200),
+    const items = o.items.slice(0, 3).filter((x) => x && filled(x.text)).map((x) => ({ text: head(String(x.text).trim(), 160), why: head(String(x.why || "").trim(), 200),
       stage: inStage(x.stage) ? x.stage - 1 : -1, review: String(x.review || "").trim().slice(0, 10), from: Array.isArray(x.from) ? [...new Set(x.from.filter(inStage).map((n) => n - 1))] : [] }));
-    return items.length ? { items, say: String(o.say).trim().slice(0, SAY_MAX) } : null;
+    return items.length ? { items, say: head(String(o.say).trim(), SAY_MAX) } : null;
   }
 
   const REPORT_SCHEMA = obj({ items: list(obj({ check: str, done: { type: "boolean" }, evidence: { type: "string" } }), 1, CHECKS_MAX), easy: str, ask: { type: "string" } });
@@ -619,8 +625,8 @@
   function parseReport(o, checks) {
     const c = (checks || []).filter(filled);
     if (!c.length || !o || !filled(o.easy) || typeof o.ask !== "string" || !Array.isArray(o.items) || !o.items.length || o.items.some((x) => !x || typeof x.done !== "boolean")) return null;
-    const items = c.map((check, i) => { const x = o.items[i], ev = x && typeof x.evidence === "string" ? x.evidence.trim().slice(0, 200) : ""; return { check, done: !!(x && x.done && ev), evidence: ev }; });
-    return { items, easy: o.easy.trim().slice(0, 240), ask: o.ask.trim().slice(0, 200), done: items.filter((x) => x.done).length, total: items.length };
+    const items = c.map((check, i) => { const x = o.items[i], ev = x && typeof x.evidence === "string" ? head(x.evidence.trim(), 200) : ""; return { check, done: !!(x && x.done && ev), evidence: ev }; });
+    return { items, easy: head(o.easy.trim(), 240), ask: head(o.ask.trim(), 200), done: items.filter((x) => x.done).length, total: items.length };
   }
 
   // ── Claude 응답은 믿지 않는다 — 모양이 맞을 때만 쓰고, 아니면 null("살펴보지 못함") ──
@@ -629,7 +635,7 @@
   const pick = (o, keys) => Object.fromEntries(keys.map((k) => [k, o[k]])); // 그 칸만 옮긴다(다른 칸은 버린다)
   const NEXT = ["what", "why", "question", "action"], FIX = ["where", "why", "hint"];
 
-  const parseDraft = (o) => (has(o, ["draft", "say"]) ? { draft: o.draft.slice(0, 4000), say: o.say } : null);
+  const parseDraft = (o) => (has(o, ["draft", "say"]) ? { draft: head(o.draft, 4000), say: o.say } : null);
   // 고칠 곳이 하나라도 있으면 ready는 우리 쪽에서 false로 둔다
   function parseReview(o) {
     if (!has(o, ["say"]) || typeof o.ready !== "boolean" || !Array.isArray(o.good) || !Array.isArray(o.fix)) return null;

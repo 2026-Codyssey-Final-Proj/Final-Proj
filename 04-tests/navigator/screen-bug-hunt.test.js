@@ -21,7 +21,7 @@ const make = (src, name, env) => new Function(...Object.keys(env), `${src}; retu
 test("F-103-1 대화 — 비밀값 경고 뒤 '보낼게요'를 누르면 그 글(원문)이 AI로 간다, 그 전 메시지가 아니라", async () => {
   const sent = [];
   const st = { quest: { chap: 2, lines: [] }, mode: "live", tier: "lite", tidy: null, warn: null };
-  const env = { st, canLive: true, QU: { curIdx: () => 0 }, render() {}, say() {}, fetchUsage() {}, ideaNow: () => "", talkOf: (t) => [{ who: "me", text: t }],
+  const env = { st, canLive: true, QU: { curIdx: () => 0 }, render() {}, say() {}, sayLines() {}, fetchUsage() {}, ideaNow: () => "", talkOf: (t) => [{ who: "me", text: t }],
     guard: (t) => { if (!/secret/.test(t)) return false; st.warn = { then: "chat" }; return true; }, callAI: async (_, body) => { sent.push(body.talk[0].text); return { ok: true, reply: "네" }; } };
   const decl = a.match(/let chatText = "";/); assert.ok(decl, "chatText 선언");
   const chatSend = new Function(...Object.keys(env), `let chatText = ""; ${fnSrc("chatSend")}; return { chatSend, retry: () => chatSend(chatText, true) };`)(...Object.values(env));

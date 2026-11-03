@@ -25,7 +25,7 @@ test("장 하나 = 퀘스트 하나: 할 일은 그 단계 · 그 등급의 할 
     assert.ok(q.objs.every((o) => o.icon), "할 일마다 그림(자리표시)");
     for (const k of ["cond", "when", "desc", "why"]) assert.ok(typeof q[k] === "string" && q[k].length, k);
   }
-  assert.match(mk(0).cond, /처음 시작/); assert.match(mk(2).cond, /2단계을 지난/);
+  assert.match(mk(0).cond, /처음 시작/); assert.match(mk(2).cond, /2단계를 지난/);   // 받침에 맞는 조사(F-144-25 — 전에는 '2단계을')
 });
 
 test("한 줄씩 적기 — 지금 할 일은 아직 안 적은 첫 것, 빈 줄은 적지 않는다, 원본은 안 바뀐다, 다 적으면 -1 · isDone", () => {

@@ -533,7 +533,7 @@
   function keepGroup() {
     // 처음 설정(setup.js) 다시 하기 — Claude Code / API 키를 바꿀 때 (2026-10-19)
     const keep = sgrp(SG.box, "기록 · 처음 설정", `${window.FloeSetup ? `<div class="row"><span class="grow">AI를 어떻게 부를지(Claude Code / API 키) 다시 고를 수 있어요.</span><button class="btn" data-act="setup">처음 설정 다시 하기</button></div>
-      <div class="row"><span class="grow">다른 프로젝트로 — 내 GitHub 저장소를 가져오거나 새로 만들어요(C-31).</span><button class="btn" data-act="setup-project">프로젝트 바꾸기</button></div>` : ""}<div class="row"><span class="grow">기록은 이 컴퓨터의 브라우저에만 남아요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`);
+      <div class="row"><span class="grow">다른 프로젝트로 — 내 GitHub 저장소를 가져오거나 새로 만들어요(C-31).</span><button class="btn" data-act="setup-project">프로젝트 바꾸기</button></div>` : ""}<div class="row"><span class="grow">기록은 이 컴퓨터에만 남아요(진짜 AI 모드의 대화는 앱 저장 곳에도) — 지우면 지금 폴더의 대화도 지워요.</span><button class="btn" data-act="forget">기록 지우기</button></div>`);
     return keep;
   }
   function viewGroup() {
@@ -1067,7 +1067,7 @@
       sub: `적어 둔 줄 “${esc((q.lines[rv.i] || [])[0] || "")}” · ${esc(st.refit.tool)}가 한 일로 본 새 줄 “${esc(rv.text)}”`, foot: "새 줄로 바꾸거나 적어 둔 줄을 그대로 둬요 — 플로로는 적은 줄을 덮지 않아요.",
       acts: [{ label: "새 줄로", act: "refit-use", i: rv.i, key: "Enter", pri: true }, { label: "그대로 둘래요", act: "refit-keep", i: rv.i, key: "Escape" }] };
     if (q.draft) { const c = momentConfirm(q, i, meta); return { ...c, ...refitBanner(q), acts: [...c.acts, ...buildActs(q.chap)] }; }   // F-70 — 초안을 확인하는 중에도 코드 맡기기(A-02)   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
-    if (st.tidy && st.tidy.fills.length) { const n = st.tidy.fills.length; return { tone: "green", mood: "happy", meta, title: `칸 ${n}개로 정리했어요.`, sub: esc(st.tidy.reply),
+    if (st.tidy && st.tidy.fills.length) { const n = st.tidy.fills.length; return { tone: "green", mood: "happy", meta, title: `칸 ${n}개로 정리했어요.`, sub: esc(st.tidy.reply).split("\n").join("<br>"),
       body: `<ol class="tidy">${st.tidy.fills.map((f) => `<li><b>${ROMAN(f.i)} ${esc(QU.nameOf(q, f.i))}</b><span>${esc(f.text)}</span></li>`).join("")}</ol>`, foot: "맞으면 적고, 아니면 더 이야기해요 — 플로로가 먼저 적지 않아요.",
       acts: [{ label: `칸 ${n}개에 적기`, act: "tidy-fill", key: "Enter", pri: true }, { label: "더 이야기하기", act: "tidy-more", key: "Escape", kind: "ghost" }] }; }   // C-61 정리 카드
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
@@ -1178,6 +1178,12 @@
     if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (q.draft) return fillNow(t); return chatSend(t); }   // C-61(2026-10-29): 보내기는 칸에 적지 않는다 — 플로로가 정리 카드로 돌려주고 사람이 [칸 n개에 적기]를 누른다. 초안 확인(draft)은 C-36대로 그 줄 고쳐 적기
     if (st.screen === "gate" && st.step === "question") { st.question = t; return answer(); }
     if (st.j && st.j.next && st.screen !== "gate" && !st.todos) { st.ownText = t; return decide(t); }
+    // F-144-15(2026-11-03): 퀘스트를 다 적었거나(완료 보고 앞) 관문에서 묻는 동안 친 말을 작업 글(st.text — 지난 단계의 보고 글)에 붙여 다시 판정하지 않는다 —
+    //   전에는 "완료"를 치면 그 글이 지금 단계 기준으로 다시 판정돼 '안 됨'이 남았다. 진짜 AI면 플로로와의 대화로, 아니면 단추를 가리킨다
+    if (q || st.screen === "gate") {
+      if (q && st.mode === "live" && canLive) return chatSend(t);
+      render(); return say("지금은 위 카드의 단추로 해요 — 적은 말은 작업 글에 붙이지 않아요");
+    }
     if (st.j && st.mode === "live") { st.text = `${st.text.trim()}\n${t}`; return judge(false); }
     render(); say(st.j ? "연습에서는 칩으로 해요 — 진짜 AI면 적은 글을 보고 어디쯤인지 봐요" : "먼저 무엇을 만들고 싶은지 말해 주세요");
   }
@@ -1226,7 +1232,7 @@
     st.warn = null;   // 보낸 뒤 경고 카드를 걷는다 — 남으면 '보낼게요'를 또 눌러 같은 글이 두 번 간다(startDraft와 같이, 새 맥락 리뷰 2026-10-29 막힘)
     const r = await callAI("/api/chat", { stage: q.chap, tier: st.tier, idea: ideaNow(), talk: talkOf(t), lines: q.lines });   // API.md 3-31(이재엽 쪽 서버 #246): 이 단계의 대화 · 적은 줄 · 처음 말한 것 → { reply, slots, n }
     if (!st.quest || st.quest.chap !== q.chap) return render();
-    if (r.ok && typeof r.reply === "string") { st.tokens = r.tokens || 0; fetchUsage(); const slots = Array.isArray(r.slots) ? r.slots : []; if (slots.length) st.tidy = { fills: slots, reply: r.reply }; else say(r.reply); return render(); }
+    if (r.ok && typeof r.reply === "string") { st.tokens = r.tokens || 0; fetchUsage(); const slots = Array.isArray(r.slots) ? r.slots : []; if (slots.length) st.tidy = { fills: slots, reply: r.reply }; else sayLines(r.reply); return render(); }
     render(); say(`답을 받지 못했어요 — ${r.reason || "AI에 연결하지 못했어요"}`);
   }
   // ── 다음 단계 초안 미리(C-40, 2026-10-26 — 이재엽 "보통길이이고 작업들을 하나씩 하는건데 왜 그냥 넣었을때 보다 너무 느려" · 버튼 "다음 단계 초안 미리") ──
@@ -1300,9 +1306,11 @@
   let startText = "";
   async function startDraft(text, skipCheck) {
     if (st.busy) return say("앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 해 주세요");   // 다른 호출이 도는 중(웹 AI 제안 '시작' 등) — 빈 퀘스트를 만들지 않는다(F-103-5)
-    startText = text; st.source = text;   // F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
-    if (st.mode !== "live" || !canLive) return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true });
+    startText = text;   // st.source는 비밀값 경고(guard)를 지난 뒤에 — 전에는 '그만둘게요'를 골라도 보내지 않기로 한 원문이 기록(KEEP)에 남아 idea.md를 덮을 수 있었다(F-144-11)
+    //   F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
+    if (st.mode !== "live" || !canLive) { st.source = text; return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true }); }
     if (!skipCheck && guard(text, "start")) return;
+    st.source = text;
     Object.assign(st, { warn: null, error: "" });
     const r = await callAI("/api/start", { text });
     if (r.ok && r.start) { st.tokens = r.tokens || 0; fetchUsage(); return beginQuest(r.start); }
@@ -1425,11 +1433,21 @@
       acts: R.stale.length ? [{ label: read.length ? "다시 읽기" : "확인했어요", act: "restore-read", key: "Enter", pri: true }, { label: "나중에", act: "restore-later", kind: "ghost" }] : [{ label: "확인했어요", act: "restore-later", key: "Enter", pri: true }] };
   }
   // 되살린 단계부터 — advance처럼 그 장의 할 일 · 퀘스트를 세운다(레벨 · 조개는 올리지 않는다 — 이미 지난 관문)
+  //   F-144-14(2026-11-03): 모두 지난 폴더면 마지막 단계를 마친 모습(advance의 끝과 같게 — st.j는 마지막 단계, 퀘스트 없음). 전에는 st.j가 비어 시작 화면이 떠
+  //   글을 치면 새 1단계가 옛 2 ~ 8단계 기록과 섞였다. 1단계(관문 전)는 되살린 줄로 칸을 채운다 — 전에는 빈 퀘스트도 만들지 않았다
   function resumeAt(n) {
     const s = N.STAGES[n];
-    if (!s) { st.finished = true; return; }
+    if (!s) {
+      const L = N.STAGES.length - 1;
+      st.j = { stage: L, reason: `폴더의 기록으로 ${LB(L)}까지 마친 것을 되살렸어요.`, criteria: crits(L).map((c) => ({ text: c.text, term: c.term, met: true, evidence: "" })), next: null };
+      st.quest = null; st.finished = true; return;
+    }
     st.j = { stage: n, reason: `폴더의 기록으로 ${LB(n)} "${s.title}"부터 이어서 해요.`, criteria: crits(n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
-    if (QU) st.quest = QU.retitle(QU.makeQuest(s, crits(n)), st.topic);
+    if (!QU) return;
+    const q = QU.retitle(QU.makeQuest(s, crits(n)), st.topic), r = st.results[n];   // 지나지 않은 단계면 어느 단계든 되살린 줄로(새 맥락 리뷰 — 3단계를 쓰다 만 폴더도)
+    st.quest = r && Array.isArray(r.items)
+      ? { ...q, phase: "quest", lines: q.objs.map((o, i) => { const it = r.items.find((x) => x && x.name === o.name); return it && Array.isArray(it.lines) ? it.lines.filter((x) => typeof x === "string" && x.trim()) : q.lines[i]; }) }
+      : q;
   }
 
   // ── 지식 퀘스트 C-48(2026-10-29 — PRD 6절 · 9절 1 · 2번): 다음 프로젝트로 가져가기 ──
@@ -1647,10 +1665,10 @@
       st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
       const t = tierOf(st.results[0]); if (t) st.tier = t;
       st.restore = null;
-      if (nx > 0) resumeAt(nx);
+      if (nx > 0 || st.results[0]) { resumeAt(nx); if (st.quest) questStarted(); }   // 1단계만 있어도(F-144-14) — 대화 구분선 · '가져온 것'도 새 단계처럼
       save(); render(); say(`${R.got.map((n) => LB(n)).join(" · ")} 기록을 폴더에서 되살렸어요.`);
       if (N.STAGES[nx]) carryLoad(nx);   // C-48
-      if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1]) stageDraft(nx); else if (st.j && st.j.stage === nx) questText();
+      if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1] && !(st.quest && st.quest.lines.some((l) => l.length))) stageDraft(nx);   // 되살린 줄이 있으면 초안으로 덮지 않는다 else if (st.j && st.j.stage === nx) questText();
     },
     "restore-read": () => {
       const R = st.restore; if (!R || R.phase !== "stale") return;
@@ -2535,6 +2553,12 @@
       <p class="meta">${b.cut ? "README가 길어 앞부분만 보여요. " : ""}고치는 곳은 README예요 — 책은 받아 와 보여 주기만 해요.</p></section>`;
   }
   // README 읽기(API.md 3-18) — 서버로 연 화면에서만. 서버 없이 · 폴더를 모름 · README 없음이면 연습 예시 책과 까닭 한 줄
+  // 폴더 · 보기 방식이 바뀌면 받아 둔 README 책과 찾은 줄을 잊는다(F-144-17, 2026-11-03) — 전에는 옛 프로젝트의 README가 '내 저장소 README'로 남고,
+  //   연습 모드에도 진짜 README가 섞였으며(API.md 3-18), 옛 '찾은 줄'의 열기가 옛 목록 번호로 새 폴더의 엉뚱한 파일을 열었다. 책 탭이 열려 있으면 바로 다시 읽는다
+  function readmeAgain() {
+    st.rb = null; found = null;
+    if (st.qwin && st.qtab === "lib") loadReadme();
+  }
   async function loadReadme() {
     if (!RB) return;
     const example = (why) => ({ book: RB.parse(RB.EXAMPLE), src: "example", why });
@@ -2581,10 +2605,13 @@
   }
   // 확인할 먹이(FR-15 더함 2026-10-20 — 이재엽 버튼 "먹이 주기에 더하기"): 종류를 붙였지만 아직 확인하지 않은 구간. 도서관 탭 맨 위 [제안 ⑦]. 맞아요 → 그 종류로 내 책의 칸(my-books.js), 빼기 → 버림.
   //   이름은 '확인할 먹이' [제안 ⑧] — C-21의 '분류 안 함' 책장(책을 꽂는 곳)과 헷갈리지 않게. 예시 먹이의 것은 '예시'라고 표시
+  // 누른 단추의 항목이 아직 그 자리에 있나 — 번호로만 찾으면 두 번 누를 때 둘째가 당겨진 다음 항목(확인하지 않은 것)을 넣거나 뺐다(F-144-10)
+  const inboxSig = (x) => { let h = 0; for (const c of `${x.topic}\n${x.text}`) h = (h * 31 + c.codePointAt(0)) | 0; return String(h >>> 0); };
+  const inboxSame = (x, el) => !!x && !!el && !!el.dataset && el.dataset.k === inboxSig(x);
   function inboxBox() {
     if (!FD || !st.inbox.length) return "";
     const rows = st.inbox.slice(0, 5).map((x, i) => `<li><span class="ft"><b>${esc(x.topic)}</b>${x.example ? " <small>· 예시</small>" : ""}<small>${esc(String(x.text || "").replace(/\s+/g, " ").slice(0, 90))}</small></span>${kindSelect("inbox-kind", i, x.kind)}
-      <button type="button" class="b pri" data-act="inbox-ok" data-i="${i}">맞아요 → 책에</button><button type="button" class="b ghost" data-act="inbox-drop" data-i="${i}">빼기</button></li>`).join("");
+      <button type="button" class="b pri" data-act="inbox-ok" data-i="${i}" data-k="${inboxSig(x)}">맞아요 → 책에</button><button type="button" class="b ghost" data-act="inbox-drop" data-i="${i}" data-k="${inboxSig(x)}">빼기</button></li>`).join("");
     return `<section class="inbox" aria-label="확인할 먹이"><div class="stg">확인할 먹이 ${st.inbox.length}개 — 종류가 맞는지 보고 책에 넣어요</div><ol class="inboxlist">${rows}</ol>${st.inbox.length > 5 ? `<p class="meta">먼저 온 5개만 보여요 — 확인하면 다음 것이 올라와요</p>` : ""}</section>`;
   }
   // 책 안의 단계 문서 목록(C-16) — 단계마다 문서 이름 · 상태(아직 · 초안 · 다시 봐 줌 · 확정). 받은 먹이(C-15)도 여기에
@@ -2845,7 +2872,7 @@
       acts: q.choices ? [...q.choices.map((c, j) => ({ label: c, act: "dbg-pick", i: j, ...(j === 0 ? { pri: true } : {}) })), { label: "그만두기", act: "dbg-close", key: "Escape", kind: "ghost" }]
         : [{ label: last ? "다 됐어요" : "다음", act: "dbg-next", key: "c-Enter", pri: true }, { label: "모름", act: "dbg-skip" }, { label: "그만두기", act: "dbg-close", key: "Escape", kind: "ghost" }] };
   }
-  const dbgFocus = () => requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=dbg-text]"); if (t) t.focus(); });
+  const dbgFocus = () => focusAct("[data-act=dbg-text]");   // 앱의 작업실 창에서도(F-144-8)
   function dbgStep() {
     const d = st.dbg; if (!d) return;
     if (d.i < FP.DEBUG_QS.length - 1) { st.dbg = { ...d, i: d.i + 1 }; render(); dbgFocus(); return; }
@@ -3053,8 +3080,13 @@
   // 사람이 고르면 멈춘다 — 지켜보기를 잠시 세우고(멈춘 결과를 끝으로 읽지 않게) 서버가 그 일을 끌 때까지 기다린다
   async function stallHalt() {
     const s = st.stall; if (!s) return null;
-    st.stall = null; await taskHalt(s.at);
-    return s;
+    st.stall = null;
+    if (await taskHalt(s.at)) return s;
+    // 멈추지 못했다(F-144-16, 2026-11-03) — 지켜보기를 다시 켜고 그렇다고 말한다(plan-unwait과 같게). 전에는 '멈췄어요'라 하고 지켜보기를 끊어
+    //   Claude Code가 아무도 지켜보지 않는 채 계속 고쳤고, 다시 맡기면 409로 거절됐다
+    st.stall = s; if (tw && !twTimer) twTimer = setInterval(twTick, 3000);
+    render(); say("Claude Code를 멈추지 못했어요 — 아직 일하는 중이라 조금 뒤 다시 눌러 주세요.");
+    return null;
   }
   //   멈춘 것을 확인할 때까지(최대 10초) 기다린다 — 그 전에 다시 맡기면 서버가 '아직 진행 중'(409)으로 거절한다. '멈추기'(plan-unwait)도 같이 쓴다
   //   돌려주는 값: 멈춘 것을 서버의 답으로 확인했나(못 닿았거나 10초 뒤에도 running이면 false — 그때 다시 맡기면 409)
@@ -3253,18 +3285,36 @@
     return `<div class="hello-bub" role="status" aria-live="polite">${st.boot.greet ? `<b class="hb-hi">${esc(C.greeting(new Date().getHours()))}</b>` : ""}<span class="hb-now">${now}</span>
       <div class="hb-acts"><button type="button" data-act="pill">섬 펼치기</button><button type="button" class="ghost" data-act="boot-later">나중에</button></div></div>`;
   };
+  // F-144-8(2026-11-03): 앱에서 작업실이 열려 있으면 보이는 칸은 작업실 창(win.js)에 있고 섬 창은 숨는다 — 섬의 요소를 켜거나 focus()해도 아무 일이 없었다.
+  //   단추 켜고 끄기(liveBtn)는 상태가 바뀔 때만 다시 그려 보내고, 칸에 커서 두기(focusAct)는 보낼 내용 끝에 한 번만 쓰는 신호(data-want-focus)를 실어 창이 그 칸에 둔다
+  //   lastOff — 창에 마지막으로 보낸 단추 상태. 다른 일로 다시 보내면(남기기 뒤 빈 칸 등) 잊는다 — 남아 있으면 다음 글자에 단추가 다시 켜지지 않았다(새 맥락 리뷰)
+  let focusSeq = 0, focusWant = "";
+  const lastOff = {};
+  function liveBtn(act, off) {
+    const b = $nav.querySelector(`[data-act=${act}]`) || document.querySelector(`[data-act=${act}]`); if (b) b.disabled = off;
+    if (winOpen.quest && lastOff[act] !== off) { syncWins(); lastOff[act] = off; }
+  }
+  function focusAct(sel) {
+    requestAnimationFrame(() => {
+      if (winOpen.quest) { focusWant = `${++focusSeq}|${sel}`; syncWins(); return; }
+      const t = $nav.querySelector(sel) || document.querySelector(sel); if (t) t.focus();
+    });
+  }
+  const focusTag = () => (focusWant ? `<i hidden data-want-focus="${esc(focusWant)}"></i>` : "");
   function syncWins() {
     if (!WINS || !QU) return;
-    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() : ""]]) {
-      if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
-      else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
-      else if (on && html !== winHtml[kind]) { winHtml[kind] = html; window.floeApp.sendWin(kind, html); }
+    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() + focusTag() : ""]]) {
+      if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; clearLive(); window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
+      else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; focusWant = ""; window.floeApp.closeWin(kind); }
+      else if (on && html !== winHtml[kind]) { winHtml[kind] = html; clearLive(); window.floeApp.sendWin(kind, html); }
     }
   }
+  // 보낸 뒤 — 단추 상태 기억을 비운다. 창을 닫으면 커서 신호도(다시 열린 창이 옛 칸으로 커서를 옮기지 않게, 새 맥락 리뷰)
+  function clearLive() { for (const k of Object.keys(lastOff)) delete lastOff[k]; }
   if (WINS) {
     window.floeApp.onWinClosed((kind) => {
       if (winClosing[kind]) { winClosing[kind] = false; return; }   // 내가 닫은 것
-      winOpen[kind] = false; winHtml[kind] = "";
+      winOpen[kind] = false; winHtml[kind] = ""; focusWant = "";
       if (kind === "quest" && st.qwin) closeQwin();
     });
     window.floeApp.onWinEvent((p) => winEvent(p));
@@ -3468,12 +3518,19 @@
   // 다시 그려도 쓰던 글 칸은 그대로 — 커서 자리와 스크롤까지 되돌린다
   // F-46(2026-10-20): 지금 모습을 html에 적어 둔다 — 띠로 접혀 있거나 창이 안 보일 때 물범의 무한 움직임을 멈춘다(app.css [data-ui="hidden"] · .page-hidden)
   document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("page-hidden", document.hidden));
+  // F-144-13(2026-11-03): 한글을 조합하는 동안 친 글자로 다시 그리면(파일 이름 찾기 · 문서 안 찾기 · 파일 고치기) 칸이 새로 생겨 조합이 낱자로 쪼개졌다 —
+  //   조합 중의 입력이 부른 그리기는 미루고 조합이 끝나면 한 번(작업실 창 win.js와 같은 뜻, F-103-18)
+  //   새 맥락 리뷰: 입력이 부른 그리기만이 아니라 조합하는 동안의 모든 그리기(1초 타이머 · say의 다음 그리기)를 — 섬의 글 칸에 커서가 있을 때만
+  let imeOn = false, imeSkipped = false;
   function render() {
+    const ae = document.activeElement;
+    if (imeOn && isField(ae) && ($nav.contains(ae) || $phone.contains(ae))) { imeSkipped = true; return; }
     document.documentElement.dataset.ui = st.ui;
     save();
     if (!timer) scheduleIdle();
     // 같은 이름의 칸이 여럿이면(계획판의 줄마다 의견 · 물을 것마다 답 — 2026-10-24 리뷰) data-id · data-i까지 맞춰 그 칸으로 돌아간다
-    const a = document.activeElement, keep = isField(a) && a.dataset.act ? `[data-act="${a.dataset.act}"]${a.dataset.id ? `[data-id="${CSS.escape(a.dataset.id)}"]` : ""}${a.dataset.i !== undefined ? `[data-i="${CSS.escape(a.dataset.i)}"]` : ""}` : "";
+    //   data-k(퀘스트 줄) · data-v(기준 카드의 빈칸 · 열린 파일)도 — 빼면 두 번째 칸을 쓰다가 다시 그려지면 첫 칸으로 튀었다(F-144-9)
+    const a = document.activeElement, keep = isField(a) && a.dataset.act ? `[data-act="${a.dataset.act}"]${a.dataset.id ? `[data-id="${CSS.escape(a.dataset.id)}"]` : ""}${["i", "k", "v"].map((d) => (a.dataset[d] !== undefined ? `[data-${d}="${CSS.escape(a.dataset[d])}"]` : "")).join("")}` : "";
     const sel = keep ? [a.selectionStart, a.selectionEnd, a.scrollTop] : null;
     // 채팅 칸의 스크롤 — 다시 그리면 칸이 새로 생겨 맨 위로 간다. 1초마다 바뀌는 '살펴보고 있어요 16초' 때문에 올려 둔 스크롤이 계속 아래로 끌려갔다(임유정 2026-10-22)
     const og = $nav.querySelector("[data-log]");
@@ -3555,6 +3612,8 @@
   // 플로로의 한마디 — 2026-10-25(두승현): 머리 위에 떴다 사라지던 말풍선(.pop-say)을 뺐다. 안내 · 오류는 섬의 대화 기록에 플로로의 말로 남긴다
   //   (실패를 숨기지 않는다 — security-records.md 6-1). 쓰다듬기 · 졸기 · 축하 같은 꾸밈 말은 부르지 않는다. ponytail: 휴대폰 화면은 대화 기록이 없어 보이지 않는다(PC 먼저)
   function say(text) { if (!text) return; logMsg("floro", esc(endDot(text))); saidSince += 1; requestAnimationFrame(render); }
+  // 플로로 대화 답(줄바꿈이 있는 글) — esc한 뒤 줄바꿈만 <br>로(F-144-23: 번호 목록 답이 한 줄로 붙었다). 그 밖은 say와 같다
+  function sayLines(text) { if (!text) return; logMsg("floro", esc(endDot(text)).split("\n").join("<br>")); saidSince += 1; requestAnimationFrame(render); }
   // 한 번 하는 움직임(seal.css · app.css). 끝나면 떼어 낸다 — 헤엄의 물방울처럼 붙어 있는 동안 계속 보이는 것이 있어서
   const playOn = (host, cls) => {
     if (STILL || !host) return;
@@ -3868,7 +3927,7 @@
   const focusText = () => requestAnimationFrame(() => { const t = document.querySelector("[data-act=text]"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } });
   // F-106(FR-14, 2026-10-30 이재엽 버튼 "오류에 연습 단추"): 키 거절 카드의 단추 둘 — 저절로 바꾸지 않고 사람이 고른다. 연습으로는 설정의 보기 방식과 같은 길
   //   보기 방식을 바꾸는 길은 하나(toMode) — 설정의 '보기 방식'(92-basecard)도 같이 쓴다. 닫기는 공통 '닫기'(dismiss)가 키 카드까지 닫는다
-  function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-137)
+  function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); readmeAgain(); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-137)
   Object.assign(ACT, { "practice-now": () => toMode("fixture") });
 // ━━ app/90-acts.js ━━
   // ── 누르기 — data-act 이름 → 할 일. (i: data-i, el: 누른 것) ──
@@ -3893,7 +3952,7 @@
     judge: () => { if (refuse(mealWhy())) return; st.notice = ""; judge(false); },
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
     restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, mats: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [] }); ACT.ex(S.examples.indexOf(S.first)); },
-    "send-anyway": () => RETRY[st.warn.then](),
+    "send-anyway": () => { if (st.warn && RETRY[st.warn.then]) RETRY[st.warn.then](); },   // 두 번 누르면 둘째는 st.warn이 이미 없다(앱 작업실은 다시 그려 보내는 데 시간이 걸린다) — F-144-18
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
     // 선택지를 한 번 누르면 정해진다 — 누른 자리에서 물방울이 튄다
@@ -3959,7 +4018,7 @@
     "find-use": (k) => { const q = st.quest, x = found && q && found.chap === q.chap && found.list[k]; if (!x || QU.curIdx(q) !== found.i) return;
       logMsg("floro", `<b>옮겼어요</b> — ${esc(x.path)} ${x.line}줄: ${esc(x.text)}`); found = null; fillNow(x.text, "moved"); },   // 원문 그대로 · 누가 = 옮김(quest.js BY) · 어디서 왔는지 한 줄 남긴다
     "find-open": (k) => { const x = found && found.list[k]; if (x && Number.isInteger(x.i)) { if (!st.qwin) st.qwin = true; openFile(x.i); } },   // 원문은 파일 보기(C-43)로
-    "draft-fix": () => { render(); requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); }); },
+    "draft-fix": () => { render(); focusAct("[data-act=say]"); },   // 앱의 작업실 창에서도(F-144-8)
     "draft-who": (i) => { const w = QU.WHO[i]; if (w && st.quest && QU.curIdx(st.quest) === QU.WHO_AT) fillNow(`쓰는 사람: ${w[0]} — ${w[1]}`, "pick"); },
     "draft-pick": (i) => {   // 기획서로 키울지(2단계, C-37) — 고른 것이 그 줄. 플로로가 권한 것을 고르면 까닭도
       const q = st.quest, pk = q ? QU.pickOf(q, QU.curIdx(q)) : null, x = QU.DOC_PICKS[i]; if (!pk || !x) return;
@@ -3984,7 +4043,7 @@
       if (!FP) return ACT["plan-direct"]();
       if (!st.plan && !st.planDraft.trim()) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.planDraft = t.slice(0, N.PLAN_MAX); }
       set({ qfocus: "plan", pane: "", settings: false });
-      requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); });
+      focusAct("[data-act=say]");   // 앱의 작업실 창에서도(F-144-8)
     },
     "plan-later": () => set({ qfocus: "stage" }),   // 나중에 · 단계 퀘스트로 — 계획 · 맡길 일은 그대로 남는다
     "plan-clear": () => set({ planDraft: "" }),
@@ -3993,7 +4052,7 @@
     // 한 줄만 적어 맡기기 — 전의 맡기기(FR-17): 적은 생각을 할 일 칸에 넣어 AI 진행 판에서 정리 → 고치기 → 허락
     "plan-direct": () => {
       if (!st.task.text.trim() && !st.task.lines && !st.task.sent) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.task.text = t.slice(0, 4000); }
-      ACT["base-ai"](); requestAnimationFrame(() => { const t = document.getElementById("task-text"); if (t) t.focus(); });
+      ACT["base-ai"](); focusAct("[data-act=task-text]");   // 앱의 작업실 창에서도(F-144-8 새 맥락 리뷰)
     },
     "plan-make": () => makePlan(false),
     "plan-ok": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "ok"); save(); render(); },
@@ -4002,14 +4061,14 @@
       const old = (st.plan.notes[id] || "").trim(), add = `앞의 결정('${x.diff.was}')에 맞춰 고쳐 주세요`;   // 이미 적은 의견은 지우지 않고 뒤에 붙인다
       st.plan = FP.note(FP.mark(st.plan, id, "fix"), id, old.includes(add) ? old : old ? `${old} / ${add}` : add); save(); render();
     },
-    "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); requestAnimationFrame(() => { const t = $nav.querySelector(`[data-act=plan-note][data-id="${el && el.dataset.id}"]`); if (t) t.focus(); }); },
+    "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); focusAct(`[data-act=plan-note][data-id="${CSS.escape(String(el && el.dataset.id))}"]`); },
     "plan-confirm": () => { if (!FP.canConfirm(st.plan)) return; st.plan = FP.confirm(st.plan); st.qfocus = "plan"; st.planSel = ""; if (qauto) openQwin("quest"); save(); render(); say("확정했어요! 퀘스트 창에 맡길 일이 생겼어요"); },
     "plan-again": () => revisePlan(),
     "plan-reset": () => { st.plan = null; st.dbg = null; st.planRej = ""; st.qfocus = "plan"; save(); render(); },
     // 지금 줄에 하는 일 — 채팅의 칩에는 줄 이름이 없다(순서대로라 지금 줄 하나 — FP.next). 보고 안의 단추는 data-id
     "plan-hand": () => handPlan(),
     "plan-accept": (i, el) => { st.plan = FP.accept(st.plan, planId(el)); save(); const p = FP.progress(st.plan); render(); say(p.done === p.total ? "계획을 다 끝냈어요! 정말 멋져요." : `끝냈어요! ${p.done} / ${p.total}`); },
-    "plan-rej-open": (i, el) => { st.planRej = planId(el); st.planRejNote = ""; render(); requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=plan-rej-note]"); if (t) t.focus(); }); },
+    "plan-rej-open": (i, el) => { st.planRej = planId(el); st.planRejNote = ""; render(); focusAct("[data-act=plan-rej-note]"); },
     "plan-rej-close": () => { st.planRej = ""; render(); },
     "plan-reject": (i, el) => { const id = planId(el); st.plan = FP.reject(st.plan, id, st.planRejNote); st.planRej = ""; st.planRejNote = ""; save(); handPlan(id); },
     // Claude Code가 물은 것에 답하고 이어서 맡기기(C-33) — 그 질문과 답을 다음 맡김 글에 붙인다
@@ -4018,7 +4077,7 @@
       if (!w || !w.report || !ans) return say("답을 먼저 적어 주세요");
       st.plan = FP.reject(st.plan, id, `Claude Code가 "${w.report.ask}"라고 물었고, 사용자의 답: ${ans}`); st.planReply = { ...st.planReply, [id]: "" }; save(); handPlan(id);
     },
-    "plan-ask-open": (i, el) => { st.planAsk = planId(el); st.planQ = ""; render(); requestAnimationFrame(() => { const q = $nav.querySelector("[data-act=plan-q]"); if (q) q.focus(); }); },
+    "plan-ask-open": (i, el) => { st.planAsk = planId(el); st.planQ = ""; render(); focusAct("[data-act=plan-q]"); },
     "plan-ask-close": () => { st.planAsk = ""; render(); },
     "plan-ask-send": (i, el) => askPlan(planId(el)),
     "plan-unwait": async () => { const id = FP.running(st.plan); if (!id || st.halting) return; const w = tw && tw.kind === "plan" ? tw : null; if (w) { st.halting = true; render(); const ok = await taskHalt(w.at); st.halting = false; if (!ok) { if (tw === w) twTimer = setInterval(twTick, 3000); render(); return say("Claude Code를 멈추지 못했어요 — 아직 일하는 중이라 조금 뒤 다시 눌러 주세요."); } if (tw === w) tw = null; st.stall = null; } if (FP.running(st.plan) !== id) return render(); st.plan = FP.failed(st.plan, id, "멈췄어요"); save(); render(); say(w ? "Claude Code도 멈췄어요 — 바로 다시 맡길 수 있어요." : "멈췄어요 — 다시 맡길 수 있어요."); },   // F-103-7(임유정 2026-10-30 '클로드 코드도 멈추는 거로'): 서버의 일을 끄고(taskHalt — 꺼진 걸 확인할 때까지) 그 줄을 끝맺는다. 그사이 보고가 와서 끝났으면 그대로 둔다
@@ -4045,7 +4104,7 @@
       if (st.qfocus === "plan") st.qfocus = "stage";
       if (st.quest && st.quest.phase === "draft") { openQwin("quest"); st.qtab = "quest"; return render(); }
       if (st.ui !== "home") go("home"); else render();
-      requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); });
+      focusAct("[data-act=say]");   // 앱의 작업실 창에서도(F-144-8)
     },
     shells: () => openGacha(),   // 위 줄의 조개 → 뽑기 창(섬이 접혀 있으면 옆 칸으로 펼친 뒤)
     gacha: () => openGacha(),
@@ -4105,8 +4164,8 @@
       set({ tab: id, error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false, libDoc: null }); },
     // 먹이 주기(C-15) — 예시 · 나눠 정리 · 구간 표시 바꾸기 · 확인 · 다시 쓰기
     // 확인할 먹이(FR-15 더함) — 맞아요: 그 종류로 책의 칸에, 빼기: 버림. 종류 고치기는 change 손잡이
-    "inbox-ok": (i) => { const x = st.inbox[i]; if (!x) return; st.sorted = [{ at: ymd(), kind: x.kind, text: x.text, topic: x.topic }, ...st.sorted].slice(0, 200); st.inbox.splice(i, 1); render(); say(`'${FD ? FD.kindLabel(x.kind) : x.kind}' 칸에 넣었어요`); },
-    "inbox-drop": (i) => { if (!st.inbox[i]) return; st.inbox.splice(i, 1); render(); say("뺐어요"); },
+    "inbox-ok": (i, el) => { const x = st.inbox[i]; if (!x || !inboxSame(x, el)) return; st.sorted = [{ at: ymd(), kind: x.kind, text: x.text, topic: x.topic }, ...st.sorted].slice(0, 200); st.inbox.splice(i, 1); render(); say(`'${FD ? FD.kindLabel(x.kind) : x.kind}' 칸에 넣었어요`); },
+    "inbox-drop": (i, el) => { if (!st.inbox[i] || !inboxSame(st.inbox[i], el)) return; st.inbox.splice(i, 1); render(); say("뺐어요"); },
     "feed-example": () => { if (refuse(busyWhy())) return; if (FD) { st.text = FD.EXAMPLE; feedSort(FD.EXAMPLE, true); } },
     "feed-sort": () => feedSort(st.text),
     "feed-mark": (i) => { const fd = st.meal; if (!fd || !fd.checks[i]) return; fd.marks[i] = feedSkip(fd, i) ? "keep" : "skip"; render(); },
@@ -4144,7 +4203,15 @@
     "confirm-anyway": () => confirmDoc(true),
     "confirm-cancel": () => set({ askConfirm: 0 }),
     "reopen-doc": () => { const x = docDone(docStage().n); if (x) set({ doc: newDoc(x.stage, x.text, "") }); },
-    forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
+    // F-144-12(2026-11-03): 진짜 AI 모드의 대화는 서버(앱 저장 곳)에도 쌓여, 다시 켜면 chatlogLoad가 되살렸다 — 그 대화도 지운 뒤 다시 읽는다
+    //   새 맥락 리뷰: 서버로 연 화면이면 지금 모드와 상관없이(진짜로 쓰다 연습으로 바꿨어도) 지금 폴더의 대화를 지운다. 못 지웠으면 숨기지 않고 멈춘다(security-records 6-1) — 폴더가 없으면(400) 지울 것이 없다
+    forget: async () => {
+      if (canLive) {
+        let ok = false, none = false;
+        try { const r = await fetch("/api/chatlog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clear: true }), credentials: "same-origin" }); ok = !!r.ok; none = r.status === 400; } catch {}
+        if (!ok && !none) return say("서버에 남은 대화를 지우지 못했어요 — 기록은 그대로 두었어요. 잠시 뒤 다시 눌러 주세요");
+      }
+      forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
     setup: () => { set({ settings: false, qwin: false }); if (window.FloeSetup) window.FloeSetup.open(); },   // 처음 설정은 섬 창에 뜬다 — 작업실이 열려 있으면 먼저 닫아 섬 창이 다시 보이게(C-41 ⑤, 새 맥락 리뷰 2026-10-27)
     "setup-project": () => { set({ settings: false, qwin: false }); if (window.FloeSetup) window.FloeSetup.open({ step: "project" }); },   // 처음 설정의 프로젝트 칸부터(2026-10-24 리뷰 — 새 프로젝트마다 AI 연결을 다시 거치지 않게). 작업실은 먼저 닫는다 — setup과 같이(F-123)
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false, check: null }),
@@ -4201,7 +4268,7 @@
       if (!NT || !st.noteText.trim()) return;
       noteList = NT.add(noteList, { text: st.noteText, ...noteCtx() }); NT.write(STORE, noteList);
       set({ noteText: "", noteCopy: "" }); say("남겨 뒀어요. 고마워요!");
-      requestAnimationFrame(() => document.querySelector("[data-act=note-text]")?.focus());
+      focusAct("[data-act=note-text]");
     },
     "note-del": (i, el) => { if (!NT || !el) return; noteList = NT.remove(noteList, el.dataset.id); NT.write(STORE, noteList); render(); },
     "notes-clear": () => { if (!NT) return; noteList = []; NT.write(STORE, noteList); set({ noteCopy: "" }); say("느낀 점을 모두 지웠어요"); },
@@ -4330,12 +4397,12 @@
     if (a === "prep-think") { const c = st.prep && st.prep.cards && st.prep.cards[Number(t.dataset.i)]; if (c) c.think = t.value.slice(0, 120); return; }   // C-54 고칠래요 — ① 생각(다시 그리지 않는다, '맞아요'에서 저장)
     if (a === "ffind") { const f = st.openFiles[Number(t.dataset.v)]; if (!f) return; f.find = t.value.slice(0, 60); if (f.kind === "md" && !f.edit && !f.raw && f.find) f.raw = true; render(); return; }   // C-53 문서 안 찾기 — 그 글이 든 줄 표시(원문 · 코드 보기)   // R-10 넘기는 까닭 — 다시 그리지 않는다(글 칸이 흔들리지 않게)
     // FR-17 할 일 · 요구 문장 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '정리' 단추만 켠다
-    if (a === "task-text") { st.task.text = t.value; const b = $nav.querySelector("[data-act=task-tidy]"); if (b) b.disabled = !st.task.text.trim(); }
+    if (a === "task-text") { st.task.text = t.value; liveBtn("task-tidy", !st.task.text.trim()); }   // 앱의 작업실 창에서도(F-144-8)
     if (a === "task-lines") st.task.lines = t.value.split("\n");
     // 준비 계획(C-34) — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) 단추만 켠다
     if (st.plan && FP && /^plan-(note|answer|general)$/.test(a || "")) {
       st.plan = a === "plan-note" ? FP.note(st.plan, t.dataset.id, t.value) : a === "plan-answer" ? FP.answer(st.plan, Number(t.dataset.i), t.value) : { ...st.plan, general: t.value.slice(0, 300) };
-      const b = $nav.querySelector("[data-act=plan-again]"); if (b) b.disabled = !(FP.hasFeedback(st.plan) && planLive());
+      liveBtn("plan-again", !(FP.hasFeedback(st.plan) && planLive()));
       save();
     }
     if (a === "plan-rej-note") st.planRejNote = t.value.slice(0, 300);
@@ -4352,7 +4419,7 @@
       save();
     }
     // 느낀 점 — 글자를 칠 때는 다시 그리지 않고(커서가 튄다) '남기기' 단추만 켠다
-    if (a === "note-text") { st.noteText = t.value; const b = document.querySelector("[data-act=note-add]"); if (b) b.disabled = !st.noteText.trim(); }
+    if (a === "note-text") { st.noteText = t.value; liveBtn("note-add", !st.noteText.trim()); }
     if (a === "doc" && st.doc) {
       st.doc.text = t.value; save(); if (t instanceof Element) grow(t);   // 글자를 칠 때는 다시 그리지 않는다(커서가 튄다) — 빈칸 개수만 바꾼다
       if (st.askConfirm) { st.askConfirm = 0; document.querySelector("[data-ask-confirm]")?.remove(); }   // 고치기 시작하면 다시 묻지 않는다
@@ -4365,6 +4432,8 @@
     $root.addEventListener("click", (e) => { const t = e.target.closest("[data-bv]"); if (!t || !BV || t.dataset.bv === "field") return; activity(); bvClick(t); });
     $root.addEventListener("change", (e) => onChange(e.target));
     $root.addEventListener("input", (e) => { activity(); onInput(e.target); });
+    $root.addEventListener("compositionstart", () => { imeOn = true; });
+    $root.addEventListener("compositionend", (e) => { imeOn = false; if (!imeSkipped) return; imeSkipped = false; onInput(e.target); render(); });   // 조합 중에 미룬 그리기를 끝난 글로 한 번(F-144-13)
   }
 
 // ━━ app/95-boot.js ━━
@@ -4615,6 +4684,7 @@
     st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "quest";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
     if (canLive && !ghLoading) loadGithub();
     if (st.qwin) loadFiles();
+    readmeAgain();   // 옛 폴더의 README 책 · 찾은 줄도(F-144-17)
   };
   window.floeUnsaved = () => st.openFiles.filter((f) => f.dirty).length;   // 앱(main.js pickAndConnect)이 폴더를 고르기 전에 묻는다 — 저장 안 한 파일이 있으면 한 번 더 확인(F-72)
   const projectPicked = (d) => {
@@ -4632,6 +4702,7 @@
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });
     else if ((d.via === "cli" || d.via === "api") && canLive) { liveApprovals(); set({ mode: "live", error: "", warn: null }); }   // F-137 연습에서 띄운 예시 카드를 내리고 진짜로 묻는다
+    readmeAgain();   // 연습 ↔ 진짜를 바꿨거나 폴더를 골랐을 수 있다 — 옛 README 책 · 찾은 줄을 잊는다(F-144-17 새 맥락 리뷰: toMode를 거치지 않는 길)
     chatRecheck();   // 처음 설정에서 폴더를 골랐을 수 있다 — 대화를 둘 폴더를 다시 묻는다(병합 뒤 고침 새 맥락 리뷰: 첫 실행에서 고른 폴더에 대화가 쌓이지 않았다)
     if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
     st.gh = null;   // 처음 설정에서 프로젝트를 골랐으면 GitHub 칸을 다시 묻는다

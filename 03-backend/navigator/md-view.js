@@ -15,9 +15,12 @@
     parts.push(["t", s.slice(last)]);
     for (const [k, v] of parts) {
       if (k === "c") { out += `<code>${esc(v)}</code>`; continue; }
-      let t = esc(v);
-      t = t.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g, (all, text, href) => (SAFE_URL.test(href) ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>` : `${text} <small>(${esc(href)})</small>`));
-      t = t.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<i>$2</i>").replace(/~~([^~\n]+)~~/g, "<s>$1</s>");
+      // 링크는 꾸밈 전에 떼어 둔다 — 전에는 주소 안의 * · ~~가 <i> · <s>로 바뀌어 링크가 깨졌다(F-144-22). 기울임은 * 바로 안쪽이 공백이 아닐 때만('2 * 3 * 4'는 글 그대로)
+      const emph = (x) => x.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\s](?:[^*\n]*[^*\s])?)\*(?!\*)/g, "$1<i>$2</i>").replace(/~~([^~\n]+)~~/g, "<s>$1</s>");
+      const links = [];
+      let t = esc(v).replace(/\u0000/g, "");
+      t = t.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g, (all, text, href) => { links.push(SAFE_URL.test(href) ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${emph(text)}</a>` : `${emph(text)} <small>(${esc(href)})</small>`); return `\u0000${links.length - 1}\u0000`; });
+      t = emph(t).replace(/\u0000(\d+)\u0000/g, (all, k) => links[Number(k)]);
       out += t;
     }
     return out;
@@ -48,7 +51,8 @@
         out.push(`<${ordered ? "ol" : "ul"}>${items.join("")}</${ordered ? "ol" : "ul"}>`); continue;
       }
       if (/^\s*>\s?/.test(line)) { flush(); const q = []; while (i < lines.length && /^\s*>\s?/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, "")); out.push(`<blockquote>${toHtml(q.join("\n"))}</blockquote>`); continue; }
-      if (/^\s*<!--/.test(line)) { let j = i; while (j < lines.length && !/-->/.test(lines[j])) j++; if (j < lines.length) { flush(); i = j + 1; continue; } }   // 주석은 보이지 않는다 — 닫는 표시가 없으면 글로 보인다(문서 나머지가 사라지지 않게)
+      //   닫는 줄의 '-->' 뒤에 남은 글은 그 줄의 나머지로 이어서 읽는다 — 전에는 '<!-- claude-drafted --> 본문'의 본문이 사라졌다(F-144-21)
+      if (/^\s*<!--/.test(line)) { let j = i; while (j < lines.length && !/-->/.test(lines[j])) j++; if (j < lines.length) { flush(); const rest = lines[j].slice(lines[j].indexOf("-->") + 3); if (rest.trim()) { lines[j] = rest; i = j; } else i = j + 1; continue; } }   // 주석은 보이지 않는다 — 닫는 표시가 없으면 글로 보인다(문서 나머지가 사라지지 않게)
       if (!line.trim()) { flush(); i++; continue; }
       para.push(line.trim()); i++;
     }

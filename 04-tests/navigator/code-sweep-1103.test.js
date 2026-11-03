@@ -74,7 +74,7 @@ test("F-137 진짜 AI로 바꾸면 연습의 예시 허락 카드를 내려 서�
   assert.match(done, /d\.via === "cli" \|\| d\.via === "api"\) && canLive\) \{[^}]*liveApprovals\(\)/, "처음 설정에서 진짜 AI를 고르면 부른다");
   // 새 맥락 리뷰 막힘 — 설정 '보기 방식'에서 진짜 AI로 바꾸는 길(toMode)도
   const calls = [];
-  const toMode = new Function("set", "chatRecheck", "liveApprovals", `${fnSrc("toMode")}; return toMode;`)(() => calls.push("set"), () => {}, () => calls.push("live"));
+  const toMode = new Function("set", "chatRecheck", "liveApprovals", "readmeAgain", `${fnSrc("toMode")}; return toMode;`)(() => calls.push("set"), () => {}, () => calls.push("live"), () => {});   // readmeAgain — F-144-17
   toMode("live"); assert.deepEqual(calls, ["live", "set"], "진짜 AI로 바꾸면 예시 카드를 먼저 내린다");
   calls.length = 0; toMode("fixture"); assert.deepEqual(calls, ["set"], "연습으로 갈 때는 그대로");
 });

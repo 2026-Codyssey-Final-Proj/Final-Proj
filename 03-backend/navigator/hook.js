@@ -22,6 +22,7 @@ const STEP_TIMEOUT = 300;   // PostToolUse — 도구마다 불리므로 짧게 
 const TALK_TIMEOUT = 1500;   // UserPromptSubmit · Stop — 전과 같다
 
 let input = "";
+process.stdin.setEncoding("utf8");   // 조각 경계의 한글이 '�'로 깨지지 않게(F-144-6 새 맥락 리뷰 — 긴 Write 글 · 도구 결과)
 process.stdin.on("data", (d) => (input += d));
 process.stdin.on("end", () => {
   let ev;

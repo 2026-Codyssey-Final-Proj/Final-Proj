@@ -438,7 +438,7 @@ function prevNote(t) {
   // 안내 문장은 늘 남기고 앞부분만 자른다(가린 뒤에) — 허락을 못 받았던 일은 다시 하면 카드가 뜬다고 적는다(①의 목적 — 카드를 다시 띄우기, 새 맥락 리뷰 2026-10-29)
   const tail = " — 이미 끝낸 일은 다시 하지 말고 못 한 것부터 이어서 해 주세요. 허락을 못 받았던 일은 다시 하면 허락 카드가 떠요.";
   const head = hide(`[앞에서 한 일] ${parts.join(" · ")}`, t.dir);
-  return `\n\n${head.length > 600 ? `${head.slice(0, 599)}…` : head}${tail}`;
+  return `\n\n${head.length > 600 ? `${head.slice(0, 599).replace(/[\uD800-\uDBFF]$/, "")}…` : head}${tail}`;
 }
 const FILES_ONLY = "\n\n[다시 맡김 — 명령 없이] 터미널 명령(Bash)은 쓰지 말고 파일만 만들거나 고쳐 주세요. 실행 · 설치 명령이 필요하면 README의 '실행하는 법'에 적기만 해요.";
 // opts.at · opts.try — 다시 맡기기는 같은 번호(at)로(지켜보던 화면 — 계획 줄 · 문서 올리기 — 이 그대로 따라간다), opts.note — 글 끝에 더할 한 줄(길이 제한 밖)
@@ -645,7 +645,7 @@ async function docmapNow(nowPath) {
     docs.push({ path: e.raw, text, name: e.name });
   }
   let changed = [];
-  try { const g = await Project.runCommand("git", ["-c", "core.quotepath=false", "status", "--porcelain", "-z", "--", "docs", "README.md", "CLAUDE.md"], { cwd: s.dir, timeout: 4000 }); if (g.code === 0) changed = g.out.split("\0").map((l) => l.slice(3).trim()).filter(Boolean); } catch {}   // -z · quotepath=false — 한글 이름이 "\354…"로 인용되지 않게(새 맥락 리뷰)
+  try { const g = await Project.runCommand("git", ["-c", "core.quotepath=false", "status", "--porcelain", "-z", "--untracked-files=all", "--", "docs", "README.md", "CLAUDE.md"], { cwd: s.dir, timeout: 4000 }); if (g.code === 0) changed = Project.porcelainPaths(g.out); } catch {}   // F-144-26: 새 폴더 안 문서도 하나씩(--untracked-files=all), 이름 바꿈의 옛 이름 칸은 건너뛴다   // -z · quotepath=false — 한글 이름이 "\354…"로 인용되지 않게(새 맥락 리뷰)
   const board = Docmap.build(docs, { now: typeof nowPath === "string" ? nowPath : "", changed, project: s.project });
   if (cut) board.sub += ` · ${DOCMAP_MAX}개까지만 보여요`;
   return [200, { ok: true, project: s.project, board, cut }];
@@ -1077,8 +1077,13 @@ function build() {
   return (buildMemo ||= Setup.buildId([...Object.values(FILES).map(([f]) => path.join(__dirname, f)), __filename,
     path.join(__dirname, "provider.js"), path.join(__dirname, "setup-status.js")]));
 }
-function setupNow() {
-  if (!claudeSeen.info || Date.now() - claudeSeen.at > 10_000) claudeSeen = { at: Date.now(), info: claudeVersion(), login: Setup.signedIn() };
+//   F-144-5: 묻는 동안 앱이 멈추지 않게 기다린다. 묻는 중에 또 오면 같은 물음을 기다린다(겹쳐 띄우지 않게)
+let claudeAsking = null;
+async function setupNow() {
+  if (!claudeSeen.info || Date.now() - claudeSeen.at > 10_000) {
+    claudeAsking ||= claudeVersion().then((info) => { claudeSeen = { at: Date.now(), info, login: Setup.signedIn() }; }).finally(() => { claudeAsking = null; });
+    await claudeAsking;
+  }
   return Setup.status(process.env, { claude: claudeSeen.info, login: claudeSeen.login, build: build() });
 }
 // 연결 확인 — 아주 작은 요청 하나. 재생 중이면 부르지 않고 그렇다고 알린다
@@ -1142,7 +1147,7 @@ async function handleRoute(req, res) {
   if (req.method === "GET" && route === "/api/github") return send(res, 200, await githubNow());   // 설정의 GitHub 칸(API.md 3-19) — 읽기만
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage(), ledger: ledger.snapshot() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다. ledger: 토큰 장부(숫자 · 이름만, 2026-10-24)
   if (req.method === "POST" && route === "/api/usage/reset") { ledger.reset(); return send(res, 200, { ok: true, ledger: ledger.snapshot() }); }   // 토큰 장부 새로 재기 — 본문 없음, 확인 값
-  if (req.method === "GET" && route === "/api/setup") return send(res, 200, { ok: true, ...setupNow() });   // 처음 설정 — 있다 · 없다만(API.md 3-10)
+  if (req.method === "GET" && route === "/api/setup") return send(res, 200, { ok: true, ...(await setupNow()) });   // 처음 설정 — 있다 · 없다만(API.md 3-10)
   if (req.method === "POST" && route === "/api/setup/check") return checkAi(res);   // 연결 확인(API.md 3-11) — 본문 없음
   if (req.method !== "POST" || !POST_ROUTES.includes(route)) return refuse(res, "없는 주소", 404);   // 본문을 읽기 전에(전에는 빈 본문이면 400이었다)
   const body = await readJson(req);

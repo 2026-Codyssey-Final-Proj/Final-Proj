@@ -18,6 +18,7 @@ const PORT = Number(process.env.NAV_PORT) || (() => { try { return Number(fs.rea
 const WAIT = Math.max(100, Number(process.env.NAV_APPROVAL_WAIT) || 95_000);
 
 let input = "";
+process.stdin.setEncoding("utf8");   // 조각 경계의 한글이 '�'로 깨지지 않게(F-144-6 새 맥락 리뷰 — 긴 Write 글 · 도구 결과)
 process.stdin.on("data", (d) => (input += d));
 process.stdin.on("end", () => {
   let ev;

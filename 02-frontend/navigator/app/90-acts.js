@@ -20,7 +20,7 @@
     judge: () => { if (refuse(mealWhy())) return; st.notice = ""; judge(false); },
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
     restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, mats: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [] }); ACT.ex(S.examples.indexOf(S.first)); },
-    "send-anyway": () => RETRY[st.warn.then](),
+    "send-anyway": () => { if (st.warn && RETRY[st.warn.then]) RETRY[st.warn.then](); },   // 두 번 누르면 둘째는 st.warn이 이미 없다(앱 작업실은 다시 그려 보내는 데 시간이 걸린다) — F-144-18
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
     // 선택지를 한 번 누르면 정해진다 — 누른 자리에서 물방울이 튄다
@@ -86,7 +86,7 @@
     "find-use": (k) => { const q = st.quest, x = found && q && found.chap === q.chap && found.list[k]; if (!x || QU.curIdx(q) !== found.i) return;
       logMsg("floro", `<b>옮겼어요</b> — ${esc(x.path)} ${x.line}줄: ${esc(x.text)}`); found = null; fillNow(x.text, "moved"); },   // 원문 그대로 · 누가 = 옮김(quest.js BY) · 어디서 왔는지 한 줄 남긴다
     "find-open": (k) => { const x = found && found.list[k]; if (x && Number.isInteger(x.i)) { if (!st.qwin) st.qwin = true; openFile(x.i); } },   // 원문은 파일 보기(C-43)로
-    "draft-fix": () => { render(); requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); }); },
+    "draft-fix": () => { render(); focusAct("[data-act=say]"); },   // 앱의 작업실 창에서도(F-144-8)
     "draft-who": (i) => { const w = QU.WHO[i]; if (w && st.quest && QU.curIdx(st.quest) === QU.WHO_AT) fillNow(`쓰는 사람: ${w[0]} — ${w[1]}`, "pick"); },
     "draft-pick": (i) => {   // 기획서로 키울지(2단계, C-37) — 고른 것이 그 줄. 플로로가 권한 것을 고르면 까닭도
       const q = st.quest, pk = q ? QU.pickOf(q, QU.curIdx(q)) : null, x = QU.DOC_PICKS[i]; if (!pk || !x) return;
@@ -111,7 +111,7 @@
       if (!FP) return ACT["plan-direct"]();
       if (!st.plan && !st.planDraft.trim()) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.planDraft = t.slice(0, N.PLAN_MAX); }
       set({ qfocus: "plan", pane: "", settings: false });
-      requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); });
+      focusAct("[data-act=say]");   // 앱의 작업실 창에서도(F-144-8)
     },
     "plan-later": () => set({ qfocus: "stage" }),   // 나중에 · 단계 퀘스트로 — 계획 · 맡길 일은 그대로 남는다
     "plan-clear": () => set({ planDraft: "" }),
@@ -120,7 +120,7 @@
     // 한 줄만 적어 맡기기 — 전의 맡기기(FR-17): 적은 생각을 할 일 칸에 넣어 AI 진행 판에서 정리 → 고치기 → 허락
     "plan-direct": () => {
       if (!st.task.text.trim() && !st.task.lines && !st.task.sent) { const q = st.quest, t = q && QU ? QU.textOf(q, st.idea) : st.idea || ""; if (t.trim()) st.task.text = t.slice(0, 4000); }
-      ACT["base-ai"](); requestAnimationFrame(() => { const t = document.getElementById("task-text"); if (t) t.focus(); });
+      ACT["base-ai"](); focusAct("[data-act=task-text]");   // 앱의 작업실 창에서도(F-144-8 새 맥락 리뷰)
     },
     "plan-make": () => makePlan(false),
     "plan-ok": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "ok"); save(); render(); },
@@ -129,14 +129,14 @@
       const old = (st.plan.notes[id] || "").trim(), add = `앞의 결정('${x.diff.was}')에 맞춰 고쳐 주세요`;   // 이미 적은 의견은 지우지 않고 뒤에 붙인다
       st.plan = FP.note(FP.mark(st.plan, id, "fix"), id, old.includes(add) ? old : old ? `${old} / ${add}` : add); save(); render();
     },
-    "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); requestAnimationFrame(() => { const t = $nav.querySelector(`[data-act=plan-note][data-id="${el && el.dataset.id}"]`); if (t) t.focus(); }); },
+    "plan-fix": (i, el) => { st.plan = FP.mark(st.plan, el && el.dataset.id, "fix"); save(); render(); focusAct(`[data-act=plan-note][data-id="${CSS.escape(String(el && el.dataset.id))}"]`); },
     "plan-confirm": () => { if (!FP.canConfirm(st.plan)) return; st.plan = FP.confirm(st.plan); st.qfocus = "plan"; st.planSel = ""; if (qauto) openQwin("quest"); save(); render(); say("확정했어요! 퀘스트 창에 맡길 일이 생겼어요"); },
     "plan-again": () => revisePlan(),
     "plan-reset": () => { st.plan = null; st.dbg = null; st.planRej = ""; st.qfocus = "plan"; save(); render(); },
     // 지금 줄에 하는 일 — 채팅의 칩에는 줄 이름이 없다(순서대로라 지금 줄 하나 — FP.next). 보고 안의 단추는 data-id
     "plan-hand": () => handPlan(),
     "plan-accept": (i, el) => { st.plan = FP.accept(st.plan, planId(el)); save(); const p = FP.progress(st.plan); render(); say(p.done === p.total ? "계획을 다 끝냈어요! 정말 멋져요." : `끝냈어요! ${p.done} / ${p.total}`); },
-    "plan-rej-open": (i, el) => { st.planRej = planId(el); st.planRejNote = ""; render(); requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=plan-rej-note]"); if (t) t.focus(); }); },
+    "plan-rej-open": (i, el) => { st.planRej = planId(el); st.planRejNote = ""; render(); focusAct("[data-act=plan-rej-note]"); },
     "plan-rej-close": () => { st.planRej = ""; render(); },
     "plan-reject": (i, el) => { const id = planId(el); st.plan = FP.reject(st.plan, id, st.planRejNote); st.planRej = ""; st.planRejNote = ""; save(); handPlan(id); },
     // Claude Code가 물은 것에 답하고 이어서 맡기기(C-33) — 그 질문과 답을 다음 맡김 글에 붙인다
@@ -145,7 +145,7 @@
       if (!w || !w.report || !ans) return say("답을 먼저 적어 주세요");
       st.plan = FP.reject(st.plan, id, `Claude Code가 "${w.report.ask}"라고 물었고, 사용자의 답: ${ans}`); st.planReply = { ...st.planReply, [id]: "" }; save(); handPlan(id);
     },
-    "plan-ask-open": (i, el) => { st.planAsk = planId(el); st.planQ = ""; render(); requestAnimationFrame(() => { const q = $nav.querySelector("[data-act=plan-q]"); if (q) q.focus(); }); },
+    "plan-ask-open": (i, el) => { st.planAsk = planId(el); st.planQ = ""; render(); focusAct("[data-act=plan-q]"); },
     "plan-ask-close": () => { st.planAsk = ""; render(); },
     "plan-ask-send": (i, el) => askPlan(planId(el)),
     "plan-unwait": async () => { const id = FP.running(st.plan); if (!id || st.halting) return; const w = tw && tw.kind === "plan" ? tw : null; if (w) { st.halting = true; render(); const ok = await taskHalt(w.at); st.halting = false; if (!ok) { if (tw === w) twTimer = setInterval(twTick, 3000); render(); return say("Claude Code를 멈추지 못했어요 — 아직 일하는 중이라 조금 뒤 다시 눌러 주세요."); } if (tw === w) tw = null; st.stall = null; } if (FP.running(st.plan) !== id) return render(); st.plan = FP.failed(st.plan, id, "멈췄어요"); save(); render(); say(w ? "Claude Code도 멈췄어요 — 바로 다시 맡길 수 있어요." : "멈췄어요 — 다시 맡길 수 있어요."); },   // F-103-7(임유정 2026-10-30 '클로드 코드도 멈추는 거로'): 서버의 일을 끄고(taskHalt — 꺼진 걸 확인할 때까지) 그 줄을 끝맺는다. 그사이 보고가 와서 끝났으면 그대로 둔다
@@ -172,7 +172,7 @@
       if (st.qfocus === "plan") st.qfocus = "stage";
       if (st.quest && st.quest.phase === "draft") { openQwin("quest"); st.qtab = "quest"; return render(); }
       if (st.ui !== "home") go("home"); else render();
-      requestAnimationFrame(() => { const t = $nav.querySelector("[data-act=say]"); if (t) t.focus(); });
+      focusAct("[data-act=say]");   // 앱의 작업실 창에서도(F-144-8)
     },
     shells: () => openGacha(),   // 위 줄의 조개 → 뽑기 창(섬이 접혀 있으면 옆 칸으로 펼친 뒤)
     gacha: () => openGacha(),
@@ -232,8 +232,8 @@
       set({ tab: id, error: "", warn: null, settings: false, askConfirm: 0, libSel: null, libConfirm: false, libDoc: null }); },
     // 먹이 주기(C-15) — 예시 · 나눠 정리 · 구간 표시 바꾸기 · 확인 · 다시 쓰기
     // 확인할 먹이(FR-15 더함) — 맞아요: 그 종류로 책의 칸에, 빼기: 버림. 종류 고치기는 change 손잡이
-    "inbox-ok": (i) => { const x = st.inbox[i]; if (!x) return; st.sorted = [{ at: ymd(), kind: x.kind, text: x.text, topic: x.topic }, ...st.sorted].slice(0, 200); st.inbox.splice(i, 1); render(); say(`'${FD ? FD.kindLabel(x.kind) : x.kind}' 칸에 넣었어요`); },
-    "inbox-drop": (i) => { if (!st.inbox[i]) return; st.inbox.splice(i, 1); render(); say("뺐어요"); },
+    "inbox-ok": (i, el) => { const x = st.inbox[i]; if (!x || !inboxSame(x, el)) return; st.sorted = [{ at: ymd(), kind: x.kind, text: x.text, topic: x.topic }, ...st.sorted].slice(0, 200); st.inbox.splice(i, 1); render(); say(`'${FD ? FD.kindLabel(x.kind) : x.kind}' 칸에 넣었어요`); },
+    "inbox-drop": (i, el) => { if (!st.inbox[i] || !inboxSame(st.inbox[i], el)) return; st.inbox.splice(i, 1); render(); say("뺐어요"); },
     "feed-example": () => { if (refuse(busyWhy())) return; if (FD) { st.text = FD.EXAMPLE; feedSort(FD.EXAMPLE, true); } },
     "feed-sort": () => feedSort(st.text),
     "feed-mark": (i) => { const fd = st.meal; if (!fd || !fd.checks[i]) return; fd.marks[i] = feedSkip(fd, i) ? "keep" : "skip"; render(); },
@@ -271,7 +271,15 @@
     "confirm-anyway": () => confirmDoc(true),
     "confirm-cancel": () => set({ askConfirm: 0 }),
     "reopen-doc": () => { const x = docDone(docStage().n); if (x) set({ doc: newDoc(x.stage, x.text, "") }); },
-    forget: () => { forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
+    // F-144-12(2026-11-03): 진짜 AI 모드의 대화는 서버(앱 저장 곳)에도 쌓여, 다시 켜면 chatlogLoad가 되살렸다 — 그 대화도 지운 뒤 다시 읽는다
+    //   새 맥락 리뷰: 서버로 연 화면이면 지금 모드와 상관없이(진짜로 쓰다 연습으로 바꿨어도) 지금 폴더의 대화를 지운다. 못 지웠으면 숨기지 않고 멈춘다(security-records 6-1) — 폴더가 없으면(400) 지울 것이 없다
+    forget: async () => {
+      if (canLive) {
+        let ok = false, none = false;
+        try { const r = await fetch("/api/chatlog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clear: true }), credentials: "same-origin" }); ok = !!r.ok; none = r.status === 400; } catch {}
+        if (!ok && !none) return say("서버에 남은 대화를 지우지 못했어요 — 기록은 그대로 두었어요. 잠시 뒤 다시 눌러 주세요");
+      }
+      forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
     setup: () => { set({ settings: false, qwin: false }); if (window.FloeSetup) window.FloeSetup.open(); },   // 처음 설정은 섬 창에 뜬다 — 작업실이 열려 있으면 먼저 닫아 섬 창이 다시 보이게(C-41 ⑤, 새 맥락 리뷰 2026-10-27)
     "setup-project": () => { set({ settings: false, qwin: false }); if (window.FloeSetup) window.FloeSetup.open({ step: "project" }); },   // 처음 설정의 프로젝트 칸부터(2026-10-24 리뷰 — 새 프로젝트마다 AI 연결을 다시 거치지 않게). 작업실은 먼저 닫는다 — setup과 같이(F-123)
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false, check: null }),
@@ -328,7 +336,7 @@
       if (!NT || !st.noteText.trim()) return;
       noteList = NT.add(noteList, { text: st.noteText, ...noteCtx() }); NT.write(STORE, noteList);
       set({ noteText: "", noteCopy: "" }); say("남겨 뒀어요. 고마워요!");
-      requestAnimationFrame(() => document.querySelector("[data-act=note-text]")?.focus());
+      focusAct("[data-act=note-text]");
     },
     "note-del": (i, el) => { if (!NT || !el) return; noteList = NT.remove(noteList, el.dataset.id); NT.write(STORE, noteList); render(); },
     "notes-clear": () => { if (!NT) return; noteList = []; NT.write(STORE, noteList); set({ noteCopy: "" }); say("느낀 점을 모두 지웠어요"); },

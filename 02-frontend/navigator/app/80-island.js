@@ -19,18 +19,36 @@
     return `<div class="hello-bub" role="status" aria-live="polite">${st.boot.greet ? `<b class="hb-hi">${esc(C.greeting(new Date().getHours()))}</b>` : ""}<span class="hb-now">${now}</span>
       <div class="hb-acts"><button type="button" data-act="pill">섬 펼치기</button><button type="button" class="ghost" data-act="boot-later">나중에</button></div></div>`;
   };
+  // F-144-8(2026-11-03): 앱에서 작업실이 열려 있으면 보이는 칸은 작업실 창(win.js)에 있고 섬 창은 숨는다 — 섬의 요소를 켜거나 focus()해도 아무 일이 없었다.
+  //   단추 켜고 끄기(liveBtn)는 상태가 바뀔 때만 다시 그려 보내고, 칸에 커서 두기(focusAct)는 보낼 내용 끝에 한 번만 쓰는 신호(data-want-focus)를 실어 창이 그 칸에 둔다
+  //   lastOff — 창에 마지막으로 보낸 단추 상태. 다른 일로 다시 보내면(남기기 뒤 빈 칸 등) 잊는다 — 남아 있으면 다음 글자에 단추가 다시 켜지지 않았다(새 맥락 리뷰)
+  let focusSeq = 0, focusWant = "";
+  const lastOff = {};
+  function liveBtn(act, off) {
+    const b = $nav.querySelector(`[data-act=${act}]`) || document.querySelector(`[data-act=${act}]`); if (b) b.disabled = off;
+    if (winOpen.quest && lastOff[act] !== off) { syncWins(); lastOff[act] = off; }
+  }
+  function focusAct(sel) {
+    requestAnimationFrame(() => {
+      if (winOpen.quest) { focusWant = `${++focusSeq}|${sel}`; syncWins(); return; }
+      const t = $nav.querySelector(sel) || document.querySelector(sel); if (t) t.focus();
+    });
+  }
+  const focusTag = () => (focusWant ? `<i hidden data-want-focus="${esc(focusWant)}"></i>` : "");
   function syncWins() {
     if (!WINS || !QU) return;
-    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() : ""]]) {
-      if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
-      else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; window.floeApp.closeWin(kind); }
-      else if (on && html !== winHtml[kind]) { winHtml[kind] = html; window.floeApp.sendWin(kind, html); }
+    for (const [kind, on, html] of [["quest", st.qwin, st.qwin ? qwinHTML() + islCol() + focusTag() : ""]]) {
+      if (on && !winOpen[kind]) { winOpen[kind] = true; winHtml[kind] = html; clearLive(); window.floeApp.openWin(kind, { side, size: winSize(kind), html, place: true }); }
+      else if (!on && winOpen[kind]) { winOpen[kind] = false; winHtml[kind] = ""; winClosing[kind] = true; focusWant = ""; window.floeApp.closeWin(kind); }
+      else if (on && html !== winHtml[kind]) { winHtml[kind] = html; clearLive(); window.floeApp.sendWin(kind, html); }
     }
   }
+  // 보낸 뒤 — 단추 상태 기억을 비운다. 창을 닫으면 커서 신호도(다시 열린 창이 옛 칸으로 커서를 옮기지 않게, 새 맥락 리뷰)
+  function clearLive() { for (const k of Object.keys(lastOff)) delete lastOff[k]; }
   if (WINS) {
     window.floeApp.onWinClosed((kind) => {
       if (winClosing[kind]) { winClosing[kind] = false; return; }   // 내가 닫은 것
-      winOpen[kind] = false; winHtml[kind] = "";
+      winOpen[kind] = false; winHtml[kind] = ""; focusWant = "";
       if (kind === "quest" && st.qwin) closeQwin();
     });
     window.floeApp.onWinEvent((p) => winEvent(p));
@@ -234,12 +252,19 @@
   // 다시 그려도 쓰던 글 칸은 그대로 — 커서 자리와 스크롤까지 되돌린다
   // F-46(2026-10-20): 지금 모습을 html에 적어 둔다 — 띠로 접혀 있거나 창이 안 보일 때 물범의 무한 움직임을 멈춘다(app.css [data-ui="hidden"] · .page-hidden)
   document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("page-hidden", document.hidden));
+  // F-144-13(2026-11-03): 한글을 조합하는 동안 친 글자로 다시 그리면(파일 이름 찾기 · 문서 안 찾기 · 파일 고치기) 칸이 새로 생겨 조합이 낱자로 쪼개졌다 —
+  //   조합 중의 입력이 부른 그리기는 미루고 조합이 끝나면 한 번(작업실 창 win.js와 같은 뜻, F-103-18)
+  //   새 맥락 리뷰: 입력이 부른 그리기만이 아니라 조합하는 동안의 모든 그리기(1초 타이머 · say의 다음 그리기)를 — 섬의 글 칸에 커서가 있을 때만
+  let imeOn = false, imeSkipped = false;
   function render() {
+    const ae = document.activeElement;
+    if (imeOn && isField(ae) && ($nav.contains(ae) || $phone.contains(ae))) { imeSkipped = true; return; }
     document.documentElement.dataset.ui = st.ui;
     save();
     if (!timer) scheduleIdle();
     // 같은 이름의 칸이 여럿이면(계획판의 줄마다 의견 · 물을 것마다 답 — 2026-10-24 리뷰) data-id · data-i까지 맞춰 그 칸으로 돌아간다
-    const a = document.activeElement, keep = isField(a) && a.dataset.act ? `[data-act="${a.dataset.act}"]${a.dataset.id ? `[data-id="${CSS.escape(a.dataset.id)}"]` : ""}${a.dataset.i !== undefined ? `[data-i="${CSS.escape(a.dataset.i)}"]` : ""}` : "";
+    //   data-k(퀘스트 줄) · data-v(기준 카드의 빈칸 · 열린 파일)도 — 빼면 두 번째 칸을 쓰다가 다시 그려지면 첫 칸으로 튀었다(F-144-9)
+    const a = document.activeElement, keep = isField(a) && a.dataset.act ? `[data-act="${a.dataset.act}"]${a.dataset.id ? `[data-id="${CSS.escape(a.dataset.id)}"]` : ""}${["i", "k", "v"].map((d) => (a.dataset[d] !== undefined ? `[data-${d}="${CSS.escape(a.dataset[d])}"]` : "")).join("")}` : "";
     const sel = keep ? [a.selectionStart, a.selectionEnd, a.scrollTop] : null;
     // 채팅 칸의 스크롤 — 다시 그리면 칸이 새로 생겨 맨 위로 간다. 1초마다 바뀌는 '살펴보고 있어요 16초' 때문에 올려 둔 스크롤이 계속 아래로 끌려갔다(임유정 2026-10-22)
     const og = $nav.querySelector("[data-log]");
@@ -321,6 +346,8 @@
   // 플로로의 한마디 — 2026-10-25(두승현): 머리 위에 떴다 사라지던 말풍선(.pop-say)을 뺐다. 안내 · 오류는 섬의 대화 기록에 플로로의 말로 남긴다
   //   (실패를 숨기지 않는다 — security-records.md 6-1). 쓰다듬기 · 졸기 · 축하 같은 꾸밈 말은 부르지 않는다. ponytail: 휴대폰 화면은 대화 기록이 없어 보이지 않는다(PC 먼저)
   function say(text) { if (!text) return; logMsg("floro", esc(endDot(text))); saidSince += 1; requestAnimationFrame(render); }
+  // 플로로 대화 답(줄바꿈이 있는 글) — esc한 뒤 줄바꿈만 <br>로(F-144-23: 번호 목록 답이 한 줄로 붙었다). 그 밖은 say와 같다
+  function sayLines(text) { if (!text) return; logMsg("floro", esc(endDot(text)).split("\n").join("<br>")); saidSince += 1; requestAnimationFrame(render); }
   // 한 번 하는 움직임(seal.css · app.css). 끝나면 떼어 낸다 — 헤엄의 물방울처럼 붙어 있는 동안 계속 보이는 것이 있어서
   const playOn = (host, cls) => {
     if (STILL || !host) return;

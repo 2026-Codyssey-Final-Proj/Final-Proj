@@ -245,6 +245,7 @@
     st.gh = null; st.openFiles = []; st.fileSel = -1; st.files = null; if (st.qtab === "file" || st.qtab === "map") st.qtab = "quest";   // 다른 폴더의 파일을 새 목록 번호에 잇지 않는다(새 맥락 리뷰 — 다른 프로젝트 파일을 덮을 수 있었다)
     if (canLive && !ghLoading) loadGithub();
     if (st.qwin) loadFiles();
+    readmeAgain();   // 옛 폴더의 README 책 · 찾은 줄도(F-144-17)
   };
   window.floeUnsaved = () => st.openFiles.filter((f) => f.dirty).length;   // 앱(main.js pickAndConnect)이 폴더를 고르기 전에 묻는다 — 저장 안 한 파일이 있으면 한 번 더 확인(F-72)
   const projectPicked = (d) => {
@@ -262,6 +263,7 @@
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });
     else if ((d.via === "cli" || d.via === "api") && canLive) { liveApprovals(); set({ mode: "live", error: "", warn: null }); }   // F-137 연습에서 띄운 예시 카드를 내리고 진짜로 묻는다
+    readmeAgain();   // 연습 ↔ 진짜를 바꿨거나 폴더를 골랐을 수 있다 — 옛 README 책 · 찾은 줄을 잊는다(F-144-17 새 맥락 리뷰: toMode를 거치지 않는 길)
     chatRecheck();   // 처음 설정에서 폴더를 골랐을 수 있다 — 대화를 둘 폴더를 다시 묻는다(병합 뒤 고침 새 맥락 리뷰: 첫 실행에서 고른 폴더에 대화가 쌓이지 않았다)
     if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
     st.gh = null;   // 처음 설정에서 프로젝트를 골랐으면 GitHub 칸을 다시 묻는다

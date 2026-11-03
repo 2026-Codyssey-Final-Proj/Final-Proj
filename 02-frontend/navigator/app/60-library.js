@@ -89,6 +89,12 @@
       <p class="meta">${b.cut ? "README가 길어 앞부분만 보여요. " : ""}고치는 곳은 README예요 — 책은 받아 와 보여 주기만 해요.</p></section>`;
   }
   // README 읽기(API.md 3-18) — 서버로 연 화면에서만. 서버 없이 · 폴더를 모름 · README 없음이면 연습 예시 책과 까닭 한 줄
+  // 폴더 · 보기 방식이 바뀌면 받아 둔 README 책과 찾은 줄을 잊는다(F-144-17, 2026-11-03) — 전에는 옛 프로젝트의 README가 '내 저장소 README'로 남고,
+  //   연습 모드에도 진짜 README가 섞였으며(API.md 3-18), 옛 '찾은 줄'의 열기가 옛 목록 번호로 새 폴더의 엉뚱한 파일을 열었다. 책 탭이 열려 있으면 바로 다시 읽는다
+  function readmeAgain() {
+    st.rb = null; found = null;
+    if (st.qwin && st.qtab === "lib") loadReadme();
+  }
   async function loadReadme() {
     if (!RB) return;
     const example = (why) => ({ book: RB.parse(RB.EXAMPLE), src: "example", why });
@@ -135,10 +141,13 @@
   }
   // 확인할 먹이(FR-15 더함 2026-10-20 — 이재엽 버튼 "먹이 주기에 더하기"): 종류를 붙였지만 아직 확인하지 않은 구간. 도서관 탭 맨 위 [제안 ⑦]. 맞아요 → 그 종류로 내 책의 칸(my-books.js), 빼기 → 버림.
   //   이름은 '확인할 먹이' [제안 ⑧] — C-21의 '분류 안 함' 책장(책을 꽂는 곳)과 헷갈리지 않게. 예시 먹이의 것은 '예시'라고 표시
+  // 누른 단추의 항목이 아직 그 자리에 있나 — 번호로만 찾으면 두 번 누를 때 둘째가 당겨진 다음 항목(확인하지 않은 것)을 넣거나 뺐다(F-144-10)
+  const inboxSig = (x) => { let h = 0; for (const c of `${x.topic}\n${x.text}`) h = (h * 31 + c.codePointAt(0)) | 0; return String(h >>> 0); };
+  const inboxSame = (x, el) => !!x && !!el && !!el.dataset && el.dataset.k === inboxSig(x);
   function inboxBox() {
     if (!FD || !st.inbox.length) return "";
     const rows = st.inbox.slice(0, 5).map((x, i) => `<li><span class="ft"><b>${esc(x.topic)}</b>${x.example ? " <small>· 예시</small>" : ""}<small>${esc(String(x.text || "").replace(/\s+/g, " ").slice(0, 90))}</small></span>${kindSelect("inbox-kind", i, x.kind)}
-      <button type="button" class="b pri" data-act="inbox-ok" data-i="${i}">맞아요 → 책에</button><button type="button" class="b ghost" data-act="inbox-drop" data-i="${i}">빼기</button></li>`).join("");
+      <button type="button" class="b pri" data-act="inbox-ok" data-i="${i}" data-k="${inboxSig(x)}">맞아요 → 책에</button><button type="button" class="b ghost" data-act="inbox-drop" data-i="${i}" data-k="${inboxSig(x)}">빼기</button></li>`).join("");
     return `<section class="inbox" aria-label="확인할 먹이"><div class="stg">확인할 먹이 ${st.inbox.length}개 — 종류가 맞는지 보고 책에 넣어요</div><ol class="inboxlist">${rows}</ol>${st.inbox.length > 5 ? `<p class="meta">먼저 온 5개만 보여요 — 확인하면 다음 것이 올라와요</p>` : ""}</section>`;
   }
   // 책 안의 단계 문서 목록(C-16) — 단계마다 문서 이름 · 상태(아직 · 초안 · 다시 봐 줌 · 확정). 받은 먹이(C-15)도 여기에

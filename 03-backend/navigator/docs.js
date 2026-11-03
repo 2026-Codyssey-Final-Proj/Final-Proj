@@ -109,9 +109,12 @@
   }
 
   // 표시 사이만 바꾸고 나머지 글은 그대로 — 표시가 없으면 끝에 더하고, 글이 없으면 절만
+  //   F-144-1(2026-11-03): 끝 표시는 시작 뒤에서만 찾는다. 시작만 있고 짝이 없으면 그 시작 표시 자리에 덩이를 넣는다 — 전에는 끝에 붙여
+  //   다음 올리기가 처음 시작부터 붙인 덩이의 끝까지(사람이 쓴 글까지) 바꿨고, 끝 표시가 시작보다 앞이면 올릴 때마다 덩이가 쌓였다
   function mergeSection(existing, block) {
-    const t = String(existing || ""), b = String(block).trim(), a = t.indexOf(MARK_START), z = t.indexOf(MARK_END);
-    if (a >= 0 && z > a) return `${t.slice(0, a)}${b}${t.slice(z + MARK_END.length)}`;
+    const t = String(existing || ""), b = String(block).trim(), a = t.indexOf(MARK_START), z = a >= 0 ? t.indexOf(MARK_END, a + MARK_START.length) : -1;
+    if (z >= 0) return `${t.slice(0, a)}${b}${t.slice(z + MARK_END.length)}`;
+    if (a >= 0) return `${t.slice(0, a)}${b}${t.slice(a + MARK_START.length)}`;
     return t.trim() ? `${t.trimEnd()}\n\n${b}\n` : `${b}\n`;
   }
 
@@ -128,7 +131,7 @@
     SLUGS.forEach((_, n) => {
       const r = R(n); if (!r || !r.passed) return;
       const first = (Array.isArray(r.items) ? r.items : []).map((x) => (Array.isArray(x && x.lines) ? x.lines : []).find((l) => String(l).trim())).find(Boolean) || "";
-      const what = String(hide(String(r.learned || "").trim() || String(first).trim())).replace(/\s+/g, " ").trim().slice(0, 80);
+      const what = String(hide(String(r.learned || "").trim() || String(first).trim())).replace(/\s+/g, " ").trim().slice(0, 80).replace(/[\uD800-\uDBFF]$/, "");   // 짝 글자 반쪽은 뗀다(F-144-24 새 맥락 리뷰 — GitHub에 커밋되는 글)
       out.push({ v: out.length + 1, n, passed: String(r.passed).slice(0, 10), line: `${label(n)} ${N.STAGES[n].title} 관문${what ? ` — ${what.replace(/&/g, "&amp;").replace(/</g, "&lt;")}` : ""}` });   // <는 &lt; — <!-- 가 README의 Floe 절을 숨기지 않게(stageDoc과 같이)
     });
     return out;

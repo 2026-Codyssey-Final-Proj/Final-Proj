@@ -13,7 +13,8 @@
   const LINE_MAX = 160;
   const label = (n) => `${n + 1}단계`;
   const one = (t) => String(t == null ? "" : t).replace(/\s+/g, " ").trim();
-  const clip = (t) => { const s = one(t); return s.length > LINE_MAX ? `${s.slice(0, LINE_MAX - 1)}…` : s; };
+  const head = (s, n) => { const t = String(s).slice(0, n), c = t.charCodeAt(t.length - 1); return c >= 0xd800 && c <= 0xdbff ? t.slice(0, -1) : t; };   // 앞 n자 — 끝에 짝 글자(이모지)의 반쪽이 남으면 뗀다(F-144-24: 화면 · 클립보드에 �로 보였다)
+  const clip = (t) => { const s = one(t); return s.length > LINE_MAX ? `${head(s, LINE_MAX - 1)}…` : s; };
   const firstLine = (it) => (Array.isArray(it && it.lines) ? it.lines : []).map((l) => String(l == null ? "" : l)).find((l) => l.trim()) || "";   // 원문 그대로 — 펴기 · 자르기는 가린 뒤(red)
   // 기준의 용어 → 풀이가 있는 것만. '보안 점검 — 보안 요구(EARS Unwanted)'처럼 긴 이름은 풀이가 없으면 뺀다
   const termRows = (crit) => { const seen = new Set(), out = [];
