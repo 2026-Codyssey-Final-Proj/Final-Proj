@@ -103,6 +103,8 @@ process.stdin.resume(); process.stdin.on("end", () => { process.stdout.write(b.s
     const body = src.slice(src.indexOf(fn), src.indexOf("\n}\n", src.indexOf(fn)));
     assert.match(body, /stdout\.setEncoding\("utf8"\)/, `${fn} — 판정 · 맡긴 일 둘 다`);
   }
+  // 새 맥락 리뷰 — 훅 둘도 표준 입력(Claude Code가 보내는 JSON)을 글자로 이어 붙인다
+  for (const f of ["hook.js", "approve-hook.js"]) assert.match(fs.readFileSync(path.join(BACK, f), "utf8"), /process\.stdin\.setEncoding\("utf8"\);[^\n]*\nprocess\.stdin\.on\("data"/, f);
 });
 
 test("F-144-7 저장소 받기가 시간 초과되면 프로세스 나무째 끄고, 받다 만 폴더를 성공으로 잇지 않는다", async () => {
