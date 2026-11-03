@@ -48,7 +48,8 @@
         out.push(`<${ordered ? "ol" : "ul"}>${items.join("")}</${ordered ? "ol" : "ul"}>`); continue;
       }
       if (/^\s*>\s?/.test(line)) { flush(); const q = []; while (i < lines.length && /^\s*>\s?/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, "")); out.push(`<blockquote>${toHtml(q.join("\n"))}</blockquote>`); continue; }
-      if (/^\s*<!--/.test(line)) { let j = i; while (j < lines.length && !/-->/.test(lines[j])) j++; if (j < lines.length) { flush(); i = j + 1; continue; } }   // 주석은 보이지 않는다 — 닫는 표시가 없으면 글로 보인다(문서 나머지가 사라지지 않게)
+      //   닫는 줄의 '-->' 뒤에 남은 글은 그 줄의 나머지로 이어서 읽는다 — 전에는 '<!-- claude-drafted --> 본문'의 본문이 사라졌다(F-144-21)
+      if (/^\s*<!--/.test(line)) { let j = i; while (j < lines.length && !/-->/.test(lines[j])) j++; if (j < lines.length) { flush(); const rest = lines[j].slice(lines[j].indexOf("-->") + 3); if (rest.trim()) { lines[j] = rest; i = j; } else i = j + 1; continue; } }   // 주석은 보이지 않는다 — 닫는 표시가 없으면 글로 보인다(문서 나머지가 사라지지 않게)
       if (!line.trim()) { flush(); i++; continue; }
       para.push(line.trim()); i++;
     }

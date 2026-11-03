@@ -272,3 +272,10 @@ test("F-144-17 작업 폴더 · 보기 방식을 바꾸면 옛 README 책과 찾
   assert.match(fnSrc("toMode"), /readmeAgain\(\)/, "연습 모드로 바꾸면 진짜 README가 남지 않게");
   assert.match(lineOf(/const forgetFolder = \(\) => \{[\s\S]*?\n {2}\};/), /readmeAgain\(\)/, "폴더가 바뀌면");
 });
+
+test("F-144-21 파일 보기(md-view) — '<!-- … -->' 뒤에 같은 줄로 쓴 본문을 지우지 않는다", () => {
+  const M = require(path.join(BACK, "md-view.js"));
+  assert.equal(M.toHtml("<!-- 메모 --> 이 줄의 본문\n\n다음 문단"), "<p>이 줄의 본문</p>\n<p>다음 문단</p>");
+  assert.equal(M.toHtml("<!-- 여러\n줄 --> 남은 글"), "<p>남은 글</p>");
+  assert.equal(M.toHtml("<!-- 주석만 -->\n본문"), "<p>본문</p>", "남은 글이 없으면 전과 같다");
+});
