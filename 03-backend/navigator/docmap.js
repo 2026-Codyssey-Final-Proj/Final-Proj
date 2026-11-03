@@ -39,7 +39,9 @@ function build(docs, opt = {}) {
   const flows = [];
   if (frames.some((f) => f.id === "plan") && frames.some((f) => f.id === "stages")) flows.push(["stages", "plan", "단계 문서를 모아"]);
   if (frames.some((f) => f.id === "repo") && frames.some((f) => f.id === "stages")) flows.push(["stages", "repo", "절만 바꿔 넣어"]);
+  // 투어는 있는 틀로 — 단계 문서가 아직 없으면(1단계 문서 전) stages 틀이 빠지는데 투어가 그 틀을 가리켜 board.js가 TypeError로 멈췄다(F-138)
+  const tf = frames[0], isStages = tf && tf.id === "stages";
   return { format: 1, title: `${opt.project || "프로젝트"} 문서 지도`, sub: `문서 ${elements.length}개 · 이음 ${relations.length}개 — 재료 줄(굵은 선)은 어느 단계에서 왔는지, 나머지는 md 링크`, start: "stages", frames, elements, relations, flows,
-    tour: elements.length ? [{ t: "단계 차례로", f: ["stages"], ids: elements.filter((e) => e.f === "stages").map((e) => e.id), p: "1단계부터 차례로 문서를 따라가요." }] : [] };
+    tour: tf ? [{ t: isStages ? "단계 차례로" : tf.kicker, f: [tf.id], ids: elements.filter((e) => e.f === tf.id).map((e) => e.id), p: isStages ? "1단계부터 차례로 문서를 따라가요." : "아직 단계 문서가 없어요 — 있는 문서부터 봐요." }] : [] };
 }
 module.exports = { build, linksOf, resolveRel, frameOf, idOf };

@@ -69,3 +69,16 @@ test("F-137 마지막 단계를 마치면 새 단계 구분선 · '가져온 것
   assert.doesNotMatch(src, /^\s*questStarted\(\);/m, "다음 단계가 없어도 부르면 8단계 구분선이 한 번 더 쌓이고 8단계 파일 목록이 비어 보였다");
   assert.match(src, /if \(nx\) questStarted\(\)/, "다음 단계가 있을 때만");
 });
+
+test("F-138 문서 지도 — 단계 문서가 아직 없으면 '흐름 따라가기'가 있는 틀을 가리킨다(없는 틀이면 board.js가 멈췄다)", () => {
+  const D = require(path.join(__dirname, "../../03-backend/navigator/docmap.js"));
+  const m = D.build([{ path: "README.md", text: "# 앱" }, { path: "docs/PRD.md", text: "# PRD" }]);
+  const ids = new Set(m.frames.map((f) => f.id));
+  assert.ok(m.tour.length > 0);
+  for (const s of m.tour) {
+    for (const f of s.f) assert.ok(ids.has(f), `투어가 없는 틀(${f})을 가리켜요 — 있는 틀: ${[...ids]}`);
+    assert.ok(s.ids.length > 0, "비춰 줄 상자가 하나는 있다");
+  }
+  const withStages = D.build([{ path: "docs/01-idea/a.md", text: "# a" }, { path: "README.md", text: "# 앱" }]);
+  assert.deepEqual(withStages.tour[0].f, ["stages"], "단계 문서가 있으면 전처럼 단계 차례로");
+});
