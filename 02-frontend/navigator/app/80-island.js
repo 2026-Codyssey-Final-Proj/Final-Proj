@@ -249,7 +249,11 @@
   // 다시 그려도 쓰던 글 칸은 그대로 — 커서 자리와 스크롤까지 되돌린다
   // F-46(2026-10-20): 지금 모습을 html에 적어 둔다 — 띠로 접혀 있거나 창이 안 보일 때 물범의 무한 움직임을 멈춘다(app.css [data-ui="hidden"] · .page-hidden)
   document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("page-hidden", document.hidden));
+  // F-144-13(2026-11-03): 한글을 조합하는 동안 친 글자로 다시 그리면(파일 이름 찾기 · 문서 안 찾기 · 파일 고치기) 칸이 새로 생겨 조합이 낱자로 쪼개졌다 —
+  //   조합 중의 입력이 부른 그리기는 미루고 조합이 끝나면 한 번(작업실 창 win.js와 같은 뜻, F-103-18)
+  let imeHold = false, imeSkipped = false;
   function render() {
+    if (imeHold) { imeSkipped = true; return; }
     document.documentElement.dataset.ui = st.ui;
     save();
     if (!timer) scheduleIdle();

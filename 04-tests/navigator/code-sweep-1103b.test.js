@@ -206,3 +206,9 @@ test("F-144-12 '기록 지우기'는 진짜 AI 모드의 서버 대화도 지운
   assert.deepEqual(calls[calls.length - 1], ["reload"], "지운 뒤에 다시 읽는다");
   assert.doesNotMatch(APP, /기록은 이 컴퓨터의 브라우저에만 남아요/, "문구도 서버 쪽을 말한다");
 });
+
+test("F-144-13 섬 화면 — 한글을 조합하는 동안의 입력은 다시 그리지 않고, 조합이 끝나면 한 번 그린다", () => {
+  assert.match(fnSrc("render"), /^function render\(\) \{\n\s*if \(imeHold\) \{ imeSkipped = true; return; \}/);
+  assert.match(APP, /addEventListener\("input", \(e\) => \{ activity\(\); if \(!e\.isComposing\) return onInput\(e\.target\); imeHold = true;/);
+  assert.match(APP, /addEventListener\("compositionend", \(e\) => \{ if \(!imeSkipped\) return; imeSkipped = false; onInput\(e\.target\); \}\)/);
+});
