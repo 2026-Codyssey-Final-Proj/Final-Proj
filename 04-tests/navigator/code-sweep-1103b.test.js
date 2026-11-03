@@ -241,10 +241,18 @@ test("F-144-12 '기록 지우기'는 진짜 AI 모드의 서버 대화도 지운
   assert.doesNotMatch(APP, /기록은 이 컴퓨터의 브라우저에만 남아요/, "문구도 서버 쪽을 말한다");
 });
 
-test("F-144-13 섬 화면 — 한글을 조합하는 동안의 입력은 다시 그리지 않고, 조합이 끝나면 한 번 그린다", () => {
-  assert.match(fnSrc("render"), /^function render\(\) \{\n\s*if \(imeHold\) \{ imeSkipped = true; return; \}/);
-  assert.match(APP, /addEventListener\("input", \(e\) => \{ activity\(\); if \(!e\.isComposing\) return onInput\(e\.target\); imeHold = true;/);
-  assert.match(APP, /addEventListener\("compositionend", \(e\) => \{ if \(!imeSkipped\) return; imeSkipped = false; onInput\(e\.target\); \}\)/);
+test("F-144-13 섬 화면 — 한글을 조합하는 동안은 다시 그리지 않고(입력 · 타이머 · say 모두), 조합이 끝나면 한 번 그린다", () => {
+  const guard = lineOf(/if \(imeOn && isField\(ae\) && \(\$nav\.contains\(ae\) \|\| \$phone\.contains\(ae\)\)\) \{ imeSkipped = true; return; \}/);
+  assert.match(fnSrc("render"), /^function render\(\) \{\n\s*const ae = document\.activeElement;\n\s*if \(imeOn/, "그리기 맨 앞에서");
+  // 그 줄을 떼어 돌린다 — 섬의 글 칸에서 조합 중이면 미루고, 칸이 사라졌으면(활성 요소가 body) 그린다
+  const run = (imeOn, inside, field) => new Function("imeOn", "isField", "$nav", "$phone", "document",
+    `let imeSkipped = false; const ae = document.activeElement; ${guard} return "drew";`)(imeOn, () => field, { contains: () => inside }, { contains: () => false }, { activeElement: {} });
+  assert.equal(run(true, true, true), undefined, "미룬다");
+  assert.equal(run(true, false, true), "drew", "섬 밖이면 그린다");
+  assert.equal(run(false, true, true), "drew");
+  assert.equal(run(true, true, false), "drew", "글 칸이 아니면 그린다");
+  assert.match(APP, /addEventListener\("compositionstart", \(\) => \{ imeOn = true; \}\)/);
+  assert.match(APP, /addEventListener\("compositionend", \(e\) => \{ imeOn = false; if \(!imeSkipped\) return; imeSkipped = false; onInput\(e\.target\); render\(\); \}\)/);
 });
 
 test("F-144-14 폴더 기록 되살리기 — 모두 지났으면 마친 모습으로, 1단계(관문 전)는 되살린 줄로 칸을 채운다", () => {

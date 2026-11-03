@@ -3520,9 +3520,11 @@
   document.addEventListener("visibilitychange", () => document.documentElement.classList.toggle("page-hidden", document.hidden));
   // F-144-13(2026-11-03): 한글을 조합하는 동안 친 글자로 다시 그리면(파일 이름 찾기 · 문서 안 찾기 · 파일 고치기) 칸이 새로 생겨 조합이 낱자로 쪼개졌다 —
   //   조합 중의 입력이 부른 그리기는 미루고 조합이 끝나면 한 번(작업실 창 win.js와 같은 뜻, F-103-18)
-  let imeHold = false, imeSkipped = false;
+  //   새 맥락 리뷰: 입력이 부른 그리기만이 아니라 조합하는 동안의 모든 그리기(1초 타이머 · say의 다음 그리기)를 — 섬의 글 칸에 커서가 있을 때만
+  let imeOn = false, imeSkipped = false;
   function render() {
-    if (imeHold) { imeSkipped = true; return; }
+    const ae = document.activeElement;
+    if (imeOn && isField(ae) && ($nav.contains(ae) || $phone.contains(ae))) { imeSkipped = true; return; }
     document.documentElement.dataset.ui = st.ui;
     save();
     if (!timer) scheduleIdle();
@@ -4429,8 +4431,9 @@
     $root.addEventListener("click", (e) => { const t = e.target.closest("[data-act]"); if (!t || !ACT[t.dataset.act]) return; activity(); clickAct(t); });
     $root.addEventListener("click", (e) => { const t = e.target.closest("[data-bv]"); if (!t || !BV || t.dataset.bv === "field") return; activity(); bvClick(t); });
     $root.addEventListener("change", (e) => onChange(e.target));
-    $root.addEventListener("input", (e) => { activity(); if (!e.isComposing) return onInput(e.target); imeHold = true; try { onInput(e.target); } finally { imeHold = false; } });
-    $root.addEventListener("compositionend", (e) => { if (!imeSkipped) return; imeSkipped = false; onInput(e.target); });   // 조합 중에 미룬 그리기를 끝난 글로(F-144-13)
+    $root.addEventListener("input", (e) => { activity(); onInput(e.target); });
+    $root.addEventListener("compositionstart", () => { imeOn = true; });
+    $root.addEventListener("compositionend", (e) => { imeOn = false; if (!imeSkipped) return; imeSkipped = false; onInput(e.target); render(); });   // 조합 중에 미룬 그리기를 끝난 글로 한 번(F-144-13)
   }
 
 // ━━ app/95-boot.js ━━

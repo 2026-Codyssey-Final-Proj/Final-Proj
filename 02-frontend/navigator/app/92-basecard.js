@@ -123,7 +123,8 @@
     $root.addEventListener("click", (e) => { const t = e.target.closest("[data-act]"); if (!t || !ACT[t.dataset.act]) return; activity(); clickAct(t); });
     $root.addEventListener("click", (e) => { const t = e.target.closest("[data-bv]"); if (!t || !BV || t.dataset.bv === "field") return; activity(); bvClick(t); });
     $root.addEventListener("change", (e) => onChange(e.target));
-    $root.addEventListener("input", (e) => { activity(); if (!e.isComposing) return onInput(e.target); imeHold = true; try { onInput(e.target); } finally { imeHold = false; } });
-    $root.addEventListener("compositionend", (e) => { if (!imeSkipped) return; imeSkipped = false; onInput(e.target); });   // 조합 중에 미룬 그리기를 끝난 글로(F-144-13)
+    $root.addEventListener("input", (e) => { activity(); onInput(e.target); });
+    $root.addEventListener("compositionstart", () => { imeOn = true; });
+    $root.addEventListener("compositionend", (e) => { imeOn = false; if (!imeSkipped) return; imeSkipped = false; onInput(e.target); render(); });   // 조합 중에 미룬 그리기를 끝난 글로 한 번(F-144-13)
   }
 
