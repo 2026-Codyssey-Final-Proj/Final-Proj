@@ -60,3 +60,16 @@ test("F-144-3 app-link — 설정 파일을 읽지 못하면(없는 것이 아�
   assert.equal(JSON.parse(fs.readFileSync(fresh, "utf8")).mcpServers.floe.command, "node");
   fs.rmSync(dir, { recursive: true, force: true });
 });
+
+test("F-144-4 기준 카드 — 쌍점이 많은 긴 줄(로그)도 바로 끝나고, 재료 줄을 고르는 뜻은 전과 같다", () => {
+  const BC = require(path.join(BACK, "basecard.js"));
+  const OLD = /(.+?)[:：]\s*(.+(?:·|,|、).+(?:·|,|、).+)/;   // 고치기 전 — 뜻을 견주려고만 둔다
+  const log = Array.from({ length: 300 }, (_, i) => `12:00:${String(i % 60).padStart(2, "0")} 요청 처리`).join(" ");
+  const t0 = Date.now();
+  BC.build({ source: [log, "a:" + "b:".repeat(4000) + "c, d"].join("\n") });
+  assert.ok(Date.now() - t0 < 300, `${Date.now() - t0}ms — 전에는 2.8초 · 30초`);
+  const mats = (line) => BC.build({ source: line }).materials.lines.length > 0;
+  const samples = ["재료: 우유 · 달걀 · 밀가루", "도구: 엑셀, 메모장, 슬랙", "a: b, c", "a:, b, c", "a: b,, c", ": a, b, c", "a:b,c,d", "a：가、나、다", "시간 12:30 · 장소 · 사람",
+    "a: ,b,", "a: b,c,", "x: · · ·", "a::b,c,d", "한 줄 글", "a: b · c, d", "ab: , ,x", "a: ,, x"];
+  for (const s of samples) assert.equal(mats(s), OLD.test(s.replace(/\s+/g, " ").trim()), `뜻이 바뀌었어요: ${s}`);
+});

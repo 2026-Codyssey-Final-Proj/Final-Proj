@@ -13,7 +13,16 @@
   const L0 = ["어떤 불편을 풀고 싶은지 한 문장으로 쓰기", "다 만들면 무엇이 달라지는지 쓰기", "누가 쓰는지 쓰기", "얼마나 크게 만들지 정하기"];
   const L1_SUCCESS = "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기", L1_DATA = "다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기";
   const FIXED_RE = /(으로|로)\s*(만들|짜|구현)|써야\s*해|쓰기로|정해져|기한|까지(\s*(제출|내|마감))|마감|제출/;
-  const SET_RE = /(.+?)[:：]\s*(.+(?:·|,|、).+(?:·|,|、).+)/;
+  // 재료 줄 — '이름: 가 · 나 · 다'(쌍점 뒤에 구분자 둘, 사이와 양끝에 글자). F-144-4(2026-11-03): 전에는 정규식 /(.+?)[:：]\s*(.+(?:·|,|、).+(?:·|,|、).+)/이라
+  //   쌍점이 많은 긴 줄(로그 붙여 넣기)에서 되돌아가기가 폭발해 관문 카드를 그릴 때마다 섬이 수 초 ~ 수십 초 멈췄다. 같은 뜻을 한 번 훑기로 —
+  //   첫 쌍점(맨 앞 글자 뒤)이 가장 긴 뒤쪽을 주므로 그것만 보고, 맨 앞이 아닌 첫 구분자 · 맨 끝이 아닌 마지막 구분자 사이에 글자가 있으면 맞다
+  const SEP = /[·,、]/g;
+  function isSet(text) {
+    const k = text.slice(1).search(/[:：]/);
+    if (k < 0) return false;
+    const rest = text.slice(k + 2), at = [...rest.matchAll(SEP)].map((m) => m.index).filter((i) => i >= 1 && i <= rest.length - 2);
+    return at.length >= 2 && at[at.length - 1] - at[0] >= 2;
+  }
   const stageOf = (results, n) => (results && (results[n] || results[String(n)])) || null;
   const cell = (results, n, name) => { const r = stageOf(results, n); if (!r || !Array.isArray(r.items)) return null; const i = r.items.findIndex((x) => x && x.name === name); const it = i >= 0 ? r.items[i] : null; const t = it && Array.isArray(it.lines) ? norm(it.lines[0]) : ""; return t ? { text: t, from: { s: n, i } } : null; };
   const field = (text, from, extra) => ({ text: text || "", from: from || [], by: text ? "moved" : null, blank: !text, ...(extra || {}) });
@@ -22,7 +31,7 @@
     const pain = cell(results, 0, L0[0]), change = cell(results, 0, L0[1]), who = cell(results, 0, L0[2]), size = cell(results, 0, L0[3]);
     const succ = cell(results, 1, L1_SUCCESS), data = cell(results, 1, L1_DATA);
     const lines = String(source || "").replace(/\r\n?/g, "\n").split("\n").map((l, i) => ({ text: norm(l), line: i + 1 })).filter((x) => x.text);
-    const fixed = lines.filter((x) => FIXED_RE.test(x.text) && !SET_RE.test(x.text)), mats = lines.filter((x) => SET_RE.test(x.text));
+    const fixed = lines.filter((x) => FIXED_RE.test(x.text) && !isSet(x.text)), mats = lines.filter((x) => isSet(x.text));
     const whatText = change && pain ? `${change.text} — ${pain.text}` : (change || pain || {}).text || "";
     const card = {
       what: field(whatText, [change && change.from, pain && pain.from].filter(Boolean)),
