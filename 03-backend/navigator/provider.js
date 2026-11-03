@@ -10,7 +10,7 @@
 // 구조화 출력·effort·폴백 같은 새 기능 없이 JSON만 요청한다(중계 서버와 옛 모델이 못 받을 수 있다). NAV_COMPAT=0/1로 직접 정할 수 있다.
 //
 // 키는 이 파일 밖으로 나가지 않는다: 로그·오류·/api/usage 어디에도 값을 싣지 않는다.
-const { spawn, spawnSync } = require("node:child_process");
+const { spawn } = require("node:child_process");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
@@ -180,9 +180,21 @@ function killTree(child, platform = process.platform, run = spawn) {
 }
 
 // 처음 설정(2026-10-19, setup-status.js · GET /api/setup)이 묻는 claude 명령의 판 — --version이라 AI를 부르지 않고 토큰도 쓰지 않는다. run: 시험에서 바꿔 끼운다
-function claudeVersion(run = spawnSync, L = claudeLaunch()) {
+// F-144-5(2026-11-03): 전에는 spawnSync라 서버가 도는 Electron 메인이 묻는 동안(최대 4초) 통째로 멈췄다 — spawn으로 기다리고 약속(Promise)을 돌려준다
+function runQuiet(cmd, args, { timeout, env }) {
+  return new Promise((resolve) => {
+    let out = "", child;
+    try { child = spawn(cmd, args, { env, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] }); } catch (error) { return resolve({ error }); }
+    const timer = setTimeout(() => { killTree(child); resolve({ error: new Error("시간 초과") }); }, timeout);
+    child.stdout.setEncoding("utf8");
+    child.stdout.on("data", (d) => { out += d; });
+    child.on("error", (error) => { clearTimeout(timer); resolve({ error }); });
+    child.on("close", (status) => { clearTimeout(timer); resolve({ status, stdout: out }); });
+  });
+}
+async function claudeVersion(run = runQuiet, L = claudeLaunch()) {
   try {
-    const r = run(L.cmd, [...L.pre, "--version"], { encoding: "utf8", timeout: 4000, windowsHide: true, env: { ...process.env, ...L.env } });
+    const r = await run(L.cmd, [...L.pre, "--version"], { timeout: 4000, env: { ...process.env, ...L.env } });
     if (!r || r.error || r.status !== 0) return { found: false, version: "" };
     const v = String(r.stdout || "").trim().split(/\s+/)[0] || "";
     return { found: true, version: /^\d+\.\d+/.test(v) ? v : "" };

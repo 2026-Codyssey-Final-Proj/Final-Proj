@@ -11,15 +11,15 @@ const P = require("../../03-backend/navigator/provider.js");   // claude 명령�
 
 const FAKE_KEY = "sk-" + "Kp7w".repeat(6);   // 시험에서만 — 소스에 키 모양이 남지 않게 실행할 때 만든다
 
-test("claude 명령(provider.js claudeVersion): 있으면 판(版)까지, 없거나 실패하면 '없음' — --version만 묻는다(토큰 0)", () => {
-  const seen = [];
-  const ok = P.claudeVersion((cmd, args) => { seen.push([cmd, ...args]); return { status: 0, stdout: "2.1.30 (Claude Code)\n" }; });
+test("claude 명령(provider.js claudeVersion): 있으면 판(版)까지, 없거나 실패하면 '없음' — --version만 묻는다(토큰 0)", async () => {
+  const seen = [];   // F-144-5(2026-11-03): 기다리는 동안 서버를 붙잡지 않게 약속(Promise)을 돌려준다
+  const ok = await P.claudeVersion(async (cmd, args) => { seen.push([cmd, ...args]); return { status: 0, stdout: "2.1.30 (Claude Code)\n" }; });
   assert.deepEqual(ok, { found: true, version: "2.1.30" });
   assert.deepEqual(seen, [["claude", "--version"]]);
-  assert.deepEqual(P.claudeVersion(() => ({ error: Object.assign(new Error("ENOENT"), { code: "ENOENT" }) })), { found: false, version: "" });
-  assert.deepEqual(P.claudeVersion(() => ({ status: 1, stdout: "" })), { found: false, version: "" });
-  assert.deepEqual(P.claudeVersion(() => { throw new Error("boom"); }), { found: false, version: "" });
-  assert.deepEqual(P.claudeVersion(() => ({ status: 0, stdout: "알 수 없는 글" })), { found: true, version: "" }, "판을 못 읽어도 찾은 것은 찾은 것");
+  assert.deepEqual(await P.claudeVersion(async () => ({ error: Object.assign(new Error("ENOENT"), { code: "ENOENT" }) })), { found: false, version: "" });
+  assert.deepEqual(await P.claudeVersion(async () => ({ status: 1, stdout: "" })), { found: false, version: "" });
+  assert.deepEqual(await P.claudeVersion(() => { throw new Error("boom"); }), { found: false, version: "" });
+  assert.deepEqual(await P.claudeVersion(async () => ({ status: 0, stdout: "알 수 없는 글" })), { found: true, version: "" }, "판을 못 읽어도 찾은 것은 찾은 것");
 });
 
 test("로그인: ~/.claude.json에 계정 칸이 있으면 true, 없으면 false, 파일이 없거나 깨졌으면 모름(null) — 내용은 내주지 않는다", () => {

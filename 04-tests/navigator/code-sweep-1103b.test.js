@@ -73,3 +73,14 @@ test("F-144-4 기준 카드 — 쌍점이 많은 긴 줄(로그)도 바로 끝�
     "a: ,b,", "a: b,c,", "x: · · ·", "a::b,c,d", "한 줄 글", "a: b · c, d", "ab: , ,x", "a: ,, x"];
   for (const s of samples) assert.equal(mats(s), OLD.test(s.replace(/\s+/g, " ").trim()), `뜻이 바뀌었어요: ${s}`);
 });
+
+test("F-144-5 claude --version은 기다리는 동안 서버를 붙잡지 않는다(spawnSync를 쓰지 않는다)", async () => {
+  const P = require(path.join(BACK, "provider.js"));
+  const r = P.claudeVersion(() => Promise.resolve({ status: 0, stdout: "2.1.30 (Claude Code)\n" }));
+  assert.equal(typeof r.then, "function", "약속(Promise)을 돌려준다");
+  assert.deepEqual(await r, { found: true, version: "2.1.30" });
+  const src = fs.readFileSync(path.join(BACK, "provider.js"), "utf8");
+  assert.doesNotMatch(src, /spawnSync\(|\{ spawn, spawnSync \}|run = spawnSync/, "Electron 메인 안에서 4초씩 멈췄다");
+  const server = fs.readFileSync(path.join(BACK, "server.js"), "utf8");
+  assert.match(server, /await setupNow\(\)/);
+});

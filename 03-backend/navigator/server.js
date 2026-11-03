@@ -1077,8 +1077,13 @@ function build() {
   return (buildMemo ||= Setup.buildId([...Object.values(FILES).map(([f]) => path.join(__dirname, f)), __filename,
     path.join(__dirname, "provider.js"), path.join(__dirname, "setup-status.js")]));
 }
-function setupNow() {
-  if (!claudeSeen.info || Date.now() - claudeSeen.at > 10_000) claudeSeen = { at: Date.now(), info: claudeVersion(), login: Setup.signedIn() };
+//   F-144-5: 묻는 동안 앱이 멈추지 않게 기다린다. 묻는 중에 또 오면 같은 물음을 기다린다(겹쳐 띄우지 않게)
+let claudeAsking = null;
+async function setupNow() {
+  if (!claudeSeen.info || Date.now() - claudeSeen.at > 10_000) {
+    claudeAsking ||= claudeVersion().then((info) => { claudeSeen = { at: Date.now(), info, login: Setup.signedIn() }; }).finally(() => { claudeAsking = null; });
+    await claudeAsking;
+  }
   return Setup.status(process.env, { claude: claudeSeen.info, login: claudeSeen.login, build: build() });
 }
 // 연결 확인 — 아주 작은 요청 하나. 재생 중이면 부르지 않고 그렇다고 알린다
@@ -1142,7 +1147,7 @@ async function handleRoute(req, res) {
   if (req.method === "GET" && route === "/api/github") return send(res, 200, await githubNow());   // 설정의 GitHub 칸(API.md 3-19) — 읽기만
   if (req.method === "GET" && route === "/api/usage") return send(res, 200, { ok: true, ...usage(), ledger: ledger.snapshot() });   // 어느 공급자·모델·얼마나 썼는지 — 키는 없다. ledger: 토큰 장부(숫자 · 이름만, 2026-10-24)
   if (req.method === "POST" && route === "/api/usage/reset") { ledger.reset(); return send(res, 200, { ok: true, ledger: ledger.snapshot() }); }   // 토큰 장부 새로 재기 — 본문 없음, 확인 값
-  if (req.method === "GET" && route === "/api/setup") return send(res, 200, { ok: true, ...setupNow() });   // 처음 설정 — 있다 · 없다만(API.md 3-10)
+  if (req.method === "GET" && route === "/api/setup") return send(res, 200, { ok: true, ...(await setupNow()) });   // 처음 설정 — 있다 · 없다만(API.md 3-10)
   if (req.method === "POST" && route === "/api/setup/check") return checkAi(res);   // 연결 확인(API.md 3-11) — 본문 없음
   if (req.method !== "POST" || !POST_ROUTES.includes(route)) return refuse(res, "없는 주소", 404);   // 본문을 읽기 전에(전에는 빈 본문이면 400이었다)
   const body = await readJson(req);
