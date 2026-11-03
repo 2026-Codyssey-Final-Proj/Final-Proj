@@ -112,11 +112,12 @@ test("가져온 저장소에 Claude Code 설정(.claude/settings.json · .mcp.js
 test("가져오기: 같은 자리에 이미 그 저장소가 있으면 다시 받지 않고 그대로 쓴다 · 다른 것이 있으면 멈춘다", async () => {
   const home = path.join(TMP, "home-again"), dir = path.join(home, "Floe", "test-1");
   fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, "README.md"), "# t");
-  const same = fakeRun([{ code: 0, out: "true" }, { code: 0, out: "https://github.com/gamercross/test-1.git" }]);
+  const same = fakeRun([{ code: 0, out: "true" }, { code: 0, out: "https://github.com/gamercross/test-1.git" }, { code: 0, out: "abc123" }]);
   const r = await P.cloneRepo(home, "gamercross/test-1", { ghReady: true, run: same });
   assert.deepEqual(r, { ok: true, dir, name: "test-1", repo: "gamercross/test-1", made: false, config: false });
   assert.deepEqual(same.calls[1].slice(0, 2), ["git", ["remote", "get-url", "origin"]], "원격만 읽고 clone은 부르지 않는다");
-  assert.equal(same.calls.length, 2);
+  assert.deepEqual(same.calls[2].slice(0, 2), ["git", ["rev-parse", "--verify", "-q", "HEAD"]], "다 받은 폴더인지(F-144-7)");
+  assert.equal(same.calls.length, 3);
   const other = await P.cloneRepo(home, "gamercross/test-1", { ghReady: true, run: fakeRun([{ code: 0, out: "true" }, { code: 0, out: "git@github.com:someone/else.git" }]) });
   assert.equal(other.ok, false); assert.match(other.message, /이미 같은 이름의 폴더/);
 });

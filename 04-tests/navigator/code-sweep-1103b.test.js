@@ -101,3 +101,26 @@ process.stdin.resume(); process.stdin.on("end", () => { process.stdout.write(b.s
     assert.match(body, /stdout\.setEncoding\("utf8"\)/, `${fn} — 판정 · 맡긴 일 둘 다`);
   }
 });
+
+test("F-144-7 저장소 받기가 시간 초과되면 프로세스 나무째 끄고, 받다 만 폴더를 성공으로 잇지 않는다", async () => {
+  const PR = require(path.join(BACK, "project.js"));
+  const killed = [];
+  const r = await PR.runCommand(process.execPath, ["-e", "setTimeout(() => {}, 5000)"], { timeout: 100, kill: (c) => { killed.push(c.pid); c.kill(); } });
+  assert.equal(r.timeout, true);
+  assert.equal(killed.length, 1, "gh만 끄면 그 밑의 git clone이 계속 돌았다");
+  // 같은 저장소 폴더가 있는데 HEAD가 없다(받다 만 것) → 잇지 않는다
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "floe-clone-")), dir = PR.folderFor(home, "app");
+  fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(path.join(dir, "x"), "");
+  const run = async (cmd, args) => {
+    if (args[0] === "api") return { code: 0, out: "true" };   // canPush — 내가 쓸 수 있는 저장소
+    if (args[0] === "remote") return { code: 0, out: "https://github.com/me/app.git" };
+    if (args[0] === "rev-parse") return { code: 128, out: "" };
+    return { code: 0, out: "" };
+  };
+  const half = await PR.cloneRepo(home, "me/app", { ghReady: true, run });
+  assert.equal(half.ok, false, JSON.stringify(half));
+  const whole = await PR.cloneRepo(home, "me/app", { ghReady: true, run: async (c, a) => (a[0] === "rev-parse" ? { code: 0, out: "abc" } : run(c, a)) });
+  assert.equal(whole.ok, true, JSON.stringify(whole));
+  assert.equal(whole.made, false);
+  fs.rmSync(home, { recursive: true, force: true });
+});

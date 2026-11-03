@@ -64,14 +64,16 @@ function parseRepoList(out) {
 
 const quietEnv = () => ({ ...process.env, GIT_TERMINAL_PROMPT: "0", GH_PROMPT_DISABLED: "1", GH_NO_UPDATE_NOTIFIER: "1" });
 // 기본 run — 셸 없이 · 창 없이 · 시간 제한. 기다리는 동안 앱(메인 프로세스)이 멈추지 않게 spawn으로. { code, out(앞 1MB를 다듬은 것), missing: 명령이 없음 }
-function runCommand(cmd, args, { cwd, timeout = LIST_MS, env = quietEnv() } = {}) {
+//   F-144-7(2026-11-03): 시간 초과면 나무째 끈다(provider.js killTree — Windows taskkill /T). 전에는 gh만 끝나 그 밑의 git clone이 계속 받았다. kill — 시험에서 바꿔 끼운다
+const killTree = (child) => require("./provider.js").killTree(child);
+function runCommand(cmd, args, { cwd, timeout = LIST_MS, env = quietEnv(), kill = killTree } = {}) {
   return new Promise((resolve) => {
     let out = "", done = false, timer = null;   // timer를 먼저 — spawn이 바로 던지면 end가 선언 전의 timer를 읽어 ReferenceError였다(F-104-9)
     const end = (r) => { if (!done) { done = true; clearTimeout(timer); resolve(r); } };
     let child;
     try { child = spawn(cmd, args, { cwd, env, shell: false, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] }); }
     catch { return end({ code: -1, out: "", missing: true }); }
-    timer = setTimeout(() => { try { child.kill(); } catch {} end({ code: -1, out: "", timeout: true }); }, timeout);
+    timer = setTimeout(() => { try { kill(child); } catch {} end({ code: -1, out: "", timeout: true }); }, timeout);
     child.stdout.setEncoding("utf8");   // 조각 경계의 한글이 깨지지 않게(F-144-6과 같은 까닭)
     child.stdout.on("data", (d) => { if (out.length < OUT_MAX) out += d; });
     child.on("error", (e) => end({ code: -1, out: "", missing: e && e.code === "ENOENT" }));
@@ -116,7 +118,11 @@ async function cloneRepo(home, text, { ghReady = false, run = runCommand } = {})
     const o = await run("git", ["remote", "get-url", "origin"], { cwd: dir, timeout: LIST_MS, env: quietEnv() });
     const there = o.code === 0 ? parseRepo(o.out) : null;
     const same = there && there.owner.toLowerCase() === r.owner.toLowerCase() && there.repo.toLowerCase() === r.repo.toLowerCase();
-    return same ? { ok: true, dir, name: r.repo, repo, made: false, config: hasClaudeConfig(dir) } : { ok: false, message: TAKEN };
+    if (!same) return { ok: false, message: TAKEN };
+    // 받다 만 폴더(앞에서 시간 초과) — origin은 clone 처음에 적혀 같은 저장소로 보이지만 HEAD가 아직 없다. 성공으로 잇지 않는다(F-144-7)
+    const head = await run("git", ["rev-parse", "--verify", "-q", "HEAD"], { cwd: dir, timeout: LIST_MS, env: quietEnv() });
+    if (head.code !== 0) return { ok: false, message: "그 자리의 폴더가 다 받아지지 않았거나 비어 있어요 — 폴더를 지운 뒤 다시 가져오거나, '이 컴퓨터에 있는 폴더'로 골라요" };
+    return { ok: true, dir, name: r.repo, repo, made: false, config: hasClaudeConfig(dir) };
   }
   const parent = path.dirname(dir);
   try { fs.mkdirSync(parent, { recursive: true }); } catch (e) { return { ok: false, message: `폴더를 만들지 못했어요(${e.code || "까닭 모름"})` }; }
