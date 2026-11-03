@@ -109,9 +109,12 @@
   }
 
   // 표시 사이만 바꾸고 나머지 글은 그대로 — 표시가 없으면 끝에 더하고, 글이 없으면 절만
+  //   F-144-1(2026-11-03): 끝 표시는 시작 뒤에서만 찾는다. 시작만 있고 짝이 없으면 그 시작 표시 자리에 덩이를 넣는다 — 전에는 끝에 붙여
+  //   다음 올리기가 처음 시작부터 붙인 덩이의 끝까지(사람이 쓴 글까지) 바꿨고, 끝 표시가 시작보다 앞이면 올릴 때마다 덩이가 쌓였다
   function mergeSection(existing, block) {
-    const t = String(existing || ""), b = String(block).trim(), a = t.indexOf(MARK_START), z = t.indexOf(MARK_END);
-    if (a >= 0 && z > a) return `${t.slice(0, a)}${b}${t.slice(z + MARK_END.length)}`;
+    const t = String(existing || ""), b = String(block).trim(), a = t.indexOf(MARK_START), z = a >= 0 ? t.indexOf(MARK_END, a + MARK_START.length) : -1;
+    if (z >= 0) return `${t.slice(0, a)}${b}${t.slice(z + MARK_END.length)}`;
+    if (a >= 0) return `${t.slice(0, a)}${b}${t.slice(a + MARK_START.length)}`;
     return t.trim() ? `${t.trimEnd()}\n\n${b}\n` : `${b}\n`;
   }
 
