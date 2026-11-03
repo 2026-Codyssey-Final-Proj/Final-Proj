@@ -40,6 +40,9 @@ test("F-144-2 허락 카드 — 강제 푸시 · 원격 지우기 · 긴 옵션�
   for (const c of ["git push origin feature", "git push -u origin main", "git push origin HEAD:main", "npm run build", "git status", "echo a+b"]) {
     assert.equal(why(c), "", `보통 일: ${c}`);
   }
+  // 새 맥락 리뷰 — /s가 뒤에 오는 rd, 옵션 묶음, 따옴표 안의 +, 그리고 && 뒤의 다른 명령은 원격 지우기가 아니다
+  for (const c of ["rd /q /s build", "rd build /s /q", "git push -fu origin main", 'git push origin "+main"', "git push -df origin x"]) assert.ok(why(c), `위험 표시가 있어야 해요: ${c}`);
+  for (const c of ["git push origin feature && ls -d .", "git push --dry-run origin main", "git push -u origin dev-docs"]) assert.equal(why(c), "", `보통 일: ${c}`);
 });
 
 test("F-144-3 app-link — 설정 파일을 읽지 못하면(없는 것이 아니면) 덮어쓰지 않는다", () => {

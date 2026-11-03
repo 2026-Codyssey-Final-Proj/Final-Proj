@@ -15,9 +15,10 @@
   // 되돌리기 어려운 일 — 삭제 · 강제 푸시 · 키 노출(요구서 FR-17). 명령 · 파일 이름 · 글에서 찾는다. 쉬운 말 까닭만 보인다
   const DANGER_CMD = [
     // F-144-2(2026-11-03): rm의 긴 옵션(--recursive · --force), Windows rd /s · del … /s, 강제 푸시의 +refspec · --mirror, 원격 지우기(--delete · -d · :이름)도
-    [/\brm\s+(-[a-zA-Z]*r[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*)\b|\brm\b[^\n]*\s--(recursive|force)\b|\brmdir\b|\brd\s+\/s\b|\bdel\b[^\n]*\s\/[sq]\b|\bRemove-Item\b.*-Recurse/i, "지우는 명령이에요 — 되돌리기 어려워요"],
-    [/\bgit\s+push\b[^\n]*(\s--force\b|\s-f\b|\s--force-with-lease\b|\s--mirror\b|\s\+\S)/i, "강제로 올리는 명령이에요 — 다른 사람의 것이 사라질 수 있어요"],
-    [/\bgit\s+push\b[^\n]*(\s--delete\b|\s-d\b|\s:\S)/i, "원격의 브랜치를 지우는 명령이에요 — 되돌리기 어려워요"],
+    [/\brm\s+(-[a-zA-Z]*r[a-zA-Z]*|-[a-zA-Z]*f[a-zA-Z]*)\b|\brm\b[^\n]*\s--(recursive|force)\b|\brmdir\b|\brd\b[^\n;&|]*\s\/s\b|\bdel\b[^\n]*\s\/[sq]\b|\bRemove-Item\b.*-Recurse/i, "지우는 명령이에요 — 되돌리기 어려워요"],
+    //   새 맥락 리뷰: rd의 /s는 어느 자리든, 짧은 옵션 묶음(-fu · -df), 따옴표 안의 "+main" · ":이름"도. push 뒤는 그 명령 안에서만 본다(&& 뒤의 ls -d를 원격 지우기로 보지 않게)
+    [/\bgit\s+push\b[^\n;&|]*(\s--force\b|\s-[a-zA-Z]*f[a-zA-Z]*\b|\s--force-with-lease\b|\s--mirror\b|\s["']?\+\S)/i, "강제로 올리는 명령이에요 — 다른 사람의 것이 사라질 수 있어요"],
+    [/\bgit\s+push\b[^\n;&|]*(\s--delete\b|\s-[a-zA-Z]*d[a-zA-Z]*\b|\s["']?:\S)/i, "원격의 브랜치를 지우는 명령이에요 — 되돌리기 어려워요"],
     [/\bgit\s+(reset\s+--hard|clean\s+-[a-zA-Z]*f|branch\s+-D|checkout\s+--\s|restore\s)/i, "되돌릴 수 없게 바꾸는 git 명령이에요"],
     [/\b(drop\s+(table|database|schema)|truncate\s+table|delete\s+from)\b/i, "표를 지우는 명령이에요"],
   ];
