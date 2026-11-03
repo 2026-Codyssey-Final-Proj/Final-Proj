@@ -70,6 +70,9 @@ test("C-45 · C-44 — 문서 지도 탭에 보드(문서 상자 · 재료 선),
     assert.deepEqual([...s.boxes].sort(), ["README.md", "docs/01-idea/idea.md", "docs/02-plan/plan.md", "docs/PRD.md", "docs/README.md", "docs/decisions.md"], "md 문서가 모두 상자로(코드 파일은 없음)");
     assert.ok(s.rels >= 5, `선 ${s.rels}`);
     assert.deepEqual(outside, [], "밖으로 요청하지 않는다(엔진 사본)");
+    // 엔진 1.4(2026-11-03): 떠 있는 '30초 흐름 따라가기' 띠 · '발표 모드' 단추는 작은 칸에서 숨기고, '흐름 따라가기' 단추는 남긴다
+    const ui = await frame.evaluate(() => { const on = (q) => { const e = document.querySelector(q); return !!e && !e.hidden && getComputedStyle(e).display !== "none"; }; return { cta: on("#tourCta"), pres: on("#bPres"), tour: on("#bTour") }; });
+    assert.deepEqual(ui, { cta: false, pres: false, tour: true }, JSON.stringify(ui));
     if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, "docmap.png") }); }
     // C-67(2026-10-30 목업 확정본 S6): 문서 지도는 작업 칸 가득(높이 ≥ 85% [해석]) · 상자 이름의 계산 글자(배율 곱) ≥ 12px [해석] — 1440 × 900과 1280 × 800 둘 다. 판 안의 판(.board 격자 칸) 없음
     const measure = async () => {

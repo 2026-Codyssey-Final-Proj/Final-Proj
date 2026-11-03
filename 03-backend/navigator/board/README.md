@@ -7,4 +7,7 @@
 
 쓰는 곳: `02-frontend/navigator/docmap.html`(작업실의 '문서 지도' 탭이 iframe으로 연다) — 데이터는 서버 `GET /api/docmap`([API.md 3-27](../API.md))이 [docmap.js](../docmap.js)로 만든다.
 
-<!-- claude-drafted: 2026-10-30 --> **사본에 더한 줄(2026-10-30, C-67):** `board.js` 맨 끝 `window.ArchiBoard.centerOn(match, k)` — 고른 상자를 가운데에 두고 배율 k로. 원본에는 없다. `docmap.html`이 켠 뒤 지금 장 상자를 100%로 올리는 데 쓴다(처음 맞춤은 상자 이름이 안 읽혔다 — 1440에서 8.6px). 원본을 새로 받아 오면 이 줄을 다시 붙인다.
+<!-- claude-drafted: 2026-10-30 --> **사본에 더한 줄(2026-10-30, C-67):** `board.js` 맨 끝 `window.ArchiBoard.centerOn(match, k, whole)` — 고른 상자를 가운데에 두고 배율 k로. 원본에는 없다. `docmap.html`이 켠 뒤 지금 장 상자를 100%로 올리는 데 쓴다(처음 맞춤은 상자 이름이 안 읽혔다 — 1440에서 8.6px). 원본을 새로 받아 오면 이 줄을 다시 붙인다.
+
+<!-- claude-drafted: 2026-11-03 --> **지금 사본: 엔진 1.4.0** (원본 `9fdcbc0`, 2026-11-03 — 이재엽 "아치보드 버전 업데이트 했는데 그거에 맞춰서 수정해줘"). 그전은 1.0.0(`742d422`, 10/23). 1.2 ~ 1.4에서 생긴 것(앞면 · 처음 보는 사람/만드는 사람 전환, 유저 스토리, 발표 모드, 떠 있는 '30초 흐름 따라가기' 띠, 판단 차트 창)은 데이터에 그 칸이 있어야 보인다 — 문서 지도 데이터([docmap.js](../docmap.js))는 그대로라 바뀌는 것은 '발표 모드' 단추와 떠 있는 띠 둘뿐이고, 작은 칸에서 지도 아래를 가려 `docmap.html`이 숨긴다(`#tourCta` · `#bPres`).
+**다시 받아 올 때:** ① 원본 `engine/v1/board.js` · `board.css`를 덮고 ② `board.css` 둘째 줄 `@import`를 지우고 맨 위에 Floe 주석 한 줄 ③ `board.js` 맨 끝 `})();` 바로 앞에 `// Floe 더함`부터의 `centerOn` 네 줄을 다시 붙인다. [docmap.test.js](../../../04-tests/navigator/docmap.test.js)의 '엔진 사본' 시험이 버전 · `@import` · `centerOn`을 확인한다(버전을 올리면 그 시험의 숫자도).

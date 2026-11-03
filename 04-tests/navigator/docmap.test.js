@@ -52,3 +52,17 @@ test("문서 지도 — 이름이 한글이라 id가 겹쳐도 상자마다 다�
   const byPath = Object.fromEntries(b.elements.map((e) => [e.c, e.id]));
   assert.deepEqual(b.relations[0].slice(0, 2), [byPath["docs/메모.md"], byPath["docs/노트.md"]]);
 });
+
+// claude-drafted: 2026-11-03 — 이재엽 "아치보드 버전 업데이트 했는데 그거에 맞춰서 수정해줘": 엔진 사본을 1.4로. 원본을 다시 받아 올 때 사본에만 있는 것(글꼴 @import 뺌 · centerOn)이 빠지지 않게
+test("엔진 사본 — archi-board 1.4.0, 밖으로 부르는 글꼴(@import) 없음, 사본에만 있는 centerOn(whole 포함)이 맨 끝에 남는다", () => {
+  const fs = require("node:fs"), path = require("node:path"), dir = path.join(__dirname, "../../03-backend/navigator/board");
+  const js = fs.readFileSync(path.join(dir, "board.js"), "utf8"), css = fs.readFileSync(path.join(dir, "board.css"), "utf8");
+  assert.match(js, /const VERSION = '1\.4\.0';/);
+  assert.ok(!/^\s*@import|googleapis/m.test(css), "글꼴을 밖에서 받지 않는다");
+  assert.match(js, /window\.ArchiBoard\.centerOn = \(match, k = 1, whole = false\) =>/);
+  const lines = js.trimEnd().split("\n");
+  assert.match(lines[lines.length - 2], /^window\.ArchiBoard\.centerOn = /, "centerOn은 엔진의 즉시 실행 함수 맨 끝(바로 다음 줄이 })();) — E · FR · fly를 쓴다");
+  assert.equal(lines[lines.length - 1], "})();");
+  const html = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/docmap.html"), "utf8");
+  assert.match(html, /#tourCta,#bPres\{display:none!important\}/, "작은 칸에서는 떠 있는 따라가기 띠 · 발표 모드를 숨긴다");
+});
