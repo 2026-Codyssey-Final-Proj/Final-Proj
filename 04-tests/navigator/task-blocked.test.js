@@ -275,8 +275,8 @@ test("화면: 허락 카드 · 막힌 일 · 멈춘 것 같은 일이 있으면 
   assert.match(a, /st\.apWait = approvals\.length > 0;/, "허락 카드가 있는 동안");
 });
 
-// claude-drafted: 2026-11-03 — F-139 다시 맡기기는 처음 맡긴 폴더에서만. 전에는 그때 연결된 폴더(projectNow)를 다시 골라 A 폴더의 요구가 B 저장소에서 돌았다
-test("F-139 그사이 연결한 폴더가 바뀌면 다시 맡기지 않는다(409) — 처음 폴더로 돌아오면 다시 맡긴다", async () => {
+// claude-drafted: 2026-11-03 — F-140 다시 맡기기는 처음 맡긴 폴더에서만. 전에는 그때 연결된 폴더(projectNow)를 다시 골라 A 폴더의 요구가 B 저장소에서 돌았다
+test("F-140 그사이 연결한 폴더가 바뀌면 다시 맡기지 않는다(409) — 처음 폴더로 돌아오면 다시 맡긴다", async () => {
   await until(async () => { const x = await task(); return !x || x.state !== "running"; });
   const a = hooked(fs.mkdtempSync(path.join(TMP, "proj-a-"))), b = hooked(fs.mkdtempSync(path.join(TMP, "proj-b-")));
   assert.equal(Srv.useProject(a), true);
@@ -297,7 +297,7 @@ test("F-139 그사이 연결한 폴더가 바뀌면 다시 맡기지 않는다(4
   await until(async () => { const x = await task(); return x && x.state !== "running" ? x : null; });
 });
 
-test("F-139 화면 — 계획 줄의 다시 맡기기가 폴더가 바뀌어 거절되면(why folder) 그 글을 새 폴더에 새로 맡기지 않는다", () => {
+test("F-140 화면 — 계획 줄의 다시 맡기기가 폴더가 바뀌어 거절되면(why folder) 그 글을 새 폴더에 새로 맡기지 않는다", () => {
   const app = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
   assert.match(app, /if \(r && !r\.ok && \(r\.why === "cap" \|\| r\.why === "folder"\)\) \{ render\(\); return say\(r\.reason\); \}/);
 });

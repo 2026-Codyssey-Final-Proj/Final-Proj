@@ -1,11 +1,11 @@
-// claude-drafted: 2026-11-03 — 코드 훑어보기 2차(임유정 "전체 코드 살펴보면서 오류 날만한 부분들 체크해줘" → "먼저 볼 것에서 4, 8, 9번 빼고 수정해줘"). F-135 ~
+// claude-drafted: 2026-11-03 — 코드 훑어보기 2차(임유정 "전체 코드 살펴보면서 오류 날만한 부분들 체크해줘" → "먼저 볼 것에서 4, 8, 9번 빼고 수정해줘"). F-136 ~
 // 실행: node --test 04-tests/navigator/code-sweep-1103.test.js
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const path = require("node:path");
 const S = require(path.join(__dirname, "../../03-backend/navigator/sensitive.js"));
 
-test("F-135 비밀값 — 환경 변수 이름 앞뒤에 붙은 키 · 접속 주소의 비밀번호 · Stripe 키도 가린다", () => {
+test("F-136 비밀값 — 환경 변수 이름 앞뒤에 붙은 키 · 접속 주소의 비밀번호 · Stripe 키도 가린다", () => {
   const leaks = [
     ["AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY", "wJalrXUtnFEMIK7MDENGbPxRfiCYEXAMPLEKEY"],
     ['SECRET_KEY = "django-insecure-abc123xyz"', "django-insecure-abc123xyz"],
@@ -27,7 +27,7 @@ test("F-135 비밀값 — 환경 변수 이름 앞뒤에 붙은 키 · 접속 �
   }
 });
 
-test("F-135 비밀값 — 흔한 코드 · 문장은 걸지 않는다", () => {
+test("F-136 비밀값 — 흔한 코드 · 문장은 걸지 않는다", () => {
   // 새 맥락 리뷰 막힘 — 상수 이름 · 설정 이름에 KEY · TOKEN · PASSWORD가 든 평범한 대입(허락 카드 위험 표시 · 파일 저장 409 · 먹이 구간 빼기가 됐다)
   const plain = ["const tokenCount = 5", "secretary: 김비서", "https://example.com:8080/path", "http://localhost:3000/@user", "키보드(KEY) 배치", "PRIMARY KEY (id)",
     'const STORAGE_KEY = "todo-app"', 'CACHE_KEY: "users-list"', 'FOREIGN_KEY = "user_id"', "ENV_KEY: process.env.X", 'const FOLD_KEY = "floe-fold-v2"',
@@ -38,13 +38,13 @@ test("F-135 비밀값 — 흔한 코드 · 문장은 걸지 않는다", () => {
   for (const t of ["user01012345678", "9f01012345678ab"]) assert.equal(S.redact(t), t);
 });
 
-test("F-135 전화번호 — 띄어 쓴 번호 · +82 꼴도 가린다", () => {
+test("F-136 전화번호 — 띄어 쓴 번호 · +82 꼴도 가린다", () => {
   for (const t of ["010 1234 5678", "+82-10-1234-5678", "+82 10 1234 5678"]) {
     assert.ok(!/\d{4}\D?\d{4}$/.test(S.redact(t)), `가려야 해요: ${S.redact(t)}`);
   }
 });
 
-test("F-135 비밀값 — 밑줄만 이어진 512KB 한 줄도 1초 안에 끝난다", () => {
+test("F-136 비밀값 — 밑줄만 이어진 512KB 한 줄도 1초 안에 끝난다", () => {
   const long = "A_".repeat(256 * 1024);
   const t0 = Date.now(); S.scan(long); S.redact(long);
   assert.ok(Date.now() - t0 < 1000, `${Date.now() - t0}ms`);
@@ -61,7 +61,7 @@ function fnSrc(name) {
   return a.slice(at, i + 1);
 }
 
-test("F-136 진짜 AI로 바꾸면 연습의 예시 허락 카드를 내려 서버에 다시 묻는다", () => {
+test("F-137 진짜 AI로 바꾸면 연습의 예시 허락 카드를 내려 서버에 다시 묻는다", () => {
   const run = new Function("st", `let approvals = [{ id: "ex1" }], apMode = "example"; ${fnSrc("liveApprovals")}; liveApprovals(); return { approvals, apMode };`);
   const st = { apWait: true };
   const r = run(st);
@@ -79,13 +79,13 @@ test("F-136 진짜 AI로 바꾸면 연습의 예시 허락 카드를 내려 서�
   calls.length = 0; toMode("fixture"); assert.deepEqual(calls, ["set"], "연습으로 갈 때는 그대로");
 });
 
-test("F-137 마지막 단계를 마치면 새 단계 구분선 · '가져온 것'을 다시 붙이지 않는다", () => {
+test("F-138 마지막 단계를 마치면 새 단계 구분선 · '가져온 것'을 다시 붙이지 않는다", () => {
   const src = fnSrc("advance");
   assert.doesNotMatch(src, /^\s*questStarted\(\);/m, "다음 단계가 없어도 부르면 8단계 구분선이 한 번 더 쌓이고 8단계 파일 목록이 비어 보였다");
   assert.match(src, /if \(nx\) questStarted\(\)/, "다음 단계가 있을 때만");
 });
 
-test("F-138 문서 지도 — 단계 문서가 아직 없으면 '흐름 따라가기'가 있는 틀을 가리킨다(없는 틀이면 board.js가 멈췄다)", () => {
+test("F-139 문서 지도 — 단계 문서가 아직 없으면 '흐름 따라가기'가 있는 틀을 가리킨다(없는 틀이면 board.js가 멈췄다)", () => {
   const D = require(path.join(__dirname, "../../03-backend/navigator/docmap.js"));
   const m = D.build([{ path: "README.md", text: "# 앱" }, { path: "docs/PRD.md", text: "# PRD" }]);
   const ids = new Set(m.frames.map((f) => f.id));
@@ -99,7 +99,7 @@ test("F-138 문서 지도 — 단계 문서가 아직 없으면 '흐름 따라�
   assert.deepEqual(withStages.tour[0].f, ["stages"], "단계 문서가 있으면 전처럼 단계 차례로");
 });
 
-test("F-140 앱 — 작업실 · 설정 창을 새로 고치면 처음 열 때의 내용이 아니라 섬이 마지막으로 보낸 내용을 다시 보낸다", () => {
+test("F-141 앱 — 작업실 · 설정 창을 새로 고치면 처음 열 때의 내용이 아니라 섬이 마지막으로 보낸 내용을 다시 보낸다", () => {
   const m = fs.readFileSync(path.join(__dirname, "../../02-frontend/electron/main.js"), "utf8");
   const load = (m.match(/w\.webContents\.on\("did-finish-load"[^\n]*/) || [""])[0];
   assert.ok(load, "did-finish-load 줄");

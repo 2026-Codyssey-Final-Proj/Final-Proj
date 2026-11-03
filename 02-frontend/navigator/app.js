@@ -2972,7 +2972,7 @@
     // C-64: '오류 같이 보기'로 답을 붙였으면 옛 글을 잇지 않고 답이 든 새 글로(기준에 시험 하나가 더해진다). 또 실패하면 답은 지워지고(plan.js failed),
     //   묻기는 실패 2번째까지(FP.DEBUG_TRIES — C-50 다시 맡기기 2번과 같은 수) — 끝없이 새로 맡기지 않게(새 맥락 리뷰 2026-10-30 막힘)
     let r = w.fail && !FP.debugOf(w) && Number.isFinite(w.at) ? await planCall("hand", "/api/task/retry", { at: w.at, way: "again" }) : null;
-    if (r && !r.ok && (r.why === "cap" || r.why === "folder")) { render(); return say(r.reason); }   // folder — 그사이 폴더가 바뀌었다: 새로 맡기면 그 글이 다른 저장소에서 돈다(F-139 새 맥락 리뷰)
+    if (r && !r.ok && (r.why === "cap" || r.why === "folder")) { render(); return say(r.reason); }   // folder — 그사이 폴더가 바뀌었다: 새로 맡기면 그 글이 다른 저장소에서 돈다(F-140 새 맥락 리뷰)
     if (!r || !r.ok) r = await planCall("hand", "/api/task/start", { text: t.text, checks: t.checks });   // 다른 일이 지나갔으면 새로 — 글에 '지난번에 끝까지 못 했어요'가 붙는다(taskFor)
     if (!r.ok) { render(); return say(r.reason || "맡기지 못했어요"); }
     st.plan = FP.start(b, id, r.task && r.task.at); save(); render(); say("맡겼어요 — 허락이 필요하면 카드가 떠요");
@@ -3180,7 +3180,7 @@
     } catch { apDecided.delete(id); say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
     pollApprovals();
   }
-  // F-136(2026-11-03): 진짜 AI로 바꾸면 연습의 예시 카드를 내린다 — 남아 있으면 pollApprovals가 예시라서 서버에 묻지 않아, 다시 켜기 전까지 진짜 허락 카드가 오지 않았다
+  // F-137(2026-11-03): 진짜 AI로 바꾸면 연습의 예시 카드를 내린다 — 남아 있으면 pollApprovals가 예시라서 서버에 묻지 않아, 다시 켜기 전까지 진짜 허락 카드가 오지 않았다
   function liveApprovals() { if (apMode !== "example") return; approvals = []; apMode = "none"; st.apWait = false; }
   // 서버에 기다리는 승인 요청이 있나 — 새 요청이 오면 한 줄로 알리고(접혀 있으면 살짝), AI 진행 판을 보이게
   async function pollApprovals() {
@@ -3849,7 +3849,7 @@
     else st.finished = true;
     // 퀘스트(C-22): 장을 지나면 무지개 조개 하나, 다음 장 퀘스트(받기 화면)를 만들고 퀘스트 창이 바로 뜬다(설정 '바로 뜨기'). 마지막이면 퀘스트 없이 마무리
     if (QU) { st.shells += 1; level = QU.levelUp(level); if (st.mode !== "fixture") writeLS(LEVEL_KEY, level); st.quest = nx ? QU.retitle(QU.makeQuest(nx, crits(nx.n)), st.topic) : null; if (nx && qauto) openQwin("quest"); }   // 다음 장도 주제를 제목으로(C-36)
-    if (nx) questStarted();   // C-61 — 새 단계: 섬은 가운데부터. 다음 장 퀘스트를 만든 뒤에 — 전에는 앞에서 불러 구분선 · '가져온 것'이 지난 장 번호였다(F-116). 마지막 장이면 부르지 않는다 — 8단계 구분선이 한 번 더 붙고 8단계에서 바꾼 파일이 비어 보였다(F-137)
+    if (nx) questStarted();   // C-61 — 새 단계: 섬은 가운데부터. 다음 장 퀘스트를 만든 뒤에 — 전에는 앞에서 불러 구분선 · '가져온 것'이 지난 장 번호였다(F-116). 마지막 장이면 부르지 않는다 — 8단계 구분선이 한 번 더 붙고 8단계에서 바꾼 파일이 비어 보였다(F-138)
     // 관문을 지난 날(C-39 — 문서의 증빙 · 결정 기록) + C-47 배운 것(비우면 '' — '비어 있음') · 처음 뜻(고르지 않았으면 남기지 않는다, 바뀌었어요인데 비우면 고르지 않은 것)
     const learned = String(st.learnDraft || "").trim().slice(0, 400), gd = st.goalDraft, goal = gd && gd.same ? { same: true } : gd && gd.changed && gd.changed.trim() ? { changed: gd.changed.trim().slice(0, 200) } : null;
     if (st.results[s.n]) st.results = { ...st.results, [s.n]: { ...st.results[s.n], passed: ymd(), learned, ...(goal && s.n >= 1 ? { goal } : {}) } };
@@ -3867,7 +3867,7 @@
   const focusText = () => requestAnimationFrame(() => { const t = document.querySelector("[data-act=text]"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } });
   // F-106(FR-14, 2026-10-30 이재엽 버튼 "오류에 연습 단추"): 키 거절 카드의 단추 둘 — 저절로 바꾸지 않고 사람이 고른다. 연습으로는 설정의 보기 방식과 같은 길
   //   보기 방식을 바꾸는 길은 하나(toMode) — 설정의 '보기 방식'(92-basecard)도 같이 쓴다. 닫기는 공통 '닫기'(dismiss)가 키 카드까지 닫는다
-  function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-136)
+  function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-137)
   Object.assign(ACT, { "practice-now": () => toMode("fixture") });
 // ━━ app/90-acts.js ━━
   // ── 누르기 — data-act 이름 → 할 일. (i: data-i, el: 누른 것) ──
@@ -4630,7 +4630,7 @@
   document.addEventListener("floe:setup-done", (e) => {
     const d = (e && e.detail) || {};
     if (d.via === "practice") set({ mode: "fixture", error: "", warn: null });
-    else if ((d.via === "cli" || d.via === "api") && canLive) { liveApprovals(); set({ mode: "live", error: "", warn: null }); }   // F-136 연습에서 띄운 예시 카드를 내리고 진짜로 묻는다
+    else if ((d.via === "cli" || d.via === "api") && canLive) { liveApprovals(); set({ mode: "live", error: "", warn: null }); }   // F-137 연습에서 띄운 예시 카드를 내리고 진짜로 묻는다
     chatRecheck();   // 처음 설정에서 폴더를 골랐을 수 있다 — 대화를 둘 폴더를 다시 묻는다(병합 뒤 고침 새 맥락 리뷰: 첫 실행에서 고른 폴더에 대화가 쌓이지 않았다)
     if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
     st.gh = null;   // 처음 설정에서 프로젝트를 골랐으면 GitHub 칸을 다시 묻는다

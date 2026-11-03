@@ -192,7 +192,7 @@
     // C-64: '오류 같이 보기'로 답을 붙였으면 옛 글을 잇지 않고 답이 든 새 글로(기준에 시험 하나가 더해진다). 또 실패하면 답은 지워지고(plan.js failed),
     //   묻기는 실패 2번째까지(FP.DEBUG_TRIES — C-50 다시 맡기기 2번과 같은 수) — 끝없이 새로 맡기지 않게(새 맥락 리뷰 2026-10-30 막힘)
     let r = w.fail && !FP.debugOf(w) && Number.isFinite(w.at) ? await planCall("hand", "/api/task/retry", { at: w.at, way: "again" }) : null;
-    if (r && !r.ok && (r.why === "cap" || r.why === "folder")) { render(); return say(r.reason); }   // folder — 그사이 폴더가 바뀌었다: 새로 맡기면 그 글이 다른 저장소에서 돈다(F-139 새 맥락 리뷰)
+    if (r && !r.ok && (r.why === "cap" || r.why === "folder")) { render(); return say(r.reason); }   // folder — 그사이 폴더가 바뀌었다: 새로 맡기면 그 글이 다른 저장소에서 돈다(F-140 새 맥락 리뷰)
     if (!r || !r.ok) r = await planCall("hand", "/api/task/start", { text: t.text, checks: t.checks });   // 다른 일이 지나갔으면 새로 — 글에 '지난번에 끝까지 못 했어요'가 붙는다(taskFor)
     if (!r.ok) { render(); return say(r.reason || "맡기지 못했어요"); }
     st.plan = FP.start(b, id, r.task && r.task.at); save(); render(); say("맡겼어요 — 허락이 필요하면 카드가 떠요");
@@ -400,7 +400,7 @@
     } catch { apDecided.delete(id); say("서버에 연결하지 못했어요 — Claude Code가 터미널에서 물어요"); }
     pollApprovals();
   }
-  // F-136(2026-11-03): 진짜 AI로 바꾸면 연습의 예시 카드를 내린다 — 남아 있으면 pollApprovals가 예시라서 서버에 묻지 않아, 다시 켜기 전까지 진짜 허락 카드가 오지 않았다
+  // F-137(2026-11-03): 진짜 AI로 바꾸면 연습의 예시 카드를 내린다 — 남아 있으면 pollApprovals가 예시라서 서버에 묻지 않아, 다시 켜기 전까지 진짜 허락 카드가 오지 않았다
   function liveApprovals() { if (apMode !== "example") return; approvals = []; apMode = "none"; st.apWait = false; }
   // 서버에 기다리는 승인 요청이 있나 — 새 요청이 오면 한 줄로 알리고(접혀 있으면 살짝), AI 진행 판을 보이게
   async function pollApprovals() {
