@@ -34,7 +34,7 @@
     // 옆 칸의 대화 기록([data-log]) — 맨 아래를 보고 있었으면 새 말이 와도 맨 아래, 위로 올려 읽는 중이면 그 자리(섬의 render와 같은 뜻, C-41 ⑤)
     const lg = root.querySelector("[data-log]"), lgTop = lg ? lg.scrollTop : null, lgEnd = !lg || lg.scrollTop + lg.clientHeight >= lg.scrollHeight - 4;
     const fvWas = fvScroll(root.querySelector(".fv")), sideWas = WS_PANES.map((c) => { const e = root.querySelector(c); return e ? e.scrollTop : null; });   // 파일 칸 · 오른쪽 칸도 — 아래쪽 목차를 누르면 맨 위로 올라갔다
-    root.innerHTML = html || "";
+    if (window.FloeKeepFrame) window.FloeKeepFrame.put(root, html || ""); else root.innerHTML = html || "";   // 문서 지도 iframe은 그대로 — 다시 불러오면 움직임이 처음부터(F-135)
     if (S && eyeAt) S.follow(root, eyeAt);   // 다시 그려도 눈은 마지막 커서 쪽
     fvScroll(root.querySelector(".fv"), fvWas);
     WS_PANES.forEach((c, j) => { const e = root.querySelector(c); if (e && sideWas[j] != null) e.scrollTop = sideWas[j]; });
