@@ -15,9 +15,12 @@
     parts.push(["t", s.slice(last)]);
     for (const [k, v] of parts) {
       if (k === "c") { out += `<code>${esc(v)}</code>`; continue; }
-      let t = esc(v);
-      t = t.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g, (all, text, href) => (SAFE_URL.test(href) ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>` : `${text} <small>(${esc(href)})</small>`));
-      t = t.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<i>$2</i>").replace(/~~([^~\n]+)~~/g, "<s>$1</s>");
+      // 링크는 꾸밈 전에 떼어 둔다 — 전에는 주소 안의 * · ~~가 <i> · <s>로 바뀌어 링크가 깨졌다(F-144-22). 기울임은 * 바로 안쪽이 공백이 아닐 때만('2 * 3 * 4'는 글 그대로)
+      const emph = (x) => x.replace(/\*\*([^*\n]+)\*\*/g, "<b>$1</b>").replace(/(^|[^*])\*([^*\s](?:[^*\n]*[^*\s])?)\*(?!\*)/g, "$1<i>$2</i>").replace(/~~([^~\n]+)~~/g, "<s>$1</s>");
+      const links = [];
+      let t = esc(v).replace(/\u0000/g, "");
+      t = t.replace(/\[([^\]]+)\]\(((?:[^()\s]|\([^()\s]*\))+)\)/g, (all, text, href) => { links.push(SAFE_URL.test(href) ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${emph(text)}</a>` : `${emph(text)} <small>(${esc(href)})</small>`); return `\u0000${links.length - 1}\u0000`; });
+      t = emph(t).replace(/\u0000(\d+)\u0000/g, (all, k) => links[Number(k)]);
       out += t;
     }
     return out;

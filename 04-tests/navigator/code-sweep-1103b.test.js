@@ -279,3 +279,12 @@ test("F-144-21 파일 보기(md-view) — '<!-- … -->' 뒤에 같은 줄로 �
   assert.equal(M.toHtml("<!-- 여러\n줄 --> 남은 글"), "<p>남은 글</p>");
   assert.equal(M.toHtml("<!-- 주석만 -->\n본문"), "<p>본문</p>", "남은 글이 없으면 전과 같다");
 });
+
+test("F-144-22 파일 보기(md-view) — 링크 주소 안의 * · ~~를 꾸밈으로 바꾸지 않고, '2 * 3 * 4'는 기울이지 않는다", () => {
+  const M = require(path.join(BACK, "md-view.js"));
+  assert.match(M.inline("[문서](https://ex.com/a*b*c)"), /href="https:\/\/ex\.com\/a\*b\*c"/);
+  assert.match(M.inline("[문서](https://ex.com/a~~b~~c)"), /href="https:\/\/ex\.com\/a~~b~~c"/);
+  assert.equal(M.inline("2 * 3 * 4"), "2 * 3 * 4");
+  assert.equal(M.inline("*기울임* · **굵게** · ~~지움~~"), "<i>기울임</i> · <b>굵게</b> · <s>지움</s>", "꾸밈은 전과 같다");
+  assert.match(M.inline("[**굵은 링크**](https://ex.com)"), /<a [^>]*><b>굵은 링크<\/b><\/a>/, "링크 글의 꾸밈도 그대로");
+});
