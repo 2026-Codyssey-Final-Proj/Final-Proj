@@ -268,6 +268,10 @@ test("F-144-14 폴더 기록 되살리기 — 모두 지났으면 마친 모습�
   assert.equal(first.quest.phase, "quest");
   assert.deepEqual(first.quest.lines, [["줄 하나"], []], "되살린 줄로 칸을 채운다");
   assert.match(lineOf(/if \(nx > 0 \|\| st\.results\[0\]\) \{ resumeAt\(nx\); if \(st\.quest\) questStarted\(\); \}/), /questStarted/);
+  // 새 맥락 리뷰 — 지나지 않은 다음 단계(2단계 이상)를 쓰다 만 폴더도 되살린 줄로, 그 위에 초안을 덮지 않는다
+  const mid = { results: { 0: { items: [], passed: "2026-11-01" }, 1: { items: [{ name: "다", lines: ["쓰던 줄"] }] } }, topic: "앱" }; make(mid)(1);
+  assert.deepEqual(mid.quest.lines, [["쓰던 줄"]]);
+  assert.match(lineOf(/st\.results\[nx - 1\] && !\(st\.quest && st\.quest\.lines\.some\(\(l\) => l\.length\)\)\) stageDraft\(nx\)/), /stageDraft/);
 });
 
 test("F-144-15 퀘스트를 다 적은 뒤 · 관문에서 친 말은 작업 글에 붙여 다시 판정하지 않는다", () => {

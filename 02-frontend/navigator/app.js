@@ -1444,7 +1444,7 @@
     }
     st.j = { stage: n, reason: `폴더의 기록으로 ${LB(n)} "${s.title}"부터 이어서 해요.`, criteria: crits(n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     if (!QU) return;
-    const q = QU.retitle(QU.makeQuest(s, crits(n)), st.topic), r = n === 0 && st.results[0];
+    const q = QU.retitle(QU.makeQuest(s, crits(n)), st.topic), r = st.results[n];   // 지나지 않은 단계면 어느 단계든 되살린 줄로(새 맥락 리뷰 — 3단계를 쓰다 만 폴더도)
     st.quest = r && Array.isArray(r.items)
       ? { ...q, phase: "quest", lines: q.objs.map((o, i) => { const it = r.items.find((x) => x && x.name === o.name); return it && Array.isArray(it.lines) ? it.lines.filter((x) => typeof x === "string" && x.trim()) : q.lines[i]; }) }
       : q;
@@ -1668,7 +1668,7 @@
       if (nx > 0 || st.results[0]) { resumeAt(nx); if (st.quest) questStarted(); }   // 1단계만 있어도(F-144-14) — 대화 구분선 · '가져온 것'도 새 단계처럼
       save(); render(); say(`${R.got.map((n) => LB(n)).join(" · ")} 기록을 폴더에서 되살렸어요.`);
       if (N.STAGES[nx]) carryLoad(nx);   // C-48
-      if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1]) stageDraft(nx); else if (st.j && st.j.stage === nx) questText();
+      if (QU && st.j && st.j.stage === nx && N.DRAFT_STAGES.includes(nx) && st.results[nx - 1] && !(st.quest && st.quest.lines.some((l) => l.length))) stageDraft(nx);   // 되살린 줄이 있으면 초안으로 덮지 않는다 else if (st.j && st.j.stage === nx) questText();
     },
     "restore-read": () => {
       const R = st.restore; if (!R || R.phase !== "stale") return;
