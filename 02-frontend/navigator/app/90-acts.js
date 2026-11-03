@@ -272,7 +272,14 @@
     "confirm-cancel": () => set({ askConfirm: 0 }),
     "reopen-doc": () => { const x = docDone(docStage().n); if (x) set({ doc: newDoc(x.stage, x.text, "") }); },
     // F-144-12(2026-11-03): 진짜 AI 모드의 대화는 서버(앱 저장 곳)에도 쌓여, 다시 켜면 chatlogLoad가 되살렸다 — 그 대화도 지운 뒤 다시 읽는다
-    forget: async () => { forgotten = true; if (chatFolder === true) { try { await fetch("/api/chatlog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clear: true }), credentials: "same-origin" }); } catch {} } try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
+    //   새 맥락 리뷰: 서버로 연 화면이면 지금 모드와 상관없이(진짜로 쓰다 연습으로 바꿨어도) 지금 폴더의 대화를 지운다. 못 지웠으면 숨기지 않고 멈춘다(security-records 6-1) — 폴더가 없으면(400) 지울 것이 없다
+    forget: async () => {
+      if (canLive) {
+        let ok = false, none = false;
+        try { const r = await fetch("/api/chatlog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ clear: true }), credentials: "same-origin" }); ok = !!r.ok; none = r.status === 400; } catch {}
+        if (!ok && !none) return say("서버에 남은 대화를 지우지 못했어요 — 기록은 그대로 두었어요. 잠시 뒤 다시 눌러 주세요");
+      }
+      forgotten = true; try { localStorage.removeItem(KEY); localStorage.removeItem(BOUND_KEY); localStorage.removeItem("floe:setup:v1"); } catch {} location.reload(); },   // 처음 설정도 처음부터
     setup: () => { set({ settings: false, qwin: false }); if (window.FloeSetup) window.FloeSetup.open(); },   // 처음 설정은 섬 창에 뜬다 — 작업실이 열려 있으면 먼저 닫아 섬 창이 다시 보이게(C-41 ⑤, 새 맥락 리뷰 2026-10-27)
     "setup-project": () => { set({ settings: false, qwin: false }); if (window.FloeSetup) window.FloeSetup.open({ step: "project" }); },   // 처음 설정의 프로젝트 칸부터(2026-10-24 리뷰 — 새 프로젝트마다 AI 연결을 다시 거치지 않게). 작업실은 먼저 닫는다 — setup과 같이(F-123)
     gate: () => set({ screen: "gate", step: "ask", hard: [], question: "", answer: "", noCount: 0, error: "", showCrit: false, check: null }),

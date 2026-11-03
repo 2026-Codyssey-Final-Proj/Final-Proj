@@ -106,7 +106,7 @@ test("앱(main.js) — 섬 페이지가 새로 읽히면(기록 지우기 · 메
   assert.match(nav, /\{ closeSideWins\(\); expandWindow\(\); \}/, "서고로 갈 때는 전처럼");
   assert.match(nav, /else if \(main && !same\) \{ closeSideWins\(\); if \(expanded\) restoreWindow\(\); \}/, "서고가 아닌 새 페이지(새로 고침)도 옆 창을 닫는다 — 같은 문서 안(#주소)은 그대로");
   assert.match(m, /w\.on\("closed", \(\) => \{[^\n]*if \(ws\) win\.show\(\);/, "작업실이 닫히면 숨었던 섬 창이 다시 뜬다 — 처음 설정이 보이게");
-  assert.match(read("navigator/app.js"), /forget: async \(\) => \{ forgotten = true;[^\n]*location\.reload\(\); \}/, "기록 지우기는 섬을 새로 읽는다 — 그래서 위 길을 탄다");
+  assert.match(read("navigator/app.js"), /forget: async \(\) => \{[\s\S]*?forgotten = true;[^\n]*location\.reload\(\); \}/, "기록 지우기는 섬을 새로 읽는다 — 그래서 위 길을 탄다");
 });
 
 test("창 화면(win.html · win.js) — 섬이 보낸 내용을 보이고, 누름 · 바뀜 · 입력 · Esc를 섬으로 돌려보낸다. 머리띠로 끈다. 앱 밖(브라우저)에서는 아무것도 하지 않는다. 서버가 내준다", () => {

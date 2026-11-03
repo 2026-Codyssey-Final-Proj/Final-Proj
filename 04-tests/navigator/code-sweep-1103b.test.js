@@ -219,13 +219,25 @@ test("F-144-11 비밀값 경고에서 '그만둘게요'면 보내지 않기로 �
 });
 
 test("F-144-12 '기록 지우기'는 진짜 AI 모드의 서버 대화도 지운 뒤 다시 읽는다", async () => {
-  const src = lineOf(/forget: async \(\) => \{[^\n]*?location\.reload\(\); \}/);
-  const calls = [];
-  const acts = new Function("chatFolder", "fetch", "localStorage", "location", "KEY", "BOUND_KEY", `let forgotten = false; return ({ ${src} });`)(
-    true, async (u, o) => { calls.push(["fetch", u, JSON.parse(o.body)]); return {}; }, { removeItem: (k) => calls.push(["rm", k]) }, { reload: () => calls.push(["reload"]) }, "k", "b");
-  await acts.forget();
-  assert.deepEqual(calls[0], ["fetch", "/api/chatlog", { clear: true }]);
-  assert.deepEqual(calls[calls.length - 1], ["reload"], "지운 뒤에 다시 읽는다");
+  const src = lineOf(/forget: async \(\) => \{[\s\S]*?location\.reload\(\); \}/);
+  const run = async (canLive, reply) => {
+    const calls = [];
+    const acts = new Function("canLive", "fetch", "say", "localStorage", "location", "KEY", "BOUND_KEY", `let forgotten = false; return ({ ${src} });`)(
+      canLive, async (u, o) => { calls.push(["fetch", u, JSON.parse(o.body)]); if (reply instanceof Error) throw reply; return reply; }, (m) => calls.push(["say", m]),
+      { removeItem: (k) => calls.push(["rm", k]) }, { reload: () => calls.push(["reload"]) }, "k", "b");
+    await acts.forget(); return calls;
+  };
+  const ok = await run(true, { ok: true, status: 200 });
+  assert.deepEqual(ok[0], ["fetch", "/api/chatlog", { clear: true }]);
+  assert.deepEqual(ok[ok.length - 1], ["reload"], "지운 뒤에 다시 읽는다");
+  // 새 맥락 리뷰 — 못 지웠으면 숨기지 않고 멈춘다(기록도 그대로), 폴더가 없으면(400) 지울 것이 없으니 이어서, 서버 없이 연 화면은 묻지 않는다
+  for (const bad of [{ ok: false, status: 500 }, new Error("끊김")]) {
+    const c = await run(true, bad);
+    assert.equal(c[c.length - 1][0], "say", JSON.stringify(c)); assert.ok(!c.some((x) => x[0] === "reload" || x[0] === "rm"));
+  }
+  assert.deepEqual((await run(true, { ok: false, status: 400 })).pop(), ["reload"]);
+  const offline = await run(false, null);
+  assert.ok(!offline.some((x) => x[0] === "fetch")); assert.deepEqual(offline.pop(), ["reload"]);
   assert.doesNotMatch(APP, /기록은 이 컴퓨터의 브라우저에만 남아요/, "문구도 서버 쪽을 말한다");
 });
 
