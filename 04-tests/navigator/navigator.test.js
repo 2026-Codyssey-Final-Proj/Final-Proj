@@ -372,6 +372,22 @@ test("플로로: 고개를 돌리면 얼굴이 그쪽으로 가며 가로로 좁
 });
 
 // ── 플로로와 교감 — 2026-10-15 "캐릭터와 교감 요소를 많이" (2026-10-15 고양이 나비 → 물범 플로로) ──
+test("플로로 장식(F-148): 뽑기의 모든 물건이 머리 그룹 안에 자기 자리로 그려져 플로로와 같이 움직이고, 모르는 것은 뺀다", () => {
+  const { ITEMS } = require("../../03-backend/navigator/quest.js");
+  for (const it of ITEMS) {
+    const s = Cat.svg("idle", 108, { hole: true, wear: [it.id] });
+    assert.match(s, new RegExp(`w-move w-${it.slot}`), it.id);
+    assert.ok(s.indexOf('class="c-head"') < s.indexOf('class="c-wear"') && s.indexOf('class="c-wear"') < s.indexOf("h-line") , `${it.id} — 머리 그룹 안, 물 띠보다 앞`);
+    assert.doesNotMatch(s, new RegExp(it.emoji), `${it.id} — 이모지가 아니라 그림`);
+  }
+  assert.doesNotMatch(Cat.svg("idle", 108, { hole: true }), /c-wear/, "안 입으면 없다");
+  assert.doesNotMatch(Cat.svg("idle", 108, { hole: true, wear: ["없는것"] }), /c-wear/, "모르는 것은 뺀다");
+  const css = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/seal.css"), "utf8");
+  const moving = css.slice(css.indexOf("prefers-reduced-motion: no-preference"), css.indexOf("F-46(2026-10-20)"));
+  assert.match(moving, /\.w-move/, "장식의 움직임은 '움직임 줄이기'를 켠 사람에게 하지 않는다");
+  assert.match(moving, /\.landing \.w-move/, "받는 순간");
+});
+
 test("플로로: 안내 화면이 쓰는 표정과 교감 표정이 모두 그림에 있고, 앞지느러미·땀방울을 붙일 수 있다", () => {
   for (const m of ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow"]) {
     assert.ok(Cat.MOODS.includes(m), m);

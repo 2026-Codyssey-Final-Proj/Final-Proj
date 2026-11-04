@@ -997,11 +997,7 @@ button.ln{cursor:pointer}
 .qwin .cover .due.late{color:#6E1226}.qwin .cover .due.soon,.qwin .cover .due.today{color:#4A3300}
 .qwin .minispread{grid-template-columns:1fr}
 .qwin .docx{grid-template-columns:1fr}
-/* 꾸미기 — 입은 것을 플로로 위에(모자 · 목). 크기는 플로로 크기(--fs)를 따른다 */
 .pet{position:relative}
-.deco{position:absolute;left:50%;translate:-50% 0;line-height:1;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
-.deco.hat{top:-6%;font-size:calc(var(--fs,100px) * .32)}
-.deco.neck{top:58%;font-size:calc(var(--fs,100px) * .28)}
 .closet{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .closet button{border:1.5px solid var(--line);background:var(--soft);border-radius:10px;padding:4px 8px;font-size:calc(12.5px * var(--ui-scale,1));color:var(--ink);display:inline-flex;align-items:center;gap:6px;min-height:32px}
 .closet button[aria-pressed=true]{border-color:var(--warn);background:var(--warnbg)}
@@ -1013,7 +1009,6 @@ button.ln{cursor:pointer}
 .gacha .gx{position:absolute;top:10px;right:10px}   /* 닫기는 오른쪽 위 X(임유정 2026-10-22) — 전에는 '조개 열기' 옆 단추 */
 .gacha .have{display:flex;justify-content:center;gap:8px;align-items:center;color:var(--ink2);font-size:calc(14px * var(--ui-scale,1))}
 .gacha .stage{height:140px;display:grid;place-items:center;border-radius:18px;background:rgba(0,0,0,.25);position:relative;overflow:hidden}
-.gacha .stage .big{font-size:calc(64px * var(--ui-scale,1));line-height:1;animation:winpop .6s cubic-bezier(.3,1.6,.5,1)}
 .gacha .bigshell{width:110px;height:110px;filter:drop-shadow(0 0 18px rgba(255,255,255,.22))}
 .gacha.rolling .bigshell{animation:shake .12s linear infinite}
 @keyframes shake{50%{rotate:8deg}100%{rotate:-8deg}}
@@ -1023,7 +1018,7 @@ button.ln{cursor:pointer}
 .odds span b{display:block;color:var(--ink2);font-size:calc(12.5px * var(--ui-scale,1))}
 .gacha .fine{font-size:calc(11.5px * var(--ui-scale,1));color:var(--sub);margin:0}
 @media (min-width:601px){.gacha{background:var(--isl)}}
-@media (prefers-reduced-motion:reduce){.win.winpop,.gacha .stage .big,.gacha.rolling .bigshell{animation:none}}
+@media (prefers-reduced-motion:reduce){.win.winpop,.gacha.rolling .bigshell{animation:none}}
 @media (min-width:601px){.tt{background:#2B3463;color:#EEF1FA;border:1px solid rgba(255,255,255,.25)}}
 
 /* 앱의 설정 창 · 퀘스트 창(win.html, C-22) — 창 폭이 601px보다 좁아도 섬과 같은 네이비(위 PC 팔레트와 같은 값 — 바꾸면 둘 다). 글자 크기 설정은 섬의 값을 따르지 않는다(창은 1배) */

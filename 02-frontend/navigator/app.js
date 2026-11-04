@@ -679,10 +679,9 @@
   const CALM = ["idle", "happy", "done"];
   const liveMood = (base) => (flashMood.until > Date.now() ? flashMood.mood : sleepState !== "awake" && CALM.includes(base) ? sleepState : base);
   // 쓰다듬을 수 있는 플로로 — 누르거나 좌우로 문지르면 된다. data-live는 기분이 바뀌면 같이 바뀌는 플로로
-  // 꾸미기(C-22): 입은 것(st.wear)을 플로로 위에 겹친다 — 모자 자리 · 목 자리. 그림(이모지)은 자리표시, 진짜 그림은 고한결
-  const deco = () => (QU ? Object.values(st.wear).map(QU.itemOf).filter(Boolean).map((it) => `<span class="deco ${it.slot}" aria-hidden="true">${it.emoji}</span>`).join("") : "");
+  // 꾸미기(C-22 · F-148): 입은 것(st.wear)은 플로로 그림 안에 그린다(seal.js WEAR)
   const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="플로로 쓰다듬기" style="--fs:${size}px"
-    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true })}${deco()}</button>`;
+    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true, wear: Object.values(st.wear) })}</button>`;
 
   // 칸 — 지나온 것과 지금 하는 것까지 밝게, 남은 것은 어둡게
   const mini = () => `<span class="mini" aria-hidden="true">${met().map((_, i) => `<i class="${i < nowAt() ? "on" : ""}"></i>`).join("")}</span>`;
@@ -2292,7 +2291,7 @@
   function gachaHTML() {
     const g = st.gacha; if (!g || !QU) return "";
     const can = st.shells >= QU.SHELL_COST && g.phase !== "rolling";   // 하나 나온 뒤(got)에도 조개가 남으면 바로 한 번 더(임유정 2026-11-01 — 전에는 창을 닫았다 열어야 했다)
-    const stage = g.phase === "got" ? `<span class="big" aria-hidden="true">${g.item.emoji}</span>` : `<i class="coin bigshell" aria-hidden="true">${SHELL_ICO}</i>`;   // 열기 전의 큰 조개 — 위 줄과 같은 무지개 조개 그림(2026-10-23)
+    const stage = g.phase === "got" ? cat("happy", 124, { hole: true, wear: [g.item.id] }) : `<i class="coin bigshell" aria-hidden="true">${SHELL_ICO}</i>`;   // 열기 전의 큰 조개 — 위 줄과 같은 무지개 조개 그림(2026-10-23)
     const got = g.phase === "got" ? `<b>${esc(g.item.name)}</b>(${esc(g.item.rar)})이 나왔어요! 플로로가 바로 써 봤어요` : g.phase === "rolling" ? "조개를 여는 중…" : st.shells >= QU.SHELL_COST ? "조개를 열면 플로로를 꾸밀 것이 하나 나와요" : `조개가 ${QU.SHELL_COST - st.shells}개 더 있어야 열 수 있어요 — 장을 지나면 받아요`;
     return `<div class="gacha-layer"><section class="gacha${g.phase === "rolling" ? " rolling" : ""}" role="dialog" aria-label="무지개 조개 뽑기"><h3>무지개 조개 뽑기</h3>
       <button type="button" class="ti gx" data-act="gacha-close" aria-label="뽑기 창 닫기" title="닫기 (Esc)">${X_ICON}</button>
@@ -2320,8 +2319,11 @@
       const it = QU.draw(QU.ITEMS, Math.random() * 100);
       st.owned = QU.cleanOwned([...st.owned, it.id]); st.wear = { ...st.wear, [it.slot]: it.id }; st.gacha = { phase: "got", item: it };
       logMsg("floro", `${it.emoji} <b>${esc(it.name)}</b>을 받았어요! 설정 창의 꾸미기 줄에서 벗거나 바꿀 수 있어요.`);
-      render(); flash("wow", 1500);
-      const host = liveCat(); if (host && !STILL) C.burst(...center(host), "star", 14, 300);
+      render();
+      // 받는 순간(F-148)은 뽑기 창 안의 플로로에서 — 섬의 플로로는 뽑기 층에 가려진다. 머리에 닿을 때(seal.css w-drop의 55%) 별을 튀긴다
+      const svg = document.querySelector(".gacha .stage svg.cat");
+      flash("happy", 1500);
+      if (svg && !STILL) { svg.classList.add("landing"); setTimeout(() => svg.classList.remove("landing"), 650); setTimeout(() => svg.isConnected && C.burst(...center(svg), "star", 14, 300), 340); }
     }, STILL ? 50 : 1200);
   }
   // 설정 판(2026-10-25 두승현 — 옆에 따로 뜨던 설정 창을 섬 안으로: 채팅 자리를 통째로 바꿔 끼운다, 알림 · AI 진행 판과 같은 틀).

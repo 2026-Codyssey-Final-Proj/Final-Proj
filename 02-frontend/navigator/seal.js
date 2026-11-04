@@ -16,10 +16,34 @@
   const heart = (x, y) => `M${x} ${y + 3.6} C${x - 4.4} ${y + 0.6} ${x - 4.4} ${y - 3.4} ${x - 1.6} ${y - 3.4} C${x - 0.6} ${y - 3.4} ${x} ${y - 2.4} ${x} ${y - 1.8} C${x} ${y - 2.4} ${x + 0.6} ${y - 3.4} ${x + 1.6} ${y - 3.4} C${x + 4.4} ${y - 3.4} ${x + 4.4} ${y + 0.6} ${x} ${y + 3.6} Z`;
   const both = (f) => EYE.map(f).join(" ");
 
+  // 꾸미기(C-22 · F-148) — 뽑기의 물건을 머리 그룹 안에 그린다. 그림 밖에 따로 두면 플로로만 움직이고 물건은 공중에 남는다.
+  //   플로로의 색으로 코드에 그린 그림이다. 두승현이 다시 그리면 art만 바꾼다. contact: 닿는 자리의 그림자 [y, 가로 반지름, 세로 반지름]
+  const WEAR = {
+    ribbon: { slot: "hat", contact: [16, 15, 3.5], art: `<g class="w-tail"><path d="M48 13 Q44 20 39 25 L44.5 26 Q48 21 50.5 14 Z" fill="#F29DAD" stroke="#D97F92" stroke-width="1"></path></g>
+      <g class="w-tail r"><path d="M52 13 Q56 20 61 25 L55.5 26 Q52 21 49.5 14 Z" fill="#F29DAD" stroke="#D97F92" stroke-width="1"></path></g>
+      <path d="M50 11 C44 2 32 2 32 10 C32 18 44 18 50 11 Z M50 11 C56 2 68 2 68 10 C68 18 56 18 50 11 Z" fill="#F7AFBA" stroke="#D97F92" stroke-width="1.2" stroke-linejoin="round"></path>
+      <path d="M37 8 Q42 9.5 46 11 M63 8 Q58 9.5 54 11" fill="none" stroke="#D97F92" stroke-width="1" stroke-linecap="round"></path>
+      <rect x="46" y="7" width="8" height="8" rx="3.2" fill="#FBC6CF" stroke="#D97F92" stroke-width="1.2"></rect>` },
+    beanie: { slot: "hat", contact: [29, 27, 2.6], art: `<path d="M25 25 C26 11 38 3 50 3 C62 3 74 11 76 25 Q50 15 25 25 Z" fill="#5D86E6" stroke="#2A3B8C" stroke-width="1.2"></path>
+      <path d="M38 7 Q34 13 33 20 M50 4 L50 17 M62 7 Q66 13 67 20" fill="none" stroke="#2A3B8C" stroke-width="1" stroke-opacity=".45" stroke-linecap="round"></path>
+      <path d="M23 24 Q50 14 78 24 L78.5 30 Q50 20 22.5 30 Z" fill="#B5D1EE" stroke="#7E9CCB" stroke-width="1.2" stroke-linejoin="round"></path>
+      <circle cx="50" cy="2" r="5" fill="#EEF5FD" stroke="#C8DAEE" stroke-width="1.2"></circle>` },
+    scarf: { slot: "neck", contact: [59, 31, 2.6], art: `<g transform="translate(0 -4)"><path d="M63 60 L61 79 L72 78 L71 57 Z" fill="#8FB8F0" stroke="#5D7FBF" stroke-width="1.2" stroke-linejoin="round"></path>
+      <path d="M19 50 Q50 62 81 50 L83 58 Q50 71 18.5 58 Z" fill="#8FB8F0" stroke="#5D7FBF" stroke-width="1.2" stroke-linejoin="round"></path>
+      <path d="M20 54.5 Q50 66.5 82 54.5" fill="none" stroke="#EEF5FD" stroke-width="1.6" stroke-linecap="round"></path>
+      <path d="M66.5 66 L67.8 69.2 L71.2 69.4 L68.6 71.6 L69.4 75 L66.5 73.1 L63.6 75 L64.4 71.6 L61.8 69.4 L65.2 69.2 Z" fill="#F5D27A"></path></g>` },
+    crown: { slot: "hat", contact: [15, 13, 3], art: `<path d="M36 15 L33.5 3 L43 9 L50 0 L57 9 L66.5 3 L64 15 Q50 10 36 15 Z" fill="#F5D27A" stroke="#C99A35" stroke-width="1.2" stroke-linejoin="round"></path>
+      <circle cx="33.5" cy="3" r="2.2" fill="#F7AFBA"></circle><circle cx="50" cy="0" r="2.4" fill="#A9E2C4"></circle><circle cx="66.5" cy="3" r="2.2" fill="#8FB8F0"></circle>` },
+  };
+  const wearArt = (wear, id) => (wear || []).filter((w) => WEAR[w]).map((w, i) => {
+    const { slot, contact: [cy, rx, ry], art } = WEAR[w], clip = `${id}k${i}`;
+    return `<g class="c-wear"><clipPath id="${clip}"><path d="${BODY}"></path></clipPath><ellipse clip-path="url(#${clip})" cx="50" cy="${cy}" rx="${rx}" ry="${ry}" fill="#1A2350" opacity=".16"></ellipse><g class="w-move w-${slot}">${art}</g></g>`;
+  }).join("");
+
   // 플로로 한 마리 — size가 32px보다 작으면 입·지느러미·수염을 빼고(.small) 눈을 키운다. tail: 꼬리지느러미, paws: 앞지느러미를 걸친 모습(한 줄 표시)
   // 입체감(2026-10-17): 가장자리로 갈수록 어두워지는 둥근 그늘(c-vol)과 왼쪽 위 반짝임(c-shine) — Coucou의 Mochi와 같은 방식(MIT, 그림은 우리 것).
   // id: 그러데이션 이름. 한 화면에 여러 마리가 있어 마리마다 다르게 준다
-  function body(small, tail, paws, id) {
+  function body(small, tail, paws, id, wear) {
     const r = small ? 5.5 : 3.4;
     // c-body: 몸 전체를 한 덩이로 — 숨쉬기·헤엄은 이 덩이를 움직인다(seal.css). c-head에는 고개 돌리기(follow)가 따로 붙는다
     return `<g class="c-body"><defs><radialGradient id="${id}v" cx=".42" cy=".36" r=".68"><stop offset=".6" stop-color="#1A2350" stop-opacity="0"></stop><stop offset="1" stop-color="#1A2350" stop-opacity=".2"></stop></radialGradient>
@@ -48,6 +72,7 @@
           <path class="c-mouth" d="M49.5 41.8 L49.5 43.4 M46 43 Q47.7 45.3 49.5 43.4 Q51.3 45.3 53 43"></path>
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
+        ${wearArt(wear, id)}
       </g>
       ${paws ? `<g class="c-paws"><ellipse cx="36" cy="114" rx="9" ry="4"></ellipse><ellipse cx="58" cy="114" rx="9" ry="4"></ellipse></g>` : ""}</g>`;
   }
@@ -66,12 +91,12 @@
   // 숨구멍(2026-10-17 B안): 얼음 테 · 동그란 틀 대신 물빛이 번진 웅덩이에서 몸을 내민다. 머리는 웅덩이 밖으로 나오고
   // 몸 아래는 물결 아래로 잠긴다. 물 아래(y 110 밑)만 잘라서, 헤엄치며 잠수하면 물속으로 사라진다. 꼬리는 물속이라 그리지 않는다
   // 2026-10-17 어깨까지 담금: 몸이 먼저 보여 표정이 묻힌다는 의견으로 몸을 14칸 내리고 1.12배 키웠다. 머리 밖 표시도 같이 내린다(HOLE_MARKS)
-  const hole = (id, small) => `<defs><radialGradient id="${id}p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
+  const hole = (id, small, wear) => `<defs><radialGradient id="${id}p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
       <linearGradient id="${id}w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
       <clipPath id="${id}c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
     <ellipse class="h-pool" cx="60" cy="88" rx="58" ry="40" fill="url(#${id}p)"></ellipse>
     <g class="h-stars"><circle cx="20" cy="74" r=".9"></circle><circle cx="100" cy="68" r="1.1"></circle><circle cx="92" cy="92" r=".7"></circle></g>
-    <g clip-path="url(#${id}c)"><g transform="translate(0 18) scale(1.12)">${body(small, false, false, id)}</g></g>
+    <g clip-path="url(#${id}c)"><g transform="translate(0 18) scale(1.12)">${body(small, false, false, id, wear)}</g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#${id}w)"></path>
     <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path>`;
   // 얼굴만(2026-10-17, 접힌 알약): 얼굴 가운데 (50, 40)을 둥글게 잘라 크게 보인다. 몸 · 지느러미 · 꼬리 · 머리 밖 표시(MARKS)는 뺀다
@@ -79,13 +104,13 @@
   const FACE_BOX = "18 8 64 64";
   const face = (id) => `<defs><clipPath id="${id}f"><circle cx="50" cy="40" r="32"></circle></clipPath></defs><g clip-path="url(#${id}f)">${body(false, false, false, id)}</g>`;
 
-  // opts.paws: 한 줄 표시용, opts.face: 얼굴만(접힌 알약), opts.hole: 카드 속 숨구멍, opts.extra: 덧붙일 class (예: "oops" — 땀방울), opts.noTail: 꼬리 없이
+  // opts.paws: 한 줄 표시용, opts.face: 얼굴만(접힌 알약), opts.hole: 카드 속 숨구멍, opts.extra: 덧붙일 class (예: "oops" — 땀방울), opts.noTail: 꼬리 없이, opts.wear: 입은 물건의 아이디들(F-148)
   let uid = 0;
   function svg(mood, size, opts = {}) {
     const m = MOODS.includes(mood) ? mood : "idle", id = `fl${++uid}`;
     const small = size < 32 && !opts.face, tail = size >= 56 && !opts.noTail;
     const cls = ["cat", `m-${m}`, small && "small", opts.face && "face", opts.hole && !opts.face && "hole", opts.extra].filter(Boolean).join(" ");
-    const inner = opts.face ? face(id) : opts.hole ? hole(id, small) + HOLE_MARKS : body(small, tail, opts.paws, id) + MARKS;
+    const inner = opts.face ? face(id) : opts.hole ? hole(id, small, opts.wear) + HOLE_MARKS : body(small, tail, opts.paws, id, opts.wear) + MARKS;
     return `<svg class="${cls}" width="${size}" height="${size}" viewBox="${opts.face ? FACE_BOX : "0 0 120 120"}" aria-hidden="true">
       ${inner}</svg>`;
   }
