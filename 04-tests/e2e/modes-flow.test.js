@@ -551,7 +551,7 @@ test("C-35 · C-26 · C-30 · C-28: 명령 네 칸이 없고 위 줄의 '퀘스�
   } finally { await browser.close(); }
 });
 
-test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기 창, 열면 하나가 나와 플로로가 바로 쓰고(.deco) 기록에 남는다, 설정 창의 꾸미기 줄에서 벗는다. 곁 퀘스트는 Lite의 공책 목차 아래 · 도전과제 옆 가지. 서고 탭의 책도 1~8", { skip }, async () => {
+test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기 창, 열면 하나가 나와 플로로가 바로 쓰고(.c-wear) 기록에 남는다, 설정 창의 꾸미기 줄에서 벗는다. 곁 퀘스트는 Lite의 공책 목차 아래 · 도전과제 옆 가지. 서고 탭의 책도 1~8", { skip }, async () => {
   const browser = await launch();
   try {
     const page = await fresh(browser);
@@ -565,7 +565,7 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     assert.ok(await page.$(".gacha-layer") && !(await page.evaluate(() => document.querySelector("[data-act=gacha-roll]").disabled)), "뽑기 창 · 열 수 있다");
     assert.equal(await page.evaluate(() => document.querySelectorAll(".odds span").length), 4, "확률표 넷");
     await page.click("[data-act=gacha-roll]"); await wait(1800);
-    const s = await page.evaluate(() => { const r = JSON.parse(localStorage.getItem("navigator-prototype:v1")); return { got: document.querySelector(".gacha .got")?.textContent || "", deco: !!document.querySelector(".pet .deco"), shells: document.querySelector(".shells span")?.textContent, owned: r.owned, wear: r.wear }; });
+    const s = await page.evaluate(() => { const r = JSON.parse(localStorage.getItem("navigator-prototype:v1")); return { got: document.querySelector(".gacha .got")?.textContent || "", deco: !!document.querySelector(".pet .c-wear"), shells: document.querySelector(".shells span")?.textContent, owned: r.owned, wear: r.wear }; });
     assert.ok(s.got.includes("나왔어요") && s.deco && s.shells === "3" && s.owned.length === 1 && Object.values(s.wear)[0] === s.owned[0], JSON.stringify(s));
     // F-114(임유정 2026-11-01): 창을 닫지 않고 바로 한 번 더 — 전에는 '조개 열기'가 꺼져 있었다. 다 쓰면 꺼진다
     assert.equal(await page.evaluate(() => { const b = document.querySelector("[data-act=gacha-roll]"); return b && !b.disabled ? b.textContent : "off"; }), "한 번 더 열기");
@@ -575,7 +575,7 @@ test("C-22: 뽑기 · 꾸미기 — 조개 셋이면 위 줄의 조개로 뽑기
     assert.ok(!(await page.$(".gacha-layer")), "Esc로 닫힌다");
     await page.click("[data-act=settings]"); await wait(300);
     await page.click(".closet [data-act=wear]"); await wait(300);
-    assert.ok(!(await page.$(".pet .deco")) && (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("navigator-prototype:v1")).wear).length)) === 0, "벗으면 기록도");
+    assert.ok(!(await page.$(".pet .c-wear")) && (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("navigator-prototype:v1")).wear).length)) === 0, "벗으면 기록도");
     await page.goto("about:blank"); await page.goto(url("navigator/index.html#ex=1&tier=Lite&q=quest"), { waitUntil: "load" }); await wait(400);
     assert.ok(await page.$(".qwin .qside"), "곁 퀘스트 — 목록 아래 한 줄(C-68)");
     if (await page.$(".isl-col.center")) { await page.click(".wh [data-act=isl-big]"); await wait(300); }   // 칸을 하나도 안 적은 퀘스트면 섬이 작업 칸을 덮는다(C-61 bigAuto) — 시험은 섬을 옆으로

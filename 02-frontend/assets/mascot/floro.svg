@@ -43,6 +43,9 @@
 
 
 .cat .s-bub circle { fill: rgba(169, 221, 255, .35); stroke: #CDE6FF; stroke-width: .8; }
+/* 꾸미기(F-148) — 그림은 seal.js의 WEAR, 머리 그룹 안에 있어 플로로의 움직임을 그대로 받는다. 기준점은 닿는 자리 */
+.cat .w-move, .cat .w-tail { transform-origin: 50px 13px; }
+.cat .w-neck { transform-origin: 50px 52px; --a: 1.2deg; }
 .face .c-fin { display: none; }   /* 얼굴만 그릴 때(접힌 알약) 가슴의 지느러미 선이 턱 밑에 걸리지 않게 */
 /* 숨구멍(물웅덩이) — 웅덩이와 물의 색은 seal.js의 그러데이션에, 선만 여기에 */
 .cat .h-stars circle { fill: #FFFFFF; opacity: .7; }
@@ -84,6 +87,19 @@
 
   /* 배로 통통 — 물범이 땅에서 걷는 법(배로 튀며 나아간다). 부르는 쪽이 감싼 요소에 .galumph를 붙인다 */
   .galumph svg.cat { transform-origin: 50% 100%; animation: galumph 1.4s ease-in-out; }
+
+  /* 꾸미기(F-148) — 물결 따라 둥실(float 5초)보다 조금 늦게 따라오고, 표정에 작게 반응한다. 목도리는 조금만 흔들린다 */
+  .cat .w-move { animation: w-lag 5s ease-in-out infinite; }
+  .m-think .w-hat { --t: 9deg; animation: w-tilt 3s ease-in-out infinite; }
+  .m-look .w-hat { --t: -7deg; animation: w-tilt 3s ease-in-out infinite; }
+  .m-happy .w-hat, .m-done .w-hat { animation: w-hop .3s ease-out 4 alternate, w-lag 5s ease-in-out 1.2s infinite; }
+  .m-wow .w-hat, .m-alert .w-hat { animation: w-pop 1s ease-out, w-lag 5s ease-in-out 1s infinite; }
+  .m-sleep .w-hat, .m-yawn .w-hat { animation: w-doze 3.4s ease-in-out infinite; }
+  .cat .w-tail { animation: w-tail 2.6s ease-in-out infinite; }
+  .cat .w-tail.r { animation-delay: -1.3s; }
+  /* 받는 순간 — 위에서 떨어져 머리가 살짝 눌린다. 부르는 쪽(gachaRoll)이 그림에 .landing을 잠깐 붙인다. 표정 움직임보다 앞선다 */
+  .cat.landing .w-move { animation: w-drop .62s cubic-bezier(.23, 1, .32, 1); }
+  .cat.landing .c-body { animation: w-squash .62s ease-out; }
 }
 /* F-46(2026-10-20): 보이지 않을 때는 무한 움직임(꼬리 · 숨쉬기 · 물방울 · z)을 멈춘다 — 띠로 접혔을 때(html[data-ui="hidden"]) · 창이 가려졌을 때(.page-hidden) */
 html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: paused; }
@@ -95,6 +111,14 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
 @keyframes blinkdot { 50% { opacity: .25; } }
 @keyframes jump { 0%, 100% { transform: none; } 40% { transform: translateY(-8px); } }
 @keyframes wave-sign { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+@keyframes w-lag { 0%, 100% { transform: none; } 38% { transform: rotate(var(--a, 3.5deg)); } 78% { transform: rotate(calc(var(--a, 3.5deg) * -1)); } }
+@keyframes w-tilt { 0%, 100% { transform: rotate(calc(var(--t) * .4)); } 50% { transform: rotate(var(--t)) translateY(.6px); } }
+@keyframes w-hop { to { transform: translateY(-3px) rotate(5deg); } }
+@keyframes w-pop { 45% { transform: translateY(-6px) rotate(-6deg); } 70% { transform: translateY(1px) scale(1.08, .9); } }
+@keyframes w-doze { 0%, 100% { transform: translate(3px, 1.5px) rotate(12deg); } 50% { transform: translate(3.4px, 2.2px) rotate(15deg); } }
+@keyframes w-tail { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(6deg); } }
+@keyframes w-drop { 0% { transform: translateY(-44px) rotate(-14deg); opacity: 0; } 15% { opacity: 1; } 55% { transform: scale(1.1, .86); } 78% { transform: translateY(-3px) scale(.97, 1.05); } 100% { transform: none; } }
+@keyframes w-squash { 0%, 45% { transform: none; } 58% { transform: scale(1.05, .93); } 78% { transform: scale(.98, 1.03); } 100% { transform: none; } }
 @keyframes flap { to { transform: scale(1.12, .9) translateY(-1px); } }
 /* 숨구멍의 몸은 1.12배로 그려져 있어 아래 칸 수는 그 안의 칸이다 — 물 아래(그림 y 110)로 사라지려면 72칸 넘게 내려간다 */
 @keyframes float { 0%, 100% { transform: none; } 30% { transform: translateY(-1.5px) rotate(-3deg); } 70% { transform: translateY(1px) rotate(3deg); } }
@@ -153,6 +177,7 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <path class="c-mouth" d="M49.5 41.8 L49.5 43.4 M46 43 Q47.7 45.3 49.5 43.4 Q51.3 45.3 53 43"></path>
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
+        
       </g>
       </g></g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#fl1w)"></path>

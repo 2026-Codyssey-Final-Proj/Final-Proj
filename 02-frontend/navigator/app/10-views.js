@@ -312,10 +312,9 @@
   const CALM = ["idle", "happy", "done"];
   const liveMood = (base) => (flashMood.until > Date.now() ? flashMood.mood : sleepState !== "awake" && CALM.includes(base) ? sleepState : base);
   // 쓰다듬을 수 있는 플로로 — 누르거나 좌우로 문지르면 된다. data-live는 기분이 바뀌면 같이 바뀌는 플로로
-  // 꾸미기(C-22): 입은 것(st.wear)을 플로로 위에 겹친다 — 모자 자리 · 목 자리. 그림(이모지)은 자리표시, 진짜 그림은 고한결
-  const deco = () => (QU ? Object.values(st.wear).map(QU.itemOf).filter(Boolean).map((it) => `<span class="deco ${it.slot}" aria-hidden="true">${it.emoji}</span>`).join("") : "");
+  // 꾸미기(C-22 · F-148): 입은 것(st.wear)은 플로로 그림 안에 그린다(seal.js WEAR)
   const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="플로로 쓰다듬기" style="--fs:${size}px"
-    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true })}${deco()}</button>`;
+    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true, wear: Object.values(st.wear) })}</button>`;
 
   // 칸 — 지나온 것과 지금 하는 것까지 밝게, 남은 것은 어둡게
   const mini = () => `<span class="mini" aria-hidden="true">${met().map((_, i) => `<i class="${i < nowAt() ? "on" : ""}"></i>`).join("")}</span>`;
