@@ -75,12 +75,18 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     // C-54 ⑧ 얼음 조각 가까이(2026-10-28 버튼 "둘다 할것" — 누르기 + 확대): 끝난 카드(1단계)를 누르면 커져 줄마다 할 일 → 문서 ← 재료, 줄을 누르면 오른쪽 칸에 누가 정했나 · 다음 단계
     // C-69(2026-10-30 목업 확정본 S4): 끝낸 카드를 누르면 그 장의 읽기만 카드가 올라온다 — 줄을 누르면 오른쪽 칸(이 탭에서는 접혀 있다가 켜진다)에 누가 정했나 · 재료
     await page.click('.sm-card[data-i="0"]'); await wait(350);
+    assert.ok(!(await page.$(".qcard.readonly")) && await page.$(".qwin .qdown"), "번호 상자는 고르기만 — 카드는 '퀘스트 카드 올리기'로만 올라온다(F-151)");
+    await page.click("[data-act=quest-up]"); await wait(350);
     assert.ok(await page.$(".qcard.readonly"), "고른 끝난 카드 → 읽기만 카드"); const rows = await page.$$('.qcard.readonly .ln[data-act="map-line"]'); assert.ok(rows.length >= 1, "줄 하나 = 할 일");
     assert.ok(!(await page.$(".qcard.readonly [data-act=quest-edit]")) && !(await page.$(".qcard.readonly [data-act=quest-report]")), "읽기만 — 고치기 · 완료 보고 없음");
     await page.click('.qcard.readonly .ln[data-act="map-line"]'); await wait(300);
     const line = await page.$eval(".wside .ws-line", (el) => el.textContent.replace(/\s+/g, " ")); assert.match(line, /누가 정했나/); assert.match(line, /종이 신청이 헷갈려요/);
     if (SHOTS) await shot(page, "map-readonly");
     await page.click("[data-act=quest-view-off]"); await wait(300); assert.ok(!(await page.$(".qcard.readonly")), "'지금 퀘스트로'면 읽기만 카드가 내려간다");
+    // F-151: 카드가 올라와 있을 때 상자를 누르면 내려가지 않고 그 장의 카드로 바뀐다. claude-drafted: 2026-11-04
+    await page.click('.sm-card[data-i="0"]'); await wait(300);
+    assert.ok(await page.$(".qwin .qstack .qcard.readonly") && await page.$(".qwin .sm-grid.one"), "올라온 채 그 장의 카드로");
+    await page.click("[data-act=quest-view-off]"); await wait(300);
     // F-110(2026-11-01 임유정): 보기 줄(지도 · 흐름 · 상자)은 어느 보기에서나 같은 자리 — 흐름 판의 class 'flow'에 1단계 화면의 .flow(가운데 맞춤)가 겹쳐 흐름에서만 가운데로 밀렸다. claude-drafted: 2026-11-01
     const barAt = () => page.$eval(".qwin .sm-views", (e) => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; });
     const barCards = await barAt();
