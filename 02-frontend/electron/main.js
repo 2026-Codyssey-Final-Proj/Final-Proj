@@ -288,24 +288,14 @@ ipcMain.handle("floe:open-settings", (e) => (fromIsland(e) ? shell.openPath(app.
 // ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "설정 창과 퀘스트 창 그리고 채팅을 입력하는 창 이렇게 3개") — 섬 창 옆에 뜨는 창 둘 ──
 // 상태는 섬(app.js) 하나가 갖는다: 섬이 창의 내용(HTML)을 그려 보내고(floe:win-html), 창의 누름 · 바뀜 · 입력은 섬으로 돌아가(floe:win-event) 섬이 처리하고 다시 그려 보낸다.
 // 설정 창(kind "settings"): 테두리 없음 · 항상 위(섬처럼) · 불투명 네이비, 머리띠를 잡고 끈다(win.html의 app-region). 자리는 섬 창 옆(lib.js sideWinBounds — 고른 쪽). 2026-10-25(F-56)부터 설정은 섬 안의 판이라 이 창은 열리지 않는다.
-// 작업실(kind "quest" — 2026-10-26 C-41, 두승현 · 스토리보드 stage-storyboard, 이재엽 · 두승현 결정): 옛 퀘스트 창. 테두리 있는 보통 창(늘 위 아님 · 작업 표시줄에 뜸 · 파스텔 · 최소 640×480). 2026-10-27 C-42 R-1부터 처음은 작업 영역 가득, 사람이 바꾼 크기 · 자리를 기억(아래 workFile).
+// 작업실(kind "quest" — 2026-10-26 C-41, 두승현 · 스토리보드 stage-storyboard, 이재엽 · 두승현 결정): 옛 퀘스트 창. 테두리 있는 보통 창(늘 위 아님 · 작업 표시줄에 뜸 · 파스텔 · 최소 640×480). 2026-11-04 F-145부터 열 때마다 최대화(아래).
 //   열려 있는 동안 섬은 그 안의 옆 칸(아래 C-41 ⑤). kind 이름은 "quest" 그대로(IPC · 상태 st.qwin)
 // 사람이 창을 닫으면 섬에 알린다(floe:win-closed). 섬 창이 닫히거나 서고로 가면 같이 닫는다. 화면 파일은 서버 주소로(navigator/win.html — STATIC에 있어야 한다)
 const wins = { settings: null, quest: null };
 const sideKind = (k) => (k === "settings" || k === "quest" ? k : null);
-// 작업실의 크기 · 자리(C-42 R-1, 2026-10-27 이재엽 "화면을 채움"): 처음은 섬이 있는 화면의 작업 영역 가득(lib.js workBounds), 사람이 옮기거나 늘리면 설정 폴더의 workspace.json에 기억해 다음에 그대로.
-//   크게 하려면 OS 창의 최대화로 — 머리의 '화면 가득' 단추는 2026-10-29 두승현 결정으로 뺐다. S/M/L(2026-10-26)도 뺐다 <!-- claude-drafted: 2026-10-27 -->
-const workFile = () => path.join(app.getPath("userData"), "workspace.json");
-const savedWork = () => { try { return JSON.parse(fs.readFileSync(workFile(), "utf8")); } catch { return null; } };
-let workTimer = null;
-function rememberWork() {
-  const w = wins.quest; if (!w || w.isDestroyed() || !w.floeUser || w.isMinimized() || w.isMaximized()) return;   // 사람이 바꾼 것만(will-resize · will-move — 새 맥락 리뷰 2026-10-27, 이재엽 버튼 "사람이 바꾼 것만 기억"). 내려간 창(-32000) · 최대화는 기억하지 않는다
-  clearTimeout(workTimer);
-  workTimer = setTimeout(() => { const b = w.isDestroyed() ? null : w.getBounds(); if (b) try { fs.writeFileSync(workFile(), JSON.stringify(b), { mode: 0o600 }); } catch {} }, 300);
-}
-// 기억한 자리가 있으면 **그 자리가 있는 화면**의 작업 영역으로 당긴다(작업실을 둘째 모니터에 둔 사람 — 새 맥락 리뷰 2026-10-27), 없으면 섬이 있는 화면 가득
-const workBoundsNow = (wa) => { const s = savedWork(); return L.workBounds(s && Number.isFinite(s.x) && Number.isFinite(s.y) ? screen.getDisplayMatching(s).workArea : wa, s); };
-const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? workBoundsNow(wa) : L.sideWinBounds(kind, side, isl, wa, size));   // 작업실은 작업 영역 가득 · 기억한 자리(R-1), 설정 창은 옆자리
+// 작업실의 크기(F-145, 2026-11-04 두승현 "플로로 아일랜드 UI에서 클릭시 작업창 UI 전체화면 화면 꽉차게"): 열 때마다 섬이 있는 화면에서 최대화. 크기를 바꿔도 그때뿐이고 다음에 열면 다시 꽉 찬다.
+//   그 전(C-42 R-1, 2026-10-27)의 '사람이 바꾼 크기 · 자리 기억(workspace.json)'은 뺐다 — 저장된 작은 값으로 찌그러져 열렸다
+const boundsFor = (kind, side, isl, wa, size) => (kind === "quest" ? L.workBounds(wa) : L.sideWinBounds(kind, side, isl, wa, size));   // 작업실은 작업 영역 가득(최대화를 풀면 돌아갈 크기), 설정 창은 옆자리
 // ── C-41 ⑤(2026-10-27 두승현 "퀘스트뿐 아니라 다른 창도 큰 화면에서 진행, 그 옆에 플로로가 배치되는 형식"): 작업실이 열려 있는 동안 섬 창은 숨고, 섬의 내용(플로로 · 채팅 · 판)은
 //   작업실 안의 옆 칸(.isl-col)에 같이 그려진다(app.js syncWins → win.js). 닫으면 섬 창이 다시 뜬다(두승현 결정 1번 — 오버레이로 허락 카드 · 알림을 받는 쓸모를 남긴다).
 //   섬을 창 좌표로 작업실 가장자리에 붙이던 ②~④의 길(placeIsland · dockBounds · 손잡이의 창 간 통신)은 뺐다 — 두승현 PC에서 두 번 다 붙지 않았고, 한 창 안의 칸은 어긋날 자리가 없다
@@ -315,16 +305,15 @@ function openSideWin(kind, opt = {}) {
   const isl = win.getContentBounds(), wa = screen.getDisplayMatching(isl).workArea;
   const b = boundsFor(kind, opt.side, isl, wa, opt.size);
   let w = wins[kind];
-  if (w && !w.isDestroyed()) { if (opt.place) { w.setBounds(b); Object.assign(w, { floeSide: opt.side, floeMoved: false }); } w.show(); if (typeof opt.html === "string") { w.floeHtml = opt.html; w.webContents.send("floe:win-html", opt.html); } return; }
+  if (w && !w.isDestroyed()) { if (opt.place) { w.setBounds(b); Object.assign(w, { floeSide: opt.side, floeMoved: false }); if (kind === "quest") w.maximize(); } w.show(); if (typeof opt.html === "string") { w.floeHtml = opt.html; w.webContents.send("floe:win-html", opt.html); } return; }
   const ws = kind === "quest";   // 작업실(C-41) — 보통 창. 바탕색은 win.html · app.css(html.win-quest)와 같은 값
   w = wins[kind] = new BrowserWindow({ ...ICON_OPT, ...b, frame: ws, transparent: false, backgroundColor: ws ? "#E9EEF6" : "#363E62", alwaysOnTop: !ws, resizable: ws, minimizable: ws, hasShadow: true, show: false,
     minWidth: ws ? 640 : 260, minHeight: ws ? 480 : 200, title: ws ? "Floe — 작업실" : "Floe — 설정",
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   if (!ws) w.setAlwaysOnTop(true, "floating");
   Object.assign(w, { floeSide: opt.side, floeMoved: false, floeHtml: typeof opt.html === "string" ? opt.html : null });   // 다시 둘 때(placeSideWins · floe:win-size) 같은 규칙으로. floeHtml — 섬이 마지막으로 보낸 내용(F-141)
-  if (ws) { w.on("will-resize", () => { w.floeUser = true; }); w.on("resize", rememberWork); w.on("move", rememberWork); }   // 작업실 — 사람이 바꾼 크기 · 자리를 기억(R-1). 앱이 둔 자리(setBounds)는 will-* 없이 와서 적히지 않는다
-  w.on("will-move", () => { w.floeMoved = true; w.floeUser = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
-  w.once("ready-to-show", () => { if (wins[kind] === w) w.show(); });
+  w.on("will-move", () => { w.floeMoved = true; });   // 사람이 머리띠를 잡고 옮겼다(앱이 옮길 때는 오지 않는다) — 그 뒤로는 앱이 자리를 바꾸지 않는다. Electron은 Windows · Mac에서만 이 알림을 준다 — Linux는 옮긴 창도 다시 둘 수 있다
+  w.once("ready-to-show", () => { if (wins[kind] === w) { if (ws) w.maximize(); w.show(); } });   // 작업실은 늘 꽉 차게(F-145)
   if (ws && win && !win.isDestroyed()) win.hide();   // 작업실을 만들면 섬 창은 바로 숨는다 — 섬은 작업실 안의 옆 칸에(C-41 ⑤). 작업실이 뜰 때(ready-to-show)까지 기다리면 켤 때 섬 창의 알약 · 말풍선이 흐리게 깜박였다(F-101, 임유정 2026-10-29)
   w.webContents.on("did-finish-load", () => { if (wins[kind] === w && typeof w.floeHtml === "string") w.webContents.send("floe:win-html", w.floeHtml); });   // 새로 고침(메뉴 · Ctrl+R)에도 마지막 내용을 — 창을 만들 때 받은 내용이면 옛 파일 목록 · 옛 단추가 남았다. 섬은 바뀔 때만 보낸다(F-141)
   w.on("closed", () => { if (wins[kind] === w) wins[kind] = null; if (win && !win.isDestroyed()) { if (ws) win.show(); win.webContents.send("floe:win-closed", kind); } });   // 작업실이 닫히면 섬 창이 다시 뜬다(C-41 ⑤)

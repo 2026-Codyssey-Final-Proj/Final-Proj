@@ -14,31 +14,23 @@ test("main.js — 작업실 창은 테두리 있는 보통 창: 늘 위 아님 �
   assert.match(m, /if \(!ws\) w\.setAlwaysOnTop\(true, "floating"\)/, "늘 위는 설정 창만");
 });
 
-// R-1(C-42, 이재엽 2026-10-27 버튼 "화면을 채움"): 작업실은 섬이 있는 화면의 작업 영역 가득 — 사람이 줄이거나 옮긴 크기 · 자리(saved)가 있으면 그대로(작업 영역 안으로 당김, 가장 작게 640×480). 섬 아래에 S/M/L로 두던 길은 뺐다
-test("lib.js workBounds — 작업실은 작업 영역 가득, 기억한 크기 · 자리가 있으면 그대로(작업 영역 안으로 · 가장 작게 640×480)", () => {
+// F-145(2026-11-04 두승현 "플로로 아일랜드 UI에서 클릭시 작업창 UI 전체화면 화면 꽉차게"): 작업실은 열 때마다 섬이 있는 화면에서 최대화. 사람이 바꾼 크기 · 자리를 기억하던 길(C-42 R-1, workspace.json)은 뺐다 — 저장된 작은 값(y 149 · 높이 853)으로 찌그러져 열렸다
+test("lib.js workBounds — 작업실은 작업 영역 가득(가장 작게 640×480)", () => {
   const L = require("../../02-frontend/electron/lib.js");
-  const WA = { x: 0, y: 25, width: 1440, height: 875 };
-  assert.deepEqual(L.workBounds(WA), { x: 0, y: 25, width: 1440, height: 875 }, "처음 열면 작업 영역 가득");
-  assert.deepEqual(L.workBounds(WA, null), { x: 0, y: 25, width: 1440, height: 875 });
-  assert.deepEqual(L.workBounds(WA, { x: 100, y: 80, width: 900, height: 600 }), { x: 100, y: 80, width: 900, height: 600 }, "기억한 크기 · 자리 그대로");
-  assert.deepEqual(L.workBounds(WA, { x: 900, y: 600, width: 900, height: 600 }), { x: 540, y: 300, width: 900, height: 600 }, "작업 영역 밖이면 안으로 당긴다");
-  assert.deepEqual(L.workBounds(WA, { x: 10, y: 30, width: 100, height: 100 }), { x: 10, y: 30, width: 640, height: 480 }, "가장 작게 640×480");
-  assert.deepEqual(L.workBounds(WA, { x: 0, y: 25, width: 3000, height: 3000 }), { x: 0, y: 25, width: 1440, height: 875 }, "작업 영역보다 크면 작업 영역만큼");
-  assert.deepEqual(L.workBounds(WA, { x: "a", width: 900 }), { x: 0, y: 25, width: 1440, height: 875 }, "모양이 안 맞는 저장값은 없는 것으로");
+  assert.deepEqual(L.workBounds({ x: 0, y: 25, width: 1440, height: 875 }), { x: 0, y: 25, width: 1440, height: 875 });
   assert.deepEqual(L.workBounds({ x: -1920, y: 0, width: 1920, height: 1080 }), { x: -1920, y: 0, width: 1920, height: 1080 }, "왼쪽 모니터(wa.x < 0)에서도 그 화면 가득");
   assert.deepEqual(L.workBounds({ x: 0, y: 0, width: 500, height: 300 }), { x: 0, y: 0, width: 640, height: 480 }, "작업 영역이 640×480보다 작아도 창은 그보다 작아지지 않는다(main.js minWidth · minHeight와 같다)");
   assert.match(fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/win.js"), "utf8"), /document\.title = kind === "quest" \? "Floe — 작업실" : "Floe — 설정"/, "OS 제목 줄");
 });
 
-test("main.js — 작업실 창: 처음은 작업 영역 가득(workBounds(wa, 기억)), 사람이 옮기거나 늘리면 기억(설정 폴더 workspace.json). '화면 가득' 단추는 2026-10-29 두승현 결정으로 뺐다(OS 창의 최대화가 같은 일) — S/M/L도 없다", () => {
+test("main.js — 작업실 창: 열 때마다 최대화(새로 만들 때 · 이미 있는 창을 다시 둘 때), 크기 · 자리를 기억하지 않는다. S/M/L · '화면 가득' 단추도 없다", () => {
   const m = read("electron/main.js");
-  assert.match(m, /const workFile = \(\) => path\.join\(app\.getPath\("userData"\), "workspace\.json"\);/, "기억은 설정 폴더의 workspace.json(project.json과 같은 자리)");
-  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? workBoundsNow\(wa\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\);/, "작업실은 작업 영역 가득 · 기억한 자리(R-1), 설정 창은 옆자리");
-  assert.match(m, /screen\.getDisplayMatching\(s\)\.workArea : wa, s\)/, "기억한 자리는 그 자리가 있는 화면의 작업 영역으로(둘째 모니터 — 새 맥락 리뷰)");
-  assert.match(m, /w\.on\("will-resize", \(\) => \{ w\.floeUser = true; \}\); w\.on\("resize", rememberWork\); w\.on\("move", rememberWork\);/, "사람이 바꾼 크기 · 자리만 기억한다(이재엽 버튼 2026-10-27)");
-  assert.match(m, /if \(!w \|\| w\.isDestroyed\(\) \|\| !w\.floeUser/, "앱이 둔 크기는 적지 않는다"); assert.ok(!/forgetWork/.test(m), "'화면 가득'에만 쓰던 기억 지우기는 없다");
+  assert.match(m, /const boundsFor = \(kind, side, isl, wa, size\) => \(kind === "quest" \? L\.workBounds\(wa\) : L\.sideWinBounds\(kind, side, isl, wa, size\)\);/);
+  assert.match(m, /w\.once\("ready-to-show", \(\) => \{ if \(wins\[kind\] === w\) \{ if \(ws\) w\.maximize\(\); w\.show\(\); \} \}\);/, "새로 만든 작업실은 보이기 전에 최대화 — 설정 창은 아니다");
+  assert.match(m, /if \(kind === "quest"\) w\.maximize\(\); \} w\.show\(\);/, "이미 있는 작업실을 다시 둘 때도");
+  for (const gone of ["savedWork", "rememberWork", "workBoundsNow", "floeUser", "workFile"]) assert.ok(!m.includes(gone), `${gone} 없음 — 저장된 크기로 열지 않는다`);
   assert.ok(!/size === "full"/.test(m), "작업실을 '화면 가득'으로 맞추는 갈래는 없다");
-  assert.ok(!m.includes("floeSize: opt.size"), "작업실 · 설정 창 모두 S/M/L 크기 기억(floeSize)은 없다 — 설정 창은 2026-10-25부터 열리지 않고, 작업실은 자리 · 크기를 workspace.json에");
+  assert.ok(!m.includes("floeSize: opt.size"), "S/M/L 크기 기억(floeSize)은 없다");
 });
 
 test("app.js — 작업실 창: 탭은 퀘스트 → 책, 처음 여는 탭은 퀘스트. 캔버스 탭(C-41 · C-42 · C-23 ⑤ 버전 칸)은 2026-11-02 두승현 결정으로 뺐다 — canvasPane · canvas-pan.js · .cv 모양이 남아 있지 않고, 저장된 옛 탭 값 canvas는 quest로", () => {
