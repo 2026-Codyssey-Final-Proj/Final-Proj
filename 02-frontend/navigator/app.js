@@ -1068,17 +1068,17 @@
     if (rv) return { tone: "amber", mood: "think", meta, title: `${ROMAN(rv.i)}. ${esc(QU.nameOf(q, rv.i))} — 적어 둔 줄과 달라요.`,
       sub: `적어 둔 줄 “${esc((q.lines[rv.i] || [])[0] || "")}” · ${esc(st.refit.tool)}가 한 일로 본 새 줄 “${esc(rv.text)}”`, foot: "새 줄로 바꾸거나 적어 둔 줄을 그대로 둬요 — 플로로는 적은 줄을 덮지 않아요.",
       acts: [{ label: "새 줄로", act: "refit-use", i: rv.i, key: "Enter", pri: true }, { label: "그대로 둘래요", act: "refit-keep", i: rv.i, key: "Escape" }] };
-    if (q.draft) { const c = momentConfirm(q, i, meta); return { ...c, ...refitBanner(q), acts: [...c.acts, ...buildActs(q.chap)] }; }   // F-70 — 초안을 확인하는 중에도 코드 맡기기(A-02)   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
     if (st.tidy && st.tidy.fills.length) { const n = st.tidy.fills.length; return { tone: "green", mood: "happy", meta, title: `칸 ${n}개로 정리했어요.`, sub: esc(st.tidy.reply).split("\n").join("<br>"),
       body: `<ol class="tidy">${st.tidy.fills.map((f) => `<li><b>${ROMAN(f.i)} ${esc(QU.nameOf(q, f.i))}</b><span>${esc(f.text)}</span></li>`).join("")}</ol>`, foot: "맞으면 적고, 아니면 더 이야기해요 — 플로로가 먼저 적지 않아요.",
       acts: [{ label: `칸 ${n}개에 적기`, act: "tidy-fill", key: "Enter", pri: true }, { label: "더 이야기하기", act: "tidy-more", key: "Escape", kind: "ghost" }] }; }   // C-61 정리 카드
+    if (q.draft) { const c = momentConfirm(q, i, meta); return { ...c, ...refitBanner(q), acts: [...c.acts, ...buildActs(q.chap)] }; }   // F-70 — 초안을 확인하는 중에도 코드 맡기기(A-02)   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
     return { tone: "blue", mood: f[0], meta, ...refitBanner(q), title: `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}`, sub: `${esc(QU.askOf(q, i))}${QU.doneOf(q, i) ? ` <small class="done-when">끝: ${esc(QU.doneOf(q, i))}</small>` : ""}${o.term ? ` ${termTag(o.term)}` : ""}`,
       body: foundHTML(q, i), acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), ...buildActs(q.chap), { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
   }
   // 1단계 초안 확인(C-36, 2026-10-25 — 이재엽 "불편한게 맞는 내용은 이게 플로로가 생각한 내용인데 맞나요 … 누가 쓰는 내용은 … 사람에 대한 내용이 있으면 이 내용이 맞는지 요청을 보내고
   //   없다면 본인 / 소수 / 불특정다수 … 얼마 크게도 … 짧음 / 보통 / 긺"): Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가(글에 사람이 있으면) — 맞나요, Ⅲ 사람이 없으면 셋 중 고르기, Ⅳ 플로로가 본 크기 + 셋 중 고르기.
-  //   고칠래요 · 다른 답은 채팅 칸에 적으면 그 줄이 된다(send — 지금 할 일에 적기)
+  //   고칠래요를 누르고 채팅 칸에 적으면 그 줄이 된다(send, F-150 — 누르지 않고 보낸 말은 대화로, 칸의 후보는 정리 카드로)
   //   C-37(2026-10-25 — 이재엽 "1단계에서 플로로 채팅이 너무 많이 올라오는 문제 … 한곳에서 보이는 것들"): 칸마다 지난 말 · '맞아요'로 쌓지 않고 이 카드 하나에 넷을 한곳에(.dchk), 끝나면 한 줄로 정리(fillNow).
   //   2단계부터는 초안의 칸마다 맞나요, 기획서로 키울지(PRD)는 플로로가 권한 것 + 셋 중 고르기
   //   C-39(2026-10-25 — 이재엽 "무엇들을 준비해야하는지 생각해서 초안들 보여줘" · 버튼 "할 일 초안 + 준비할 것" · "흐름 + 칸마다 재료까지"): 카드 맨 위에 이 단계 전에 준비할 것, 칸마다 재료(플로로가 본 지난 단계 칸)
@@ -1130,7 +1130,7 @@
     out.push({ label: unreadN() ? `알림 ${unreadN()}` : "알림", act: "base-alerts", kind: "ghost" });
     return out;
   }
-  const sayHint = () => (planNow() ? (!st.plan ? "만들고 싶은 것 · 요구 · 문제 글을 붙여 넣어요" : !st.plan.confirmed ? "전체 의견을 적어도 돼요" : "보고에 대해 묻거나 답해요") : !st.j && !st.quest ? "원하는 것을 적거나 붙여 넣어요" : st.quest && st.quest.phase === "quest" && !QU.isDone(st.quest) ? (st.quest.draft ? "다르면 고쳐 적어 주세요" : "한 줄로 적어 주세요") : st.screen === "gate" && st.step === "question" ? "궁금한 걸 적어 주세요" : "플로로에게 말하기");
+  const sayHint = () => (planNow() ? (!st.plan ? "만들고 싶은 것 · 요구 · 문제 글을 붙여 넣어요" : !st.plan.confirmed ? "전체 의견을 적어도 돼요" : "보고에 대해 묻거나 답해요") : !st.j && !st.quest ? "원하는 것을 적거나 붙여 넣어요" : st.quest && st.quest.phase === "quest" && !QU.isDone(st.quest) ? (st.quest.draft ? (draftFixAt === QU.curIdx(st.quest) ? "이 칸에 들어갈 말을 적어 주세요" : "궁금한 것을 물어봐요 — 칸을 바꾸려면 '고칠래요'") : "한 줄로 적어 주세요") : st.screen === "gate" && st.step === "question" ? "궁금한 걸 적어 주세요" : "플로로에게 말하기");
   // 채팅 카드 — v는 momentToday()/momentGate()가 준 것(글은 이미 esc 한 것)
   function chatCard(v) {
     // C-61: 섬이 가운데이고 이 단계의 대화가 아직 비어 있으면 플로로 · 질문 하나 · 입력 상자 하나만(칩 없음). 질문은 셋 중 하나 — 문구는 예시(기획안)
@@ -1177,7 +1177,7 @@
       if (k < 0) { render(); return say("짧음 · 보통 · 긺 중에서 골라 주세요"); }
       return ACT["draft-size"](k);
     }
-    if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (q.draft) return fillNow(t); return chatSend(t); }   // C-61(2026-10-29): 보내기는 칸에 적지 않는다 — 플로로가 정리 카드로 돌려주고 사람이 [칸 n개에 적기]를 누른다. 초안 확인(draft)은 C-36대로 그 줄 고쳐 적기
+    if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (q.draft && draftFixAt === QU.curIdx(q)) { draftFixAt = -1; return fillNow(t); } return chatSend(t); }   // C-61(2026-10-29): 보내기는 칸에 적지 않는다 — 플로로가 정리 카드로 돌려주고 사람이 [칸 n개에 적기]를 누른다. F-150(2026-11-04): 초안 확인 중에도 같다 — 플로로에게 한 말("무슨 뜻이야?")이 칸의 답이 됐다. '고칠래요'를 누른 칸만 다음 말이 그 줄이 된다(C-36)
     if (st.screen === "gate" && st.step === "question") { st.question = t; return answer(); }
     if (st.j && st.j.next && st.screen !== "gate" && !st.todos) { st.ownText = t; return decide(t); }
     // F-144-15(2026-11-03): 퀘스트를 다 적었거나(완료 보고 앞) 관문에서 묻는 동안 친 말을 작업 글(st.text — 지난 단계의 보고 글)에 붙여 다시 판정하지 않는다 —
@@ -1219,8 +1219,10 @@
     if (all.length && all[all.length - 1].who === "me") all[all.length - 1] = me; else all.push(me);
     let out = all.slice(-40); while (out.length > 1 && out.reduce((n, m) => n + m.text.length, 0) > 8000) out = out.slice(1); return out; };
   let chatText = "";
+  let draftFixAt = -1;   // F-150 — '고칠래요'를 누른 칸. 다음에 보낸 말이 그 칸의 줄이 된다
   // 새 단계(C-61 · C-63, 2026-10-29): 대화에 구분선(단계 · 이름 · 날짜)과 '지난 단계에서 가져온 것'(정한 줄 요약 — 틀리면 말로 고친다), 섬은 저절로 가운데(칸이 비었으니), 대화 표시 자리는 구분선 뒤. islBig은 저장하지 않는다 — 다시 켜면 칸 상태대로 저절로
   const questStarted = () => {
+    draftFixAt = -1;
     const n = st.quest ? st.quest.chap : atStage();
     logMsg("sys", `<b>${LB(n)} · ${esc(N.STAGES[n].title)}</b><span>${ymd()}</span>`, { kind: "stage", n, title: N.STAGES[n].title });
     const prev = n > 0 ? st.results[n - 1] : null, got = prev ? prev.items.filter((x) => (x.lines || [])[0]) : [];
@@ -4033,7 +4035,7 @@
     "find-use": (k) => { const q = st.quest, x = found && q && found.chap === q.chap && found.list[k]; if (!x || QU.curIdx(q) !== found.i) return;
       logMsg("floro", `<b>옮겼어요</b> — ${esc(x.path)} ${x.line}줄: ${esc(x.text)}`); found = null; fillNow(x.text, "moved"); },   // 원문 그대로 · 누가 = 옮김(quest.js BY) · 어디서 왔는지 한 줄 남긴다
     "find-open": (k) => { const x = found && found.list[k]; if (x && Number.isInteger(x.i)) { if (!st.qwin) st.qwin = true; openFile(x.i); } },   // 원문은 파일 보기(C-43)로
-    "draft-fix": () => { render(); focusAct("[data-act=say]"); },   // 앱의 작업실 창에서도(F-144-8)
+    "draft-fix": () => { draftFixAt = st.quest && st.quest.draft ? QU.curIdx(st.quest) : -1; render(); focusAct("[data-act=say]"); },   // 앱의 작업실 창에서도(F-144-8)
     "draft-who": (i) => { const w = QU.WHO[i]; if (w && st.quest && QU.curIdx(st.quest) === QU.WHO_AT) fillNow(`쓰는 사람: ${w[0]} — ${w[1]}`, "pick"); },
     "draft-pick": (i) => {   // 기획서로 키울지(2단계, C-37) — 고른 것이 그 줄. 플로로가 권한 것을 고르면 까닭도
       const q = st.quest, pk = q ? QU.pickOf(q, QU.curIdx(q)) : null, x = QU.DOC_PICKS[i]; if (!pk || !x) return;
