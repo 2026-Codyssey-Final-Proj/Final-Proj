@@ -226,7 +226,7 @@ Final-Proj/
 ├─ 02-frontend/
 │  ├─ index.html · navigator/app/*.js    # 🦭 섬 — 조각 19개 → app.js (node navigator/app-parts.js join)
 │  ├─ navigator/win.html · win.js        # 🗂 작업실 창
-│  ├─ assets/mascot/                     # 플로로 그림 · 표정 (고한결)
+│  ├─ assets/mascot/                     # 플로로 그림 · 표정 (두승현)
 │  └─ electron/                          # 🖥 앱 껍데기 — main.js · package.json(앱 버전) · release-notes.md
 ├─ 03-backend/navigator/
 │  ├─ server.js                          # 로컬 API 43개 (127.0.0.1:4317)
@@ -287,7 +287,7 @@ Final-Proj/
 
 ![플로로의 표정 — 기본 · 기쁨 · 생각 · 하트 · 깜짝 · 잠](02-frontend/assets/mascot/floro-moods.svg)
 
-물에서 고개를 내민 **길잡이 물범**. 지금 단계를 알려 주고, 기다리는 동안 곁을 지켜요. 표정 11가지, 눈 · 코가 마우스 쪽으로, 둥실 · 빼꼼 · 잠수 · 물 뿜기, 쓰다듬으면 하트. 🎨 캐릭터 고한결 · 자세히 → [마스코트 README](02-frontend/assets/mascot/README.md)
+물에서 고개를 내민 **길잡이 물범**. 지금 단계를 알려 주고, 기다리는 동안 곁을 지켜요. 표정 11가지, 눈 · 코가 마우스 쪽으로, 둥실 · 빼꼼 · 잠수 · 물 뿜기, 쓰다듬으면 하트. 🎨 캐릭터 두승현 · 자세히 → [마스코트 README](02-frontend/assets/mascot/README.md)
 
 ---
 
@@ -296,9 +296,9 @@ Final-Proj/
 | | 이름 | 맡은 일 |
 |---|---|---|
 | 🧑‍✈️ | 이재엽 | 팀장 · 총괄 · 제출 · AI 에이전트 · API 연동 |
-| 🎨 | 고한결 | UI/UX · 인터뷰 · 발표 흐름 · 캐릭터 |
+| 🎨 | 고한결 | UI/UX · 인터뷰 · 발표 흐름 |
 | 🖥 | 임유정 | 프론트엔드 · 시연 화면 |
-| 🧪 | 두승현 | 시연 프로토타입 · 테스트 · 검증 · 문서 · 협업 증빙 |
+| 🧪 | 두승현 | 시연 프로토타입 · 캐릭터 · 테스트 · 검증 · 문서 · 협업 증빙 |
 
 🤖 Claude는 브랜치에만 올리고 병합은 사람이. 올릴 때는 [`changes/`](changes/README.md) 조각 한 장 → 병합되면 버전 번호가 붙는다. 상세 → [TEAM.md](TEAM.md) · 라이선스 [MIT](LICENSE)
 

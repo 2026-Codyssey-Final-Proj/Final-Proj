@@ -17,7 +17,7 @@
   const both = (f) => EYE.map(f).join(" ");
 
   // 꾸미기(C-22 · F-148) — 뽑기의 물건을 머리 그룹 안에 그린다. 그림 밖에 따로 두면 플로로만 움직이고 물건은 공중에 남는다.
-  //   플로로의 색으로 코드에 그린 임시 그림이다. 진짜 그림(고한결)이 오면 art만 바꾼다. contact: 닿는 자리의 그림자 [y, 가로 반지름, 세로 반지름]
+  //   플로로의 색으로 코드에 그린 그림이다. 두승현이 다시 그리면 art만 바꾼다. contact: 닿는 자리의 그림자 [y, 가로 반지름, 세로 반지름]
   const WEAR = {
     ribbon: { slot: "hat", contact: [16, 15, 3.5], art: `<g class="w-tail"><path d="M48 13 Q44 20 39 25 L44.5 26 Q48 21 50.5 14 Z" fill="#F29DAD" stroke="#D97F92" stroke-width="1"></path></g>
       <g class="w-tail r"><path d="M52 13 Q56 20 61 25 L55.5 26 Q52 21 49.5 14 Z" fill="#F29DAD" stroke="#D97F92" stroke-width="1"></path></g>

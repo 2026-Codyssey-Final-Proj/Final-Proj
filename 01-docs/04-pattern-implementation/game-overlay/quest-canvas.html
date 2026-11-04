@@ -330,7 +330,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
 <script>
 (() => {
   const S = window.NavSeal, $ = (id) => document.getElementById(id);
-  // ── 자료 — 할 일은 navigator.js STAGES. 이름 그대로, 모양만 퀘스트. 그림(이모지)은 자리표시 — 진짜 그림은 고한결 ──
+  // ── 자료 — 할 일은 navigator.js STAGES. 이름 그대로, 모양만 퀘스트. 그림(이모지)은 자리표시 — 진짜 그림은 두승현 ──
   const CHAPTERS = [
     { n: 0, name: "정하기", title: "무엇을 만들지 정하기", icon: "📝", main: [["불편 한 문장", "😮‍💨"], ["달라지는 것", "✨"], ["누가 쓰나", "🧑‍🤝‍🧑"], ["얼마나 크게", "📏"]], side: [] },
     { n: 1, name: "적어 두기", title: "아이디어 적어 두기", icon: "🗂️", main: [["빈칸 채우기", "✍️"], ["왜 · 어디까지 · 언제", "🧭"], ["한 문장 한 가지", "1️⃣"]], side: [["기획서로 키우기", "📑"], ["보안 한 줄", "🔒"]] },
@@ -492,7 +492,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--ice); 
     $("p-chap").textContent = `${LABEL(st.q.chap)} · ${st.q.title}`; $("p-q").textContent = `${n}개 중 ${k}번째 할 일`;
     $("p-dots").innerHTML = st.q.objs.map((o, j) => `<i class="${st.q.got[j] >= o[2] ? "done" : j === i && st.phase === "quest" ? "on" : ""}"></i>`).join("");
   }
-  // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 고한결
+  // 받기 화면의 그림 — 자리표시(밤하늘 · 얼음 · 공책). 진짜 그림은 두승현
   const PIC = `<svg viewBox="0 0 320 140" aria-hidden="true"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B1550"/><stop offset="1" stop-color="#2A4AC8"/></linearGradient><linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3BA6"/><stop offset="1" stop-color="#0E1A4F"/></linearGradient></defs><rect width="320" height="140" fill="url(#sky)"/><g fill="#fff"><circle cx="30" cy="22" r="1.4"/><circle cx="80" cy="40" r="1"/><circle cx="140" cy="18" r="1.6"/><circle cx="200" cy="34" r="1"/><circle cx="260" cy="16" r="1.3"/><circle cx="300" cy="46" r="1"/><circle cx="110" cy="60" r=".8"/><circle cx="240" cy="62" r=".9"/></g><circle cx="262" cy="36" r="16" fill="#FFF3C4"/><circle cx="268" cy="31" r="14" fill="url(#sky)"/><path d="M0 95 Q 80 80 160 95 T 320 95 V140 H0z" fill="url(#sea)"/><path d="M70 100 L 110 78 L 200 76 L 250 100 Z" fill="#E6F6FF"/><path d="M70 100 L 250 100 L 240 112 L 85 112 Z" fill="#A9DDFF"/><rect x="130" y="52" width="60" height="30" rx="4" fill="#F3EBD8" stroke="#6B5B3E" stroke-width="2"/><path d="M138 60h44M138 67h36M138 74h40" stroke="#B99A4F" stroke-width="2" stroke-linecap="round"/><path d="M20 70 L 60 48 L 60 70 Z" fill="#8AE0FF" opacity=".5"/></svg>`;
   function renderQuest() {
     const q = st.q, p = $("pane-quest");
