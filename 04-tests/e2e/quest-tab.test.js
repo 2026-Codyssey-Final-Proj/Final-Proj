@@ -63,7 +63,7 @@ test("C-65 · C-70 · C-69 · C-72 — 탭 셋 · 받기 전 카드(단추 둘) 
     assert.ok(await page.$(".qwin .sm-legend.by") && (await n(page, ".qwin .sm-card.st-done .sm-chips i")) >= 1, "범례 · 끝낸 카드의 누가 정했나 칩");
     assert.equal(JSON.parse(await page.evaluate(() => localStorage.getItem("navigator-prototype:v1"))).questUp, false, "내린 상태는 이 컴퓨터에 기억(두승현 2026-10-30)");
     // ⑥ 끝낸 장(1단계) 상자를 고르고 '퀘스트 카드 올리기' → 읽기만 카드 · 다시 지금 퀘스트로
-    // F-150(임유정 2026-11-04 "'퀘스트 카드 올리기' 버튼을 눌렀을때만"): 번호 상자는 고르기만 — 여덟 장 지도는 펼친 채, 아래 띠가 고른 장을 보인다. claude-drafted: 2026-11-04
+    // F-151(임유정 2026-11-04 "'퀘스트 카드 올리기' 버튼을 눌렀을때만"): 번호 상자는 고르기만 — 여덟 장 지도는 펼친 채, 아래 띠가 고른 장을 보인다. claude-drafted: 2026-11-04
     await page.click('.sm-card[data-i="0"]'); await wait(400);
     assert.ok(await page.$(".qwin .qdown") && !(await page.$(".qwin .qstack")) && (await n(page, ".qwin .sm-grid .sm-card")) === 8, "번호 상자를 눌러도 카드는 내린 채 여덟 장");
     assert.ok(await page.$('.qwin .sm-card.sel[data-i="0"]'), "누른 상자는 골라짐");

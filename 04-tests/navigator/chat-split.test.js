@@ -9,8 +9,11 @@ const read = (f) => fs.readFileSync(path.join(__dirname, "../..", f), "utf8");
 const a = read("02-frontend/navigator/app.js"), c = read("02-frontend/navigator/app.css"), h = read("02-frontend/navigator/win.html"), w = read("02-frontend/navigator/win.js");
 const Nav = require("../../03-backend/navigator/navigator.js"), QU = require("../../03-backend/navigator/quest.js");
 
-test("보내기는 칸에 적지 않는다 — 퀘스트 중(초안 확인이 아닐 때) 보낸 말은 chatSend로 가고, fillNow는 초안 확인(C-36 고쳐 적기)과 정리 카드의 [칸 n개에 적기]에서만", () => {
-  assert.match(a, /if \(q && q\.phase === "quest" && QU\.curIdx\(q\) >= 0\) \{ if \(q\.draft\) return fillNow\(t\); return chatSend\(t\); \}/, "보내기 → chatSend");
+test("보내기는 칸에 적지 않는다 — 퀘스트 중 보낸 말은 chatSend로 가고, fillNow는 '고칠래요'를 누른 칸과 정리 카드의 [칸 n개에 적기]에서만(F-150 — 초안 확인 중에도)", () => {
+  assert.match(a, /if \(q && q\.phase === "quest" && QU\.curIdx\(q\) >= 0\) \{ if \(q\.draft && draftFixAt === QU\.curIdx\(q\)\) \{ draftFixAt = -1; return fillNow\(t\); \} return chatSend\(t\); \}/, "보내기 → chatSend, 고칠래요를 누른 칸만 그 줄로");
+  assert.match(a, /"draft-fix": \(\) => \{ draftFixAt = st\.quest && st\.quest\.draft \? QU\.curIdx\(st\.quest\) : -1; render\(\); focusAct\("\[data-act=say\]"\); \}/, "고칠래요를 눌러야 다음 말이 그 줄이 된다");
+  assert.ok(a.indexOf("if (st.tidy && st.tidy.fills.length) { const n") < a.indexOf("if (q.draft) { const c = momentConfirm(q, i, meta)"), "초안 확인 중에도 정리 카드가 먼저 보인다");
+  assert.match(a, /st\.quest\.draft \? \(draftFixAt === QU\.curIdx\(st\.quest\) \? "이 칸에 들어갈 말을 적어 주세요" : "궁금한 것을 물어봐요 — 칸을 바꾸려면 '고칠래요'"\)/, "입력 칸의 안내도 맞춘다");
   assert.ok(!a.includes('if (!q.draft) say("적었어요!"); return fillNow(t);'), "옛 '보내면 곧바로 적힘' 길은 없다");
   assert.match(a, /async function chatSend\(t, skipCheck\)/);
   assert.match(a, /callAI\("\/api\/chat", \{ stage: q\.chap, tier: st\.tier, idea: ideaNow\(\), talk: talkOf\(t\), lines: q\.lines \}\)/, "진짜 AI는 /api/chat(API.md 3-31 — 이재엽 쪽 서버)에 이 단계의 대화 · 적은 줄 · 처음 말한 것");

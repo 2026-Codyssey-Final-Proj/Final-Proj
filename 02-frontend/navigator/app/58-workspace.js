@@ -131,7 +131,7 @@
     // C-69 S4(카드 내림): 끝낸 · 지금 장 카드에 칸마다 누가 정했나 칩과 건네준 것 — 흐름(S5)의 요약판
     const chips = (c) => (strip || !(c.state === "done" || c.state === "now") ? "" : `<span class="sm-chips">${stageCells(c.n).map((x, k) => `<i class="${x.by ? `by-${x.by}` : ""}${x.line ? "" : " miss"}">${ROMAN(k)} ${x.by ? QU.BY_WORD[x.by] : x.line ? "적음" : "아직"}</i>`).join("")}</span>${gv(N.STAGES[c.n]) ? `<span class="sm-gives">건네준 것 — ${esc(gv(N.STAGES[c.n]))}</span>` : ""}`);   // 건네준 것은 늘 gv(shownGives)를 거친다 — 확인 질문의 정답이 새지 않게
     const gateNow = !!(st.quest && st.quest.phase === "done" && st.quest.chap === cur && st.results[cur] && !st.results[cur].passed);   // C-71 완료 보고 뒤 · 관문 전 — 지금 카드는 '관문 앞', 다음 카드는 '다음'
-    const card = (c) => { const p = c.prepared, sel = st.mapSel === c.n || st.qview === c.n;   // qview는 저장되고 mapSel은 아니다 — 다시 켜도 아래 띠의 '고른 장'과 상자 표시가 맞게(F-150)
+    const card = (c) => { const p = c.prepared, sel = st.mapSel === c.n || st.qview === c.n;   // qview는 저장되고 mapSel은 아니다 — 다시 켜도 아래 띠의 '고른 장'과 상자 표시가 맞게(F-151)
       const body = c.state === "later" ? `<span class="sm-note">2단계에서 그려져요</span>`
         : c.state === "done" ? `<span class="sm-line">${c.q ? `퀘스트 ${c.q.k}/${c.q.n}` : "지났어요"}</span>`
         : c.state === "now" ? `<span class="sm-line">${gateNow ? `관문 앞 · ${c.q ? `${c.q.k}/${c.q.n}` : "다 적음"}` : c.q ? `다섯 칸 중 ${Math.min(c.q.k + 1, c.q.n)}번째 · ${c.q.k}/${c.q.n}` : "퀘스트 받기 전"}${c.gateLeft && !gateNow ? ` · 관문 남은 ${c.gateLeft}` : ""}</span>`
@@ -163,7 +163,7 @@
     // 범례(누가 정했나)는 카드를 내렸을 때만 — 올라와 있으면 지도 띠 한 줄에 칩이 없어 뜻이 없다(두승현 2026-10-30, 요구 문서 9절 7번)
     const top = up ? `<span class="qtop-hint">번호를 누르면 그 장의 카드로 바뀌어요</span><button type="button" class="lnk" data-act="quest-down">지도 보기</button>`
       : `<p class="sm-legend by">${QU.BY.map((b) => `<span><i class="by-${b}" aria-hidden="true"></i>${QU.BY_WORD[b]}</span>`).join("")}</p>`;
-    const pick = st.qview;   // F-150 — 카드를 내린 채 고른 장: 아래 띠가 '올리면 무엇이 올라오는지'를 보인다
+    const pick = st.qview;   // F-151 — 카드를 내린 채 고른 장: 아래 띠가 '올리면 무엇이 올라오는지'를 보인다
     const sub = pick != null ? `${LB(pick)} · 고른 장 — 올리면 이 장의 카드가 보여요` : q ? `${LB(cur)} 퀘스트 · 정한 줄 ${got} / ${q.objs.length}${ci >= 0 ? ` · 지금 ${ROMAN(ci)} ${esc(QU.nameOf(q, ci))}` : q.phase === "done" ? " · 관문 앞" : ""}` : `${LB(cur)} · 퀘스트 받기 전`;
     const card = up ? `<div class="qstack" style="--q-tail:${(cur % 4) * 25 + 12.5}%"><button type="button" class="qhandle" data-act="quest-down" aria-label="퀘스트 카드 내리기 — 지도 보기"><i aria-hidden="true"></i></button>${st.qview != null ? viewCard(st.qview) : questTab()}</div>`
       : `<div class="qdown"><div><b>${esc(pick != null ? N.STAGES[pick].title : (st.quest && st.quest.chap === cur && st.quest.title) || N.STAGES[cur].title)}</b><span>${sub}</span></div><button type="button" class="b" data-act="quest-up">퀘스트 카드 올리기</button></div>`;
@@ -362,7 +362,7 @@
     // C-69(2026-10-30): 지금 장 → 퀘스트 카드 올림, 끝낸 · 준비된 장 → 그 장의 카드(읽기만 · 미리보기)가 올라옴. 준비된 카드는 오른쪽 칸에 준비한 다섯 칸도(C-54)
     "map-card": (i) => { const m = stageMap(), c = m && m.cards[i]; if (!c) return; st.mapLine = null;
       if (c.state === "now") { st.mapSel = null; st.qview = null; } else { st.qview = st.qview === c.n ? null : c.n; st.mapSel = st.qview != null ? c.n : null; if (st.mapSel != null && c.prepared) wsideQuest = true; }   // 오른쪽 칸(이 탭에서는 접힘)은 준비된 카드만 바로 켠다 — 끝낸 장은 줄을 누를 때(map-line)
-      render(); },   // F-150(임유정 2026-11-04 "'퀘스트 카드 올리기' 버튼을 눌렀을때만"): 번호 상자는 고르기만 — 카드를 내린 여덟 장 지도는 그대로, 올라와 있으면 그 장의 카드로 바뀐다. 올리는 길은 quest-up 하나. claude-drafted: 2026-11-04
+      render(); },   // F-151(임유정 2026-11-04 "'퀘스트 카드 올리기' 버튼을 눌렀을때만"): 번호 상자는 고르기만 — 카드를 내린 여덟 장 지도는 그대로, 올라와 있으면 그 장의 카드로 바뀐다. 올리는 길은 quest-up 하나. claude-drafted: 2026-11-04
     "quest-back": () => { treeView = "cards"; set({ questUp: true }); },   // 흐름 · 상자에서 퀘스트 카드가 올라온 지도로(C-67)
     "quest-down": () => set({ questUp: false }),   // 지도 보기 — 카드를 내려 여덟 장 + 아래 띠(S4)
     "quest-up": () => set({ questUp: true }),
