@@ -4704,7 +4704,7 @@
     else if ((d.via === "cli" || d.via === "api") && canLive) { liveApprovals(); set({ mode: "live", error: "", warn: null }); }   // F-137 연습에서 띄운 예시 카드를 내리고 진짜로 묻는다
     readmeAgain();   // 연습 ↔ 진짜를 바꿨거나 폴더를 골랐을 수 있다 — 옛 README 책 · 찾은 줄을 잊는다(F-144-17 새 맥락 리뷰: toMode를 거치지 않는 길)
     chatRecheck();   // 처음 설정에서 폴더를 골랐을 수 있다 — 대화를 둘 폴더를 다시 묻는다(병합 뒤 고침 새 맥락 리뷰: 첫 실행에서 고른 폴더에 대화가 쌓이지 않았다)
-    if (d.open) { setPlace("vibe"); st.tab = "today"; go("home"); }   // '시작하기' — 바이브 코딩으로(C-13: 보여 주기는 바이브 코딩 안에)
+    if (d.open) { setPlace("vibe"); st.tab = "today"; openQwin("quest"); st.islBig = null; go("home"); }   // '시작하기' — 작업실의 플로로 홈으로(F-146, 2026-11-04 두승현 "초기 설정 세팅 이후 … 작업실의 플로로 홈에서"): 섬을 펼친 채 작업실을 연다. 1단계 시작 전이면 가운데 큰 플로로와 입력 칸(bigAuto). 전에는 작업실 없는 옛 섬 화면으로 갔고, 작업실로 가려면 '퀘스트' 단추를 찾아 눌러야 했다
     st.gh = null;   // 처음 설정에서 프로젝트를 골랐으면 GitHub 칸을 다시 묻는다
     // C-31(2026-10-24): 처음 설정에서 새로 만든 폴더의 GitHub 저장소를 바랐으면 — 만드는 일은 사용자의 Claude Code에(C-25), 허락은 섬의 카드로
     if (d.makeRepo === "private" || d.makeRepo === "public") {
