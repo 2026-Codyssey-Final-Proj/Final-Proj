@@ -46,8 +46,10 @@
   }
   const whyOf = (tool_name, input) => {
     const file = str(input.file_path || input.notebook_path);
-    if (file && VERBS[tool_name] && VERBS[tool_name] !== "run" && DANGER_FILE.test(file)) return DANGER_FILE_WHY;
-    if (file && VERBS[tool_name] && VERBS[tool_name] !== "run" && GUARD_FILE.test(file)) return GUARD_WHY;
+    if (file && VERBS[tool_name] && VERBS[tool_name] !== "run") {
+      if (DANGER_FILE.test(file)) return DANGER_FILE_WHY;
+      if (GUARD_FILE.test(file)) return GUARD_WHY;
+    }
     if (tool_name === "Bash") { const cmd = str(input.command); for (const [re, why] of DANGER_CMD) if (re.test(cmd)) return why; if (GUARD_CMD.test(cmd)) return GUARD_WHY; if (blocked(cmd)) return SECRET_WHY; }
     if (VERBS[tool_name] === "edit" || VERBS[tool_name] === "write") {
       const texts = [input.new_string, input.content, input.new_source, ...(Array.isArray(input.edits) ? input.edits.map((e) => e && e.new_string) : [])];
