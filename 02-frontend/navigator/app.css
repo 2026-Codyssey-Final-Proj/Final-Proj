@@ -997,7 +997,6 @@ button.ln{cursor:pointer}
 .qwin .cover .due.late{color:#6E1226}.qwin .cover .due.soon,.qwin .cover .due.today{color:#4A3300}
 .qwin .minispread{grid-template-columns:1fr}
 .qwin .docx{grid-template-columns:1fr}
-.pet{position:relative}
 .closet{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .closet button{border:1.5px solid var(--line);background:var(--soft);border-radius:10px;padding:4px 8px;font-size:calc(12.5px * var(--ui-scale,1));color:var(--ink);display:inline-flex;align-items:center;gap:6px;min-height:32px}
 .closet button[aria-pressed=true]{border-color:var(--warn);background:var(--warnbg)}

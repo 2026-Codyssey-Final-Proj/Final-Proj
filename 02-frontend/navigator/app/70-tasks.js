@@ -413,6 +413,7 @@
     let j;
     try { j = await (await fetch("/api/approvals", { credentials: "same-origin" })).json(); } catch { return; }
     if (!j || !j.ok || !Array.isArray(j.items)) return;
+    apAuto = j.auto !== false;
     const before = approvals.map((a) => a.id).join(), fresh = j.items.filter((a) => !apKnown.has(a.id));
     apMode = "live"; approvals = j.items.filter((a) => !apDecided.has(a.id)); st.apWait = approvals.length > 0;
     for (const a of j.items) apKnown.add(a.id);
@@ -423,6 +424,15 @@
       activity(); if (st.ui !== "home") go("home"); say(`${toolName(fresh[0].tool)}가 허락을 기다려요 — 채팅의 카드를 봐 주세요`);
     }
     if (approvals.map((a) => a.id).join() !== before && st.ui === "home") render();
+  }
+  // F-149 설정의 '허락을 자동으로' — 닿지 못하면 칸을 되돌린다
+  async function setApAuto(on) {
+    const was = apAuto; apAuto = on;
+    try {
+      const r = await (await fetch("/api/approvals/auto", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ on }) })).json();
+      if (!(r && r.ok)) throw new Error("no");
+      say(on ? "이제 되돌리기 어려운 일만 물어볼게요" : "이제 파일을 고치거나 명령을 쓸 때마다 물어볼게요");
+    } catch { apAuto = was; say("바꾸지 못했어요 — 서버에 연결되어 있는지 봐 주세요"); render(); }
   }
   if (canLive) setInterval(pollApprovals, 2000);
   if (st.plan && FP && FP.running(st.plan)) setTimeout(() => { const id = FP.running(st.plan), w = st.plan.work && st.plan.work[id]; if (planLive() && w && Number.isFinite(w.at)) watchTask({ at: w.at }, "plan"); else st.plan = FP.failed(st.plan, id); }, 0);   // 다시 켰는데 맡김 중인 줄이 있으면 서버에 다시 묻는다(연습이면 다시 맡길 수 있게)

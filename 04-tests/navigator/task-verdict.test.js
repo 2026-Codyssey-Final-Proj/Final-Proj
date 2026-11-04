@@ -66,6 +66,7 @@ for (const k of ["NAV_RECORD", "ANTHROPIC_API_KEY", "ANTHROPIC_BASE_URL"]) delet
 let Srv, port, srv, dir;
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 const token = () => fs.readFileSync(process.env.NAV_EVENT_TOKEN_FILE, "utf8").trim();
+fs.writeFileSync(process.env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-approve-auto"), "0");   // F-149 — 이 시험은 사람의 답을 기다리는 길을 본다
 before(async () => {
   port = await freePort(); process.env.NAV_PORT = String(port);
   Srv = require(path.join(BACK, "server.js"));

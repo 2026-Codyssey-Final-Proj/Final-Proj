@@ -2,7 +2,7 @@
 // Claude Code가 파일을 고치거나 명령을 쓰기 전에 허락을 구하면(PermissionRequest 훅) 섬에 띄울 **승인 카드**를 만드는 순수 규칙 — 훅(approve-hook.js) · 서버(server.js) · 섬(app.js)이 같이 쓴다.
 //   card(ev)  — 무엇을(도구의 말 · 파일이나 명령) · 바뀔 내용(가려서 · 줄 수 제한) · 되돌리기 어려운 일이면 까닭(danger)
 //   sig(ev)   — 요청의 지문(세션 · 도구 · 입력). 결정은 이 지문이 맞을 때만 쓴다 — 늦은 결정 · 다른 요청의 결정은 버린다(요구서 C-4 ③, 장부 W-25 · W-26)
-//   decisionOutput(d) — 훅이 Claude Code에 돌려줄 글. allow · deny만 JSON이고 그 밖은 빈 글: **대신 허용하는 길이 없다**
+//   decisionOutput(d) — 훅이 Claude Code에 돌려줄 글. allow · deny만 JSON이고 그 밖은 빈 글 — 허용은 서버가 답할 때만(자동 허용 F-149도 서버가 정한다)
 //   EXAMPLE  — 서버 없이(FR-10) 보일 카드 둘
 // 바뀔 내용은 승인 카드에서만 보이고 저장 · 전송하지 않는다(서버는 메모리에만, 결정하면 지운다). AI 진행(C-12)의 '이름 · 첫 줄 · 줄 수만'은 그대로다 — 두 길을 섞지 않는다.
 // 훅의 모양은 Claude Code 문서(code.claude.com/docs/en/hooks, 2026-10-20 확인)대로: 결정은 hookSpecificOutput.decision.behavior allow|deny, 결정 없이 끝나면 보통 흐름(허용되지 않음).
@@ -24,6 +24,10 @@
   ];
   const DANGER_FILE = /(^|[\\/])(\.env(\.[^\\/]*)?|[^\\/]*\.(pem|key|p12|pfx)|id_(rsa|ed25519|ecdsa)(\.pub)?|[^\\/]*credentials[^\\/]*)$/i;
   const DANGER_FILE_WHY = "비밀값 파일이에요 — 밖으로 새면 되돌릴 수 없어요";
+  // F-149: 자동 허용은 이 판정을 믿는다 — 허락 훅이 걸린 설정 · git 훅을 고쳐 장치를 스스로 끄지 못하게
+  const GUARD_FILE = /(^|[\\/])(\.claude[\\/]settings(\.local)?\.json|\.git[\\/]hooks[\\/][^\\/]+)$/i;
+  const GUARD_CMD = /\.claude[\\/]settings(\.local)?\.json|\.git[\\/]hooks[\\/]/i;
+  const GUARD_WHY = "허락을 묻는 장치의 설정이에요 — 바뀌면 다음부터 묻지 않을 수 있어요";
   const SECRET_WHY = "비밀값 모양이 들어 있어요 — 밖으로 새면 되돌릴 수 없어요";
   const VERBS = { Edit: "edit", MultiEdit: "edit", Write: "write", NotebookEdit: "edit", Bash: "run" };
 
@@ -42,8 +46,11 @@
   }
   const whyOf = (tool_name, input) => {
     const file = str(input.file_path || input.notebook_path);
-    if (file && VERBS[tool_name] && VERBS[tool_name] !== "run" && DANGER_FILE.test(file)) return DANGER_FILE_WHY;
-    if (tool_name === "Bash") { const cmd = str(input.command); for (const [re, why] of DANGER_CMD) if (re.test(cmd)) return why; if (blocked(cmd)) return SECRET_WHY; }
+    if (file && VERBS[tool_name] && VERBS[tool_name] !== "run") {
+      if (DANGER_FILE.test(file)) return DANGER_FILE_WHY;
+      if (GUARD_FILE.test(file)) return GUARD_WHY;
+    }
+    if (tool_name === "Bash") { const cmd = str(input.command); for (const [re, why] of DANGER_CMD) if (re.test(cmd)) return why; if (GUARD_CMD.test(cmd)) return GUARD_WHY; if (blocked(cmd)) return SECRET_WHY; }
     if (VERBS[tool_name] === "edit" || VERBS[tool_name] === "write") {
       const texts = [input.new_string, input.content, input.new_source, ...(Array.isArray(input.edits) ? input.edits.map((e) => e && e.new_string) : [])];
       if (texts.some((t) => blocked(str(t)))) return SECRET_WHY;

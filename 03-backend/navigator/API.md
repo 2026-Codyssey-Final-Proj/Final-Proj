@@ -32,6 +32,7 @@
 | `POST /api/approval` | 허락 훅(`approve-hook.js`) — **답을 기다린다**(FR-17, 2026-10-20) | 출처 · 확인 값(머리글) | `{ok, id, decision: "allow"\|"deny"\|"none"}` — 결정이 오거나 90초가 지나면 | 403 · 413 · 400 · 429 |
 | `GET /api/approvals` | 섬(2초마다) | 출처 · 확인 값(쿠키) | `{ok, items[]}` 기다리는 승인 카드 | 403 |
 | `POST /api/approvals/decide` | 섬 "허용" · "거절" | 출처 · 확인 값(쿠키) | `{ok, id, decision}` | 403 · 404 · 409 · 400 |
+| `POST /api/approvals/auto` | 설정 "허락을 자동으로"(F-149, 2026-11-04) | 출처 · 확인 값(쿠키) | `{ok, auto}` | 403 · 400 · 500 |
 | `POST /api/task/tidy` | 섬 "요구 문장으로 정리" | 출처 · 확인 값(쿠키) | `{ok, lines[], say, tokens}` | 403 · 413 · 400 · 502 |
 | `POST /api/task/start` | 섬 "허락하고 넘기기" | 출처 · 확인 값(쿠키) | `{ok, project, task:{state, project, at, code}}` — 연결한 폴더에서 `claude -p`를 연다 | 403 · 413 · 400 · 409 · 502 |
 | `POST /api/chat` (3-31) | 섬 — '보내기'(작업실 개편 C-61, 2026-10-29) | 출처 · 확인 값(쿠키) | `{ok, reply, slots[], n, tokens}` — 플로로의 답 + 이 대화로 채울 수 있는 칸(적지 않는다) | 403 · 413 · 400 · 502 |
@@ -468,7 +469,7 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 ### 3-14. `GET /api/approvals` — 섬이 기다리는 승인 카드를 본다
 
 - **누가:** 섬(`app.js`, 2초마다, 쿠키로). 서버 없이 열면 부르지 않고 [approve.js](approve.js) `EXAMPLE`을 보인다(FR-10, 주소 끝 `&approve=1`).
-- **성공:** `{ "ok": true, "items": [ { "id", "sig", "at", "project", "tool", "tool_name", "card" } ] }` — 오래된 것부터. `sig`는 결정(3-15)에 그대로 돌려보낸다.
+- **성공:** `{ "ok": true, "auto": true, "items": [ { "id", "sig", "at", "project", "tool", "tool_name", "card" } ] }` — `auto`는 자동 허용이 켜졌는지(3-15-1). 오래된 것부터. `sig`는 결정(3-15)에 그대로 돌려보낸다.
 - **거절:** 403.
 
 ### 3-15. `POST /api/approvals/decide` — 섬이 허용 · 거절을 누른다
@@ -476,6 +477,13 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 - **본문:** `id` · `sig`(3-14에서 받은 것 그대로) · `decision`(`"allow"` · `"deny"`) · `sure`(되돌리기 어려운 일을 허용할 때만 `true`).
 - **판정 차례(2-1):** 확인 값 → `id`가 기다리는 표에 있나(아니면 **404** `기다리는 요청이 아님 — 늦었거나 이미 정해졌어요`) → `sig`가 같나(아니면 **409** `결정이 요청과 짝이 맞지 않음 — 버렸어요`) → `decision`(아니면 **400** `decision은 allow 또는 deny`) → `card.danger`가 있는데 `allow`이고 `sure`가 없으면 **409** `되돌리기 어려운 일이에요 — … 한 번 더 확인(sure)해 주세요`(섬은 '정말 허용' 단추를 한 번 더 보인다).
 - **성공:** `{ "ok": true, "id", "decision" }` — 같은 순간 붙들어 둔 훅(3-13)에도 같은 답이 간다. 요청은 표에서 빠진다.
+
+### 3-15-1. `POST /api/approvals/auto` — 허락을 자동으로 켜고 끈다 (F-149, 2026-11-04) <!-- claude-drafted: 2026-11-04 -->
+
+- **본문:** `on`(`true` · `false`). 그 밖은 **400**. 성공 `{ "ok": true, "auto": true }`.
+- **켜져 있으면(처음 상태):** `POST /api/approval`(3-13)은 카드의 `kind`가 `edit` · `write` · `run`이고 `danger`가 비어 있으면 기다리지 않고 바로 `{ "ok": true, "id", "decision": "allow", "auto": true }`로 답한다. 카드는 목록에 남지 않는다.
+- **그래도 사람에게 묻는 것:** `danger`가 있는 일(삭제 · 강제 푸시 · 비밀값 · 허락 장치의 설정 — [approve.js](approve.js))과 `kind`가 `other`인 도구. 답이 없거나 서버가 꺼져 있으면 전처럼 허용되지 않는다.
+- **저장:** 이 컴퓨터의 파일 하나(`NAV_USAGE_FILE` 옆 `-approve-auto`, 없으면 홈의 `.navigator-approve-auto`, 600). 파일이 없으면 켜짐, 읽지 못하면 꺼짐으로 본다.
 
 ### 3-16. 일 넘기기 — `POST /api/task/tidy` · `POST /api/task/start` · `GET /api/task`
 
