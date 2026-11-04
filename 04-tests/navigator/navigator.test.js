@@ -392,6 +392,7 @@ test("플로로 열중(F-154): Claude Code가 일하는 동안의 표정 — 내
   assert.ok(Cat.MOODS.includes("work"));
   assert.match(Cat.svg("work", 108, { hole: true }), /class="cat m-work hole"/);
   assert.match(Cat.svg("work", 108), /class="e-work"/);
+  assert.doesNotMatch(Cat.svg("work", 108), /e-brow/, "눈썹은 그리지 않는다(두승현 2026-11-04)");
   const hole = Cat.svg("work", 108, { hole: true, wear: ["scarf"] });
   assert.ok(hole.indexOf('class="c-wear"') < hole.indexOf('class="c-lap"') && hole.indexOf('class="c-lap"') < hole.indexOf("h-line"), "노트북은 목도리 앞, 물 띠 뒤");
   assert.match(hole, /class="s-code"/, "머리 위 코드 글자");
