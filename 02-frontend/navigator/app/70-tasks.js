@@ -40,7 +40,7 @@
       sub: "끝낸 줄과 보고는 퀘스트 창의 맡길 일에 남아 있어요.", acts: [{ label: "새 계획 적기", act: "plan-reset", pri: true }] };
     const i = b.plan.items.findIndex((x) => x.id === id), x = b.plan.items[i], w = b.work[id] || {}, s = FP.stateOf(b, id);
     const meta = `<span class="mm-stage">맡길 일 · ${p.total}개 중 ${i + 1}번째</span>${planMini(b, i)}${ex}`;
-    if (s === "running") return { tone: "gray", mood: "think", meta, title: st.halting ? `Claude Code를 멈추는 중이에요${dots}` : `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,   // halting — '멈추기'를 누르고 서버가 끌 때까지(최대 10초) 단추 없이
+    if (s === "running") return { tone: "gray", mood: "work", meta, title: st.halting ? `Claude Code를 멈추는 중이에요${dots}` : `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,   // halting — '멈추기'를 누르고 서버가 끌 때까지(최대 10초) 단추 없이
       body: `<p class="mc-fine">허락이 필요하면 이 말 위에 카드가 떠요. 끝나면 기준마다 해냈는지 알려 줘요.</p>`, acts: st.halting ? [] : [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "멈추기", act: "plan-unwait", kind: "ghost" }] };   // 진행 보기 — Claude Code가 한 일 한 줄씩(AI 진행 판). 멈추기 — 맡긴 일을 끄고 그 줄을 끝맺어 바로 다시 맡길 수 있게(F-103-7)
     if (s === "report" && w.report) { const v = w.verdict || N.reportVerdict(w.report, "done");   // C-50 서버가 기준을 세어 준 미리 보기(없던 옛 기록만 화면이 센다)
       return { tone: v.kind === "done" ? "green" : "amber", mood: v.kind === "done" ? "happy" : "think", meta, title: `보고가 왔어요 — 세어 보니 ${v.word} (기준 ${Number(w.report.total) || 0}개 중 ${Number(w.report.done) || 0}개)`, sub: esc(w.report.easy),

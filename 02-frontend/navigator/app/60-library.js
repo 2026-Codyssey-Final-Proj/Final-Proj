@@ -261,7 +261,7 @@
     if (greeting) main = `<b>플로로</b><span class="pl-now pl-hello" aria-live="polite">${esc(st.back || C.greeting(new Date().getHours()))}</span>`;
     const base = st.ping ? "look" : greeting ? "happy" : face()[0];
     return `<button class="pill${st.ping || st.warn ? " ping" : ""}${greeting ? " greet" : ""}" data-act="pill" aria-expanded="false" aria-label="플로로 펼치기 · ${esc(stateWords())}">
-      <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { face: true })}</span>${main}${modeChip()}${connLed()}</button>`;
+      <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { face: true, extra: moodIn(liveMood(base), 36) })}</span>${main}${modeChip()}${connLed()}</button>`;
   }
   // 접혀 있을 때도 보이는 작은 표시(시연 안전장치) — 연습인지 진짜 AI인지, Claude Code·Codex와 연결됐는지
   const conn = () => (!canLive ? "" : st.unplug ? "off" : st.feed.at ? "on" : "wait");

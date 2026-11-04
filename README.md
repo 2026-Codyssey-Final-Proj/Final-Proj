@@ -15,7 +15,7 @@
 ![Server](https://img.shields.io/badge/Server-Node.js%20local%20only-339933?logo=nodedotjs&logoColor=white)
 ![AI](https://img.shields.io/badge/AI-Claude%20%28API%20key%20or%20Claude%20Code%29-D97757?logo=anthropic&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-node%20%2B%20python-3776AB?logo=pytest&logoColor=white)
-![Release](https://img.shields.io/badge/Release-app--v11.1.0-1E6FD9?logo=github&logoColor=white)
+![Release](https://img.shields.io/badge/Release-app--v11.2.0-1E6FD9?logo=github&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 ![작업실 — 왼쪽 파일 칸, 가운데 퀘스트 탭(위 여덟 장 지도 · 아래 지금 퀘스트 다섯 칸), 오른쪽 섬(플로로와 채팅)](01-docs/features/shots/2026-10-30-quest-tab/after-b-s2-1440.png)
@@ -25,7 +25,7 @@
 
 | 📦 버전 기록 | 🖥 앱 | 🗓 일정 | 🏷 이름 |
 |---|---|---|---|
-| **v63.0** (2026-11-04) · [CHANGELOG](CHANGELOG.md) | **11.1.0** (2026-11-04, 11/1 동결 판 11.0.0 뒤 고침) · Mac · Windows · 우분투 · [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) | 🧪 사용 테스트 **11/4 ~ 7** · 📮 제출 **11/8 18:00** · 🎤 발표 **11/12 · 13** | **Floe**(제품) · **플로로**(마스코트) — 2026-10-17 확정 [#51](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/issues/51) |
+| **v63.4** (2026-11-04) · [CHANGELOG](CHANGELOG.md) | **11.2.0** (2026-11-04) · Mac · Windows · 우분투 · [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) | 🧪 사용 테스트 **11/4 ~ 7** · 📮 제출 **11/8 18:00** · 🎤 발표 **11/12 · 13** | **Floe**(제품) · **플로로**(마스코트) — 2026-10-17 확정 [#51](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/issues/51) |
 
 코디세이 Final-Project · 작업 이름 Project Navigator · 할 일은 Jira 프로젝트 Floe([jira.md](01-docs/00-overview/jira.md))
 
@@ -61,7 +61,7 @@
 | 07 | **문서를 내 GitHub에** | 관문을 지나면 단계 문서 · 기획서 · 결정 기록 · CLAUDE.md를 작업 폴더에 쓴다. 커밋 · 푸시는 Claude Code가(허락을 받고). 비밀값 모양은 쓰기 전에 가린다. |
 | 08 | **파일을 작업실에서** | 파일 칸에서 누르면 열린다 — md는 보기 좋게, 코드는 줄 번호와 git과 다른 줄. 고쳐 저장하고 되돌리며, 문서 고치기는 **틀로 맡기기**로 넘긴다. |
 | 09 | **배운 것을 다음 프로젝트로** | 관문마다 배운 것 한 줄, 단계마다 한 장, 8단계에서 가져갈 것을 골라 다음 프로젝트의 그 단계에서 다시 본다. 지식 창고(세컨드 브레인)로도 넣는다. |
-| 10 | **플로로** | 표정 11가지 · 고개 돌리기 · 둥실 · 잠수 · 쓰다듬기. 뽑기로 받은 장식을 머리에 쓰고 같이 움직인다. 섬을 접으면 가장자리의 알약 안에서 얼굴만 내민다. 움직임 줄이기 설정을 켠 사람에게는 움직이지 않는다. |
+| 10 | **플로로** | 표정 12가지 · 고개 돌리기 · 둥실 · 잠수 · 쓰다듬기. 뽑기로 받은 장식을 머리에 쓰고 같이 움직인다. 섬을 접으면 가장자리의 알약 안에서 얼굴만 내민다. 움직임 줄이기 설정을 켠 사람에게는 움직이지 않는다. |
 
 기능마다 무엇 · 왜 · 흐름 그림 · 시연 GIF → [기능 지도](01-docs/features/README.md). 있는 기능 **81개**를 하나도 빠짐없이 적은 표 → [기능 전체 목록](01-docs/features/2026-10-31-기능-전체-목록.md) · [우선순위](01-docs/features/2026-10-31-기능-우선순위.md) · [마감 전 줄이기 제안](01-docs/features/2026-10-31-기능-줄이기-제안.md)
 
@@ -282,7 +282,6 @@ Final-Proj/
 - **진짜 AI로 한 바퀴는 다시 재지 않았다.** 연습 판은 끝까지 되지만, 10/30 진짜 AI 기록에서 허락 카드가 안 뜬 채 커밋된 일(#294)의 까닭을 찾았다는 기록이 없다. 위 장면 4.
 - **자동 허용의 범위.** 처음부터 켜져 있어 패키지 설치 · 외부 스크립트 실행 · `sudo`도 묻지 않고 돈다. 삭제 · 강제 푸시 · 비밀값 · 허락 장치의 설정만 묻는다(F-149).
 - **칸의 내용은 보지 않는다.** 플로로에게 보낸 말이 칸에 바로 적히지는 않지만(F-150), 사람이 직접 적은 줄이 답인지는 관문이 판단하지 않는다.
-- **내려받는 앱은 11.1.0.** 그 뒤의 고침(눈 · 장식 · 자동 허용 등)은 앱 버전을 올려야 들어간다.
 - **Claude Desktop 같이 쓰기 · 원격 MCP는 시험판.** 도구 넷이 보이는 것까지 확인, 대화로 한 바퀴는 아직. 기본 꺼짐.
 - **e2e는 이 컴퓨터에서 안 돌았다.** 위 "품질 확인"의 건너뛴 94개가 그것이다 — Chrome 경로를 주면 돈다.
 - 숨겨 둔 것: 서재(1,479줄) · 지식 은하 · 먹이 주기의 시연 노출. 대회 뒤 지울 코드는 약 3,300줄([줄이기 제안 5절](01-docs/features/2026-10-31-기능-줄이기-제안.md)).
@@ -293,7 +292,7 @@ Final-Proj/
 
 ![플로로의 표정 — 기본 · 기쁨 · 생각 · 하트 · 깜짝 · 잠](02-frontend/assets/mascot/floro-moods.svg)
 
-물에서 고개를 내민 **길잡이 물범**. 지금 단계를 알려 주고, 기다리는 동안 곁을 지켜요. 표정 11가지, 눈 · 코가 마우스 쪽으로, 둥실 · 빼꼼 · 잠수 · 물 뿜기, 쓰다듬으면 하트. 뽑기로 받은 장식을 쓰고 같이 움직여요. 🎨 화면 속 플로로 두승현 · 원본 그림 이재엽(두승현이 제안한 스킬로) · 자세히 → [마스코트 README](02-frontend/assets/mascot/README.md)
+물에서 고개를 내민 **길잡이 물범**. 지금 단계를 알려 주고, 기다리는 동안 곁을 지켜요. 표정 12가지, 눈 · 코가 마우스 쪽으로, 둥실 · 빼꼼 · 잠수 · 물 뿜기, 쓰다듬으면 하트. 뽑기로 받은 장식을 쓰고 같이 움직여요. 🎨 화면 속 플로로 두승현 · 원본 그림 이재엽(두승현이 제안한 스킬로) · 자세히 → [마스코트 README](02-frontend/assets/mascot/README.md)
 
 ---
 

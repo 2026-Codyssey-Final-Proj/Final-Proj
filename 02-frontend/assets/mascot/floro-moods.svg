@@ -32,6 +32,18 @@
 .m-love .e-heart,.m-purr .e-closed,.m-sleep .e-closed,.m-yawn .e-closed{display:inline}
 .m-look .s-dots,.m-done .s-spark,.m-think .s-q,.m-alert .s-bang,.m-love .s-heart,.m-purr .s-heart,.m-sleep .s-zzz{display:inline}
 .cat.oops .s-sweat{display:inline}.cat.oops .s-q{display:none}
+/* 열중(F-154) — Claude Code가 일하는 동안 노트북으로 코드를 친다. 내리깐 눈 + 노트북 + 머리 위 코드 글자. 그림은 seal.js, 움직임은 아래 no-preference 안에 */
+.cat .c-lap{display:none}
+.m-work .e-work{display:inline}
+.m-work .c-lap,.m-work .s-code{display:inline}
+.m-work .c-fin{display:none}
+.small .c-lap{display:none}
+.cat .lap-lid{fill:#D3E0F3;stroke:#7E9CCB;stroke-width:1.2;stroke-linejoin:round}
+.cat .lap-base{fill:#B5D1EE;stroke:#7E9CCB;stroke-width:1.2;stroke-linejoin:round}
+.cat .lap-mark{font:800 7.5px ui-monospace,Consolas,Menlo,monospace;fill:#4D66B5;text-anchor:middle}
+.cat .lap-l,.cat .lap-r{fill:var(--seal);stroke:var(--seal-fin);stroke-width:1.1}
+.cat .s-code text{font:800 7.5px ui-monospace,Consolas,Menlo,monospace;fill:var(--seal-code,#A9C4F0)}
+.cat .c-eyes .e-work path{fill:var(--seal-ink);stroke-width:1.4;stroke-linejoin:round}
 .m-angry .e-angry,.m-angry .s-sign{display:inline}.m-angry .c-mouth{display:none}.m-angry .c-open{display:inline}   /* C-19 화난 눈 · X 표지판 — 숨기는 규칙(위) 뒤에 둔다 */
 .m-yawn .c-mouth,.m-wow .c-mouth,.m-alert .c-mouth{display:none}
 .m-yawn .c-open,.m-wow .c-open,.m-alert .c-open{display:inline}
@@ -88,6 +100,36 @@
   /* 배로 통통 — 물범이 땅에서 걷는 법(배로 튀며 나아간다). 부르는 쪽이 감싼 요소에 .galumph를 붙인다 */
   .galumph svg.cat { transform-origin: 50% 100%; animation: galumph 1.4s ease-in-out; }
 
+  /* 열중(F-154) — 양쪽 지느러미로 번갈아 타닥타닥, 고개를 조금씩 끄덕이고, 머리 위 코드 글자가 차례로 떠오른다 */
+  .m-work .lap-l { animation: work-tap .24s ease-in-out infinite alternate; }
+  .m-work .lap-r { animation: work-tap .24s ease-in-out -.12s infinite alternate; }
+  .m-work .c-body, .hole.m-work .c-body { transform-origin: 55px 60px; animation: work-nod 1.5s ease-in-out infinite; }
+  .m-work .s-code text { animation: work-code 1.8s ease-in-out infinite; }
+  .m-work .s-code text:nth-child(2) { animation-delay: .35s; } .m-work .s-code text:nth-child(3) { animation-delay: .7s; }
+
+  /* 표정이 바뀌는 순간(F-154, 두승현 "애니메이션 변환시 연출이 자연스러웠으면") — 바뀐 직후의 그림에만 붙는 .mood-in · .from-옛표정으로 한 번만(app/10-views.js moodIn).
+     ponytail: 움직이는 도중(0.9초 안)에 다시 그려지면 처음부터 다시 움직인다 — 눈에 띄면 경과 시간을 animation-delay로 넘긴다 */
+  /* 눈 · 입은 스르르 뜨듯이, 머리 위 표시는 작게 솟아 나오고, 볼은 물들듯이 */
+  .mood-in .c-eyes>* { transform-box: fill-box; transform-origin: center; animation: eye-in .2s ease-out; }
+  .mood-in :is(.c-mouth, .c-open) { transform-box: fill-box; transform-origin: center; animation: eye-in .2s ease-out; }
+  .mood-in :is(.s-q, .s-spark, .s-bang, .s-heart) { transform-box: fill-box; transform-origin: center bottom; animation: mark-in .24s cubic-bezier(.34, 1.56, .64, 1); }
+  .mood-in .c-blush ellipse { animation: blush-in .3s ease-out; }
+  /* 몸의 높이가 달라지는 표정(잠수 · 끄덕임)을 오갈 때 뛰지 않게 */
+  .hole.mood-in:is(.m-think, .m-look) .c-body { animation: body-dive .4s ease-out, dip 3s ease-in-out .4s infinite; }
+  .hole.mood-in:is(.from-think, .from-look):not(.m-think):not(.m-look):not(.m-work):not(.m-wow):not(.m-alert) .c-body { animation: body-settle .4s ease-out, float 5s ease-in-out .4s infinite; }
+  /* 노트북 — 물에서 떠올라 뚜껑이 열리고, 지느러미가 올라와 치기 시작한다 */
+  .mood-in.m-work .c-lap { animation: lap-rise .42s cubic-bezier(.23, 1, .32, 1) both; }
+  .mood-in.m-work .lap-top { transform-origin: 49px 65px; animation: lap-open .4s cubic-bezier(.34, 1.56, .64, 1) .14s both; }
+  .mood-in.m-work .lap-l { animation: arm-in .24s ease-out .36s both, work-tap .24s ease-in-out .6s infinite alternate; }
+  .mood-in.m-work .lap-r { animation: arm-in .24s ease-out .36s both, work-tap .24s ease-in-out .72s infinite alternate; }
+  .mood-in.m-work .c-fin { display: inline; animation: fade-out .18s ease-out both; }
+  .mood-in.m-work .s-code { animation: fade-in .3s ease-out .45s both; }
+  /* 끝나면 — 지느러미를 내리고 뚜껑을 닫아 물로 내려간다. 가슴의 지느러미 선이 돌아온다 */
+  .mood-in.from-work:not(.m-work):not(.small) .c-lap { display: inline; animation: lap-sink .3s ease-in .12s both; }
+  .mood-in.from-work:not(.m-work):not(.small) .lap-top { transform-origin: 49px 65px; animation: lap-close .18s ease-in both; }
+  .mood-in.from-work:not(.m-work) :is(.lap-l, .lap-r) { display: none; }
+  .mood-in.from-work:not(.m-work) .c-fin { animation: fade-in .3s ease-out .25s both; }
+
   /* 꾸미기(F-148) — 물결 따라 둥실(float 5초)보다 조금 늦게 따라오고, 표정에 작게 반응한다. 목도리는 조금만 흔들린다 */
   .cat .w-move { animation: w-lag 5s ease-in-out infinite; }
   .m-think .w-hat { --t: 9deg; animation: w-tilt 3s ease-in-out infinite; }
@@ -111,6 +153,21 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
 @keyframes blinkdot { 50% { opacity: .25; } }
 @keyframes jump { 0%, 100% { transform: none; } 40% { transform: translateY(-8px); } }
 @keyframes wave-sign { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+@keyframes eye-in { from { opacity: .2; transform: scaleY(.25); } }
+@keyframes mark-in { from { opacity: 0; transform: scale(.5) translateY(3px); } }
+@keyframes blush-in { from { opacity: 0; } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
+@keyframes body-dive { from { transform: none; } to { transform: translateY(3px); } }
+@keyframes body-settle { from { transform: translateY(5px); } to { transform: none; } }
+@keyframes lap-rise { from { opacity: 0; transform: translateY(16px); } 35% { opacity: 1; } to { opacity: 1; transform: none; } }
+@keyframes lap-sink { from { opacity: 1; transform: none; } 70% { opacity: 1; } to { opacity: 0; transform: translateY(16px); } }
+@keyframes lap-open { from { transform: scaleY(.08); } to { transform: none; } }
+@keyframes lap-close { from { transform: none; } to { transform: scaleY(.08); } }
+@keyframes arm-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes work-tap { from { transform: translateY(-1.1px); } to { transform: translateY(.7px); } }
+@keyframes work-nod { 0%, 100% { transform: none; } 50% { transform: translateY(1.4px) rotate(1deg); } }
+@keyframes work-code { 0%, 100% { opacity: .2; transform: translateY(1.5px); } 45% { opacity: 1; transform: translateY(-1.5px); } }
 @keyframes w-lag { 0%, 100% { transform: none; } 38% { transform: rotate(var(--a, 3.5deg)); } 78% { transform: rotate(calc(var(--a, 3.5deg) * -1)); } }
 @keyframes w-tilt { 0%, 100% { transform: rotate(calc(var(--t) * .4)); } 50% { transform: rotate(var(--t)) translateY(.6px); } }
 @keyframes w-hop { to { transform: translateY(-3px) rotate(5deg); } }
@@ -122,7 +179,7 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
 @keyframes flap { to { transform: scale(1.12, .9) translateY(-1px); } }
 /* 숨구멍의 몸은 1.12배로 그려져 있어 아래 칸 수는 그 안의 칸이다 — 물 아래(그림 y 110)로 사라지려면 72칸 넘게 내려간다 */
 @keyframes float { 0%, 100% { transform: none; } 30% { transform: translateY(-1.5px) rotate(-3deg); } 70% { transform: translateY(1px) rotate(3deg); } }
-@keyframes popup { 0% { transform: translateY(15px); } 50% { transform: translateY(-13px) scale(.97, 1.04); } 75% { transform: translateY(2px); } 100% { transform: none; } }
+@keyframes popup { 0% { transform: none; } 18% { transform: translateY(7px) scale(1.03, .96); } 55% { transform: translateY(-13px) scale(.97, 1.04); } 78% { transform: translateY(2px); } 100% { transform: none; } }   /* 움츠렸다가 솟는다 — 전에는 15칸 아래에서 갑자기 시작해 표정이 바뀔 때 몸이 뛰었다(F-154) */
 @keyframes dip { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(10px); } }
 @keyframes swim {
   0% { transform: none; }
@@ -169,6 +226,7 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
+          <g class="e-work"><path d="M35.4 35.8 A3.6 3.6 0 0 0 42.6 35.8 Z"></path> <path d="M56.4 35.8 A3.6 3.6 0 0 0 63.6 35.8 Z"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
           <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
@@ -178,12 +236,14 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
         
+        <g class="c-lap"><ellipse class="lap-l" cx="28.5" cy="59" rx="5.5" ry="2.6" transform="rotate(14 28.5 59)"></ellipse><ellipse class="lap-r" cx="69.5" cy="59" rx="5.5" ry="2.6" transform="rotate(-14 69.5 59)"></ellipse><g class="lap-top"><path class="lap-lid" d="M28.5 49 Q28.3 47 30.3 47 H67.7 Q69.7 47 69.5 49 L67.3 65 H30.7 Z"></path><text class="lap-mark" x="49" y="58.6">&lt;/&gt;</text></g><path class="lap-base" d="M30.5 65 H67.5 Q68.6 65 68.6 66 Q68.6 67.2 67.4 67.2 H30.6 Q29.4 67.2 29.4 66 Q29.4 65 30.5 65 Z"></path></g>
       </g>
       </g></g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#fl2w)"></path>
     <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path><g transform="translate(-2 12)"><g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
+      <g class="s-code"><text x="80" y="29">{ }</text><text x="86" y="18">&lt;/&gt;</text><text x="94" y="8">;</text></g>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
@@ -212,6 +272,7 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
+          <g class="e-work"><path d="M35.4 35.8 A3.6 3.6 0 0 0 42.6 35.8 Z"></path> <path d="M56.4 35.8 A3.6 3.6 0 0 0 63.6 35.8 Z"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
           <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
@@ -221,12 +282,14 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
         
+        <g class="c-lap"><ellipse class="lap-l" cx="28.5" cy="59" rx="5.5" ry="2.6" transform="rotate(14 28.5 59)"></ellipse><ellipse class="lap-r" cx="69.5" cy="59" rx="5.5" ry="2.6" transform="rotate(-14 69.5 59)"></ellipse><g class="lap-top"><path class="lap-lid" d="M28.5 49 Q28.3 47 30.3 47 H67.7 Q69.7 47 69.5 49 L67.3 65 H30.7 Z"></path><text class="lap-mark" x="49" y="58.6">&lt;/&gt;</text></g><path class="lap-base" d="M30.5 65 H67.5 Q68.6 65 68.6 66 Q68.6 67.2 67.4 67.2 H30.6 Q29.4 67.2 29.4 66 Q29.4 65 30.5 65 Z"></path></g>
       </g>
       </g></g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#fl3w)"></path>
     <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path><g transform="translate(-2 12)"><g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
+      <g class="s-code"><text x="80" y="29">{ }</text><text x="86" y="18">&lt;/&gt;</text><text x="94" y="8">;</text></g>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
@@ -255,6 +318,7 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
+          <g class="e-work"><path d="M35.4 35.8 A3.6 3.6 0 0 0 42.6 35.8 Z"></path> <path d="M56.4 35.8 A3.6 3.6 0 0 0 63.6 35.8 Z"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
           <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
@@ -264,12 +328,14 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
         
+        <g class="c-lap"><ellipse class="lap-l" cx="28.5" cy="59" rx="5.5" ry="2.6" transform="rotate(14 28.5 59)"></ellipse><ellipse class="lap-r" cx="69.5" cy="59" rx="5.5" ry="2.6" transform="rotate(-14 69.5 59)"></ellipse><g class="lap-top"><path class="lap-lid" d="M28.5 49 Q28.3 47 30.3 47 H67.7 Q69.7 47 69.5 49 L67.3 65 H30.7 Z"></path><text class="lap-mark" x="49" y="58.6">&lt;/&gt;</text></g><path class="lap-base" d="M30.5 65 H67.5 Q68.6 65 68.6 66 Q68.6 67.2 67.4 67.2 H30.6 Q29.4 67.2 29.4 66 Q29.4 65 30.5 65 Z"></path></g>
       </g>
       </g></g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#fl4w)"></path>
     <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path><g transform="translate(-2 12)"><g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
+      <g class="s-code"><text x="80" y="29">{ }</text><text x="86" y="18">&lt;/&gt;</text><text x="94" y="8">;</text></g>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
@@ -298,6 +364,7 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
+          <g class="e-work"><path d="M35.4 35.8 A3.6 3.6 0 0 0 42.6 35.8 Z"></path> <path d="M56.4 35.8 A3.6 3.6 0 0 0 63.6 35.8 Z"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
           <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
@@ -307,12 +374,14 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
         
+        <g class="c-lap"><ellipse class="lap-l" cx="28.5" cy="59" rx="5.5" ry="2.6" transform="rotate(14 28.5 59)"></ellipse><ellipse class="lap-r" cx="69.5" cy="59" rx="5.5" ry="2.6" transform="rotate(-14 69.5 59)"></ellipse><g class="lap-top"><path class="lap-lid" d="M28.5 49 Q28.3 47 30.3 47 H67.7 Q69.7 47 69.5 49 L67.3 65 H30.7 Z"></path><text class="lap-mark" x="49" y="58.6">&lt;/&gt;</text></g><path class="lap-base" d="M30.5 65 H67.5 Q68.6 65 68.6 66 Q68.6 67.2 67.4 67.2 H30.6 Q29.4 67.2 29.4 66 Q29.4 65 30.5 65 Z"></path></g>
       </g>
       </g></g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#fl5w)"></path>
     <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path><g transform="translate(-2 12)"><g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
+      <g class="s-code"><text x="80" y="29">{ }</text><text x="86" y="18">&lt;/&gt;</text><text x="94" y="8">;</text></g>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
@@ -341,6 +410,7 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
+          <g class="e-work"><path d="M35.4 35.8 A3.6 3.6 0 0 0 42.6 35.8 Z"></path> <path d="M56.4 35.8 A3.6 3.6 0 0 0 63.6 35.8 Z"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
           <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
@@ -350,12 +420,14 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
         
+        <g class="c-lap"><ellipse class="lap-l" cx="28.5" cy="59" rx="5.5" ry="2.6" transform="rotate(14 28.5 59)"></ellipse><ellipse class="lap-r" cx="69.5" cy="59" rx="5.5" ry="2.6" transform="rotate(-14 69.5 59)"></ellipse><g class="lap-top"><path class="lap-lid" d="M28.5 49 Q28.3 47 30.3 47 H67.7 Q69.7 47 69.5 49 L67.3 65 H30.7 Z"></path><text class="lap-mark" x="49" y="58.6">&lt;/&gt;</text></g><path class="lap-base" d="M30.5 65 H67.5 Q68.6 65 68.6 66 Q68.6 67.2 67.4 67.2 H30.6 Q29.4 67.2 29.4 66 Q29.4 65 30.5 65 Z"></path></g>
       </g>
       </g></g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#fl6w)"></path>
     <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path><g transform="translate(-2 12)"><g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
+      <g class="s-code"><text x="80" y="29">{ }</text><text x="86" y="18">&lt;/&gt;</text><text x="94" y="8">;</text></g>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
@@ -384,6 +456,7 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
+          <g class="e-work"><path d="M35.4 35.8 A3.6 3.6 0 0 0 42.6 35.8 Z"></path> <path d="M56.4 35.8 A3.6 3.6 0 0 0 63.6 35.8 Z"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
           <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
@@ -393,12 +466,14 @@ html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: p
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
         
+        <g class="c-lap"><ellipse class="lap-l" cx="28.5" cy="59" rx="5.5" ry="2.6" transform="rotate(14 28.5 59)"></ellipse><ellipse class="lap-r" cx="69.5" cy="59" rx="5.5" ry="2.6" transform="rotate(-14 69.5 59)"></ellipse><g class="lap-top"><path class="lap-lid" d="M28.5 49 Q28.3 47 30.3 47 H67.7 Q69.7 47 69.5 49 L67.3 65 H30.7 Z"></path><text class="lap-mark" x="49" y="58.6">&lt;/&gt;</text></g><path class="lap-base" d="M30.5 65 H67.5 Q68.6 65 68.6 66 Q68.6 67.2 67.4 67.2 H30.6 Q29.4 67.2 29.4 66 Q29.4 65 30.5 65 Z"></path></g>
       </g>
       </g></g></g>
     <path class="h-water" d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="url(#fl7w)"></path>
     <path class="h-line" d="M14 100 Q60 93 106 100"></path><path class="h-ripple" d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108"></path><g transform="translate(-2 12)"><g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
+      <g class="s-code"><text x="80" y="29">{ }</text><text x="86" y="18">&lt;/&gt;</text><text x="94" y="8">;</text></g>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
