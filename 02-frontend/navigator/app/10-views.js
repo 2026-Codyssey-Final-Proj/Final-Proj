@@ -157,6 +157,8 @@
         : st.feed.at ? `${toolName(st.feed.tool)}와 연결됨 · ${esc(wsFull() || st.feed.project || "프로젝트")} · 마지막 알림 ${ago(st.feed.at)}${st.feed.project && wsFull() && st.feed.project !== wsFull() ? `(${esc(st.feed.project)}에서)` : ""}`   // 이름은 연결한 폴더 먼저 — 마지막 알림이 다른 폴더에서 왔으면 그 이름은 뒤에(F-73)
         : "Claude Code·Codex 알림을 기다리는 중 — connect.js로 연결해 주세요",
         `<button type="button" class="btn" data-act="unplug" aria-pressed="${st.unplug}">${st.unplug ? "다시 연결" : "연결 끊기"}</button>`)}
+      <label class="chk"><input type="checkbox" data-act="ap-auto" ${apAuto ? "checked" : ""}>Claude Code의 허락을 플로로가 자동으로 허용하기</label>
+      <span>지우기 · 강제 푸시 · 비밀값처럼 되돌리기 어려운 일은 계속 물어요. 끄면 파일을 고치거나 명령을 쓸 때마다 물어요.</span>
       ${st.mode === "live" ? `<label class="chk"><input type="checkbox" data-act="auto" ${st.auto ? "checked" : ""} ${st.unplug ? "disabled" : ""}>AI 코딩 도구가 작업을 마치면 자동으로 살펴보기</label>
       <span>켜면 그때마다 최근 작업 대화가 AI(Claude)로 보내져요. 비밀번호처럼 보이는 게 있으면 보내기 전에 멈춰요.</span>` : ""}${
       // 앱 안에서는 폴더 고르기로 훅을 더하고 뺀다(터미널의 floe.js · connect.js와 같은 일) — preload.js가 열어 준 셋만

@@ -72,13 +72,13 @@ const EVENT_ROUTES = ["/api/event", "/api/events", "/api/events/clear", "/api/st
 // 2026-10-19: 처음 설정의 연결 확인(/api/setup/check)도 AI를 부르므로 같은 확인 값을 건다
 const AI_ROUTES = ["/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/setup/check", "/api/task/tidy", "/api/quest", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat"];   // /api/chat — 작업실 개편 C-61 플로로와 자유 대화(2026-10-29)   // /api/prepare — C-56 R-2 준비된 퀘스트(새 맥락 리뷰 2026-10-28 막힘: 토큰 없이 불렸다)   // /api/stagedraft — C-37 2단계 초안(2026-10-25) · /api/start — C-36 처음 한 바퀴의 1단계 초안(2026-10-25) · /api/plan — C-34 준비 계획판(2026-10-24)   // /api/task/tidy — FR-17 요구 문장 정리(2026-10-20), /api/quest — C-22 퀘스트 제작(2026-10-21)
 // FR-17(2026-10-20): 승인(훅이 보내고 기다림 · 섬이 보고 누름)과 일 넘기기 — 모두 확인 값. 폴더 경로는 섬에 주지 않고, claude는 훅이 알려 준 폴더에서만 연다
-const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/task", "/api/task/start", "/api/task/retry", "/api/task/stop"];   // /api/task/retry — F-69 막힌 일을 다시 · 직접 하기 글, /api/task/stop — C-50 사람이 고르면 멈추기(2026-10-28)
+const APPROVE_ROUTES = ["/api/approval", "/api/approvals", "/api/approvals/decide", "/api/approvals/auto", "/api/task", "/api/task/start", "/api/task/retry", "/api/task/stop"];   // /api/task/retry — F-69 막힌 일을 다시 · 직접 하기 글, /api/task/stop — C-50 사람이 고르면 멈추기(2026-10-28)
 // C-26(2026-10-23): 내 작업 책 — 연결한 폴더의 README를 읽어 준다. 폴더 이름 · 글이 나가므로 확인 값을 건다
 const BOOK_ROUTES = ["/api/readme", "/api/files", "/api/file", "/api/find", "/api/docmap", "/api/preset", "/api/github", "/api/github/create", "/api/docs", "/api/chatlog"];   // /api/file — C-43 파일 보기 · 고치기(2026-10-27): 목록의 번호로 열고 쓴다   // /api/files — C-42 R-8 작업실 파일 칸: 연결한 폴더의 파일 · 폴더 이름만(2026-10-27)   // /api/docs — C-37 단계 문서를 작업 폴더에 쓰고 커밋 · 푸시를 Claude Code에(2026-10-25)   // /api/github — 설정의 GitHub 칸(C-25, 2026-10-24): 폴더 이름 · 저장소 이름이 나가고, create는 Claude Code를 연다
 const USAGE_ROUTES = ["/api/usage/reset"];   // 토큰 장부 새로 재기(2026-10-24) — 장부를 지우므로 확인 값. 읽기(GET /api/usage)는 전처럼 숫자만
 const MCP_LOCAL_ROUTES = ["/api/state", "/api/proposals", "/api/proposals/decide", "/api/apps/link"];   // C-38 시험판(2026-10-25) — 화면이 상태를 보내고 웹 AI의 제안을 본다 · Claude Desktop 설정 파일에 잇는다. 밖(터널)에서는 받지 않는다(allowed)
 const TOKEN_ROUTES = [...EVENT_ROUTES, ...AI_ROUTES, ...APPROVE_ROUTES, ...BOOK_ROUTES, ...USAGE_ROUTES, ...MCP_LOCAL_ROUTES];
-const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/task/tidy", "/api/task/start", "/api/task/retry", "/api/task/stop", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link", "/api/chatlog"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
+const POST_ROUTES = ["/api/file", "/api/preset", "/api/event", "/api/judge", "/api/answer", "/api/draft", "/api/review", "/api/approval", "/api/approvals/decide", "/api/approvals/auto", "/api/task/tidy", "/api/task/start", "/api/task/retry", "/api/task/stop", "/api/quest", "/api/github/create", "/api/plan", "/api/start", "/api/stagedraft", "/api/prepare", "/api/chat", "/api/docs", "/api/state", "/api/proposals/decide", "/api/apps/link", "/api/chatlog"];   // 본문(JSON)을 읽는 주소 — 이 밖은 본문을 읽기 전에 404
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43,}$/;   // randomBytes(32)의 base64url = 43자
 // 지식 퀘스트 C-48(2026-10-29) — 따로 더해 둔다(다른 갈래가 고치는 위 목록 줄과 부딪치지 않게). 가져갈 것 초안(AI 한 번) · 장부(이 컴퓨터) 모두 확인 값
 TOKEN_ROUTES.push("/api/carry/draft", "/api/carry");
@@ -319,7 +319,8 @@ const stepsSince = (since) => ({ latest: stepSeq, sessions: [...work.values()].r
 // ── FR-17 섬에서 허용 · 거절 — claude-drafted: 2026-10-20 (이재엽 버튼 "섬에서 진짜 승인", 넘김 문서 c4-views 2절 ② · 3절) ──
 // 훅(approve-hook.js)이 POST /api/approval로 승인 카드를 보내고 **답을 기다린다**(길게 여는 요청). 섬은 GET /api/approvals로 보고 POST /api/approvals/decide로 누른다.
 // 결정은 그 요청(id · sig)과 짝이 맞을 때만 — 늦은 결정(404) · 다른 요청의 결정(409)은 버린다. 되돌리기 어려운 일(card.danger)은 sure:true가 있어야 허용(409로 한 번 더 묻는다).
-// 아무도 누르지 않으면 APPROVAL_WAIT 뒤 none — 훅은 아무것도 출력하지 않아 Claude Code가 스스로 묻는다. **대신 허용하는 길이 없다.** 카드는 메모리에만, 결정하면 지운다(바뀔 내용을 저장 · 전송하지 않는다)
+// F-149(2026-11-04, 두승현 "auto mode 처럼"): 자동 허용이 켜져 있으면(기본) 파일 고치기 · 명령은 서버가 바로 허용한다 — 되돌리기 어려운 일(card.danger)과 그 밖의 도구(kind other)는 아래처럼 사람에게 묻는다.
+// 아무도 누르지 않으면 APPROVAL_WAIT 뒤 none — 훅은 아무것도 출력하지 않아 Claude Code가 스스로 묻는다. **서버가 꺼져 있으면 대신 허용하는 길이 없다.** 카드는 메모리에만, 결정하면 지운다(바뀔 내용을 저장 · 전송하지 않는다)
 const APPROVAL_WAIT = Math.max(100, Number(process.env.NAV_APPROVAL_WAIT) || 90_000), MAX_PENDING = 20;   // [제안 2026-10-20] — 훅의 기다림(95초)보다 짧게
 const pending = new Map();   // id → {item, res, timer}
 const ID_SHAPE = /^[A-Za-z0-9_-]{8,64}$/, SIG_SHAPE = /^[0-9a-f]{64}$/, KINDS = new Set(["edit", "write", "run", "other"]);
@@ -330,13 +331,18 @@ function cleanCard(c) {
   return { tool_name: cutTo(c.tool_name || "", 40), verb: cutTo(c.verb || "", 20), what: cutTo(c.what || "", 200), kind: KINDS.has(c.kind) ? c.kind : "other",
     danger: cutTo(c.danger || "", 120), lines: c.lines.slice(0, 40).map((l) => cutTo(typeof l === "string" ? l : "", 200)) };
 }
+// 자동 허용 설정 — 이 컴퓨터의 파일 하나(NAV_USAGE_FILE 옆 -approve-auto, 없으면 홈의 .navigator-approve-auto, 600). 파일이 없으면 켜짐, 읽지 못하면 허용하지 않는 쪽
+const autoFile = () => (process.env.NAV_USAGE_FILE ? process.env.NAV_USAGE_FILE.replace(/(\.json)?$/, "-approve-auto") : path.join(os.homedir(), ".navigator-approve-auto"));
+function autoOn() { try { return fs.readFileSync(autoFile(), "utf8").trim() !== "0"; } catch (e) { return !!e && e.code === "ENOENT"; } }
+const AUTO_KINDS = new Set(["edit", "write", "run"]);
 // 승인 요청 하나를 기다리는 표에 넣고 답을 붙들어 둔다. 돌려주는 것: 거절 이유(글) 또는 ""(붙들었다)
 function holdApproval(body, req, res) {
   if (!body || typeof body !== "object" || !ID_SHAPE.test(String(body.id)) || !SIG_SHAPE.test(String(body.sig))) return "승인 요청 모양이 아님";
   const card = cleanCard(body.card);
   if (!card) return "승인 요청 모양이 아님 — card가 없음";
-  if (pending.size >= MAX_PENDING) return "기다리는 승인 요청이 너무 많음";
   const id = String(body.id);
+  if (autoOn() && AUTO_KINDS.has(card.kind) && !card.danger) { countAsk("allow", body.cwd); touchTask(body.cwd); send(res, 200, { ok: true, id, decision: "allow", auto: true }); return ""; }   // F-149
+  if (pending.size >= MAX_PENDING) return "기다리는 승인 요청이 너무 많음";
   const item = { id, sig: String(body.sig), at: Date.now(), project: Sensitive.redact(path.basename(String(body.cwd || ""))), tool: body.tool === "codex" ? "codex" : "claude", tool_name: card.tool_name, card };
   const finish = (decision) => { const p = pending.get(id); if (!p) return; pending.delete(id); clearTimeout(p.timer); countAsk(decision, body.cwd); send(p.res, 200, { ok: true, id, decision }); };
   pending.set(id, { item, res, timer: setTimeout(() => finish("none"), APPROVAL_WAIT), finish });
@@ -344,7 +350,7 @@ function holdApproval(body, req, res) {
   res.on("close", () => { if (res.writableFinished) return; const p = pending.get(id); if (p && p.res === res) { pending.delete(id); clearTimeout(p.timer); } });   // 훅이 먼저 끊으면(시간 초과 · 사람이 터미널에서 답함) 표에서 뺀다. req의 close는 본문을 다 읽은 뒤라 Node 16+에서 이미 지나 오지 않았다(F-104-4)
   return "";
 }
-const listApprovals = () => ({ items: [...pending.values()].map((p) => p.item) });
+const listApprovals = () => ({ auto: autoOn(), items: [...pending.values()].map((p) => p.item) });
 // 섬이 누른 결정 — [상태 코드, 답]
 function decideApproval(body) {
   const b = body && typeof body === "object" ? body : {};
@@ -1160,6 +1166,11 @@ async function handleRoute(req, res) {
   if (route === "/api/approval") { const why = holdApproval(body, req, res); return why ? refuse(res, why, why.includes("너무 많") ? 429 : 400) : undefined; }   // FR-17 훅 — 답은 결정이 오거나 시간이 지나면(3-13)
   if (route === "/api/github/create") { const [code, out] = await githubCreate(body); return send(res, code, out); }   // 저장소 만들기를 Claude Code에 맡기기(3-19)
   if (route === "/api/approvals/decide") { const [code, out] = decideApproval(body); return send(res, code, out); }
+  if (route === "/api/approvals/auto") {   // F-149 설정의 '허락을 자동으로' 켜기 · 끄기(API.md 3-15-1)
+    if (!body || typeof body.on !== "boolean") return refuse(res, "on은 true 또는 false", 400);
+    try { fs.writeFileSync(autoFile(), body.on ? "1" : "0", { mode: 0o600 }); } catch { return refuse(res, "설정을 저장하지 못했어요", 500); }
+    return send(res, 200, { ok: true, auto: autoOn() });
+  }
   if (route === "/api/task/retry") { const [code, out] = retryTask(body); return send(res, code, out); }
   if (route === "/api/task/stop") { const [code, out] = stopTask(body); return send(res, code, out); }   // C-50 사람이 고르면 멈추기(API.md 3-16)   // F-69 막힌 일을 다시 · 명령 없이 · 직접 하기 글(API.md 3-16)   // FR-17 섬의 결정(3-15)
   if (route === "/api/quest") {   // C-22 퀘스트 제작(API.md 3-17, 2026-10-21) — AI 한 번. 할 일 이름 · 개수는 코드, AI는 설명 · 질문 · 예시만(navigator.js questPrompt · parseQuest)

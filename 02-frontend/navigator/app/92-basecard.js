@@ -62,6 +62,7 @@
     if (a === "hard") toggleHard(Number(t.dataset.i), t.checked);
     if (a === "tier") setTier(t.value);
     if (a === "qauto") { qauto = t.checked; writeLS(QAUTO_KEY, qauto ? "1" : "0"); }
+    if (a === "ap-auto") setApAuto(t.checked);
     if (a === "preset-pick") { const f = st.openFiles[Number(t.dataset.v)]; const id = t.value; if (f && id && f.i >= 0) { t.value = ""; presetGo(id, { i: f.i }); } return; }   // 연 파일을 틀로 맡기기(C-44) — 번호로   // 퀘스트를 받으면 퀘스트 창이 바로 뜨기(C-22)
     if (a === "plan-readme") { st.planReadme = t.checked; save(); }   // 준비 계획 — 작업 폴더의 README도 읽나(C-34)
     if (a === "feed-kind" && st.meal) st.meal.kinds[Number(t.dataset.i)] = t.value;   // FR-15 더함 — 구간의 종류를 고친다(다시 그리지 않는다)

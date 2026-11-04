@@ -151,7 +151,7 @@
     if (!lines.length) return { tone: "amber", mood: "think", meta, title: `${LB(2)} 기능 줄이 아직 없어요.`,
       sub: `${LB(2)} '꼭 필요한 기능 정리하기'에 '~하면, 앱은 ~한다' 줄을 적으면 줄마다 맡길 수 있어요.`, acts: [{ label: "닫기", act: "line-x", key: "Escape", kind: "ghost" }] };
     return { tone: "blue", mood: "look", meta, title: "어느 기능을 Claude Code에 맡길까요?",
-      sub: "한 줄씩 맡겨요 — Claude Code가 그 줄의 확인 방법을 먼저 적고 만든 뒤 끝 조건마다 보고해요. 허락 카드는 여기 채팅에 떠요.",
+      sub: "한 줄씩 맡겨요 — Claude Code가 그 줄의 확인 방법을 먼저 적고 만든 뒤 끝 조건마다 보고해요. 허락이 필요하면 여기 채팅에 카드가 떠요.",
       body: `<ol class="lines-pick" aria-label="${LB(2)} 기능 줄">${lines.map((l, i) => { const y = done.includes(l); return `<li class="${y ? "y" : ""}"><span>${esc(l)}</span>${y ? `<small>${OK_ICON} 보고 옴</small>` : ""}<button type="button" class="b${y ? " ghost" : ""}" data-act="line-go" data-i="${i}">${y ? "다시 맡기기" : "이 줄 맡기기"}</button></li>`; }).join("")}</ol>`,
       acts: [{ label: "닫기", act: "line-x", key: "Escape", kind: "ghost" }] };
   }
@@ -174,7 +174,7 @@
   function momentPreset() {
     const pk = st.presetPick, n = st.finished ? N.STAGES.length - 1 : atStage();
     return { tone: "blue", mood: "think", meta: `<span class="mm-stage">${LB(n)} · 문서 틀</span>`, title: `어느 틀로 맡길까요? — ${esc(pk.path)}`,
-      sub: "틀을 고르면 플로로가 지시를 적어 Claude Code에 맡겨요. 허락 카드는 여기 채팅에 떠요. 틀은 Floe의 틀 파일에서 더하고 고칠 수 있어요.",
+      sub: "틀을 고르면 플로로가 지시를 적어 Claude Code에 맡겨요. 허락이 필요하면 여기 채팅에 카드가 떠요. 틀은 Floe의 틀 파일에서 더하고 고칠 수 있어요.",
       acts: [...(PR ? PR.PRESETS : []).map((p) => ({ label: p.name, act: "preset-go", kind: "opt", i: p.id })), { label: "그만둘게요", act: "preset-x", key: "Escape", kind: "ghost" }] };
   }
   const BROWSER_WIN = [920, 640];   // 브라우저 판(섬 옆)의 크기 — 앱의 창 크기는 main.js(R-1)

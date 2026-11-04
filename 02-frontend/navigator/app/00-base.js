@@ -97,6 +97,7 @@
   const MAP_ICON = '<svg class="ic lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/></svg>';
   const GATE_ICON = '<svg class="ic lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 20v-8.5a6 6 0 0 1 12 0V20"/><path d="M4 20h16"/><path d="M9.5 20v-7.5a2.5 2.5 0 0 1 5 0V20"/></svg>';
   const side = "right";   // 섬은 작업실 오른쪽만(2026-10-28 합의 — 위 · 아래 · 왼쪽 단추를 뺐다, C-62). quest.js SIDES는 저장값 호환용으로 남아 있다
+  let apAuto = true;   // F-149 허락을 자동으로 — 값은 서버의 것(pollApprovals가 받아 온다)
   let qauto = readLS(QAUTO_KEY, "1") !== "0", userName = readLS(NAME_KEY, "").slice(0, 20);
   // C-53(2026-10-28): 작업실 세 칸 — 파일 칸 · 오른쪽 칸을 접었는지(이 컴퓨터에 기억), 글 칸의 줄 위치(상태 줄 — 다시 그릴 때만 보인다, 치는 동안은 그리지 않는다)
   let wnavOpen = readLS("floe:ws-nav", "1") !== "0", wsideOpen = readLS("floe:ws-side", "1") !== "0", caretLine = 0;

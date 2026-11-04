@@ -2,8 +2,8 @@
 // 지켜보기 훅(hook.js — 답을 기다리지 않는다)과 **따로** 둔다: 이 훅은 섬의 결정을 기다린다(넘김 문서 3절 "기다리는 훅은 새로 두고, 지금 훅의 원칙은 바꾸지 않는다").
 //   1. 입력(session_id · cwd · tool_name · tool_input)으로 승인 카드(approve.js card)와 지문(sig)을 만든다 — tool_input 원문은 보내지 않는다
 //   2. 127.0.0.1의 Floe 서버 POST /api/approval에 보내고 답을 기다린다(NAV_APPROVAL_WAIT, 기본 95초 — connect.js의 훅 시간 상한 120초보다 짧게)
-//   3. 서버가 allow · deny라고 하면 그 JSON을 출력한다. 그 밖(none · 서버 꺼짐 · 오류 · 시간 초과 · 이상한 답)은 **아무것도 출력하지 않고 0으로 끝난다**
-//      → Claude Code는 보통 흐름(터미널에서 스스로 묻기, -p면 거절)으로 간다. 저절로 허용하는 길이 없다(요구서 FR-17 "대신 허용하지 않는다").
+//   3. 서버가 allow · deny라고 하면 그 JSON을 출력한다(자동 허용 F-149는 서버가 바로 allow로 답한다). 그 밖(none · 서버 꺼짐 · 오류 · 시간 초과 · 이상한 답)은 **아무것도 출력하지 않고 0으로 끝난다**
+//      → Claude Code는 보통 흐름(터미널에서 스스로 묻기, -p면 거절)으로 간다. 서버가 답하지 않으면 저절로 허용하는 길이 없다(요구서 FR-17).
 // Claude Code 훅 문서(2026-10-20 확인): 결정은 hookSpecificOutput.decision.behavior allow|deny뿐, exit 2는 이 훅에서 무시되고, 시간이 넘으면 출력은 버려진다.
 const http = require("node:http");
 const fs = require("node:fs");
