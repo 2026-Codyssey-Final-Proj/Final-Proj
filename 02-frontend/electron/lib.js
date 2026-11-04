@@ -208,16 +208,9 @@ function sideWinBounds(kind, side, isl, wa, size) {
   x = Math.max(wa.x, Math.min(Math.round(x), wa.x + wa.width - want));
   return { x, y, width: want, height };
 }
-// 작업실 창(C-41 → C-42 R-1, 2026-10-27 이재엽 버튼 "화면을 채움") — 처음 열면 섬이 있는 화면의 **작업 영역 가득**. 사람이 줄이거나 옮기면 그 크기 · 자리(saved — main.js가 workspace.json에 기억)를 그대로,
-//   작업 영역을 넘으면 안으로 당기고 가장 작게 640×480(main.js minWidth · minHeight와 같다). 섬 아래에 S/M/L 크기로 두던 길(2026-10-26)은 뺐다 — 섬 옆 칸(420)과 파일 칸이 들어가면 캔버스가 좁아 늘 넘쳤다(F-61-1) <!-- claude-drafted: 2026-10-27 -->
+// 작업실 창(C-41 → C-42 R-1 → F-145, 2026-11-04) — 섬이 있는 화면의 **작업 영역 가득**(main.js가 열 때마다 최대화, 이 값은 최대화를 풀면 돌아갈 크기). 가장 작게 640×480(main.js minWidth · minHeight와 같다)
 const WORK_MIN = { width: 640, height: 480 };
-function workBounds(wa, saved) {
-  const ok = saved && ["x", "y", "width", "height"].every((k) => Number.isFinite(saved[k]));
-  if (!ok) return { x: wa.x, y: wa.y, width: Math.max(WORK_MIN.width, wa.width), height: Math.max(WORK_MIN.height, wa.height) };
-  const width = Math.max(WORK_MIN.width, Math.min(Math.round(saved.width), wa.width)), height = Math.max(WORK_MIN.height, Math.min(Math.round(saved.height), wa.height));
-  const x = Math.max(wa.x, Math.min(Math.round(saved.x), wa.x + wa.width - width)), y = Math.max(wa.y, Math.min(Math.round(saved.y), wa.y + wa.height - height));
-  return { x, y, width, height };
-}
+const workBounds = (wa) => ({ x: wa.x, y: wa.y, width: Math.max(WORK_MIN.width, wa.width), height: Math.max(WORK_MIN.height, wa.height) });
 // 두 상자가 겹치나 — 맞닿기만 하면 겹침이 아니다. 섬 크기가 바뀔 때 옆 창을 다시 둘지 앱(main.js placeSideWins)이 묻는다
 const overlaps = (a, b) => !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
