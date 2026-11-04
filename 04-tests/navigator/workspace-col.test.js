@@ -56,6 +56,12 @@ test("app.css — 옆 칸은 작업실 바탕(남색은 그 안의 섬 카드만
   assert.match(c, /html\.in-win:not\(\.win-quest\)\{/, "설정 창만 남색");
   assert.match(c, /\.isl-col\{display:flex;flex-direction:column;min-width:0;min-height:0;padding:10px;background:var\(--desk\)\}/, "옆 칸은 파스텔(C-62)");
   assert.match(c, /\.isl-col \.isl-body\{flex:1 1 auto;min-height:0;overflow:hidden auto\}/);
+  // F-152 옆 칸의 대화 — 입력 칸은 섬 안에 고정, 기록만 스크롤(화면으로 잰 것은 PR에)
+  assert.match(c, /\.isl-col:not\(\.center\) \.isl-body:has\(>\.mc\.chat:not\(\.hello\)\)\{overflow:hidden\}/, "대화가 있으면 몸통은 스크롤하지 않는다");
+  assert.match(c, /\.isl-col:not\(\.center\) \.isl-body>\.mc\.chat:not\(\.hello\)\{flex:1 1 0;min-height:0;grid-template-rows:minmax\(0,1fr\)\}/, "대화 카드가 몸통을 채운다");
+  assert.match(c, /\.isl-col:not\(\.center\) \.mc\.chat:not\(\.hello\) \.main>\.log\{flex:1 1 0;max-height:none;min-height:0\}/, "남는 높이는 기록이 쓴다");
+  assert.match(c, /\.isl-col:not\(\.center\) \.mc\.chat:not\(\.hello\) \.main>:is\(\.opts,\.cin\)\{flex:none\}/, "단추 줄 · 입력 칸은 줄지 않는다");
+  assert.doesNotMatch(c, /calc\(100vh - 340px\)|--col-h,360px/, "옛 높이 어림값이 남지 않는다");
   assert.match(c, /\.isl-col\.narrow \.mc\.chat\{grid-template-columns:minmax\(0,1fr\)\}/); assert.match(c, /\.isl-col\.narrow \.tb\{flex-wrap:wrap\}/);
   assert.ok(!c.includes("dock-narrow") && !c.includes("dock-wide"));
 });

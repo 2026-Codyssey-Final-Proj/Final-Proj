@@ -1302,8 +1302,15 @@ html.win-quest .wh .ttl{display:none}   /* OS 제목 줄에 "Floe — 작업실"
 .isl-col.narrow .mc{gap:10px;padding:12px 14px}
 .isl-col.narrow .tb{flex-wrap:wrap}
 .isl-col.narrow .tb-proj{display:none}
-.isl-col.narrow .mc.chat .log{max-height:max(120px,calc(100vh - 340px))}
-.isl-col.wide .mc.chat .log{max-height:max(110px,calc(var(--col-h,360px) - 250px))}
+/* F-152(2026-11-04 두승현 "하단의 채팅창은 항상 대화 가능하도록 고정하고 내용만 스크롤"): 기록 높이를 어림값으로 정해 입력 칸이 섬 아래로 밀렸다 — 남는 높이를 기록이 쓴다 */
+.isl-col:not(.center) .isl-body:has(>.mc.chat:not(.hello)){overflow:hidden}
+.isl-col:not(.center) .isl-body>.mc.chat:not(.hello){flex:1 1 0;min-height:0;grid-template-rows:minmax(0,1fr)}
+.isl-col.narrow:not(.center) .isl-body>.mc.chat:not(.hello){grid-template-rows:auto minmax(0,1fr)}
+.isl-col:not(.center) .mc.chat:not(.hello) .main{min-height:0}
+.isl-col:not(.center) .mc.chat:not(.hello) .main>.log{flex:1 1 0;max-height:none;min-height:0}
+.isl-col:not(.center) .mc.chat:not(.hello) .main>:is(.opts,.cin){flex:none}
+/* 창이 낮으면 플로로를 빼 대화 자리를 지킨다 — 플로로(약 190px)가 있으면 기록이 거의 남지 않는다 */
+@media (max-height:620px){.isl-col.narrow:not(.center) .mc.chat:not(.hello) .who{display:none}.isl-col.narrow:not(.center) .isl-body>.mc.chat:not(.hello){grid-template-rows:minmax(0,1fr)}}
 /* 접힌 옆 칸(C-46 R-2, 2026-10-27) — 그 가장자리의 알약 하나. 왼쪽 · 오른쪽은 세로 알약(이재엽 버튼 "세로 알약"): 플로로 얼굴은 바로, 글은 세로쓰기. 칸의 두께(56)는 win.js FOLD */
 .isl-col.folded{padding:3px;align-items:center;justify-content:center;overflow:hidden;background:var(--side)}   /* 56(win.js FOLD) − 3×2 = 50 = 알약 높이. 남색은 알약 하나만(F-65 파란 줄, 2026-10-28). 바탕은 오른쪽 칸(.wside)과 같은 옆 칸 색 — 전에는 투명해 창 바탕이 비쳐 두 띠로 보였다(두승현 2026-10-29) */
 .isl-col.folded .pill{max-width:100%;flex:none;background:var(--isl);-webkit-backdrop-filter:none;backdrop-filter:none}   /* 남색 판(섬 토큰 — 앱 창의 .in-app 알약과 같은 값, C-57) — 작업실 창에는 앱 창의 .in-app 규칙이 없어 유리(반투명)로 그려져, F-65로 칸이 비친 뒤 파스텔이 비쳐 글자가 흐렸다(임유정 2026-10-28) */
