@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v61.9 | 2026-11-04 | 두승현 | 처음 설정을 마치면 옛 섬 화면 대신 작업실의 플로로 홈으로 — '퀘스트' 단추를 찾지 않아도 된다 (F-146) (#324) | `02-frontend/navigator/`(담당 임유정) · `04-tests/` · `01-docs/07-maintenance/fix-map.md` |
 | v61.8 | 2026-11-04 | 두승현 | 섬에서 작업실을 열면 늘 화면 가득(최대화) — 저장된 작은 크기로 찌그러져 열리던 것 (F-145) (#323) | `02-frontend/electron/`(담당 임유정) · `02-frontend/navigator/README.md` · `04-tests/navigator/` · `01-docs/07-maintenance/fix-map.md` |
 | v61.7 | 2026-11-04 | 임유정 | 코드 점검 3차에서 나온 오류 25개 고침 — 문서 절 합치기 · 위험 명령 · 설정 덮어쓰기 · 정규식 멈춤 · 작업실 창의 단추와 커서 · 한글 조합 · 되살리기 외 (F-144) (#322) | `02-frontend/navigator/`(담당 임유정) · `03-backend/navigator/`(담당 이재엽 — 이 줄이 알림) · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v61.6 | 2026-11-03 | 두승현 | 섬 채팅 · 작업실의 스크롤바를 숨기고, 작업실 작업 칸 · 가운데 플로로 화면에만 얇고 옅은 스크롤바 (F-142 · F-143) (#321) | `02-frontend/navigator/app.css`(담당 임유정) · `01-docs/07-maintenance/fix-map.md` |
