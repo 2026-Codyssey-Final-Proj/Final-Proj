@@ -124,14 +124,19 @@ before(async () => {
   srv = http.createServer(Srv.handle); await new Promise((r) => srv.listen(port, "127.0.0.1", r)); Srv.eventToken();
 });
 after(() => { srv && srv.close(); fs.rmSync(TMP, { recursive: true, force: true }); });
-function call(body, method = "POST") {
+function call(body, method = "POST", route = "/api/docs") {
   return new Promise((resolve, reject) => {
     const data = body === undefined ? undefined : JSON.stringify(body), tok = fs.readFileSync(process.env.NAV_EVENT_TOKEN_FILE, "utf8").trim();
-    const req = http.request({ host: "127.0.0.1", port, path: "/api/docs", method, headers: { ...(data !== undefined ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}), "X-Nav-Token": tok }, timeout: 5000 }, (res) => {
+    const req = http.request({ host: "127.0.0.1", port, path: route, method, headers: { ...(data !== undefined ? { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(data) } : {}), "X-Nav-Token": tok }, timeout: 5000 }, (res) => {
       let text = ""; res.setEncoding("utf8"); res.on("data", (d) => (text += d)); res.on("end", () => { let json = null; try { json = JSON.parse(text); } catch {} resolve({ status: res.statusCode, json, text }); });
     });
     req.on("error", reject); req.end(data);
   });
+}
+// POST /api/docs가 맡긴 일(가짜 Claude)이 끝나기를 기다린다 — 정해진 시간만 쉬면 컴퓨터가 바쁠 때 다음 POST가 409("아직 진행 중")로 흔들린다
+async function untilDone() {
+  for (let k = 0; k < 200; k++) { const t = (await call(undefined, "GET", "/api/task")).json.task; if (!t || t.state !== "running") return; await new Promise((res) => setTimeout(res, 50)); }
+  throw new Error("맡긴 일이 끝나지 않음");
 }
 
 test("POST /api/docs — 확인한 한 장을 받아 단계 문서 · README에 쓴다, 한 장 모양이 틀리면 400(아무것도 쓰지 않는다)", async () => {
@@ -145,7 +150,7 @@ test("POST /api/docs — 확인한 한 장을 받아 단계 문서 · README에 
   assert.match(read(path.join(DIR, "docs/01-idea/idea.md")), /## 한 장\n\n- 생각: 처음 말 \[/);
   assert.match(read(path.join(DIR, "README.md")), /— 한 장\n- 생각: /);
   assert.ok(!read(path.join(DIR, "README.md")).includes(KEY));
-  await new Promise((res) => setTimeout(res, 300));
+  await untilDone();
   // 사람이 폴더의 한 장을 길게 고쳤다 → 다시 읽기(GET) → 그대로 다시 올려도(POST) 400이 아니다 — 막다른 길이 없다
   const f = path.join(DIR, "docs/01-idea/idea.md");
   fs.writeFileSync(f, read(f).replace(/^- 한 일: .*$/m, `- 한 일: ${"나".repeat(700)}`));
@@ -155,7 +160,7 @@ test("POST /api/docs — 확인한 한 장을 받아 단계 문서 · README에 
   assert.ok(back.sheet && back.sheet.did.length <= SH.FIELD_MAX, "다시 읽은 한 장은 칸 크기 안");
   const again = await call({ topic: "앱", results: { 0: back, 1: R1 } });
   assert.equal(again.status, 200, again.text);
-  await new Promise((res) => setTimeout(res, 300));
+  await untilDone();
 });
 
 test("화면에 이어졌다 — 조각 48-sheet: 재료 저장 · 누르기 넷 · 규칙만(AI를 부르지 않는다), 재료를 모으는 네 곳, 채팅 카드 자리, 스크립트 · 서버 목록", () => {
