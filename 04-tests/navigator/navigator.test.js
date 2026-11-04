@@ -378,6 +378,8 @@ test("플로로: 안내 화면이 쓰는 표정과 교감 표정이 모두 그�
     assert.match(Cat.svg(m, 64), new RegExp(`class="cat m-${m}"`));
   }
   assert.match(Cat.svg("think", 108, { extra: "oops" }), /class="cat m-think oops"/);
+  assert.doesNotMatch(Cat.svg("think", 108), /e-think/, "생각 표정: 한쪽 눈만 사선인 그림을 쓰지 않는다(F-147)");
+  assert.match(fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/seal.css"), "utf8"), /\.m-think \.e-dot/, "생각 표정: 두 눈 다 평소 눈(F-147)");
   assert.match(Cat.svg("idle", 36, { paws: true }), /c-paws/);
   assert.doesNotMatch(Cat.svg("idle", 36), /c-paws/);
   assert.match(Cat.svg("idle", 64), /c-tail/, "크면 꼬리");

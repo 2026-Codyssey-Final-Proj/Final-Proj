@@ -40,7 +40,6 @@
           <path class="e-happy" d="${both((x) => `M${x - 3.5} ${EY + 1.5} Q${x} ${EY - 3.5} ${x + 3.5} ${EY + 1.5}`)}"></path>
           <path class="e-closed" d="${both((x) => `M${x - 3.5} ${EY - 0.5} Q${x} ${EY + 3} ${x + 3.5} ${EY - 0.5}`)}"></path>
           <path class="e-blink" d="${both((x) => `M${x - 3.5} ${EY} L${x + 3.5} ${EY}`)}"></path>
-          <g class="e-think"><circle cx="${EYE[0]}" cy="${EY}" r="3.4"></circle><path d="M56 33.5 L64 36.5"></path></g>
           <g class="e-heart">${both((x) => `<path d="${heart(x, EY)}"></path>`)}</g>
           <g class="e-angry">${both((x) => `<circle cx="${x}" cy="${EY + 0.5}" r="3.4"></circle>`)}<path d="M${EYE[0] - 5} ${EY - 6.5} L${EYE[0] + 4} ${EY - 3.5} M${EYE[1] + 5} ${EY - 6.5} L${EYE[1] - 4} ${EY - 3.5}"></path></g>
         </g>
