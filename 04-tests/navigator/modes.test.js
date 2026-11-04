@@ -52,7 +52,7 @@ test("app.js — 채팅 중심 섬(C-22): 위 줄 하나(집 · 단계 띠 · �
   assert.match(app, /foot: esc\(nowLine\(\)\)/, "지금 한 줄은 첫 카드의 작은 줄");
   assert.match(app, /go\("petit"\);   \/\/ 인사가 끝나도 알약 그대로\(C-46 R-1\)/, "2026-10-27 C-46: 인사가 끝나면 알약(전에는 기본 화면)");
   assert.match(app, /else if \(st\.ui === "greet"\) st\.ui = location\.hash && location\.hash !== "#" \? "home" : "petit";/, "인사 움직임이 없어도 알약(C-46) — 주소 끝 장면은 기본 화면");
-  assert.match(app, /if \(d\.open\) \{ setPlace\("vibe"\); st\.tab = "today"; go\("home"\); \}/, "처음 설정의 '시작하기'는 바이브 코딩으로");
+  assert.match(app, /if \(d\.open\) \{ setPlace\("vibe"\); st\.tab = "today"; openQwin\("quest"\); st\.islBig = null; go\("home"\); \}/, "처음 설정의 '시작하기'는 작업실의 플로로 홈으로(F-146 — 전에는 작업실 없는 옛 섬 화면)");
 });
 
 test("app.js — 알림 · AI 진행 판은 섬 안에서 바로, hub.js의 순수 함수(FloeHub)와 한 줄 글(NavSteps)을 그대로 쓴다. '크게 보기'(모아 보기 창)는 2026-10-23에 뺐다", () => {

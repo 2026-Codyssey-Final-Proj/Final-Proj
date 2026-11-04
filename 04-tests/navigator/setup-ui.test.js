@@ -150,3 +150,10 @@ test("내비게이터 화면이 처음 설정을 부른다 — 플로로 그림(
   assert.ok(at('src="seal.js"') > 0 && at('src="setup.js"') > at('src="seal.js"') && at('src="app.js"') > at('src="setup.js"'));
   assert.ok(at('href="setup.css"') > 0);
 });
+
+// F-146(2026-11-04 두승현 "초기 설정 세팅 이후 … 작업실의 플로로 홈에서"): 시작하기 뒤 옛 섬 화면으로 가면 작업실로 가는 길('퀘스트' 단추)을 새 사용자가 알 수 없다
+test("처음 설정의 시작하기(open) — 작업실을 열고 섬을 펼친다, 가운데 큰 플로로는 bigAuto가 정한다(1단계 시작 전이면 플로로 홈)", () => {
+  const a = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  assert.match(a, /if \(d\.open\) \{ setPlace\("vibe"\); st\.tab = "today"; openQwin\("quest"\); st\.islBig = null; go\("home"\); \}/);
+  assert.match(a, /const bigAuto = \(\) => !!\(QU && \(\(!st\.j && !st\.quest && st\.qwin\)/, "1단계 시작 전 + 작업실이면 가운데");
+});

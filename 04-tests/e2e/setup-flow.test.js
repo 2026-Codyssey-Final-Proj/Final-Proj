@@ -126,8 +126,10 @@ test("한 번에 이어진다: 인사 → AI 연결(Claude Code) → GitHub(로�
     await click(page, '[data-s="done"]');
     assert.equal(await page.$("#floe-setup"), null);
     assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("floe:setup:v1")).via), "cli");
-    await page.waitForSelector(".msg.now .say", { timeout: 5000 });
-    assert.match(await page.$eval(".msg.now .say", (e) => e.textContent), /원하는 것을 플로로에게/, "시작하면 채팅이 원하는 것을 받는다(C-36) — AI는 아직 부르지 않는다");
+    await page.waitForSelector(".qwin", { timeout: 5000 });   // F-146(2026-11-04): 시작하기 뒤에는 옛 섬 화면이 아니라 작업실의 플로로 홈
+    await page.waitForSelector(".isl-col.center .hello-q", { timeout: 5000 });
+    assert.match(await page.$eval(".isl-col.center .hello-q", (e) => e.textContent), /어떤 프로젝트/, "시작하면 플로로 홈이 무엇을 만들지 묻는다(C-36 · C-61) — AI는 아직 부르지 않는다");
+    assert.ok(await page.$(".isl-col.center textarea.mc-input"), "그 자리에서 바로 적는다");
     assert.deepEqual(seen.create, [], "저장소 만들기는 부르지 않았다");
     assert.deepEqual(seen.errors, []);
   } finally { await browser.close(); }
