@@ -28,7 +28,7 @@
 /* X 표지판(C-19, 2026-10-20) — 막을 때 손에 든다. 움직임 줄이기면 흔들지 않고 들고만 있다 */
 .cat .s-sign .sg-pole{fill:none;stroke:#8C6B3F;stroke-width:3;stroke-linecap:round}.cat .s-sign .sg-board{fill:#FF4D4D;stroke:#fff;stroke-width:2.2}.cat .s-sign .sg-x{fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round}
 .cat .c-eyes>*,.cat [class^="s-"]{display:none}
-.m-idle .e-dot,.m-look .e-dot,.m-alert .e-wide,.m-wow .e-wow,.m-happy .e-happy,.m-done .e-happy,.m-think .e-think,
+.m-idle .e-dot,.m-look .e-dot,.m-think .e-dot,.m-alert .e-wide,.m-wow .e-wow,.m-happy .e-happy,.m-done .e-happy,
 .m-love .e-heart,.m-purr .e-closed,.m-sleep .e-closed,.m-yawn .e-closed{display:inline}
 .m-look .s-dots,.m-done .s-spark,.m-think .s-q,.m-alert .s-bang,.m-love .s-heart,.m-purr .s-heart,.m-sleep .s-zzz{display:inline}
 .cat.oops .s-sweat{display:inline}.cat.oops .s-q{display:none}
@@ -36,10 +36,10 @@
 .m-yawn .c-mouth,.m-wow .c-mouth,.m-alert .c-mouth{display:none}
 .m-yawn .c-open,.m-wow .c-open,.m-alert .c-open{display:inline}
 .m-love .c-blush ellipse,.m-purr .c-blush ellipse,.m-happy .c-blush ellipse,.m-done .c-blush ellipse,.m-sleep .c-blush ellipse{opacity:.8}
-.m-look .e-dot{transform:translateY(-2px)}
+.m-look .e-dot,.m-think .e-dot{transform:translateY(-2px)}   /* 생각: 두 눈이 평소 눈 그대로 위를 본다(F-147, 전에는 한쪽 눈이 사선) */
 .small .c-mouth,.small .c-open,.small .c-fin,.small .c-whisk{display:none}
-.blink .m-idle .e-dot,.blink .m-look .e-dot{display:none}
-.blink .m-idle .e-blink,.blink .m-look .e-blink{display:inline}
+.blink .m-idle .e-dot,.blink .m-look .e-dot,.blink .m-think .e-dot{display:none}
+.blink .m-idle .e-blink,.blink .m-look .e-blink,.blink .m-think .e-blink{display:inline}
 
 
 .cat .s-bub circle { fill: rgba(169, 221, 255, .35); stroke: #CDE6FF; stroke-width: .8; }

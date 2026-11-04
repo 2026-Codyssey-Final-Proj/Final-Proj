@@ -25,18 +25,21 @@
 .cat .s-zzz text{font:800 10px -apple-system,sans-serif;fill:var(--seal-zz,#7C8BA8)}
 .cat .s-zzz text:nth-child(2){font-size:12px}.cat .s-zzz text:nth-child(3){font-size:15px}
 .cat .s-sweat{fill:#7FB3FF}
+/* X 표지판(C-19, 2026-10-20) — 막을 때 손에 든다. 움직임 줄이기면 흔들지 않고 들고만 있다 */
+.cat .s-sign .sg-pole{fill:none;stroke:#8C6B3F;stroke-width:3;stroke-linecap:round}.cat .s-sign .sg-board{fill:#FF4D4D;stroke:#fff;stroke-width:2.2}.cat .s-sign .sg-x{fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round}
 .cat .c-eyes>*,.cat [class^="s-"]{display:none}
-.m-idle .e-dot,.m-look .e-dot,.m-alert .e-wide,.m-wow .e-wow,.m-happy .e-happy,.m-done .e-happy,.m-think .e-think,
+.m-idle .e-dot,.m-look .e-dot,.m-think .e-dot,.m-alert .e-wide,.m-wow .e-wow,.m-happy .e-happy,.m-done .e-happy,
 .m-love .e-heart,.m-purr .e-closed,.m-sleep .e-closed,.m-yawn .e-closed{display:inline}
 .m-look .s-dots,.m-done .s-spark,.m-think .s-q,.m-alert .s-bang,.m-love .s-heart,.m-purr .s-heart,.m-sleep .s-zzz{display:inline}
 .cat.oops .s-sweat{display:inline}.cat.oops .s-q{display:none}
+.m-angry .e-angry,.m-angry .s-sign{display:inline}.m-angry .c-mouth{display:none}.m-angry .c-open{display:inline}   /* C-19 화난 눈 · X 표지판 — 숨기는 규칙(위) 뒤에 둔다 */
 .m-yawn .c-mouth,.m-wow .c-mouth,.m-alert .c-mouth{display:none}
 .m-yawn .c-open,.m-wow .c-open,.m-alert .c-open{display:inline}
 .m-love .c-blush ellipse,.m-purr .c-blush ellipse,.m-happy .c-blush ellipse,.m-done .c-blush ellipse,.m-sleep .c-blush ellipse{opacity:.8}
-.m-look .e-dot{transform:translateY(-2px)}
+.m-look .e-dot,.m-think .e-dot{transform:translateY(-2px)}   /* 생각: 두 눈이 평소 눈 그대로 위를 본다(F-147, 전에는 한쪽 눈이 사선) */
 .small .c-mouth,.small .c-open,.small .c-fin,.small .c-whisk{display:none}
-.blink .m-idle .e-dot,.blink .m-look .e-dot{display:none}
-.blink .m-idle .e-blink,.blink .m-look .e-blink{display:inline}
+.blink .m-idle .e-dot,.blink .m-look .e-dot,.blink .m-think .e-dot{display:none}
+.blink .m-idle .e-blink,.blink .m-look .e-blink,.blink .m-think .e-blink{display:inline}
 
 
 .cat .s-bub circle { fill: rgba(169, 221, 255, .35); stroke: #CDE6FF; stroke-width: .8; }
@@ -74,6 +77,7 @@
 
   .m-look .s-dots { animation: blinkdot 1s infinite; }
   .cat.m-wow { animation: jump .4s ease; }
+  .m-angry .s-sign { transform-origin: 22px 104px; animation: wave-sign .5s ease-in-out 4 alternate; }   /* 표지판 흔들기 — 네 번 */
 
   /* 헤엄 — 숨구멍 안에서 머리만 내놓고 이리저리 헤엄치다 쏙 잠수하고 뿅 올라온다. 부르는 쪽이 감싼 요소에 .swim을 붙인다 */
   .swim .cat .c-body { transform-origin: 55px 60px; animation: swim 3.6s ease-in-out; }   /* 표정 동작보다 앞선다 */
@@ -81,6 +85,8 @@
   /* 배로 통통 — 물범이 땅에서 걷는 법(배로 튀며 나아간다). 부르는 쪽이 감싼 요소에 .galumph를 붙인다 */
   .galumph svg.cat { transform-origin: 50% 100%; animation: galumph 1.4s ease-in-out; }
 }
+/* F-46(2026-10-20): 보이지 않을 때는 무한 움직임(꼬리 · 숨쉬기 · 물방울 · z)을 멈춘다 — 띠로 접혔을 때(html[data-ui="hidden"]) · 창이 가려졌을 때(.page-hidden) */
+html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: paused; }
 @keyframes sway { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
 @keyframes wag { from { transform: rotate(10deg); } to { transform: rotate(-18deg); } }
 @keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012, .992); } }
@@ -88,6 +94,7 @@
 @keyframes zz { 0%, 100% { opacity: .25; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-2px); } }
 @keyframes blinkdot { 50% { opacity: .25; } }
 @keyframes jump { 0%, 100% { transform: none; } 40% { transform: translateY(-8px); } }
+@keyframes wave-sign { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
 @keyframes flap { to { transform: scale(1.12, .9) translateY(-1px); } }
 /* 숨구멍의 몸은 1.12배로 그려져 있어 아래 칸 수는 그 안의 칸이다 — 물 아래(그림 y 110)로 사라지려면 72칸 넘게 내려간다 */
 @keyframes float { 0%, 100% { transform: none; } 30% { transform: translateY(-1.5px) rotate(-3deg); } 70% { transform: translateY(1px) rotate(3deg); } }
@@ -138,8 +145,8 @@
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
-          <g class="e-think"><circle cx="39" cy="35" r="3.4"></circle><path d="M56 33.5 L64 36.5"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
+          <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
         <g class="c-snout">
           <path class="c-nose" d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z"></path>
@@ -156,7 +163,7 @@
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
       <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
-      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g></g></svg><svg x="120" y="8" class="cat m-happy hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g><g class="s-sign"><path class="sg-pole" d="M22 70 L22 104"></path><circle class="sg-board" cx="22" cy="62" r="13"></circle><path class="sg-x" d="M16 56 L28 68 M28 56 L16 68"></path></g></g></svg><svg x="120" y="8" class="cat m-happy hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
       <defs><radialGradient id="fl3p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
       <linearGradient id="fl3w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
       <clipPath id="fl3c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
@@ -180,8 +187,8 @@
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
-          <g class="e-think"><circle cx="39" cy="35" r="3.4"></circle><path d="M56 33.5 L64 36.5"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
+          <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
         <g class="c-snout">
           <path class="c-nose" d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z"></path>
@@ -198,7 +205,7 @@
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
       <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
-      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g></g></svg><svg x="230" y="8" class="cat m-think hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g><g class="s-sign"><path class="sg-pole" d="M22 70 L22 104"></path><circle class="sg-board" cx="22" cy="62" r="13"></circle><path class="sg-x" d="M16 56 L28 68 M28 56 L16 68"></path></g></g></svg><svg x="230" y="8" class="cat m-think hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
       <defs><radialGradient id="fl4p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
       <linearGradient id="fl4w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
       <clipPath id="fl4c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
@@ -222,8 +229,8 @@
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
-          <g class="e-think"><circle cx="39" cy="35" r="3.4"></circle><path d="M56 33.5 L64 36.5"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
+          <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
         <g class="c-snout">
           <path class="c-nose" d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z"></path>
@@ -240,7 +247,7 @@
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
       <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
-      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g></g></svg><svg x="340" y="8" class="cat m-love hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g><g class="s-sign"><path class="sg-pole" d="M22 70 L22 104"></path><circle class="sg-board" cx="22" cy="62" r="13"></circle><path class="sg-x" d="M16 56 L28 68 M28 56 L16 68"></path></g></g></svg><svg x="340" y="8" class="cat m-love hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
       <defs><radialGradient id="fl5p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
       <linearGradient id="fl5w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
       <clipPath id="fl5c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
@@ -264,8 +271,8 @@
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
-          <g class="e-think"><circle cx="39" cy="35" r="3.4"></circle><path d="M56 33.5 L64 36.5"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
+          <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
         <g class="c-snout">
           <path class="c-nose" d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z"></path>
@@ -282,7 +289,7 @@
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
       <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
-      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g></g></svg><svg x="450" y="8" class="cat m-wow hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g><g class="s-sign"><path class="sg-pole" d="M22 70 L22 104"></path><circle class="sg-board" cx="22" cy="62" r="13"></circle><path class="sg-x" d="M16 56 L28 68 M28 56 L16 68"></path></g></g></svg><svg x="450" y="8" class="cat m-wow hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
       <defs><radialGradient id="fl6p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
       <linearGradient id="fl6w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
       <clipPath id="fl6c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
@@ -306,8 +313,8 @@
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
-          <g class="e-think"><circle cx="39" cy="35" r="3.4"></circle><path d="M56 33.5 L64 36.5"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
+          <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
         <g class="c-snout">
           <path class="c-nose" d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z"></path>
@@ -324,7 +331,7 @@
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
       <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
-      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g></g></svg><svg x="560" y="8" class="cat m-sleep hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g><g class="s-sign"><path class="sg-pole" d="M22 70 L22 104"></path><circle class="sg-board" cx="22" cy="62" r="13"></circle><path class="sg-x" d="M16 56 L28 68 M28 56 L16 68"></path></g></g></svg><svg x="560" y="8" class="cat m-sleep hole" width="110" height="110" viewBox="0 0 120 120" aria-hidden="true">
       <defs><radialGradient id="fl7p" cy=".62"><stop offset=".35" stop-color="#16226A" stop-opacity=".9"></stop><stop offset="1" stop-color="#16226A" stop-opacity="0"></stop></radialGradient>
       <linearGradient id="fl7w" x2="0" y2="1"><stop offset="0" stop-color="#5D86E6" stop-opacity=".95"></stop><stop offset="1" stop-color="#2A3B8C" stop-opacity=".8"></stop></linearGradient>
       <clipPath id="fl7c"><rect x="-20" y="-40" width="160" height="150"></rect></clipPath></defs>
@@ -348,8 +355,8 @@
           <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
           <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
           <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
-          <g class="e-think"><circle cx="39" cy="35" r="3.4"></circle><path d="M56 33.5 L64 36.5"></path></g>
           <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
+          <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
         </g>
         <g class="c-snout">
           <path class="c-nose" d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z"></path>
@@ -366,4 +373,4 @@
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
       <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
-      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g></g></svg></svg>
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g><g class="s-sign"><path class="sg-pole" d="M22 70 L22 104"></path><circle class="sg-board" cx="22" cy="62" r="13"></circle><path class="sg-x" d="M16 56 L28 68 M28 56 L16 68"></path></g></g></svg></svg>
