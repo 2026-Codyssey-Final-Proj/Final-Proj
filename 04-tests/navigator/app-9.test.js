@@ -86,7 +86,7 @@ test("C-22: 뽑기는 조개 셋에 한 번(quest.js SHELL_COST · draw — 확�
   assert.ok(app.includes("돈으로 사는 것은 없어요"), "돈으로 사지 않는다");
   const keep = /const KEEP = \[([^\]]+)\]/.exec(app)[1];
   assert.ok(keep.includes('"owned"') && keep.includes('"wear"') && keep.includes('"shells"'), "기록에 남는다");
-  assert.match(app, /cat\(liveMood\(mood\), size, \{ extra, hole: true, wear: Object\.values\(st\.wear\) \}\)/, "입은 것은 플로로 그림 안에(F-148)");
+  assert.match(app, /cat\(m, size, \{ extra: [^\n]*, hole: true, wear: Object\.values\(st\.wear\) \}\)/, "입은 것은 플로로 그림 안에(F-148)");
   assert.doesNotMatch(css, /\.deco\b/, "그림 밖에 따로 놓는 자리가 남지 않는다(F-148)");
   assert.match(app, /g\.phase === "got" \? cat\("happy", 124, \{ hole: true, wear: \[g\.item\.id\] \}\)/, "뽑기 창은 받은 물건을 플로로가 쓴 그림으로 보인다(F-148)");
   assert.match(app, /querySelector\("\.gacha \.stage svg\.cat"\)[\s\S]{0,80}classList\.add\("landing"\)/, "받는 순간은 뽑기 창 안의 플로로에서 — 섬의 플로로는 뽑기 층에 가려진다");

@@ -677,14 +677,17 @@
       : `<button class="${cls}" ${data}${tip}>${esc(a.label)}${kbd(k)}</button>`;
   }
 
-  // 플로로 — 기분은 [잠깐 짓는 표정(쓰다듬기·축하) > 졸음 > 안내 화면의 표정] 순서. 졸음은 편한 표정일 때만
+  // 플로로 — 기분은 [잠깐 짓는 표정(쓰다듬기·축하) > 열중(Claude Code가 일하는 동안, F-154) > 졸음 > 안내 화면의 표정] 순서. 열중 · 졸음은 편한 표정일 때만 — 물어보는 말 · 오류의 표정은 가리지 않는다
   let flashMood = { mood: "", until: 0 }, sleepState = "awake";
   const CALM = ["idle", "happy", "done"];
-  const liveMood = (base) => (flashMood.until > Date.now() ? flashMood.mood : sleepState !== "awake" && CALM.includes(base) ? sleepState : base);
+  const liveMood = (base) => (flashMood.until > Date.now() ? flashMood.mood : working() && CALM.includes(base) ? "work" : sleepState !== "awake" && CALM.includes(base) ? sleepState : base);
+  // F-154 표정이 바뀐 직후의 그림에만 붙이는 표시 — 화면은 다시 그릴 때마다 그림을 새로 만들어, 표시가 늘 있으면 2초마다 노트북이 또 올라온다. 크기로 나눠 센다(설정 창의 플로로와 섞이지 않게)
+  const moodSeen = {};
+  const moodIn = (m, size) => { const s = moodSeen[size] || (moodSeen[size] = { m, from: "", at: 0 }); if (s.m !== m) { s.from = s.m; s.m = m; s.at = Date.now(); } return s.from && Date.now() - s.at < 900 ? `mood-in from-${s.from}` : ""; };
   // 쓰다듬을 수 있는 플로로 — 누르거나 좌우로 문지르면 된다. data-live는 기분이 바뀌면 같이 바뀌는 플로로
   // 꾸미기(C-22 · F-148): 입은 것(st.wear)은 플로로 그림 안에 그린다(seal.js WEAR)
-  const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="플로로 쓰다듬기"
-    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true, wear: Object.values(st.wear) })}</button>`;
+  const petCat = (mood, size, extra = "", m = liveMood(mood)) => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="플로로 쓰다듬기"
+    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(m, size, { extra: [extra, moodIn(m, size)].filter(Boolean).join(" "), hole: true, wear: Object.values(st.wear) })}</button>`;
 
   // 칸 — 지나온 것과 지금 하는 것까지 밝게, 남은 것은 어둡게
   const mini = () => `<span class="mini" aria-hidden="true">${met().map((_, i) => `<i class="${i < nowAt() ? "on" : ""}"></i>`).join("")}</span>`;
@@ -2733,7 +2736,7 @@
     if (greeting) main = `<b>플로로</b><span class="pl-now pl-hello" aria-live="polite">${esc(st.back || C.greeting(new Date().getHours()))}</span>`;
     const base = st.ping ? "look" : greeting ? "happy" : face()[0];
     return `<button class="pill${st.ping || st.warn ? " ping" : ""}${greeting ? " greet" : ""}" data-act="pill" aria-expanded="false" aria-label="플로로 펼치기 · ${esc(stateWords())}">
-      <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { face: true })}</span>${main}${modeChip()}${connLed()}</button>`;
+      <span class="pet" data-pet data-live data-base="${base}">${cat(liveMood(base), 36, { face: true, extra: moodIn(liveMood(base), 36) })}</span>${main}${modeChip()}${connLed()}</button>`;
   }
   // 접혀 있을 때도 보이는 작은 표시(시연 안전장치) — 연습인지 진짜 AI인지, Claude Code·Codex와 연결됐는지
   const conn = () => (!canLive ? "" : st.unplug ? "off" : st.feed.at ? "on" : "wait");
@@ -2855,7 +2858,7 @@
       sub: "끝낸 줄과 보고는 퀘스트 창의 맡길 일에 남아 있어요.", acts: [{ label: "새 계획 적기", act: "plan-reset", pri: true }] };
     const i = b.plan.items.findIndex((x) => x.id === id), x = b.plan.items[i], w = b.work[id] || {}, s = FP.stateOf(b, id);
     const meta = `<span class="mm-stage">맡길 일 · ${p.total}개 중 ${i + 1}번째</span>${planMini(b, i)}${ex}`;
-    if (s === "running") return { tone: "gray", mood: "think", meta, title: st.halting ? `Claude Code를 멈추는 중이에요${dots}` : `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,   // halting — '멈추기'를 누르고 서버가 끌 때까지(최대 10초) 단추 없이
+    if (s === "running") return { tone: "gray", mood: "work", meta, title: st.halting ? `Claude Code를 멈추는 중이에요${dots}` : `Claude Code가 일하고 있어요${dots}`, sub: `${ROMAN(i)}. ${esc(x.need)}`, passing: true,   // halting — '멈추기'를 누르고 서버가 끌 때까지(최대 10초) 단추 없이
       body: `<p class="mc-fine">허락이 필요하면 이 말 위에 카드가 떠요. 끝나면 기준마다 해냈는지 알려 줘요.</p>`, acts: st.halting ? [] : [{ label: "진행 보기", act: "base-ai", kind: "ghost" }, { label: "멈추기", act: "plan-unwait", kind: "ghost" }] };   // 진행 보기 — Claude Code가 한 일 한 줄씩(AI 진행 판). 멈추기 — 맡긴 일을 끄고 그 줄을 끝맺어 바로 다시 맡길 수 있게(F-103-7)
     if (s === "report" && w.report) { const v = w.verdict || N.reportVerdict(w.report, "done");   // C-50 서버가 기준을 세어 준 미리 보기(없던 옛 기록만 화면이 센다)
       return { tone: v.kind === "done" ? "green" : "amber", mood: v.kind === "done" ? "happy" : "think", meta, title: `보고가 왔어요 — 세어 보니 ${v.word} (기준 ${Number(w.report.total) || 0}개 중 ${Number(w.report.done) || 0}개)`, sub: esc(w.report.easy),
@@ -3622,7 +3625,9 @@
     document.body.classList.toggle("dozing", sleepState === "sleep");   // 띠만 보일 때도 귀 옆에 z가 뜬다
     for (const b of document.querySelectorAll("[data-live]")) {
       const svg = b.querySelector("svg.cat");
-      if (svg) svg.setAttribute("class", svg.getAttribute("class").replace(/\bm-[a-z]+/, `m-${liveMood(b.dataset.base)}`));
+      if (!svg) continue;
+      const m = liveMood(b.dataset.base), moved = moodIn(m, svg.getAttribute("width"));
+      svg.setAttribute("class", `${svg.getAttribute("class").replace(/\s*(mood-in|from-[a-z]+)/g, "").replace(/\bm-[a-z]+/, `m-${m}`)}${moved ? ` ${moved}` : ""}`);
     }
   }
   function flash(mood, ms) { flashMood = { mood, until: Date.now() + ms }; applyMood(); setTimeout(applyMood, ms + 30); }
@@ -3740,6 +3745,7 @@
   }
   setInterval(() => {
     if (isPhone() || st.busy) return;
+    if (working()) activity();   // F-154 일하는 동안은 졸거나 헤엄치지 않는다
     // 20초쯤 가만히 있으면 졸기 전에 숨구멍에서 한 바퀴 헤엄친다(쉴 때마다 한 번)
     if (!swam && sleepState === "awake" && Date.now() - lastActive >= 20_000) { swam = true; playOn(liveCat(), "swim"); }
     // 8초쯤 가만히 있으면 두리번 — 왼쪽 → 오른쪽 → 앞(쉴 때마다 한 번). 마우스를 움직이면 눈이 다시 마우스를 따라간다
@@ -4565,7 +4571,7 @@
   }
   pollSteps().then(() => { if (st.place === "base" && st.ui === "home") render(); });
   chatlogLoad().then((ok) => { if (ok) render(); });   // C-63 — 켤 때 저장된 대화를 이어서(진짜 AI 모드)
-  if (canLive) setInterval(async () => { if (st.ui !== "home") return; const was = aiLatest; await pollSteps(); if (aiLatest !== was) render(); }, 2000);   // 펼쳐져 있으면 늘(C-22 — 채팅의 '일하고 있어요' 띠)
+  if (canLive) setInterval(async () => { const was = aiLatest, busy = working(); await pollSteps(); if (working() !== busy || (st.ui === "home" && aiLatest !== was)) render(); }, 2000);   // 채팅의 '일하고 있어요' 띠(C-22). 접혀 있어도 묻는다 — 알약의 플로로가 일하는 줄 알아야 한다(F-154). 일이 끝나면 새 줄이 없어도 다시 그린다 — 작업실 창은 다시 그려야 바뀐다
 
   // ── 뒤쪽 예시 화면: AI 도구로 작업하는 장면 ──
   const LINES = [

@@ -309,14 +309,17 @@
       : `<button class="${cls}" ${data}${tip}>${esc(a.label)}${kbd(k)}</button>`;
   }
 
-  // 플로로 — 기분은 [잠깐 짓는 표정(쓰다듬기·축하) > 졸음 > 안내 화면의 표정] 순서. 졸음은 편한 표정일 때만
+  // 플로로 — 기분은 [잠깐 짓는 표정(쓰다듬기·축하) > 열중(Claude Code가 일하는 동안, F-154) > 졸음 > 안내 화면의 표정] 순서. 열중 · 졸음은 편한 표정일 때만 — 물어보는 말 · 오류의 표정은 가리지 않는다
   let flashMood = { mood: "", until: 0 }, sleepState = "awake";
   const CALM = ["idle", "happy", "done"];
-  const liveMood = (base) => (flashMood.until > Date.now() ? flashMood.mood : sleepState !== "awake" && CALM.includes(base) ? sleepState : base);
+  const liveMood = (base) => (flashMood.until > Date.now() ? flashMood.mood : working() && CALM.includes(base) ? "work" : sleepState !== "awake" && CALM.includes(base) ? sleepState : base);
+  // F-154 표정이 바뀐 직후의 그림에만 붙이는 표시 — 화면은 다시 그릴 때마다 그림을 새로 만들어, 표시가 늘 있으면 2초마다 노트북이 또 올라온다. 크기로 나눠 센다(설정 창의 플로로와 섞이지 않게)
+  const moodSeen = {};
+  const moodIn = (m, size) => { const s = moodSeen[size] || (moodSeen[size] = { m, from: "", at: 0 }); if (s.m !== m) { s.from = s.m; s.m = m; s.at = Date.now(); } return s.from && Date.now() - s.at < 900 ? `mood-in from-${s.from}` : ""; };
   // 쓰다듬을 수 있는 플로로 — 누르거나 좌우로 문지르면 된다. data-live는 기분이 바뀌면 같이 바뀌는 플로로
   // 꾸미기(C-22 · F-148): 입은 것(st.wear)은 플로로 그림 안에 그린다(seal.js WEAR)
-  const petCat = (mood, size, extra = "") => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="플로로 쓰다듬기"
-    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(liveMood(mood), size, { extra, hole: true, wear: Object.values(st.wear) })}</button>`;
+  const petCat = (mood, size, extra = "", m = liveMood(mood)) => `<button class="pet" data-act="pet" data-pet data-live data-base="${mood}" aria-label="플로로 쓰다듬기"
+    title="플로로 쓰다듬기 — 눌러도, 좌우로 문질러도 돼요">${cat(m, size, { extra: [extra, moodIn(m, size)].filter(Boolean).join(" "), hole: true, wear: Object.values(st.wear) })}</button>`;
 
   // 칸 — 지나온 것과 지금 하는 것까지 밝게, 남은 것은 어둡게
   const mini = () => `<span class="mini" aria-hidden="true">${met().map((_, i) => `<i class="${i < nowAt() ? "on" : ""}"></i>`).join("")}</span>`;

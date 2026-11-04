@@ -338,7 +338,9 @@
     document.body.classList.toggle("dozing", sleepState === "sleep");   // 띠만 보일 때도 귀 옆에 z가 뜬다
     for (const b of document.querySelectorAll("[data-live]")) {
       const svg = b.querySelector("svg.cat");
-      if (svg) svg.setAttribute("class", svg.getAttribute("class").replace(/\bm-[a-z]+/, `m-${liveMood(b.dataset.base)}`));
+      if (!svg) continue;
+      const m = liveMood(b.dataset.base), moved = moodIn(m, svg.getAttribute("width"));
+      svg.setAttribute("class", `${svg.getAttribute("class").replace(/\s*(mood-in|from-[a-z]+)/g, "").replace(/\bm-[a-z]+/, `m-${m}`)}${moved ? ` ${moved}` : ""}`);
     }
   }
   function flash(mood, ms) { flashMood = { mood, until: Date.now() + ms }; applyMood(); setTimeout(applyMood, ms + 30); }
@@ -456,6 +458,7 @@
   }
   setInterval(() => {
     if (isPhone() || st.busy) return;
+    if (working()) activity();   // F-154 일하는 동안은 졸거나 헤엄치지 않는다
     // 20초쯤 가만히 있으면 졸기 전에 숨구멍에서 한 바퀴 헤엄친다(쉴 때마다 한 번)
     if (!swam && sleepState === "awake" && Date.now() - lastActive >= 20_000) { swam = true; playOn(liveCat(), "swim"); }
     // 8초쯤 가만히 있으면 두리번 — 왼쪽 → 오른쪽 → 앞(쉴 때마다 한 번). 마우스를 움직이면 눈이 다시 마우스를 따라간다

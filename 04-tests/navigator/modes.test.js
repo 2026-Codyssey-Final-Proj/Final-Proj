@@ -62,7 +62,7 @@ test("app.js — 알림 · AI 진행 판은 섬 안에서 바로, hub.js의 순�
   assert.match(app, /HUB\.anyWorking\(mine\(\)\)/, "일하는 중 점 — 연결한 폴더의 세션만(F-73)");
   assert.ok(!app.includes('"hub-alerts"') && !app.includes("크게 보기"), "크게 보기 · 모아 보기 창이 없다");
   assert.match(app, /fetch\(`\/api\/steps\?since=\$\{aiLatest\}`/, "AI 진행만 묻는다");
-  assert.match(app, /if \(st\.ui !== "home"\) return; const was = aiLatest;/, "펼쳐져 있을 때만 2초마다(C-22부터는 채팅의 '일하고 있어요' 띠가 쓴다)");
+  assert.match(app, /const was = aiLatest, busy = working\(\); await pollSteps\(\);/, "2초마다 — 접혀 있어도 묻는다(F-154 알약의 플로로), 다시 그리는 것은 펼쳐져 있을 때만(C-22 채팅의 '일하고 있어요' 띠)");
   assert.match(app, /aiSessions = HUB\.exampleSessions\(STEPS, Date\.now\(\)\)/, "서버 없이는 예시(FR-10)");
   // C-12 규칙 — 파일 내용 · 고친 글 · 명령 결과를 다루는 이름이 섬에 없다
   for (const bad of ["tool_input", "tool_response", "old_string", "new_string", "content:"]) assert.ok(!app.includes(bad), `app.js에 ${bad}가 없어야`);

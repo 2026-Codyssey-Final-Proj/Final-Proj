@@ -106,7 +106,7 @@
   }
   pollSteps().then(() => { if (st.place === "base" && st.ui === "home") render(); });
   chatlogLoad().then((ok) => { if (ok) render(); });   // C-63 — 켤 때 저장된 대화를 이어서(진짜 AI 모드)
-  if (canLive) setInterval(async () => { if (st.ui !== "home") return; const was = aiLatest; await pollSteps(); if (aiLatest !== was) render(); }, 2000);   // 펼쳐져 있으면 늘(C-22 — 채팅의 '일하고 있어요' 띠)
+  if (canLive) setInterval(async () => { const was = aiLatest, busy = working(); await pollSteps(); if (working() !== busy || (st.ui === "home" && aiLatest !== was)) render(); }, 2000);   // 채팅의 '일하고 있어요' 띠(C-22). 접혀 있어도 묻는다 — 알약의 플로로가 일하는 줄 알아야 한다(F-154). 일이 끝나면 새 줄이 없어도 다시 그린다 — 작업실 창은 다시 그려야 바뀐다
 
   // ── 뒤쪽 예시 화면: AI 도구로 작업하는 장면 ──
   const LINES = [

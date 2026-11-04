@@ -8,7 +8,7 @@
 // 그림 말고도 교감에 쓰는 순수 함수(쓰다듬기 알아채기·친해진 정도·인사·졸음)와 화면 효과(하트·별·물방울 튀기기)가 여기 있다.
 (function (root) {
   // 앞의 여섯은 안내 화면(navigator.js의 face·docFace)이 쓰고, 뒤의 다섯은 교감할 때 잠깐 짓는 표정이다
-  const MOODS = ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow", "angry"];   // angry — 막을 때(C-19, 2026-10-20): 화난 눈 + 손의 X 표지판(s-sign)
+  const MOODS = ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow", "angry", "work"];   // angry — 막을 때(C-19, 2026-10-20): 화난 눈 + 손의 X 표지판(s-sign)
   // 좌표는 120칸. 몸은 x 18~102, 머리 가운데 x 50, 눈 높이 y 35
   const BODY = "M50 10 C66 10 78 21 80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 57 115 C39 115 27 112 22 103 C17 94 18 78 19 63 C20 47 20 31 26 21 C32 13 40 10 50 10 Z";
   const SHADE = "M80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 62 115 C80 108 90 96 87 82 C84 70 79 58 80 38 Z";
@@ -64,6 +64,7 @@
           <path class="e-happy" d="${both((x) => `M${x - 3.5} ${EY + 1.5} Q${x} ${EY - 3.5} ${x + 3.5} ${EY + 1.5}`)}"></path>
           <path class="e-closed" d="${both((x) => `M${x - 3.5} ${EY - 0.5} Q${x} ${EY + 3} ${x + 3.5} ${EY - 0.5}`)}"></path>
           <path class="e-blink" d="${both((x) => `M${x - 3.5} ${EY} L${x + 3.5} ${EY}`)}"></path>
+          <g class="e-work">${both((x) => `<path d="M${x - 3.6} ${EY + 0.8} A3.6 3.6 0 0 0 ${x + 3.6} ${EY + 0.8} Z"></path>`)}<path class="e-brow" d="M${EYE[0] - 4.6} ${EY - 5} L${EYE[0] + 3.6} ${EY - 3.8} M${EYE[1] + 4.6} ${EY - 5} L${EYE[1] - 3.6} ${EY - 3.8}"></path></g>
           <g class="e-heart">${both((x) => `<path d="${heart(x, EY)}"></path>`)}</g>
           <g class="e-angry">${both((x) => `<circle cx="${x}" cy="${EY + 0.5}" r="3.4"></circle>`)}<path d="M${EYE[0] - 5} ${EY - 6.5} L${EYE[0] + 4} ${EY - 3.5} M${EYE[1] + 5} ${EY - 6.5} L${EYE[1] - 4} ${EY - 3.5}"></path></g>
         </g>
@@ -73,6 +74,7 @@
           <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
         </g>
         ${wearArt(wear, id)}
+        <g class="c-lap"><ellipse class="lap-l" cx="28.5" cy="59" rx="5.5" ry="2.6" transform="rotate(14 28.5 59)"></ellipse><ellipse class="lap-r" cx="69.5" cy="59" rx="5.5" ry="2.6" transform="rotate(-14 69.5 59)"></ellipse><g class="lap-top"><path class="lap-lid" d="M28.5 49 Q28.3 47 30.3 47 H67.7 Q69.7 47 69.5 49 L67.3 65 H30.7 Z"></path><text class="lap-mark" x="49" y="58.6">&lt;/&gt;</text></g><path class="lap-base" d="M30.5 65 H67.5 Q68.6 65 68.6 66 Q68.6 67.2 67.4 67.2 H30.6 Q29.4 67.2 29.4 66 Q29.4 65 30.5 65 Z"></path></g>
       </g>
       ${paws ? `<g class="c-paws"><ellipse cx="36" cy="114" rx="9" ry="4"></ellipse><ellipse cx="58" cy="114" rx="9" ry="4"></ellipse></g>` : ""}</g>`;
   }
@@ -82,6 +84,7 @@
   const MARKS = `<g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
       <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
       <text class="s-q" x="82" y="27">?</text>
+      <g class="s-code"><text x="80" y="29">{ }</text><text x="86" y="18">&lt;/&gt;</text><text x="94" y="8">;</text></g>
       <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
       <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
       <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>

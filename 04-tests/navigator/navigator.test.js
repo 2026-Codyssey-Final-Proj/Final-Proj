@@ -388,6 +388,52 @@ test("플로로 장식(F-148): 뽑기의 모든 물건이 머리 그룹 안에 �
   assert.match(moving, /\.landing \.w-move/, "받는 순간");
 });
 
+test("플로로 열중(F-154): Claude Code가 일하는 동안의 표정 — 내리깐 눈으로 노트북에 코드를 친다(번갈아 치는 지느러미 · 끄덕임 · 떠오르는 코드 글자), 움직임 줄이기면 멈춘다", () => {
+  assert.ok(Cat.MOODS.includes("work"));
+  assert.match(Cat.svg("work", 108, { hole: true }), /class="cat m-work hole"/);
+  assert.match(Cat.svg("work", 108), /class="e-work"/);
+  const hole = Cat.svg("work", 108, { hole: true, wear: ["scarf"] });
+  assert.ok(hole.indexOf('class="c-wear"') < hole.indexOf('class="c-lap"') && hole.indexOf('class="c-lap"') < hole.indexOf("h-line"), "노트북은 목도리 앞, 물 띠 뒤");
+  assert.match(hole, /class="s-code"/, "머리 위 코드 글자");
+  const css = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/seal.css"), "utf8");
+  assert.match(css, /\.m-work \.e-work/, "눈");
+  assert.match(css, /\.cat \.c-lap\{display:none\}/, "노트북은 평소에 보이지 않는다");
+  assert.match(css, /\.m-work \.c-lap,\.m-work \.s-code\{display:inline\}/, "열중일 때만 노트북 · 코드 글자");
+  assert.match(css, /\.m-work \.c-fin\{display:none\}/, "가슴의 지느러미 선 대신 타이핑하는 지느러미");
+  assert.match(css, /\.small \.c-lap/, "아주 작으면 노트북을 뺀다");
+  const moving = css.slice(css.indexOf("prefers-reduced-motion: no-preference"), css.indexOf("F-46(2026-10-20)"));
+  for (const part of [/\.m-work \.lap-l \{[^}]*work-tap/, /\.m-work \.lap-r \{[^}]*work-tap[^}]*animation-delay|\.m-work \.lap-r \{[^}]*work-tap/, /\.m-work \.c-body[^{]*\{[^}]*work-nod/, /\.m-work \.s-code text \{[^}]*work-code/]) assert.match(moving, part);
+  const app = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  assert.match(app, /const liveMood = \(base\) => \(flashMood\.until > Date\.now\(\) \? flashMood\.mood : working\(\) && CALM\.includes\(base\) \? "work" : sleepState/, "일하는 동안은 편한 표정 · 졸음 대신 열중");
+  assert.match(app, /if \(isPhone\(\) \|\| st\.busy\) return;\n\s*if \(working\(\)\) activity\(\);/, "일하는 동안은 졸거나 헤엄치지 않는다");
+  assert.match(app, /const was = aiLatest, busy = working\(\); await pollSteps\(\); if \(working\(\) !== busy \|\| \(st\.ui === "home" && aiLatest !== was\)\) render\(\);/, "접혀 있어도 알아채고, 일이 끝나면 새 줄이 없어도 다시 그린다");
+  assert.match(app, /if \(s === "running"\) return \{ tone: "gray", mood: "work", meta,/, "맡긴 일이 도는 카드도 열중");
+});
+
+test("플로로 표정 바뀜(F-154): 바뀐 직후의 그림에만 mood-in · from-표정을 붙여 한 번만 움직이고, 노트북은 물에서 올라와 열리고 끝나면 닫혀 내려간다", () => {
+  const app = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  const src = /const moodIn = \(m, size\) => \{[^\n]*\n/.exec(app);
+  assert.ok(src, "moodIn");
+  let now = 1000; const realNow = Date.now; Date.now = () => now;
+  try {
+    const moodIn = new Function(`const moodSeen = {}; ${src[0]}; return moodIn;`)();
+    assert.equal(moodIn("idle", 150), "", "처음 그릴 때는 움직이지 않는다");
+    assert.equal(moodIn("idle", 150), "", "표정이 그대로면 다시 그려도 움직이지 않는다");
+    assert.equal(moodIn("work", 150), "mood-in from-idle", "바뀌면");
+    now += 500; assert.equal(moodIn("work", 150), "mood-in from-idle", "움직임이 끝나기 전에 다시 그려도 잃지 않는다");
+    now += 500; assert.equal(moodIn("work", 150), "", "끝나면 뺀다 — 2초마다 다시 그려도 노트북이 또 올라오지 않는다");
+    assert.equal(moodIn("look", 92), "", "크기가 다른 플로로(설정 창)는 따로 센다");
+    assert.equal(moodIn("work", 150), "", "그쪽 때문에 이쪽이 바뀐 것으로 보지 않는다");
+    assert.equal(moodIn("idle", 150), "mood-in from-work", "돌아갈 때");
+  } finally { Date.now = realNow; }
+  assert.match(app, /cat\(m, size, \{ extra: \[extra, moodIn\(m, size\)\]\.filter\(Boolean\)\.join\(" "\), hole: true, wear: Object\.values\(st\.wear\) \}\)/, "플로로 그림에 붙인다");
+  assert.match(app, /replace\(\/\\s\*\(mood-in\|from-\[a-z\]\+\)\/g, ""\)/, "표정만 바꿀 때도 옛 표시를 지운다");
+  const css = fs.readFileSync(path.join(__dirname, "../../02-frontend/navigator/seal.css"), "utf8");
+  const moving = css.slice(css.indexOf("prefers-reduced-motion: no-preference"), css.indexOf("F-46(2026-10-20)"));
+  for (const part of [/\.mood-in\.m-work \.c-lap \{[^}]*lap-rise/, /\.mood-in\.m-work \.lap-top \{[^}]*lap-open/, /\.mood-in\.from-work:not\(\.m-work\):not\(\.small\) \.c-lap \{[^}]*display: inline;[^}]*lap-sink/, /\.mood-in\.from-work:not\(\.m-work\):not\(\.small\) \.lap-top \{[^}]*lap-close/, /\.mood-in \.c-eyes>\* \{[^}]*eye-in/]) assert.match(moving, part);
+  assert.match(Cat.svg("work", 108), /<g class="lap-top">/, "뚜껑은 한 덩이로 열리고 닫힌다");
+});
+
 test("플로로: 안내 화면이 쓰는 표정과 교감 표정이 모두 그림에 있고, 앞지느러미·땀방울을 붙일 수 있다", () => {
   for (const m of ["idle", "happy", "look", "done", "think", "alert", "love", "purr", "sleep", "yawn", "wow"]) {
     assert.ok(Cat.MOODS.includes(m), m);
