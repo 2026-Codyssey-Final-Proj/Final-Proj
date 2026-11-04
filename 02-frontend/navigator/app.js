@@ -3174,7 +3174,7 @@
     const was = proposals.map((p) => p.id).join();
     proposals = j.items.filter((p) => !decided.has(p.id));
     if (proposals.map((p) => p.id).join() === was) return;
-    if (proposals.length && st.ui !== "home") { st.ping = "웹 AI가 퀘스트에 적자고 해요 — 눌러서 볼까요?"; peek(); } else render();
+    if (proposals.length && st.ui !== "home" && !st.finished) { st.ping = "웹 AI가 퀘스트에 적자고 해요 — 눌러서 볼까요?"; peek(); } else render();   // F-153 새 맥락 리뷰 — 다 마친 뒤에는 끝난 화면 위에 카드를 띄우지 않는다
   }
   async function decideProposal(id, ok) {
     const p = proposals.find((x) => x.id === id); if (!p) return;
@@ -3805,7 +3805,8 @@
   function landed(j0, tokens, sent = st.text, checkBy = "") {
     const j = gateApply(j0);
     const was = allDone();
-    Object.assign(st, { j, tokens: tokens || 0, todos: null, openInput: false, choice: null, later: false, picking: false, back: "", notice: pendingNotice, finished: false, judged: sent });
+    const stillDone = st.finished && j.stage === N.STAGES.length - 1;   // F-153 — 다 마친 뒤의 마지막 장 살펴보기는 끝난 상태를 풀지 않는다(관문이 다시 열려 조개 · 문서 올리기가 되풀이됐다)
+    Object.assign(st, { j, tokens: tokens || 0, todos: null, openInput: false, choice: null, later: false, picking: false, back: "", notice: pendingNotice, finished: stillDone, judged: sent });
     if (QU && st.quest && st.quest.phase === "quest" && QU.isDone(st.quest) && st.quest.chap === j.stage) {   // 다 적은 퀘스트를 살펴본 결과가 왔다 = 완료 보고가 됐다
       st.quest = { ...st.quest, phase: "done" };
       // 단계 결과(C-37) — 한곳에서 보기 · 도전과제 지도 · 다음 장 초안 · 문서. C-39: 칸을 다 확인한 날 · 완료 기준과 근거(문서의 증빙)
@@ -3924,7 +3925,7 @@
     Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null });
     if (nx) st.j = { stage: nx.n, reason: `${LB(s.n)}를 마쳤어요! 이제 ${LB(nx.n)} "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
-    else st.finished = true;
+    else { st.finished = true; st.ping = ""; }   // F-153 — 관문 전에 온 알림의 '어디쯤인지 볼까요?'가 끝난 화면 위에 남지 않게
     // 퀘스트(C-22): 장을 지나면 무지개 조개 하나, 다음 장 퀘스트(받기 화면)를 만들고 퀘스트 창이 바로 뜬다(설정 '바로 뜨기'). 마지막이면 퀘스트 없이 마무리
     if (QU) { st.shells += 1; level = QU.levelUp(level); if (st.mode !== "fixture") writeLS(LEVEL_KEY, level); st.quest = nx ? QU.retitle(QU.makeQuest(nx, crits(nx.n)), st.topic) : null; if (nx && qauto) openQwin("quest"); }   // 다음 장도 주제를 제목으로(C-36)
     if (nx) questStarted();   // C-61 — 새 단계: 섬은 가운데부터. 다음 장 퀘스트를 만든 뒤에 — 전에는 앞에서 불러 구분선 · '가져온 것'이 지난 장 번호였다(F-116). 마지막 장이면 부르지 않는다 — 8단계 구분선이 한 번 더 붙고 8단계에서 바꾼 파일이 비어 보였다(F-138)
@@ -4526,7 +4527,10 @@
     const tool = toolName(ev.tool);
     lastPing = { tool, kind: ev.kind };
     logMsg("sys", `${esc(tool)}가 일을 마쳤어요${ev.sim ? " · 연습 알림" : ""}`);   // 채팅에 한 줄(C-22)
-    const auto = !st.finished && st.screen !== "gate" && (ev.sim ? st.mode === "fixture" : st.auto && st.mode === "live");
+    // F-153(임유정 2026-11-04 "8단계 … 관문을 통과했는데도 … 계속 루프가 돈다"): 다 마친 뒤의 알림(문서 올리기의 커밋 · 푸시도)은 채팅 한 줄로 끝 —
+    //   '어디쯤인지 볼까요?'를 누르면 살펴보기가 끝난 상태를 풀어 8단계 관문이 다시 열렸다. claude-drafted: 2026-11-04
+    if (st.finished) { st.ping = ""; return render(); }
+    const auto = st.screen !== "gate" && (ev.sim ? st.mode === "fixture" : st.auto && st.mode === "live");
     if (auto) {
       await lookAfterWork(lastPing);
       if (ev.sim || st.warn) view("alert");

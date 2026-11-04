@@ -68,7 +68,10 @@
     const tool = toolName(ev.tool);
     lastPing = { tool, kind: ev.kind };
     logMsg("sys", `${esc(tool)}가 일을 마쳤어요${ev.sim ? " · 연습 알림" : ""}`);   // 채팅에 한 줄(C-22)
-    const auto = !st.finished && st.screen !== "gate" && (ev.sim ? st.mode === "fixture" : st.auto && st.mode === "live");
+    // F-153(임유정 2026-11-04 "8단계 … 관문을 통과했는데도 … 계속 루프가 돈다"): 다 마친 뒤의 알림(문서 올리기의 커밋 · 푸시도)은 채팅 한 줄로 끝 —
+    //   '어디쯤인지 볼까요?'를 누르면 살펴보기가 끝난 상태를 풀어 8단계 관문이 다시 열렸다. claude-drafted: 2026-11-04
+    if (st.finished) { st.ping = ""; return render(); }
+    const auto = st.screen !== "gate" && (ev.sim ? st.mode === "fixture" : st.auto && st.mode === "live");
     if (auto) {
       await lookAfterWork(lastPing);
       if (ev.sim || st.warn) view("alert");

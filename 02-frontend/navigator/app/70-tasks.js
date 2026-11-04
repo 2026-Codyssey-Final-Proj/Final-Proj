@@ -359,7 +359,7 @@
     const was = proposals.map((p) => p.id).join();
     proposals = j.items.filter((p) => !decided.has(p.id));
     if (proposals.map((p) => p.id).join() === was) return;
-    if (proposals.length && st.ui !== "home") { st.ping = "웹 AI가 퀘스트에 적자고 해요 — 눌러서 볼까요?"; peek(); } else render();
+    if (proposals.length && st.ui !== "home" && !st.finished) { st.ping = "웹 AI가 퀘스트에 적자고 해요 — 눌러서 볼까요?"; peek(); } else render();   // F-153 새 맥락 리뷰 — 다 마친 뒤에는 끝난 화면 위에 카드를 띄우지 않는다
   }
   async function decideProposal(id, ok) {
     const p = proposals.find((x) => x.id === id); if (!p) return;
