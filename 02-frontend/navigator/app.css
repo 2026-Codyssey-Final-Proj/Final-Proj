@@ -115,6 +115,7 @@ html.notch .pill{border-radius:0 0 25px 25px}
 /* 접힌 한 줄에 마우스를 올리면 살짝 커진다(세로 +6 · 가로 +24 — 비율 --px · --py는 app.js peekReady가 크기마다 잰다). 떠나면 돌아온다. 창은 바꾸지 않는다(접힌 창에 여유) */
 .pill{transform-origin:50% 0;transition:transform .16s ease-out}
 .pill:hover{transform:scale(var(--px,1.06),var(--py,1.12));transition:transform .2s cubic-bezier(.3,1.4,.5,1)}
+html.island-drag,html.island-drag *{cursor:grabbing!important}   /* 알약을 끄는 동안(C-74) */
 .in-app .nav.peekroom{padding:0 12px 8px}   /* 접힌 창의 여유(가로 24 · 세로 8) — 양옆 12는 여기(가운데 기준점이 어긋나지 않게 대칭, F-45), 오른쪽 12 · 아래 8은 app.js measureSize가 더한다 */
 @media (prefers-reduced-motion:reduce){.pill,.pill:hover{transform:none;transition:none}}
 

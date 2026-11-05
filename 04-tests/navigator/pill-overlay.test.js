@@ -63,3 +63,38 @@ test("F-158 — 앱에서 처음 설정이 떠 있는 동안 섬(#nav)을 감춘
   const su = read("navigator/setup.css");
   assert.match(su, /html\.in-app:has\(#floe-setup\) #nav\{visibility:hidden\}/);
 });
+
+// C-74(두승현 2026-11-05 "알약상태일때 상단 고정이 아니라 유저가 위치를 이동"): 자리 계산은 순수 함수로, 잇는 곳은 글자로. 진짜 끌기는 격리한 앱에서 사람 입력으로 잼
+const L = require("../../02-frontend/electron/lib.js");
+const WA = { x: 0, y: 0, width: 1680, height: 1010 };
+test("C-74 islandSpot — 접히면 창 폭이 밖으로 나가도 알약만 화면 안, 펼치면 창 전체를 안으로. 세로는 작업 영역 안", () => {
+  assert.deepEqual(L.islandSpot({ cx: 800, y: 300 }, 952, 65, WA, 392), { x: 324, y: 300 }, "화면 가운데는 그대로");
+  assert.deepEqual(L.islandSpot({ cx: 0, y: 0 }, 952, 65, WA, 392), { x: 196 - 476, y: 0 }, "왼쪽 끝 — 창은 밖으로 나가고 알약은 끝에 붙는다");
+  assert.deepEqual(L.islandSpot({ cx: 5000, y: 5000 }, 952, 65, WA, 392), { x: 1680 - 196 - 476, y: 1010 - 65 }, "오른쪽 아래 끝");
+  assert.deepEqual(L.islandSpot({ cx: 0, y: 900 }, 952, 600, WA, 0), { x: 0, y: 410 }, "펼치면 창 전체가 안으로 — 아래쪽 알약은 위로 자란다");
+  assert.deepEqual(L.islandSpot({ cx: 840, y: 0 }, 2000, 2000, WA, 0), { x: 0, y: 0 }, "화면보다 크면 왼쪽 위");
+  assert.deepEqual(L.islandSpot({ cx: 2500, y: 100 }, 952, 65, { x: 1680, y: 0, width: 1920, height: 1040 }, 392), { x: 2024, y: 100 }, "두 번째 화면의 좌표");
+});
+test("C-74 parseSpot — 저장한 자리를 읽고, 망가진 글은 없는 셈", () => {
+  assert.deepEqual(L.parseSpot('{"cx":120.5,"y":30}'), { cx: 120.5, y: 30 });
+  for (const bad of ["", "{", "null", "[]", '{"cx":"1","y":2}', '{"cx":1}']) assert.equal(L.parseSpot(bad), null, bad);
+});
+test("C-74 앱 — 화면은 시작 · 움직임 · 끝만 보내고 자리는 앱이 커서로 잰다. 노치 · 넓힌 창에서는 옮기지 않고, 끝나면 저장한다", () => {
+  const m = read("electron/main.js"), pre = read("electron/preload.js");
+  assert.match(pre, /dragIsland: \(phase, pillW\) => ipcRenderer\.send\("floe:drag", phase, pillW\)/);
+  const d = m.slice(m.indexOf('ipcMain.on("floe:drag"'), m.indexOf('ipcMain.on("floe:drag"') + 900);
+  assert.match(d, /if \(!fromIsland\(e\) \|\| NOTCH \|\| expanded\) return;/);
+  assert.match(d, /screen\.getCursorScreenPoint\(\)/);
+  assert.match(d, /fs\.writeFile\(homeFile\(\)/);
+  assert.match(m, /L\.islandSpot\(home, W, H, homeArea\(\), Number\(pillW\) \|\| 0\)/, "크기가 바뀌어도 옮긴 자리를 기준으로 — 펼쳤다 접으면 돌아온다");
+  assert.match(m, /win\.on\("will-move", \(\) => \{ home = null; \}\)/, "펼친 섬의 머리 줄로 직접 옮기면 그 자리를 따른다");
+});
+test("C-74 화면 — 4px 넘게 움직여야 끌기, 끈 뒤의 누름은 먹는다, 끄는 동안 클릭 통과 · 창 크기 맞춤을 멈춘다. 띠는 알약과 같은 창이라 따로 옮기지 않는다", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /e\.target\.closest\("\.pill, \.strip"\)/);
+  assert.match(a, /if \(!\(e\.buttons & 1\)\) return drop\(\);/, "뗀 신호를 놓쳐도 안 누른 커서를 따라오지 않는다");
+  assert.match(a, /Math\.hypot\(e\.screenX - press\.x, e\.screenY - press\.y\) < 4/);
+  assert.match(a, /if \(eatClick\) \{ eatClick = false; e\.stopPropagation\(\); e\.preventDefault\(\); \}/);
+  assert.match(a, /addEventListener\("mousemove", \(e\) => \{ if \(document\.documentElement\.classList\.contains\("island-drag"\)\) return; const on = bare\(e\.target\);/);
+  assert.match(a, /if \(h\.classList\.contains\("island-drag"\)\) return;/);
+});
