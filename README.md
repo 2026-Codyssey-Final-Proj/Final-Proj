@@ -15,7 +15,7 @@
 ![Server](https://img.shields.io/badge/Server-Node.js%20local%20only-339933?logo=nodedotjs&logoColor=white)
 ![AI](https://img.shields.io/badge/AI-Claude%20%28API%20key%20or%20Claude%20Code%29-D97757?logo=anthropic&logoColor=white)
 ![Tests](https://img.shields.io/badge/Tests-node%20%2B%20python-3776AB?logo=pytest&logoColor=white)
-![Release](https://img.shields.io/badge/Release-app--v11.2.0-1E6FD9?logo=github&logoColor=white)
+![Release](https://img.shields.io/badge/Release-app--v11.3.0-1E6FD9?logo=github&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 ![작업실 — 왼쪽 파일 칸, 가운데 퀘스트 탭(위 여덟 장 지도 · 아래 지금 퀘스트 다섯 칸), 오른쪽 섬(플로로와 채팅)](01-docs/features/shots/2026-10-30-quest-tab/after-b-s2-1440.png)
@@ -25,7 +25,7 @@
 
 | 📦 버전 기록 | 🖥 앱 | 🗓 일정 | 🏷 이름 |
 |---|---|---|---|
-| **v63.4** (2026-11-04) · [CHANGELOG](CHANGELOG.md) | **11.2.0** (2026-11-04) · Mac · Windows · 우분투 · [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) | 🧪 사용 테스트 **11/4 ~ 7** · 📮 제출 **11/8 18:00** · 🎤 발표 **11/12 · 13** | **Floe**(제품) · **플로로**(마스코트) — 2026-10-17 확정 [#51](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/issues/51) |
+| **v66.1** (2026-11-05) · [CHANGELOG](CHANGELOG.md) | **11.3.0** (2026-11-05) · Mac · Windows · 우분투 · [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) | 🧪 사용 테스트 **11/4 ~ 7** · 📮 제출 **11/8 18:00** · 🎤 발표 **11/12 · 13** | **Floe**(제품) · **플로로**(마스코트) — 2026-10-17 확정 [#51](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/issues/51) |
 
 코디세이 Final-Project · 작업 이름 Project Navigator · 할 일은 Jira 프로젝트 Floe([jira.md](01-docs/00-overview/jira.md))
 
