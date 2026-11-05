@@ -283,7 +283,7 @@
       const b = document.querySelector(keep);
       if (b && b !== a) { b.focus(); try { b.setSelectionRange(sel[0], sel[1]); } catch {} b.scrollTop = sel[2]; }
     }
-    if (point) C.follow(isPhone() ? $phone : $nav, point);
+    if (point) follow(point);
     for (const t of document.querySelectorAll("textarea.doc")) grow(t);
     // 채팅은 마지막 말이 보이게(C-22) — 단, 맨 아래를 따라가는 중(logPin)이거나 새 말이 왔을 때만. 위로 올려 읽는 중이면 그 자리 그대로
     const lg = $nav.querySelector("[data-log]");
@@ -417,11 +417,14 @@
 
   // 눈은 마우스를 따라온다. 글 칸에 들어가면 글 칸을 본다. 깜빡임은 들쭉날쭉하게
   let point = null, raf = 0, target = null;
+  // 처음 설정의 플로로는 #nav 밖(#floe-setup)에 있다 — 같이 본다(F-160)
+  function follow(p) { C.follow(isPhone() ? $phone : $nav, p); const su = document.getElementById("floe-setup"); if (su) C.follow(su, p); }
+  document.addEventListener("floe:setup-drawn", () => { if (point) follow(point); });   // 칸이 바뀌어 새로 그린 플로로도 앞이 아니라 커서 쪽을
   if (!STILL) {
     document.addEventListener("mousemove", (e) => {
       point = { x: e.clientX, y: e.clientY }; target = null;   // 창 안이면 바로 — 미끄러지던 것은 멈춘다
       if (!raf) raf = requestAnimationFrame(() => {
-        raf = 0; activity(); C.follow(isPhone() ? $phone : $nav, point);
+        raf = 0; activity(); follow(point);
       });
     });
     // 앱(Electron) 안이면 창 밖의 커서도 — 창이 섬 크기라 커서는 거의 늘 창 밖이다(2026-10-19). 눈만 따라오고, 졸음을 깨우지는 않는다(activity는 이 창을 쓸 때만).
@@ -432,7 +435,7 @@
         glideRaf = 0;
         if (!target) return;
         const g = C.glide(point, target, now - last); last = now;
-        point = { x: g.x, y: g.y }; C.follow(isPhone() ? $phone : $nav, point);
+        point = { x: g.x, y: g.y }; follow(point);
         if (g.done) target = null; else glideRaf = requestAnimationFrame(step);
       };
       window.floeApp.onCursor((p) => { target = p; if (!glideRaf) { last = performance.now(); glideRaf = requestAnimationFrame(step); } });
