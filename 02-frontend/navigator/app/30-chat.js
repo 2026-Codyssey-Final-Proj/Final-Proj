@@ -34,6 +34,11 @@
   //   폴더를 고르면(connected · projectPicked) 다시 묻는다. 병합 뒤 고침(2026-10-29 — #247 서버 · #250 화면이 같이 들어간 main에서 브라우저로 연 화면이 말마다 400을 쌓았다)
   let chatQueue = [], chatFlushing = false, chatFolder = null, chatAsk = 0;
   function chatlogAdd(m) { if (!chatLive() || !Number.isInteger(m.n) || chatFolder === false) return; const t = turnOf(m); if (!t || !(t.text || t.title || t.carry)) return; chatQueue.push(t); if (!chatFlushing && chatFolder) setTimeout(chatlogFlush, 0); }
+  // F-157-6(claude-drafted: 2026-11-05 사용자 시험 — 뼈대 코드를 만든 뒤에도 한 장이 '바뀐 파일은 없었어요'): 바뀐 파일은 서버의 대화 기록에 쌓이는데 켤 때만 받았다 — Claude Code가 일을 마칠 때마다 다시
+  async function changesRefresh() {
+    if (!chatLive() || !chatFolder) return;
+    try { const r = await (await fetch("/api/chatlog", { credentials: "same-origin" })).json(); if (r && r.ok && Array.isArray(r.changes)) { st.chatChanges = r.changes.filter((c) => c && Number.isFinite(c.at) && typeof c.path === "string"); render(); } } catch {}
+  }
   async function chatlogFlush() {
     if (chatFlushing || !chatQueue.length || chatFolder !== true) return; chatFlushing = true; const add = chatQueue.splice(0, 20);
     try { await fetch("/api/chatlog", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ add }), credentials: "same-origin" }); } catch { /* 못 쌓아도 화면은 계속 — 이 브라우저에는 남아 있다 */ }

@@ -12,18 +12,24 @@
   const FEATURE_LINE = "기능을 '~하면, 앱은 ~한다' 문장으로 쓰기", TRACE_LINE = "기능마다 어디서 나온 생각인지 표로 잇기 (기능이 5개 이상일 때)";
   const SUCCESS_LINE = "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기", OUT_LINE = "다룰 정보에 남의 정보가 섞이는지, 무엇이 밖으로 나가는지 적기";
   const MEASURE_LINE = "2단계에서 정한 숫자를 실제로 재 보기", PUBLIC_LINE = "공개한 앱에 아무나 들어오지 못하게 되어 있는지 확인하기";
+  const SMOKE_LINE = "이어진 게 실제로 도는지 확인하기";   // 5단계 — 도는지 보려면 코드가 있어야 한다(F-157-4)
+  const COMMIT_LINE = "마친 작업을 저장소에 올려 두기";   // 8단계 — 커밋 문구를 고르는 것만으로 '했음'이 되지 않게(F-157-4)
   const lineOf = (r, name) => { const it = r && Array.isArray(r.items) ? r.items.find((x) => x && x.name === name) : null; return it && Array.isArray(it.lines) ? it.lines : null; };
   const stageOf = (results, n) => (results && (results[n] || results[String(n)])) || null;
 
   // 사실 — 결과(단계마다 { items: [{ name, lines }] }) · 파일 목록(/api/files의 { path, dir })에서. 모르면 null
-  function factsFrom({ results = {}, files = null, codeless = false } = {}) {
+  //   card — 1단계 관문의 기준 카드(basecard.js). 사람이 거기 '성공'에 숫자를 적었으면 2단계 Ⅱ가 '아직 모름'이어도 성공 숫자가 있다(F-157-2 — claude-drafted: 2026-11-05)
+  //   pushed — 화면이 '문서로 묶어 GitHub에'로 푸시까지 한 적이 있나(true · false), 모르면(연습 · 서버 없음) null
+  function factsFrom({ results = {}, files = null, codeless = false, card = null, pushed = null } = {}) {
     const feat = lineOf(stageOf(results, 2), FEATURE_LINE), succ = lineOf(stageOf(results, 1), SUCCESS_LINE), out = lineOf(stageOf(results, 1), OUT_LINE);
     const outText = out ? norm(out.join(" ")) : "";
+    const cardSucc = card && card.success && typeof card.success.text === "string" ? card.success.text : "", measured = (l) => /\d/.test(l) && !UNMEASURED.test(l);
     return {
       features: feat ? feat.flatMap((l) => String(l).split(/\s\/\s/)).filter((l) => norm(l)).length : null,   // 3단계 Ⅰ은 '~하면, 앱은 ~한다'를 ' / '로 이어 한 줄(navigator.js STAGE_HINT) — 줄 수가 아니라 조각 수(새 맥락 리뷰 2026-10-28 막힘)
       publish: !outText ? null : /공개\s*(안|하지)|공개하지|비공개|공개는\s*안/.test(outText) ? false : /공개/.test(outText) ? true : null,
-      success: !succ || !succ.length ? null : succ.some((l) => /\d/.test(l) && !UNMEASURED.test(l)),
+      success: measured(cardSucc) ? true : !succ || !succ.length ? null : succ.some(measured),
       codeFiles: Array.isArray(files) ? files.filter((f) => f && !f.dir && CODE_RE.test(String(f.path || ""))).length : null,
+      pushed: typeof pushed === "boolean" ? pushed : null,
       codeless: !!codeless,   // 6단계에서 '코드 파일을 만드시겠습니까?'에 아니요(결정 모음 A-04 — 문서만 만드는 일일 수 있다, F-70) — 코드 0개여도 막지 않는다
     };
   }
@@ -35,7 +41,10 @@
     const is = (line, idx) => (name ? name === line : i === idx);   // 기준 글이 있으면 글로, 없으면(시험 · 옛 기록) 그 등급의 기본 번호로
     if (stage === 2 && is(TRACE_LINE, 3) && facts.features != null && facts.features < 5) return { state: "skip", why: `기능이 ${facts.features}개 — 5개 이상일 때만 해요` };
     if (stage === 6 && is(PUBLIC_LINE, 3) && facts.publish === false) return { state: "skip", why: "앱을 공개하지 않아요 — 공개할 때만 해요" };
-    if (stage === 6 && is(MEASURE_LINE, 0) && facts.success === false) return { state: "first", go: { s: 1, i: 1 }, why: "2단계 '언제 성공'의 숫자가 비어 있어요 — 그것부터 적어요" };
+    if (stage === 6 && is(MEASURE_LINE, 0) && facts.success === false) return { state: "first", go: { s: 1, i: 1, name: SUCCESS_LINE }, why: "2단계 '언제 성공'의 숫자가 비어 있어요 — 그것부터 적어요" };
+    // F-157-4(2026-11-05 사용자 시험 — 코드가 하나도 없는데 5단계 할 일이 '다 했어요'가 되고 관문이 열렸다): 5단계 '도는지 보기'도 6단계처럼 먼저 코드를 묻는다
+    if (stage === 4 && is(SMOKE_LINE, 1) && facts.codeFiles === 0 && !facts.codeless) return { state: "first", go: { s: 4, i: 0 }, code: true, why: "코드 파일이 없어요 — 뼈대 코드부터 만들어 돌려 봐요" };
+    if (stage === 7 && is(COMMIT_LINE, 4) && facts.pushed === false) return { state: "first", go: { s: 7, i: 4 }, ship: true, why: "아직 저장소에 올리지 않았어요 — '문서로 묶어 GitHub에'로 올리면 이 칸을 적을 수 있어요" };
     if (stage === 5 && facts.codeFiles === 0 && !facts.codeless) return { state: "first", go: { s: 4, i: 0 }, code: true, why: "코드 파일이 없어요 — 5단계 뼈대 코드부터" };   // code — 화면이 '코드 파일을 만드시겠습니까?'로 묻는다(A-04)
     return { state: "write" };
   }

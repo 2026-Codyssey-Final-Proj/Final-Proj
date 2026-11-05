@@ -411,7 +411,7 @@ function touchTask(cwd) { if (task && task.state === "running" && inDir(task.dir
 // ── F-69 막힘(2026-10-28 — 이재엽 "결과물이 안나오는 문제 해결", 결정 모음 A-03 "허락 팝업을 다시 → 선택창 → 까닭과 가장 가까운 길"): claude -p는 허락을 못 받아도 끝 코드 0 · subtype success다.
 //   결과의 permission_denials에서 도구 이름 · 개수만 읽고(tokens.js denialsOf) 0이 아니면 state blocked — 화면이 '끝남' 대신 막혔다고 말하고 사람이 길을 고른다. **대신 허용하는 길은 없다**(FR-17)
 //   asks — 그 일이 도는 동안 섬의 허락 카드에 어떻게 답했나(허용 · 거절 · 답 없음 none). 카드를 못 눌렀는지, 거절했는지, 카드가 뜨지도 않았는지를 가른다
-const DENY_KIND = { Write: "파일 쓰기", Edit: "파일 쓰기", MultiEdit: "파일 쓰기", NotebookEdit: "파일 쓰기", Bash: "명령", WebFetch: "인터넷", WebSearch: "인터넷" };
+const DENY_KIND = { Write: "파일 쓰기", Edit: "파일 쓰기", MultiEdit: "파일 쓰기", NotebookEdit: "파일 쓰기", Bash: "명령", PowerShell: "명령", WebFetch: "인터넷", WebSearch: "인터넷" };
 function blockedOf(t) {
   const kinds = [];
   for (const [tool, n] of Object.entries((t.denied && t.denied.tools) || {})) { const what = DENY_KIND[tool] || "다른 도구", k = kinds.find((x) => x.what === what); if (k) k.n += n; else kinds.push({ what, n }); }

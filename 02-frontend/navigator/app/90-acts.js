@@ -19,7 +19,7 @@
     },
     judge: () => { if (refuse(mealWhy())) return; st.notice = ""; judge(false); },
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
-    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, mats: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [] }); ACT.ex(S.examples.indexOf(S.first)); },
+    restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, mats: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [], pushedAt: null }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => { if (st.warn && RETRY[st.warn.then]) RETRY[st.warn.then](); },   // 두 번 누르면 둘째는 st.warn이 이미 없다(앱 작업실은 다시 그려 보내는 데 시간이 걸린다) — F-144-18
     "stop-send": () => set({ warn: null }),
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
@@ -57,7 +57,11 @@
     "draft-alt": (k) => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex[k]) fillNow(ex[k], "pick"); },
     // 1단계에서 크기 칸까지 채우면 만드는 크기도 권한 크기로 — 크기 칩(draft-size)과 같게(2026-10-26 리뷰: 줄만 '보통'이고 등급은 Full로 남아 다음 장이 Full 할 일 수로 열렸다)
     "card-edit": () => { if (!BC || !st.card) return; st.card = BC.withEdits(st.card, st.cardEdits); st.cardEdits = {}; if (st.prep && SM) { const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits }); st.prep = { ...st.prep, cards: st.prep.ai ? mergePrepared(rule.cards, st.prep.cards) : rule.cards, fix: false }; } save(); render(); say("기준을 고쳤어요 — 아직 안 한 단계의 퀘스트를 이 기준으로 다시 지어요"); },   // C-56 R-1: 카드를 고치면 아직 안 한 퀘스트를 다시(지금은 준비된 퀘스트 — AI 맞춤은 ⓓ)
-    "first-go": () => { treeView = "flow"; openQwin("quest"); render(); say("한눈에 보기에서 그 칸을 찾아 채워요 — 지난 장의 칸은 '채우기'로 채팅에서 같이 적어요"); },   // C-56 먼저 → 갈 곳
+    // C-56 먼저 → 갈 곳. F-157-3: 한눈에 보기는 지난 장의 칸을 고칠 수 없어 막다른 길이었다 — 채팅에서 그 칸의 지금 줄을 보이고, 보낸 말로 고친다
+    "first-go": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, x = i >= 0 ? qstates(q)[i] : null; if (!x || x.state !== "first" || !x.go) return;
+      const g = { s: x.go.s, i: x.go.i, ...(x.go.name ? { name: x.go.name } : {}) }, at = pastIdx(g), r = st.results[g.s], it = r && r.items[at]; if (!it) return say("그 칸이 아직 없어요 — '아직 못 함으로 적기'로 넘어가요");
+      pastFixAt = g; render();
+      say(`${LB(g.s)} ${ROMAN(at)} ${QU.shortOf(it.name)} — 지금 줄은 “${(it.lines || [])[0] || "비었어요"}”예요. 고친 줄을 아래 칸에 적어 보내면 그 칸이 바뀌어요`); focusAct("[data-act=say]"); },
     "first-notyet": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, x = i >= 0 ? qstates(q)[i] : null; if (!x || x.state !== "first") return; fillNow(`아직 못 함 — ${x.why}`, "me"); },   // 비워 두지 않고 적되 관문 규칙(evidence)이 막는다
     "draft-again": async () => {
       const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex.length < 2) return;
@@ -97,7 +101,7 @@
       setTier(QU.SIZE_TIER[k]);
       fillNow(`크기: ${QU.SIZE_WORD[k]}${k === q.draft.size ? ` — ${q.draft.sizeWhy}` : ""}`, "pick");
     },
-    "quest-ok": () => { const q = st.quest; if (!q || q.phase !== "draft") return; st.quest = { ...q, phase: "quest", edit: false, sel: 0 }; st.qtab = "quest"; set({ questUp: true }); say("받았어요! 퀘스트 카드에 다섯 칸이 열렸어요"); },
+    "quest-ok": () => { const q = st.quest; if (!q || q.phase !== "draft") return; st.quest = { ...q, phase: "quest", edit: false, sel: 0 }; st.qtab = "quest"; set({ questUp: true }); say(`받았어요! 퀘스트 카드에 ${q.objs.length}칸이 열렸어요`); },
     "quest-fix": () => { if (!st.quest) return; st.quest = { ...st.quest, edit: true }; openQwin("quest"); render(); set({ questUp: true }); say("퀘스트 카드에서 이름과 할 일 수를 고친 뒤 '이대로 받기'를 눌러요"); },
     "quest-later": () => { set({ questUp: false }); say("그럼 쉬어요 — 지도를 보다가 '퀘스트 카드 올리기'를 누르면 다시 올라와요"); },   // C-69: 작업실을 닫지 않고 카드를 내린다(S4)
     "quest-example": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.example(q, i) : null; if (ex === null) return; if (q.draft) { st.say = ex; return send(); } logMe(ex); fillNow(ex, "ok"); },   // 예시는 플로로가 낸 것 그대로(ok) — C-61 뒤로 send()는 대화라 여기서 바로 적는다
@@ -301,7 +305,7 @@
       const r = U.grade(c.q, i);
       st.checks = U.record(st.checks, c.q.stage, r.ok, ymd());
       st.check = { ...c, pick: i, ok: r.ok };
-      if (r.ok) { toNext(); return say(U.FACE.right[1]); }
+      if (r.ok) { say(U.FACE.right[1]); toNext(); return; }   // 맞았다는 말이 다음 단계 구분선 · 인사보다 먼저(F-157-10 — 전에는 다음 단계 말 뒤에 붙었다)
       render(); flash("think", 1200);
     },
     "check-go": () => toNext(),
