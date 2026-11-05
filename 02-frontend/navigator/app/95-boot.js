@@ -207,7 +207,7 @@
     setupNeeded: !!(window.FloeSetup && window.FloeSetup.shouldOpen(window.FloeSetup.readSaved(localStorage), location.hash)) };
   const boot = GR && st.ui === "greet" ? GR.bootPlan(bootArgs) : { workspace: false, bubble: false, greet: false };
   const greetNow = !!GR && st.ui === "greet" && !boot.workspace && GR.shouldGreet(bootArgs).greet;
-  if (boot.workspace) { openQwin("quest"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); }
+  if (boot.workspace) { openQwin("quest"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); if (st.coach) { st.boot = null; st.ui = "home"; } }   // 첫 사용 안내 중에 껐다 켰으면 알약이 아니라 그 걸음으로(88-coach)
   else if (greetNow) { document.documentElement.classList.add("greeting"); st.ui = "petit"; }
   else if (st.ui === "greet") st.ui = location.hash && location.hash !== "#" ? "home" : "petit";
   function startGreeting() {

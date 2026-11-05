@@ -11,6 +11,10 @@ contextBridge.exposeInMainWorld("floeApp", {
   newProject: (name) => ipcRenderer.invoke("floe:project-new", String(name || "")),
   cloneProject: (text) => ipcRenderer.invoke("floe:project-clone", String(text || "")),
   myRepos: () => ipcRenderer.invoke("floe:project-repos"),
+  // 처음 설정의 로그인 실행 칸(C-73) — 이름(claude · gh)만 보낸다. 명령은 앱 쪽 표(lib.js)에만 있다
+  runLogin: (name) => ipcRenderer.invoke("floe:login-run", String(name || "")),
+  stopLogin: () => ipcRenderer.invoke("floe:login-stop"),
+  onLoginLine: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:login-line", h); return () => ipcRenderer.removeListener("floe:login-line", h); },
   openSettings: () => ipcRenderer.invoke("floe:open-settings"), // .env를 두는 앱 설정 폴더 열기
   saveKey: (key, baseUrl) => ipcRenderer.invoke("floe:save-key", { key, baseUrl }),   // API 키(와 중계 서버 주소)를 넣는다
   clearKey: () => ipcRenderer.invoke("floe:clear-key"),       // 키를 뺀다 — 그다음부터 이 컴퓨터의 Claude Code로

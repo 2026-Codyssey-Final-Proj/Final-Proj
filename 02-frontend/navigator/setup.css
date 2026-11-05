@@ -59,6 +59,16 @@ html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투�
 .su-repos{grid-area:repos;display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .su-repos .b{min-height:30px!important;padding:0 10px;font-size:calc(12px * var(--ui-scale,1));border:1px solid var(--line)}
 .su-ok{color:var(--ok)}
+/* 로그인 실행 칸(C-73) — 터미널처럼: 어두운 바탕 · 고정폭 글자. 칠 수 있는 칸은 없다 */
+.su-run{width:100%;box-sizing:border-box;border-radius:12px;background:#10162F;color:#E6ECFA;border:1px solid var(--line);overflow:hidden}
+.su-run-cmd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 6px 6px 12px}
+.su-run-cmd code{min-width:0;font:calc(12.5px * var(--ui-scale,1))/1.5 var(--font-code);color:inherit;overflow-wrap:anywhere}
+.su-run-cmd .b{flex:none}
+.su-run-out{padding:8px 12px 10px;border-top:1px solid rgba(255,255,255,.12);font:calc(12.5px * var(--ui-scale,1))/1.6 var(--font-code);overflow-wrap:anywhere}
+.su-run-out p{margin:0}
+.su-run-out .su-link{color:#B8C9F0;text-decoration:underline}
+.su-run-out .su-warn{color:#FFC98A}
+.su-otp{margin:0 6px;font-size:1.25em;letter-spacing:.06em;color:#fff}
 /* 준비 끝 — 요약 세 줄과 저장소 만들기 */
 .su-sum{display:grid;gap:6px;margin:0}
 .su-sum div{display:grid;grid-template-columns:84px minmax(0,1fr);gap:10px;font-size:calc(14px * var(--ui-scale,1))}

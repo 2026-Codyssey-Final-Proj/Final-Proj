@@ -60,7 +60,7 @@
       { k: "find", title: "Claude Code 찾기", done: !!c.found,
         line: c.found ? `찾았어요${c.version ? ` (${c.version})` : ""}` : "이 컴퓨터에서 claude 명령을 못 찾았어요. Claude Code를 설치한 뒤 다시 확인해요." },
       { k: "login", title: "로그인", done: c.signedIn === true,
-        line: c.signedIn === true ? "로그인되어 있어요" : c.signedIn === false ? "터미널에서 claude를 한 번 켜서 로그인해 주세요" : "로그인했는지는 마지막 '연결 확인'으로 알아봐요" },
+        line: c.signedIn === true ? "로그인되어 있어요" : c.signedIn === false ? (ctx.app ? "아래 '실행'을 누르면 브라우저가 열려요. 로그인하고 돌아오면 돼요" : "터미널에서 claude auth login을 실행해 로그인해 주세요") : "로그인했는지는 마지막 '연결 확인'으로 알아봐요" },
       ...(st && st.apiKey ? [{ k: "unkey", title: "API 키 빼기", done: false, line: "지금은 API 키로 불러요. Claude Code로 부르려면 키를 빼야 해요." }] : []),
       { k: "check", title: "연결 확인", done: ctx.checked === true, line: checkLine(ctx.checked, "아주 작은 요청 하나로 정말 되는지 봐요") },
     ];
@@ -73,13 +73,13 @@
     ];
   }
   // GitHub 칸 — gh: GET /api/github의 답(없으면 null). Floe는 비밀번호 · 토큰을 받지 않는다 — 이 컴퓨터의 gh가 로그인한다
-  function githubSteps(gh) {
+  function githubSteps(gh, ctx = {}) {
     if (!gh || !gh.ok || !gh.gh) return [{ k: "gh", title: "GitHub CLI(gh) 찾기", done: false, line: "앱이나 서버로 켜면 알 수 있어요" }, { k: "login", title: "GitHub 로그인", done: false, line: "앱이나 서버로 켜면 알 수 있어요" }];
     const g = gh.gh;
     return [
       { k: "gh", title: "GitHub CLI(gh) 찾기", done: !!g.found, line: g.found ? "찾았어요" : "이 컴퓨터에 gh가 없어요 — 설치하면 저장소를 가져오고 만들 수 있어요" },
       { k: "login", title: "GitHub 로그인", done: g.signedIn === true,
-        line: g.signedIn === true ? "로그인되어 있어요" : "터미널에서 한 번만 gh auth login — 브라우저에서 GitHub에 로그인해요. 하고 나서 '다시 확인'" },
+        line: g.signedIn === true ? "로그인되어 있어요" : ctx.app ? "아래 '실행'을 누르면 일회용 코드와 주소가 나와요. 코드를 복사하고 주소를 열어 붙여 넣어요" : "터미널에서 한 번만 gh auth login — 브라우저에서 GitHub에 로그인해요. 하고 나서 '다시 확인'" },
     ];
   }
   // 같이 쓸 앱 칸의 한 줄 — a: GET /api/apps의 답(없으면 null)
@@ -98,25 +98,79 @@
   }
   // 새로 만든 빈 폴더면 GitHub 저장소도 만들지 묻는다 — 만들기는 사용자의 Claude Code가(C-25), 허락은 섬에서. Claude Code가 없으면 맡길 곳이 없어 묻지 않는다
   const offerRepo = (s) => !!(githubReady(s.gh) && s.st && s.st.claude && s.st.claude.found && s.project && s.project.made && !s.project.repo);
-  const api = { KEY, readSaved, shouldOpen, FLOW, stageOf, firstStep, nextStage, prevStage, insertStage, chipCli, chipApi, recommend, cliSteps, apiSteps, githubSteps, githubReady, appsChip, summary, offerRepo };
+  // ── 처음 설정 안내(C-73, 2026-11-05 두승현 "처음 설정할 때도 온보딩") — 걸음은 상태로 계산한다. 그리기는 coach.js ──
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const LOGIN_CMD = { claude: "claude auth login", gh: "gh auth login --web --hostname github.com --git-protocol https" };   // 보이는 글 — 실제 명령은 앱의 표(electron/lib.js LOGIN_COMMANDS). 같은지 시험이 본다
+  // 실행 칸의 결과 한 줄 — 글은 가리고, https 주소는 링크로(앱이 기본 브라우저로 연다), 일회용 코드는 복사 단추로
+  const loginLineHTML = (t) => esc(t).replace(/(https:\/\/\S+)|\b([A-Z0-9]{4}-[A-Z0-9]{4})\b/g, (m, url, otp) => (url
+    ? `<a class="su-link" href="${url}" target="_blank" rel="noopener">여기를 눌러 열기</a>`
+    : `<b class="su-otp">${otp}</b><button type="button" class="b ghost su-copy" data-s="copycode" data-v="${otp}">복사</button>`));
+  const coachWanted = (saved, hash, flag, phone) => !(saved && saved.done) && !(hash && hash !== "#") && flag !== "off" && !phone;   // 켤 때 저절로 열릴 때만. flag: floe:setup-coach(e2e가 끈다)
+  function coachStep(s) {
+    if (!s.coach) return "";
+    if (s.login && s.login.running) return s.login.name === "gh" ? "su-gh-run" : "su-run";
+    if (s.busy) return "";
+    if (s.step === "hello") return "su-hello";
+    if (s.step === "choose") return "su-choose";
+    if (s.step === "cli" || s.step === "api") {
+      if (!s.st) return "";
+      const si = (s.st.claude || {}).signedIn, known = si === false || (si !== true && !!(s.checked && s.checked.error));   // 로그인했는지 모르면(null — Claude Code를 처음 쓰면 기록 파일이 없다) 연결 확인으로 먼저 보고, 실패하면 로그인으로
+      const steps = s.step === "cli" ? cliSteps(s.st, { checked: s.checked }).filter((x) => x.k !== "login" || known) : apiSteps(s.st, { checked: s.checked });
+      const now = steps.find((x) => !x.done);
+      return now ? { find: "su-find", login: "su-login", unkey: "su-unkey", check: "su-check", key: "su-key" }[now.k] : "su-next";
+    }
+    if (s.step === "apps") return "su-apps";
+    if (s.step === "github") {
+      if (!s.gh) return "";
+      const now = githubSteps(s.gh).find((x) => !x.done);
+      return now ? (now.k === "gh" ? "su-gh-find" : "su-gh-login") : "su-next";
+    }
+    if (s.step === "project") return s.project ? "su-project-next" : "su-project";
+    return s.step === "done" ? "su-done" : "";
+  }
+  // 걸음표 — 말은 초심자 눈높이로. app: 앱 안(실행 칸이 있다) · platform: navigator.platform(브라우저 판의 터미널 여는 법)
+  function coachSteps({ app, platform }) {
+    const term = /win/i.test(platform) ? "시작 메뉴에서 'PowerShell'을 찾아 켜고" : /mac/i.test(platform) ? "Spotlight(⌘ + Space)에서 '터미널'을 찾아 켜고" : "터미널을 켜고";
+    const S = "#floe-setup ", li = (k) => `${S}.su-steps li[data-k="${k}"]`, skip = `${S}[data-s="ghskip"]`, next = `${S}[data-s="next"]`;
+    const step = (dot, sel, mood, text, focus) => ({ clip: `${S}.su`, dot: [dot, 6], sel, mood, text, ...(focus ? { focus } : {}) });
+    return {
+      "su-hello": step(1, `${S}[data-s="go"], ${S}[data-s="later"]`, "happy", "처음이라 막막해도 괜찮아요! 제가 한 칸씩 같이 할게요. '준비 시작하기'를 눌러 주세요.", `${S}[data-s="go"]`),
+      "su-choose": step(2, `${S}.su-picks, ${S}[data-s="practice"]`, "look", "AI를 어떻게 부를지 골라요. Claude Code를 쓰고 있으면 왼쪽, API 키가 있으면 오른쪽이에요. 잘 모르겠으면 연습용 예시로 먼저 둘러봐도 돼요."),
+      "su-find": step(2, li("find"), "think", "Claude Code는 AI가 내 파일을 직접 고쳐 주는 프로그램이에요. 설치 안내를 따라 설치하고 돌아와 '다시 찾기'를 눌러 주세요. 지금 어려우면 '건너뛰기'를 눌러도 돼요."),
+      "su-login": step(2, li("login"), "look", app ? "로그인만 하면 돼요. '실행'을 누르면 브라우저가 열려요. 거기서 로그인하고 돌아오면 제가 확인할게요." : `터미널은 컴퓨터에 글로 명령하는 창이에요. ${term} 복사한 명령을 붙여 넣어 주세요. 브라우저에서 로그인한 뒤 돌아와 '다시 확인'을 눌러요.`, `${S}[data-s="login"]`),
+      "su-unkey": step(2, li("unkey"), "look", "지금은 API 키로 불러요. Claude Code로 부르려면 키를 빼야 해요."),
+      "su-check": step(2, li("check"), "look", "정말 되는지 아주 작은 요청 하나로 볼게요. '연결 확인하기'를 눌러 주세요.", `${S}[data-s="check"]`),
+      "su-key": step(2, li("key"), "look", "API 키는 비밀번호 같은 거예요. 다른 사람에게 보여 주지 마세요. 이 컴퓨터에만 저장돼요.", `${S}input[name="key"]`),
+      "su-next": step(2, next, "happy", "됐어요! '다음'을 눌러 넘어가요.", next),
+      "su-apps": step(3, `${S}.su-card, ${next}`, "look", "Claude Desktop 앱을 쓰고 있으면 이어 둘 수 있어요. 안 쓰면 그냥 건너뛰면 돼요.", next),
+      "su-gh-find": step(4, `${li("gh")}, ${skip}`, "look", "GitHub는 내 작업을 온라인에 보관하는 곳이에요. 나중에 해도 괜찮으니 지금은 'GitHub 없이 할래요'를 눌러도 돼요."),
+      "su-gh-login": step(4, `${li("login")}, ${skip}`, "look", app ? "GitHub는 내 작업을 온라인에 보관하는 곳이에요. '실행'을 누르면 코드와 주소가 나와요. 코드를 복사하고 주소를 열어 붙여 넣어 주세요. 나중에 해도 괜찮아요." : `GitHub는 내 작업을 온라인에 보관하는 곳이에요. 터미널은 컴퓨터에 글로 명령하는 창이에요. ${term} 복사한 명령을 붙여 넣어 주세요. 나중에 해도 괜찮아요.`, `${S}[data-s="login"]`),
+      "su-project": step(5, `${S}.su-proj, ${next}`, "look", "이제 만들 곳을 정해요. 처음이면 '새로 만들기'가 제일 쉬워요. 이 폴더에서 저랑 Claude Code가 일해요."),
+      "su-project-next": step(5, next, "happy", "좋아요! '다음'을 눌러 주세요.", next),
+      "su-done": step(6, `${S}.su-repo, ${S}[data-s="done"]`, "happy", "다 됐어요! '시작하기'를 누르면 무엇을 만들지 같이 정해요.", `${S}[data-s="done"]`),
+      "su-run": step(2, `${S}.su-run`, "think", "브라우저에서 로그인해 주세요. 끝나면 제가 저절로 확인할게요. 브라우저가 안 열리면 '여기를 눌러 열기'를 눌러요."),
+      "su-gh-run": step(4, `${S}.su-run`, "think", "코드 옆 '복사'를 누르고, '여기를 눌러 열기'로 GitHub를 열어 코드를 붙여 넣어 주세요. 끝나면 제가 저절로 확인할게요."),
+    };
+  }
+  const api = { coachStep, coachSteps, coachWanted, loginLineHTML, LOGIN_CMD, KEY, readSaved, shouldOpen, FLOW, stageOf, firstStep, nextStage, prevStage, insertStage, chipCli, chipApi, recommend, cliSteps, apiSteps, githubSteps, githubReady, appsChip, summary, offerRepo };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; return; }
 
   // ── 화면 (브라우저에서만) ──
   const doc = root.document, Seal = root.NavSeal;
   const STILL = root.matchMedia && root.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const live = root.location.protocol.startsWith("http"), app = !!root.floeApp;
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const CMD = {
     connect: "node 03-backend/navigator/connect.js <내 프로젝트 폴더> --apply",
     env: "ANTHROPIC_API_KEY=<내 키>",
     start: "node 03-backend/navigator/floe.js <내 프로젝트 폴더>",
     ghlogin: "gh auth login",
+    claude: "claude auth login",
   };
   const GH_CLI = "https://cli.github.com";
-  let host = null, s = null, lastStep = "";
+  let host = null, s = null, lastStep = "", coachNext = false;
   let flow = FLOW.slice();
   const extra = {};   // addStage로 더한 칸 — { view(s) → HTML }
-  const fresh = () => ({ step: "hello", via: "", st: null, checked: null, busy: "", note: "", gh: null, ghSkip: false, apps: null, repos: [], project: null, makeRepo: true, repoVis: "private" });
+  const fresh = () => ({ coach: false, login: null, step: "hello", via: "", st: null, checked: null, busy: "", note: "", gh: null, ghSkip: false, apps: null, repos: [], project: null, makeRepo: true, repoVis: "private" });
 
   function save(via) { try { root.localStorage.setItem(KEY, JSON.stringify({ done: true, via, at: new Date().toLocaleDateString("sv-SE") })); } catch {} }
   async function status() {
@@ -135,7 +189,7 @@
   const phone = () => !root.floeApp && root.matchMedia && root.matchMedia("(max-width:600px)").matches;   // 앱 안에서는 창이 좁아도 PC 모양(2026-10-19)
   const chip = (c) => `<span class="su-chip ${c.tone}">${esc(c.text)}</span>`;
   const code = (k) => `<span class="su-code"><code>${esc(CMD[k])}</code><button type="button" class="b ghost su-copy" data-s="copy" data-k="${k}">복사</button></span>`;
-  const stepList = (steps) => `<ol class="su-steps">${steps.map((x) => `<li class="${x.done ? "ok" : ""}"><span class="su-ck" aria-hidden="true">${x.done ? "✓" : ""}</span>
+  const stepList = (steps) => `<ol class="su-steps">${steps.map((x) => `<li class="${x.done ? "ok" : ""}" data-k="${x.k}"><span class="su-ck" aria-hidden="true">${x.done ? "✓" : ""}</span>
         <div><b>${esc(x.title)}</b><span class="su-line">${esc(x.line)}</span>${tools(x)}</div></li>`).join("")}</ol>`;
   const note = () => (s.note ? `<p class="su-note" role="status">${esc(s.note)}</p>` : "");
   const back = (to, label = "‹ 뒤로") => `<button type="button" class="b ghost" data-s="go" data-to="${to}">${label}</button>`;
@@ -186,7 +240,7 @@
       return `
       <h2 id="su-title" class="mc-title">GitHub와 이어요</h2>
       <p class="mc-sub">만든 것을 내 GitHub 저장소에 남기고, 있는 저장소를 가져올 때 써요. Floe는 GitHub 비밀번호 · 토큰을 받지 않아요 — 이 컴퓨터의 gh가 해요.</p>
-      ${s.busy === "gh" ? `<p class="su-note" role="status">확인하는 중…</p>` : stepList(githubSteps(s.gh))}${note()}
+      ${s.busy === "gh" ? `<p class="su-note" role="status">확인하는 중…</p>` : stepList(githubSteps(s.gh, { app }))}${note()}
       <div class="su-acts">${back("apps")}
         <button type="button" class="b ghost" data-s="ghskip">GitHub 없이 할래요</button>
         <button type="button" class="b ${ready ? "pri" : ""}" data-s="next"${ready ? "" : " disabled"}>다음: 프로젝트${ready ? '<kbd aria-hidden="true">Enter</kbd>' : ""}</button></div>`;
@@ -241,10 +295,27 @@
     }
     if (x.k === "check" && live) return `<button type="button" class="b${x.done ? " ghost" : ""}" data-s="check"${s.busy === "check" ? " disabled" : ""}>${s.busy === "check" ? "확인하는 중…" : x.done ? "다시 확인" : "연결 확인하기"}</button>`;
     if (x.k === "gh" && !x.done && live) return `<a class="su-link" href="${GH_CLI}" target="_blank" rel="noopener">GitHub CLI 설치 안내 열기</a><button type="button" class="b ghost" data-s="ghcheck">다시 확인</button>`;
-    if (x.k === "login" && s.step === "github" && !x.done && live) return `${code("ghlogin")}<button type="button" class="b ghost" data-s="ghcheck">다시 확인</button>`;
+    if (x.k === "login" && s.step === "github" && !x.done && live) return `${app ? runBox("gh") : code("ghlogin")}<button type="button" class="b ghost" data-s="ghcheck">다시 확인</button>`;
+    if (x.k === "login" && s.step === "cli" && !x.done && live && s.st && s.st.claude && s.st.claude.found) return `${app ? runBox("claude") : code("claude")}<button type="button" class="b ghost" data-s="refresh"${busy}>다시 확인</button>`;
     return "";
   }
 
+  // 로그인 실행 칸 — 터미널처럼 생겼지만 정해 둔 명령 하나만 돈다. 안 되면 까닭과 복사 칸(직접 터미널에 붙여 넣기)
+  function runBox(name) {
+    const l = s.login && s.login.name === name ? s.login : null, on = !!(l && l.running);
+    return `<div class="su-run${on ? " on" : ""}"><div class="su-run-cmd"><code><span aria-hidden="true">&gt; </span>${esc(LOGIN_CMD[name])}</code>${on ? `<button type="button" class="b ghost" data-s="loginstop">그만두기</button>` : `<button type="button" class="b pri" data-s="login" data-k="${name}">실행</button>`}</div>${
+      l && (l.lines.length || l.error) ? `<div class="su-run-out" aria-live="polite">${l.lines.map((t) => `<p>${loginLineHTML(t)}</p>`).join("")}${l.error ? `<p class="su-warn">${esc(l.error)}</p>` : ""}</div>` : ""}</div>${l && l.error && !on ? code(name === "gh" ? "ghlogin" : "claude") : ""}`;
+  }
+  function onLogin(p) {
+    if (!host || !s.login || !p) return;
+    if (typeof p.line === "string") s.login.lines = [...s.login.lines, p.line].slice(-8);
+    if (p.end) {
+      const name = s.login.name;
+      s.login.running = false; s.login.error = p.ok ? "" : p.reason || "로그인이 되지 않았어요";
+      if (p.ok) { s.note = "로그인했어요!"; if (name === "gh") refreshGh(); else { s.checked = null; refresh(); setTimeout(() => { if (host) refresh(); }, 10500); } burst("heart", 6); }   // 서버가 상태를 10초 기억한다(setupNow) — 한 번 더 묻는다
+    }
+    render();
+  }
   function render() {
     if (!host) return;   // 가져오는 중(최대 3분)에 닫혔다 — 끝난 뒤 빈 화면에 그리지 않는다
     const mood = s.busy === "check" || s.busy === "clone" ? "think" : s.checked && s.checked.error ? "alert" : s.checked === true && s.step !== "done" && stageOf(s.step) === "ai" ? "happy" : MOOD[s.step] || "idle";
@@ -253,7 +324,7 @@
     const typed = [...host.querySelectorAll("input[name]")].map((i) => [i.name, i.value]), was = doc.activeElement, caret = was && was.name && host.contains(was) ? [was.name, was.selectionStart, was.selectionEnd] : null;
     host.innerHTML = `<div class="su-back"></div><section class="su isl" role="dialog" aria-modal="true" aria-labelledby="su-title">
       <div class="su-cat">${floro(mood, phone() ? 84 : 124)}</div><div class="su-main">${body()}</div>
-      <ol class="su-dots" aria-label="처음 설정 ${at + 1} / ${flow.length}">${flow.map((k) => `<li class="${stageOf(s.step) === k ? "on" : ""}"></li>`).join("")}</ol></section>`;
+      <ol class="su-dots" aria-label="처음 설정 ${at + 1} / ${flow.length}">${flow.map((k) => `<li class="${stageOf(s.step) === k ? "on" : ""}"></li>`).join("")}</ol></section>${coachStep(s) ? `<i hidden data-coach="${coachStep(s)}"></i>` : ""}`;
     for (const [n, v] of typed) { const i = host.querySelector(`input[name="${n}"]`); if (i && !i.value) i.value = v; }
     if (caret) { const i = host.querySelector(`input[name="${caret[0]}"]`); if (i) { i.focus({ preventScroll: true }); try { i.setSelectionRange(caret[1], caret[2]); } catch {} } }
     // 단계가 바뀌면 제목으로(화면 읽기 프로그램이 새 단계부터 읽는다), 같은 단계에서 다시 그리면 하던 자리 가까이로
@@ -261,12 +332,14 @@
     if (title && s.step !== lastStep) { title.setAttribute("tabindex", "-1"); title.focus({ preventScroll: true }); }
     else if (!host.contains(doc.activeElement)) { const b = host.querySelector(".su-main .b.pri, .su-main .b"); if (b) b.focus({ preventScroll: true }); }
     lastStep = s.step;
+    if (root.FloeCoach) root.FloeCoach.sync();
   }
   async function refresh() { s.st = await status(); render(); }
   async function refreshGh() { s.busy = "gh"; render(); s.gh = await ghStatus(); s.busy = ""; render(); }
   async function loadRepos() { if (!app || !root.floeApp.myRepos || !githubReady(s.gh)) return; try { const r = await root.floeApp.myRepos(); s.repos = Array.isArray(r) ? r : []; } catch { s.repos = []; } render(); }
   // 칸으로 들어갈 때 필요한 것을 묻는다 — GitHub 칸은 gh 상태, 프로젝트 칸은 내 저장소 목록(gh에 로그인했을 때만 앱이 부른다)
   function enter(step) {
+    if (s.login && s.login.running) root.floeApp.stopLogin();
     s.step = step; s.note = ""; render();
     if (step === "github") refreshGh();
     if (step === "apps") appsStatus().then((a) => { if (!host || s.step !== "apps") return; s.apps = a; render(); });
@@ -292,7 +365,9 @@
   function close(via, open) {
     save(via);
     const makeRepo = open && offerRepo(s) && s.makeRepo ? s.repoVis : "";
+    if (s.login && s.login.running) root.floeApp.stopLogin();
     host.remove(); host = null;
+    if (root.FloeCoach) root.FloeCoach.sync();   // 안내 층도 같이 걷는다
     doc.dispatchEvent(new CustomEvent("floe:setup-done", { detail: { via, open, makeRepo } }));
   }
   // 앱이 폴더를 정했다(가져오기 · 새로 만들기 · 고르기) — 받은 이름 · 자리를 보이고 플로로가 기뻐한다
@@ -327,6 +402,14 @@
     if (a === "makerepo") { s.makeRepo = !!el.checked; return; }
     if (a === "repovis") { s.repoVis = el.dataset.v === "public" ? "public" : "private"; render(); return; }
     if (a === "pickrepo") { const f = host.querySelector('form[data-s="clone"] input[name="repo"]'); if (f) f.value = el.dataset.v; return cloneFrom(el.dataset.v); }
+    if (a === "login" && app && !(s.login && s.login.running)) {
+      s.login = { name: el.dataset.k, running: true, lines: [], error: "" }; s.note = ""; render();
+      const r = await root.floeApp.runLogin(el.dataset.k).catch(() => ({ ok: false, reason: "명령을 띄우지 못했어요" }));
+      if (!r || !r.ok) { s.login.running = false; s.login.error = (r && r.reason) || "명령을 띄우지 못했어요"; render(); }
+      return;
+    }
+    if (a === "loginstop" && app) { root.floeApp.stopLogin(); return; }
+    if (a === "copycode") { try { await root.navigator.clipboard.writeText(el.dataset.v); el.textContent = "복사함"; } catch { el.textContent = "직접 골라 복사해요"; } return; }
     if (a === "copy") {
       const t = CMD[el.dataset.k];
       try { await root.navigator.clipboard.writeText(t); el.textContent = "복사함"; } catch { el.textContent = "직접 골라 복사해요"; }
@@ -385,6 +468,8 @@
   function open({ step } = {}) {
     if (host) return;
     s = fresh();
+    s.coach = coachNext && !!root.FloeCoach; coachNext = false;   // boot가 켠 한 번만 — 설정에서 다시 열면 안내 없이
+    if (s.coach) root.FloeCoach.define(coachSteps({ app, platform: root.navigator.platform || "" }), (act) => { if (act === "coach-skip" && s) { s.coach = false; render(); } });   // 건너뛰기 — 처음 설정의 안내만 끝낸다. 작업실 안내는 따로
     const at = typeof step === "string" && flow.includes(step) && step !== "hello" ? step : "";
     if (at) { s.step = at; s.resumed = true; const saved = readSaved(root.localStorage); s.via = (saved && saved.via) || ""; }   // 인사 화면을 먼저 그리지 않고 바로 그 칸 · 저장된 AI 연결 방식은 그대로
     host = doc.createElement("div"); host.id = "floe-setup";   // 앱 안이면 html.in-app(app.js) — 뒤를 어둡게 깔지 않는다(setup.css)
@@ -424,7 +509,10 @@
   const boot = () => {
     let saved = null; try { saved = readSaved(root.localStorage); } catch {}
     if (!shouldOpen(saved, root.location.hash)) return;
+    let flag = ""; try { flag = root.localStorage.getItem("floe:setup-coach") || ""; } catch {}
+    coachNext = coachWanted(saved, root.location.hash, flag, phone());
     if (doc.documentElement.classList.contains("greeting")) doc.addEventListener("floe:greet-done", () => open(), { once: true }); else open();
   };
+  if (app && root.floeApp.onLoginLine) root.floeApp.onLoginLine(onLogin);
   if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", boot); else boot();
 })(typeof window !== "undefined" ? window : globalThis);
