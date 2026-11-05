@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v65.1 | 2026-11-05 | 임유정 | 처음 설정이 떠 있는 동안에도 대화상자 밖의 다른 앱을 클릭할 수 있게 (F-156) (#336) | `02-frontend/navigator/` · `01-docs/07-maintenance/` |
 | v65.0 | 2026-11-05 | 두승현 | 첫 사용 안내 — 처음 설정과 작업실에서 눌러야 할 곳만 밝게 두고 나머지는 어둡게 한 채, 옆에서 플로로가 말풍선으로 첫 칸까지 안내한다. 앱의 로그인 칸은 정해 둔 명령을 실행만 누르면 되는 실행 칸이 된다. 처음 적은 말은 진짜 프로젝트가 되고 '건너뛰기' · Esc로 언제든 끝낸다 (C-73 · F-155) (#335) | `02-frontend/navigator/`(담당 임유정 — 이 줄이 알림) · `02-frontend/electron/`(실행 칸) · `03-backend/navigator/server.js`(허용 목록 한 칸) · `01-docs/` · `.claude/rules/security-records.md` |
 | v64.0 | 2026-11-04 | 두승현 | 앱 11.2.0 — Claude Code가 일하는 동안 플로로가 노트북으로 코드를 치는 표정 — 내리깐 눈 · 번갈아 치는 지느러미 · 끄덕임 · 떠오르는 코드 글자, 접힌 알약에서도 (F-154) (#334) | `02-frontend/navigator/`(담당 임유정 — 이 줄이 알림) · `02-frontend/assets/mascot/` · `02-frontend/electron/` · `02-frontend/intro/` · `README.md` |
 | v63.4 | 2026-11-04 | 임유정 | 8단계까지 다 마친 뒤 Claude Code 알림(문서 올리기의 커밋 · 푸시)이 오면 끝난 상태가 풀려 관문 · 조개 · 문서 올리기가 되풀이되던 것 — 다 마친 뒤 알림은 채팅 한 줄만 (F-153) (#333) | `02-frontend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/fix-map.md` |
