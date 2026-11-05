@@ -73,7 +73,8 @@
   // 앱이 통과시키는 동안에도 움직임은 오므로(forward) 섬 위로 오면 다시 끈다. Linux에서는 앱이 무시한다(main.js floe:thru)
   if (window.floeApp && window.floeApp.thru) {
     let thru = null;
-    const bare = (t) => t === document.documentElement || t === document.body || t.id === "nav" || t.id === "fx";
+    // 처음 설정(setup.js)이 뜨면 창을 넓히고 창 전체를 투명한 막(#floe-setup · .su-back)이 덮는다 — 그 막도 빈 자리로 본다. 빼면 대화상자 밖 뒤 창(다른 앱)이 클릭되지 않았다(F-155, 임유정 2026-11-05)
+    const bare = (t) => t === document.documentElement || t === document.body || t.id === "nav" || t.id === "fx" || t.id === "floe-setup" || (t.classList && t.classList.contains("su-back"));
     document.addEventListener("mousemove", (e) => { const on = bare(e.target); if (on !== thru) { thru = on; window.floeApp.thru(on); } }, { passive: true });
   }
   // Mac 노치(다이내믹 아일랜드, 2026-10-19 이재엽 결정): 앱이 노치 크기를 보내면 섬을 노치에 맞춘다(app.css html.notch). 브라우저 · 노치 없는 컴퓨터에는 오지 않는다
