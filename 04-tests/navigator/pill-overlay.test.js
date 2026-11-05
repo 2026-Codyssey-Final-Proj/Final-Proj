@@ -57,3 +57,9 @@ test("작업실 창 — seal.js를 win.js보다 먼저 불러오고, 창 안의 
   assert.match(w, /if \(S && !STILL\) document\.addEventListener\("mousemove", /, "창 안의 커서");
   assert.match(w, /if \(S && eyeAt\) S\.follow\(root, eyeAt\);/, "다시 그려도 마지막 커서 쪽");
 });
+
+// F-158(두승현 2026-11-05 "알약부분 작업해줘"): 앱의 처음 설정 창은 투명해서 뒤의 알약이 카드 위로 삐져나와 보였다 — 설정이 떠 있는 동안 섬을 감춘다
+test("F-158 — 앱에서 처음 설정이 떠 있는 동안 섬(#nav)을 감춘다. 자리는 그대로 두고(display:none이 아니라 visibility) 브라우저 판은 그대로", () => {
+  const su = read("navigator/setup.css");
+  assert.match(su, /html\.in-app:has\(#floe-setup\) #nav\{visibility:hidden\}/);
+});

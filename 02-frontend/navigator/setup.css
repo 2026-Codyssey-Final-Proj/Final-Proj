@@ -4,6 +4,7 @@
 #floe-setup .su-back{position:absolute;inset:0;background:rgba(8,14,40,.38)}
 html.in-app #floe-setup{-webkit-app-region:no-drag}   /* 위 줄(.tb drag)을 덮는다 — 빼지 않으면 대화상자 위쪽 단추가 창 끌기로 먹힌다(F-63과 같은 꼴, F-103-16) */
 html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투명하다 — 어둡게 깔면 바탕 화면 위에 회색 네모가 생긴다 */
+html.in-app:has(#floe-setup) #nav{visibility:hidden}   /* 위와 같은 까닭으로 뒤의 알약 · 섬이 그대로 보여 카드 위로 삐져나온다(F-158). 자리는 재야 해서 display:none을 쓰지 않는다 */
 #floe-setup .su{position:relative;width:min(860px,100%);max-height:calc(100vh - 28px);overflow:auto;display:grid;grid-template-columns:150px minmax(0,1fr);gap:4px 18px;
   padding:26px 30px 18px 18px;border-radius:28px;animation:su-in .38s cubic-bezier(.34,1.56,.64,1)}
 @keyframes su-in{from{opacity:0;transform:translateY(-10px) scale(.98)}}
