@@ -22,7 +22,8 @@ contextBridge.exposeInMainWorld("floeApp", {
   onCursor: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:cursor", h); return () => ipcRenderer.removeListener("floe:cursor", h); },
   // Mac 노치(다이내믹 아일랜드, 2026-10-19) — 앱이 노치 크기 {width, height}(pt)를 보내면 화면이 띠를 노치에 맞춘다. 노치가 없으면 오지 않는다
   onNotch: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:notch", h); return () => ipcRenderer.removeListener("floe:notch", h); },
-  resize: (w, h, anchor) => ipcRenderer.send("floe:resize", w, h, anchor),   // 창을 지금 보이는 섬(띠 · 한 줄 · 펼침 · 옆의 설정 창) 크기에 맞춘다. anchor "left"면 왼쪽을 고정
+  dragIsland: (phase, pillW) => ipcRenderer.send("floe:drag", phase, pillW),   // 알약을 끌어 옮기기(C-74) — start · move · end만, 자리는 앱이 커서로 잰다
+  resize: (w, h, anchor, pillW) => ipcRenderer.send("floe:resize", w, h, anchor, pillW),   // 창을 지금 보이는 섬(띠 · 한 줄 · 펼침 · 옆의 설정 창) 크기에 맞춘다. anchor "left"면 왼쪽을 고정
   thru: (on) => ipcRenderer.send("floe:thru", !!on),           // 창의 투명한 자리 클릭을 뒤 창으로 통과(Windows · Mac — 2026-10-22). 섬 위면 false
   expand: () => ipcRenderer.send("floe:expand"),                // 서고로 들어갈 때 — 창을 화면만큼 넓힌다(6.2.0). 넓히면 floe:expanded가 온다
   // 창을 넓힌 뒤(2026-10-20) — 앱이 {dx, dy}(섬 창이 있던 자리에서 넓힌 창까지 옮긴 거리)를 보내면 화면이 섬을 제자리에 붙들고 잠수한다

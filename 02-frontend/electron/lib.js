@@ -158,6 +158,15 @@ function islandX(anchor, bounds, w, cx, wa) {
   return Math.max(wa.x, Math.min(x, wa.x + wa.width - w));
 }
 
+// 사람이 옮긴 섬 자리(C-74, 2026-11-05 두승현) — home = { cx: 알약 가운데 x, y: 위 }. 접힘(pillW > 0)이면 창 폭(Windows · Mac 952)이 화면 밖으로 나가도 알약만 화면 안이면 되고,
+// 펼치면(pillW 0) 창 전체를 안으로 당긴다. home은 그대로 두므로 접으면 돌아온다
+function islandSpot(home, w, h, wa, pillW) {
+  const half = pillW > 0 ? Math.min(pillW, wa.width) / 2 : w / 2;
+  const cx = Math.max(wa.x + half, Math.min(home.cx, wa.x + wa.width - half));
+  return { x: Math.round(cx - w / 2), y: Math.round(Math.max(wa.y, Math.min(home.y, wa.y + wa.height - h))) };
+}
+const parseSpot = (text) => { try { const v = JSON.parse(text); return v && Number.isFinite(v.cx) && Number.isFinite(v.y) ? { cx: v.cx, y: v.y } : null; } catch { return null; } };
+
 // 서고에 있는 동안의 창(2026-10-20) — 작업 영역 **위쪽** 가운데(세로 가운데가 아니다 — 섬이 있던 맨 위에서 잠수가 이어지게), 최대 1440×960.
 // saved: 사람이 지난번에 조절한 크기({width, height}) — 있으면 그 크기(작업 영역 안으로 당김, 최소 640×480)
 const LIB_MIN = { width: 640, height: 480 };
@@ -243,4 +252,4 @@ function loginRunner({ spawn, launch, kill, later = setTimeout, cancel = clearTi
   return { run, stop };
 }
 
-module.exports = { LOGIN_COMMANDS, loginClean, loginRunner, refreshDir, SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };
+module.exports = { LOGIN_COMMANDS, loginClean, loginRunner, refreshDir, SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, islandSpot, parseSpot, libraryBounds, LIB_MIN, bootPage, bootUrl };

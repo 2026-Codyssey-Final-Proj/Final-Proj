@@ -86,6 +86,10 @@ const ISLAND_W = 940 + PAD * 2;   // 펼친 섬(app.css .in-app .nav 940px)이 �
 // 앱이 켜질 때 한 번 돌려 JSON 한 줄을 읽는다(lib.js parseNotchProbe). 도우미가 없거나 · 실패하거나 · 노치가 없으면 null — 전처럼 위쪽 가운데(floating).
 let PROBE = null;   // 도우미가 읽은 것 { notch: {x, width, height} | null, screen, menuBar }
 let NOTCH = null;   // 창 자리 { x, y, width, height, level, cx } — 노치가 있을 때만. cx = 노치 가운데(화면 좌표), 크기가 바뀌어도 여기에 맞춘다
+// 사람이 끌어 옮긴 알약 자리(C-74) { cx, y } — 없으면 전처럼 위쪽 가운데. 설정 폴더의 island-spot.json으로 다음 켤 때도
+let home = null, dragFrom = null;
+const homeFile = () => path.join(app.getPath("userData"), "island-spot.json");
+const homeArea = () => screen.getDisplayNearestPoint({ x: Math.round(home.cx), y: Math.round(home.y) }).workArea;
 function probeNotch() {
   if (process.platform !== "darwin") return null;
   const bin = app.isPackaged ? path.join(process.resourcesPath, "notch-probe") : path.join(__dirname, "build/notch-probe");
@@ -104,7 +108,12 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false } });
   // 노치가 있으면 메뉴 줄보다 위 레벨(screen-saver)로 올린 뒤 자리를 다시 둔다 — floating 레벨의 창은 메뉴 줄 아래로 밀린다. 레벨을 먼저 올리고 자리를 놓는다
   if (NOTCH) { win.setAlwaysOnTop(true, NOTCH.level); win.setContentBounds({ x: NOTCH.x, y: NOTCH.y, width: W, height: H }, false); }
-  else win.setAlwaysOnTop(true, "floating");
+  else {
+    win.setAlwaysOnTop(true, "floating");
+    try { home = L.parseSpot(fs.readFileSync(homeFile(), "utf8")); } catch {}
+    if (home) win.setContentBounds({ ...L.islandSpot(home, W, H, homeArea(), MIN_W), width: W, height: H }, false);
+  }
+  win.on("will-move", () => { home = null; });   // 펼친 섬의 머리 줄을 잡고 직접 옮겼다(앱이 옮길 때는 오지 않는다) — 그 자리를 따른다
   win.setVisibleOnAllWorkspaces(true);   // visibleOnFullScreen 옵션은 뺐다(3.0.2) — 전체 화면 보조 창으로 만들면 입력이 이상해질 수 있어서. 노치 모양에서도 켜지 않는다(사람이 켜 본 뒤 정한다)
   // 노치 크기를 화면에 — 띠를 노치와 같은 검정 · 노치 폭으로(app.css .notch). 서고에 갔다 돌아와도(다시 load) 매번 보낸다
   // 페이지가 바뀌면(서고 · 다시 읽기) 클릭 통과를 끈다 — 새 페이지는 통과를 켠 줄 모른다(floe:thru)
@@ -137,18 +146,19 @@ function createWindow() {
 // 화면이 알려 준 섬 크기로 창을 맞춘다 — 가로가 바뀌면 가운데를 유지하고(사용자가 옮긴 자리 기준), 세로는 위를 고정.
 // anchor="left"면 왼쪽 가장자리를 고정한다(설정 창이 섬 오른쪽에 열릴 때 — 섬은 그 자리에 있고 창만 오른쪽으로 넓어진다, 6.2.0).
 // 크기와 자리를 한 번에(setBounds) 바꾼다 — 따로 두 번 바꾸면 그 사이 한 프레임이 어긋나 보여 "따라오는 게 버벅"였다(이재엽 2026-10-19). 화면 밖으로 나가면 안쪽으로 당긴다
-ipcMain.on("floe:resize", (e, w, h, anchor) => {
+ipcMain.on("floe:resize", (e, w, h, anchor, pillW) => {
   if (!win || e.sender !== win.webContents) return;
   // 서고에 있는 동안(넓힌 창)은 섬 크기를 따르지 않는다. 서고가 아닌데 넓혀져 있으면(처음 설정이 떠 있는 동안 넓혔다가 닫힘 — KAN-57 F-39-1, 병합 2026-10-20)
   // 조절 · 서고 크기 기억 없이 섬 창으로 돌아와 아래에서 섬 크기를 맞춘다
   if (expanded) { if (/\/library\//.test(win.webContents.getURL())) return; expanded = null; win.setResizable(false); win.setMinimumSize(MIN_W, MIN_H); }
   const W = L.islandWidth(Math.max(MIN_W, Math.ceil(Number(w) || 0) + PAD), process.platform, ISLAND_W), H = Math.max(MIN_H, Math.ceil(Number(h) || 0) + PAD);
   const b = win.getContentBounds();
-  if (Math.abs(b.width - W) < 2 && Math.abs(b.height - H) < 2) return;
+  if (!home && Math.abs(b.width - W) < 2 && Math.abs(b.height - H) < 2) return;
   const wa = screen.getDisplayMatching(b).workArea;
   // 노치가 있으면 가로는 늘 노치 가운데, 세로는 화면 맨 위(서고에서 돌아와도 노치로) — 없으면 지금 창의 가운데 · 지금 y
   const x = L.islandX(anchor, b, W, NOTCH ? NOTCH.cx : null, wa);
-  win.setContentBounds({ x, y: NOTCH ? NOTCH.y : b.y, width: W, height: H }, false);
+  const spot = home && !NOTCH && anchor !== "left" ? L.islandSpot(home, W, H, homeArea(), Number(pillW) || 0) : { x, y: NOTCH ? NOTCH.y : b.y };   // 옮긴 자리가 있으면 그 자리 기준 — 펼쳤다 접으면 돌아온다(C-74)
+  win.setContentBounds({ ...spot, width: W, height: H }, false);
   placeSideWins();
 });
 // 서고로 들어갈 때(…/library/) 창을 화면만큼 넓힌다 — 섬 크기에 묶인 창에서는 서고가 커질 수 없었다(이재엽 2026-10-19 "서재도 오버레이가 커져야 하는데 커지지 못하는 상태").
@@ -348,6 +358,18 @@ function placeSideWins() {
 const closeSideWins = () => { for (const k of Object.keys(wins)) { const w = wins[k]; if (w && !w.isDestroyed()) w.close(); } };
 const fromIsland = (e) => !!win && !win.isDestroyed() && e.sender === win.webContents;
 const fromSide = (e) => Object.values(wins).some((w) => w && !w.isDestroyed() && e.sender === w.webContents);
+// 알약을 끌어 옮긴다(C-74). 화면은 시작 · 움직임 · 끝만 알리고 자리는 앱이 커서로 잰다 — 화면 배율이 달라도 어긋나지 않는다. 노치 자리 · 넓힌 창에서는 옮기지 않는다
+ipcMain.on("floe:drag", (e, phase, pillW) => {
+  if (!fromIsland(e) || NOTCH || expanded) return;
+  const c = screen.getCursorScreenPoint(), b = win.getContentBounds();
+  if (phase === "start") { dragFrom = { dx: c.x - b.x, dy: c.y - b.y, width: b.width, height: b.height, pillW: Number(pillW) || 0 }; return; }
+  if (!dragFrom) return;
+  const { dx, dy, width, height } = dragFrom;
+  const spot = L.islandSpot({ cx: c.x - dx + width / 2, y: c.y - dy }, width, height, screen.getDisplayNearestPoint(c).workArea, dragFrom.pillW);
+  win.setContentBounds({ ...spot, width, height }, false);   // 크기도 같이 — 배율이 다른 화면으로 넘어갈 때 창이 커지지 않게
+  home = { cx: spot.x + width / 2, y: spot.y };
+  if (phase === "end") { dragFrom = null; fs.writeFile(homeFile(), JSON.stringify(home), () => {}); placeSideWins(); }
+});
 ipcMain.on("floe:win-open", (e, kind, opt) => { if (fromIsland(e) && sideKind(kind)) openSideWin(kind, opt || {}); });
 ipcMain.on("floe:win-html", (e, kind, html) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) { w.floeHtml = String(html || ""); w.webContents.send("floe:win-html", w.floeHtml); } });
 ipcMain.on("floe:win-close", (e, kind) => { const w = sideKind(kind) && wins[kind]; if (fromIsland(e) && w && !w.isDestroyed()) w.close(); });

@@ -309,6 +309,7 @@
     if (document.getElementById("floe-setup")) { if (lastSize !== "setup") { lastSize = "setup"; window.floeApp.expand(); } return; }
     const h = document.documentElement;
     if (h.classList.contains("diving") || h.classList.contains("surfacing")) return;   // 창은 서고 크기(넓힘) · 섬 크기(돌아옴)로 앱이 먼저 맞춰 둔다
+    if (h.classList.contains("island-drag")) return;   // 끄는 동안은 앱이 자리를 정한다(C-74) — 놓으면 다시 잰다
     if (morphHold) return;   // 줄어드는 움직임이 끝난 뒤 창을 줄인다(C-14 — 움직이는 동안 창을 바꾸면 F-24의 버벅임이 돌아온다)
     let r = 0, b = 0;
     for (const el of $nav.children) { if (el.classList.contains("shell")) continue; const q = el.getBoundingClientRect(); r = Math.max(r, q.right); b = Math.max(b, q.bottom); }
@@ -319,7 +320,7 @@
     const key = `${Math.ceil(r)}x${Math.ceil(b)}:${anchor}`;
     if (key === lastSize) return;
     lastSize = key;
-    window.floeApp.resize(r, b, anchor);
+    window.floeApp.resize(r, b, anchor, $nav.classList.contains("peekroom") ? ($nav.querySelector(".pill, .strip") || {}).offsetWidth || 0 : 0);
   }
   const queueSize = () => { if (!sizeRaf) sizeRaf = requestAnimationFrame(measureSize); };
   function reportSize() {
@@ -330,6 +331,33 @@
   }
   // 처음 설정이 뜨거나 닫히면('나중에 할게요' · Esc 포함) 다시 잰다 — 닫히면 섬 크기로 돌아온다(KAN-57)
   document.addEventListener("floe:setup-open", queueSize);
+  // 알약을 끌어 옮긴다(C-74, 2026-11-05 두승현 "상단 고정이 아니라 유저가 위치를 이동"). 4px 넘게 움직여야 끌기 — 그 전에 떼면 그대로 누름. 띠(대기 플로로)는 알약과 같은 창이라 같이 옮겨진다
+  if (window.floeApp && window.floeApp.dragIsland) {
+    const root = document.documentElement;
+    let press = null, eatClick = false;
+    $nav.addEventListener("pointerdown", (e) => {
+      eatClick = false;
+      const t = e.button === 0 && !root.classList.contains("notch") && e.target.closest(".pill, .strip");
+      press = t ? { x: e.screenX, y: e.screenY } : null;
+      if (t) window.floeApp.dragIsland("start", t.offsetWidth);   // 누른 순간의 자리를 앱이 기억한다 — 움직인 뒤에 재면 알약이 커서보다 밀린다
+    });
+    const drop = () => {
+      press = null;
+      if (!root.classList.contains("island-drag")) return;
+      root.classList.remove("island-drag"); window.floeApp.dragIsland("end"); eatClick = true; lastSize = ""; queueSize();
+    };
+    document.addEventListener("pointermove", (e) => {
+      if (!press) return;
+      if (!(e.buttons & 1)) return drop();   // 뗀 신호를 놓쳤다(창 밖에서 뗌 등) — 안 누른 커서를 알약이 따라오지 않게
+      if (!root.classList.contains("island-drag")) {
+        if (Math.hypot(e.screenX - press.x, e.screenY - press.y) < 4) return;
+        root.classList.add("island-drag");
+      }
+      window.floeApp.dragIsland("move");
+    });
+    document.addEventListener("pointerup", drop); document.addEventListener("pointercancel", drop);
+    document.addEventListener("click", (e) => { if (eatClick) { eatClick = false; e.stopPropagation(); e.preventDefault(); } }, true);   // 끈 뒤의 누름이 작업실을 열지 않게
+  }
   document.addEventListener("floe:setup-done", queueSize);
   PHONE.addEventListener("change", render);
 
