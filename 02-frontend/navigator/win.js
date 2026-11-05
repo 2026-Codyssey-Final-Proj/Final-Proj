@@ -26,6 +26,7 @@
   root.addEventListener("compositionstart", () => { composing = true; });
   //   끝난 바로 뒤에 다음 음절의 compositionstart가 오므로 한 박자 미뤄 그때도 조합 중이 아니면 그린다(새 맥락 리뷰)
   root.addEventListener("compositionend", () => { composing = false; setTimeout(() => { if (composing || pending === null) return; const h = pending; pending = null; draw(h); }, 0); });
+  if (window.FloeCoach) window.FloeCoach.init((act) => F.winEvent({ type: "click", act, data: { act } }));
   F.onWinHtml((html) => { if (composing && root.contains(document.activeElement)) { pending = html; return; } composing = false; draw(html); });   // 글 칸이 사라져 compositionend가 안 와도 멈춰 있지 않게
   function draw(html) {
     const a = document.activeElement, keep = a && a.dataset && a.dataset.act && /^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName) ? a : null;
@@ -48,6 +49,7 @@
     const lg2 = root.querySelector("[data-log]"); if (lg2) lg2.scrollTop = lgTop === null || lgEnd ? lg2.scrollHeight : lgTop;
     const gs = root.querySelector("[data-log][data-go-stage]"), gv = gs ? gs.dataset.goStage : ""; if (gv && gv !== goStageShown) { goStageShown = gv; const el = gs.querySelector(`[data-stage="${gv.split(":")[0]}"]`); if (el) { el.scrollIntoView({ block: "start" }); el.classList.add("hl"); setTimeout(() => el.classList.remove("hl"), 1200); } }   // C-63 대화 목록의 바로가기 — 그 단계 구분선으로(섬 app.js goStage와 같다)
     const go = root.querySelector("[data-go]"); if (go && go.dataset.go !== goShown) { goShown = go.dataset.go; const p = go.closest(".fv-code"); if (p) p.scrollTop = go.offsetTop - (p.clientHeight - go.offsetHeight) / 2; }   // 목차로 고른 제목 줄로 한 번만(섬의 ftoc-go — 섬의 render와 같은 뜻)
+    if (window.FloeCoach) window.FloeCoach.sync();   // 첫 사용 안내 — 섬이 실어 보낸 걸음 이름(data-coach)을 읽는다
     layoutCol();
   }
   // ── 섬 옆 칸(.isl-col)의 자리와 크기 — 자리는 class side-top · bottom · left · right(섬이 보냄), 크기는 여기서: 옆이면 너비 320 ~ 760(그리고 창 너비의 반까지, 처음 420), 위아래면 높이 320 ~ 480(처음 360).

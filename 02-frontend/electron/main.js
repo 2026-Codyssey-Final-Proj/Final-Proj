@@ -12,7 +12,7 @@ const http = require("node:http");
 const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
-const { spawnSync, execFile } = require("node:child_process");
+const { spawn, spawnSync, execFile } = require("node:child_process");
 const L = require("./lib.js");
 // Windows 아이콘(F-59, 2026-10-26 — 이재엽 "윈도우 환경에서 앱이 우리 플로 사진이 아닌 문제"): 앱 ID를 설치 바로 가기와 같은 값(L.APP_ID = package.json appId — electron-builder가 바로 가기에 쓴다)으로 정해
 //   작업 표시줄이 고정한 바로 가기 · 플로로 아이콘과 묶이게 하고, 창마다 아이콘을 준다(개발 실행도 Electron 기본 그림 대신 플로로)
@@ -280,6 +280,18 @@ function menu() {
 
 // 키 · 폴더 · 설정 폴더는 섬 창이 보낸 것만(옆 창 · 다른 페이지는 받지 않는다, F-103-22) — 부르는 곳은 섬의 app.js · setup.js뿐
 ipcMain.handle("floe:connect", (e) => (fromIsland(e) ? pickAndConnect(true) : { ok: false, message: "" }));
+// 처음 설정의 로그인 실행 칸(C-73, lib.js loginRunner) — 이름만 받는다. 도는 동안 항상 위를 끈다(열린 브라우저가 설정 창 뒤에 가려지지 않게), 끝나면 되돌리고 Floe로 돌아온다
+let loginRun = null;
+const loginNow = () => { if (!loginRun) { const Pv = require(path.join(P.backend, "provider.js")); loginRun = L.loginRunner({ spawn, launch: () => Pv.claudeLaunch(), kill: (c) => Pv.killTree(c) }); } return loginRun; };
+ipcMain.handle("floe:login-run", (e, name) => {
+  if (!fromIsland(e)) return { ok: false, reason: "" };
+  const live = () => !!win && !win.isDestroyed();
+  const r = loginNow().run(name, (line) => { if (live()) win.webContents.send("floe:login-line", { line }); },
+    (end) => { if (!live()) return; win.setAlwaysOnTop(true, NOTCH ? NOTCH.level : "floating"); win.focus(); win.webContents.send("floe:login-line", { end: true, ...end }); });
+  if (r.ok) win.setAlwaysOnTop(false);
+  return r;
+});
+ipcMain.handle("floe:login-stop", (e) => { if (fromIsland(e) && loginRun) loginRun.stop(); });
 ipcMain.handle("floe:project-new", async (e, name) => { if (!fromIsland(e)) return { ok: false, message: "" }; return afterPick(await Project.newFolder(os.homedir(), name)); });
 ipcMain.handle("floe:project-clone", async (e, text) => { if (!fromIsland(e)) return { ok: false, message: "" }; return afterPick(await Project.cloneRepo(os.homedir(), text, { ghReady: await Project.ghReady() })); });
 ipcMain.handle("floe:project-repos", async (e) => (fromIsland(e) ? Project.myRepos({ ghReady: await Project.ghReady() }) : []));
@@ -398,6 +410,7 @@ app.on("window-all-closed", () => { if (process.platform !== "darwin") app.quit(
 // 맡긴 일(claude와 그 자식)을 남기지 않는다 — Windows는 부모가 끝나도 자식이 돈다(F-118). 도는 일이 있으면 끄기를 멈추고, 끝난 뒤(늦어도 3초) 다시 끈다
 let quitting = false;
 app.on("before-quit", (e) => {
+  if (loginRun) loginRun.stop();
   if (quitting) return;
   let ended = null; try { ended = Server && Server.stopTasks ? Server.stopTasks() : null; } catch {}
   if (!ended) return;

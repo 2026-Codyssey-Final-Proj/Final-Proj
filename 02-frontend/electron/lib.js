@@ -214,4 +214,33 @@ const workBounds = (wa) => ({ x: wa.x, y: wa.y, width: Math.max(WORK_MIN.width, 
 // 두 상자가 겹치나 — 맞닿기만 하면 겹침이 아니다. 섬 크기가 바뀔 때 옆 창을 다시 둘지 앱(main.js placeSideWins)이 묻는다
 const overlaps = (a, b) => !!a && !!b && a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
-module.exports = { refreshDir, SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };
+// 처음 설정의 로그인 실행 칸(C-73, 2026-11-05 두승현 "명령어가 이미 입력되어 있어서 사용자가 그냥 실행만") — 화면은 이름만 보내고 실제 명령은 이 표에만 있다.
+//   진짜 터미널이 아니라 입력을 못 받는다: 두 명령 모두 터미널 없이 도는 것을 재 봤다(claude는 브라우저를 열고, gh는 일회용 코드와 주소를 출력한다). 결과는 화면으로만 보내고 파일 · 기록에 남기지 않는다(일회용 코드가 지나간다)
+const LOGIN_COMMANDS = { claude: ["claude", ["auth", "login"]], gh: ["gh", ["auth", "login", "--web", "--hostname", "github.com", "--git-protocol", "https"]] };
+const LOGIN_MAX_MS = 5 * 60 * 1000;
+const loginClean = (s) => String(s).replace(/\x1b\]8;;[^\x07\x1b]*(?:\x07|\x1b\\)/g, "").replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "").trim();   // 색 · 링크 표시 지우기
+// launch · kill — provider.js의 claudeLaunch(npm으로 깐 PC) · killTree. 셸 없이 띄운다
+function loginRunner({ spawn, launch, kill, later = setTimeout, cancel = clearTimeout }) {
+  let cur = null;
+  function run(name, onLine, onEnd) {
+    if (typeof name !== "string" || !Object.prototype.hasOwnProperty.call(LOGIN_COMMANDS, name)) return { ok: false, reason: "모르는 명령이에요" };
+    if (cur) return { ok: false, reason: "이미 돌고 있어요" };
+    const [bin, args] = LOGIN_COMMANDS[name], how = name === "claude" ? launch() : { cmd: bin, pre: [], env: {} };
+    let child;
+    try { child = spawn(how.cmd, [...how.pre, ...args], { env: { ...process.env, ...how.env }, stdio: ["ignore", "pipe", "pipe"], windowsHide: true }); } catch { return { ok: false, reason: "명령을 띄우지 못했어요" }; }
+    const me = (cur = { child, why: "" }), tails = { out: "", err: "" };
+    const say = (t) => { const c = loginClean(t); if (c) onLine(c); };
+    const feed = (k) => (d) => { const parts = (tails[k] + d).split(/\r?\n/); tails[k] = parts.pop(); parts.forEach(say); };
+    const timer = later(() => { me.why = "5분이 지나 멈췄어요"; kill(child); }, LOGIN_MAX_MS);
+    if (timer && timer.unref) timer.unref();   // 이 시계 때문에 앱(과 시험)이 끝나지 못하면 안 된다
+    const finish = (ok, reason) => { if (cur !== me) return; cur = null; cancel(timer); say(tails.out); say(tails.err); onEnd({ ok, reason }); };
+    child.stdout.on("data", feed("out")); child.stderr.on("data", feed("err"));
+    child.on("error", (e) => finish(false, e && e.code === "ENOENT" ? "이 컴퓨터에서 명령을 찾지 못했어요" : "명령을 띄우지 못했어요"));
+    child.on("exit", (code) => finish(code === 0 && !me.why, me.why || (code === 0 ? "" : "로그인이 되지 않았어요")));
+    return { ok: true };
+  }
+  const stop = () => { if (cur) { cur.why = "그만뒀어요"; kill(cur.child); } };
+  return { run, stop };
+}
+
+module.exports = { LOGIN_COMMANDS, loginClean, loginRunner, refreshDir, SIDE_GAP, SIDE_MIN_W, SIDE_MIN_H, sideWinBounds, workBounds, overlaps, paths, devIcon, appIcon, APP_ID, parseEnv, applyEnv, wantsShellPath, loginShell, mergePath, hookCommand, connectDir, setEnvLines, looksLikeKey, relayUrl, cursorMsg, parseNotchProbe, notchLayout, keepsWidth, islandWidth, islandX, libraryBounds, LIB_MIN, bootPage, bootUrl };

@@ -73,7 +73,7 @@
   // 앱이 통과시키는 동안에도 움직임은 오므로(forward) 섬 위로 오면 다시 끈다. Linux에서는 앱이 무시한다(main.js floe:thru)
   if (window.floeApp && window.floeApp.thru) {
     let thru = null;
-    // 처음 설정(setup.js)이 뜨면 창을 넓히고 창 전체를 투명한 막(#floe-setup · .su-back)이 덮는다 — 그 막도 빈 자리로 본다. 빼면 대화상자 밖 뒤 창(다른 앱)이 클릭되지 않았다(F-155, 임유정 2026-11-05)
+    // 처음 설정(setup.js)이 뜨면 창을 넓히고 창 전체를 투명한 막(#floe-setup · .su-back)이 덮는다 — 그 막도 빈 자리로 본다. 빼면 대화상자 밖 뒤 창(다른 앱)이 클릭되지 않았다(F-156, 임유정 2026-11-05)
     const bare = (t) => t === document.documentElement || t === document.body || t.id === "nav" || t.id === "fx" || t.id === "floe-setup" || (t.classList && t.classList.contains("su-back"));
     document.addEventListener("mousemove", (e) => { const on = bare(e.target); if (on !== thru) { thru = on; window.floeApp.thru(on); } }, { passive: true });
   }
@@ -190,7 +190,7 @@
   const holding = () => !!(st.hold && st.j && st.hold.stage === st.j.stage && !st.finished);
   let colHover = false, colTyping = false;   // 작업실 옆 칸(win.js)에서 온 '마우스 올림' · '글 쓰는 중' — 섬 창의 hovering · typing과 같은 뜻(C-46, 새 맥락 리뷰 2026-10-27 막힘: 옆 칸에 글을 쓰는 중에도 접혔다)
   // apWait · blocked · stall — 허락 카드 · 막힌 일 · 멈춘 것 같은 일은 사람이 고를 때까지 접지 않는다(F-69 · C-50, 새 맥락 리뷰 2026-10-28 — 전에는 15초 뒤 알약으로 접혀 카드가 안 보였다)
-  const pinned = () => st.userPin || !!st.apWait || !!(st.blocked && !st.blocked.retrying) || !!(st.stall && st.stall.lv !== "calm" && st.stall.wait !== st.stall.lv) || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || st.openInput || typing() || colTyping;   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
+  const pinned = () => st.userPin || !!st.apWait || !!(st.blocked && !st.blocked.retrying) || !!(st.stall && st.stall.lv !== "calm" && st.stall.wait !== st.stall.lv) || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || !!st.coach || st.openInput || typing() || colTyping;   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
   // 플로로의 [표정, 말] — 기다림·경고·오류가 먼저, 그다음 확인 질문·잠시 멈추기(understand.js), 나머지는 navigator.js
   function face() {
     const base = N.face({ busy: st.busy, warn: st.warn, error: st.error, gate: st.screen === "gate", step: st.step,
@@ -2103,7 +2103,7 @@
         <span class="wtgs"><button type="button" class="wtg" data-act="wnav-toggle" aria-pressed="${wnavOpen}" aria-label="파일 칸 ${wnavOpen ? "접기" : "펼치기"}" title="파일 칸 ${wnavOpen ? "접기" : "펼치기"}">${PANE_L}</button><button type="button" class="wtg" data-act="wside-toggle"${WINS && !colFolded() ? " disabled" : ""} aria-pressed="${wsideOpen}" aria-label="오른쪽 칸 ${wsideOpen ? "접기" : "펼치기"}" title="${WINS && !colFolded() ? "오른쪽 칸 — 섬을 접으면 나와요" : `오른쪽 칸 ${wsideOpen ? "접기" : "펼치기"}`}">${PANE_R}</button></span><span class="grow"></span>
         <span class="wlv" title="칭호 · ${esc(QU.rankOf(Math.min(level, 7)))}">LV ${level} · <button type="button" class="shells" data-act="shells" title="무지개 조개 — 장을 지나면 하나. 셋이면 열어요" aria-label="무지개 조개 ${st.shells}개">${coin()}<span>${st.shells}</span></button></span>${hisl()}
         <button type="button" class="ti" data-act="qwin" aria-label="작업실 창 닫기" title="닫기">${X_ICON}</button></div>`;
-    return `${wh}<div class="win qwin${pop}" role="dialog" aria-label="작업실 창" style="width:${BROWSER_WIN[0]}px;height:${BROWSER_WIN[1]}px">
+    return `${wh}<div class="win qwin${pop}" role="dialog" aria-label="작업실 창" style="width:${BROWSER_WIN[0]}px;height:${BROWSER_WIN[1]}px">${coachTag()}
       <div class="wmain">${wnavOpen ? `<nav class="wnav" aria-label="대화 · 파일">${chatNav()}</nav>` : ""}<div class="wbody" data-view="${esc(`${st.qtab}|${st.qtab === "lib" ? `${st.libSel || ""}|${st.libDoc ?? ""}` : st.qtab === "file" ? `${st.fileSel}|${(st.openFiles[st.fileSel] || {}).edit ? "e" : "v"}` : ""}`)}">${pane}</div>${sideOn() ? `<aside class="wside" aria-label="이 문서 · 퀘스트">${wsideHTML(n)}</aside>` : ""}</div></div>${setModal()}`;
   }
   // F-86(2026-10-29 두승현 "별도의 모달창을 중앙에"): 작업실이 열려 있으면 설정은 섬이 아니라 작업실 위 가운데 모달 — 섬은 접혀 있든 펼쳐져 있든 그대로. 바깥(바탕)을 누르면 닫힌다
@@ -3582,6 +3582,7 @@
     goStage($nav);   // C-63 — 대화 목록의 바로가기를 눌렀으면 그 단계 구분선으로
     if (logRO) { logRO.disconnect(); if (lg) { logRO.observe(lg); if (lg.lastElementChild) logRO.observe(lg.lastElementChild); } }
     syncWins();
+    if (window.FloeCoach) window.FloeCoach.sync();   // 브라우저 판의 첫 사용 안내(앱은 win.js)
     refract();
     reportSize();
   }
@@ -3955,6 +3956,24 @@
   //   보기 방식을 바꾸는 길은 하나(toMode) — 설정의 '보기 방식'(92-basecard)도 같이 쓴다. 닫기는 공통 '닫기'(dismiss)가 키 카드까지 닫는다
   function toMode(m) { if (m === "live") liveApprovals(); set({ mode: m, keyBad: false, error: "", warn: null }); readmeAgain(); chatRecheck(); }   // 진짜 AI 모드로 바꾸면 대화를 둘 폴더를 다시 묻는다. 연습에서 띄운 예시 허락 카드도 내린다(F-137)
   Object.assign(ACT, { "practice-now": () => toMode("fixture") });
+// ━━ app/88-coach.js ━━
+  // ── 작업실의 첫 사용 안내(C-73, 2026-11-05 두승현 — 게임 온보딩처럼 눌러야 할 곳만 밝게 + 플로로 말풍선). 그리기 · 걸음 계산은 coach.js, 여기는 상태 · 신호 · 누르기(처음 설정의 안내는 setup.js) ──
+  //   처음 설정을 '시작하기'로 끝낸 직후에만 시작한다 — 이미 쓰던 사람 · 주소 끝 장면 · 휴대폰에는 뜨지 않는다. 기록 지우기로 처음부터 하면 다시 나온다
+  keep(["coach", "coachDone"]);
+  if (!(st.coach && Array.isArray(st.coach.seen))) st.coach = null;
+  // 95-boot의 같은 신호보다 먼저 듣는다(조각 차례) — 그쪽의 go("home")이 그릴 때 이미 켜져 있다
+  document.addEventListener("floe:setup-done", ({ detail }) => { if (detail && detail.open && !st.coachDone && !st.coach && !st.j && !st.quest && !isPhone()) st.coach = { seen: [] }; });
+  const coachNow = () => (window.FloeCoach ? window.FloeCoach.stepOf({ on: !!st.coach, ui: st.ui, busy: !!st.busy,
+    blocked: !!(st.warn || st.error || st.apWait || st.settings || st.gacha || st.pane || st.openInput),
+    hasQuest: !!(st.quest || st.j), draft: !!(st.quest && st.quest.draft),
+    filled: st.quest ? st.quest.objs.filter((_, i) => QU.filled(st.quest, i)).length : 1, seen: st.coach ? st.coach.seen : [] }) : "");
+  function coachTag() { const id = coachNow(); return id ? `<i hidden data-coach="${id}"></i>` : ""; }
+  const coachEnd = (line) => { st.coach = null; st.coachDone = true; render(); say(line); };
+  Object.assign(ACT, {
+    "coach-next": () => { const id = coachNow(); if (id === "tabs") return coachEnd("이제 같이 만들어 봐요!"); if (id && st.coach) { st.coach.seen.push(id); render(); } },
+    "coach-skip": () => { if (st.coach) coachEnd("안내는 여기까지 할게요. 궁금한 건 언제든 물어봐 주세요."); },
+  });
+  if (window.FloeCoach) window.FloeCoach.init((act) => clickAct({ dataset: { act } }));
 // ━━ app/90-acts.js ━━
   // ── 누르기 — data-act 이름 → 할 일. (i: data-i, el: 누른 것) ──
   const set = (patch) => { Object.assign(st, patch); render(); };
@@ -4673,7 +4692,7 @@
     setupNeeded: !!(window.FloeSetup && window.FloeSetup.shouldOpen(window.FloeSetup.readSaved(localStorage), location.hash)) };
   const boot = GR && st.ui === "greet" ? GR.bootPlan(bootArgs) : { workspace: false, bubble: false, greet: false };
   const greetNow = !!GR && st.ui === "greet" && !boot.workspace && GR.shouldGreet(bootArgs).greet;
-  if (boot.workspace) { openQwin("quest"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); }
+  if (boot.workspace) { openQwin("quest"); st.ui = "petit"; st.boot = { greet: boot.greet, at: Date.now() }; if (boot.greet) writeLS(GREET_DAY, ymd()); setTimeout(() => { if (st.boot) { st.boot = null; render(); } }, GR.BUBBLE_MS); if (st.coach) { st.boot = null; st.ui = "home"; } }   // 첫 사용 안내 중에 껐다 켰으면 알약이 아니라 그 걸음으로(88-coach)
   else if (greetNow) { document.documentElement.classList.add("greeting"); st.ui = "petit"; }
   else if (st.ui === "greet") st.ui = location.hash && location.hash !== "#" ? "home" : "petit";
   function startGreeting() {
