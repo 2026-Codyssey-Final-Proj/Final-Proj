@@ -1,5 +1,5 @@
 /* claude-drafted: 2026-10-19 — 처음 설정(setup.js)의 모양. app.css의 색 이름(--ink · --sub · --acc · --card …)과 단추(.b · .b.pri)를 그대로 쓴다 —
-   밝은 · 어두운 설정과 PC 리퀴드 글래스(네이비 + 아이스 블루)를 따로 칠하지 않아도 따라간다. 플로로는 seal.css(숨구멍 그림). */
+   밝은 · 어두운 설정과 PC의 섬 남색을 따로 칠하지 않아도 따라간다. 플로로는 seal.css(숨구멍 그림). */
 #floe-setup{position:fixed;inset:0;z-index:40;display:flex;justify-content:center;align-items:flex-start;padding:max(14px,env(safe-area-inset-top,0px)) 16px 16px}
 #floe-setup .su-back{position:absolute;inset:0;background:rgba(8,14,40,.38)}
 html.in-app #floe-setup{-webkit-app-region:no-drag}   /* 위 줄(.tb drag)을 덮는다 — 빼지 않으면 대화상자 위쪽 단추가 창 끌기로 먹힌다(F-63과 같은 꼴, F-103-16) */
@@ -93,9 +93,8 @@ html.in-app #floe-setup .su-back{background:transparent}   /* 앱의 창은 투�
   #floe-setup kbd{display:none}   /* 휴대폰에는 단축키가 없다 — 진한 단추 위의 옅은 글씨(대비 부족, axe)도 같이 사라진다 */
 }
 @media (min-width:601px){
-  #floe-setup .su{background:rgba(22,34,94,.86);-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);color:var(--ink)}   /* color — 섬 글자(제목이 body의 남색을 물려받아 1.25:1, F-102 고침 2026-10-30) */
+  #floe-setup .su{background:var(--isl);color:var(--ink)}   /* 작업실 섬 칸과 같은 불투명 남색(F-158). color — 섬 글자(제목이 body의 남색을 물려받아 1.25:1, F-102 고침 2026-10-30) */
   .su-pick{background:rgba(255,255,255,.06)}
   .su-key input,.su-card input{background:rgba(255,255,255,.08)}
 }
-@media (min-width:601px) and (prefers-reduced-transparency:reduce){#floe-setup .su{background:#363E62;-webkit-backdrop-filter:none;backdrop-filter:none}}
 @media (prefers-reduced-motion:reduce){#floe-setup .su{animation:none}.su-pick{transition:none}}

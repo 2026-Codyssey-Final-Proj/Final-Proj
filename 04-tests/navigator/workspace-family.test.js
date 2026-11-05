@@ -121,3 +121,13 @@ test("머리 줄의 접기 단추는 오고 가는 단추 — 펼친 섬이면 �
   assert.match(a, /data-act="fold" aria-pressed="\$\{colFolded\(\)\}" aria-label="\$\{colFolded\(\) \? "펼치기" : "접기"\}"/, "알약일 때는 펼치기로 읽힌다");
   assert.match(a, /\$\{colFolded\(\) \? I\.down : I\.up\}<\/button><\/span>`;/, "알약일 때는 아래 화살표");
 });
+
+// F-158(두승현 2026-11-05 "카드 색 회남색으로 통일" · "제목 굵기도 맞춰줘"): 처음 설정도 작업실 섬과 같은 불투명 남색 · 같은 제목 굵기
+test("F-158 — PC의 처음 설정 카드는 섬과 같은 불투명 남색(--isl)이고 유리가 없다, 제목(.mc-title)은 두꺼운 글꼴을 억지로 더 굵게 하지 않는다", () => {
+  const su = read("navigator/setup.css");
+  const pc = su.slice(su.indexOf("@media (min-width:601px){"));
+  assert.match(pc, /#floe-setup \.su\{background:var\(--isl\);color:var\(--ink\)\}/, "카드 바탕은 섬 토큰");
+  assert.ok(!/backdrop-filter/.test(su), "처음 설정에도 유리(블러) 없음 — C-62와 같게");
+  const titleRules = [...c.matchAll(/(^|\})\s*([^{}]*\.mc-title[^{}]*)\{([^}]*)\}/g)].filter((m) => /font-weight/.test(m[3]));
+  assert.ok(titleRules.length > 0 && titleRules.every((m) => /font-weight:400/.test(m[3])), "제목 굵기는 400만 — 800이면 뭉개진다");
+});

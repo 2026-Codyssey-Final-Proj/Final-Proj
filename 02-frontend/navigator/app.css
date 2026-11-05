@@ -295,7 +295,7 @@ html[data-greet="hello"] .pill.greet .pl-hello,html[data-greet="settle"] .pill.g
 .mc-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:calc(13px * var(--ui-scale,1));color:var(--sub)}
 .mm-stage{font-weight:700;color:var(--ink)}
 .mini{display:inline-flex;gap:3px}.mini i{width:16px;height:5px;border-radius:3px;background:var(--seg)}.mini i.on{background:var(--tink,var(--acc))}
-.mc-title{margin:0;font-size:calc(21px * var(--ui-scale,1));font-weight:800;letter-spacing:-.3px;line-height:1.35;text-wrap:balance}
+.mc-title{margin:0;font-size:calc(21px * var(--ui-scale,1));letter-spacing:-.3px;line-height:1.35;text-wrap:balance}
 .mc-sub{margin:0;font-size:calc(14px * var(--ui-scale,1));color:var(--sub);line-height:1.55}
 .mc-foot{margin:0;font-size:calc(13px * var(--ui-scale,1));color:var(--sub)}
 .mc-fine{margin:-4px 0 0;font-size:calc(12px * var(--ui-scale,1));color:var(--sub)}
