@@ -73,7 +73,7 @@ async function open(browser, { gh = { found: true, signedIn: true }, apps = { fo
       myRepos: rec("myRepos", () => [{ name: "gamercross/test-1", private: false }, { name: "gamercross/secret", private: true }]),
       cloneProject: rec("clone", (t) => (/test-1/.test(t) ? { ok: true, name: "test-1", where: "~/Floe/test-1", made: true, repo: "gamercross/test-1" } : { ok: false, message: "가져오지 못했어요 — 저장소 이름을 확인해 주세요." })),
       newProject: rec("new", (n) => ({ ok: true, name: n, where: `~/Floe/${n}`, made: true, repo: "" })) };
-    try { localStorage.removeItem("floe:setup:v1"); } catch {}
+    try { localStorage.removeItem("floe:setup:v1"); localStorage.setItem("floe:setup-coach", "off"); } catch {}   // 안내 층(C-73)을 끄고 처음 설정 자체를 본다
   });
   await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "load" });
   await page.waitForSelector("#floe-setup .su", { timeout: 12000 });

@@ -294,6 +294,7 @@
     goStage($nav);   // C-63 — 대화 목록의 바로가기를 눌렀으면 그 단계 구분선으로
     if (logRO) { logRO.disconnect(); if (lg) { logRO.observe(lg); if (lg.lastElementChild) logRO.observe(lg.lastElementChild); } }
     syncWins();
+    if (window.FloeCoach) window.FloeCoach.sync();   // 브라우저 판의 첫 사용 안내(앱은 win.js)
     refract();
     reportSize();
   }
