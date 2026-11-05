@@ -30,6 +30,10 @@
   const GUARD_WHY = "허락을 묻는 장치의 설정이에요 — 바뀌면 다음부터 묻지 않을 수 있어요";
   const SECRET_WHY = "비밀값 모양이 들어 있어요 — 밖으로 새면 되돌릴 수 없어요";
   const VERBS = { Edit: "edit", MultiEdit: "edit", Write: "write", NotebookEdit: "edit", Bash: "run" };
+  // F-157-5(claude-drafted: 2026-11-05 사용자 시험 — Windows 카드가 "했어요 · PowerShell"만 보였다): 허락 카드는 아직 하지 않은 일이라 '~해요'로.
+  //   PowerShell(Windows의 Claude Code 명령 도구)도 Bash처럼 명령 줄 · 위험 경고를 보이되, 자동 허용 종류(run)로는 넣지 않는다 — 위험 명령 검사(DANGER_CMD)가 bash 기준이라
+  const SHELLS = new Set(["Bash", "PowerShell"]);
+  const ASK = { Edit: "고쳐요", MultiEdit: "고쳐요", NotebookEdit: "고쳐요", Write: "만들어요", Bash: "실행해요", PowerShell: "실행해요", Read: "읽어요", Grep: "찾아요", Glob: "찾아요" };
 
   const str = (v) => (typeof v === "string" ? v : "");
   const cutLine = (t) => (t.length > MAX_CHARS ? `${t.slice(0, MAX_CHARS - 1)}…` : t);
@@ -50,7 +54,7 @@
       if (DANGER_FILE.test(file)) return DANGER_FILE_WHY;
       if (GUARD_FILE.test(file)) return GUARD_WHY;
     }
-    if (tool_name === "Bash") { const cmd = str(input.command); for (const [re, why] of DANGER_CMD) if (re.test(cmd)) return why; if (GUARD_CMD.test(cmd)) return GUARD_WHY; if (blocked(cmd)) return SECRET_WHY; }
+    if (SHELLS.has(tool_name)) { const cmd = str(input.command); for (const [re, why] of DANGER_CMD) if (re.test(cmd)) return why; if (GUARD_CMD.test(cmd)) return GUARD_WHY; if (blocked(cmd)) return SECRET_WHY; }
     if (VERBS[tool_name] === "edit" || VERBS[tool_name] === "write") {
       const texts = [input.new_string, input.content, input.new_source, ...(Array.isArray(input.edits) ? input.edits.map((e) => e && e.new_string) : [])];
       if (texts.some((t) => blocked(str(t)))) return SECRET_WHY;
@@ -69,9 +73,9 @@
     else if (name === "MultiEdit") { for (const e of Array.isArray(input.edits) ? input.edits.slice(0, 3) : []) if (e && typeof e === "object") out.push(...lines(e.old_string, "− "), ...lines(e.new_string, "+ ")); }
     else if (name === "Write") out = lines(input.content, "+ ");
     else if (name === "NotebookEdit") out = lines(input.new_source, "+ ");
-    else if (name === "Bash") out = lines(input.command);
-    const what = kind === "other" ? name : cutLine(redact(str(step.what) || name));
-    return { tool_name: name, verb: str(step.verb) || "했어요", what, kind, lines: out, danger: whyOf(name, input) };
+    else if (SHELLS.has(name)) out = lines(input.command);
+    const what = kind === "other" && !SHELLS.has(name) ? name : cutLine(redact(str(step.what) || name));
+    return { tool_name: name, verb: ASK[name] || "해요", what, kind, lines: out, danger: whyOf(name, input) };
   }
 
   // 요청의 지문 — 세션 · 도구 · 입력이 같을 때만 같다(sha256, 64자). Node에서만(훅 · 서버)
@@ -91,9 +95,9 @@
   // 서버 없이(FR-10) 보일 승인 카드 둘 — 보통 일 하나(파일 고치기), 되돌리기 어려운 일 하나(강제 푸시). 가짜 지문
   const EXAMPLE = [
     { id: "example-edit-1", sig: "e".repeat(64), at: 0, project: "예시-프로젝트", tool: "claude", tool_name: "Edit",
-      card: { tool_name: "Edit", verb: "고쳤어요", what: "src/signup.js", kind: "edit", lines: ["− const limit = 10;", "+ const limit = 30;", "+ // 신청 인원 상한 — 행사 목록 화면에서 읽는다"], danger: "" } },
+      card: { tool_name: "Edit", verb: "고쳐요", what: "src/signup.js", kind: "edit", lines: ["− const limit = 10;", "+ const limit = 30;", "+ // 신청 인원 상한 — 행사 목록 화면에서 읽는다"], danger: "" } },
     { id: "example-run-2", sig: "f".repeat(64), at: 0, project: "예시-프로젝트", tool: "claude", tool_name: "Bash",
-      card: { tool_name: "Bash", verb: "실행했어요", what: "git push --force origin main", kind: "run", lines: ["git push --force origin main"], danger: "강제로 올리는 명령이에요 — 다른 사람의 것이 사라질 수 있어요" } },
+      card: { tool_name: "Bash", verb: "실행해요", what: "git push --force origin main", kind: "run", lines: ["git push --force origin main"], danger: "강제로 올리는 명령이에요 — 다른 사람의 것이 사라질 수 있어요" } },
   ];
 
   const api = { MAX_LINES, MAX_CHARS, card, sig, decisionOutput, EXAMPLE };

@@ -29,7 +29,7 @@
               <p class="ws-h">이 줄을 쓰는 다음 단계</p><ul class="ws-mat">${uses.length ? uses.map((u) => `<li>${LB(u.s)} ${ROMAN(u.i)} ${esc(QU.shortOf(u.name))}</li>`).join("") : "<li>아직 없어요 — 다음 단계가 이 줄을 재료로 쓰면 여기에 와요</li>"}</ul>
               <p class="ws-h">문서</p><p class="ws-sum"><code>${esc(c.doc.path)}</code> ${open}${preset}${c.doc.has ? "" : " 아직 없어요"}</p></section>`; } }
         const p = c.prepared, cells = p ? [["① 생각", p.think], ["② 행동", p.act], ["③ 기록", p.record.map((x) => QU.shortOf(x)).join(" · ")], ["④ 저장", p.save], ["⑤ 버전", p.ver]] : null;
-        return `${doc}<section class="ws-q"><h4>퀘스트</h4>${cells ? `<ol class="ws-cells">${cells.map(([k, v]) => `<li><b>${k}</b> ${esc(v || "—")}</li>`).join("")}</ol><p class="ws-h">재료</p><p class="ws-sum">${esc(p.from)}</p>` : `<p class="ws-sum">${c.state === "later" ? "2단계에서 그려져요" : c.q ? `다섯 칸 ${c.q.k}/${c.q.n}` : "아직"}</p>`}
+        return `${doc}<section class="ws-q"><h4>퀘스트</h4>${cells ? `<ol class="ws-cells">${cells.map(([k, v]) => `<li><b>${k}</b> ${esc(v || "—")}</li>`).join("")}</ol><p class="ws-h">재료</p><p class="ws-sum">${esc(p.from)}</p>` : `<p class="ws-sum">${c.state === "later" ? "2단계에서 그려져요" : c.q ? `정한 칸 ${c.q.k}/${c.q.n}` : "아직"}</p>`}
           <p class="ws-h">문서</p><p class="ws-sum"><code>${esc(c.doc.path)}</code> ${c.doc.has ? `<button type="button" class="lnk" data-act="map-open" data-v="${esc(c.doc.path)}">파일 보기로 열기</button>` : "아직 없어요"}</p></section>`;
       }
     }
@@ -37,7 +37,7 @@
     const q = st.quest && st.quest.chap === n ? st.quest : null, p = q ? QU.progress(q) : null, s = N.STAGES[n];
     const unmet = st.j && !st.finished && st.j.stage === n ? st.j.criteria.filter((x) => !x.met) : [];
     const cells = q ? `<ol class="ws-cells">${q.objs.map((o, i) => `<li class="${QU.filled(q, i) ? "y" : i === QU.curIdx(q) ? "now" : ""}">${ROMAN(i)} ${esc(QU.nameOf(q, i))}</li>`).join("")}</ol>` : `<p class="ws-sum">${st.j ? "퀘스트를 받기 전이에요 — 퀘스트 탭에서 받아요" : "채팅에서 원하는 것을 말하면 1단계 퀘스트가 생겨요"}</p>`;
-    const quest = `<section class="ws-q"><h4>퀘스트</h4><p class="ws-sum"><b>${LB(n)} · ${esc(s.title)}</b>${p ? ` — 다섯 칸 중 ${p.k}번째, 정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}` : ""}</p>${cells}
+    const quest = `<section class="ws-q"><h4>퀘스트</h4><p class="ws-sum"><b>${LB(n)} · ${esc(s.title)}</b>${p ? ` — ${q.objs.length}칸 중 ${p.k}번째, 정한 줄 ${q.objs.filter((_, i) => QU.filled(q, i)).length}/${q.objs.length}` : ""}</p>${cells}
       <p class="ws-h">관문</p><p class="ws-sum">${st.finished ? "모든 장을 마쳤어요" : st.results[n] && st.results[n].passed ? `지났어요 ${esc(st.results[n].passed.slice(5))}` : st.j && st.j.stage === n ? (unmet.length ? `남은 기준 ${unmet.length}개` : "기준을 다 채웠어요 — 섬에서 넘어가기 전 확인") : "아직 — 칸을 다 채우면"}</p>${
       unmet.length ? `<ul class="ws-unmet">${unmet.slice(0, 4).map((x) => `<li>${esc(QU.shortOf(x.text))}</li>`).join("")}${unmet.length > 4 ? `<li>+${unmet.length - 4}</li>` : ""}</ul>` : ""}</section>`;
     return doc + base + quest;
@@ -74,8 +74,8 @@
       const n = q.chap, gate = st.j && st.j.stage === n ? st.j.criteria.length : crits(n).length, first = TU ? TU.forChap(n).map((t) => esc(t.name)) : [];   // '처음 쓰는 기능' 한 줄 — 장 화면의 튜토리얼이 가는 곳(요구 문서 9절 3번 기본값: 이름만)
       const rows = q.objs.map((o, i) => ({ no: ROMAN(i), state: "later", edit: ed, name: ed ? `<input data-act="quest-name" data-i="${i}" value="${esc(o.name)}" aria-label="할 일 이름" maxlength="60">` : esc(QU.nameOf(q, i)),
         method: o.term ? `<small class="method">${esc(o.term)}</small>` : "", easy: esc(QU.easyOf(o.name)), right: ed ? `<input type="number" min="1" max="5" value="${o.need}" data-act="quest-need" data-i="${i}" aria-label="${esc(o.name)} 개수">개` : o.need > 1 ? `${o.need}개` : "" }));
-      return `<div class="qcard qpre"><div class="qhead"><div><h3>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</h3><div class="meta">${LB(n)} 퀘스트 · 플로로가 만들었어요 · ${ed ? "고치는 중" : "받기 전"}</div></div><div class="qprog">다섯 칸 · 관문 기준 ${gate}개</div></div>
-        <p class="qwhy"><b>왜 하나요</b> — ${esc(q.why)}</p>${questRows(rows, `${LB(n)} 퀘스트의 다섯 칸 — 받기 전`)}
+      return `<div class="qcard qpre"><div class="qhead"><div><h3>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</h3><div class="meta">${LB(n)} 퀘스트 · 플로로가 만들었어요 · ${ed ? "고치는 중" : "받기 전"}</div></div><div class="qprog">${q.objs.length}칸 · 관문 기준 ${gate}개</div></div>
+        <p class="qwhy"><b>왜 하나요</b> — ${esc(q.why)}</p>${questRows(rows, `${LB(n)} 퀘스트의 ${q.objs.length}칸 — 받기 전`)}
         ${first.length ? `<p class="qfirst">처음 쓰는 기능 — ${first.join(" · ")}. 관문에서 한 번 더 맞춰 봐요</p>` : ""}
         <div class="qfoot"><span class="rw">보상 · 무지개 조개 1 · ${esc(QU.rankOf(Math.min(7, n + 1)))}</span><div class="pacts">${ed ? `<button type="button" data-act="quest-cancel">고치기 취소</button><button type="button" class="pri" data-act="quest-save">이대로 받기</button>` : `<button type="button" data-act="quest-later">나중에</button><button type="button" class="pri" data-act="quest-ok">퀘스트 받기</button>`}</div></div></div>`;
     }
@@ -94,7 +94,7 @@
     const got = rows.filter((r) => r.state === "done").length, dots = rows.map((r) => `<i class="${r.state === "done" ? "on" : r.state === "now" ? "now" : ""}"></i>`).join("");
     const side = (q.side || []).length ? `<p class="qside">곁 퀘스트 — 안 해도 돼요 · ${q.side.map((s) => `${s.icon} ${esc(s.name)}`).join(" · ")}<small>만드는 크기를 키우면 할 일이 돼요</small></p>` : "";
     return `<div class="qcard"><div class="qhead"><div><h3>${ed ? `<input data-act="quest-title" value="${esc(q.title)}" aria-label="퀘스트 이름" maxlength="40">` : esc(q.title)}</h3><div class="meta">${LB(q.chap)} 퀘스트${q.title !== N.STAGES[q.chap].title ? ` · ${esc(N.STAGES[q.chap].title)}` : ""} · 플로로가 만들었어요 · ${done ? "다 적음" : "하는 중"}</div></div><div class="qprog">정한 줄 <b>${got} / ${rows.length}</b><span class="dots">${dots}</span></div></div>
-      ${questRows(rows, `${LB(q.chap)} 퀘스트의 다섯 칸`)}${side}
+      ${questRows(rows, `${LB(q.chap)} 퀘스트의 ${q.objs.length}칸`)}${side}
       <details class="qdesc"><summary>자세히 보기 · 왜 하나요</summary><p>${esc(q.desc)}</p><p><b>왜 하나요</b> — ${esc(q.why)}</p><button type="button" class="lnk qmore" data-act="qmore" aria-expanded="${qmore}">${qmore ? "간단히 보기" : "원래 할 일 문장 · 용어 보기"}</button></details>
       <div class="qfoot"><span class="rw">보상 · 무지개 조개 1 · ${esc(QU.rankOf(Math.min(7, q.chap + 1)))}</span>
         <div class="pacts">${ed ? `<button type="button" class="pri" data-act="quest-save">저장</button><button type="button" data-act="quest-cancel">취소</button>` : `<button type="button" data-act="quest-hint">힌트</button><button type="button" data-act="quest-edit">고치기</button><button type="button" class="${done ? "pri" : ""}" data-act="quest-report" ${done ? "" : "disabled"}>완료 보고</button>`}</div></div></div>`;
@@ -134,7 +134,7 @@
     const card = (c) => { const p = c.prepared, sel = st.mapSel === c.n || st.qview === c.n;   // qview는 저장되고 mapSel은 아니다 — 다시 켜도 아래 띠의 '고른 장'과 상자 표시가 맞게(F-151)
       const body = c.state === "later" ? `<span class="sm-note">2단계에서 그려져요</span>`
         : c.state === "done" ? `<span class="sm-line">${c.q ? `퀘스트 ${c.q.k}/${c.q.n}` : "지났어요"}</span>`
-        : c.state === "now" ? `<span class="sm-line">${gateNow ? `관문 앞 · ${c.q ? `${c.q.k}/${c.q.n}` : "다 적음"}` : c.q ? `다섯 칸 중 ${Math.min(c.q.k + 1, c.q.n)}번째 · ${c.q.k}/${c.q.n}` : "퀘스트 받기 전"}${c.gateLeft && !gateNow ? ` · 관문 남은 ${c.gateLeft}` : ""}</span>`
+        : c.state === "now" ? `<span class="sm-line">${gateNow ? `관문 앞 · ${c.q ? `${c.q.k}/${c.q.n}` : "다 적음"}` : c.q ? `${c.q.n}칸 중 ${Math.min(c.q.k + 1, c.q.n)}번째 · ${c.q.k}/${c.q.n}` : "퀘스트 받기 전"}${c.gateLeft && !gateNow ? ` · 관문 남은 ${c.gateLeft}` : ""}</span>`
         : gateNow && c.n === cur + 1 ? `<span class="sm-line next">다음</span>${p ? `<span class="sm-from">${esc(p.from)}</span>` : ""}`
         : `<span class="sm-line">${p ? esc(p.think.length > 48 ? `${p.think.slice(0, 47)}…` : p.think) : ""}</span><span class="sm-from">${p ? esc(p.from) : ""}</span>`;
       const docLine = `<span class="sm-doc"><code>${esc(c.doc.path.replace(/^docs\//, ""))}</code> ${c.doc.has ? "있음" : c.state === "done" || c.state === "now" ? "아직" : ""}</span>`;
@@ -176,7 +176,7 @@
     const rows = q.objs.map((o, i) => ({ no: ROMAN(i), state: "done", name: esc(QU.nameOf(q, i)), method: o.term ? `<small class="method">${esc(o.term)}</small>` : "",
       lines: (q.lines[i] || []).map((l) => `<span class="lw">${esc(l)}</span>`).join(""), right: esc(QU.BY_WORD[(q.by || [])[i]] || "") }));
     return `<div class="qcard gate"><div class="qhead"><div><h3>${esc(q.title)}</h3><div class="meta">${LB(n)} 퀘스트 · 완료 보고를 보냈어요${r && r.at ? ` ${esc(r.at)}` : ""} · 관문 앞</div></div><div class="qprog">정한 줄 <b>${rows.length} / ${rows.length}</b><span class="dots">${rows.map(() => '<i class="on"></i>').join("")}</span></div></div>
-      ${questRows(rows, `${LB(n)} 퀘스트의 다섯 칸 — 다 적음`)}
+      ${questRows(rows, `${LB(n)} 퀘스트의 ${rows.length}칸 — 다 적음`)}
       <div class="gatebox"><div class="gb-head"><b>관문 — 기준 ${cr.length}개 중 ${met}개 맞음</b><small>플로로가 본 결과</small></div>
         <ul class="gb-list">${cr.map((c) => `<li class="${c.met ? "ok" : "no"}"><span class="ck">${c.met ? OK_ICON : ""}</span><span>${esc(QU.shortOf(c.text))}${c.met ? (c.skipped ? " — 까닭을 적고 넘김" : "") : " — 아직"}</span></li>`).join("")}</ul>
         <div class="gb-learn"><p class="gb-h">이번에 배운 것 한 줄</p>${learnBox(n)}</div>
@@ -188,7 +188,7 @@
     const r = st.results[n], s = N.STAGES[n], done = !!r, cells = stageCells(n);
     const rows = cells.map((x, k) => ({ no: ROMAN(k), state: done ? "done" : "later", name: esc(QU.shortOf(x.name)), easy: done ? "" : esc(x.draft || ""), lines: x.line ? `<span class="lw">${esc(x.line)}</span>` : "",
       right: done ? esc(QU.BY_WORD[x.by] || "") : "아직", act: done ? "map-line" : "", key: `data-i="${n}" data-k="${k}"`, pressed: !!(st.mapLine && st.mapLine.n === n && st.mapLine.k === k) }));
-    return `<div class="qcard readonly"><div class="qhead"><div><h3>${esc(s.title)}</h3><div class="meta">${LB(n)} · ${done ? `지난 장 — 읽기만${r.passed ? ` · 관문 ${esc(String(r.passed).slice(5))}` : ""}` : "준비된 퀘스트 — 그 단계에 들어가면 받아요"}</div></div><button type="button" class="lnk" data-act="quest-view-off">지금 퀘스트로</button></div>${questRows(rows, `${LB(n)}의 다섯 칸`)}</div>`;
+    return `<div class="qcard readonly"><div class="qhead"><div><h3>${esc(s.title)}</h3><div class="meta">${LB(n)} · ${done ? `지난 장 — 읽기만${r.passed ? ` · 관문 ${esc(String(r.passed).slice(5))}` : ""}` : "준비된 퀘스트 — 그 단계에 들어가면 받아요"}</div></div><button type="button" class="lnk" data-act="quest-view-off">지금 퀘스트로</button></div>${questRows(rows, `${LB(n)}의 ${rows.length}칸`)}</div>`;
   }
   // 한눈에 보기(C-37, 2026-10-25 — 이재엽 "1단계 결과들을 정리해서 한번에 보는 곳 … 이어지는 다이어그램을 이용해 도전과제들을 보여주는 공간 … 우리가 어느 곳이 부족한지 보여주고 이 다이어그램들을 채워 나가도록" ·
   //   버튼 "단계가 이어지는 흐름"): 위에서 아래로 단계 블록, 사이 화살표에 넘겨주는 것(STAGES gives). 지금 장의 빈 칸은 점선 + 채우기. 1 · 2단계를 마쳤으면 문서로 묶어 올리기.

@@ -57,7 +57,7 @@
     if (QU && st.quest && st.quest.phase === "quest" && QU.isDone(st.quest) && st.quest.chap === j.stage) {   // 다 적은 퀘스트를 살펴본 결과가 왔다 = 완료 보고가 됐다
       st.quest = { ...st.quest, phase: "done" };
       // 단계 결과(C-37) — 한곳에서 보기 · 도전과제 지도 · 다음 장 초안 · 문서. C-39: 칸을 다 확인한 날 · 완료 기준과 근거(문서의 증빙)
-      st.results = { ...st.results, [st.quest.chap]: { ...QU.resultOf(st.quest), at: ymd(), check: checkOf(j), ...(checkBy ? { checkBy } : {}), ...(skipOf(j) ? { skip: skipOf(j) } : {}), ...(st.quest.chap === 5 && st.codeless && !(factsNow().codeFiles > 0) ? { nocode: true } : {}) } };   // 아니요 뒤에 코드가 생겼으면 '코드 없이'로 남기지 않는다   // skip — 건너뛴 기준의 까닭(C-56 · F-62)
+      st.results = { ...st.results, [st.quest.chap]: { ...QU.resultOf(st.quest), at: ymd(), check: checkOf(j), ...(checkBy ? { checkBy } : {}), ...(skipOf(j) ? { skip: skipOf(j) } : {}), ...((st.quest.chap === 4 || st.quest.chap === 5) && st.codeless && !(factsNow().codeFiles > 0) ? { nocode: true } : {}) } };   // 4 — 5단계 '도는지 보기'에서도 묻는다(F-157-4, 새 맥락 리뷰 E)   // 아니요 뒤에 코드가 생겼으면 '코드 없이'로 남기지 않는다   // skip — 건너뛴 기준의 까닭(C-56 · F-62)
     }
     // 다시 살펴본 결과 — 결정 기록의 '기준 n/m'이 관문을 연 살펴보기와 같게(F-60 ①: test-1은 첫 살펴보기 1/4만 남았다)
     else if (st.results[j.stage] && !st.results[j.stage].passed) st.results = { ...st.results, [j.stage]: { ...st.results[j.stage], check: checkOf(j), ...(checkBy ? { checkBy } : {}) } };
@@ -169,10 +169,10 @@
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`, at: ymd(),   // at — 세션별 보기(C-3, my-books.js dated)가 읽는다(2026-10-20). 옛 기록은 글 끝의 날짜로
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
         last ? ` · 확인 질문 ${last.ok ? "맞힘" : "정답 보고 넘어감"}` : ""} · ${ymd()}` });
-    Object.assign(st, { screen: "main", notice: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null });
+    Object.assign(st, { screen: "main", notice: "", ping: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null });
     if (nx) st.j = { stage: nx.n, reason: `${LB(s.n)}를 마쳤어요! 이제 ${LB(nx.n)} "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
-    else { st.finished = true; st.ping = ""; }   // F-153 — 관문 전에 온 알림의 '어디쯤인지 볼까요?'가 끝난 화면 위에 남지 않게
+    else st.finished = true;   // F-153의 st.ping = ""은 위 Object.assign의 ping: ""이 맡는다(F-157-7)
     // 퀘스트(C-22): 장을 지나면 무지개 조개 하나, 다음 장 퀘스트(받기 화면)를 만들고 퀘스트 창이 바로 뜬다(설정 '바로 뜨기'). 마지막이면 퀘스트 없이 마무리
     if (QU) { st.shells += 1; level = QU.levelUp(level); if (st.mode !== "fixture") writeLS(LEVEL_KEY, level); st.quest = nx ? QU.retitle(QU.makeQuest(nx, crits(nx.n)), st.topic) : null; if (nx && qauto) openQwin("quest"); }   // 다음 장도 주제를 제목으로(C-36)
     if (nx) questStarted();   // C-61 — 새 단계: 섬은 가운데부터. 다음 장 퀘스트를 만든 뒤에 — 전에는 앞에서 불러 구분선 · '가져온 것'이 지난 장 번호였다(F-116). 마지막 장이면 부르지 않는다 — 8단계 구분선이 한 번 더 붙고 8단계에서 바꾼 파일이 비어 보였다(F-138)

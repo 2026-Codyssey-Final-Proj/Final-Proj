@@ -452,7 +452,7 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 
 - **누가:** [`approve-hook.js`](approve-hook.js) — Claude Code의 **PermissionRequest** 훅(파일을 고치거나 명령을 쓰기 전에 허락을 구할 때). 지켜보기 훅(`hook.js`)과 따로다 — 이 훅만 기다린다.
 - **확인:** 출처 + 확인 값 머리글.
-- **본문:** `id`(훅이 만든 임의 글 8~64자), `sig`(세션 · 도구 · 입력의 지문 — sha256 64자, [approve.js](approve.js) `sig`), `session_id` · `cwd` · `tool` · `tool_name`, `card`([approve.js](approve.js) `card` — `tool_name` · `verb` · `what` · `kind` · `lines[]` · `danger`). **`tool_input` 원문은 보내지 않는다.**
+- **본문:** `id`(훅이 만든 임의 글 8~64자), `sig`(세션 · 도구 · 입력의 지문 — sha256 64자, [approve.js](approve.js) `sig`), `session_id` · `cwd` · `tool` · `tool_name`, `card`([approve.js](approve.js) `card` — `tool_name` · `verb`(아직 하지 않은 일이라 '고쳐요 · 만들어요 · 실행해요', PowerShell도 명령 줄을 보인다 — F-157-5) · `what` · `kind` · `lines[]` · `danger`). **`tool_input` 원문은 보내지 않는다.**
 - **서버가 하는 일:** 카드를 믿지 않는다 — 칸마다 모양을 보고 **다시 가리고**(S4) 자른다(줄 40개 · 한 줄 200자). 기다리는 표(메모리, 20개까지)에 넣고 **응답을 붙들어 둔다.** 섬이 결정하면(3-15) 그 결정을, 아무도 누르지 않고 90초(`NAV_APPROVAL_WAIT`)가 지나면 `"none"`을 답하고 표에서 지운다. 훅이 먼저 끊어도 지운다. `POST /api/events/clear`(3-4)는 기다리던 요청 모두에 `"none"`.
 - **성공:** `{ "ok": true, "id", "decision": "allow" | "deny" | "none" }`. 훅은 `allow` · `deny`일 때만 Claude Code에 JSON을 출력하고, `none` · 오류 · 서버 꺼짐이면 아무것도 출력하지 않아 Claude Code가 **스스로 묻는다**(터미널) — 대신 허용하는 길이 없다.
 - **거절:** 403 출처 · 403 확인 값 · 413 · 400 `승인 요청 모양이 아님`(id · sig · card) · 429 `기다리는 승인 요청이 너무 많음`.
@@ -461,7 +461,7 @@ Claude Code가 도구(Read · Edit · Bash …)를 쓸 때마다 훅이 불린�
 ```jsonc
 // 요청 (X-Nav-Token 머리글)
 { "id": "k3Jd…", "sig": "9f1c…(64자)", "session_id": "s-1", "cwd": "/Users/me/club-app", "tool": "claude", "tool_name": "Bash",
-  "card": { "tool_name": "Bash", "verb": "실행했어요", "what": "git push --force origin main", "kind": "run", "lines": ["git push --force origin main"], "danger": "강제로 올리는 명령이에요 — 다른 사람의 것이 사라질 수 있어요" } }
+  "card": { "tool_name": "Bash", "verb": "실행해요", "what": "git push --force origin main", "kind": "run", "lines": ["git push --force origin main"], "danger": "강제로 올리는 명령이에요 — 다른 사람의 것이 사라질 수 있어요" } }
 // 응답 — 섬이 누른 뒤(또는 90초 뒤 "none")
 { "ok": true, "id": "k3Jd…", "decision": "deny" }
 ```

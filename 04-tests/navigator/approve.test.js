@@ -26,18 +26,18 @@ const FAKE_KEY = "sk-" + "Zq9x".repeat(6);   // secret-check: allow
 const ev = (tool_name, tool_input) => ({ hook_event_name: "PermissionRequest", session_id: "s-1", cwd: CWD, tool_name, tool_input });
 
 // ── ① card ──
-test("card — Edit: 고쳤어요 · 상대 경로 · 뺀 줄(−)과 넣을 줄(+) 미리 보기 · 줄 수 제한. Write: 만들었어요 · 앞 줄만. Bash: 실행했어요 · 명령 전체. 그 밖: 도구 이름 · 줄 없음", () => {
+test("card — Edit: 고쳐요(허락 카드는 아직 하지 않은 일, F-157-5) · 상대 경로 · 뺀 줄(−)과 넣을 줄(+) 미리 보기 · 줄 수 제한. Write: 만들어요 · 앞 줄만. Bash: 실행해요 · 명령 전체. 그 밖: 도구 이름 · 줄 없음", () => {
   const e = AP.card(ev("Edit", { file_path: `${CWD}/src/signup.js`, old_string: "a\nb", new_string: "c\nd\ne" }));
-  assert.deepEqual([e.tool_name, e.verb, e.what, e.kind, e.danger], ["Edit", "고쳤어요", "src/signup.js", "edit", ""]);
+  assert.deepEqual([e.tool_name, e.verb, e.what, e.kind, e.danger], ["Edit", "고쳐요", "src/signup.js", "edit", ""]);
   assert.deepEqual(e.lines, ["− a", "− b", "+ c", "+ d", "+ e"]);
   const long = AP.card(ev("Write", { file_path: "new.txt", content: Array.from({ length: 40 }, (_, i) => `줄 ${i}`).join("\n") }));
-  assert.equal(long.verb, "만들었어요"); assert.equal(long.kind, "write");
+  assert.equal(long.verb, "만들어요"); assert.equal(long.kind, "write");
   assert.equal(long.lines.length, AP.MAX_LINES + 1, "제한 줄 + '… 더 있어요' 한 줄");
   assert.ok(long.lines[AP.MAX_LINES].includes("더"));
   const run = AP.card(ev("Bash", { command: "npm test\necho done", description: "시험" }));
-  assert.deepEqual([run.verb, run.kind, run.what, run.lines], ["실행했어요", "run", "npm test", ["npm test", "echo done"]]);
+  assert.deepEqual([run.verb, run.kind, run.what, run.lines], ["실행해요", "run", "npm test", ["npm test", "echo done"]]);
   const other = AP.card(ev("WebFetch", { url: "https://example.com" }));
-  assert.deepEqual([other.verb, other.what, other.kind, other.lines], ["했어요", "WebFetch", "other", []]);
+  assert.deepEqual([other.verb, other.what, other.kind, other.lines], ["해요", "WebFetch", "other", []]);
   assert.ok(!JSON.stringify(other).includes("example.com"), "모르는 도구의 입력은 싣지 않는다");
   assert.deepEqual(AP.card(null).lines, []);
   assert.ok(AP.card({ tool_name: "Edit", tool_input: { file_path: "x", old_string: "a", new_string: "b".repeat(500) } }).lines.every((l) => l.length <= AP.MAX_CHARS + 2), "한 줄도 자른다");

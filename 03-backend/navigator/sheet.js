@@ -47,7 +47,7 @@
     const chat = of("chat"), rep = of("report"), feed = of("feed");
     const allow = sum(of("approve").filter((x) => x.t.startsWith("허용"))), deny = sum(of("approve").filter((x) => x.t.startsWith("거절")));
     const written = cells.filter((c) => c && one(c.line));
-    const think = chat[0] ? `${title ? `${one(title)} — ` : ""}처음 한 말: “${chat[0].t}”` : written[0] ? `${one(title)} — ${one(written[0].line)}` : `${one(title) || "이 단계"}를 했어요`;
+    const think = chat[0] ? `${title ? `${one(title)} — ` : ""}이 단계에서 처음 한 말: “${chat[0].t}”` : written[0] ? `${one(title)} — ${one(written[0].line)}` : `${one(title) || "이 단계"}를 했어요`;   // '이 단계에서' — 2단계부터는 프로젝트의 처음 말이 아니다(F-157-6, 2026-11-05)
     const fileNames = [...new Set(files.map(one).filter(Boolean))];
     // 칸마다 부분이 여럿이면 몫을 나눠 자른다 — 합친 글 전체를 자르면 뒤쪽(허락 결정 · 먹인 글)이 통째로 사라졌다(2026-10-30 새 맥락 리뷰)
     const share = (parts, sep) => { const xs = parts.filter(Boolean), per = Math.floor((DRAFT_MAX - sep.length * (xs.length - 1)) / Math.max(1, xs.length)); return xs.map((x) => clip(x, per)).join(sep); };

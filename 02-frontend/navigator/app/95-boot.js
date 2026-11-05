@@ -62,6 +62,7 @@
     if (!ev.sim && tw) twTick();   // 맡긴 일이 끝났을 수 있다 — 3초를 기다리지 않고 바로 묻는다(C-32 · F-69)
     st.alerts = A.add(st.alerts, ev, (t) => sensitive(t).length > 0);
     scheduleRefit(ev);   // C-56 R-5 — 몇 초 모아 지금 단계 초안을 다시 맞춘다
+    if (!ev.sim) { changesRefresh(); if (st.files && st.files.src === "mine") loadFiles(); }   // F-157-6 — 한 장의 '바뀐 파일' · 코드 파일 수(5 · 6단계 '코드 파일을 만드시겠습니까?'가 옛 목록으로 계속 묻지 않게, 새 맥락 리뷰 F)
     if (st.busy) return render();
     if (ev.work) st.text = ev.work;
     activity();
@@ -158,7 +159,7 @@
     if (q.approve && AP) { approvals = AP.EXAMPLE.map((a) => ({ ...a, at: Date.now() })); apMode = "example"; st.task = { text: "", lines: null, say: "", sent: "" }; st.apSure = ""; }   // &approve=1 — 예시 승인 카드(FR-17, 녹화 · 시험용)
     if (q.tier && TIERS.some(([v]) => v === q.tier)) { st.tier = q.tier; if (st.j) st.j = T.refit(st.j, st.tier); }
     if (q.noex) { exHidden = true; applyEx(); }   // 이 화면만 예시 책 없이(시험 · 시연용) — 저장하지 않는다
-    if (q.start) Object.assign(st, { codeless: null, linesDone: [], carryUse: {}, carryDone: false, j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, mats: {}, ship: null, prep: null, mapSel: null });
+    if (q.start) Object.assign(st, { codeless: null, linesDone: [], pushedAt: null, carryUse: {}, carryDone: false, j: null, finished: false, todos: null, text: S.first.text, tab: "today", hold: null, quest: null, idea: "", topic: "", results: {}, mats: {}, ship: null, prep: null, mapSel: null });
     // #feed — 먹이 주기의 정리 장면(예시 먹이, C-15 — 녹화 · 시험용)
     if (q.feed && FD) Object.assign(st, { j: null, finished: false, todos: null, tab: "today", hold: null, text: FD.EXAMPLE, meal: feedState(FD.EXAMPLE, true) });
     if (q.ex !== undefined) {

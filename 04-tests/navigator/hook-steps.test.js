@@ -123,7 +123,7 @@ test("EXAMPLE: 서버 없이 보일 예시 세션 — 6~8줄, 쉬운 말, 줄마
 });
 
 test("VERBS: 도구 이름 → 쉬운 말 표", () => {
-  assert.deepEqual(Steps.VERBS, { Read: "읽었어요", Edit: "고쳤어요", MultiEdit: "고쳤어요", Write: "만들었어요", Bash: "실행했어요", Grep: "찾았어요", Glob: "찾았어요" });
+  assert.deepEqual(Steps.VERBS, { Read: "읽었어요", Edit: "고쳤어요", MultiEdit: "고쳤어요", Write: "만들었어요", Bash: "실행했어요", PowerShell: "실행했어요", Grep: "찾았어요", Glob: "찾았어요" });
   assert.equal(Steps.OTHER, "했어요");
 });
 

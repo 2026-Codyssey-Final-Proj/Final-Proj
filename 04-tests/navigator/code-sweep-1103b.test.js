@@ -278,7 +278,7 @@ test("F-144-15 퀘스트를 다 적은 뒤 · 관문에서 친 말은 작업 글
   const run = (st, canLive) => {
     const calls = [];
     const send = new Function("st", "QU", "canLive", "logMe", "activity", "mat", "planNow", "planSay", "startDraft", "render", "say", "ACT", "fillNow", "chatSend", "answer", "decide", "judge",
-      `${fnSrc("send")} return send;`)(st, { curIdx: () => -1, pickOf: () => null, SIZE_AT: 3 }, canLive, () => {}, () => {}, () => {}, () => false, () => {}, () => calls.push("start"),
+      `let pastFixAt = null; ${fnSrc("send")} return send;`)(st, { curIdx: () => -1, pickOf: () => null, SIZE_AT: 3 }, canLive, () => {}, () => {}, () => {}, () => false, () => {}, () => calls.push("start"),
       () => {}, (m) => calls.push(`say:${m}`), {}, () => calls.push("fill"), (t) => calls.push(`chat:${t}`), () => calls.push("answer"), () => calls.push("decide"), () => calls.push("judge"));
     send(); return calls;
   };
