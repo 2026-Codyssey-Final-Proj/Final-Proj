@@ -98,3 +98,12 @@ test("C-74 화면 — 4px 넘게 움직여야 끌기, 끈 뒤의 누름은 먹�
   assert.match(a, /addEventListener\("mousemove", \(e\) => \{ if \(document\.documentElement\.classList\.contains\("island-drag"\)\) return; const on = bare\(e\.target\);/);
   assert.match(a, /if \(h\.classList\.contains\("island-drag"\)\) return;/);
 });
+
+// F-160(두승현 2026-11-05 "설정창에서 좌측 플로로 알약 플로로 처럼 커서 이동하면 눈빛 따라가도록"): 처음 설정의 플로로는 #nav 밖(#floe-setup)이라 눈 따라오기가 닿지 않았다
+test("F-160 — 눈 따라오기가 처음 설정의 플로로에도 닿고, 설정 칸을 다시 그려도 커서 쪽을 본다", () => {
+  const a = read("navigator/app.js"), su = read("navigator/setup.js");
+  assert.match(a, /function follow\(p\) \{ C\.follow\(isPhone\(\) \? \$phone : \$nav, p\); const su = document\.getElementById\("floe-setup"\); if \(su\) C\.follow\(su, p\); \}/);
+  assert.equal((a.match(/follow\(point\)/g) || []).length, 4, "창 안 · 창 밖 · 섬을 다시 그린 뒤 · 설정을 다시 그린 뒤");
+  assert.match(a, /addEventListener\("floe:setup-drawn", \(\) => \{ if \(point\) follow\(point\); \}\)/);
+  assert.match(su, /doc\.dispatchEvent\(new CustomEvent\("floe:setup-drawn"\)\);/);
+});

@@ -332,6 +332,7 @@
     if (title && s.step !== lastStep) { title.setAttribute("tabindex", "-1"); title.focus({ preventScroll: true }); }
     else if (!host.contains(doc.activeElement)) { const b = host.querySelector(".su-main .b.pri, .su-main .b"); if (b) b.focus({ preventScroll: true }); }
     lastStep = s.step;
+    doc.dispatchEvent(new CustomEvent("floe:setup-drawn"));
     if (root.FloeCoach) root.FloeCoach.sync();
   }
   async function refresh() { s.st = await status(); render(); }
