@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="1920" height="1080" data-scene="6" data-t="39.900" font-family="'Gowun Dodum','Malgun Gothic',sans-serif"><style><![CDATA[/* claude-drafted: 2026-10-17 — 플로로의 그림 스타일과 움직임. 내비게이터 · 서고 · 지식 은하가 같이 쓴다.
+   app.css에 있던 꼬리 · 잠 · 살핌 · 깜짝을 옮기고, 물범다운 움직임(꼬리 흔들기 · 숨쉬기 · 지느러미 박수 · 헤엄 · 배로 통통)을 더했다.
+   그림은 seal.js, 언제 움직이는지는 app.js(헤엄) · library.js(배로 통통).
+   그림 스타일(색 · 표정 · 상태 표시)도 2026-10-17에 app.css · library.css의 같은 사본 둘을 여기 하나로 모았다.
+   페이지 CSS보다 먼저 읽는다 — 페이지마다 다른 것(테두리 없애기 등)은 페이지 CSS가 덮는다. */
+:root{--seal:#EEF5FD;--seal-shade:#E0EBF8;--seal-line:#C8DAEE;--seal-fin:#B5D1EE;--seal-ink:#1A2350}
+.cat{flex:none;overflow:visible;display:block}
+.cat .c-fur{fill:var(--seal);stroke:var(--seal-line);stroke-width:1.5}
+.cat .c-shade{fill:var(--seal-shade)}
+.cat .c-fin{fill:none;stroke:var(--seal-fin);stroke-width:3.2;stroke-linecap:round}
+.cat .c-tail ellipse{fill:var(--seal-fin)}
+.cat .c-paws ellipse{fill:var(--seal);stroke:var(--seal-fin);stroke-width:1.5}
+.cat .c-blush ellipse{fill:#F7AFBA;opacity:0;transition:opacity .2s}   /* 평소엔 없고, 기쁘거나 잘 때만 */
+.cat .c-whisk{fill:none;stroke:var(--seal-ink);stroke-width:1.1;stroke-linecap:round}   /* 늘 보인다(2026-10-17) — 아주 작을 때(.small)만 뺀다 */
+.cat .c-nose{fill:var(--seal-ink)}
+.cat .c-mouth{fill:none;stroke:var(--seal-ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.cat .c-open{fill:#B4505F;display:none}
+.cat .c-eyes circle{fill:var(--seal-ink)}
+.cat .c-eyes .e-glint{fill:#FFFFFF}
+.cat .c-eyes path{fill:none;stroke:var(--seal-ink);stroke-width:2.2;stroke-linecap:round}
+.cat .c-eyes .e-heart path{fill:#FF5D73;stroke:none}
+.cat .s-dots circle{fill:#8FA9D6}.cat .s-spark{fill:#F5A524}.cat .s-heart{fill:#FF6F86}
+.cat .s-q{font:800 22px -apple-system,sans-serif;fill:var(--seal-q,#2F6BFF)}
+.cat .s-bang circle{fill:#F5A524}.cat .s-bang path{stroke:#fff;stroke-width:3;stroke-linecap:round}.cat .s-bang circle:last-child{fill:#fff}
+.cat .s-zzz text{font:800 10px -apple-system,sans-serif;fill:var(--seal-zz,#7C8BA8)}
+.cat .s-zzz text:nth-child(2){font-size:12px}.cat .s-zzz text:nth-child(3){font-size:15px}
+.cat .s-sweat{fill:#7FB3FF}
+/* X 표지판(C-19, 2026-10-20) — 막을 때 손에 든다. 움직임 줄이기면 흔들지 않고 들고만 있다 */
+.cat .s-sign .sg-pole{fill:none;stroke:#8C6B3F;stroke-width:3;stroke-linecap:round}.cat .s-sign .sg-board{fill:#FF4D4D;stroke:#fff;stroke-width:2.2}.cat .s-sign .sg-x{fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round}
+.cat .c-eyes>*,.cat [class^="s-"]{display:none}
+.m-idle .e-dot,.m-look .e-dot,.m-think .e-dot,.m-alert .e-wide,.m-wow .e-wow,.m-happy .e-happy,.m-done .e-happy,
+.m-love .e-heart,.m-purr .e-closed,.m-sleep .e-closed,.m-yawn .e-closed{display:inline}
+.m-look .s-dots,.m-done .s-spark,.m-think .s-q,.m-alert .s-bang,.m-love .s-heart,.m-purr .s-heart,.m-sleep .s-zzz{display:inline}
+.cat.oops .s-sweat{display:inline}.cat.oops .s-q{display:none}
+.m-angry .e-angry,.m-angry .s-sign{display:inline}.m-angry .c-mouth{display:none}.m-angry .c-open{display:inline}   /* C-19 화난 눈 · X 표지판 — 숨기는 규칙(위) 뒤에 둔다 */
+.m-yawn .c-mouth,.m-wow .c-mouth,.m-alert .c-mouth{display:none}
+.m-yawn .c-open,.m-wow .c-open,.m-alert .c-open{display:inline}
+.m-love .c-blush ellipse,.m-purr .c-blush ellipse,.m-happy .c-blush ellipse,.m-done .c-blush ellipse,.m-sleep .c-blush ellipse{opacity:.8}
+.m-look .e-dot,.m-think .e-dot{transform:translateY(-2px)}   /* 생각: 두 눈이 평소 눈 그대로 위를 본다(F-147, 전에는 한쪽 눈이 사선) */
+.small .c-mouth,.small .c-open,.small .c-fin,.small .c-whisk{display:none}
+.blink .m-idle .e-dot,.blink .m-look .e-dot,.blink .m-think .e-dot{display:none}
+.blink .m-idle .e-blink,.blink .m-look .e-blink,.blink .m-think .e-blink{display:inline}
+
+
+.cat .s-bub circle { fill: rgba(169, 221, 255, .35); stroke: #CDE6FF; stroke-width: .8; }
+/* 꾸미기(F-148) — 그림은 seal.js의 WEAR, 머리 그룹 안에 있어 플로로의 움직임을 그대로 받는다. 기준점은 닿는 자리 */
+.cat .w-move, .cat .w-tail { transform-origin: 50px 13px; }
+.cat .w-neck { transform-origin: 50px 52px; --a: 1.2deg; }
+.face .c-fin { display: none; }   /* 얼굴만 그릴 때(접힌 알약) 가슴의 지느러미 선이 턱 밑에 걸리지 않게 */
+/* 숨구멍(물웅덩이) — 웅덩이와 물의 색은 seal.js의 그러데이션에, 선만 여기에 */
+.cat .h-stars circle { fill: #FFFFFF; opacity: .7; }
+.cat .h-line, .cat .h-ripple { fill: none; stroke: #EAF4FF; stroke-linecap: round; }
+.cat .h-line { stroke-width: 1.6; opacity: .7; } .cat .h-ripple { stroke-width: 1; opacity: .4; }
+
+/* '움직임 줄이기'를 켠 사람에게는 하지 않는다 */
+@media (prefers-reduced-motion: no-preference) {
+  /* 꼬리 — 평소엔 느리게 살랑, 살필 땐 조금 빠르게, 기쁘면 파닥파닥, 잘 땐 멈춤 */
+  .cat .c-tail { transform-origin: 92px 108px; animation: sway 3.2s ease-in-out infinite; }
+  .m-look .c-tail, .m-alert .c-tail { animation-duration: 1.1s; }
+  .m-happy .c-tail, .m-done .c-tail, .m-love .c-tail, .m-purr .c-tail { animation: wag .32s ease-in-out infinite alternate; }
+  .m-sleep .c-tail, .m-yawn .c-tail { animation: none; }
+
+  /* 숨쉬기 — 깨어 있을 땐 살짝, 잘 땐 크게 */
+  .cat .c-body { transform-origin: 55px 112px; animation: breath 4.2s ease-in-out infinite; }
+  .hole .c-body { transform-origin: 55px 60px; animation: float 5s ease-in-out infinite; }   /* 숨구멍에서는 물결 따라 둥실 */
+  .m-sleep .c-body { animation: breathe 3.4s ease-in-out infinite; }
+  .m-sleep .s-zzz text { animation: zz 2.6s ease-in-out infinite; }
+  .m-sleep .s-zzz text:nth-child(2) { animation-delay: .35s; } .m-sleep .s-zzz text:nth-child(3) { animation-delay: .7s; }
+
+  /* 앞지느러미 박수 — 기쁠 때 · 다 했을 때 · 깜짝 놀랐을 때 몇 번 */
+  .m-happy .c-fin, .m-done .c-fin, .m-wow .c-fin { transform-origin: 49px 72px; animation: flap .16s ease-in-out 6 alternate; }
+
+  /* 숨구멍에서 물 위로 얼굴 내밀기(2026-10-17) — 표정이 바뀌면 저절로. 물방울(s-bub)이 같이 오른다
+     빼꼼 솟기: 깜짝 · 알림 / 코까지 잠수: 생각 · 살펴보는 중 / 물 뿜기: 다 했을 때 (두리번은 app.js가 고개만 돌린다) */
+  .hole.m-wow .c-body, .hole.m-alert .c-body { animation: popup 1s ease-out; }
+  .hole.m-think .c-body, .hole.m-look .c-body { animation: dip 3s ease-in-out infinite; }
+  .hole.m-wow .s-bub, .hole.m-alert .s-bub, .hole.m-think .s-bub, .hole.m-look .s-bub, .hole.m-done .s-bub, .swim .cat .s-bub { display: inline; }
+  .cat .s-bub circle { animation: rise 1.3s ease-in infinite; }
+  .cat .s-bub circle:nth-child(2) { animation-delay: .45s; } .cat .s-bub circle:nth-child(3) { animation-delay: .9s; }
+
+  .m-look .s-dots { animation: blinkdot 1s infinite; }
+  .cat.m-wow { animation: jump .4s ease; }
+  .m-angry .s-sign { transform-origin: 22px 104px; animation: wave-sign .5s ease-in-out 4 alternate; }   /* 표지판 흔들기 — 네 번 */
+
+  /* 헤엄 — 숨구멍 안에서 머리만 내놓고 이리저리 헤엄치다 쏙 잠수하고 뿅 올라온다. 부르는 쪽이 감싼 요소에 .swim을 붙인다 */
+  .swim .cat .c-body { transform-origin: 55px 60px; animation: swim 3.6s ease-in-out; }   /* 표정 동작보다 앞선다 */
+
+  /* 배로 통통 — 물범이 땅에서 걷는 법(배로 튀며 나아간다). 부르는 쪽이 감싼 요소에 .galumph를 붙인다 */
+  .galumph svg.cat { transform-origin: 50% 100%; animation: galumph 1.4s ease-in-out; }
+
+  /* 꾸미기(F-148) — 물결 따라 둥실(float 5초)보다 조금 늦게 따라오고, 표정에 작게 반응한다. 목도리는 조금만 흔들린다 */
+  .cat .w-move { animation: w-lag 5s ease-in-out infinite; }
+  .m-think .w-hat { --t: 9deg; animation: w-tilt 3s ease-in-out infinite; }
+  .m-look .w-hat { --t: -7deg; animation: w-tilt 3s ease-in-out infinite; }
+  .m-happy .w-hat, .m-done .w-hat { animation: w-hop .3s ease-out 4 alternate, w-lag 5s ease-in-out 1.2s infinite; }
+  .m-wow .w-hat, .m-alert .w-hat { animation: w-pop 1s ease-out, w-lag 5s ease-in-out 1s infinite; }
+  .m-sleep .w-hat, .m-yawn .w-hat { animation: w-doze 3.4s ease-in-out infinite; }
+  .cat .w-tail { animation: w-tail 2.6s ease-in-out infinite; }
+  .cat .w-tail.r { animation-delay: -1.3s; }
+  /* 받는 순간 — 위에서 떨어져 머리가 살짝 눌린다. 부르는 쪽(gachaRoll)이 그림에 .landing을 잠깐 붙인다. 표정 움직임보다 앞선다 */
+  .cat.landing .w-move { animation: w-drop .62s cubic-bezier(.23, 1, .32, 1); }
+  .cat.landing .c-body { animation: w-squash .62s ease-out; }
+}
+/* F-46(2026-10-20): 보이지 않을 때는 무한 움직임(꼬리 · 숨쉬기 · 물방울 · z)을 멈춘다 — 띠로 접혔을 때(html[data-ui="hidden"]) · 창이 가려졌을 때(.page-hidden) */
+html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: paused; }
+@keyframes sway { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
+@keyframes wag { from { transform: rotate(10deg); } to { transform: rotate(-18deg); } }
+@keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012, .992); } }
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025, .985); } }
+@keyframes zz { 0%, 100% { opacity: .25; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-2px); } }
+@keyframes blinkdot { 50% { opacity: .25; } }
+@keyframes jump { 0%, 100% { transform: none; } 40% { transform: translateY(-8px); } }
+@keyframes wave-sign { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+@keyframes w-lag { 0%, 100% { transform: none; } 38% { transform: rotate(var(--a, 3.5deg)); } 78% { transform: rotate(calc(var(--a, 3.5deg) * -1)); } }
+@keyframes w-tilt { 0%, 100% { transform: rotate(calc(var(--t) * .4)); } 50% { transform: rotate(var(--t)) translateY(.6px); } }
+@keyframes w-hop { to { transform: translateY(-3px) rotate(5deg); } }
+@keyframes w-pop { 45% { transform: translateY(-6px) rotate(-6deg); } 70% { transform: translateY(1px) scale(1.08, .9); } }
+@keyframes w-doze { 0%, 100% { transform: translate(3px, 1.5px) rotate(12deg); } 50% { transform: translate(3.4px, 2.2px) rotate(15deg); } }
+@keyframes w-tail { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(6deg); } }
+@keyframes w-drop { 0% { transform: translateY(-44px) rotate(-14deg); opacity: 0; } 15% { opacity: 1; } 55% { transform: scale(1.1, .86); } 78% { transform: translateY(-3px) scale(.97, 1.05); } 100% { transform: none; } }
+@keyframes w-squash { 0%, 45% { transform: none; } 58% { transform: scale(1.05, .93); } 78% { transform: scale(.98, 1.03); } 100% { transform: none; } }
+@keyframes flap { to { transform: scale(1.12, .9) translateY(-1px); } }
+/* 숨구멍의 몸은 1.12배로 그려져 있어 아래 칸 수는 그 안의 칸이다 — 물 아래(그림 y 110)로 사라지려면 72칸 넘게 내려간다 */
+@keyframes float { 0%, 100% { transform: none; } 30% { transform: translateY(-1.5px) rotate(-3deg); } 70% { transform: translateY(1px) rotate(3deg); } }
+@keyframes popup { 0% { transform: translateY(15px); } 50% { transform: translateY(-13px) scale(.97, 1.04); } 75% { transform: translateY(2px); } 100% { transform: none; } }
+@keyframes dip { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(10px); } }
+@keyframes swim {
+  0% { transform: none; }
+  14% { transform: translate(0, 19px); }
+  32% { transform: translate(-14px, 21px) rotate(-9deg); }
+  52% { transform: translate(13px, 19px) rotate(9deg); }
+  64% { transform: translate(0, 21px); }
+  76% { transform: translate(0, 82px); }
+  90% { transform: translate(0, -6px) scale(.97, 1.05); }
+  100% { transform: none; }
+}
+@keyframes rise { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px); } }
+@keyframes galumph {
+  0%, 100% { transform: none; }
+  10% { transform: scale(1.08, .9); }
+  22% { transform: translateY(-16px) scale(.94, 1.08) rotate(-3deg); }
+  34% { transform: scale(1.1, .88); }
+  46% { transform: translateY(-12px) scale(.95, 1.06) rotate(-2deg); }
+  58% { transform: scale(1.08, .9); }
+  70% { transform: translateY(-7px) scale(.97, 1.04); }
+  82% { transform: scale(1.04, .96); }
+}
+
+.cat, .cat * { animation: none !important; transition: none !important; }]]></style><defs><filter id="blur6" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3.2"/></filter></defs>
+    <g filter="url(#blur6)"><g data-zoom="2.4" transform="translate(160 90) scale(2.4) translate(-92 -76)"><rect x="-200" y="-200" width="720" height="580" fill="#CDEBFA"/>
+  <path d="M40 150 C20 110 40 50 100 30 C160 10 250 20 285 60 C315 95 305 150 270 170 L60 172 C50 165 45 160 40 150 Z" fill="#E2F4FD"/>
+    <ellipse cx="142" cy="151.5" rx="22" ry="3" fill="#5FA6D8" opacity=".3"/><ellipse cx="235" cy="151.5" rx="22" ry="3" fill="#5FA6D8" opacity=".3"/>
+    
+    <g data-laptop4="1">
+    <path d="M22 100 H106" stroke="#1F2A5A" stroke-width="3" stroke-linecap="round"/>
+    <path d="M32 100 V154 M96 100 V154" stroke="#1F2A5A" stroke-width="3"/>
+    <clipPath id="lt6"><rect x="44" y="66" width="48" height="30"/></clipPath>
+    <rect x="44" y="66" width="48" height="30" rx="1.5" fill="#FFFFFF"/>
+    <g clip-path="url(#lt6)">
+      <path d="M50 72 h14 M54 77 h18 M54 82 h11 M50 87 h20 M50 92 h9" stroke-width="2" stroke-linecap="round" stroke="#9FB4D6"/>
+    <path d="M50 72 h6" stroke="#2F6BFF" stroke-width="2" stroke-linecap="round"/><path d="M54 82 h5" stroke="#14B8A6" stroke-width="2" stroke-linecap="round"/>
+      
+    </g>
+    <rect x="44" y="66" width="48" height="30" rx="1.5" fill="none" stroke="#5B8AD6" stroke-width="2.2"/>
+    <path d="M38 96 L98 96 L102 100 L34 100 Z" fill="#5B8AD6"/>
+  </g>
+    <g data-person="user-standing" data-gesture="open" data-blink="0"><path d="M131 102.79 L131 126.33 L139 126.67 L141 103.21 Z" fill="#18214A"/><path d="M131.01 126.7 L132.7 146.57 L139.3 146.23 L138.99 126.3 Z" fill="#18214A"/><circle cx="136" cy="103" r="5" fill="#18214A"/><circle cx="135" cy="126.5" r="4" fill="#18214A"/><circle cx="136" cy="146.4" r="3.3" fill="#18214A"/>
+    <path d="M141.11 103.28 L143.41 126.22 L151.79 125.78 L151.69 102.72 Z" fill="#1F2A5A"/><path d="M143.4 126.08 L144.5 146.47 L151.5 146.33 L151.8 125.92 Z" fill="#1F2A5A"/><circle cx="146.4" cy="103" r="5.3" fill="#1F2A5A"/><circle cx="147.6" cy="126" r="4.2" fill="#1F2A5A"/><circle cx="148" cy="146.4" r="3.5" fill="#1F2A5A"/>
+    <path d="M148.6 108 L148.2 144" stroke="#18214A" stroke-width=".7" opacity=".7"/>
+    <path d="M144.4 127 q2 1.4 4.4 0.4" fill="none" stroke="#18214A" stroke-width=".8" stroke-linecap="round"/><path d="M131.6 145 C131.6 143.6 133 143.2 134.39999999999998 143.6 L139.6 144.6 C143.6 145.4 145.6 146.8 145.79999999999998 149.4 L145.79999999999998 150.6 L131.6 150.6 Z" fill="#D48E2E"/>
+    <path d="M131.39999999999998 150.8 H146" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round"/><path d="M143.6 145 C143.6 143.6 145 143.2 146.39999999999998 143.6 L151.6 144.6 C155.6 145.4 157.6 146.8 157.79999999999998 149.4 L157.79999999999998 150.6 L143.6 150.6 Z" fill="#E9A23B"/>
+    <path d="M143.39999999999998 150.8 H158" stroke="#FFFFFF" stroke-width="1.6" stroke-linecap="round"/><g transform="rotate(0.15 142 150)"><g transform="translate(142 104) scale(1 1.01) translate(-142 -104)"><path d="M127.95 71.39 L125.74 87.06 L132.26 88.14 L135.25 72.61 Z" fill="#4F82DD"/><path d="M125.77 88.26 L128.56 99.98 L134.24 98.82 L132.23 86.94 Z" fill="#4F82DD"/><circle cx="131.6" cy="72" r="3.7" fill="#4F82DD"/><circle cx="129" cy="87.6" r="3.3" fill="#4F82DD"/><circle cx="131.4" cy="99.4" r="2.9" fill="#4F82DD"/><path d="M127.83 97.91 L128.26 100.04 L134.54 98.76 L134.1 96.64 Z" fill="#3E6FD1"/><circle cx="130.97" cy="97.28" r="3.2" fill="#3E6FD1"/><circle cx="131.4" cy="99.4" r="3.2" fill="#3E6FD1"/><g transform="translate(131.4 99.4) rotate(95) scale(1)"><path d="M-0.4 -3 C2.4 -3.8 6 -3.8 7.8 -2.4 C9.2 -1.2 9.2 1.6 7.8 2.8 C6 4.2 2.4 4 -0.4 3 Z" fill="#D9876B"/>
+      <path d="M1.4 -2.8 C2.2 -4.4 4.2 -4.8 5.2 -4.2 C5.8 -3.8 5.2 -3 4 -2.6 Z" fill="#D9876B"/>
+      <path d="M6.2 -1.6 h2.2 M6.4 0.4 h2.4 M6.2 2.2 h2" stroke="#D9876B" stroke-width=".5" stroke-linecap="round"/></g><path d="M128 104.6 C126.2 93 126.6 79 130.6 71.4 C133.6 66.4 139 64.6 144 64.8 C150 65 154.6 68.4 156.2 73.6 C158 81 158.4 94 156.6 104.6 Z" fill="#5B8FE8"/>
+    <path d="M128 104.6 C126.2 93 126.6 79 130.6 71.4 C131.8 69.4 133.2 68 134.8 67 C132 76 131.6 92 133 104.6 Z" fill="#4F82DD"/>
+    <path d="M141 81 q1.6 9 0 17" fill="none" stroke="#3E6FD1" stroke-width="1.1" stroke-linecap="round"/>
+    <rect x="128" y="100.8" width="28.6" height="4" rx="1.8" fill="#3E6FD1"/><path d="M137.2 65.6 L140.6 70.2 L142.4 66.6 Z M147.8 65.2 L144.6 70 L142.8 66.6 Z" fill="#FFFFFF"/>
+    <path d="M136 66.2 C138.6 70.6 146 70.6 148.8 65.8" fill="none" stroke="#3E6FD1" stroke-width="1.6" stroke-linecap="round"/><path d="M138.8 57.2 L145.4 57.2 L146 66.6 L138.2 66.6 Z" fill="#D9876B"/><g transform="rotate(0 142 57)">
+    <path d="M133.8 49 C133.6 42.2 138.4 39.4 142.6 39.6 C147.6 39.8 150.4 43.4 150.4 48.4 C150.4 53.6 147.4 57.6 142.6 57.6 C137.8 57.6 134 54.4 133.8 49 Z" fill="#EFA486"/>
+    <path d="M136.4 47.6 C134.2 46.8 133.2 50 134.8 51.8 C135.6 52.8 137.2 52.4 137.4 51.2 Z" fill="#D9876B"/>
+    <path d="M150 46.6 C152.4 48 152.6 50 150.2 50.8 Z" fill="#EFA486"/>
+    <path d="M144.8 44.4 q1.6 -1 3.2 0" fill="none" stroke="#1F2A5A" stroke-width=".9" stroke-linecap="round"/>
+    <path d="M145.4 47.6 q1.5 -1.6 3 0" fill="none" stroke="#16226A" stroke-width="1" stroke-linecap="round"/><path d="M145.8 53.2 q1.8 1.3 3.6 0" fill="none" stroke="#B5654F" stroke-width=".95" stroke-linecap="round"/>
+    <ellipse cx="146.2" cy="50.8" rx="1.5" ry=".8" fill="#F7AFBA" opacity=".6"/>
+    
+    <path d="M133.2 49.6 C131.4 41.4 136 35.4 143 35.6 C148.8 35.8 152.6 38.6 152.4 43 C150.2 41.6 147 41.4 144.8 42.4 C143.4 43.2 142.6 44.6 142 46.2 C141 45.4 139.4 45.4 138.6 46.6 C137.8 47.8 138 49.6 137.4 51.6 C136.6 53.6 134.2 53.4 133.2 49.6 Z" fill="#1F2A5A"/>
+      <path d="M137 38.6 C139.8 36.6 145 36.2 149 38.2" fill="none" stroke="#33438A" stroke-width="1.1" stroke-linecap="round"/></g><path d="M148.73 73.73 L158.15 87.26 L163.85 83.54 L155.27 69.47 Z" fill="#5B8FE8"/><path d="M163.1 88.07 L172.26 80.36 L168.54 75.64 L158.9 82.73 Z" fill="#5B8FE8"/><circle cx="152" cy="71.6" r="3.9" fill="#5B8FE8"/><circle cx="161" cy="85.4" r="3.4" fill="#5B8FE8"/><circle cx="170.4" cy="78" r="3" fill="#5B8FE8"/><path d="M170.75 81.92 L172.44 80.59 L168.36 75.41 L166.67 76.74 Z" fill="#3E6FD1"/><circle cx="168.71" cy="79.33" r="3.3" fill="#3E6FD1"/><circle cx="170.4" cy="78" r="3.3" fill="#3E6FD1"/>
+       <path d="M159.4 87 l2.6 2" stroke="#3E6FD1" stroke-width=".9" stroke-linecap="round"/>
+       <g transform="translate(170.4 78) rotate(-44.21) scale(1.05)"><path d="M0 -2.4 C2.6 -3 5.4 -3.4 7.6 -2.8 C8.6 -2.4 8.6 -1.2 7.6 -1 L5.8 -0.8 C7.4 -0.6 8.8 0 8.6 1 C8.4 1.8 7.2 1.8 5.6 1.6 C6.8 2 7.4 2.8 6.8 3.4 C6.2 3.9 4.6 3.6 3 3.2 C1.6 3 0.6 2.8 0 2.4 Z" fill="#EFA486"/>
+      <path d="M1.8 -2.2 C2.4 -4.6 4.2 -5.8 5.4 -5.2 C6.2 -4.8 5.6 -3.6 4.2 -2.6 Z" fill="#EFA486"/></g></g></g></g>
+    <g data-person="evaluator" data-blink="0" transform="translate(377 0) scale(-1 1)">
+    <path d="M131 102.79 L131 126.33 L139 126.67 L141 103.21 Z" fill="#D2BE97"/><path d="M131.01 126.7 L132.7 146.57 L139.3 146.23 L138.99 126.3 Z" fill="#D2BE97"/><circle cx="136" cy="103" r="5" fill="#D2BE97"/><circle cx="135" cy="126.5" r="4" fill="#D2BE97"/><circle cx="136" cy="146.4" r="3.3" fill="#D2BE97"/>
+    <path d="M141.11 103.28 L143.41 126.22 L151.79 125.78 L151.69 102.72 Z" fill="#E8D6B5"/><path d="M143.4 126.08 L144.5 146.47 L151.5 146.33 L151.8 125.92 Z" fill="#E8D6B5"/><circle cx="146.4" cy="103" r="5.3" fill="#E8D6B5"/><circle cx="147.6" cy="126" r="4.2" fill="#E8D6B5"/><circle cx="148" cy="146.4" r="3.5" fill="#E8D6B5"/>
+    <path d="M148.6 108 L148.2 144" stroke="#D2BE97" stroke-width=".7" opacity=".7"/>
+    <path d="M144.4 127 q2 1.4 4.4 0.4" fill="none" stroke="#D2BE97" stroke-width=".8" stroke-linecap="round"/><path d="M131.6 145 C131.6 143.6 133 143.2 134.39999999999998 143.6 L139.6 144.6 C143.6 145.4 145.6 146.8 145.79999999999998 149.4 L145.79999999999998 150.6 L131.6 150.6 Z" fill="#2C2F5E"/>
+    <path d="M131.39999999999998 150.8 H146" stroke="#1B1D3D" stroke-width="1.6" stroke-linecap="round"/><path d="M143.6 145 C143.6 143.6 145 143.2 146.39999999999998 143.6 L151.6 144.6 C155.6 145.4 157.6 146.8 157.79999999999998 149.4 L157.79999999999998 150.6 L143.6 150.6 Z" fill="#3B3F78"/>
+    <path d="M143.39999999999998 150.8 H158" stroke="#1B1D3D" stroke-width="1.6" stroke-linecap="round"/><g transform="rotate(-0.06 142 150)"><g transform="translate(142 104) scale(1 1.01) translate(-142 -104)"><path d="M127.95 71.39 L125.74 87.06 L132.26 88.14 L135.25 72.61 Z" fill="#286D60"/><path d="M125.77 88.26 L128.56 99.98 L134.24 98.82 L132.23 86.94 Z" fill="#286D60"/><circle cx="131.6" cy="72" r="3.7" fill="#286D60"/><circle cx="129" cy="87.6" r="3.3" fill="#286D60"/><circle cx="131.4" cy="99.4" r="2.9" fill="#286D60"/><path d="M127.83 97.91 L128.26 100.04 L134.54 98.76 L134.1 96.64 Z" fill="#24695B"/><circle cx="130.97" cy="97.28" r="3.2" fill="#24695B"/><circle cx="131.4" cy="99.4" r="3.2" fill="#24695B"/><g transform="translate(131.4 99.4) rotate(95) scale(1)"><path d="M-0.4 -3 C2.4 -3.8 6 -3.8 7.8 -2.4 C9.2 -1.2 9.2 1.6 7.8 2.8 C6 4.2 2.4 4 -0.4 3 Z" fill="#AE7155"/>
+      <path d="M1.4 -2.8 C2.2 -4.4 4.2 -4.8 5.2 -4.2 C5.8 -3.8 5.2 -3 4 -2.6 Z" fill="#AE7155"/>
+      <path d="M6.2 -1.6 h2.2 M6.4 0.4 h2.4 M6.2 2.2 h2" stroke="#AE7155" stroke-width=".5" stroke-linecap="round"/></g><path d="M128 104.6 C126.2 93 126.6 79 130.6 71.4 C133.6 66.4 139 64.6 144 64.8 C150 65 154.6 68.4 156.2 73.6 C158 81 158.4 94 156.6 104.6 Z" fill="#2F7D6D"/>
+    <path d="M128 104.6 C126.2 93 126.6 79 130.6 71.4 C131.8 69.4 133.2 68 134.8 67 C132 76 131.6 92 133 104.6 Z" fill="#286D60"/>
+    <path d="M145.6 68 L146.6 104.6" stroke="#24695B" stroke-width="1"/>
+      <circle cx="147.8" cy="78" r=".9" fill="#CFE7DF"/><circle cx="148" cy="85.4" r=".9" fill="#CFE7DF"/><circle cx="148.2" cy="92.8" r=".9" fill="#CFE7DF"/>
+    <rect x="128" y="100.8" width="28.6" height="4" rx="1.8" fill="#24695B"/><path d="M137.2 65.6 L140.6 70.2 L142.4 66.6 Z M147.8 65.2 L144.6 70 L142.8 66.6 Z" fill="#FFFFFF"/>
+    <path d="M136 66.2 C138.6 70.6 146 70.6 148.8 65.8" fill="none" stroke="#24695B" stroke-width="1.6" stroke-linecap="round"/><path d="M138.8 57.2 L145.4 57.2 L146 66.6 L138.2 66.6 Z" fill="#AE7155"/><g transform="rotate(0 142 57)">
+    <path d="M133.8 49 C133.6 42.2 138.4 39.4 142.6 39.6 C147.6 39.8 150.4 43.4 150.4 48.4 C150.4 53.6 147.4 57.6 142.6 57.6 C137.8 57.6 134 54.4 133.8 49 Z" fill="#C98A6B"/>
+    <path d="M136.4 47.6 C134.2 46.8 133.2 50 134.8 51.8 C135.6 52.8 137.2 52.4 137.4 51.2 Z" fill="#AE7155"/>
+    <path d="M150 46.6 C152.4 48 152.6 50 150.2 50.8 Z" fill="#C98A6B"/>
+    <path d="M144.8 44.4 q1.6 -1 3.2 0" fill="none" stroke="#5A3A26" stroke-width=".9" stroke-linecap="round"/>
+    <circle cx="146.8" cy="47" r=".95" fill="#16226A"/><path d="M145.8 53.2 q1.8 1.3 3.6 0" fill="none" stroke="#B5654F" stroke-width=".95" stroke-linecap="round"/>
+    <ellipse cx="146.2" cy="50.8" rx="1.5" ry=".8" fill="#F7AFBA" opacity=".6"/>
+    <circle cx="146.8" cy="47.2" r="2.4" fill="none" stroke="#16226A" stroke-width=".7"/><path d="M144.4 47 L137.4 47.4" stroke="#16226A" stroke-width=".55"/>
+    <path d="M133.6 49.4 C131.8 42 135.8 36.4 142.6 36.4 C148.6 36.4 152.4 39.6 152 43.6 C149 42.2 145.6 42 143.4 43 C141.8 43.8 141 45.6 140.2 47.4 C139 46.6 137.6 46.8 137 48.2 C136.4 49.8 136.6 51.6 136 53 C135 54.2 134 52.6 133.6 49.4 Z" fill="#5A3A26"/>
+      <circle cx="134.6" cy="41.6" r="3.2" fill="#5A3A26"/><circle cx="138.4" cy="37.6" r="3.4" fill="#5A3A26"/><circle cx="143.4" cy="36" r="3.4" fill="#5A3A26"/><circle cx="148.4" cy="37.4" r="3.1" fill="#5A3A26"/><circle cx="151.6" cy="40.8" r="2.6" fill="#5A3A26"/><circle cx="133.6" cy="46.4" r="2.6" fill="#5A3A26"/><circle cx="135.4" cy="51" r="2.2" fill="#5A3A26"/>
+      <path d="M137.4 37.8 q2.6 -1.6 5.2 -0.6 M143.8 36.6 q2.6 -0.4 4.6 1.2" fill="none" stroke="#7A5338" stroke-width=".9" stroke-linecap="round"/></g><g transform="translate(0 0) rotate(-6 162 89)">
+    <rect x="155" y="78" width="15" height="20" rx="1.6" fill="#FDF6E3" stroke="#D9C9A0" stroke-width=".8"/>
+    <rect x="159.5" y="76.4" width="6" height="3" rx="1" fill="#9AA3B5"/>
+    <path d="M163.6 84 h4.4 M163.6 88.6 h4.4 M163.6 93.2 h3" stroke="#D9C9A0" stroke-width="1" stroke-linecap="round"/><path d="M160.6 83.6 l1.2 1.2 l2.2 -2.4" fill="none" stroke="#22C55E" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M160.6 88.19999999999999 l1.2 1.2 l2.2 -2.4" fill="none" stroke="#22C55E" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/><path d="M160.6 92.8 l1.2 1.2 l2.2 -2.4" fill="none" stroke="#22C55E" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></g><path d="M148.1 71.45 L148 86.87 L154.8 87.13 L155.9 71.75 Z" fill="#2F7D6D"/><path d="M149.63 89.9 L157.04 93.96 L160.16 88.84 L153.17 84.1 Z" fill="#2F7D6D"/><circle cx="152" cy="71.6" r="3.9" fill="#2F7D6D"/><circle cx="151.4" cy="87" r="3.4" fill="#2F7D6D"/><circle cx="158.6" cy="91.4" r="3" fill="#2F7D6D"/><path d="M155.58 93.42 L156.88 94.22 L160.32 88.58 L159.02 87.79 Z" fill="#24695B"/><circle cx="157.3" cy="90.61" r="3.3" fill="#24695B"/><circle cx="158.6" cy="91.4" r="3.3" fill="#24695B"/>
+       <path d="M149.8 88.6 l2.6 2" stroke="#24695B" stroke-width=".9" stroke-linecap="round"/>
+       <g transform="translate(158.6 91.4) rotate(-38.57) scale(1.05)"><path d="M-0.4 -3 C2.4 -3.8 6 -3.8 7.8 -2.4 C9.2 -1.2 9.2 1.6 7.8 2.8 C6 4.2 2.4 4 -0.4 3 Z" fill="#C98A6B"/>
+      <path d="M1.4 -2.8 C2.2 -4.4 4.2 -4.8 5.2 -4.2 C5.8 -3.8 5.2 -3 4 -2.6 Z" fill="#C98A6B"/>
+      <path d="M6.2 -1.6 h2.2 M6.4 0.4 h2.4 M6.2 2.2 h2" stroke="#AE7155" stroke-width=".5" stroke-linecap="round"/></g></g></g></g>
+    
+    <path transform="translate(78.52 48.13) scale(1.42)" d="M0 3.6 C-4.4 0.6 -4.4 -3.4 -1.6 -3.4 C-0.6 -3.4 0 -2.4 0 -1.8 C0 -2.4 0.6 -3.4 1.6 -3.4 C4.4 -3.4 4.4 0.6 0 3.6 Z" fill="#FF6F86" opacity="0.19"/></g></g>
+    <rect x="-10" y="-10" width="340" height="200" fill="#FFFFFF" opacity="0.7"/>
+    <g transform="translate(160 56) scale(1) translate(-160 -56)"><g data-mark="1"><defs><linearGradient id="mg7" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3A5FE0"/><stop offset="1" stop-color="#16226A"/></linearGradient>
+    <clipPath id="mc8"><rect x="135" y="31" width="50" height="50" rx="12.5"/></clipPath></defs>
+    <rect x="135" y="31" width="50" height="50" rx="12.5" fill="url(#mg7)"/><g clip-path="url(#mc8)"><g data-floro="happy"><g transform="translate(160 91) rotate(0) scale(0.358 0.358) translate(-56 -115)"><svg class="cat m-happy" width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+      <g class="c-body"><defs><radialGradient id="fl6v" cx=".42" cy=".36" r=".68"><stop offset=".6" stop-color="#1A2350" stop-opacity="0"></stop><stop offset="1" stop-color="#1A2350" stop-opacity=".2"></stop></radialGradient>
+        <radialGradient id="fl6s"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".85"></stop><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"></stop></radialGradient></defs>
+      
+      <g class="c-head">
+        <path class="c-fur" d="M50 10 C66 10 78 21 80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 57 115 C39 115 27 112 22 103 C17 94 18 78 19 63 C20 47 20 31 26 21 C32 13 40 10 50 10 Z"></path>
+        <path class="c-shade" d="M80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 62 115 C80 108 90 96 87 82 C84 70 79 58 80 38 Z"></path>
+        <path class="c-vol" d="M50 10 C66 10 78 21 80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 57 115 C39 115 27 112 22 103 C17 94 18 78 19 63 C20 47 20 31 26 21 C32 13 40 10 50 10 Z" fill="url(#fl6v)"></path>
+        <ellipse class="c-shine" cx="36" cy="22" rx="12" ry="7" transform="rotate(-25 36 22)" fill="url(#fl6s)"></ellipse>
+        <path class="c-fin" d="M37 62 Q45 64 49 74 M62 59 Q54 64 49 74 M31 72 Q49 85 69 71"></path>
+        <g class="c-blush"><ellipse cx="33" cy="42" rx="4.2" ry="2.6"></ellipse><ellipse cx="66" cy="42" rx="4.2" ry="2.6"></ellipse></g>
+        <path class="c-whisk" d="M31 41 L22 39.5 M31 43.5 L22 44.5 M68 41 L77 39.5 M68 43.5 L77 44.5"></path>
+        <g class="c-eyes">
+          <g class="e-dot"><circle cx="39" cy="35" r="3.4"></circle> <circle cx="60" cy="35" r="3.4"></circle></g>
+          <g class="e-wide"><circle cx="39" cy="35" r="4.6"></circle><circle class="e-glint" cx="40.4" cy="33.4" r="1.4"></circle> <circle cx="60" cy="35" r="4.6"></circle><circle class="e-glint" cx="61.4" cy="33.4" r="1.4"></circle></g>
+          <g class="e-wow"><circle cx="39" cy="35" r="5.2"></circle><circle class="e-glint" cx="40.6" cy="33.2" r="1.7"></circle><circle class="e-glint" cx="37.4" cy="37" r=".8"></circle> <circle cx="60" cy="35" r="5.2"></circle><circle class="e-glint" cx="61.6" cy="33.2" r="1.7"></circle><circle class="e-glint" cx="58.4" cy="37" r=".8"></circle></g>
+          <path class="e-happy" d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5"></path>
+          <path class="e-closed" d="M35.5 34.5 Q39 38 42.5 34.5 M56.5 34.5 Q60 38 63.5 34.5"></path>
+          <path class="e-blink" d="M35.5 35 L42.5 35 M56.5 35 L63.5 35"></path>
+          <g class="e-heart"><path d="M39 38.6 C34.6 35.6 34.6 31.6 37.4 31.6 C38.4 31.6 39 32.6 39 33.2 C39 32.6 39.6 31.6 40.6 31.6 C43.4 31.6 43.4 35.6 39 38.6 Z"></path> <path d="M60 38.6 C55.6 35.6 55.6 31.6 58.4 31.6 C59.4 31.6 60 32.6 60 33.2 C60 32.6 60.6 31.6 61.6 31.6 C64.4 31.6 64.4 35.6 60 38.6 Z"></path></g>
+          <g class="e-angry"><circle cx="39" cy="35.5" r="3.4"></circle> <circle cx="60" cy="35.5" r="3.4"></circle><path d="M34 28.5 L43 31.5 M65 28.5 L56 31.5"></path></g>
+        </g>
+        <g class="c-snout">
+          <path class="c-nose" d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z"></path>
+          <path class="c-mouth" d="M49.5 41.8 L49.5 43.4 M46 43 Q47.7 45.3 49.5 43.4 Q51.3 45.3 53 43"></path>
+          <ellipse class="c-open" cx="49.5" cy="45" rx="1.8" ry="2.4"></ellipse>
+        </g>
+        
+      </g>
+      </g><g class="s-dots"><circle cx="84" cy="26" r="2.2"></circle><circle cx="90" cy="18" r="3"></circle><circle cx="97" cy="9" r="3.8"></circle></g>
+      <path class="s-spark" d="M97 2 L99.5 10 L107 12.5 L99.5 15 L97 23 L94.5 15 L87 12.5 L94.5 10 Z"></path>
+      <text class="s-q" x="82" y="27">?</text>
+      <g class="s-bang"><circle cx="94" cy="16" r="8"></circle><path d="M94 11 L94 17.5"></path><circle cx="94" cy="21" r="1.6"></circle></g>
+      <path class="s-heart" d="M84 15 C84 10 91 10 91 15 C91 10 98 10 98 15 C98 21 91 24 91 27 C91 24 84 21 84 15 Z"></path>
+      <g class="s-zzz"><text x="80" y="28">z</text><text x="87" y="18">z</text><text x="95" y="7">z</text></g>
+      <path class="s-sweat" d="M80 20 Q76.5 27 80 30 Q83.5 27 80 20 Z"></path>
+      <g class="s-bub"><circle cx="50" cy="100" r="2"></circle><circle cx="60" cy="104" r="1.4"></circle><circle cx="43" cy="105" r="1.6"></circle></g><g class="s-sign"><path class="sg-pole" d="M22 70 L22 104"></path><circle class="sg-board" cx="22" cy="62" r="13"></circle><path class="sg-x" d="M16 56 L28 68 M28 56 L16 68"></path></g></svg></g></g></g></g></g><g transform="translate(160 108) scale(1) translate(-160 -108)"><text data-caption="wordmark" x="160" y="116" text-anchor="middle" font-family="'Bagel Fat One','Gowun Dodum',sans-serif" font-size="25" fill="#16226A">Floe</text></g><text data-caption="tagline" x="160" y="135" text-anchor="middle" font-size="9" fill="#1F2A5A" opacity="1">당신을 위한 코딩 길잡이, Floe와 함께하세요</text></svg>

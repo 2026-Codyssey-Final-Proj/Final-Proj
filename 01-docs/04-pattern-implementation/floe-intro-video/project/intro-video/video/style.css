@@ -1,0 +1,15 @@
+html, body { margin: 0; height: 100%; background: #10131c; color: #e8eefc; font-family: "Gowun Dodum", "Malgun Gothic", sans-serif; }
+#wrap { position: relative; overflow: hidden; }
+#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; transform-origin: 0 0; background: #fff; }
+#stage > svg { display: block; }
+#controls { position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: #1b2030; }
+#controls input { flex: 1; }
+#controls button { font: inherit; padding: 4px 14px; }
+
+/* 찍을 때는 1920×1080 그대로, 조작 막대 없이 */
+html.render, html.render body { background: #fff; overflow: hidden; }
+html.render #controls { display: none; }
+html.render #wrap { width: 1920px; height: 1080px; } /* 미리 보기에선 fit()이 크기를 주지만, 찍을 때는 여기서 — 없으면 높이 0으로 잘려 하얗게 찍힘 */
+
+/* 플로로의 CSS 움직임(seal.css)은 끈다 — 모든 움직임은 시간 t로 직접 계산해야 프레임이 늘 같게 찍힌다 */
+#stage .cat, #stage .cat * { animation: none !important; transition: none !important; }
