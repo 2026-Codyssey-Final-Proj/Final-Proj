@@ -15,6 +15,7 @@
 | [`website/`](website/README.md) | Floe 소개 웹사이트 초안 — 고른 방향은 '웹-1 플로로 그림책'(2026-10-30 C-1에서 이름 바꿈, 결정 모음 X-11 <!-- claude-drafted: 2026-10-30 -->)을 파스텔로 낮춘 한 페이지, 고르기까지의 캔버스도 (2026-10-21, 제품 코드는 그대로) |
 | [`stage-storyboard/`](stage-storyboard/README.md) | 0~8단계 스토리보드 디자인 첫 판 — test-1(이재엽이 Floe로 만든 저장소)을 따라 장면마다 화면 그림 · 다섯 칸 · 본 틈 → 이어져야, '언제 성공' 실 하나, 섬 자리 · 크기 · 캔버스 다시 배치 눌러 보기 (2026-10-26, 제품 코드는 그대로) |
 | [`presentation-story.md`](presentation-story.md) | 10분 발표 스토리 · 슬라이드 구성안 초안 — 시간표 · 평가 배점 대응 · 비어 있는 칸 (2026-10-24, KAN-14, 슬라이드 파일은 아직 없음) |
+| [`floe-intro-video/`](floe-intro-video/README.md) | 최종 발표 첫머리 40초 소개 영상 2차 판 — 완성 영상 · 스토리보드 · 장면 SVG · 만든 코드 (2026-11-06, 고한결). 레퍼런스 원본은 라이선스 때문에 넣지 않음 |
 | [`onboarding-scene-additions.md`](onboarding-scene-additions.md) | 처음 한 바퀴 장면 열둘마다 더할 것 [제안] — UI/UX 초안 (2026-10-24, 고한결 몫, 고르는 사람 이재엽) |
 | [`onboarding-storyboard.md`](onboarding-storyboard.md) · [그림판](onboarding-storyboard.html) | 첫 5분 스토리보드 초안 — 한 줄 적기 → AI 없이 LV 0 · 첫 경험치 → 그다음 Claude 연결 (2026-10-20, KAN-55, 제품 코드는 그대로) |
 

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="1920" height="1080" data-scene="1a" data-t="1.500" font-family="'Gowun Dodum','Malgun Gothic',sans-serif"><style><![CDATA[/* claude-drafted: 2026-10-17 — 플로로의 그림 스타일과 움직임. 내비게이터 · 서고 · 지식 은하가 같이 쓴다.
+   app.css에 있던 꼬리 · 잠 · 살핌 · 깜짝을 옮기고, 물범다운 움직임(꼬리 흔들기 · 숨쉬기 · 지느러미 박수 · 헤엄 · 배로 통통)을 더했다.
+   그림은 seal.js, 언제 움직이는지는 app.js(헤엄) · library.js(배로 통통).
+   그림 스타일(색 · 표정 · 상태 표시)도 2026-10-17에 app.css · library.css의 같은 사본 둘을 여기 하나로 모았다.
+   페이지 CSS보다 먼저 읽는다 — 페이지마다 다른 것(테두리 없애기 등)은 페이지 CSS가 덮는다. */
+:root{--seal:#EEF5FD;--seal-shade:#E0EBF8;--seal-line:#C8DAEE;--seal-fin:#B5D1EE;--seal-ink:#1A2350}
+.cat{flex:none;overflow:visible;display:block}
+.cat .c-fur{fill:var(--seal);stroke:var(--seal-line);stroke-width:1.5}
+.cat .c-shade{fill:var(--seal-shade)}
+.cat .c-fin{fill:none;stroke:var(--seal-fin);stroke-width:3.2;stroke-linecap:round}
+.cat .c-tail ellipse{fill:var(--seal-fin)}
+.cat .c-paws ellipse{fill:var(--seal);stroke:var(--seal-fin);stroke-width:1.5}
+.cat .c-blush ellipse{fill:#F7AFBA;opacity:0;transition:opacity .2s}   /* 평소엔 없고, 기쁘거나 잘 때만 */
+.cat .c-whisk{fill:none;stroke:var(--seal-ink);stroke-width:1.1;stroke-linecap:round}   /* 늘 보인다(2026-10-17) — 아주 작을 때(.small)만 뺀다 */
+.cat .c-nose{fill:var(--seal-ink)}
+.cat .c-mouth{fill:none;stroke:var(--seal-ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.cat .c-open{fill:#B4505F;display:none}
+.cat .c-eyes circle{fill:var(--seal-ink)}
+.cat .c-eyes .e-glint{fill:#FFFFFF}
+.cat .c-eyes path{fill:none;stroke:var(--seal-ink);stroke-width:2.2;stroke-linecap:round}
+.cat .c-eyes .e-heart path{fill:#FF5D73;stroke:none}
+.cat .s-dots circle{fill:#8FA9D6}.cat .s-spark{fill:#F5A524}.cat .s-heart{fill:#FF6F86}
+.cat .s-q{font:800 22px -apple-system,sans-serif;fill:var(--seal-q,#2F6BFF)}
+.cat .s-bang circle{fill:#F5A524}.cat .s-bang path{stroke:#fff;stroke-width:3;stroke-linecap:round}.cat .s-bang circle:last-child{fill:#fff}
+.cat .s-zzz text{font:800 10px -apple-system,sans-serif;fill:var(--seal-zz,#7C8BA8)}
+.cat .s-zzz text:nth-child(2){font-size:12px}.cat .s-zzz text:nth-child(3){font-size:15px}
+.cat .s-sweat{fill:#7FB3FF}
+/* X 표지판(C-19, 2026-10-20) — 막을 때 손에 든다. 움직임 줄이기면 흔들지 않고 들고만 있다 */
+.cat .s-sign .sg-pole{fill:none;stroke:#8C6B3F;stroke-width:3;stroke-linecap:round}.cat .s-sign .sg-board{fill:#FF4D4D;stroke:#fff;stroke-width:2.2}.cat .s-sign .sg-x{fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round}
+.cat .c-eyes>*,.cat [class^="s-"]{display:none}
+.m-idle .e-dot,.m-look .e-dot,.m-think .e-dot,.m-alert .e-wide,.m-wow .e-wow,.m-happy .e-happy,.m-done .e-happy,
+.m-love .e-heart,.m-purr .e-closed,.m-sleep .e-closed,.m-yawn .e-closed{display:inline}
+.m-look .s-dots,.m-done .s-spark,.m-think .s-q,.m-alert .s-bang,.m-love .s-heart,.m-purr .s-heart,.m-sleep .s-zzz{display:inline}
+.cat.oops .s-sweat{display:inline}.cat.oops .s-q{display:none}
+.m-angry .e-angry,.m-angry .s-sign{display:inline}.m-angry .c-mouth{display:none}.m-angry .c-open{display:inline}   /* C-19 화난 눈 · X 표지판 — 숨기는 규칙(위) 뒤에 둔다 */
+.m-yawn .c-mouth,.m-wow .c-mouth,.m-alert .c-mouth{display:none}
+.m-yawn .c-open,.m-wow .c-open,.m-alert .c-open{display:inline}
+.m-love .c-blush ellipse,.m-purr .c-blush ellipse,.m-happy .c-blush ellipse,.m-done .c-blush ellipse,.m-sleep .c-blush ellipse{opacity:.8}
+.m-look .e-dot,.m-think .e-dot{transform:translateY(-2px)}   /* 생각: 두 눈이 평소 눈 그대로 위를 본다(F-147, 전에는 한쪽 눈이 사선) */
+.small .c-mouth,.small .c-open,.small .c-fin,.small .c-whisk{display:none}
+.blink .m-idle .e-dot,.blink .m-look .e-dot,.blink .m-think .e-dot{display:none}
+.blink .m-idle .e-blink,.blink .m-look .e-blink,.blink .m-think .e-blink{display:inline}
+
+
+.cat .s-bub circle { fill: rgba(169, 221, 255, .35); stroke: #CDE6FF; stroke-width: .8; }
+/* 꾸미기(F-148) — 그림은 seal.js의 WEAR, 머리 그룹 안에 있어 플로로의 움직임을 그대로 받는다. 기준점은 닿는 자리 */
+.cat .w-move, .cat .w-tail { transform-origin: 50px 13px; }
+.cat .w-neck { transform-origin: 50px 52px; --a: 1.2deg; }
+.face .c-fin { display: none; }   /* 얼굴만 그릴 때(접힌 알약) 가슴의 지느러미 선이 턱 밑에 걸리지 않게 */
+/* 숨구멍(물웅덩이) — 웅덩이와 물의 색은 seal.js의 그러데이션에, 선만 여기에 */
+.cat .h-stars circle { fill: #FFFFFF; opacity: .7; }
+.cat .h-line, .cat .h-ripple { fill: none; stroke: #EAF4FF; stroke-linecap: round; }
+.cat .h-line { stroke-width: 1.6; opacity: .7; } .cat .h-ripple { stroke-width: 1; opacity: .4; }
+
+/* '움직임 줄이기'를 켠 사람에게는 하지 않는다 */
+@media (prefers-reduced-motion: no-preference) {
+  /* 꼬리 — 평소엔 느리게 살랑, 살필 땐 조금 빠르게, 기쁘면 파닥파닥, 잘 땐 멈춤 */
+  .cat .c-tail { transform-origin: 92px 108px; animation: sway 3.2s ease-in-out infinite; }
+  .m-look .c-tail, .m-alert .c-tail { animation-duration: 1.1s; }
+  .m-happy .c-tail, .m-done .c-tail, .m-love .c-tail, .m-purr .c-tail { animation: wag .32s ease-in-out infinite alternate; }
+  .m-sleep .c-tail, .m-yawn .c-tail { animation: none; }
+
+  /* 숨쉬기 — 깨어 있을 땐 살짝, 잘 땐 크게 */
+  .cat .c-body { transform-origin: 55px 112px; animation: breath 4.2s ease-in-out infinite; }
+  .hole .c-body { transform-origin: 55px 60px; animation: float 5s ease-in-out infinite; }   /* 숨구멍에서는 물결 따라 둥실 */
+  .m-sleep .c-body { animation: breathe 3.4s ease-in-out infinite; }
+  .m-sleep .s-zzz text { animation: zz 2.6s ease-in-out infinite; }
+  .m-sleep .s-zzz text:nth-child(2) { animation-delay: .35s; } .m-sleep .s-zzz text:nth-child(3) { animation-delay: .7s; }
+
+  /* 앞지느러미 박수 — 기쁠 때 · 다 했을 때 · 깜짝 놀랐을 때 몇 번 */
+  .m-happy .c-fin, .m-done .c-fin, .m-wow .c-fin { transform-origin: 49px 72px; animation: flap .16s ease-in-out 6 alternate; }
+
+  /* 숨구멍에서 물 위로 얼굴 내밀기(2026-10-17) — 표정이 바뀌면 저절로. 물방울(s-bub)이 같이 오른다
+     빼꼼 솟기: 깜짝 · 알림 / 코까지 잠수: 생각 · 살펴보는 중 / 물 뿜기: 다 했을 때 (두리번은 app.js가 고개만 돌린다) */
+  .hole.m-wow .c-body, .hole.m-alert .c-body { animation: popup 1s ease-out; }
+  .hole.m-think .c-body, .hole.m-look .c-body { animation: dip 3s ease-in-out infinite; }
+  .hole.m-wow .s-bub, .hole.m-alert .s-bub, .hole.m-think .s-bub, .hole.m-look .s-bub, .hole.m-done .s-bub, .swim .cat .s-bub { display: inline; }
+  .cat .s-bub circle { animation: rise 1.3s ease-in infinite; }
+  .cat .s-bub circle:nth-child(2) { animation-delay: .45s; } .cat .s-bub circle:nth-child(3) { animation-delay: .9s; }
+
+  .m-look .s-dots { animation: blinkdot 1s infinite; }
+  .cat.m-wow { animation: jump .4s ease; }
+  .m-angry .s-sign { transform-origin: 22px 104px; animation: wave-sign .5s ease-in-out 4 alternate; }   /* 표지판 흔들기 — 네 번 */
+
+  /* 헤엄 — 숨구멍 안에서 머리만 내놓고 이리저리 헤엄치다 쏙 잠수하고 뿅 올라온다. 부르는 쪽이 감싼 요소에 .swim을 붙인다 */
+  .swim .cat .c-body { transform-origin: 55px 60px; animation: swim 3.6s ease-in-out; }   /* 표정 동작보다 앞선다 */
+
+  /* 배로 통통 — 물범이 땅에서 걷는 법(배로 튀며 나아간다). 부르는 쪽이 감싼 요소에 .galumph를 붙인다 */
+  .galumph svg.cat { transform-origin: 50% 100%; animation: galumph 1.4s ease-in-out; }
+
+  /* 꾸미기(F-148) — 물결 따라 둥실(float 5초)보다 조금 늦게 따라오고, 표정에 작게 반응한다. 목도리는 조금만 흔들린다 */
+  .cat .w-move { animation: w-lag 5s ease-in-out infinite; }
+  .m-think .w-hat { --t: 9deg; animation: w-tilt 3s ease-in-out infinite; }
+  .m-look .w-hat { --t: -7deg; animation: w-tilt 3s ease-in-out infinite; }
+  .m-happy .w-hat, .m-done .w-hat { animation: w-hop .3s ease-out 4 alternate, w-lag 5s ease-in-out 1.2s infinite; }
+  .m-wow .w-hat, .m-alert .w-hat { animation: w-pop 1s ease-out, w-lag 5s ease-in-out 1s infinite; }
+  .m-sleep .w-hat, .m-yawn .w-hat { animation: w-doze 3.4s ease-in-out infinite; }
+  .cat .w-tail { animation: w-tail 2.6s ease-in-out infinite; }
+  .cat .w-tail.r { animation-delay: -1.3s; }
+  /* 받는 순간 — 위에서 떨어져 머리가 살짝 눌린다. 부르는 쪽(gachaRoll)이 그림에 .landing을 잠깐 붙인다. 표정 움직임보다 앞선다 */
+  .cat.landing .w-move { animation: w-drop .62s cubic-bezier(.23, 1, .32, 1); }
+  .cat.landing .c-body { animation: w-squash .62s ease-out; }
+}
+/* F-46(2026-10-20): 보이지 않을 때는 무한 움직임(꼬리 · 숨쉬기 · 물방울 · z)을 멈춘다 — 띠로 접혔을 때(html[data-ui="hidden"]) · 창이 가려졌을 때(.page-hidden) */
+html[data-ui="hidden"] .cat *, html.page-hidden .cat * { animation-play-state: paused; }
+@keyframes sway { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-14deg); } }
+@keyframes wag { from { transform: rotate(10deg); } to { transform: rotate(-18deg); } }
+@keyframes breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.012, .992); } }
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025, .985); } }
+@keyframes zz { 0%, 100% { opacity: .25; transform: translateY(2px); } 50% { opacity: 1; transform: translateY(-2px); } }
+@keyframes blinkdot { 50% { opacity: .25; } }
+@keyframes jump { 0%, 100% { transform: none; } 40% { transform: translateY(-8px); } }
+@keyframes wave-sign { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+@keyframes w-lag { 0%, 100% { transform: none; } 38% { transform: rotate(var(--a, 3.5deg)); } 78% { transform: rotate(calc(var(--a, 3.5deg) * -1)); } }
+@keyframes w-tilt { 0%, 100% { transform: rotate(calc(var(--t) * .4)); } 50% { transform: rotate(var(--t)) translateY(.6px); } }
+@keyframes w-hop { to { transform: translateY(-3px) rotate(5deg); } }
+@keyframes w-pop { 45% { transform: translateY(-6px) rotate(-6deg); } 70% { transform: translateY(1px) scale(1.08, .9); } }
+@keyframes w-doze { 0%, 100% { transform: translate(3px, 1.5px) rotate(12deg); } 50% { transform: translate(3.4px, 2.2px) rotate(15deg); } }
+@keyframes w-tail { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(6deg); } }
+@keyframes w-drop { 0% { transform: translateY(-44px) rotate(-14deg); opacity: 0; } 15% { opacity: 1; } 55% { transform: scale(1.1, .86); } 78% { transform: translateY(-3px) scale(.97, 1.05); } 100% { transform: none; } }
+@keyframes w-squash { 0%, 45% { transform: none; } 58% { transform: scale(1.05, .93); } 78% { transform: scale(.98, 1.03); } 100% { transform: none; } }
+@keyframes flap { to { transform: scale(1.12, .9) translateY(-1px); } }
+/* 숨구멍의 몸은 1.12배로 그려져 있어 아래 칸 수는 그 안의 칸이다 — 물 아래(그림 y 110)로 사라지려면 72칸 넘게 내려간다 */
+@keyframes float { 0%, 100% { transform: none; } 30% { transform: translateY(-1.5px) rotate(-3deg); } 70% { transform: translateY(1px) rotate(3deg); } }
+@keyframes popup { 0% { transform: translateY(15px); } 50% { transform: translateY(-13px) scale(.97, 1.04); } 75% { transform: translateY(2px); } 100% { transform: none; } }
+@keyframes dip { 0%, 100% { transform: translateY(3px); } 50% { transform: translateY(10px); } }
+@keyframes swim {
+  0% { transform: none; }
+  14% { transform: translate(0, 19px); }
+  32% { transform: translate(-14px, 21px) rotate(-9deg); }
+  52% { transform: translate(13px, 19px) rotate(9deg); }
+  64% { transform: translate(0, 21px); }
+  76% { transform: translate(0, 82px); }
+  90% { transform: translate(0, -6px) scale(.97, 1.05); }
+  100% { transform: none; }
+}
+@keyframes rise { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px); } }
+@keyframes galumph {
+  0%, 100% { transform: none; }
+  10% { transform: scale(1.08, .9); }
+  22% { transform: translateY(-16px) scale(.94, 1.08) rotate(-3deg); }
+  34% { transform: scale(1.1, .88); }
+  46% { transform: translateY(-12px) scale(.95, 1.06) rotate(-2deg); }
+  58% { transform: scale(1.08, .9); }
+  70% { transform: translateY(-7px) scale(.97, 1.04); }
+  82% { transform: scale(1.04, .96); }
+}
+
+.cat, .cat * { animation: none !important; transition: none !important; }]]></style><g data-zoom="1.006" transform="translate(160 90) scale(1.006) translate(-162.376 -90.648)"><rect x="-200" y="-200" width="720" height="580" fill="#CDEBFA"/>
+  <path d="M40 150 C20 110 40 50 100 30 C160 10 250 20 285 60 C315 95 305 150 270 170 L60 172 C50 165 45 160 40 150 Z" fill="#E2F4FD"/>
+    <g data-errors="0">
+    <rect x="122" y="22" width="80" height="70" rx="4" fill="#F6F9FC" stroke="#1F2A5A" stroke-width="1.2"/>
+    <path d="M132 34 H170" stroke="#1F2A5A" stroke-width="1"/>
+    <path d="M132 50 H188 M132 58 H178 M132 66 H184" stroke="#C3CCDA" stroke-width="1.6" stroke-linecap="round"/>
+    
+    <rect x="70" y="42" width="88" height="76" rx="4" fill="#FFFFFF" stroke="#1F2A5A" stroke-width="1.2"/>
+    <circle cx="150" cy="50" r="3.6" fill="none" stroke="#1F2A5A" stroke-width="1"/>
+    <rect x="80" y="58" width="22" height="22" fill="#5B8AD6"/>
+    <path d="M108 61 H146 M108 69 H146 M108 77 H132" stroke="#5B8AD6" stroke-width="3" stroke-linecap="round"/>
+    <path d="M80 92 H140 M80 99 H128" stroke="#9AA3B5" stroke-width="1"/>
+    <path d="M80 108 H140" stroke="#9AA3B5" stroke-width="1"/>
+  </g>
+    <g data-laptop="plain">
+    <clipPath id="ls1"><path d="M100 112 L166 106 L170 152 L104 157 Z"/></clipPath>
+    <path d="M100 112 L166 106 L170 152 L104 157 Z" fill="#FFFFFF"/>
+    <g clip-path="url(#ls1)"><path d="M110 118 L146 115 M110 126 L138 123.6 M110 134 L152 130.4" stroke="#9FB4D6" stroke-width="2" stroke-linecap="round"/></g>
+    <path d="M100 112 L166 106 L170 152 L104 157 Z" fill="none" stroke="#5B8AD6" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M104 157 L170 152 L196 158 L128 163 Z" fill="#5B8AD6"/>
+  </g>
+    <g data-desk="1">
+    <rect x="80" y="151" width="11" height="13" rx="2" fill="#F2B33D"/>
+    <path d="M80 154 q-5 0 -5 4 q0 4 5 4" fill="none" stroke="#F2B33D" stroke-width="2"/>
+    <path transform="translate(-0.78 0)" d="M84 146 q-2 -3 0 -6 M88 146 q-2 -3 0 -6" fill="none" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" opacity=".9"/>
+    <path d="M76 164 H268" stroke="#1F2A5A" stroke-width="4" stroke-linecap="round"/>
+    <path d="M96 164 V182" stroke="#1F2A5A" stroke-width="4"/>
+  </g>
+    <g transform="translate(0 0) translate(250 182) scale(1 1) translate(-250 -182)"><g data-person="user" data-pose="chin" data-face="think">
+    <path d="M204.6 114.95 L183.04 154.2 L192.96 159.8 L215.4 121.05 Z" fill="#5B8FE8"/><path d="M193.02 159.7 L227.23 94.28 L218.77 89.72 L182.98 154.3 Z" fill="#5B8FE8"/><circle cx="210" cy="118" r="6.2" fill="#5B8FE8"/><circle cx="188" cy="157" r="5.7" fill="#5B8FE8"/><circle cx="223" cy="92" r="4.8" fill="#5B8FE8"/><path d="M221.19 106.12 L227.49 94.42 L218.51 89.58 L212.21 101.28 Z" fill="#3E6FD1"/><circle cx="216.7" cy="103.7" r="5.1" fill="#3E6FD1"/><circle cx="223" cy="92" r="5.1" fill="#3E6FD1"/>
+    <path d="M191 156 l5 -1.4" stroke="#3E6FD1" stroke-width="1.2" stroke-linecap="round" opacity="1"/><path d="M276.09 113.04 L282.58 146.96 L293.42 145.04 L287.91 110.96 Z" fill="#5B8FE8"/><path d="M283.17 143.37 L271.61 165.61 L280.39 170.39 L292.83 148.63 Z" fill="#5B8FE8"/><circle cx="282" cy="112" r="6" fill="#5B8FE8"/><circle cx="288" cy="146" r="5.5" fill="#5B8FE8"/><circle cx="276" cy="168" r="5" fill="#5B8FE8"/><path d="M273.51 161.5 L271.35 165.46 L280.65 170.54 L282.81 166.58 Z" fill="#3E6FD1"/><circle cx="278.16" cy="164.04" r="5.3" fill="#3E6FD1"/><circle cx="276" cy="168" r="5.3" fill="#3E6FD1"/>
+    <path d="M291 145 l5 -1.4" stroke="#3E6FD1" stroke-width="1.2" stroke-linecap="round" opacity="0"/><path d="M198 182 C196 150 199 124 212 112 C224 102 268 99 283 106 C297 114 303 140 306 182 Z" fill="#5B8FE8"/>
+    <path d="M283 106 C297 114 303 140 306 182 L287 182 C289 150 288 126 279 110 Z" fill="#4F82DD"/>
+    <path d="M230 126 C234 142 234 160 232 176 M276 124 C272 140 272 158 275 174 M250 120 q5 3 10 1" fill="none" stroke="#3E6FD1" stroke-width="1.3" stroke-linecap="round"/><path d="M235 88 L250 88 L253 106 L232 106 Z" fill="#D9876B"/>
+    <path d="M223 105 C232 113 253 113 263 103 C255 99 231 99 223 105 Z" fill="#4A7DDB"/>
+    <path d="M227 104.6 C235 110 251 110 259 103.4" fill="none" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round" opacity=".9"/><g transform="rotate(1.49 243 92)"><ellipse cx="243" cy="74" rx="16" ry="18" fill="#EFA486"/>
+    <path d="M234.3 76 C232.3 79 234.3 84.4 237.5 83.6 C239.9 83 239.9 77 236.9 75.6 Z" fill="#D9876B"/>
+    <path d="M235.9 78.4 q-1 2.2 0.6 3.6" fill="none" stroke="#C7735A" stroke-width=".7" stroke-linecap="round"/><g transform="translate(4.2 0)">
+    <path d="M226.6 75 C221.4 58 230 47.6 244 47.2 C252 47 259.4 50 263.4 56.6 C267.4 63.4 266.6 74 263.6 81.4 C261.6 87 257 91.6 251.6 93 C253.4 85 251.8 77 246 72.6 C240 69 233 70.4 226.6 75 Z" fill="#1F2A5A"/>
+    <path d="M228.4 61 C233 50.4 245.6 46 256 50.6 C250 49 240.4 50.8 234.6 57.2 Z" fill="#33438A"/>
+    <path d="M236 55.4 C242 51.6 251.6 51.4 258.6 55.6" fill="none" stroke="#33438A" stroke-width="1.1" stroke-linecap="round"/>
+  </g><g opacity="1"><path d="M227.6 73.2 Q223.4 76.8 227.8 78.8 Z" fill="#EFA486"/>
+      <path d="M228.4 67.8 q2.4 -1.2 4.8 0" fill="none" stroke="#1F2A5A" stroke-width="1.2" stroke-linecap="round"/><circle cx="230.4" cy="72.6" r="1.35" fill="#16226A"/><path d="M228.8 82.6 h2.8" stroke="#B5654F" stroke-width="1" stroke-linecap="round"/>
+      </g></g><g opacity="1"><g transform="translate(223 92) rotate(-46.7) scale(1.45)"><path d="M-0.4 -3 C2.4 -3.8 6 -3.8 7.8 -2.4 C9.2 -1.2 9.2 1.6 7.8 2.8 C6 4.2 2.4 4 -0.4 3 Z" fill="#EFA486"/>
+      <path d="M1.4 -2.8 C2.2 -4.4 4.2 -4.8 5.2 -4.2 C5.8 -3.8 5.2 -3 4 -2.6 Z" fill="#EFA486"/>
+      <path d="M6.2 -1.6 h2.2 M6.4 0.4 h2.4 M6.2 2.2 h2" stroke="#D9876B" stroke-width=".5" stroke-linecap="round"/></g></g></g></g>
+    </g></svg>
