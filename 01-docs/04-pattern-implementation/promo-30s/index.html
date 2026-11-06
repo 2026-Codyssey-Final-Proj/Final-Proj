@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Floe 30초 홍보영상</title>
+<!-- claude-drafted: 2026-11-06 — 두승현의 요청("30초 버전으로 만들어줘")으로 Claude가 만든 30초 홍보영상의 원본(움직이는 페이지). 5초판(../promo-5s/)은 그대로 두었다.
+     흐름: 빛 한 줄(0~3) → 노트북(3~7) → 길 안내(7~12) → 내가 정함(12~18) → 배움이 남음(18~23) → 큰 글자(23~27) → Floe(27~30).
+     브라우저로 열면 되풀이해 보이고(소리 없이), 주소 끝에 ?t=14 처럼 붙이면 그 순간에 멈춘다. 영상 파일은 node ../promo-5s/make-video.js . 로 굽는다.
+     화면의 말은 지어내지 않았다 — 단계 이름은 navigator.js STAGES, 섬 · 관문 · 한 장의 말은 app/40-quest.js · app/48-sheet.js와 2026-10-30 연습 예시 캡처(after-b-s2 · after-c-s3 · workspace-pill),
+     파일 이름은 그 캡처의 '④ 저장' 칸. 다만 한 장의 '생각 · 정한 것' 줄은 캡처의 긴 글을 이름만 남기고 줄였고, 지도 · 섬 · 한 장은 캡처를 확대하면 뭉개져 앱의 색 · 글꼴로 다시 그렸다.
+     자막 세 줄(길을 잃지 않는다 · 맡기되, 내가 결정한다 · 배움이 남는다)은 시연-한-줄기.md '약속 셋(초안)'의 말이고 팀이 확정한 문구가 아니다.
+     플로로는 제품의 seal.js · seal.css 그대로(생김새는 두승현의 작업물). 소리는 이 페이지가 직접 만든다(renderSound — 받아 온 음원 없음). 서버 · AI를 부르지 않는다. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="../../../02-frontend/navigator/seal.css">
+<style>
+@font-face { font-family: "Bagel Fat One"; src: url("../../../02-frontend/assets/fonts/BagelFatOne-Regular.woff") format("woff"); }
+@font-face { font-family: "Gowun Dodum"; src: url("../../../02-frontend/assets/fonts/GowunDodum-Regular.woff") format("woff"); }
+@font-face { font-family: "NanumGothicCoding"; src: url("../../../02-frontend/assets/fonts/NanumGothicCoding-Regular.woff") format("woff"); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+.stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; transform-origin: 0 0; word-break: keep-all;
+  font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+.cut { position: absolute; inset: 0; overflow: hidden; background: #000; }
+.cat, .cat * { animation: none !important; transition: none !important; }   /* 플로로의 움직임도 아래 스크립트가 시각 t로 정한다 */
+
+/* ── 여러 장면이 같이 쓰는 것: 자막 · 암전 · 커서 · 누름 표시 · 단추 ── */
+.cap { position: absolute; left: 0; right: 0; top: 836px; text-align: center; }
+.cap small { display: block; font-size: 30px; font-weight: 500; color: #8FA0C8; letter-spacing: -.01em; }
+.cap b { display: inline-block; margin-top: 6px; font-size: 76px; font-weight: 800; line-height: 1.2; letter-spacing: -.035em;
+  background: linear-gradient(92deg, #FFFFFF 10%, #C3D6FF 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.veil { position: absolute; inset: 0; background: #000; }
+.cur { position: absolute; left: 0; top: 0; width: 64px; height: 64px; transform-origin: 8px 4px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45)); }
+.ring { position: absolute; left: 0; top: 0; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 5px solid #fff; opacity: 0; }
+.drop { position: absolute; left: 0; top: 0; width: 18px; height: 18px; margin: -9px; border-radius: 50%; background: rgba(214, 234, 255, .9); opacity: 0; }
+.btns { display: flex; gap: 22px; }
+.btns i { font-style: normal; line-height: 1; border-radius: 999px; }
+.btns .ok { background: #B8C9F0; color: #263066; font-weight: 700; }
+.btns .ghost { color: #E6ECFA; box-shadow: inset 0 0 0 2.5px rgba(255, 255, 255, .3); }
+
+/* ── 1 — 닫힌 노트북의 틈, 빛 한 줄 ── */
+.c1-cam { position: absolute; inset: 0; }
+.c1 .lid, .c1 .base { position: absolute; left: -80px; right: -80px; }
+.c1 .lid { top: 392px; height: 144px; border-radius: 60px 60px 8px 8px / 44px 44px 8px 8px; background: linear-gradient(180deg, #555963 0, #2c2e34 5%, #191a1d 60%, #0b0b0d 100%); }
+.c1 .base { top: 544px; height: 196px; border-radius: 6px 6px 90px 90px / 6px 6px 60px 60px; background: linear-gradient(180deg, #0c0c0e 0, #1b1c20 34%, #2b2d33 90%, #131416 100%); }
+.c1 .edge { position: absolute; left: 0; right: 0; height: 70px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); }
+.c1 .edge.up { top: 466px; background: linear-gradient(0deg, rgba(200, 222, 255, .75), rgba(200, 222, 255, 0)); }
+.c1 .edge.dn { top: 544px; background: linear-gradient(180deg, rgba(200, 222, 255, .6), rgba(200, 222, 255, 0)); }
+.c1 .bloom { position: absolute; left: 50%; border-radius: 50%; }
+.c1 .b1 { top: 500px; width: 1500px; height: 80px; margin-left: -750px; background: #D6E6FF; filter: blur(28px); }
+.c1 .b2 { top: 380px; width: 1700px; height: 320px; margin-left: -850px; background: #5F8CFF; filter: blur(120px); }
+.c1 .notch { position: absolute; left: 50%; top: 544px; width: 320px; height: 30px; margin-left: -160px; border-radius: 0 0 160px 160px / 0 0 30px 30px; background: #F4F8FF; }
+.c1 .slit { position: absolute; left: 50%; top: 536px; width: 1760px; height: 8px; margin-left: -880px; background: linear-gradient(90deg, rgba(255, 255, 255, 0), #EAF2FF 20%, #fff 50%, #EAF2FF 80%, rgba(255, 255, 255, 0)); }
+
+/* ── 2 — 노트북이 열린다 (로고 없는 노트북, 화면은 실제 앱 캡처) ── */
+.c2-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 980px 560px at 50% 40%, rgba(110, 150, 255, .5), rgba(60, 90, 220, .16) 46%, rgba(0, 0, 0, 0) 72%); }
+.c2-floor { position: absolute; left: 50%; top: 800px; width: 1500px; height: 150px; margin-left: -750px; background: radial-gradient(ellipse 50% 100% at 50% 0, rgba(120, 160, 255, .3), rgba(0, 0, 0, 0) 70%); }
+.c2-cam, .c2-push, .scene { position: absolute; inset: 0; }
+.c2-cam { transform-origin: 50% 46%; }
+.c2-push { transform-origin: 893px 235px; }   /* 화면 속 지도 쪽으로 다가간다 */
+.scene { perspective: 2800px; perspective-origin: 50% 36%; }
+.rig { position: absolute; left: 960px; top: 690px; width: 0; height: 0; transform-style: preserve-3d; }   /* 경첩 자리 */
+.deck { position: absolute; left: -480px; top: 0; width: 960px; height: 660px; transform-origin: 50% 0; transform: rotateX(90deg); border-radius: 0 0 40px 40px; overflow: hidden;
+  background: linear-gradient(180deg, #24262b 0, #34373e 55%, #2a2c32 100%); }
+.deck .keys { position: absolute; left: 56px; right: 56px; top: 44px; height: 330px; border-radius: 12px; background-color: #0d0e10;
+  background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, .07) 0 2px, transparent 2px 60.6px), repeating-linear-gradient(0deg, rgba(255, 255, 255, .07) 0 2px, transparent 2px 55px); }
+.deck .pad { position: absolute; left: 50%; top: 404px; width: 340px; height: 220px; margin-left: -170px; border-radius: 14px; background: #3a3d44; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .07); }
+.deck .spill { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(196, 217, 255, .62), rgba(196, 217, 255, .14) 40%, rgba(196, 217, 255, 0) 75%); }
+.lip { position: absolute; left: -480px; top: 0; width: 960px; height: 16px; transform: translateZ(660px); border-radius: 0 0 26px 26px; background: linear-gradient(180deg, #5b5f69, #17181b); }
+.lid3 { position: absolute; left: -480px; top: -616px; width: 960px; height: 616px; transform-origin: 50% 100%; }
+.lid3 .bezel { position: absolute; inset: 0; border-radius: 26px 26px 6px 6px; background: #050506; box-shadow: inset 0 0 0 3px #2d2f35; }
+.lid3 img, .lid3 .wake { position: absolute; left: 24px; top: 22px; width: 912px; height: 570px; border-radius: 8px; }
+.lid3 img { object-fit: cover; object-position: 0 0; }
+.lid3 .wake { background: #000; }
+.c2-flash { position: absolute; inset: 0; background: radial-gradient(ellipse 1300px 420px at 50% 58%, rgba(214, 230, 255, .95), rgba(120, 160, 255, .35) 45%, rgba(0, 0, 0, 0) 75%); }
+
+/* ── 3 — 길 안내: 지도 여덟 장 (켜진 카드의 색은 앱의 카드 색) ── */
+.c3-cam { position: absolute; inset: 0; transform-origin: 50% 38%; }
+.c3 .map { position: absolute; left: 116px; top: 110px; display: grid; grid-template-columns: repeat(4, 404px); gap: 24px; }
+.c3 .card { position: relative; height: 214px; padding: 22px 28px; border-radius: 34px; --on: 0; --glow: 0;
+  background: color-mix(in srgb, #F7F9FC calc(var(--on) * 100%), #12162A);
+  box-shadow: 0 0 calc(var(--glow) * 70px) rgba(170, 200, 255, calc(var(--glow) * .85)), inset 0 0 0 2px color-mix(in srgb, #C5CEE2 calc(var(--on) * 100%), #242A45); }
+.c3 .card em { display: block; font: 400 62px/1 "Bagel Fat One", sans-serif; color: color-mix(in srgb, #4D66B5 calc(var(--on) * 100%), #323A60); }
+.c3 .card b { display: block; margin-top: 14px; font: 400 30px/1.36 "Gowun Dodum", "Malgun Gothic", sans-serif; letter-spacing: -.02em; white-space: nowrap; color: color-mix(in srgb, #2B3463 calc(var(--on) * 100%), #4D5782); }
+.c3 .card .st { position: absolute; left: 28px; bottom: 20px; font: 400 24px/1 "Gowun Dodum", "Malgun Gothic", sans-serif; color: #5B6491; opacity: 0; }
+.c3 .card .edge { position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 5px #2B3463; opacity: 0; }   /* 지금 장의 굵은 테두리 */
+.c3 .card .chip { position: absolute; right: -20px; top: -30px; width: 92px; height: 92px; display: grid; place-items: center; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px #C6D5EE, 0 10px 24px rgba(0, 0, 0, .4); }
+.c3 .now { position: absolute; left: 50%; top: 624px; display: flex; align-items: center; gap: 16px; padding: 22px 44px; border-radius: 999px; background: #F7F9FC; box-shadow: inset 0 0 0 2px #C5CEE2, 0 20px 60px rgba(0, 0, 0, .5);
+  font: 400 34px/1 "Gowun Dodum", "Malgun Gothic", sans-serif; letter-spacing: -.02em; white-space: nowrap; color: #5B6491; }
+.c3 .now i { width: 18px; height: 18px; border-radius: 50%; background: #2B3463; }
+.c3 .now b { color: #2B3463; font-weight: 700; }
+
+/* ── 4 — 내가 정함: 섬의 플로로 (색 · 말은 앱 그대로: --isl #363E62, 단추 #B8C9F0 / #263066) ── */
+.c4, .c5 { background: #05070F; }
+.c4-cam { position: absolute; inset: 0; transform-origin: 50% 40%; }
+.c4 .isl { position: absolute; left: 410px; top: 26px; width: 1100px; height: 750px; border-radius: 64px; background: #363E62; box-shadow: 0 40px 120px rgba(0, 0, 0, .6), 0 0 160px rgba(77, 102, 181, .22), inset 0 0 0 2px rgba(255, 255, 255, .08); }
+.c4 .floro { position: absolute; left: 50%; top: 0; width: 300px; height: 300px; margin-left: -150px; }
+.c4 .bub { position: absolute; left: 70px; right: 70px; top: 318px; padding: 30px 40px 34px; border-radius: 40px; background: rgba(255, 255, 255, .08); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .15);
+  font-family: "Gowun Dodum", "Pretendard", "Malgun Gothic", sans-serif; color: #F2F6FF; letter-spacing: -.01em; }
+.c4 .bub b { display: block; font-size: 40px; font-weight: 400; }
+.c4 .bub span { display: block; margin-top: 12px; font-size: 34px; line-height: 1.36; color: #C9D5F2; }
+.c4 .bub .btns { margin-top: 28px; }
+.c4 .bub .btns i { font-size: 37px; padding: 24px 54px; }
+.c4 .bub.b { box-shadow: inset 0 0 0 2.5px #8FD6B4; }
+.c4 .bub.b small { display: block; font-size: 27px; color: #A9B8E0; }
+.c4 .bub.b b { margin-top: 8px; font: 400 44px/1.2 "Bagel Fat One", "Gowun Dodum", sans-serif; }
+.c4 .star { position: absolute; left: 0; top: 0; width: 44px; height: 44px; margin: -22px; font: 44px/1 "Malgun Gothic", sans-serif; text-align: center; color: #FFC83A; opacity: 0; }
+
+/* ── 5 — 배움이 남음: 한 장 → 문서로 묶어 GitHub에 → 내 저장소 ── */
+.c5-cam { position: absolute; inset: 0; transform-origin: 50% 42%; }
+.c5 .sheet { position: absolute; left: 150px; top: 44px; width: 700px; height: 746px; padding: 40px 44px; border-radius: 56px; background: #363E62; box-shadow: 0 40px 120px rgba(0, 0, 0, .6), inset 0 0 0 2px rgba(255, 255, 255, .08);
+  font-family: "Gowun Dodum", "Pretendard", "Malgun Gothic", sans-serif; color: #F2F6FF; letter-spacing: -.01em; }
+.c5 .sheet h3 { margin: 0 0 20px; font-size: 37px; font-weight: 700; }
+.c5 .sheet dl { margin: 0; }
+.c5 .row { display: grid; grid-template-columns: 150px 1fr; column-gap: 18px; margin: 0 -16px 8px; padding: 9px 16px; border-radius: 20px; font-size: 30px; line-height: 1.38; }
+.c5 .row dt { font-weight: 700; }
+.c5 .row dd { margin: 0; color: #C9D5F2; }
+.c5 .sheet .btns { position: absolute; left: 44px; bottom: 40px; }
+.c5 .sheet .btns i { font-size: 32px; padding: 20px 44px; }
+.c5 .sheet .btns .later { padding-left: 14px; padding-right: 14px; color: #A9B8E0; }
+.c5 .pipe { position: absolute; left: 850px; top: 418px; width: 220px; height: 4px; background: linear-gradient(90deg, rgba(184, 201, 240, 0), rgba(184, 201, 240, .5), rgba(184, 201, 240, 0)); }
+.c5 .dot { position: absolute; left: 0; top: 0; width: 18px; height: 18px; margin: -9px; border-radius: 50%; background: #DCE8FF; box-shadow: 0 0 24px #9FC0FF; opacity: 0; }
+.c5 .send { position: absolute; left: 960px; top: 420px; padding: 18px 26px; border-radius: 28px; background: #B8C9F0; color: #263066; font: 700 28px/1.3 "Gowun Dodum", "Pretendard", sans-serif; text-align: center; white-space: nowrap; box-shadow: 0 14px 40px rgba(0, 0, 0, .45); }
+.c5 .repo { position: absolute; left: 1070px; top: 190px; width: 720px; height: 456px; padding-top: 34px; border-radius: 44px; background: #0E1224; box-shadow: 0 40px 120px rgba(0, 0, 0, .6), inset 0 0 0 2px rgba(255, 255, 255, .12); }
+.c5 .repo h3 { display: flex; align-items: center; gap: 16px; margin: 0 34px 22px; font-size: 35px; font-weight: 600; color: #E6ECFA; letter-spacing: -.02em; }
+.c5 .repo h3 i { position: relative; width: 34px; height: 26px; border-radius: 5px; background: #8FA8E8; }   /* 폴더 모양 */
+.c5 .repo h3 i::before { content: ""; position: absolute; left: 0; top: -7px; width: 15px; height: 9px; border-radius: 4px 4px 0 0; background: #8FA8E8; }
+.c5 .repo ul { list-style: none; margin: 0; padding: 0; }
+.c5 .repo li { display: flex; align-items: center; gap: 16px; padding: 25px 34px; border-top: 1.5px solid rgba(255, 255, 255, .08); font: 28px/1 "NanumGothicCoding", ui-monospace, Consolas, monospace; color: #C9D5F2; }
+.c5 .repo li::before { content: ""; flex: none; width: 22px; height: 28px; border-radius: 4px; box-shadow: inset 0 0 0 2.5px #7F8FB8; }   /* 문서 모양 */
+.c5 .repo li em { margin-left: auto; font: 400 23px/1 "Gowun Dodum", "Malgun Gothic", sans-serif; color: #8FD6B4; }
+
+/* ── 6 — 큰 글자 ── */
+.c6 .copy { position: absolute; left: 0; right: 0; top: 50%; text-align: center; letter-spacing: -.035em; line-height: 1.18; }
+.c6 .copy span { display: block; }
+.c6 .l1 { font-size: 108px; font-weight: 700; color: #9FACCB; }
+.c6 .l2 { margin-top: 10px; font-size: 140px; font-weight: 800; background: linear-gradient(92deg, #FFFFFF 10%, #C3D6FF 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ── 7 — 플로로 아이콘 · Floe · 한 줄 (아이콘 색은 앱 아이콘과 같다) ── */
+.c7 .halo { position: absolute; inset: 0; background: radial-gradient(ellipse 760px 520px at 50% 40%, rgba(58, 95, 224, .34), rgba(0, 0, 0, 0) 70%); }
+.c7 .tile { position: absolute; left: 50%; top: 250px; width: 280px; height: 280px; margin-left: -140px; border-radius: 64px; overflow: hidden;
+  background: linear-gradient(135deg, #3A5FE0, #16226A); box-shadow: 0 30px 100px rgba(58, 95, 224, .5), inset 0 0 0 2px rgba(255, 255, 255, .1); }
+.c7 .tile .floro { position: absolute; left: 28px; top: 34px; width: 224px; height: 224px; }
+.c7 .name { position: absolute; left: 0; right: 0; top: 556px; text-align: center; font: 400 168px/1 "Bagel Fat One", "Pretendard", sans-serif; color: #fff; letter-spacing: .01em; }
+.c7 .tag { position: absolute; left: 0; right: 0; top: 762px; text-align: center; font-size: 46px; font-weight: 500; color: #B4C2E4; letter-spacing: -.02em; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <section class="cut c1"><div class="c1-cam">
+    <div class="lid"></div><div class="base"></div>
+    <div class="edge up"></div><div class="edge dn"></div>
+    <div class="bloom b2"></div><div class="bloom b1"></div>
+    <div class="notch"></div><div class="slit"></div>
+  </div></section>
+
+  <section class="cut c2">
+    <div class="c2-glow"></div><div class="c2-floor"></div>
+    <div class="c2-cam"><div class="c2-push"><div class="scene"><div class="rig">
+      <div class="deck"><i class="keys"></i><i class="pad"></i><i class="spill"></i></div>
+      <div class="lip"></div>
+      <div class="lid3"><div class="bezel"></div><img src="../../features/shots/2026-10-30-quest-tab/after-b-s2-1440.png" alt=""><i class="wake"></i></div>
+    </div></div></div></div>
+    <div class="c2-flash"></div><div class="veil"></div>
+  </section>
+
+  <section class="cut c3">
+    <div class="c3-cam">
+      <div class="map" id="map"></div>
+      <div class="now"><i></i>지금 하는 일 <b>5개 중 1번째 칸 — 기능 문장</b></div>
+    </div>
+    <div class="cap"><small>지금 어디고, 다음에 무엇을</small><b>길을 잃지 않는다</b></div>
+    <div class="veil"></div>
+  </section>
+
+  <section class="cut c4">
+    <div class="c4-cam">
+      <div class="isl">
+        <div class="floro" id="f4"></div>
+        <div class="bub a"><b>플로로가 생각한 내용인데 맞나요?</b><span>“회원이 신청 버튼을 누르면, 앱은 신청서를 보여 준다.”</span>
+          <div class="btns"><i class="ok">맞아요</i><i class="ghost">고칠래요</i></div></div>
+        <div class="bub b"><small>3단계 · 꼭 필요한 기능 정리하기</small><b>3단계 할 일을 모두 했어요!</b><span>다음 단계로 가기 전에, 이번 단계를 이해했는지 한 번만 같이 확인해요.</span>
+          <div class="btns"><i class="ok go">확인하고 넘어가기</i></div></div>
+      </div>
+      <div class="fx"></div>
+      <div class="ring"></div>
+      <svg class="cur" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 2 V25 L10.2 19.4 L14.4 29 L18.4 27.3 L14.3 17.9 L22.6 17.9 Z" fill="#fff" stroke="#10142B" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="cap"><small>AI가 쓰고, 사람이 정하고</small><b>맡기되, 내가 결정한다</b></div>
+    <div class="veil"></div>
+  </section>
+
+  <section class="cut c5">
+    <div class="c5-cam">
+      <div class="sheet">
+        <h3>③ 기록 — 3단계 한 장</h3>
+        <dl>
+          <div class="row"><dt>생각</dt><dd>기능을 '~하면, 앱은 ~한다' 문장으로 쓰기</dd></div>
+          <div class="row"><dt>한 일</dt><dd>맡긴 일 · 바뀐 파일은 없었어요</dd></div>
+          <div class="row"><dt>정한 것</dt><dd>기능 문장 · 숫자로 · 꼭 · 있으면 좋음</dd></div>
+          <div class="row"><dt>배운 말</dt><dd>EARS · Planguage · MoSCoW·Kano · 추적표 RTM</dd></div>
+          <div class="row"><dt>다음 할 일</dt><dd>4단계 · 만드는 방법 고르기</dd></div>
+        </dl>
+        <div class="btns"><i class="ok">맞아요</i><i class="ghost">고칠래요</i><i class="later">나중에</i></div>
+      </div>
+      <div class="pipe"></div><div class="fx"></div>
+      <div class="send">문서로 묶어<br>GitHub에</div>
+      <div class="repo"><h3><i></i>내 GitHub 저장소</h3>
+        <ul><li>README.md<em>방금</em></li><li>docs/03-requirements/requirements.md<em>방금</em></li><li>docs/PRD.md<em>방금</em></li><li>docs/decisions.md<em>방금</em></li></ul></div>
+      <div class="ring"></div>
+      <svg class="cur" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 2 V25 L10.2 19.4 L14.4 29 L18.4 27.3 L14.3 17.9 L22.6 17.9 Z" fill="#fff" stroke="#10142B" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="cap"><small>끝나면 기록이 내 폴더에</small><b>배움이 남는다</b></div>
+    <div class="veil"></div>
+  </section>
+
+  <section class="cut c6"><div class="copy"><span class="l1">AI가 일해도,</span><span class="l2">성장은 사람이.</span></div></section>
+
+  <section class="cut c7">
+    <div class="halo"></div>
+    <div class="tile"><div class="floro" id="f7"></div></div>
+    <div class="name">Floe</div>
+    <div class="tag">얼음 위 작업실에서, 플로로와 함께</div>
+  </section>
+
+</div>
+<script src="../../../02-frontend/navigator/seal.js"></script>
+<script>
+(() => {
+  const DUR = 30, CAP = new URLSearchParams(location.search).has("capture");
+  const $ = (s, el = document) => el.querySelector(s), $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const clamp = (x) => Math.min(1, Math.max(0, x));
+  const prog = (t, a, b) => clamp((t - a) / (b - a));
+  const lerp = (a, b, p) => a + (b - a) * p;
+  const easeOut = (p) => 1 - Math.pow(1 - p, 3), easeOut4 = (p) => 1 - Math.pow(1 - p, 4), easeIn = (p) => p * p * p;
+  const easeInOut = (p) => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+  const backOut = (p) => 1 + 2.70158 * Math.pow(p - 1, 3) + 1.70158 * Math.pow(p - 1, 2);
+  const css = (el, o) => Object.assign(el.style, o);
+  const make = (parent, cls, n, text = "") => Array.from({ length: n }, () => parent.appendChild(Object.assign(document.createElement("i"), { className: cls, textContent: text })));
+
+  // 지도 — 단계 이름은 navigator.js STAGES의 title, 지금은 연습 예시의 3단계
+  const STAGES = ["무엇을 만들지 정하기", "아이디어 적어 두기", "꼭 필요한 기능 정리하기", "만드는 방법 고르기", "뼈대 먼저 이어 보기", "하나씩 만들고 확인하기", "실제로 써 보고 재 보기", "돌아보고 배운 것 남기기"], NOW = 2;
+  $("#map").innerHTML = STAGES.map((title, k) => `<div class="card"><em>${k + 1}</em><b>${title}</b><span class="st">${k < NOW ? "✓ 지났어요" : k === NOW ? "● 지금" : ""}</span>${
+    k === NOW ? `<i class="edge"></i><i class="chip">${NavSeal.svg("idle", 78, { face: true })}</i>` : ""}</div>`).join("");
+  const stage = $("#stage"), cuts = $$(".cut"), cards = $$(".c3 .card");
+  const f4 = $("#f4"), f7 = $("#f7");
+  f4.innerHTML = NavSeal.svg("idle", 300, { hole: true });
+  f7.innerHTML = NavSeal.svg("idle", 224, { hole: true });
+  const svg4 = $("svg.cat", f4), body4 = $(".c-body", f4), svg7 = $("svg.cat", f7), body7 = $(".c-body", f7), blush7 = $$(".c-blush ellipse", f7);
+  const mood = (svg, m) => { if (svg.dataset.m !== m) { svg.dataset.m = m; svg.setAttribute("class", svg.getAttribute("class").replace(/\bm-\w+/, `m-${m}`)); } };
+  // 물방울 — 처음 자리(dx) · 속도(vx, vy) · 크기 · 늦게 나오는 정도
+  const DROPS = [[-100, -230, 560, 1.1, 0], [-50, -110, 740, .8, .03], [34, 80, 810, 1, .01], [92, 210, 630, 1.2, .04], [126, 340, 470, .7, .02], [-126, -360, 430, .75, .05], [0, -26, 900, .6, .06]];
+  const drops = make($(".c4 .fx"), "drop", DROPS.length), stars = make($(".c4 .fx"), "star", 9, "★"), dots = make($(".c5 .fx"), "dot", 4);
+  const rows5 = $$(".c5 .row"), files = $$(".c5 .repo li");
+  let P = {};
+
+  function fit() {
+    const k = CAP ? 1 : Math.min(innerWidth / 1920, innerHeight / 1080);
+    css(stage, { transform: `scale(${k})`, left: `${CAP ? 0 : (innerWidth - 1920 * k) / 2}px`, top: `${CAP ? 0 : (innerHeight - 1080 * k) / 2}px` });
+  }
+  // 글꼴이 다 온 뒤, 커서가 갈 자리를 무대 좌표로 잰다(카메라가 움직이기 전)
+  function measure() {
+    const sr = stage.getBoundingClientRect(), k = sr.width / 1920;
+    const at = (el, fx = .5, fy = .5) => { const r = el.getBoundingClientRect(); return { x: (r.left + r.width * fx - sr.left) / k, y: (r.top + r.height * fy - sr.top) / k }; };
+    P = { okA: at($(".c4 .bub.a .ok"), .58, .58), go: at($(".c4 .go"), .56, .58), water: at(f4, .5, .82), head: at(f4, .47, .42), okS: at($(".c5 .sheet .ok"), .58, .58) };
+  }
+  function caption(el, t, a, b) {   // a에 들어와 b에 나간다
+    const i = easeOut(prog(t, a, a + .55)), o = easeIn(prog(t, b - .35, b));
+    css(el, { opacity: i * (1 - o), transform: `translateY(${lerp(26, 0, i).toFixed(1)}px)`, filter: i < 1 ? `blur(${lerp(10, 0, i).toFixed(1)}px)` : "none" });
+  }
+  function pointer(scope, x, y, press, at, r, show) {   // 커서(움직이기 직전에 나타난다)와 누름 표시
+    css($(`${scope} .cur`), { opacity: show, transform: `translate(${(x - 8).toFixed(1)}px, ${(y - 4).toFixed(1)}px) scale(${1 - .12 * press})` });
+    css($(`${scope} .ring`), { transform: `translate(${at.x}px, ${at.y}px) scale(${lerp(.3, 1.7, easeOut(r))})`, opacity: r > 0 && r < 1 ? (1 - r) * .85 : 0 });
+  }
+  const pressed = (el, p) => css(el, { transform: `scale(${1 - .05 * p})`, filter: `brightness(${1 + .18 * p})` });
+
+  function cut1(t) {   // 0 ~ 3 — 암전에서 빛 한 줄
+    const p = easeInOut(prog(t, .5, 2.5)), f = easeIn(prog(t, 2.45, 3));
+    css($(".c1-cam"), { transform: `scale(${lerp(1.1, 1, prog(t, 0, 3))})`, opacity: easeOut(prog(t, 0, .9)) });
+    css($(".c1 .slit"), { transform: `scaleX(${p})`, opacity: p });
+    css($(".c1 .b1"), { transform: `scale(${p}, ${1 + f * 2.2})`, opacity: .95 * p });
+    css($(".c1 .b2"), { transform: `scaleX(${.3 + .7 * p})`, opacity: .3 * p + .5 * f });
+    css($(".c1 .edge.up"), { transform: `scaleX(${p})`, opacity: .8 * p });
+    css($(".c1 .edge.dn"), { transform: `scaleX(${p})`, opacity: .8 * p });
+    css($(".c1 .notch"), { opacity: p });
+  }
+
+  function cut2(t) {   // 3 ~ 7 — 노트북이 열리고 다가간다
+    const o = easeOut4(prog(t, 3, 5)), g = easeOut(prog(t, 3, 4.8)), q = easeIn(prog(t, 6.3, 7));
+    $(".lid3").style.transform = `rotateX(${lerp(-78, 7, o).toFixed(2)}deg)`;
+    css($(".lid3 .wake"), { opacity: lerp(.5, 0, easeOut(prog(t, 3, 4.4))) });
+    css($(".c2-glow"), { opacity: .2 + .8 * g });
+    css($(".deck .spill"), { opacity: .2 + .8 * g });
+    css($(".c2-floor"), { opacity: g });
+    css($(".c2-cam"), { transform: `scale(${lerp(.92, 1.08, easeOut(prog(t, 3, 6.6)))})` });
+    css($(".c2-push"), { transform: `scale(${1 + 1.9 * q})`, filter: q ? `blur(${(q * 12).toFixed(1)}px)` : "none" });
+    css($(".c2-flash"), { opacity: lerp(.9, 0, easeOut(prog(t, 3, 3.5))) });
+    css($(".c2 .veil"), { opacity: easeIn(prog(t, 6.6, 7)) });
+  }
+
+  function cut3(t) {   // 7 ~ 12 — 지도 여덟 장이 차례로 켜지고, 지금 자리가 정해진다
+    const inn = easeOut(prog(t, 7, 7.45)), settle = easeOut(prog(t, 9.5, 10)), chip = prog(t, 9.5, 9.92), now = easeOut(prog(t, 10.1, 10.55));
+    css($(".c3-cam"), { transform: `scale(${lerp(1.08, 1, inn) + .02 * prog(t, 7.45, 12)})` });
+    cards.forEach((c, k) => {
+      const show = easeOut(prog(t, 7.05 + .04 * k, 7.4 + .04 * k)), t0 = 7.7 + .2 * k, glow = t >= t0 ? Math.max(0, 1 - (t - t0) / .6) : 0;
+      c.style.setProperty("--on", (easeOut(prog(t, t0, t0 + .25)) * (k > NOW ? 1 - settle : 1)).toFixed(3));   // 아직 안 간 단계는 다시 꺼진다
+      c.style.setProperty("--glow", glow.toFixed(3));
+      css(c, { opacity: show, transform: `translateY(${lerp(18, 0, show).toFixed(1)}px) scale(${(1 + .03 * glow).toFixed(3)})` });
+      $(".st", c).style.opacity = k <= NOW ? settle : 0;
+    });
+    $(".c3 .edge").style.opacity = settle;
+    css($(".c3 .chip"), { transform: `scale(${chip > 0 ? backOut(chip).toFixed(3) : 0})` });
+    css($(".c3 .now"), { opacity: now, transform: `translate(-50%, ${lerp(22, 0, now).toFixed(1)}px)` });
+    caption($(".c3 .cap"), t, 7.5, 11.65);
+    css($(".c3 .veil"), { opacity: Math.max(1 - inn, easeIn(prog(t, 11.6, 12))) });
+  }
+
+  function cut4(t) {   // 12 ~ 18 — 플로로가 묻고 내가 누른다: 맞아요 → 확인하고 넘어가기
+    const inn = easeOut(prog(t, 12, 12.45));
+    css($(".c4-cam"), { transform: `scale(${lerp(1.08, 1, inn) + .02 * prog(t, 12.45, 18)})` });
+    css($(".c4 .veil"), { opacity: Math.max(1 - inn, easeIn(prog(t, 17.55, 18))) });
+    // 플로로 — 물 아래(84칸)에 있다가 뿅, 그 뒤로는 물결 따라 조금. 관문을 넘으면 깡충
+    const a = prog(t, 12.35, 12.6), b = prog(t, 12.6, 12.85), hop = Math.sin(Math.PI * prog(t, 16.55, 16.95));
+    const y = a < 1 ? lerp(84, -7, easeOut(a)) : lerp(-7, 0, easeInOut(b)) + (b >= 1 ? Math.sin((t - 12.85) * 2.4) * 1.1 : 0) - 9 * hop;
+    const st = a < 1 ? Math.sin(Math.PI * a) : .5 * hop;
+    body4.style.transform = `translateY(${y.toFixed(2)}px) scale(${(1 - .04 * st).toFixed(3)}, ${(1 + .07 * st).toFixed(3)})`;
+    mood(svg4, t >= 15 ? "done" : "idle");
+    f4.classList.toggle("blink", t >= 13.02 && t < 13.11);
+    DROPS.forEach(([dx, vx, vy, s, d], i) => {
+      const tau = t - 12.46 - d, on = tau > 0 && tau < .6;
+      css(drops[i], { opacity: on ? 1 - tau / .6 : 0, transform: `translate(${(P.water.x + dx + vx * tau).toFixed(1)}px, ${(P.water.y - vy * tau + 1100 * tau * tau).toFixed(1)}px) scale(${s})` });
+    });
+    stars.forEach((s, i) => {   // 별이 튄다 — 단계를 넘어갔을 때
+      const tau = (t - 16.56 - .015 * i) / .95, on = tau > 0 && tau < 1, th = -Math.PI * (.08 + i / (stars.length - 1) * .84), r = lerp(70, 250 + 40 * (i % 3), easeOut(tau));
+      css(s, { opacity: on ? Math.min(1, tau / .12) * (1 - Math.max(0, (tau - .5) / .5)) : 0,
+        transform: `translate(${(P.head.x + Math.cos(th) * r).toFixed(1)}px, ${(P.head.y + Math.sin(th) * r * .85 + 60 * tau * tau).toFixed(1)}px) rotate(${(140 * tau * (i % 2 ? 1 : -1)).toFixed(0)}deg) scale(${.7 + .25 * (i % 3)})` });
+    });
+    // 말풍선 — 초안 확인이 나가고 관문이 들어온다
+    const A = easeOut(prog(t, 12.75, 13.15)), Aout = easeIn(prog(t, 14.5, 14.85)), B = easeOut(prog(t, 14.85, 15.3));
+    css($(".c4 .bub.a"), { opacity: A * (1 - Aout), transform: `translateY(${(lerp(24, 0, A) - 18 * Aout).toFixed(1)}px)` });
+    css($(".c4 .bub.b"), { opacity: B, transform: `translateY(${lerp(24, 0, B).toFixed(1)}px)` });
+    // 커서 — 오른쪽 아래에서 '맞아요'로, 이어서 '확인하고 넘어가기'로
+    const second = t >= 15.65, m = second ? easeInOut(prog(t, 15.65, 16.4)) : easeInOut(prog(t, 13.3, 14.05));
+    const from = second ? P.okA : { x: 1540, y: 1010 }, to = second ? P.go : P.okA;
+    const press = second ? Math.sin(Math.PI * prog(t, 16.5, 16.66)) : Math.sin(Math.PI * prog(t, 14.15, 14.31));
+    pointer(".c4", lerp(from.x, to.x, m), lerp(from.y, to.y, m) - Math.sin(Math.PI * m) * (second ? 30 : 50), press, to, second ? prog(t, 16.52, 16.8) : prog(t, 14.17, 14.45), prog(t, 13.05, 13.3));
+    pressed($(".c4 .bub.a .ok"), second ? 0 : press);
+    pressed($(".c4 .go"), second ? press : 0);
+    const cr = $(".c4 .cur").getBoundingClientRect();
+    NavSeal.follow(f4, { x: cr.left, y: cr.top });   // 제품의 '눈 따라오기' 그대로
+    caption($(".c4 .cap"), t, 12.6, 17.6);
+  }
+
+  function cut5(t) {   // 18 ~ 23 — 한 장이 채워지고, 맞아요를 누르면 문서가 내 저장소에 쌓인다
+    const inn = easeOut(prog(t, 18, 18.45));
+    css($(".c5-cam"), { transform: `scale(${lerp(1.06, 1, inn) + .02 * prog(t, 18.45, 23)})` });
+    css($(".c5 .veil"), { opacity: Math.max(1 - inn, easeIn(prog(t, 22.55, 23))) });
+    rows5.forEach((row, k) => { const p = easeOut(prog(t, 18.35 + .2 * k, 18.7 + .2 * k)); css(row, { opacity: p, transform: `translateY(${lerp(14, 0, p).toFixed(1)}px)` }); });
+    rows5[3].style.background = `rgba(184, 201, 240, ${(.24 * Math.sin(Math.PI * prog(t, 19.25, 20.6))).toFixed(3)})`;   // 배운 말 줄이 잠깐 밝아진다
+    css($(".c5 .sheet .btns"), { opacity: easeOut(prog(t, 19.15, 19.45)) });
+    const m = easeInOut(prog(t, 19.3, 19.88)), press = Math.sin(Math.PI * prog(t, 19.95, 20.11));
+    pointer(".c5", lerp(1240, P.okS.x, m), lerp(1010, P.okS.y, m) - Math.sin(Math.PI * m) * 40, press, P.okS, prog(t, 19.97, 20.25), prog(t, 19.1, 19.3));
+    pressed($(".c5 .sheet .ok"), press);
+    const s = prog(t, 20.12, 20.5);
+    css($(".c5 .send"), { opacity: easeOut(s), transform: `translate(-50%, -50%) scale(${lerp(.6, 1, backOut(s)).toFixed(3)})` });
+    css($(".c5 .pipe"), { opacity: easeOut(prog(t, 20.1, 20.5)) });
+    css($(".c5 .repo"), { opacity: lerp(.55, 1, easeOut(prog(t, 20.3, 20.7))) });
+    files.forEach((li, k) => {
+      const t0 = 20.45 + .35 * k, p = easeOut(prog(t, t0, t0 + .35)), d = prog(t, t0 - .28, t0 + .04);
+      css(li, { opacity: p, transform: `translateX(${lerp(-28, 0, p).toFixed(1)}px)` });
+      css(dots[k], { opacity: d > 0 && d < 1 ? Math.sin(Math.PI * d) : 0, transform: `translate(${lerp(850, 1070, d).toFixed(1)}px, 420px)` });
+    });
+    caption($(".c5 .cap"), t, 18.5, 22.6);
+  }
+
+  function cut6(t) {   // 23 ~ 27 — 큰 글자
+    const out = easeIn(prog(t, 26.5, 27));
+    [[".c6 .l1", prog(t, 23.3, 23.95)], [".c6 .l2", prog(t, 24.1, 24.85)]].forEach(([sel, p]) =>
+      css($(sel), { opacity: easeOut(p) * (1 - out), transform: `translateY(${lerp(48, 0, easeOut(p)).toFixed(1)}px)`, filter: `blur(${(lerp(16, 0, easeOut(p)) + out * 8).toFixed(1)}px)` }));
+    css($(".c6 .copy"), { transform: `translateY(-54%) scale(${1 + .045 * prog(t, 23, 27)})` });
+  }
+
+  function cut7(t) {   // 27 ~ 30 — 아이콘 · Floe · 한 줄, 눈웃음
+    const a = prog(t, 27.1, 27.75), n = prog(t, 27.4, 28.05), g = prog(t, 27.85, 28.45), smile = t >= 28.7, hop = Math.sin(Math.PI * prog(t, 28.7, 29));
+    css($(".c7 .halo"), { opacity: easeOut(prog(t, 27, 27.9)) });
+    css($(".c7 .tile"), { opacity: easeOut(a), transform: `scale(${lerp(.8, 1, backOut(a)).toFixed(3)})`, filter: a < 1 ? `blur(${lerp(12, 0, easeOut(a)).toFixed(1)}px)` : "none" });
+    css($(".c7 .name"), { opacity: easeOut(n), transform: `translateY(${lerp(34, 0, easeOut(n)).toFixed(1)}px)`, filter: n < 1 ? `blur(${lerp(10, 0, easeOut(n)).toFixed(1)}px)` : "none" });
+    css($(".c7 .tag"), { opacity: easeOut(g), transform: `translateY(${lerp(18, 0, easeOut(g)).toFixed(1)}px)` });
+    mood(svg7, smile ? "happy" : "idle");
+    blush7.forEach((e) => { e.style.opacity = smile ? .8 * easeOut(prog(t, 28.7, 28.9)) : 0; });
+    body7.style.transform = `translateY(${(-3 * hop).toFixed(2)}px)`;
+  }
+
+  const CUTS = [[3, cut1], [7, cut2], [12, cut3], [18, cut4], [23, cut5], [27, cut6], [Infinity, cut7]];
+  function render(t) {
+    t = Math.min(DUR, Math.max(0, t));
+    const n = CUTS.findIndex(([end]) => t < end);
+    cuts.forEach((c, i) => { c.style.display = i === n ? "block" : "none"; });
+    CUTS[n][1](t);
+  }
+
+  // ── 소리 — 받아 온 음원 없이 여기서 만든다(화음 깔개 · 바람 · 종 · 물방울 · 딸깍). 시각은 위 장면과 같은 수다.
+  //    ponytail: 악기는 사인파 · 삼각파 · 잡음뿐 — 진짜 음악이 필요하면 음원을 받아 make-video.js에서 섞는다
+  window.renderSound = async () => {
+    const SR = 48000, ac = new OfflineAudioContext(2, SR * DUR, SR), out = ac.createGain(), comp = ac.createDynamicsCompressor();
+    let seed = 20261106; const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2147483648) - 1;   // 늘 같은 잡음
+    Object.entries({ threshold: -14, knee: 10, ratio: 6, attack: .004, release: .25 }).forEach(([k, v]) => { comp[k].value = v; });
+    out.connect(comp); comp.connect(ac.destination);
+    const ir = ac.createBuffer(2, SR * 2.6, SR), nbuf = ac.createBuffer(1, SR * 3, SR);
+    for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < d.length; i++) d[i] = rnd() * Math.pow(1 - i / d.length, 2.6); }
+    { const d = nbuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = rnd(); }
+    const verb = ac.createConvolver(), wet = ac.createGain(); verb.buffer = ir; wet.gain.value = .5; verb.connect(wet); wet.connect(out);
+    const route = (node, send, pan = 0) => { const p = ac.createStereoPanner(), s = ac.createGain(); p.pan.value = pan; s.gain.value = send; node.connect(p); p.connect(out); p.connect(s); s.connect(verb); };
+    function tone(f, t0, { type = "sine", a = .005, d = .4, g = .1, to, send = .3, pan = 0 } = {}) {
+      const o = ac.createOscillator(), v = ac.createGain();
+      o.type = type; o.frequency.setValueAtTime(f, t0); if (to) o.frequency.exponentialRampToValueAtTime(to[0], t0 + to[1]);
+      v.gain.setValueAtTime(.0001, t0); v.gain.linearRampToValueAtTime(g, t0 + a); v.gain.exponentialRampToValueAtTime(.0001, t0 + a + d);
+      o.connect(v); route(v, send, pan); o.start(t0); o.stop(t0 + a + d + .05);
+    }
+    function noise(t0, dur, { g = .05, from = 300, to = 3000, type = "lowpass", a = dur * .8, send = .2 } = {}) {
+      const s = ac.createBufferSource(), f = ac.createBiquadFilter(), v = ac.createGain();
+      s.buffer = nbuf; s.loop = true; f.type = type; f.Q.value = .7;
+      f.frequency.setValueAtTime(from, t0); f.frequency.exponentialRampToValueAtTime(to, t0 + dur);
+      v.gain.setValueAtTime(.0001, t0); v.gain.exponentialRampToValueAtTime(g, t0 + a); v.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+      s.connect(f); f.connect(v); route(v, send); s.start(t0); s.stop(t0 + dur + .05);
+    }
+    function pad(notes, t0, t1, g, a = 1.4) {   // 음마다 조금 어긋난 두 소리를 부드럽게 깎아 깐다
+      const lp = ac.createBiquadFilter(), v = ac.createGain();
+      lp.type = "lowpass"; lp.frequency.value = 1500; lp.Q.value = .3;
+      v.gain.setValueAtTime(.0001, t0); v.gain.linearRampToValueAtTime(g, t0 + a); v.gain.setValueAtTime(g, t1 - 1.2); v.gain.linearRampToValueAtTime(.0001, t1);
+      lp.connect(v); route(v, .5);
+      notes.forEach((f) => [-7, 7].forEach((cents) => {
+        const o = ac.createOscillator(), p = ac.createStereoPanner(), og = ac.createGain();
+        o.type = "triangle"; o.frequency.value = f; o.detune.value = cents; p.pan.value = cents > 0 ? .5 : -.5; og.gain.value = f < 120 ? .45 : .55;   // 낮은 음은 작게 — 웅웅거리지 않게
+        o.connect(og); og.connect(p); p.connect(lp); o.start(t0); o.stop(t1 + .1);
+      }));
+    }
+    const bell = (f, t0, g = .1, pan = 0) => { tone(f, t0, { d: 1.1, g, send: .6, pan }); tone(f * 2.76, t0, { d: .35, g: g * .22, send: .6, pan }); tone(f * 5.4, t0, { d: .12, g: g * .1, send: .4, pan }); };
+    const click = (t0, g = .12) => { noise(t0, .03, { g, from: 3500, to: 2500, type: "highpass", a: .002, send: .1 }); tone(1400, t0, { d: .04, g: g * .6, send: .1 }); };
+    const pop = (t0, g = .18) => tone(260, t0, { to: [900, .08], d: .13, g, send: .4 });   // 물방울 '뽁'
+    const thum = (t0, f, g) => tone(f * 1.6, t0, { to: [f, .12], a: .01, d: 1.3, g, send: .15 });   // 낮게 '둥'
+    const D5 = 587.33, E5 = 659.25, Fs5 = 739.99, A5 = 880, B5 = 987.77, D6 = 1174.66, E6 = 1318.51, Fs6 = 1479.98, A6 = 1760;
+
+    // 깔개 — D(처음 ~ 내가 정함) → G(배움이 남음) → A(큰 글자) → D(Floe)
+    pad([73.42, 110, 146.83, 185, 220, 329.63], .2, 18.8, .032, 3);
+    pad([293.66, 369.99, 440, 587.33], 2.9, 7.6, .02);   // 노트북이 열릴 때 밝아진다
+    pad([98, 146.83, 196, 246.94, 293.66, 440], 17.8, 23.8, .032);
+    pad([110, 164.81, 220, 293.66, 329.63], 22.8, 27.8, .03);
+    pad([73.42, 110, 146.83, 220, 293.66, 369.99, 440], 26.8, DUR, .04);
+    // 1 · 2 — 빛이 번지는 바람, 열리는 순간의 '둥', 화면으로 다가가는 바람
+    noise(.8, 2.2, { g: .06, from: 180, to: 4200 });
+    thum(3, 48, .32); noise(3, .9, { g: .05, from: 5000, to: 400, a: .01 });
+    noise(6.35, .65, { g: .05, from: 400, to: 5000 });
+    // 3 — 카드가 켜질 때마다 종 하나, 플로로가 앉는 '뽁', 지금 하는 일
+    [D5, E5, Fs5, A5, B5, D6, E6, Fs6].forEach((f, k) => bell(f, 7.7 + .2 * k, .11, -.6 + k * .17));
+    pop(9.5, .14); tone(A5, 10.1, { d: .25, g: .06 });
+    // 4 — 물에서 뿅, 맞아요 딸깍, 관문 카드, 넘어가기 딸깍, 별
+    pop(12.46); noise(12.46, .25, { g: .04, from: 3000, to: 900, a: .01 });
+    click(14.15); bell(A5, 14.95, .08); click(16.5);
+    [A5, D6, Fs6, A6].forEach((f, k) => bell(f, 16.6 + .08 * k, .09, -.3 + k * .2));
+    // 5 — 줄이 채워지는 소리, 맞아요 딸깍, 문서가 쌓일 때마다 한 음
+    [0, 1, 2, 3, 4].forEach((k) => tone(1200 + 60 * k, 18.35 + .2 * k, { d: .06, g: .035 }));
+    click(19.95);
+    [D5, Fs5, A5, D6].forEach((f, k) => { tone(f, 20.45 + .35 * k, { d: .35, g: .11, send: .4, pan: .3 }); tone(f * 2, 20.45 + .35 * k, { d: .12, g: .03, pan: .3 }); });
+    // 6 · 7 — 글자마다 낮게 '둥', Floe의 종, 눈웃음
+    thum(23.3, 55, .26); thum(24.1, 73.42, .22);
+    bell(D5, 27.3, .11, -.2); bell(A5, 27.33, .09, .2); bell(Fs6, 27.37, .07);
+    bell(E6, 28.7, .08, -.2); bell(A6, 28.8, .08, .2);
+
+    const buf = await ac.startRendering(), L = buf.getChannelData(0), R = buf.getChannelData(1), n = L.length;
+    let peak = 0; for (let i = 0; i < n; i++) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
+    const k = .7 / (peak || 1), wav = new DataView(new ArrayBuffer(44 + n * 4));   // 가장 큰 곳을 −3dB에 맞춘 16비트 WAV
+    const str = (at, s) => [...s].forEach((c, i) => wav.setUint8(at + i, c.charCodeAt(0)));
+    str(0, "RIFF"); wav.setUint32(4, 36 + n * 4, true); str(8, "WAVEfmt "); wav.setUint32(16, 16, true); wav.setUint16(20, 1, true); wav.setUint16(22, 2, true);
+    wav.setUint32(24, SR, true); wav.setUint32(28, SR * 4, true); wav.setUint16(32, 4, true); wav.setUint16(34, 16, true); str(36, "data"); wav.setUint32(40, n * 4, true);
+    for (let i = 0; i < n; i++) { const fade = Math.min(1, (n - i) / (SR * .3)); wav.setInt16(44 + i * 4, Math.round(L[i] * k * fade * 32767), true); wav.setInt16(46 + i * 4, Math.round(R[i] * k * fade * 32767), true); }
+    const bytes = new Uint8Array(wav.buffer); let bin = "";
+    for (let i = 0; i < bytes.length; i += 32768) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 32768));
+    return btoa(bin);
+  };
+
+  window.film = { seconds: DUR, name: "floe-promo-30s",
+    stills: [1.2, 2.3, 2.9, 3.1, 3.7, 4.8, 6.2, 6.85, 7.2, 8.1, 9.0, 9.75, 10.8, 11.85, 12.3, 12.55, 13.2, 14.2, 15.4, 16.55, 16.9, 17.8, 18.5, 19.1, 19.8, 20.3, 21.0, 22.0, 22.85, 23.6, 24.6, 26.0, 26.85, 27.5, 28.3, 29.6] };
+  window.seek = (t) => { render(t); return new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(t)))); };
+  window.fontsUsed = () => [...new Set([...document.fonts].filter((f) => f.status === "loaded").map((f) => `${f.family.replace(/"/g, "")} ${f.weight}`))].join(", ") || "받은 글꼴 없음(컴퓨터 글꼴로 보임)";
+  window.ready = (async () => {
+    fit();
+    const want = [["800 100px Pretendard", "성장은 사람이. 길을 잃지 않는다 맡기되, 내가 결정한다 배움이 남는다"], ["700 100px Pretendard", "AI가 일해도,"], ["600 40px Pretendard", "내 GitHub 저장소"],
+      ["500 40px Pretendard", "얼음 위 작업실에서, 플로로와 함께 지금 어디고, 다음에 무엇을 AI가 쓰고, 사람이 정하고 끝나면 기록이 내 폴더에"],
+      ['100px "Bagel Fat One"', "Floe 12345678 3단계 할 일을 모두 했어요!"], ['40px "Gowun Dodum"', stage.textContent], ['27px "NanumGothicCoding"', "README.md docs/03-requirements"]];
+    await Promise.all(want.map(([font, text]) => document.fonts.load(font, text).catch(() => {})));
+    await $(".lid3 img").decode().catch(() => {});
+    measure();
+    if (CAP) return render(0);
+    addEventListener("resize", fit);
+    const still = new URLSearchParams(location.search).get("t");
+    if (still !== null) return render(parseFloat(still) || 0);
+    const t0 = performance.now();
+    (function loop(now) { render(Math.min(((now - t0) / 1000) % (DUR + 1), DUR)); requestAnimationFrame(loop); })(t0);
+  })();
+})();
+</script>
+</body>
+</html>

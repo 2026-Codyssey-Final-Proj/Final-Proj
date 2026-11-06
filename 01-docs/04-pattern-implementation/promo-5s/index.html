@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Floe 5초 홍보영상</title>
+<!-- claude-drafted: 2026-11-06 — 두승현의 요청("이대로 영상 만들어줘 최대한 빨리")으로 Claude가 만든 5초 홍보영상의 원본(움직이는 페이지).
+     컷 · 시간 · 문구는 ../promo-5s-storyboard.html 그대로다. 브라우저로 열면 되풀이해 보이고, 주소 끝에 ?t=2.5 처럼 붙이면 그 순간에 멈춘다.
+     영상 파일은 같은 폴더의 make-video.js가 이 페이지를 1/30초씩 찍어 만든다(?capture=1). 움직임은 전부 시각 t의 함수라 같은 t면 같은 그림이다.
+     플로로는 제품의 seal.js · seal.css를 그대로 불러온다(생김새는 두승현의 작업물 — 여기서 고치지 않는다). 노트북 화면은 실제 앱 캡처(2026-10-30 연습 예시),
+     섬의 글은 실제 화면의 말("플로로가 생각한 내용인데 맞나요?" · 맞아요 / 고칠래요 — app/40-quest.js)과 그 캡처에 보이는 연습 예시 문장이다.
+     큰 글자용 Pretendard만 밖(jsDelivr)에서 받는다 — 못 받으면 컴퓨터 글꼴로 보인다. 서버 · AI를 부르지 않고 아무것도 저장하지 않는다. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="../../../02-frontend/navigator/seal.css">
+<style>
+@font-face { font-family: "Bagel Fat One"; src: url("../../../02-frontend/assets/fonts/BagelFatOne-Regular.woff") format("woff"); }
+@font-face { font-family: "Gowun Dodum"; src: url("../../../02-frontend/assets/fonts/GowunDodum-Regular.woff") format("woff"); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+.stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: #000; transform-origin: 0 0;
+  font-family: "Pretendard", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+.cut { position: absolute; inset: 0; overflow: hidden; background: #000; }
+.cat, .cat * { animation: none !important; transition: none !important; }   /* 플로로의 움직임도 아래 스크립트가 시각 t로 정한다 */
+
+/* ── 컷 1 — 닫힌 노트북의 틈, 빛 한 줄 ── */
+.c1-cam { position: absolute; inset: 0; }
+.c1 .lid, .c1 .base { position: absolute; left: -80px; right: -80px; }
+.c1 .lid { top: 392px; height: 144px; border-radius: 60px 60px 8px 8px / 44px 44px 8px 8px; background: linear-gradient(180deg, #555963 0, #2c2e34 5%, #191a1d 60%, #0b0b0d 100%); }
+.c1 .base { top: 544px; height: 196px; border-radius: 6px 6px 90px 90px / 6px 6px 60px 60px; background: linear-gradient(180deg, #0c0c0e 0, #1b1c20 34%, #2b2d33 90%, #131416 100%); }
+.c1 .edge { position: absolute; left: 0; right: 0; height: 70px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); }
+.c1 .edge.up { top: 466px; background: linear-gradient(0deg, rgba(200, 222, 255, .75), rgba(200, 222, 255, 0)); }
+.c1 .edge.dn { top: 544px; background: linear-gradient(180deg, rgba(200, 222, 255, .6), rgba(200, 222, 255, 0)); }
+.c1 .bloom { position: absolute; left: 50%; border-radius: 50%; }
+.c1 .b1 { top: 500px; width: 1500px; height: 80px; margin-left: -750px; background: #D6E6FF; filter: blur(28px); }
+.c1 .b2 { top: 380px; width: 1700px; height: 320px; margin-left: -850px; background: #5F8CFF; filter: blur(120px); }
+.c1 .notch { position: absolute; left: 50%; top: 544px; width: 320px; height: 30px; margin-left: -160px; border-radius: 0 0 160px 160px / 0 0 30px 30px; background: #F4F8FF; }
+.c1 .slit { position: absolute; left: 50%; top: 536px; width: 1760px; height: 8px; margin-left: -880px; background: linear-gradient(90deg, rgba(255, 255, 255, 0), #EAF2FF 20%, #fff 50%, #EAF2FF 80%, rgba(255, 255, 255, 0)); }
+
+/* ── 컷 2 — 노트북이 열린다 (로고 없는 노트북, 화면은 실제 앱 캡처) ── */
+.c2-glow { position: absolute; inset: 0; background: radial-gradient(ellipse 980px 560px at 50% 40%, rgba(110, 150, 255, .5), rgba(60, 90, 220, .16) 46%, rgba(0, 0, 0, 0) 72%); }
+.c2-floor { position: absolute; left: 50%; top: 800px; width: 1500px; height: 150px; margin-left: -750px; background: radial-gradient(ellipse 50% 100% at 50% 0, rgba(120, 160, 255, .3), rgba(0, 0, 0, 0) 70%); }
+.c2-cam, .c2-push, .scene { position: absolute; inset: 0; }
+.c2-cam { transform-origin: 50% 46%; }
+.c2-push { transform-origin: 1306px 336px; }   /* 화면 속 섬 쪽으로 다가간다 */
+.scene { perspective: 2800px; perspective-origin: 50% 36%; }
+.rig { position: absolute; left: 960px; top: 690px; width: 0; height: 0; transform-style: preserve-3d; }   /* 경첩 자리 */
+.deck { position: absolute; left: -480px; top: 0; width: 960px; height: 660px; transform-origin: 50% 0; transform: rotateX(90deg); border-radius: 0 0 40px 40px; overflow: hidden;
+  background: linear-gradient(180deg, #24262b 0, #34373e 55%, #2a2c32 100%); }
+.deck .keys { position: absolute; left: 56px; right: 56px; top: 44px; height: 330px; border-radius: 12px; background-color: #0d0e10;
+  background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, .07) 0 2px, transparent 2px 60.6px), repeating-linear-gradient(0deg, rgba(255, 255, 255, .07) 0 2px, transparent 2px 55px); }
+.deck .pad { position: absolute; left: 50%; top: 404px; width: 340px; height: 220px; margin-left: -170px; border-radius: 14px; background: #3a3d44; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .07); }
+.deck .spill { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(196, 217, 255, .62), rgba(196, 217, 255, .14) 40%, rgba(196, 217, 255, 0) 75%); }
+.lip { position: absolute; left: -480px; top: 0; width: 960px; height: 16px; transform: translateZ(660px); border-radius: 0 0 26px 26px; background: linear-gradient(180deg, #5b5f69, #17181b); }
+.lid3 { position: absolute; left: -480px; top: -616px; width: 960px; height: 616px; transform-origin: 50% 100%; }
+.lid3 .bezel { position: absolute; inset: 0; border-radius: 26px 26px 6px 6px; background: #050506; box-shadow: inset 0 0 0 3px #2d2f35; }
+.lid3 img, .lid3 .wake { position: absolute; left: 24px; top: 22px; width: 912px; height: 570px; border-radius: 8px; }
+.lid3 img { object-fit: cover; object-position: 0 0; }
+.lid3 .wake { background: #000; }
+.c2-flash { position: absolute; inset: 0; background: radial-gradient(ellipse 1300px 420px at 50% 58%, rgba(214, 230, 255, .95), rgba(120, 160, 255, .35) 45%, rgba(0, 0, 0, 0) 75%); }   /* 컷 1의 빛이 이어진다 */
+
+/* ── 컷 3 — 섬의 플로로 (색 · 말은 앱 그대로: --isl #363E62, 단추 #B8C9F0 / #263066) ── */
+.c3 { background: #070A1C; }
+.c3-cam { position: absolute; inset: 0; transform-origin: 62% 48%; }
+.c3 .ws { position: absolute; left: -140px; top: -40px; width: 760px; height: 1200px; border-radius: 48px; background: #414A6E; filter: blur(7px); overflow: hidden; }   /* 뒤에 흐리게 놓인 작업실 창 — 섬이 주인공이라 어둡게 */
+.c3 .ws i { position: absolute; left: 200px; right: 60px; border-radius: 36px; background: #525C84; border: 3px solid #6C78A2; }
+.c3 .ws i:nth-child(1) { top: 130px; height: 250px; }
+.c3 .ws i:nth-child(2) { top: 430px; height: 640px; }
+.c3 .isl { position: absolute; left: 560px; top: 40px; width: 1280px; height: 1180px; border-radius: 72px; background: #363E62; box-shadow: 0 40px 120px rgba(0, 0, 0, .55), inset 0 0 0 2px rgba(255, 255, 255, .08); }
+.c3 .floro { position: absolute; left: 50%; top: 30px; width: 420px; height: 420px; margin-left: -210px; }
+.c3 .bub { position: absolute; left: 110px; right: 110px; top: 470px; padding: 38px 48px 42px; border-radius: 44px; background: rgba(255, 255, 255, .08); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .15);
+  font-family: "Gowun Dodum", "Pretendard", "Malgun Gothic", sans-serif; color: #F2F6FF; letter-spacing: -.01em; }
+.c3 .bub b { display: block; font-size: 42px; font-weight: 400; }
+.c3 .bub span { display: block; margin-top: 16px; font-size: 37px; color: #C9D5F2; }
+.c3 .btns { position: absolute; left: 110px; top: 742px; display: flex; gap: 26px; font-family: "Gowun Dodum", "Pretendard", "Malgun Gothic", sans-serif; }
+.c3 .btns i { font-style: normal; font-size: 40px; line-height: 1; padding: 26px 58px; border-radius: 999px; }
+.c3 .ok { background: #B8C9F0; color: #263066; font-weight: 700; }
+.c3 .fix { color: #E6ECFA; box-shadow: inset 0 0 0 2.5px rgba(255, 255, 255, .3); }
+.c3 .drop { position: absolute; left: 0; top: 0; width: 18px; height: 18px; margin: -9px; border-radius: 50%; background: rgba(214, 234, 255, .9); }
+.c3 .ring { position: absolute; left: 0; top: 0; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; border: 5px solid #fff; }
+.c3 .cur { position: absolute; left: 0; top: 0; width: 64px; height: 64px; transform-origin: 8px 4px; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45)); }
+.c3-fade { position: absolute; inset: 0; background: #000; }
+
+/* ── 컷 4 — 큰 글자 ── */
+.c4 .copy { position: absolute; left: 0; right: 0; top: 50%; text-align: center; letter-spacing: -.035em; line-height: 1.18; }
+.c4 .copy span { display: block; }
+.c4 .l1 { font-size: 108px; font-weight: 700; color: #9FACCB; }
+.c4 .l2 { margin-top: 10px; font-size: 140px; font-weight: 800; background: linear-gradient(92deg, #FFFFFF 10%, #C3D6FF 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ── 컷 5 — 플로로 아이콘 · Floe · 한 줄 (아이콘 색은 앱 아이콘과 같다) ── */
+.c5 .halo { position: absolute; inset: 0; background: radial-gradient(ellipse 760px 520px at 50% 40%, rgba(58, 95, 224, .34), rgba(0, 0, 0, 0) 70%); }
+.c5 .tile { position: absolute; left: 50%; top: 250px; width: 280px; height: 280px; margin-left: -140px; border-radius: 64px; overflow: hidden;
+  background: linear-gradient(135deg, #3A5FE0, #16226A); box-shadow: 0 30px 100px rgba(58, 95, 224, .5), inset 0 0 0 2px rgba(255, 255, 255, .1); }
+.c5 .tile .floro { position: absolute; left: 28px; top: 34px; width: 224px; height: 224px; }
+.c5 .name { position: absolute; left: 0; right: 0; top: 556px; text-align: center; font: 400 168px/1 "Bagel Fat One", "Pretendard", sans-serif; color: #fff; letter-spacing: .01em; }
+.c5 .tag { position: absolute; left: 0; right: 0; top: 762px; text-align: center; font-size: 46px; font-weight: 500; color: #B4C2E4; letter-spacing: -.02em; }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <section class="cut c1"><div class="c1-cam">
+    <div class="lid"></div><div class="base"></div>
+    <div class="edge up"></div><div class="edge dn"></div>
+    <div class="bloom b2"></div><div class="bloom b1"></div>
+    <div class="notch"></div><div class="slit"></div>
+  </div></section>
+
+  <section class="cut c2">
+    <div class="c2-glow"></div><div class="c2-floor"></div>
+    <div class="c2-cam"><div class="c2-push"><div class="scene"><div class="rig">
+      <div class="deck"><i class="keys"></i><i class="pad"></i><i class="spill"></i></div>
+      <div class="lip"></div>
+      <div class="lid3"><div class="bezel"></div><img src="../../features/shots/2026-10-30-quest-tab/after-b-s2-1440.png" alt=""><i class="wake"></i></div>
+    </div></div></div></div>
+    <div class="c2-flash"></div>
+  </section>
+
+  <section class="cut c3"><div class="c3-cam">
+    <div class="ws"><i></i><i></i></div>
+    <div class="isl">
+      <div class="floro" id="f3"></div>
+      <div class="bub"><b>플로로가 생각한 내용인데 맞나요?</b><span>“회원이 신청 버튼을 누르면, 앱은 신청서를 보여 준다.”</span></div>
+      <div class="btns"><i class="ok">맞아요</i><i class="fix">고칠래요</i></div>
+    </div>
+    <div class="drops"></div>
+    <div class="ring"></div>
+    <svg class="cur" viewBox="0 0 32 32" aria-hidden="true"><path d="M4 2 V25 L10.2 19.4 L14.4 29 L18.4 27.3 L14.3 17.9 L22.6 17.9 Z" fill="#fff" stroke="#10142B" stroke-width="1.8" stroke-linejoin="round"/></svg>
+  </div><div class="c3-fade"></div></section>
+
+  <section class="cut c4"><div class="copy"><span class="l1">AI가 일해도,</span><span class="l2">성장은 사람이.</span></div></section>
+
+  <section class="cut c5">
+    <div class="halo"></div>
+    <div class="tile"><div class="floro" id="f5"></div></div>
+    <div class="name">Floe</div>
+    <div class="tag">얼음 위 작업실에서, 플로로와 함께</div>
+  </section>
+
+</div>
+<script src="../../../02-frontend/navigator/seal.js"></script>
+<script>
+(() => {
+  const DUR = 5, CAP = new URLSearchParams(location.search).has("capture");
+  const $ = (s, el = document) => el.querySelector(s);
+  const clamp = (x) => Math.min(1, Math.max(0, x));
+  const prog = (t, a, b) => clamp((t - a) / (b - a));
+  const lerp = (a, b, p) => a + (b - a) * p;
+  const easeOut = (p) => 1 - Math.pow(1 - p, 3), easeOut4 = (p) => 1 - Math.pow(1 - p, 4), easeIn = (p) => p * p * p;
+  const easeInOut = (p) => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+  const backOut = (p) => 1 + 2.70158 * Math.pow(p - 1, 3) + 1.70158 * Math.pow(p - 1, 2);
+  const css = (el, o) => Object.assign(el.style, o);
+
+  const stage = $("#stage"), cuts = [...document.querySelectorAll(".cut")];
+  const f3 = $("#f3"), f5 = $("#f5");
+  f3.innerHTML = NavSeal.svg("idle", 420, { hole: true });
+  f5.innerHTML = NavSeal.svg("idle", 224, { hole: true });
+  const body3 = $(".c-body", f3), svg5 = $("svg.cat", f5), body5 = $(".c-body", f5), blush5 = [...f5.querySelectorAll(".c-blush ellipse")];
+  // 물방울 — 처음 자리(dx) · 속도(vx, vy) · 크기 · 늦게 나오는 정도
+  const DROPS = [[-120, -260, 620, 1.1, 0], [-60, -120, 820, .8, .03], [40, 90, 900, 1, .01], [110, 240, 700, 1.2, .04], [150, 380, 520, .7, .02], [-150, -400, 480, .75, .05], [0, -30, 1000, .6, .06]];
+  const drops = DROPS.map(() => $(".drops").appendChild(Object.assign(document.createElement("i"), { className: "drop" })));
+  let OK = { x: 0, y: 0 }, WATER = { x: 0, y: 0 };
+  const START = { x: 1560, y: 1130 };
+
+  function fit() {
+    const k = CAP ? 1 : Math.min(innerWidth / 1920, innerHeight / 1080);
+    css(stage, { transform: `scale(${k})`, left: `${CAP ? 0 : (innerWidth - 1920 * k) / 2}px`, top: `${CAP ? 0 : (innerHeight - 1080 * k) / 2}px` });
+  }
+  // 글꼴이 다 온 뒤 '맞아요' 단추와 물 선의 자리를 무대 좌표로 잰다(카메라가 움직이기 전)
+  function measure() {
+    const sr = stage.getBoundingClientRect(), k = sr.width / 1920;
+    const at = (r, fx, fy) => ({ x: (r.left + r.width * fx - sr.left) / k, y: (r.top + r.height * fy - sr.top) / k });
+    OK = at($(".c3 .ok").getBoundingClientRect(), .56, .56);
+    WATER = at(f3.getBoundingClientRect(), .5, .82);
+  }
+
+  function cut1(t) {
+    const p = easeOut(prog(t, .03, .48)), f = easeIn(prog(t, .4, .6));
+    css($(".c1-cam"), { transform: `scale(${lerp(1.08, 1, easeOut(prog(t, 0, .6)))})` });
+    css($(".c1 .slit"), { transform: `scaleX(${p})`, opacity: p });
+    css($(".c1 .b1"), { transform: `scale(${p}, ${1 + f * 2.2})`, opacity: .95 * p });
+    css($(".c1 .b2"), { transform: `scaleX(${.3 + .7 * p})`, opacity: .3 * p + .5 * f });
+    css($(".c1 .edge.up"), { transform: `scaleX(${p})`, opacity: .8 * p });
+    css($(".c1 .edge.dn"), { transform: `scaleX(${p})`, opacity: .8 * p });
+    css($(".c1 .notch"), { opacity: p });
+  }
+
+  function cut2(t) {
+    const o = easeOut4(prog(t, .6, 1.5)), g = easeOut(prog(t, .6, 1.4)), q = easeIn(prog(t, 1.56, 1.8));
+    $(".lid3").style.transform = `rotateX(${lerp(-78, 7, o).toFixed(2)}deg)`;
+    css($(".lid3 .wake"), { opacity: lerp(.5, 0, easeOut(prog(t, .6, 1.25))) });
+    css($(".c2-glow"), { opacity: .2 + .8 * g });
+    css($(".deck .spill"), { opacity: .2 + .8 * g });
+    css($(".c2-floor"), { opacity: g });
+    css($(".c2-cam"), { transform: `scale(${lerp(.92, 1.08, easeOut(prog(t, .6, 1.7)))})` });
+    css($(".c2-push"), { transform: `scale(${1 + 1.7 * q})`, filter: q ? `blur(${(q * 12).toFixed(1)}px)` : "none" });
+    css($(".c2-flash"), { opacity: lerp(.9, 0, easeOut(prog(t, .6, .82))) });
+  }
+
+  function cut3(t) {
+    css($(".c3-cam"), { transform: `scale(${lerp(1.14, 1, easeOut(prog(t, 1.8, 2.15))) + .02 * prog(t, 2.15, 3.2)})`, filter: t < 2 ? `blur(${lerp(14, 0, easeOut(prog(t, 1.8, 2))).toFixed(1)}px)` : "none" });
+    // 플로로 — 물 아래(84칸)에 있다가 뿅 올라와 살짝 넘치고 제자리로, 그 뒤로는 물결 따라 조금
+    const a = prog(t, 1.92, 2.14), b = prog(t, 2.14, 2.36);
+    const y = a < 1 ? lerp(84, -7, easeOut(a)) : lerp(-7, 0, easeInOut(b)) + (b >= 1 ? Math.sin((t - 2.36) * 2.4) * 1.1 : 0);
+    const st = a < 1 ? Math.sin(Math.PI * a) : 0;
+    body3.style.transform = `translateY(${y.toFixed(2)}px) scale(${(1 - .04 * st).toFixed(3)}, ${(1 + .07 * st).toFixed(3)})`;
+    f3.classList.toggle("blink", t >= 2.44 && t < 2.53);
+    DROPS.forEach(([dx, vx, vy, s, d], i) => {
+      const tau = t - 2.03 - d, on = tau > 0 && tau < .6;
+      css(drops[i], { opacity: on ? 1 - tau / .6 : 0, transform: `translate(${(WATER.x + dx + vx * tau).toFixed(1)}px, ${(WATER.y - vy * tau + 1200 * tau * tau).toFixed(1)}px) scale(${s})` });
+    });
+    // 커서 — 오른쪽 아래에서 살짝 휘어 '맞아요'로, 눌렀다 뗀다
+    const m = easeInOut(prog(t, 2.06, 2.74)), press = Math.sin(Math.PI * prog(t, 2.8, 2.96)), r = prog(t, 2.82, 3.1);
+    const cx = lerp(START.x, OK.x, m), cy = lerp(START.y, OK.y, m) - Math.sin(Math.PI * m) * 60, cur = $(".c3 .cur");
+    css(cur, { transform: `translate(${(cx - 8).toFixed(1)}px, ${(cy - 4).toFixed(1)}px) scale(${1 - .12 * press})` });
+    css($(".c3 .ok"), { transform: `scale(${1 - .05 * press})`, filter: `brightness(${1 + .18 * press})` });
+    css($(".c3 .ring"), { transform: `translate(${OK.x}px, ${OK.y}px) scale(${lerp(.3, 1.7, easeOut(r))})`, opacity: r > 0 && r < 1 ? (1 - r) * .85 : 0 });
+    const cr = cur.getBoundingClientRect();
+    NavSeal.follow(f3, { x: cr.left, y: cr.top });   // 제품의 '눈 따라오기' 그대로
+    css($(".c3-fade"), { opacity: easeIn(prog(t, 3.04, 3.2)) });
+  }
+
+  function cut4(t) {
+    const out = easeIn(prog(t, 4.08, 4.2));
+    [[".c4 .l1", prog(t, 3.22, 3.52)], [".c4 .l2", prog(t, 3.4, 3.72)]].forEach(([sel, p]) =>
+      css($(sel), { opacity: easeOut(p) * (1 - out), transform: `translateY(${lerp(48, 0, easeOut(p)).toFixed(1)}px)`, filter: `blur(${(lerp(16, 0, easeOut(p)) + out * 8).toFixed(1)}px)` }));
+    css($(".c4 .copy"), { transform: `translateY(-54%) scale(${1 + .03 * prog(t, 3.2, 4.2)})` });
+  }
+
+  function cut5(t) {
+    const a = prog(t, 4.22, 4.56), n = prog(t, 4.34, 4.64), g = prog(t, 4.48, 4.76), smile = t >= 4.66, hop = Math.sin(Math.PI * prog(t, 4.66, 4.9));
+    css($(".c5 .halo"), { opacity: easeOut(prog(t, 4.2, 4.7)) });
+    css($(".c5 .tile"), { opacity: easeOut(a), transform: `scale(${lerp(.8, 1, backOut(a)).toFixed(3)})`, filter: a < 1 ? `blur(${lerp(12, 0, easeOut(a)).toFixed(1)}px)` : "none" });
+    css($(".c5 .name"), { opacity: easeOut(n), transform: `translateY(${lerp(34, 0, easeOut(n)).toFixed(1)}px)`, filter: n < 1 ? `blur(${lerp(10, 0, easeOut(n)).toFixed(1)}px)` : "none" });
+    css($(".c5 .tag"), { opacity: easeOut(g), transform: `translateY(${lerp(18, 0, easeOut(g)).toFixed(1)}px)` });
+    // 눈웃음 — 앱 아이콘의 그 얼굴로
+    svg5.classList.toggle("m-happy", smile); svg5.classList.toggle("m-idle", !smile);
+    blush5.forEach((e) => { e.style.opacity = smile ? .8 * easeOut(prog(t, 4.66, 4.86)) : 0; });
+    body5.style.transform = `translateY(${(-3 * hop).toFixed(2)}px)`;
+  }
+
+  const CUTS = [[.6, cut1], [1.8, cut2], [3.2, cut3], [4.2, cut4], [Infinity, cut5]];
+  function render(t) {
+    t = Math.min(DUR, Math.max(0, t));
+    const n = CUTS.findIndex(([end]) => t < end);
+    cuts.forEach((c, i) => { c.style.display = i === n ? "block" : "none"; });
+    CUTS[n][1](t);
+  }
+
+  window.seek = (t) => { render(t); return new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(() => ok(t)))); };
+  window.fontsUsed = () => [...new Set([...document.fonts].filter((f) => f.status === "loaded").map((f) => `${f.family.replace(/"/g, "")} ${f.weight}`))].join(", ") || "받은 글꼴 없음(컴퓨터 글꼴로 보임)";
+  window.ready = (async () => {
+    fit();
+    const want = [["800 100px Pretendard", "성장은 사람이."], ["700 100px Pretendard", "AI가 일해도,"], ["500 40px Pretendard", "얼음 위 작업실에서, 플로로와 함께"], ['100px "Bagel Fat One"', "Floe"], ['40px "Gowun Dodum"', "플로로가 생각한 내용인데 맞나요? 맞아요 고칠래요"]];
+    await Promise.all(want.map(([font, text]) => document.fonts.load(font, text).catch(() => {})));
+    const img = $(".lid3 img");
+    await img.decode().catch(() => {});
+    measure();
+    if (CAP) return render(0);
+    addEventListener("resize", fit);
+    const still = new URLSearchParams(location.search).get("t");
+    if (still !== null) return render(parseFloat(still) || 0);
+    const t0 = performance.now();
+    (function loop(now) { render(Math.min(((now - t0) / 1000) % (DUR + .8), DUR)); requestAnimationFrame(loop); })(t0);
+  })();
+})();
+</script>
+</body>
+</html>

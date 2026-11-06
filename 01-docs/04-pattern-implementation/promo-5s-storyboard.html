@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floe 5초 홍보영상 — 스토리보드 (초안)</title>
+<!-- claude-drafted: 2026-11-05 — 두승현의 요청("5초짜리 간단한 홍보영상을 만들고 싶어 애플 맥북 광고 느낌나게 / 우선 스토리보드 문서를 만들어줘 … 양식 참고해서")으로 Claude가 만든 초안.
+     양식(Title · Page · Cut / Picture / 샷 / Action / Dialogue / time)은 두승현이 준 스토리보드 예시 그림을 따랐다. 컷 · 시간 · 카피 · 규격은 초안이고 두승현이 고친다.
+     화면 묘사의 근거: README(작업실 = 위 지도 · 아래 퀘스트 · 오른쪽 섬, '맞아요 / 고칠래요'), 마스코트 README(빼꼼 솟기 · 눈이 마우스 쪽으로 · 표정 전환), 앱 아이콘(02-frontend/electron/build/icon.png),
+     소개 페이지의 한 문장("AI가 일하는 시대에도, 성장하는 건 사람이어야 한다" — 이재엽 확정 2026-10-12)과 "얼음 위 작업실에서, 플로로와 함께".
+     플로로 그림은 02-frontend/assets/mascot/floro.svg의 선을 흑백 스케치로 옮긴 것이다(원본은 고치지 않았다). 서버 · AI를 부르지 않고 아무것도 저장하지 않는다. 브라우저로 바로 열고, 인쇄하면 A4 한 장이다. -->
+<style>
+@font-face { font-family: "Bagel Fat One"; src: url("../../02-frontend/assets/fonts/BagelFatOne-Regular.woff") format("woff"); font-display: swap; }
+@page { size: A4; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: #e7e6e2; color: #111; font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; }
+.sheet { width: 210mm; height: 297mm; margin: 8mm auto; padding: 13mm 10mm 9mm; background: #fff; box-shadow: 0 2px 16px rgba(0, 0, 0, .2); }
+@media screen and (min-width: 1200px) { .sheet { zoom: 1.3; } }   /* 넓은 화면에서는 크게 — 인쇄는 그대로 A4 */
+@media print { body { background: #fff; } .sheet { margin: 0; box-shadow: none; height: 296mm; } }
+
+/* 머리 — Title. / Page. */
+.head { display: flex; justify-content: space-between; align-items: flex-end; margin: 0 1mm 4.5mm; font: 11pt Arial, "Malgun Gothic", sans-serif; }
+.field { display: flex; align-items: baseline; gap: 3mm; border-bottom: .35mm solid #111; padding: 0 1mm .9mm 0; }
+.field.title { width: 104mm; }
+.field.page { width: 46mm; }
+.field b { font: 700 10.5pt "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+
+/* 표 — 바깥은 굵게, 컷 사이는 두 줄 */
+table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1.1mm solid #111; }
+th, td { border-left: .5mm solid #111; }
+th:first-child, td:first-child { border-left: 0; }
+th { height: 6.4mm; padding: 0; font: 400 10pt Arial, sans-serif; text-align: center; border-bottom: .5mm solid #111; }
+td { vertical-align: top; padding: 1.7mm 1.6mm; font-size: 8.6pt; line-height: 1.46; word-break: keep-all; overflow-wrap: anywhere; border-bottom: 1mm double #111; }
+tr:last-child td { border-bottom: 0; }
+td.cut { padding: 0; vertical-align: middle; text-align: center; font: 22pt "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive; }
+td.pic { padding: 0; }
+td.pic svg { display: block; width: 100%; height: auto; }
+td p { margin: 0 0 1.2mm; }
+td b { font-size: 10pt; }
+td small { display: block; margin-bottom: 1.2mm; font-size: 7.4pt; line-height: 1.4; color: #444; }
+td .why, td .snd { color: #444; font-size: 7.8pt; }
+td .copy { font-weight: 700; font-size: 9.6pt; line-height: 1.38; }
+td.time { text-align: center; padding: 1.7mm .5mm; }
+td.time b { display: block; }
+td.time small { font-size: 6.8pt; }
+
+/* 그림 속 글씨 — 빨강은 움직임 메모 */
+svg .rn { font: 700 11.5px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; fill: #E5261F; }
+svg .bt { font: 700 12px "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+svg .mv { fill: none; stroke: #E5261F; stroke-width: 1.9; stroke-linecap: round; }
+
+/* 아래 메모 */
+.note { margin: 4.5mm 1mm 0; font-size: 7.8pt; line-height: 1.55; color: #222; }
+.note dl { display: grid; grid-template-columns: 19mm 1fr; gap: .7mm 2mm; margin: 0; }
+.note dt { font-weight: 700; }
+.note dd { margin: 0; }
+.note .red { color: #E5261F; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- 그림들이 같이 쓰는 것: 손그림처럼 떨리는 선 · 빛 번짐 · 빨간 화살촉 · 플로로 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="rough" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180">
+      <feTurbulence type="fractalNoise" baseFrequency="0.045" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="soft" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180"><feGaussianBlur stdDeviation="6"/></filter>
+    <radialGradient id="halo"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="slit"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff"/><stop offset=".7" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M1.5 1.5 L8.5 5 L1.5 8.5" fill="none" stroke="#E5261F" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <clipPath id="floro-clip"><rect x="-20" y="-40" width="160" height="150"/></clipPath>
+    <!-- 플로로(숨구멍) — floro.svg의 몸 · 지느러미 · 물 선 그대로, 색만 흑백 -->
+    <symbol id="floro" viewBox="0 0 120 120">
+      <ellipse cx="60" cy="88" rx="56" ry="30" fill="#141414" opacity=".5"/>
+      <g clip-path="url(#floro-clip)"><g transform="translate(0 18) scale(1.12)">
+        <path d="M50 10 C66 10 78 21 80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 57 115 C39 115 27 112 22 103 C17 94 18 78 19 63 C20 47 20 31 26 21 C32 13 40 10 50 10 Z" fill="#fff" stroke="#1b1b1b" stroke-width="1.7"/>
+        <path d="M80 38 C81 50 83 58 91 68 C100 79 102 96 94 106 C87 114 73 115 62 115 C80 108 90 96 87 82 C84 70 79 58 80 38 Z" fill="#d9d9d9"/>
+        <path d="M37 62 Q45 64 49 74 M62 59 Q54 64 49 74 M31 72 Q49 85 69 71" fill="none" stroke="#a6a6a6" stroke-width="2.8" stroke-linecap="round"/>
+      </g></g>
+      <path d="M4 100 Q60 92 116 100 Q110 117 60 118 Q10 117 4 100 Z" fill="#7d7d7d"/>
+      <path d="M14 100 Q60 93 106 100" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
+      <path d="M30 106 Q44 104 52 106 M66 108 Q78 106 90 108" fill="none" stroke="#fff" stroke-width="1" stroke-linecap="round" opacity=".5"/>
+    </symbol>
+    <symbol id="floro-snout" viewBox="0 0 120 120"><g transform="translate(0 18) scale(1.12)">
+      <path d="M47.3 39.2 Q49.5 38.2 51.7 39.2 Q50.8 41.6 49.5 41.8 Q48.2 41.6 47.3 39.2 Z" fill="#1b1b1b"/>
+      <path d="M49.5 41.8 L49.5 43.4 M46 43 Q47.7 45.3 49.5 43.4 Q51.3 45.3 53 43" fill="none" stroke="#1b1b1b" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M31 41 L22 39.5 M31 43.5 L22 44.5 M68 41 L77 39.5 M68 43.5 L77 44.5" fill="none" stroke="#1b1b1b" stroke-width="1.1" stroke-linecap="round"/>
+    </g></symbol>
+    <symbol id="floro-eyes" viewBox="0 0 120 120"><g transform="translate(0 18) scale(1.12)" fill="#1b1b1b"><circle cx="39" cy="35" r="3.4"/><circle cx="60" cy="35" r="3.4"/></g></symbol>
+    <symbol id="floro-smile" viewBox="0 0 120 120"><g transform="translate(0 18) scale(1.12)">
+      <path d="M35.5 36.5 Q39 31.5 42.5 36.5 M56.5 36.5 Q60 31.5 63.5 36.5" fill="none" stroke="#1b1b1b" stroke-width="2.2" stroke-linecap="round"/>
+      <ellipse cx="33" cy="42" rx="4.2" ry="2.6" fill="#cfcfcf"/><ellipse cx="66" cy="42" rx="4.2" ry="2.6" fill="#cfcfcf"/>
+    </g></symbol>
+  </defs>
+</svg>
+
+<main class="sheet">
+  <div class="head">
+    <div class="field title">Title. <b>Floe 5초 홍보영상 — 초안</b></div>
+    <div class="field page">Page. <b>1 / 1</b></div>
+  </div>
+
+  <table>
+    <colgroup><col style="width:8mm"><col style="width:78mm"><col style="width:24mm"><col style="width:38mm"><col style="width:30mm"><col style="width:12mm"></colgroup>
+    <thead><tr><th>Cut</th><th>Picture</th><th aria-label="샷 · 카메라"></th><th>Action</th><th>Dialogue</th><th>time</th></tr></thead>
+    <tbody>
+
+    <!-- 컷 1 — 틈새의 빛 -->
+    <tr>
+      <td class="cut">1</td>
+      <td class="pic">
+        <svg viewBox="0 0 320 180" role="img" aria-label="컷 1 그림 — 검은 화면, 닫힌 노트북 틈에서 새는 빛 한 줄">
+          <rect width="320" height="180" fill="#222"/>
+          <g filter="url(#rough)">
+            <path d="M-8 58 H328 V88 H-8 Z" fill="#383838"/>
+            <path d="M-8 58 H328" fill="none" stroke="#a9a9a9" stroke-width="1.5"/>
+            <path d="M-8 92 H132 Q139 92 142 96 Q147 101 160 101 Q173 101 178 96 Q181 92 188 92 H328 V126 H-8 Z" fill="#2f2f2f"/>
+            <path d="M-8 126 H328" fill="none" stroke="#8a8a8a" stroke-width="1.5"/>
+          </g>
+          <ellipse cx="160" cy="91" rx="112" ry="13" fill="#fff" opacity=".42" filter="url(#soft)"/>
+          <rect x="30" y="88.4" width="260" height="3.4" fill="url(#slit)"/>
+          <path d="M132 92 Q139 92 142 96 Q147 101 160 101 Q173 101 178 96 Q181 92 188 92 Z" fill="#fff" opacity=".94"/>
+          <ellipse cx="160" cy="143" rx="96" ry="8" fill="#fff" opacity=".08"/>
+          <path class="mv" d="M146 40 H84" marker-end="url(#arr)"/>
+          <path class="mv" d="M174 40 H236" marker-end="url(#arr)"/>
+          <text class="rn" x="160" y="27" text-anchor="middle">빛이 가운데서 양옆으로</text>
+          <text class="rn" x="160" y="166" text-anchor="middle">닫힌 노트북의 앞 틈</text>
+        </svg>
+      </td>
+      <td><b>E.C.U</b><small>익스트림 클로즈업 — 아주 가까이</small><p>정면 · 고정</p></td>
+      <td><p>암전에서 시작. 닫힌 노트북 틈으로 빛 한 줄이 가운데서 양옆으로 번진다.</p><p class="why">→ 무엇이 열릴지 궁금하게</p></td>
+      <td><p>대사 없음</p><p class="snd">소리: 낮게 깔리는 <span style="white-space:nowrap">'웅—'</span></p></td>
+      <td class="time"><b>0.6초</b><small>0.0 – 0.6</small></td>
+    </tr>
+
+    <!-- 컷 2 — 노트북이 열린다 -->
+    <tr>
+      <td class="cut">2</td>
+      <td class="pic">
+        <svg viewBox="0 0 320 180" role="img" aria-label="컷 2 그림 — 노트북이 열리고 화면에 Floe 작업실이 켜진다">
+          <rect width="320" height="180" fill="#222"/>
+          <ellipse cx="160" cy="74" rx="150" ry="92" fill="url(#halo)"/>
+          <g filter="url(#rough)">
+            <rect x="82" y="20" width="156" height="104" rx="7" fill="#0f0f0f" stroke="#bdbdbd" stroke-width="1.5"/>
+            <rect x="88" y="26" width="144" height="90" rx="2" fill="#f4f4f4"/>
+            <rect x="88" y="26" width="144" height="9" fill="#dcdcdc"/>
+            <rect x="117" y="28.4" width="34" height="4.2" rx="2.1" fill="#fff" stroke="#9a9a9a" stroke-width=".6"/>
+            <rect x="88" y="35" width="21" height="81" fill="#e6e6e6"/>
+            <rect x="90" y="40" width="17" height="6" rx="1.8" fill="#4a4a4a"/>
+            <path d="M91 51 H103 M91 56 H100" fill="none" stroke="#9a9a9a" stroke-width="1.2" stroke-linecap="round"/>
+            <g fill="#fff" stroke="#8d8d8d" stroke-width=".8">
+              <rect x="112.5" y="39" width="14.5" height="17" rx="3.2"/><rect x="129" y="39" width="14.5" height="17" rx="3.2"/>
+              <rect x="145.5" y="39" width="14.5" height="17" rx="3.2" stroke="#222" stroke-width="1.5"/><rect x="162" y="39" width="14.5" height="17" rx="3.2" fill="#ececec"/>
+            </g>
+            <rect x="112.5" y="60" width="64" height="53" rx="3.5" fill="#fff" stroke="#8d8d8d" stroke-width=".8"/>
+            <rect x="115.5" y="65.5" width="58" height="10" rx="2.4" fill="none" stroke="#444" stroke-width=".9"/>
+            <circle cx="120" cy="70.5" r="2.1" fill="#555"/>
+            <path d="M125 70.5 H150 M125 83 H158 M125 92 H152 M125 101 H160 M125 109 H146" fill="none" stroke="#8d8d8d" stroke-width="1.2" stroke-linecap="round"/>
+            <g fill="#fff" stroke="#8d8d8d" stroke-width=".8"><circle cx="120" cy="83" r="1.9"/><circle cx="120" cy="92" r="1.9"/><circle cx="120" cy="101" r="1.9"/><circle cx="120" cy="109" r="1.9"/></g>
+            <rect x="180" y="38" width="49" height="76" rx="6" fill="#3c3c3c"/>
+            <rect x="184" y="66" width="36" height="11" rx="3.5" fill="#5c5c5c"/>
+            <rect x="184" y="80" width="41" height="17" rx="3.5" fill="#4a4a4a" stroke="#e2e2e2" stroke-width=".7"/>
+            <rect x="184" y="101" width="30" height="8.5" rx="4.2" fill="#5c5c5c"/><rect x="216" y="101" width="10" height="8.5" rx="4.2" fill="#d6d6d6"/>
+            <path d="M64 126 H256 L270 140 Q272 144 266 144 H54 Q48 144 50 140 Z" fill="#303030" stroke="#bdbdbd" stroke-width="1.5"/>
+            <path d="M80 129 H240 L247 137 H73 Z" fill="#1a1a1a"/>
+            <path d="M143 140.5 H177" fill="none" stroke="#8d8d8d" stroke-width="1.2" stroke-linecap="round"/>
+          </g>
+          <use href="#floro" x="192" y="38.5" width="26" height="26"/><use href="#floro-eyes" x="192" y="38.5" width="26" height="26"/>
+          <ellipse cx="160" cy="134" rx="84" ry="6" fill="#fff" opacity=".1"/>
+          <path class="mv" d="M252 120 Q266 76 246 28" marker-end="url(#arr)"/>
+          <text class="rn" x="263" y="80">열림</text>
+          <path class="mv" d="M20 8 H300 V165.5 H20 Z" stroke-dasharray="5 5" stroke-width="1.3"/>
+          <path class="mv" d="M2 1 L17 6.5" marker-end="url(#arr)"/>
+          <path class="mv" d="M318 179 L303 167.5" marker-end="url(#arr)"/>
+          <text class="rn" x="27" y="160">달리 인 — 카메라가 다가감</text>
+        </svg>
+      </td>
+      <td><b>F.S</b><small>풀 샷 — 전체가 보이게</small><p>정면 · 달리 인</p><small>카메라가 천천히 다가감</small></td>
+      <td><p>노트북이 열리며 화면 빛이 어둠에 번진다. 화면에는 Floe 작업실 — 위 지도, 아래 퀘스트, 오른쪽 섬.</p><p class="why">→ 주인공(Floe) 등장</p></td>
+      <td><p>대사 없음</p><p class="snd">소리: 빛을 따라 음이 차오름</p></td>
+      <td class="time"><b>1.2초</b><small>0.6 – 1.8</small></td>
+    </tr>
+
+    <!-- 컷 3 — 섬의 플로로 -->
+    <tr>
+      <td class="cut">3</td>
+      <td class="pic">
+        <svg viewBox="0 0 320 180" role="img" aria-label="컷 3 그림 — 섬의 플로로가 물에서 빼꼼 올라와 커서를 눈으로 따라가고, 커서가 맞아요를 누른다">
+          <rect width="320" height="180" fill="#ececec"/>
+          <g filter="url(#rough)">
+            <rect x="-14" y="14" width="96" height="44" rx="9" fill="#fff" stroke="#9a9a9a" stroke-width="1.1"/>
+            <path d="M6 30 H52 M6 42 H38" fill="none" stroke="#b0b0b0" stroke-width="2.2" stroke-linecap="round"/>
+            <rect x="-14" y="68" width="96" height="130" rx="9" fill="#fff" stroke="#9a9a9a" stroke-width="1.1"/>
+            <circle cx="12" cy="88" r="5.5" fill="none" stroke="#777" stroke-width="1.3"/>
+            <path d="M9.3 88 L11.4 90.2 L15 86" fill="none" stroke="#777" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M24 88 H66 M10 110 H60 M10 128 H52 M10 146 H64 M10 164 H46" fill="none" stroke="#b0b0b0" stroke-width="2.2" stroke-linecap="round"/>
+            <rect x="96" y="6" width="250" height="200" rx="16" fill="#3a3a3a" stroke="#1b1b1b" stroke-width="1.6"/>
+            <rect x="118" y="110" width="184" height="30" rx="9" fill="#585858"/>
+            <path d="M130 121 H262 M130 131 H218" fill="none" stroke="#d2d2d2" stroke-width="2.2" stroke-linecap="round"/>
+            <rect x="118" y="147" width="68" height="23" rx="11.5" fill="#f4f4f4" stroke="#111" stroke-width="1.2"/>
+            <rect x="193" y="147" width="74" height="23" rx="11.5" fill="none" stroke="#d2d2d2" stroke-width="1.2"/>
+          </g>
+          <text class="bt" x="145" y="163" text-anchor="middle" fill="#111">맞아요</text>
+          <text class="bt" x="230" y="163" text-anchor="middle" fill="#e6e6e6">고칠래요</text>
+          <use href="#floro" x="150" y="2" width="106" height="106"/>
+          <g transform="translate(-1.8 2)"><use href="#floro-eyes" x="150" y="2" width="106" height="106"/><use href="#floro-snout" x="150" y="2" width="106" height="106"/></g>
+          <g fill="none" stroke="#e8e8e8" stroke-width="1.2"><circle cx="160" cy="72" r="2.6"/><circle cx="254" cy="62" r="2"/><circle cx="248" cy="79" r="3"/><circle cx="166" cy="57" r="1.7"/></g>
+          <path transform="translate(177 161)" d="M0 0 V15 L4.2 11.4 L7 18 L9.6 16.9 L6.9 10.5 L12.3 10.5 Z" fill="#fff" stroke="#111" stroke-width="1.3" stroke-linejoin="round"/>
+          <circle class="mv" cx="177" cy="161" r="7.5" stroke-width="1.5"/>
+          <path class="mv" d="M134 92 V36" marker-end="url(#arr)"/>
+          <path class="mv" d="M191 64 L181 149" stroke-dasharray="4 5" stroke-width="1.5" marker-end="url(#arr)"/>
+          <text class="rn" x="108" y="28">빼꼼!</text>
+          <text class="rn" x="262" y="34">눈이</text><text class="rn" x="262" y="48">커서를</text><text class="rn" x="262" y="62">따라감</text>
+        </svg>
+      </td>
+      <td><b>C.U</b><small>클로즈업 — 가까이</small><p>화면 속 '섬' · 고정</p></td>
+      <td><p>섬의 플로로가 물에서 빼꼼 올라온다. 눈이 커서를 따라가고, 커서가 '맞아요'를 누른다.</p><p class="why">→ AI가 쓰고, 정하는 건 나</p></td>
+      <td><p>대사 없음</p><p>화면 글자: 맞아요 / 고칠래요</p><p class="snd">소리: 물방울 '뽁' → 클릭 '톡'</p></td>
+      <td class="time"><b>1.4초</b><small>1.8 – 3.2</small></td>
+    </tr>
+
+    <!-- 컷 4 — 큰 글자 -->
+    <tr>
+      <td class="cut">4</td>
+      <td class="pic">
+        <svg viewBox="0 0 320 180" role="img" aria-label="컷 4 그림 — 검은 바탕에 큰 글자 두 줄: AI가 일해도, 성장은 사람이.">
+          <rect width="320" height="180" fill="#222"/>
+          <g text-anchor="middle" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif" fill="#fff">
+            <text x="160" y="75" font-size="25" font-weight="700" fill="#c4c4c4">AI가 일해도,</text>
+            <text x="160" y="114" font-size="31" font-weight="700">성장은 사람이.</text>
+          </g>
+          <path class="mv" d="M36 124 V96" marker-end="url(#arr)"/>
+          <path class="mv" d="M284 124 V96" marker-end="url(#arr)"/>
+          <text class="rn" x="160" y="160" text-anchor="middle">한 줄씩 아래에서 떠오름</text>
+        </svg>
+      </td>
+      <td><b>타이포</b><small>글자만 나오는 화면</small><p>검은 바탕 · 가운데</p></td>
+      <td><p>클릭과 함께 화면이 검게 바뀌고, 글자가 한 줄씩 아래에서 떠오르며 또렷해진다.</p><p class="why">→ 한 문장만 남긴다</p></td>
+      <td><p>자막(큰 글자)</p><p class="copy">AI가 일해도,<br>성장은 사람이.</p><p class="snd">소리: 잠깐 고요</p></td>
+      <td class="time"><b>1.0초</b><small>3.2 – 4.2</small></td>
+    </tr>
+
+    <!-- 컷 5 — 로고 엔딩 -->
+    <tr>
+      <td class="cut">5</td>
+      <td class="pic">
+        <svg viewBox="0 0 320 180" role="img" aria-label="컷 5 그림 — 플로로 아이콘과 Floe 글자, 한 줄 소개">
+          <rect width="320" height="180" fill="#222"/>
+          <ellipse cx="160" cy="78" rx="130" ry="80" fill="url(#halo)" opacity=".5"/>
+          <rect x="131" y="15" width="58" height="58" rx="14" fill="#4b4b4b" stroke="#d6d6d6" stroke-width="1.3" filter="url(#rough)"/>
+          <use href="#floro" x="136" y="19" width="48" height="48"/><use href="#floro-smile" x="136" y="19" width="48" height="48"/><use href="#floro-snout" x="136" y="19" width="48" height="48"/>
+          <text x="160" y="116" text-anchor="middle" font-family="'Bagel Fat One','Arial Rounded MT Bold','Malgun Gothic',sans-serif" font-size="36" fill="#fff">Floe</text>
+          <text x="160" y="141" text-anchor="middle" font-family="'Malgun Gothic','Apple SD Gothic Neo',sans-serif" font-size="12.5" fill="#d0d0d0">얼음 위 작업실에서, 플로로와 함께</text>
+          <path class="mv" d="M194 42 Q204 39 208 30" stroke-width="1.6"/>
+          <text class="rn" x="212" y="28">눈웃음</text>
+        </svg>
+      </td>
+      <td><b>로고 엔딩</b><small>이름으로 끝나는 화면</small><p>가운데 · 고정</p></td>
+      <td><p>플로로 아이콘과 'Floe'가 떠오른다. 플로로가 눈웃음을 짓고(앱 아이콘의 그 얼굴) 그대로 멈춘다.</p><p class="why">→ 이름을 기억하게</p></td>
+      <td><p class="copy">Floe</p><p>얼음 위 작업실에서, 플로로와 함께</p><p class="snd">소리: 맑은 한 음</p></td>
+      <td class="time"><b>0.8초</b><small>4.2 – 5.0</small></td>
+    </tr>
+
+    </tbody>
+  </table>
+
+  <section class="note" aria-label="메모">
+    <dl>
+      <dt>길이 · 규격</dt><dd>총 5.0초 · 5컷 · 가로 16:9(1920×1080) · 초당 30장(30fps). 소리 없이도 뜻이 통하게 — 소리는 있을 때만 더한다.</dd>
+      <dt>톤</dt><dd>애플 맥북 광고처럼 — 검은 바탕, 한 줄기 빛, 느린 움직임, 큰 글자, 넉넉한 여백. 노트북은 로고 없는 모습으로.</dd>
+      <dt>화면</dt><dd>컷 2 · 3의 화면과 플로로는 실제 앱 그대로 쓴다 — 연습 예시 화면(작업실 · 섬)과 화면 속 플로로의 '빼꼼 솟기' · '눈 따라오기'.</dd>
+      <dt>카피</dt><dd>컷 4는 초안 — 팀이 확정한 한 문장 "AI가 일하는 시대에도, 성장하는 건 사람이어야 한다"를 줄인 것.</dd>
+      <dt>그림 표시</dt><dd><span class="red">빨간 선 · 글씨</span>는 움직임(피사체 · 카메라)이고 영상에는 나오지 않는다. 그림은 흑백 스케치 — 실제 색은 앱의 남색 · 하늘빛.</dd>
+    </dl>
+  </section>
+</main>
+
+</body>
+</html>
