@@ -90,7 +90,8 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     // F-110(2026-11-01 임유정): 보기 줄(지도 · 흐름 · 상자)은 어느 보기에서나 같은 자리 — 흐름 판의 class 'flow'에 1단계 화면의 .flow(가운데 맞춤)가 겹쳐 흐름에서만 가운데로 밀렸다. claude-drafted: 2026-11-01
     const barAt = () => page.$eval(".qwin .sm-views", (e) => { const r = e.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; });
     const barCards = await barAt();
-    for (const v of ["flow", "box"]) { await page.click(`[data-act="tree-view"][data-v="${v}"]`); await wait(200); assert.deepEqual(await barAt(), barCards, `${v} 보기의 보기 줄 자리 = 지도`); }
+    assert.deepEqual(await page.$$eval('[data-act="tree-view"]', (bs) => bs.map((b) => b.textContent)), ["지도", "흐름"], "'상자' 보기는 뺐다(F-165)");
+    for (const v of ["flow"]) { await page.click(`[data-act="tree-view"][data-v="${v}"]`); await wait(200); assert.deepEqual(await barAt(), barCards, `${v} 보기의 보기 줄 자리 = 지도`); }
     await page.click('[data-act="tree-view"][data-v="flow"]'); await wait(200); assert.ok(await page.$(".qwin .jmap"), "흐름 = 한눈에 보기(C-39)");
     // C-67(2026-10-30): 흐름이면 지도 띠 · 퀘스트 카드가 접히고 작업 칸 가득, 돌아가는 길은 '퀘스트로' 알약 하나(지금 줄 · 진행)
     assert.ok(!(await page.$(".qwin .sm-grid")) && !(await page.$(".qwin .qstack")) && await page.$(".qwin .qboard.full") && await page.$(".qwin .q-back"), "흐름 보기 — 지도 띠 · 카드 없음 · 알약 있음");
@@ -106,7 +107,6 @@ test("C-54 — 도전과제 탭의 카드 지도 · 기획서로 3 ~ 8단계 그
     const rail = await page.$eval('.jm-stage[data-n="0"] .jm-rails i.a', (el) => { const r = el.getBoundingClientRect(), b = el.closest(".board").getBoundingClientRect(); return { w: r.width, h: r.height, inside: r.right <= b.right && r.left >= b.left }; });
     assert.ok(rail.w >= 3 && rail.h > 20 && rail.inside, `길이 보인다 ${JSON.stringify(rail)}`);
     if (SHOTS) { await page.$eval('.jm-stage[data-n="1"]', (el) => el.scrollIntoView({ block: "start" })); await wait(150); await shot(page, "map-rails"); }
-    await page.click('[data-act="tree-view"][data-v="box"]'); await wait(200); assert.ok(await page.$(".qwin .qempty, .qwin iframe.docmap"), "상자 = 문서 지도(서버 없이는 까닭)");
     await page.click('[data-act="tree-view"][data-v="cards"]'); await wait(200); assert.ok(await page.$(".sm-grid"), "다시 지도");
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("navigator-prototype:v1")));
     assert.ok(saved.prep && saved.prep.ok && saved.prep.cards["2"], "준비된 퀘스트는 기록에 남는다");
