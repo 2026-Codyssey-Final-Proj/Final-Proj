@@ -856,6 +856,7 @@ async function shipDocs(body) {   // async — 공개 저장소 확인(gh)을 �
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];   // 쓰기 전에(쓰고 나서 못 맡기지 않게)
+  if (await GH.parentRepo(s.dir)) return [409, { ok: false, why: "parent-repo", reason: PARENT_REPO }];   // F-166-9 — 쓰기 전에: 위 저장소에 커밋 · 푸시하지 않게
   { const hk = Connect.hookReady(s.dir); if (!hk.ok) return [409, { ok: false, why: "hook", reason: NO_HOOK[hk.why] || NO_HOOK.none }]; }   // 허락 연결도 쓰기 전에(F-69 — 커밋 · 푸시가 모두 막힌 채 문서만 남지 않게)
   // C-52(2026-10-29, 지식 퀘스트 PRD 9절 10번): 푸시할 곳(origin)이 공개(또는 모름)면 저장소마다 처음 한 번 묻는다 — 쓰기 전에. 화면이 '올릴게요'면 publicOk: true로 다시 보낸다.
   //   이미 '올릴게요'를 받은 저장소는 gh를 부르지 않는다(서버를 붙잡지 않게)
@@ -1036,12 +1037,15 @@ function carryPost(body) {
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──
 // 폴더는 README와 같이 projectNow에서만 고른다. 저장소 만들기는 Floe가 하지 않고 일 넘기기(3-16)로 사용자의 Claude Code에 맡긴다 — 글은 github.js createRequest가 정한다(화면이 글을 보내지 않는다)
 async function githubNow() { const s = projectNow(); return GH.status(s ? s.dir : "", s ? s.project : ""); }   // async(F-104-7)
+// F-166-9 — 작업 폴더가 다른 git 저장소 안에 있을 때(홈이 저장소 등): 그 저장소로 커밋 · 푸시하지 않게 저장소 만들기 · 문서 올리기를 멈춘다
+const PARENT_REPO = "이 폴더는 다른 git 저장소 안에 있어요 — 그대로 올리면 그 저장소로 커밋 · 푸시돼요. 이 폴더에서 git init으로 따로 저장소를 만든 뒤 다시 해 주세요";
 async function githubCreate(body) {
   const vis = body && body.visibility != null ? body.visibility : "private";
   if (!GH.VIS.includes(vis)) return [400, { ok: false, reason: "공개 범위는 private · public 중 하나" }];
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   const now = await GH.status(s.dir, s.project);
+  if (now.why === "parent-repo") return [409, { ok: false, why: "parent-repo", reason: PARENT_REPO }];   // F-166-9
   if (now.remote) return [409, { ok: false, reason: "이 폴더는 이미 원격 저장소와 이어져 있어요" }];
   return startTask(GH.createRequest(s.project, vis), "저장소 만들기");
 }

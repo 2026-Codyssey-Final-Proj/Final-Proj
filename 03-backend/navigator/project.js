@@ -98,13 +98,13 @@ function folderState(dir) {
   try {
     const st = fs.lstatSync(dir);
     if (!st.isDirectory()) return "file";
-    return fs.readdirSync(dir).length ? "full" : "empty";
+    return fs.readdirSync(dir).filter((n) => n !== ".git").length ? "full" : "empty";   // .git만 있으면 빈 폴더 — 새로 만들기가 git init 한다(F-166-9)
   } catch { return "none"; }
 }
 const TAKEN = "이미 같은 이름의 폴더가 있어요 — 다른 이름을 적거나, '이 컴퓨터에 있는 폴더'로 그 폴더를 골라요";
 
 // ① 새로 만들기 — 홈/Floe/이름. 빈 폴더면 그대로 쓴다
-async function newFolder(home, name) {
+async function newFolder(home, name, { run = runCommand } = {}) {
   const why = badName(name);
   if (why) return { ok: false, message: why };
   const dir = folderFor(home, name), now = folderState(dir);
@@ -112,6 +112,9 @@ async function newFolder(home, name) {
   if (now === "none") {
     try { fs.mkdirSync(dir, { recursive: true }); } catch (e) { return { ok: false, message: `폴더를 만들지 못했어요(${e.code || "까닭 모름"})` }; }
   }
+  // F-166-9(2026-11-07): 새 폴더는 자기 git 저장소로 — 위 폴더(홈 등)가 저장소면 이 폴더의 git 명령이 그 저장소로 가서, 문서 올리기가 남의 저장소에 커밋 · 푸시할 수 있었다.
+  //   빈 폴더에만(가져온 저장소 · 있는 폴더는 건드리지 않는다). git이 없거나 실패해도 폴더는 쓴다(저장소 만들기가 나중에 git init 한다)
+  if (!fs.existsSync(path.join(dir, ".git"))) { try { await run("git", ["init", "-q", "-b", "main"], { cwd: dir }); } catch {} }
   return { ok: true, dir, name, made: now === "none" };
 }
 

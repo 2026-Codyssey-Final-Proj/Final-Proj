@@ -491,6 +491,7 @@
     else if (g.remote && g.remote.kind === "github") repo = `${ledRow("on", `${where} → <b>${esc(g.remote.owner)}/${esc(g.remote.repo)}</b>`, `<a class="btn" href="${esc(g.remote.web)}" target="_blank" rel="noopener">GitHub에서 열기</a>`)}
       <span class="meta">기록 · 저장은 이 저장소의 README와 커밋으로 남아요. 올리는 일은 Claude Code가 하고, Floe는 읽기만 해요.</span>`;
     else if (g.remote) repo = ledRow("", `${where}는 GitHub가 아닌 곳과 이어져 있어요 — 그대로 써도 되고, 책(README)은 똑같이 읽혀요.`);
+    else if (g.why === "parent-repo") repo = ledRow("off", `${where}는 다른 git 저장소 안에 있어요 — 그대로 올리면 그 저장소로 커밋 · 푸시돼요. 이 폴더에서 git init으로 따로 저장소를 만든 뒤 '다시 확인'을 눌러요.`);   // F-166-9 — 저장소 만들기 단추를 보이지 않는다
     else {
       const can = g.gh.found && g.gh.signedIn, live = st.mode === "live";
       repo = `${ledRow("off", `${where}는 ${g.why === "not-repo" ? "아직 git 저장소가 아니에요" : "아직 GitHub 저장소와 이어지지 않았어요"}`)}
