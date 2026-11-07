@@ -75,3 +75,10 @@ test("resultFiles — 보고 근거에 나온 경로 중 파일 목록에 있는
   assert.deepEqual(B.resultFiles({ items: [{ evidence: "`app.py` · ./out 확인" }] }, root), [{ i: 0, path: "app.py" }]);
 });
 
+
+// claude-drafted: 2026-11-07 — F-166-18(사용자 시험 셋째): 'out/2026-11.html이 생겼어요'처럼 조사가 붙은 경로를 못 찾고, 입력 파일(example/members.csv)이 결과보다 먼저 열렸다
+test("resultFiles — 조사가 바로 붙은 경로도 찾고, '결과가 나왔다'의 근거에 든 파일이 맨 앞", () => {
+  const rep = { items: [{ evidence: "python3 dues.py 2026-11 --data example (example/members.csv)" }, { evidence: "결과 파일 out/2026-11.html이 생겼어요" }] };
+  assert.deepEqual(B.resultFiles(rep, [{ path: "example/members.csv" }, { path: "out/2026-11.html" }]), [{ i: 1, path: "out/2026-11.html" }, { i: 0, path: "example/members.csv" }]);
+  assert.deepEqual(B.resultFiles({ items: [{ evidence: "app.py가 생겼어요" }] }, [{ path: "src/myapp.py" }, { path: "app.py" }]), [{ i: 1, path: "app.py" }], "앞 경계는 전처럼 — myapp.py에 맞지 않는다");
+});

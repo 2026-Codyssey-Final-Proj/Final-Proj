@@ -121,6 +121,7 @@
     else if (g.remote && g.remote.kind === "github") repo = `${ledRow("on", `${where} → <b>${esc(g.remote.owner)}/${esc(g.remote.repo)}</b>`, `<a class="btn" href="${esc(g.remote.web)}" target="_blank" rel="noopener">GitHub에서 열기</a>`)}
       <span class="meta">기록 · 저장은 이 저장소의 README와 커밋으로 남아요. 올리는 일은 Claude Code가 하고, Floe는 읽기만 해요.</span>`;
     else if (g.remote) repo = ledRow("", `${where}는 GitHub가 아닌 곳과 이어져 있어요 — 그대로 써도 되고, 책(README)은 똑같이 읽혀요.`);
+    else if (g.why === "parent-repo") repo = ledRow("off", `${where}는 다른 git 저장소 안에 있어요 — 그대로 올리면 그 저장소로 커밋 · 푸시돼요. 이 폴더에서 git init으로 따로 저장소를 만든 뒤 '다시 확인'을 눌러요.`);   // F-166-9 — 저장소 만들기 단추를 보이지 않는다
     else {
       const can = g.gh.found && g.gh.signedIn, live = st.mode === "live";
       repo = `${ledRow("off", `${where}는 ${g.why === "not-repo" ? "아직 git 저장소가 아니에요" : "아직 GitHub 저장소와 이어지지 않았어요"}`)}
@@ -347,6 +348,9 @@
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
         acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, ...(!fix && st.warn.then === "stage" && secretPast(st.warn.text) ? [{ label: "그 칸 고치기", act: "secret-fix", kind: "soft" }] : []), { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };   // F-161-1 — 지난 칸에 있으면 그 칸을 고칠 길
     }
+    if (st.fillWarn && st.fillWarn.vague) return { tone: "blue", mood: "think", title: "숫자로 바꿔 볼까요?",   // F-166-16 — 애매한 말(FR-11)
+      sub: `'${esc(st.fillWarn.w.join("' · '"))}'은 사람마다 다르게 읽혀요. '10초 안에' · '하루 한 번'처럼 숫자로 적으면 나중에 재 볼 수 있어요. 아직 모르면 그대로 적어도 돼요.`,
+      acts: [{ label: "숫자로 고칠게요", act: "fill-fix", key: "Enter", pri: true }, { label: "그대로 적기", act: "fill-anyway" }] };
     if (st.fillWarn) return { tone: "amber", mood: "alert", title: "적기 전에 잠깐!",   // F-161-3 — 칸에 바로 적는 글
       sub: `글 안에 ${esc(st.fillWarn.w.join(", "))}처럼 보이는 게 있어요. 칸에 적으면 화면 · 다음 단계 초안에 그대로 쓰여요(단계 문서에는 가려서 들어가요). 그대로 적을까요?`,
       acts: [{ label: "고칠게요", act: "fill-fix", key: "Enter", pri: true }, { label: "그대로 적기", act: "fill-anyway" }] };

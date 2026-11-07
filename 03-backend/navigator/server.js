@@ -581,6 +581,16 @@ function readmeText(dir) {
 }
 // C-42 R-8(2026-10-27): 작업실 파일 칸 — 연결한 폴더(readme와 같은 '폴더 고르기')의 파일 · 폴더 이름만, 깊이 3 · 200개(files.js). 경로를 받지 않고 · 주지 않는다. 폴더를 모르면 files: null, why: "folder"
 let lastFiles = null;   // 마지막 목록 { dir, list } — /api/file은 이 목록의 번호로만 연다(경로를 요청에서 받지 않는다, C-43)
+// F-166-6(2026-11-07 사용자 시험 셋째): 커밋하지 않은 파일 수(문서 · Floe 설정 밖) — 8단계 '저장소에 올리기'가 단계 문서만 올리고 코드는 한 번도 커밋하지 않은 채 '했음'이 됐다.
+//   git이 없거나 저장소가 아니면 null(모름 — 막지 않는다). 이름은 보내지 않고 수만
+async function dirtyNow(dir) {
+  try {
+    const g = await Project.runCommand("git", ["-c", "core.quotepath=false", "status", "--porcelain", "-z", "--untracked-files=all"], { cwd: dir, timeout: 4000 });
+    if (g.code !== 0) return null;
+    return Project.porcelainPaths(g.out).filter((p) => !/^(docs\/|README\.md$|CLAUDE\.md$|\.claude\/)/.test(p)).length;
+  } catch { return null; }
+}
+async function filesNowAsync() { const r = filesNow(); if (!r.files) return r; const s = projectNow(); return { ...r, dirty: s ? await dirtyNow(s.dir) : null }; }
 function filesNow() {
   const s = projectNow();
   if (!s) { lastFiles = null; return { ok: true, project: "", files: null, why: "folder" }; }
@@ -856,6 +866,7 @@ async function shipDocs(body) {   // async — 공개 저장소 확인(gh)을 �
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   if (task && task.state === "running") return [409, { ok: false, reason: "넘긴 일이 아직 진행 중이에요 — 끝난 뒤 다시 올려요" }];   // 쓰기 전에(쓰고 나서 못 맡기지 않게)
+  if (await GH.parentRepo(s.dir)) return [409, { ok: false, why: "parent-repo", reason: PARENT_REPO }];   // F-166-9 — 쓰기 전에: 위 저장소에 커밋 · 푸시하지 않게
   { const hk = Connect.hookReady(s.dir); if (!hk.ok) return [409, { ok: false, why: "hook", reason: NO_HOOK[hk.why] || NO_HOOK.none }]; }   // 허락 연결도 쓰기 전에(F-69 — 커밋 · 푸시가 모두 막힌 채 문서만 남지 않게)
   // C-52(2026-10-29, 지식 퀘스트 PRD 9절 10번): 푸시할 곳(origin)이 공개(또는 모름)면 저장소마다 처음 한 번 묻는다 — 쓰기 전에. 화면이 '올릴게요'면 publicOk: true로 다시 보낸다.
   //   이미 '올릴게요'를 받은 저장소는 gh를 부르지 않는다(서버를 붙잡지 않게)
@@ -1036,12 +1047,15 @@ function carryPost(body) {
 // ── 설정의 GitHub 칸(C-25) — claude-drafted: 2026-10-24 (이재엽 "깃허브을 연동하는 곳을 설정창에") ──
 // 폴더는 README와 같이 projectNow에서만 고른다. 저장소 만들기는 Floe가 하지 않고 일 넘기기(3-16)로 사용자의 Claude Code에 맡긴다 — 글은 github.js createRequest가 정한다(화면이 글을 보내지 않는다)
 async function githubNow() { const s = projectNow(); return GH.status(s ? s.dir : "", s ? s.project : ""); }   // async(F-104-7)
+// F-166-9 — 작업 폴더가 다른 git 저장소 안에 있을 때(홈이 저장소 등): 그 저장소로 커밋 · 푸시하지 않게 저장소 만들기 · 문서 올리기를 멈춘다
+const PARENT_REPO = "이 폴더는 다른 git 저장소 안에 있어요 — 그대로 올리면 그 저장소로 커밋 · 푸시돼요. 이 폴더에서 git init으로 따로 저장소를 만든 뒤 다시 해 주세요";
 async function githubCreate(body) {
   const vis = body && body.visibility != null ? body.visibility : "private";
   if (!GH.VIS.includes(vis)) return [400, { ok: false, reason: "공개 범위는 private · public 중 하나" }];
   const s = projectNow();
   if (!s) return [400, { ok: false, reason: NO_FOLDER }];
   const now = await GH.status(s.dir, s.project);
+  if (now.why === "parent-repo") return [409, { ok: false, why: "parent-repo", reason: PARENT_REPO }];   // F-166-9
   if (now.remote) return [409, { ok: false, reason: "이 폴더는 이미 원격 저장소와 이어져 있어요" }];
   return startTask(GH.createRequest(s.project, vis), "저장소 만들기");
 }
@@ -1055,7 +1069,7 @@ function addEvent(body) {
   workSession(body, tool).state = kind === "prompt" ? "working" : "done";   // C-12: 세션 상태 — 요청 받음이면 일하는 중, 작업 마침이면 마쳤어요
   const id = `${tool}:${String(body.session_id || "")}`, log = sessions.get(id) || [];
   // S4: 저장하기 전에 가린다 — 메모리의 대화에도, 화면에 줄 글에도 원래 값이 남지 않는다(자르기 전에 가려서 키가 반쯤 남지 않는다)
-  for (const [who, said] of [["사용자", body.prompt], [tool === "codex" ? "Codex" : "Claude", body.last_assistant_message]]) {
+  for (const [who, said] of [["사용자", typeof body.prompt === "string" ? Nav.briefHead(body.prompt) : body.prompt], [tool === "codex" ? "Codex" : "Claude", body.last_assistant_message]]) {   // Floe가 맡긴 글은 요구 문장만(F-166-17)
     if (typeof said === "string" && said.trim()) log.push(`[${who}] ${Sensitive.redact(said.trim())}`);
   }
   while (log.length > 20) log.shift();   // 한 알림에 두 말이 오면 둘 다 넘칠 수 있다
@@ -1143,7 +1157,7 @@ async function handleRoute(req, res) {
   if (req.method === "POST" && route === "/api/knowledge-store") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = sbPost(body || {}); return send(res, code, out); }
   if (req.method === "GET" && route === "/api/exclude") return send(res, 200, excludeGet());   // C-52 빼 둘 곳(API.md 3-34) — 폴더마다의 줄 목록
   if (req.method === "POST" && route === "/api/exclude") { const body = await readJson(req, 16 * 1024); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = excludePost(body); return send(res, code, out); }   // C-52 저장(거절할 줄이 있으면 바꾸지 않음)
-  if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
+  if (req.method === "GET" && route === "/api/files") return send(res, 200, await filesNowAsync());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
   if (req.method === "GET" && route === "/api/docmap") { const [code, out] = await docmapNow(new URL(req.url, "http://localhost").searchParams.get("now") || ""); return send(res, code, out); }   // C-45 문서 지도(API.md 3-27) — 읽기만
   if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만
   if (req.method === "GET" && route === "/api/file") { const [code, out] = await readFileNow(new URL(req.url, "http://localhost").searchParams.get("i")); return send(res, code, out); }   // C-43 파일 열기(API.md 3-26)

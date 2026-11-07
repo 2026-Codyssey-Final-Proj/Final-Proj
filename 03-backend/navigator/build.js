@@ -75,10 +75,15 @@
     const text = report && Array.isArray(report.items) ? report.items.map((x) => String((x && x.evidence) || "")).join("\n") : "";
     if (!text || !Array.isArray(files)) return [];
     // 경로 경계로 맞춘다 — 'app.py'가 'src/myapp.py' · 'src/app.py'에 맞지 않게(앞은 줄 처음 · 빈칸 · 따옴표 · 괄호 · './', 뒤는 끝 · 빈칸 · 문장 부호)
-    const at = (p) => new RegExp(`(?:^|[\\s'"\`(「]|\\./)${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=$|[\\s'"\`),.:;!?」])`, "m").test(text);
+    // 뒤 경계는 경로에 쓰지 않는 글자 — 'out/a.html이 생겼어요'처럼 조사가 바로 붙어도 찾는다(F-166-18). 앞은 전처럼
+    const pat = (p) => new RegExp(`(?:^|[\\s'"\`(「]|\\./)${p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?=$|[^A-Za-z0-9_./-])`, "m");
+    const at = (p) => pat(p).test(text);
     const hit = files.map((f, i) => ({ ...f, i })).filter((f) => f && !f.dir && typeof f.path === "string" && f.path.length > 2 && at(f.path));
     const docLike = (f) => /^docs\//.test(f.path) || /^readme\.md$/i.test(f.path);
-    const rank = (f) => (docLike(f) ? 2 : CODE_RE.test(f.path) ? 1 : 0);
+    // F-166-18(2026-11-07 사용자 시험 셋째): '결과가 나왔다'(둘째 기준)의 근거에 적힌 파일이 맨 앞 — 첫 기준의 근거에 든 입력 파일(example/members.csv)이 결과(out/2026-11.html)보다 먼저 열렸다
+    const outText = report.items[1] && report.items[1].evidence ? String(report.items[1].evidence) : "";
+    const inOut = (f) => !!outText && pat(f.path).test(outText);
+    const rank = (f) => (docLike(f) ? 2 : inOut(f) ? -1 : CODE_RE.test(f.path) ? 1 : 0);   // 문서는 그대로 뒤
     return hit.sort((a, b) => rank(a) - rank(b) || a.i - b.i).slice(0, 3).map((f) => ({ i: f.i, path: f.path }));
   }
 

@@ -17,6 +17,16 @@
   const stageOk = (n) => Number.isInteger(Number(n)) && Number(n) >= 0 && Number(n) < STAGES;
 
   // 재료 하나 더하기 — 새 묶음을 돌려준다(받은 것은 그대로). 같은 종류 · 같은 줄이면 수만 늘고, 종류마다 처음 하나 + 최근 것으로 PER_KIND개
+  // F-166-13(2026-11-07 사용자 시험 셋째): 버린 말 빼기 — '적기 전에 잠깐!'에서 '고칠게요'로 버린 글(키 모양)이 한 장의 '이 단계에서 처음 한 말'로 남아 문서에도 실렸다.
+  //   add와 같은 모양으로 맞춘 글을 하나 덜어 낸다(두 번 이상 보낸 같은 말이면 수만 하나 줄인다). 없으면 그대로
+  function drop(store, n, kind, text, redact) {
+    const base = store && typeof store === "object" && !Array.isArray(store) ? store : {};
+    if (typeof redact !== "function" || !KINDS.includes(kind) || !stageOk(n) || !Array.isArray(base[n])) return base;
+    const t = clip(redact(one(text)), LINE_MAX), list = base[n], i = list.findIndex((x) => x.k === kind && x.t === t);
+    if (!t || i < 0) return base;
+    const next = (list[i].c || 1) > 1 ? list.map((x, k) => (k === i ? { ...x, c: x.c - 1 } : x)) : list.filter((_, k) => k !== i);
+    return { ...base, [n]: next };
+  }
   function add(store, n, kind, text, redact) {
     const base = store && typeof store === "object" && !Array.isArray(store) ? store : {};
     if (typeof redact !== "function" || !KINDS.includes(kind) || !stageOk(n)) return base;
@@ -80,7 +90,7 @@
     return ok(out) ? out : null;
   }
 
-  const api = { KINDS, LINE_MAX, PER_KIND, FIELD_MAX, DRAFT_MAX, FIELDS, add, fromSaved, draft, ok, toLines, parse };
+  const api = { KINDS, LINE_MAX, PER_KIND, FIELD_MAX, DRAFT_MAX, FIELDS, add, drop, fromSaved, draft, ok, toLines, parse };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloeSheet = api;
 })(typeof window !== "undefined" ? window : globalThis);

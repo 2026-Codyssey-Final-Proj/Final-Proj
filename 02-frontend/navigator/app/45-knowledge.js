@@ -169,7 +169,7 @@
     st.ship = null;
     // Claude Code가 기준(커밋 · 푸시)마다 보고한다(C-32) — 끝났다(0)는 것만으로 올라갔다고 말하지 않는다(푸시를 건너뛰거나 허락을 거절해도 0으로 끝난다, 2026-10-25 리뷰)
     const r = t.report, pushed = !!(r && r.items[1] && r.items[1].done);
-    if (pushed) { st.pushedAt = Date.now(); save(); if (st.quest) st.quest = applyStates(st.quest); }   // F-157-4 — 8단계 '저장소에 올리기'가 실제로 올렸는지 본다
+    if (pushed) { st.pushedAt = Date.now(); st.shippedStages = shipStages(); save(); if (st.quest) st.quest = applyStates(st.quest); }   // shippedStages — 그때 문서에 든 단계(F-166-10)   // F-157-4 — 8단계 '저장소에 올리기'가 실제로 올렸는지 본다
     say(t.state !== "done" ? "올리기가 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요" : pushed ? "올리기를 마쳤어요 — 내 저장소(origin)의 docs 폴더에 올라갔어요"   /* F-161-9 — origin이 GitHub가 아닐 수도 */
       : r ? `푸시는 못 했어요 — ${r.easy}` : "Claude Code가 일을 마쳤어요 — 푸시됐는지 진행 보기에서 봐 주세요");
   }
@@ -226,7 +226,7 @@
       if (r && r.ok && r.files) {
         const n = st.finished ? N.STAGES.length - 1 : atStage(), slug = FDOCS ? FDOCS.SLUGS[n] : "";
         st.fnOpen = r.files.map((f, i) => (f.dir && (f.path === "docs" || (slug && f.path === `docs/${slug}`)) ? String(i) : "")).filter(Boolean);   // 지금 장의 폴더는 펼쳐 둔다 — 열쇠는 목록의 번호(가린 이름끼리 경로가 겹칠 수 있다, 새 맥락 리뷰)
-        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, excluded: r.excluded || 0, exBroken: !!r.excludeBroken, why: "" };   // excluded · exBroken — C-52 빼 둔 곳 줄 수 · 저장 파일이 깨졌나
+        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, excluded: r.excluded || 0, exBroken: !!r.excludeBroken, dirty: Number.isInteger(r.dirty) ? r.dirty : null, why: "" };   // excluded · exBroken — C-52 빼 둔 곳 줄 수 · 저장 파일이 깨졌나
         for (const f of st.openFiles) f.i = r.files.findIndex((x) => !x.dir && x.path === f.path);   // 열린 파일은 새 목록의 번호로 다시 잇는다(없어졌으면 -1 — 저장하지 못한다)
       } else st.files = { src: "example", why: "연결한 폴더를 아직 몰라요" };
     } catch { st.files = { src: "example", why: "서버에 닿지 않았어요" }; }

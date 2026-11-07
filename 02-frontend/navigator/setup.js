@@ -147,7 +147,7 @@
       "su-apps": step(3, `${S}.su-card, ${next}`, "look", "Claude Desktop 앱을 쓰고 있으면 이어 둘 수 있어요. 안 쓰면 그냥 건너뛰면 돼요.", next),
       "su-gh-find": step(4, `${li("gh")}, ${skip}`, "look", "GitHub는 내 작업을 온라인에 보관하는 곳이에요. 나중에 해도 괜찮으니 지금은 'GitHub 없이 할래요'를 눌러도 돼요."),
       "su-gh-login": step(4, `${li("login")}, ${skip}`, "look", app ? "GitHub는 내 작업을 온라인에 보관하는 곳이에요. '실행'을 누르면 코드와 주소가 나와요. 코드를 복사하고 주소를 열어 붙여 넣어 주세요. 나중에 해도 괜찮아요." : `GitHub는 내 작업을 온라인에 보관하는 곳이에요. 터미널은 컴퓨터에 글로 명령하는 창이에요. ${term} 복사한 명령을 붙여 넣어 주세요. 나중에 해도 괜찮아요.`, `${S}[data-s="login"]`),
-      "su-gh-next": step(4, next, "happy", "GitHub도 이어졌어요! '다음'을 눌러 넘어가요.", next),
+      "su-gh-next": step(4, `${next}, ${skip}`, "happy", "GitHub도 이어졌어요! '다음'을 눌러 넘어가요.", next),   // 'GitHub 없이 할래요'도 눌린다(F-166-8)
       "su-project": step(5, `${S}.su-proj, ${next}`, "look", "이제 만들 곳을 정해요. 처음이면 '새로 만들기'가 제일 쉬워요. 이 폴더에서 저랑 Claude Code가 일해요."),
       "su-project-next": step(5, next, "happy", "좋아요! '다음'을 눌러 주세요.", next),
       "su-done": step(6, `${S}.su-repo, ${S}[data-s="done"]`, "happy", "다 됐어요! '시작하기'를 누르면 무엇을 만들지 같이 정해요.", `${S}[data-s="makerepo"], ${S}[data-s="done"]`),   // F-166-1 — 저장소 만들기 칸이 있으면 그 칸에 먼저(querySelector는 앞의 것) — Enter가 바로 시작하기를 누르지 않게

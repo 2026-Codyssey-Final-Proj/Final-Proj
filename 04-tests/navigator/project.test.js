@@ -62,6 +62,23 @@ test("새로 만들기: 홈/Floe/이름에 빈 폴더 — 없으면 만들고, �
   assert.equal(bad.ok, false); assert.match(bad.message, /영문/);
 });
 
+// claude-drafted: 2026-11-07 — F-166-9(사용자 시험 셋째): 홈이 git 저장소인 컴퓨터에서 새 폴더의 git 명령이 홈 저장소로 갔다 — 새 폴더는 자기 저장소로
+test("새로 만들기: 새 폴더에 git init(main) — 위 폴더가 저장소여도 자기 저장소가 된다, .git만 있으면 빈 폴더로 본다", async () => {
+  const run = fakeRun([]);
+  const home = path.join(TMP, "home-init");
+  const a = await P.newFolder(home, "club-git", { run: run.run || run });
+  const calls = run.calls || [];
+  assert.deepEqual(calls.map((c) => [c[0], c[1]]), [["git", ["init", "-q", "-b", "main"]]]); assert.equal(calls[0][2].cwd, a.dir);
+  const parent = path.join(TMP, "home-parent"); fs.mkdirSync(parent, { recursive: true });
+  if (spawnSync("git", ["--version"]).status === 0) {
+    spawnSync("git", ["init", "-q"], { cwd: parent });
+    const b = await P.newFolder(parent, "inner");
+    const top = spawnSync("git", ["rev-parse", "--show-toplevel"], { cwd: b.dir, encoding: "utf8" }).stdout.trim();
+    assert.equal(fs.realpathSync(top), fs.realpathSync(b.dir), "위가 저장소여도 새 폴더가 맨 위");
+    assert.deepEqual(await P.newFolder(parent, "inner"), { ok: true, dir: b.dir, name: "inner", made: false }, ".git만 있으면 빈 폴더 — 다시 골라도 쓴다");
+  }
+});
+
 test("가져오기: 홈/Floe/저장소이름으로 — 명령을 셸 없이 · 비밀번호를 묻지 않게 · 시간 제한, 실패하면 까닭을 쉬운 말로", async () => {
   const home = path.join(TMP, "home-clone");
   const run = fakeRun([{ code: 0, out: "true" }, { code: 0, out: "" }]);
