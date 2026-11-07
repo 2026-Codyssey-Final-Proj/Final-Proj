@@ -4,7 +4,7 @@
      숫자: 커밋 1,164 · 병합 PR 317 · 결정 기록 8 · 앱 v11.3.0(11/5)은 2026-11-07에 git · gh로 다시 잰 값(PDF는 1,132 · 307 · v11.1.0).
      시험 1,167 통과 · 실패 0은 2026-11-07 run_all_tests.py 실측(노드 시험 1,261 중 통과 1,167, 건너뜀 있음). 토큰 5.2만 / 8.8만 · −29% · Anthropic 67/50/65% · 결정 35칸 · 관문 8번 · 요구 17개(11개 중 10개) · TAM/SAM/SOM은 PDF v1.3의 값 그대로 — 이 세션에서 확인하지 못했다.
      19장 사용 테스트 결과는 PDF처럼 빈칸(_). 앞 판 ../presentation-10min.html은 그대로.
-     쓰는 법: ← → 넘김 · S 발표자 창(지금 장 · 다음 장 · 대본 · 타이머) · T 테마 · F 전체 화면 · O 전체 보기 · Ctrl+P → PDF -->
+     쓰는 법: ← → 넘김 · S 발표자 창(지금 장 · 다음 장 · 대본 · 타이머) · T 테마 · F 전체 화면 · O 전체 보기 · + − 0 글자 크기 · Ctrl+P → PDF -->
 <html lang="ko" data-themes="arctic-cool,corporate-clean,minimal-white,nord,tokyo-night">
 <head>
 <meta charset="utf-8">
@@ -84,6 +84,10 @@ ul.plain{margin:0;padding-left:1.2em;font-size:18px;line-height:1.8;color:var(--
 .tpl-presenter-mode-reveal .card h4{font-size:17px}
 .tpl-presenter-mode-reveal .card .dim{font-size:14px}
 .deck-footer .who{font-weight:600;color:var(--text-2)}
+/* 글자 크기 — + / − / 0 키. 바닥 띠 · 메모는 그대로, 본문만 */
+.slide>:not(.deck-footer):not(.notes){zoom:var(--zoom,1)}
+#zoom-tip{position:fixed;top:16px;right:16px;padding:8px 14px;border-radius:999px;background:var(--text-1);color:var(--bg);font-size:14px;font-weight:600;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none}
+#zoom-tip.on{opacity:1}
 </style>
 </head>
 <body class="tpl-presenter-mode-reveal">
@@ -506,5 +510,29 @@ ul.plain{margin:0;padding-left:1.2em;font-size:18px;line-height:1.8;color:var(--
 
 </div>
 <script src="assets/runtime.js"></script>
+<div id="zoom-tip"></div>
+<script>
+// 글자 크기: + 키우기 · − 줄이기 · 0 원래대로. 70%~160%, 브라우저에 기억(발표자 창의 미리보기도 같은 값을 읽는다).
+(function(){
+  var KEY='floe-deck-zoom', tip=document.getElementById('zoom-tip'), timer, z=1;
+  try{ z=Math.min(1.6,Math.max(.7,parseFloat(localStorage.getItem(KEY))||1)); }catch(e){}
+  function apply(show){
+    document.documentElement.style.setProperty('--zoom',z);
+    try{ localStorage.setItem(KEY,z); }catch(e){}
+    if(!show) return;
+    tip.textContent='글자 '+Math.round(z*100)+'%'; tip.classList.add('on');
+    clearTimeout(timer); timer=setTimeout(function(){ tip.classList.remove('on'); },1200);
+  }
+  apply(false);
+  document.addEventListener('keydown',function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey) return;            // Ctrl + 는 브라우저 확대 그대로
+    if(e.key==='+'||e.key==='=') z=Math.min(1.6,Math.round((z+.1)*10)/10);
+    else if(e.key==='-'||e.key==='_') z=Math.max(.7,Math.round((z-.1)*10)/10);
+    else if(e.key==='0') z=1;
+    else return;
+    e.preventDefault(); apply(true);
+  });
+})();
+</script>
 </body>
 </html>
