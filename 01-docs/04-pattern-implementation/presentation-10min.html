@@ -1,0 +1,294 @@
+<!doctype html>
+<!-- claude-drafted: 2026-11-07 — 두승현의 요청("html 발표 자료 초안 써줘")으로 Claude가 썼다.
+     구성 · 시간 · 발표자는 presentation-story.md(2026-10-24, 고한결 요청으로 Claude가 쓴 초안)의 11장을 그대로 옮겼다.
+     인터뷰 · 사용 테스트 · 아키텍처 그림은 아직 없어 분홍 "채울 것" 칸으로 두었다 — 지어내지 않았다.
+     협업 숫자는 2026-11-07에 gh · git으로 잰 값이다. 확정은 고한결(발표 흐름) · 이재엽(기술 · 구조).
+     쓰는 법: 브라우저로 열고 → / ← / 스페이스로 넘긴다. N은 "말할 것"(발표자 메모) 보기, F는 전체 화면, 인쇄(Ctrl+P)하면 장마다 한 쪽 PDF. -->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Floe 최종 발표 — 10분 (초안)</title>
+<style>
+@font-face{font-family:"Bagel Fat One";src:url("../../02-frontend/assets/fonts/BagelFatOne-Regular.woff") format("woff");font-display:swap}
+@font-face{font-family:"Gowun Dodum";src:url("../../02-frontend/assets/fonts/GowunDodum-Regular.woff") format("woff");font-display:swap}
+
+:root{
+  --navy:#2B3463; --navy-deep:#1F2749; --ink:#F2F5FA; --mist:#C5CEE2; --dim:#5B6491;
+  --blue:#4D66B5; --pale:#D3E0F3; --mint:#A9E2C4; --pink:#EFC3CB; --sand:#EFE3C0;
+  --disp:"Bagel Fat One","Gowun Dodum",sans-serif; --text:"Gowun Dodum","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--navy-deep);color:var(--ink);font-family:var(--text);font-size:clamp(14px,1.6vw,22px);line-height:1.55}
+button{font:inherit}
+
+/* 무대 — 16:9, 화면에 맞춰 축소 */
+.deck{position:fixed;inset:0;display:grid;place-items:center;padding:16px}
+.slide{display:none;width:min(100vw - 32px,calc((100vh - 32px) * 16 / 9));aspect-ratio:16/9;background:var(--navy);border-radius:28px;padding:5.2% 6% 4.5%;position:relative;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.slide.on{display:flex;flex-direction:column}
+.slide h1{font-family:var(--disp);font-weight:400;font-size:2.6em;line-height:1.18;margin:0 0 .5em;letter-spacing:-.01em;max-width:22ch}
+.slide h1 small{display:block;font-family:var(--text);font-size:.42em;color:var(--mist);margin-top:.5em;letter-spacing:0}
+.body{flex:1;display:flex;gap:4%;min-height:0}
+.body>*{flex:1;min-width:0}
+p{margin:0 0 .7em}
+ul{margin:0;padding-left:1.1em}
+li{margin:.25em 0}
+.quiet{color:var(--mist)}
+.big{font-family:var(--disp);font-size:1.5em;line-height:1.3}
+
+/* 칸 — 글자 뒤는 불투명 면(화면 흐름 1절) */
+.card{background:var(--navy-deep);border-radius:18px;padding:1em 1.2em}
+.card h3{font-family:var(--disp);font-weight:400;font-size:1.1em;margin:0 0 .4em;color:var(--pale)}
+.mint{background:var(--mint);color:var(--navy-deep)}
+.blue{background:var(--blue);color:var(--ink)}
+.fill{background:var(--pink);color:#4a1f2b;border:2px dashed #8E3A52}
+.fill::before{content:"채울 것  ";font-family:var(--disp)}
+table{border-collapse:collapse;width:100%;font-size:.92em}
+th,td{text-align:left;padding:.45em .6em;border-bottom:1px solid var(--dim);vertical-align:top}
+th{color:var(--mist);font-weight:400}
+td:first-child{white-space:nowrap}
+td b{color:var(--mint);font-weight:400}
+
+/* 흐름 그림 */
+.flow{display:flex;align-items:center;gap:.5em;flex-wrap:wrap}
+.flow .step{background:var(--pale);color:var(--navy-deep);border-radius:999px;padding:.35em 1em;font-family:var(--disp)}
+.flow .gate{background:var(--mint);color:var(--navy-deep);border-radius:14px;padding:.5em 1em;font-family:var(--disp)}
+.flow .arrow{color:var(--mist)}
+.flow,.stages{flex:0 0 auto}
+.stages{display:flex;gap:.3em;margin-top:1em}
+.stages span{flex:1;text-align:center;background:var(--navy-deep);border-radius:10px;padding:.5em .2em;font-size:.8em;color:var(--mist)}
+.stages span.now{background:var(--blue);color:var(--ink)}
+
+/* 분업 세 기둥 */
+.cols{display:flex;gap:3%}
+.cols .card{flex:1}
+.cols .who{font-family:var(--disp);font-size:1.4em;margin-bottom:.3em}
+
+/* 영상 */
+video{width:100%;max-height:100%;border-radius:16px;background:#000}
+
+/* 바닥 — 시간 띠 */
+.foot{display:flex;align-items:center;gap:1.2em;margin-top:1.2em;color:var(--mist);font-size:.78em}
+.track{flex:1;height:8px;background:var(--navy-deep);border-radius:4px;overflow:hidden}
+.track i{display:block;height:100%;background:var(--pale);border-radius:4px;width:0}
+
+/* 발표자 메모 (N) */
+.note{display:none;position:fixed;left:16px;right:16px;bottom:16px;background:var(--sand);color:#3a2f10;border-radius:14px;padding:.8em 1.2em;font-size:.95em;box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:9}
+body.notes .note{display:block}
+.note b{font-family:var(--disp);font-weight:400}
+
+.help{position:fixed;top:4px;right:16px;color:var(--mist);font-size:.7em;z-index:5}
+
+/* 표지 */
+.cover{justify-content:center;background:linear-gradient(160deg,var(--navy) 55%,var(--blue))}
+.cover .body{align-items:center}
+.cover .logo{font-family:var(--disp);font-size:7em;line-height:1;margin:0}
+.cover img{max-width:min(36%,340px);border-radius:28px;background:rgba(255,255,255,.08);padding:4%}
+
+@media (prefers-reduced-motion:no-preference){.track i{transition:width .5s ease}}
+@media print{
+  @page{size:16in 9in;margin:0}
+  html,body{background:#fff;height:auto}
+  .deck{position:static;display:block;padding:0}
+  .slide{display:flex!important;flex-direction:column;width:16in;height:9in;border-radius:0;box-shadow:none;page-break-after:always}
+  .help,.note{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="help">→ 다음 · ← 이전 · N 메모 · F 전체 화면 · Ctrl+P 로 PDF</div>
+<main class="deck">
+
+<!-- 1 -->
+<section class="slide cover" data-time="0:30" data-who="고한결">
+  <div class="body">
+    <div>
+      <p class="logo">Floe</p>
+      <p class="big">AI가 코드를 써 주는 시대에,<br>끝까지 만들고, 이해하고, 배움이 쌓이게<br>길을 안내한다.</p>
+      <p class="quiet">결과를 대신 만들지 않는다. 사람이 스스로 결정하게 한다.</p>
+    </div>
+    <img src="../../02-frontend/assets/mascot/mascot-v1.webp" alt="길잡이 물범 플로로">
+  </div>
+  <div class="note"><b>말할 것</b> AI가 코드를 써 주는 시대, 그래서 오히려 끝까지 이해하며 만드는 게 어려워졌습니다. 저희는 그 사이를 안내하는 Floe를 만들었습니다.</div>
+</section>
+
+<!-- 2 -->
+<section class="slide" data-time="1:00" data-who="고한결">
+  <h1>코드는 나오는데, 지금 어디쯤인지 모르면 멈춘다<small>기획 의도 — 문제 정의</small></h1>
+  <div class="body">
+    <div>
+      <div class="card"><h3>멈추는 순간</h3><p>AI가 만든 결과가 맞는지, 지금 어느 단계이고 다음에 뭘 해야 하는지 판단하지 못해 개발이 중간에 선다.</p></div>
+      <div class="card" style="margin-top:1em"><h3>끝내도 남는 문제</h3><p>끝까지 만들어도 내 코드를 설명하지 못하고, 배운 것이 다음 프로젝트로 이어지지 않는다.</p></div>
+    </div>
+    <div>
+      <div class="card fill">인터뷰에서 들은 말 한두 줄 — 응답자 A처럼 이름 없이. 인터뷰(#11)는 보류 중이라, 없으면 "기획안의 가설"이라고 말하고 사용 테스트에서 들은 말로 채운다.</div>
+    </div>
+  </div>
+  <div class="note"><b>말할 것</b> 바이브 코딩은 쉬워졌는데 "지금 어디까지 왔고 다음에 뭘 하지?"에서 멈춥니다. 끝까지 만들어도 내 코드를 설명하지 못합니다. (인터뷰 전이면 "가설"이라고 밝힌다.)</div>
+</section>
+
+<!-- 3 -->
+<section class="slide" data-time="0:30" data-who="고한결">
+  <h1>코딩을 배운 적 없어도, GitHub와 Claude Code만 있으면<small>누가 쓰나</small></h1>
+  <div class="body">
+    <table>
+      <tr><th>누구</th><th>언제 쓰나</th></tr>
+      <tr><td>AI로 코딩을 배우는 학습자</td><td>과제 · 프로젝트를 AI와 만들다 막힐 때 <b>첫 검증 대상</b></td></tr>
+      <tr><td>코딩은 모르지만 AI로 서비스를 만드는 기획자 · 디자이너</td><td>지금 단계와 내가 만든 것을 이해하고 싶을 때</td></tr>
+      <tr><td>개인 프로젝트로 바이브 코딩을 하는 직장인 · 창작자</td><td>여러 프로젝트 사이에서 개발을 이어 갈 때</td></tr>
+    </table>
+    <div>
+      <div class="card"><h3>그래서 쉬운 말로 만들었다</h3><p>화면의 큰 글에는 전문 용어를 쓰지 않고, 나오면 그 자리에서 풀어 준다.</p></div>
+      <div class="card fill" style="margin-top:1em">사용 테스트에 비전공자가 몇 명 있었나.</div>
+    </div>
+  </div>
+  <div class="note"><b>말할 것</b> 대상은 모두 "AI로 프로그램을 만드는 사람"입니다. 프로그래밍을 배운 적 없는 사람도 쓰도록 쉬운 말로 설계했습니다.</div>
+</section>
+
+<!-- 4 -->
+<section class="slide" data-time="1:00" data-who="고한결 → 이재엽">
+  <h1>일을 한 칸씩 쪼개고, 단계가 끝나면 사람이 "이해했나요"를 누른다<small>해결 한 장 — 퀘스트 한 바퀴와 관문</small></h1>
+  <div class="body" style="flex-direction:column">
+    <div class="flow">
+      <span class="step">생각</span><span class="arrow">→</span>
+      <span class="step">행동</span><span class="arrow">→</span>
+      <span class="step">기록</span><span class="arrow">→</span>
+      <span class="gate">관문 — 이해하셨나요? 예 / 아니요</span><span class="arrow">→</span>
+      <span class="step">다음 할 일</span>
+    </div>
+    <div class="stages">
+      <span>0 원문제</span><span>1 문제 저장</span><span>2 문제 분석</span><span>3 패턴 분석</span><span class="now">4 패턴 구현</span><span>5 구현</span><span>6 서비스</span><span>7 유지보수</span>
+    </div>
+    <p class="quiet" style="margin-top:1em">아니요를 누르면 헷갈린 곳을 묻고 한 장으로 다시 설명한다. 예를 눌러야 다음 할 일이 열린다. 저장 · 버전 칸은 대회 뒤에 만든다 — 만든 만큼만 말한다.</p>
+  </div>
+  <div class="note"><b>말할 것</b> 일을 한 칸씩 쪼개 보여 주고, 단계가 끝나면 "이해했는지"를 사람이 직접 눌러야 넘어갑니다. 여기서 이재엽에게 넘긴다 — 말이 끊기지 않게.</div>
+</section>
+
+<!-- 5 -->
+<section class="slide" data-time="1:00" data-who="이재엽">
+  <h1>서버 없이, 내 컴퓨터에서 내 Claude로 돈다<small>구조</small></h1>
+  <div class="body">
+    <div>
+      <div class="flow" style="flex-direction:column;align-items:stretch;gap:.6em">
+        <div class="card blue"><h3>오버레이 앱 (Electron)</h3>코딩 도구 위에 떠 있는 섬. 플로로가 지금 단계와 다음 할 일을 보인다</div>
+        <div class="card"><h3>Floe 서버 (같은 프로세스)</h3>단계 · 관문 판정 · 기록. 밖으로 나가는 서버가 없다</div>
+        <div class="card"><h3>사용자의 Claude Code</h3>코드를 쓰는 건 사용자의 도구. Floe는 일을 넘기고, 허용 · 거절을 섬에서 받는다</div>
+        <div class="card"><h3>사용자의 GitHub 저장소</h3>단계 문서와 README가 "책"의 원본. Floe는 받아 와 보여 주기만 한다</div>
+      </div>
+    </div>
+    <div class="card fill">아키텍처 · 데이터 흐름 그림(입력 → 판정 → 설계도 → 이해 확인 → 기록). Jira KAN-31 · KAN-32에서 갱신한 그림을 넣는다. 그림이 갱신되기 전에는 이 장을 확정하지 않는다.</div>
+  </div>
+  <div class="note"><b>말할 것</b> 로컬 앱 + 오버레이 + 사용자의 Claude. 키와 기록은 사용자 컴퓨터에만 있습니다.</div>
+</section>
+
+<!-- 6 -->
+<section class="slide" data-time="1:00" data-who="이재엽">
+  <h1>판정은 코드 규칙이 하고, Claude는 초안과 설명만 한다<small>AI 적용 — API를 그대로 쓴 것이 아닌 이유</small></h1>
+  <div class="body" style="flex-direction:column">
+    <div class="cols">
+      <div class="card mint"><div class="who">사람</div>정한다 — 초안 확정, "이해했나요", 맡긴 일의 허용 · 거절</div>
+      <div class="card blue"><div class="who">코드 규칙</div>판정한다 — 완료 기준 항목을 대조. 같은 입력이면 같은 답이라 시험할 수 있다</div>
+      <div class="card"><div class="who">Claude</div>돕는다 — 초안 · 설명 · 리뷰 · 질문. 한 번에 한 조각만 맡는다</div>
+    </div>
+    <p class="quiet" style="margin-top:1em">AI는 긴 단계를 기억하고 스스로 "다 됐다"고 판정할 때 약하다. 그래서 기억은 앱이, 판정은 코드와 사람이, AI는 한 조각만. 정확도 · 토큰 숫자는 출처를 확인한 뒤에만 넣는다(두승현 확인 전).</p>
+  </div>
+  <div class="note"><b>말할 것</b> 판정을 프롬프트에 맡기면 같은 입력에 다른 답이 나와 시험할 수 없습니다. 그래서 판정은 코드 규칙, Claude는 초안 · 설명 · 리뷰. 확정과 이해 여부는 사람이 누릅니다.</div>
+</section>
+
+<!-- 7 -->
+<section class="slide" data-time="2:30" data-who="이재엽 (해설)">
+  <h1>아이디어 한 줄에서 관문을 넘기까지<small>시연 영상 — 2분 30초</small></h1>
+  <div class="body">
+    <video controls preload="none" src="floe-intro-video/final/floe-intro-40s.mp4"></video>
+    <div style="flex:0 0 30%">
+      <div class="card fill">지금 넣은 건 40초 소개 영상이다. 3분 시연 스토리의 장면 1~8에서 2:30에 맞게 고른 구동 영상으로 바꾼다(이재엽 · 임유정). 화면의 "가상 숫자예요" 표시는 가리지 않는다.</div>
+    </div>
+  </div>
+  <div class="note"><b>말할 것</b> 장면마다 한 문장만. 영상과 말이 겹치지 않게 — 리허설에서 소리 · 자막 필요 여부를 정한다.</div>
+</section>
+
+<!-- 8 -->
+<section class="slide" data-time="0:45" data-who="고한결">
+  <h1>써 보기 전과 후<small>검증 — 숫자가 나오면 이 제목을 결론 문장으로 바꾼다</small></h1>
+  <div class="body">
+    <div class="card fill">사용 전 — 다음 할 일을 찾는 데 걸린 시간, 설명할 수 있었나</div>
+    <div class="card fill">사용 후 — 같은 항목. 5명 이상, 비전공자 포함(일정 11/4~7)</div>
+    <div class="card fill">성공 수치 — 2단계에서 정한 목표 값과 실측 값. 못 잰 건 "못 쟀다"고 쓴다</div>
+  </div>
+  <div class="note"><b>말할 것</b> 잰 값만 말한다. 못 잰 것은 못 쟀다고 말한다 — 지어낸 숫자보다 신뢰를 얻는다. 담당: 두승현(검증 결과) · 고한결(사용 테스트 진행).</div>
+</section>
+
+<!-- 9 -->
+<section class="slide" data-time="0:45" data-who="고한결">
+  <h1>역할과 결과물이 1:1이고, 기록이 GitHub에 남아 있다<small>팀 구성과 협업 증빙</small></h1>
+  <div class="body">
+    <table>
+      <tr><th>이름</th><th>역할</th><th>결과물</th></tr>
+      <tr><td>이재엽</td><td>팀장 · AI 에이전트 · API 연동</td><td>판정 규칙 · 서버 · 제출</td></tr>
+      <tr><td>고한결</td><td>UI/UX · 인터뷰 · 발표 흐름</td><td>화면 설계 · 사용 테스트 · 발표</td></tr>
+      <tr><td>임유정</td><td>프론트엔드</td><td>시연 화면 · 구동 GIF</td></tr>
+      <tr><td>두승현</td><td>시연 프로토타입 · 테스트 · 검증 · 문서</td><td>섬 · 플로로 · 수용 테스트 · 검증 기록</td></tr>
+    </table>
+    <div>
+      <div class="card"><h3>GitHub에 남은 것 (2026-11-07 기준)</h3>
+        <ul><li>병합된 PR 317개</li><li>PR마다 변경 조각 한 장 → 버전 기록 자동 합침</li><li>할 일은 Jira 프로젝트 Floe, 리뷰 코멘트는 PR에</li></ul></div>
+      <div class="card fill" style="margin-top:.8em">증빙 화면 캡처 — 커밋 로그 · Jira 보드 · PR 리뷰. 팀원별 PR · 리뷰 수는 발표 직전에 다시 잰다.</div>
+    </div>
+  </div>
+  <div class="note"><b>말할 것</b> 역할과 맡은 결과물이 1:1입니다. 말이 아니라 화면으로 보인다 — 커밋 로그 · Jira · PR 리뷰. 이 장은 30점이 걸린 자리다.</div>
+</section>
+
+<!-- 10 -->
+<section class="slide" data-time="0:30" data-who="이재엽">
+  <h1>아직 못 한 것을 먼저 말한다<small>한계와 앞으로</small></h1>
+  <div class="body">
+    <ul>
+      <li>서재(책장)는 대회 뒤에 다시 연다.</li>
+      <li>NotebookLM 공부 · 관문 계획서 · 저장 · 버전 칸은 대회 뒤.</li>
+      <li>맡긴 일 안에서 AI가 틀리는 건 Floe가 막지 못한다 — "시험 먼저 · 직접 확인"으로만 잡는다.</li>
+      <li>node가 없는 컴퓨터, 앱 자동 업데이트는 미정.</li>
+    </ul>
+    <div class="card"><h3>앞으로</h3><p>사용 테스트에서 나온 것부터 고친다. 한계를 먼저 말해야 질의응답에서 덜 흔들린다.</p></div>
+  </div>
+  <div class="note"><b>말할 것</b> 못 한 것 한 줄씩. 질문이 오면 이 장으로 돌아온다.</div>
+</section>
+
+<!-- 11 -->
+<section class="slide cover" data-time="0:30" data-who="고한결">
+  <div class="body">
+    <div>
+      <p class="big">AI가 일하는 시대에도,<br>성장하는 건 사람이어야 한다.</p>
+      <p class="quiet">질문은 유형별로 — 기술 이재엽 · 임유정, 사용자와 화면 고한결, 검증 두승현</p>
+      <p class="quiet">github.com/2026-Codyssey-Final-Proj/Final-Proj</p>
+    </div>
+  </div>
+  <div class="note"><b>말할 것</b> 한 문장을 한 번 더 말하고 질의응답으로 넘긴다. 질문이 오면 담당에게 넘긴다.</div>
+</section>
+
+</main>
+
+<script>
+// ponytail: 슬라이드 넘김만 — 라이브러리 없음. 애니메이션 · 발표자 창이 필요해지면 reveal.js.
+const slides=[...document.querySelectorAll('.slide')];
+const toSec=t=>{const[m,s]=t.split(':').map(Number);return m*60+s};
+const total=slides.reduce((a,s)=>a+toSec(s.dataset.time),0);
+let acc=0;
+slides.forEach((s,i)=>{
+  acc+=toSec(s.dataset.time);
+  const f=document.createElement('div');f.className='foot';
+  f.innerHTML=`<span>${i+1} / ${slides.length}</span><span class="track"><i style="width:${acc/total*100}%"></i></span><span>${s.dataset.time} · 누적 ${Math.floor(acc/60)}:${String(acc%60).padStart(2,'0')}</span><span>${s.dataset.who}</span>`;
+  s.insertBefore(f,s.querySelector('.note'));
+});
+let cur=Math.min(Math.max(parseInt(location.hash.slice(1))||1,1),slides.length)-1;
+function show(n){cur=(n+slides.length)%slides.length;slides.forEach((s,i)=>s.classList.toggle('on',i===cur));history.replaceState(null,'','#'+(cur+1))}
+show(cur);
+addEventListener('keydown',e=>{
+  if(['ArrowRight',' ','PageDown'].includes(e.key)){e.preventDefault();show(cur+1)}
+  else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();show(cur-1)}
+  else if(e.key==='n'||e.key==='N')document.body.classList.toggle('notes');
+  else if(e.key==='f'||e.key==='F')document.documentElement.requestFullscreen?.();
+});
+document.querySelector('.deck').addEventListener('click',e=>{if(!e.target.closest('video,a,button'))show(cur+1)});
+</script>
+</body>
+</html>
