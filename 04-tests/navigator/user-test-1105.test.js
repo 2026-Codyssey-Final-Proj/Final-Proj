@@ -121,7 +121,7 @@ test("F-157 새 맥락 리뷰 반영 — 1단계 중에는 미리 받지 않는�
   const fx = app.slice(app.indexOf("function fixPast("), app.indexOf("function fixPast(") + 900);
   assert.match(fx, /lines: \[t\], by: "me"/);
   assert.match(app, /const pastIdx = \(g\) =>/);
-  assert.match(app, /if \(pastFixAt && !\["send", "say", "first-go"\]\.includes\(t\.dataset\.act\)\) pastFixAt = null;/);
+  assert.match(app, /if \(pastFixAt && !\["send", "say", "first-go"[^\]]*\]\.includes\(t\.dataset\.act\)\) pastFixAt = null;/);   // F-161이 단추를 더했다
   assert.match(app, /const sayHint = \(\) => \(planNow\(\) \? [^\n]*: pastFixAt \? "그 칸의 고친 줄/, "입력 칸 안내가 그 칸 전용으로(planNow 판정은 맨 앞 그대로 — modes.test.js)");
   assert.equal(S.stateOf({ stage: 6, i: 0, text: "", facts: { success: false } }).go.name, "왜 만드는지, 어디까지 만들지, 언제 성공인지 답하기");
   assert.match(app, /\(st\.quest\.chap === 4 \|\| st\.quest\.chap === 5\) && st\.codeless/);

@@ -170,7 +170,7 @@
     // Claude Code가 기준(커밋 · 푸시)마다 보고한다(C-32) — 끝났다(0)는 것만으로 올라갔다고 말하지 않는다(푸시를 건너뛰거나 허락을 거절해도 0으로 끝난다, 2026-10-25 리뷰)
     const r = t.report, pushed = !!(r && r.items[1] && r.items[1].done);
     if (pushed) { st.pushedAt = Date.now(); save(); if (st.quest) st.quest = applyStates(st.quest); }   // F-157-4 — 8단계 '저장소에 올리기'가 실제로 올렸는지 본다
-    say(t.state !== "done" ? "올리기가 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요" : pushed ? "올리기를 마쳤어요 — GitHub에서 docs 폴더를 볼 수 있어요"
+    say(t.state !== "done" ? "올리기가 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요" : pushed ? "올리기를 마쳤어요 — 내 저장소(origin)의 docs 폴더에 올라갔어요"   /* F-161-9 — origin이 GitHub가 아닐 수도 */
       : r ? `푸시는 못 했어요 — ${r.easy}` : "Claude Code가 일을 마쳤어요 — 푸시됐는지 진행 보기에서 봐 주세요");
   }
   // 퀘스트 글 받기(C-22, API.md 3-17) — 진짜 AI 모드에서만. 설명 · 질문 · 예시만 받고 할 일 이름 · 개수는 코드 그대로. 못 받으면 기본 글(quest.js)로 두고 까닭만 말한다

@@ -26,7 +26,7 @@
       const t = HO.build(handoffCtx(), { redact: window.NavSensitive.redact });
       if (!t) return;
       hoText = t;
-      try { await navigator.clipboard.writeText(t); hoCopied = true; } catch { hoCopied = false; }
+      hoCopied = await copyText(t);
       render();
     },
     "handoff-close": () => { hoText = ""; render(); },

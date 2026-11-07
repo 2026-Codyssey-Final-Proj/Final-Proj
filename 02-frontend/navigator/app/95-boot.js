@@ -61,7 +61,8 @@
     if (st.settings && !ev.sim) fetchUsage();   // 일을 마쳤다 — 열려 있는 토큰 칸을 새 값으로(2026-10-24)
     if (!ev.sim && tw) twTick();   // 맡긴 일이 끝났을 수 있다 — 3초를 기다리지 않고 바로 묻는다(C-32 · F-69)
     st.alerts = A.add(st.alerts, ev, (t) => sensitive(t).length > 0);
-    scheduleRefit(ev);   // C-56 R-5 — 몇 초 모아 지금 단계 초안을 다시 맞춘다
+    const own = ev.sim ? "" : ownTask();   // F-161-4 — Floe가 맡긴 일의 알림
+    if (!NO_REFIT.has(own)) scheduleRefit(ev);   // C-56 R-5 — 몇 초 모아 지금 단계 초안을 다시 맞춘다
     if (!ev.sim) { changesRefresh(); if (st.files && st.files.src === "mine") loadFiles(); }   // F-157-6 — 한 장의 '바뀐 파일' · 코드 파일 수(5 · 6단계 '코드 파일을 만드시겠습니까?'가 옛 목록으로 계속 묻지 않게, 새 맥락 리뷰 F)
     if (st.busy) return render();
     if (ev.work) st.text = ev.work;
@@ -72,6 +73,7 @@
     // F-153(임유정 2026-11-04 "8단계 … 관문을 통과했는데도 … 계속 루프가 돈다"): 다 마친 뒤의 알림(문서 올리기의 커밋 · 푸시도)은 채팅 한 줄로 끝 —
     //   '어디쯤인지 볼까요?'를 누르면 살펴보기가 끝난 상태를 풀어 8단계 관문이 다시 열렸다. claude-drafted: 2026-11-04
     if (st.finished) { st.ping = ""; return render(); }
+    if (own) return render();   // F-161-4 — 보고는 그 일의 끝맺음이 한다(채팅 한 줄은 위에)
     const auto = st.screen !== "gate" && (ev.sim ? st.mode === "fixture" : st.auto && st.mode === "live");
     if (auto) {
       await lookAfterWork(lastPing);

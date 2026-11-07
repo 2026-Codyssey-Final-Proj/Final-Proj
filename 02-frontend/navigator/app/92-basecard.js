@@ -41,7 +41,8 @@
   function clickAct(t) {
     if (!t || !ACT[t.dataset.act]) return;
     if (t.dataset.label && !t.classList.contains("ghost")) logMe(t.dataset.label);   // 채팅의 칩을 누르면 내 말로 남는다(C-22)
-    if (pastFixAt && !["send", "say", "first-go"].includes(t.dataset.act)) pastFixAt = null;   // F-157-3 — 다른 단추를 누르면 지난 칸 고치기를 그만둔다(다음 말이 엉뚱하게 그 칸의 줄이 되지 않게, 새 맥락 리뷰 D)
+    if (pastFixAt && !["send", "say", "first-go", "fill-fix", "fill-anyway", "secret-fix"].includes(t.dataset.act)) pastFixAt = null;
+    if (st.fillWarn && !["fill-fix", "fill-anyway", "say"].includes(t.dataset.act)) st.fillWarn = null;   // F-161-3 새 맥락 리뷰 보완 3 — 다른 단추를 누르면 묻던 카드를 걷는다(남아 섬이 접히지 않던 것)   // F-157-3 — 다른 단추를 누르면 지난 칸 고치기를 그만둔다(다음 말이 엉뚱하게 그 칸의 줄이 되지 않게, 새 맥락 리뷰 D)
     run({ act: t.dataset.act, i: t.dataset.i === undefined ? undefined : Number(t.dataset.i) }, t);
   }
   // 책 보기 설정(C-9 · C-3) — 판의 단추(구조 · 보기 · 크기 · 탭)와 칸 체크. 고르면 바로 저장하고 다시 그린다. '전체 화면'을 고르면 지금 책을 서고에서 연다

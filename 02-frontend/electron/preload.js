@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld("floeApp", {
   runLogin: (name) => ipcRenderer.invoke("floe:login-run", String(name || "")),
   stopLogin: () => ipcRenderer.invoke("floe:login-stop"),
   onLoginLine: (cb) => { const h = (_e, p) => cb(p); ipcRenderer.on("floe:login-line", h); return () => ipcRenderer.removeListener("floe:login-line", h); },
+  // F-161-2(claude-drafted: 2026-11-06 사용자 시험): 클립보드에 글 넣기 — 작업실 창에서 누른 '다른 AI에 넘기기' · 복사 단추는 섬 창(포커스 없음)이 처리해
+  //   navigator.clipboard가 "Document is not focused"로 늘 거절했다. 앱(main)의 클립보드는 포커스와 상관없다. 글만 보낸다(돌려받는 것 없음)
+  copyText: (text) => ipcRenderer.invoke("floe:copy", String(text || "")),
   openSettings: () => ipcRenderer.invoke("floe:open-settings"), // .env를 두는 앱 설정 폴더 열기
   saveKey: (key, baseUrl) => ipcRenderer.invoke("floe:save-key", { key, baseUrl }),   // API 키(와 중계 서버 주소)를 넣는다
   clearKey: () => ipcRenderer.invoke("floe:clear-key"),       // 키를 뺀다 — 그다음부터 이 컴퓨터의 Claude Code로

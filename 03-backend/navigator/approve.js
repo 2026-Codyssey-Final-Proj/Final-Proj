@@ -21,6 +21,9 @@
     [/\bgit\s+push\b[^\n;&|]*(\s--delete\b|\s-[a-zA-Z]*d[a-zA-Z]*\b|\s["']?:\S)/i, "원격의 브랜치를 지우는 명령이에요 — 되돌리기 어려워요"],
     [/\bgit\s+(reset\s+--hard|clean\s+-[a-zA-Z]*f|branch\s+-D|checkout\s+--\s|restore\s)/i, "되돌릴 수 없게 바꾸는 git 명령이에요"],
     [/\b(drop\s+(table|database|schema)|truncate\s+table|delete\s+from)\b/i, "표를 지우는 명령이에요"],
+    // F-161-6(claude-drafted: 2026-11-06 사용자 시험): 내 GitHub에 저장소를 만들거나 공개 범위를 바꾸는 명령 — 밖에 올라가 되돌리기 어렵다. 자동 허용(F-149)에서 빼고 섬에서 사람이 정한다
+    //   (처음 설정의 '저장소도 만들기'는 "허락을 구하면 섬에서 물어볼게요"라고 하지만 명령은 자동 허용으로 그냥 지나갔다 — 11-05 시험에서 저장소가 확인 없이 생긴 원인 후보)
+    [/\bgh\s+repo\s+(create\b|edit\b[^\n;&|]*--visibility)/i, "GitHub에 저장소를 만들거나 공개 범위를 바꾸는 명령이에요 — 공개면 누구나 봐요"],
   ];
   const DANGER_FILE = /(^|[\\/])(\.env(\.[^\\/]*)?|[^\\/]*\.(pem|key|p12|pfx)|id_(rsa|ed25519|ecdsa)(\.pub)?|[^\\/]*credentials[^\\/]*)$/i;
   const DANGER_FILE_WHY = "비밀값 파일이에요 — 밖으로 새면 되돌릴 수 없어요";
