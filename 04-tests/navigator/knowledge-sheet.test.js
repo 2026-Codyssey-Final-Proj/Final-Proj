@@ -207,5 +207,5 @@ test("버린 말 빼기(drop) — 고칠게요로 버린 글은 처음 한 말�
   two = SHx.drop(two, 1, "chat", "같은 말", red); assert.equal(two[1][0].c, 1);
   assert.deepEqual(SHx.drop(two, 1, "chat", "없는 말", red), two, "없으면 그대로");
   const a = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
-  assert.match(a, /"fill-fix": \(\) => \{ const f = st\.fillWarn; st\.fillWarn = null; if \(f\) \{ st\.say = f\.t; unmat\("chat", f\.t\); \}/, "고칠게요가 재료에서 뺀다");
+  assert.match(a, /"fill-fix": \(\) => \{ const f = st\.fillWarn; st\.fillWarn = null; if \(f\) \{ st\.say = f\.t; if \(!f\.vague\) unmat\("chat", f\.t\); \}/, "고칠게요가 재료에서 뺀다(애매한 말은 비밀이 아니라 그대로)");
 });

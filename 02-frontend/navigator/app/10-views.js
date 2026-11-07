@@ -348,6 +348,9 @@
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
         acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, ...(!fix && st.warn.then === "stage" && secretPast(st.warn.text) ? [{ label: "그 칸 고치기", act: "secret-fix", kind: "soft" }] : []), { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };   // F-161-1 — 지난 칸에 있으면 그 칸을 고칠 길
     }
+    if (st.fillWarn && st.fillWarn.vague) return { tone: "blue", mood: "think", title: "숫자로 바꿔 볼까요?",   // F-166-16 — 애매한 말(FR-11)
+      sub: `'${esc(st.fillWarn.w.join("' · '"))}'은 사람마다 다르게 읽혀요. '10초 안에' · '하루 한 번'처럼 숫자로 적으면 나중에 재 볼 수 있어요. 아직 모르면 그대로 적어도 돼요.`,
+      acts: [{ label: "숫자로 고칠게요", act: "fill-fix", key: "Enter", pri: true }, { label: "그대로 적기", act: "fill-anyway" }] };
     if (st.fillWarn) return { tone: "amber", mood: "alert", title: "적기 전에 잠깐!",   // F-161-3 — 칸에 바로 적는 글
       sub: `글 안에 ${esc(st.fillWarn.w.join(", "))}처럼 보이는 게 있어요. 칸에 적으면 화면 · 다음 단계 초안에 그대로 쓰여요(단계 문서에는 가려서 들어가요). 그대로 적을까요?`,
       acts: [{ label: "고칠게요", act: "fill-fix", key: "Enter", pri: true }, { label: "그대로 적기", act: "fill-anyway" }] };

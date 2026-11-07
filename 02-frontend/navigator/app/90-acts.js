@@ -31,7 +31,7 @@
     "send-anyway": () => { if (st.warn && RETRY[st.warn.then]) RETRY[st.warn.then](); },   // 두 번 누르면 둘째는 st.warn이 이미 없다(앱 작업실은 다시 그려 보내는 데 시간이 걸린다) — F-144-18
     "stop-send": () => { const stage = st.warn && st.warn.then === "stage"; set({ warn: null }); if (stage) say("이 단계 초안은 받지 않았어요 — 그 글을 고친 뒤 '초안 다시 받기'를 누르거나, 칸을 직접 적어요"); },   // F-161-1 — 초안이 왜 없는지 · 다시 받는 길
     "fill-anyway": () => fillAnyway(),
-    "fill-fix": () => { const f = st.fillWarn; st.fillWarn = null; if (f) { st.say = f.t; unmat("chat", f.t); } render(); focusAct("[data-act=say]"); },   // F-166-13 — 고칠게요로 버린 말은 한 장의 '처음 한 말'이 되지 않게 재료에서 뺀다   // 글을 입력 칸에 돌려놓는다 — 고칠 칸(pastFixAt · draftFixAt)은 그대로
+    "fill-fix": () => { const f = st.fillWarn; st.fillWarn = null; if (f) { st.say = f.t; if (!f.vague) unmat("chat", f.t); } render(); focusAct("[data-act=say]"); },   // F-166-13 — 고칠게요로 버린 말은 한 장의 '처음 한 말'이 되지 않게 재료에서 뺀다   // 글을 입력 칸에 돌려놓는다 — 고칠 칸(pastFixAt · draftFixAt)은 그대로
     "secret-fix": () => { const g = st.warn && secretPast(st.warn.text); st.warn = null; if (!fixSecretPast(g)) render(); },
     "stage-redraft": () => { const q = st.quest; if (q && !q.draft && N.DRAFT_STAGES.includes(q.chap) && st.results[q.chap - 1]) stageDraft(q.chap); },
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },

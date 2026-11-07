@@ -92,6 +92,9 @@
     const t = Number(since) || 0;
     return (Array.isArray(sessions) ? sessions : []).some((s) => s && Array.isArray(s.steps) && s.steps.some((x) => x && x.what && (x.add || x.del) && (!t || (Number(x.at) || 0) >= t)));
   }
+  // F-166-16(2026-11-07 사용자 시험 셋째 · FR-11): 칸에 적는 말에 숫자 없이 정도를 나타내는 애매한 말이 있으면 그 말들 — 화면이 숫자로 바꿀지 한 번 묻는다(막지 않는다)
+  const VAGUE = ["빨리", "빠르게", "금방", "곧", "충분히", "적당히", "자주", "가끔", "오래", "많이", "조금", "최대한", "되도록"];
+  const vagueIn = (text) => { const t = String(text || ""); if (/\d/.test(t)) return []; return VAGUE.filter((w) => new RegExp(`(^|[^가-힣])${w}($|[^가-힣])`).test(t) || t.includes(` ${w} `) || t.startsWith(`${w} `)); };
   function gateRules(j, ctx = {}) {
     if (!j || !Array.isArray(j.criteria)) return j;
     const lines = Array.isArray(ctx.lines) ? ctx.lines : [], work = !!ctx.work, need = EVIDENCE_CRITERIA[j.stage] || [];
@@ -250,10 +253,13 @@
     "작업 내용에 '→ …로 정했어요.'라고 적힌 줄은 사용자가 이미 고른 것이다. 그 일은 했다고 보고 다음 일로 넘어간다.",
   ], tag("작업내용", text)); };
 
+  // F-166-15(2026-11-07 사용자 시험 셋째): 플로로가 Floe의 '만드는 크기'를 몰라 "이 앱에서 두 크기를 어떻게 나누는지는 제가 몰라요"라고 답했다 — 화면의 이름과 단계마다 할 일 수를 알려 준다
+  const SIZE_NAME = { Lite: "짧음", Xpress: "보통", Full: "긺" };
+  const sizeFact = () => `Floe의 '만드는 크기'(1단계 '크기' 칸 · 설정의 '만드는 크기')는 짧음 · 보통 · 긺 셋이다. 크기는 단계마다 하는 할 일 수를 정한다 — ${["Lite", "Xpress", "Full"].map((t) => `${SIZE_NAME[t]}: 1 ~ 8단계 할 일 ${STAGES.map((s, n) => criteriaFor(n, t).length).join(" · ")}개`).join(", ")}. 크기가 클수록 더 꼼꼼히 정하는 할 일이 붙는다. 언제든 설정에서 바꿀 수 있고, 이미 적은 칸은 남는다.`;
   function answerPrompt(stage, hard, question, text) {
     const s = STAGES[stage];
-    return prompt([`사용자가 ${s.n}단계 "${s.title}"(${s.does})를 마치고 "잘 모르겠다"고 했다.`, `헷갈린 부분: ${hard.join(", ") || "(고르지 않음)"}`],
-      ["다섯 문장 이내로 답한다. 모르면 모른다고 한다."], tag("작업내용", text), tag("질문", question));
+    return prompt([`사용자가 ${s.n}단계 "${s.title}"(${s.does})를 마치고 "잘 모르겠다"고 했다.`, `헷갈린 부분: ${hard.join(", ") || "(고르지 않음)"}`, sizeFact()],
+      ["다섯 문장 이내로 답한다. 모르면 모른다고 한다. Floe의 크기를 물으면 위의 설명대로 답한다."], tag("작업내용", text), tag("질문", question));
   }
 
   // FR-3 설계도: AI가 초안을 먼저 쓰고 → 사용자가 고치고 → AI가 다시 봐 준다. 확정은 사람만 한다(화면의 버튼).
@@ -454,7 +460,7 @@
     const slots = todo.map((c, i) => { const got = (lines[i] || []).filter(filled); return `(${i + 1}) ${c.text} — ${got.length ? `이미 적음: ${got.join(" / ")}` : "비어 있음"}`; }).join("\n");
     const mat = matOf(prev);
     return prompt([`사용자가 ${s.n + 1}단계 "${s.title}"(${s.does})를 하며 플로로와 이야기한다. 대화의 마지막 사람 말에 답하고, 이 대화로 채울 수 있는 이 단계의 칸이 있으면 칸마다 한 줄을 제안한다. 칸에 적을지는 사람이 정한다.`,
-      `이 단계의 칸(번호는 1부터 — 이미 적은 칸은 제안하지 않는다):\n${slots}`], [
+      `이 단계의 칸(번호는 1부터 — 이미 적은 칸은 제안하지 않는다):\n${slots}`, sizeFact()], [
       FLORO_VOICE,
       `reply는 마지막 사람 말에 대한 답이다(${CHAT_REPLY_MAX}자 안쪽). 칸 이름이나 방법 이름(EARS · Planguage …)을 앞세우지 않는다.`,
       `slots에는 사용자가 대화에서 실제로 말한 내용으로 채울 수 있는 칸만 { i: 칸 번호(1부터), text: 그 칸에 적을 한 줄(${SLOT_LINE_MAX}자 안쪽) }로 쓴다. 이미 적은 칸은 넣지 않는다. 채울 칸이 없으면 빈 목록 [].`,
@@ -632,6 +638,9 @@
       "easy는 초등학생도 알아듣는 말로 두 문장, 60자 안쪽 — 무엇을 했고 무엇이 남았는지. 어려운 말은 쉬운 말로 풀고, 파일 이름 · 명령 · 숫자는 바꾸지 않아요.",
       "사용자에게 물을 것이 있으면 ask에 한 문장(쉬운 말), 없으면 빈 글. 증거에 내 컴퓨터의 전체 경로는 쓰지 말고 폴더 안의 파일 이름만 써요."].join("\n");
   }
+  // F-166-17(2026-11-07 사용자 시험 셋째): 훅 알림의 '사용자 말'이 Floe가 맡긴 글(taskBrief)이면 요구 문장만 — 알림 목록에 보고하는 법(내부 지시)이 그대로 보였다
+  const BRIEF_MARK = "\n\n다 됐는지 보는 기준:";
+  const briefHead = (prompt) => { const t = String(prompt || ""); const k = t.indexOf(BRIEF_MARK); return k > 0 && t.includes("정해진 모양으로 알려 주세요") ? `Floe가 맡긴 일: ${t.slice(0, k).trim()}` : t; };
   // C-50 미리 판정(2026-10-29 — 지식 퀘스트 PRD 9절 8번 '규칙으로, AI를 더 부르지 않음'): 보고의 해냄을 세어 다 됨 · 덜 됨, 일이 막혔으면 막힘,
   //   보고가 없거나 기준이 0이거나 실패 · 멈춤이면 직접 확인 필요. 화면은 '다 됨'일 때만 '맞아요'를 큰 단추로 둔다
   function reportVerdict(r, state = "") {
@@ -683,7 +692,7 @@
     };
   }
 
-  const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, gateRules, workSeen, BLANK_MARK, EVIDENCE_CRITERIA, GATE_WHY, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
+  const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, gateRules, workSeen, vagueIn, VAGUE, briefHead, BLANK_MARK, EVIDENCE_CRITERIA, GATE_WHY, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, TASK_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt, taskPrompt,
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
     FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest, LEN, SHORT_RULE, fit,   // 퀘스트 글의 길이(2026-10-30) — C-22 퀘스트 제작(2026-10-21)

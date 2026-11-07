@@ -1069,7 +1069,7 @@ function addEvent(body) {
   workSession(body, tool).state = kind === "prompt" ? "working" : "done";   // C-12: 세션 상태 — 요청 받음이면 일하는 중, 작업 마침이면 마쳤어요
   const id = `${tool}:${String(body.session_id || "")}`, log = sessions.get(id) || [];
   // S4: 저장하기 전에 가린다 — 메모리의 대화에도, 화면에 줄 글에도 원래 값이 남지 않는다(자르기 전에 가려서 키가 반쯤 남지 않는다)
-  for (const [who, said] of [["사용자", body.prompt], [tool === "codex" ? "Codex" : "Claude", body.last_assistant_message]]) {
+  for (const [who, said] of [["사용자", typeof body.prompt === "string" ? Nav.briefHead(body.prompt) : body.prompt], [tool === "codex" ? "Codex" : "Claude", body.last_assistant_message]]) {   // Floe가 맡긴 글은 요구 문장만(F-166-17)
     if (typeof said === "string" && said.trim()) log.push(`[${who}] ${Sensitive.redact(said.trim())}`);
   }
   while (log.length > 20) log.shift();   // 한 알림에 두 말이 오면 둘 다 넘칠 수 있다

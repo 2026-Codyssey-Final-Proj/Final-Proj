@@ -13,7 +13,10 @@
     const q = st.quest, f = face(), meta = stageMetaQ();
     if (q.phase === "draft") return { tone: "blue", mood: "happy", meta, title: `${LB(q.chap)} 퀘스트를 만들었어요.`,
       sub: `조건 · 할 일 ${q.objs.length}개 · 보상을 보고 '퀘스트 받기'를 눌러 주세요. 이름이나 할 일 수는 '고쳐 주세요'로 고쳐요.`,   // F-161-9 — 이 카드의 단추를 가리킨다(전에는 '퀘스트 창의 큰 단추')
-      acts: [{ label: "퀘스트 받기", act: "quest-ok", key: "Enter", pri: true }, { label: "고쳐 주세요", act: "quest-fix" }, { label: "나중에", act: "quest-later", key: "Escape", kind: "ghost" }] };
+      acts: [{ label: "퀘스트 받기", act: "quest-ok", key: "Enter", pri: true }, { label: "고쳐 주세요", act: "quest-fix" }, { label: "나중에", act: "quest-later", key: "Escape", kind: "ghost" }],
+      // F-166-14(2026-11-07 사용자 시험 셋째): 진짜 AI로 단계 초안을 곧 받는 장(2단계부터)에서는 이 카드가 잠깐만 보이고 바로 칸 확인으로 넘어간다 —
+      //   지난 말로 채팅에 남아 없는 단추('퀘스트 받기' · '고쳐 주세요')를 가리켰다. 기다리는 말처럼 쌓지 않는다(초안을 못 받으면 따로 말하고 이 카드가 그대로 남는다)
+      passing: q.chap >= 1 && st.mode === "live" && canLive && !q.draft };
     const i = QU.curIdx(q);
     if (i < 0) return { tone: "green", mood: "wow", meta, title: "다 됐어요! 완료 보고할까요?",
       sub: st.mode === "live" ? "적은 글을 AI(Claude)가 보고 어디쯤인지 봐요. 고칠 곳이 있으면 퀘스트 카드에서 먼저 고쳐요." : "연습이라 적은 대로 한 것으로 봐요. 고칠 곳이 있으면 퀘스트 카드에서 먼저 고쳐요.",
@@ -139,6 +142,9 @@
     const q = st.quest;
     // F-161-3(claude-drafted: 2026-11-06 사용자 시험 — '고칠래요'로 적은 키 모양 글이 경고 없이 칸 · 퀘스트 카드 · 다음 단계 '가져온 것'에 원문으로 남았다): 칸에 바로 적는 말이면 먼저 묻는다 — 막지 않고 그대로 적기 / 고칠게요(보안 기준 6-3)
     if ((pastFixAt || (q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q))) && sensitive(t).length) { st.fillWarn = { t, w: sensitive(t) }; render(); return; }
+    // F-166-16(2026-11-07 사용자 시험 셋째 · FR-11 · FR-12): 고쳐 적는 칸에 숫자 없는 애매한 말('빨리' 등)이 있으면 한 번 묻는다 — 같은 칸은 다시 묻지 않는다
+    { const at = q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q) ? `${q.chap}-${draftFixAt}` : "", vw = at && N.vagueIn ? N.vagueIn(t) : [];
+      if (vw.length && !vagueAsked.has(at)) { vagueAsked.add(at); st.fillWarn = { t, w: vw, vague: true }; render(); return; } }
     if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, t); }   // F-157-3 · F-161-1(앱 확인: 다음 단계 퀘스트를 받기 전에도 — 전에는 아래 '먼저 퀘스트를 받아 주세요'가 먼저였다) — '먼저' 카드에서 지난 칸으로 간 뒤 보낸 말은 그 칸의 새 줄
     if (!st.j && !q && QU) return startDraft(t);    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }
     if (q && q.draft && q.phase === "quest" && QU.pickOf(q, QU.curIdx(q))) {   // 기획서로 키울지(2단계)는 셋 중 하나로 — 글로 답해도 맞춰 고른다
@@ -224,6 +230,7 @@
   // F-157-3(claude-drafted: 2026-11-05 사용자 시험 — 7단계 '2단계 Ⅱ 보기'가 고칠 수 없는 한눈에 보기로 보내 막다른 길이었다): 지난 칸 { s, i } — 다음에 보낸 말이 그 칸의 줄이 된다
   let pastFixAt = null;
   // F-161-3 — 경고 뒤 '그대로 적기': 보내려던 칸(지난 칸 · 고칠래요 칸)에 그대로 적는다
+  const vagueAsked = new Set();   // 애매한 말을 이미 물은 칸(장-칸) — 같은 칸은 한 번만(F-166-16)
   function fillAnyway() { const f = st.fillWarn; st.fillWarn = null; if (!f) return render(); const q = st.quest;
     if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, f.t); }
     if (q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q)) { draftFixAt = -1; return fillNow(f.t); }
