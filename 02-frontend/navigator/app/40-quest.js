@@ -12,7 +12,7 @@
   function momentQuest() {
     const q = st.quest, f = face(), meta = stageMetaQ();
     if (q.phase === "draft") return { tone: "blue", mood: "happy", meta, title: `${LB(q.chap)} 퀘스트를 만들었어요.`,
-      sub: `퀘스트 창에서 조건 · 할 일 ${q.objs.length}개 · 보상을 보고 큰 단추로 받아 주세요. 이름이나 할 일 수는 거기서 고칠 수 있어요.`,
+      sub: `조건 · 할 일 ${q.objs.length}개 · 보상을 보고 '퀘스트 받기'를 눌러 주세요. 이름이나 할 일 수는 '고쳐 주세요'로 고쳐요.`,   // F-161-9 — 이 카드의 단추를 가리킨다(전에는 '퀘스트 창의 큰 단추')
       acts: [{ label: "퀘스트 받기", act: "quest-ok", key: "Enter", pri: true }, { label: "고쳐 주세요", act: "quest-fix" }, { label: "나중에", act: "quest-later", key: "Escape", kind: "ghost" }] };
     const i = QU.curIdx(q);
     if (i < 0) return { tone: "green", mood: "wow", meta, title: "다 됐어요! 완료 보고할까요?",
@@ -41,7 +41,8 @@
     if (q.draft) { const c = momentConfirm(q, i, meta); return { ...c, ...refitBanner(q), acts: [...c.acts, ...buildActs(q.chap)] }; }   // F-70 — 초안을 확인하는 중에도 코드 맡기기(A-02)   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
     return { tone: "blue", mood: f[0], meta, ...refitBanner(q), title: `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}`, sub: `${esc(QU.askOf(q, i))}${QU.doneOf(q, i) ? ` <small class="done-when">끝: ${esc(QU.doneOf(q, i))}</small>` : ""}${o.term ? ` ${termTag(o.term)}` : ""}`,
-      body: foundHTML(q, i), acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), ...buildActs(q.chap), { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
+      body: foundHTML(q, i), acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []),
+        ...(N.DRAFT_STAGES.includes(q.chap) && st.results[q.chap - 1] && st.mode === "live" && canLive && !q.objs.some((_, k) => QU.filled(q, k)) ? [{ label: "초안 다시 받기", act: "stage-redraft", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), ...buildActs(q.chap), { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };   // F-161-1 '초안 다시 받기' — 비밀값 경고에서 그만뒀거나 초안을 못 받았을 때
   }
   // 1단계 초안 확인(C-36, 2026-10-25 — 이재엽 "불편한게 맞는 내용은 이게 플로로가 생각한 내용인데 맞나요 … 누가 쓰는 내용은 … 사람에 대한 내용이 있으면 이 내용이 맞는지 요청을 보내고
   //   없다면 본인 / 소수 / 불특정다수 … 얼마 크게도 … 짧음 / 보통 / 긺"): Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가(글에 사람이 있으면) — 맞나요, Ⅲ 사람이 없으면 셋 중 고르기, Ⅳ 플로로가 본 크기 + 셋 중 고르기.
@@ -133,6 +134,9 @@
     mat("chat", t);   // C-47 재료 — 내가 적어 보낸 말의 한 줄(48-sheet, 가린 뒤 80자)
     if (planNow()) return planSay(t);   // 준비 계획 · 맡길 일(C-35)
     const q = st.quest;
+    // F-161-3(claude-drafted: 2026-11-06 사용자 시험 — '고칠래요'로 적은 키 모양 글이 경고 없이 칸 · 퀘스트 카드 · 다음 단계 '가져온 것'에 원문으로 남았다): 칸에 바로 적는 말이면 먼저 묻는다 — 막지 않고 그대로 적기 / 고칠게요(보안 기준 6-3)
+    if ((pastFixAt || (q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q))) && sensitive(t).length) { st.fillWarn = { t, w: sensitive(t) }; render(); return; }
+    if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, t); }   // F-157-3 · F-161-1(앱 확인: 다음 단계 퀘스트를 받기 전에도 — 전에는 아래 '먼저 퀘스트를 받아 주세요'가 먼저였다) — '먼저' 카드에서 지난 칸으로 간 뒤 보낸 말은 그 칸의 새 줄
     if (!st.j && !q && QU) return startDraft(t);    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }
     if (q && q.draft && q.phase === "quest" && QU.pickOf(q, QU.curIdx(q))) {   // 기획서로 키울지(2단계)는 셋 중 하나로 — 글로 답해도 맞춰 고른다
       const k = /경량|가볍|짧/.test(t) ? 0 : /상세|자세/.test(t) ? 1 : /안 함|않|없|아니/.test(t) ? 2 : -1;
@@ -144,7 +148,6 @@
       if (k < 0) { render(); return say("짧음 · 보통 · 긺 중에서 골라 주세요"); }
       return ACT["draft-size"](k);
     }
-    if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, t); }   // F-157-3 — '먼저' 카드에서 지난 칸으로 간 뒤 보낸 말은 그 칸의 새 줄
     if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (q.draft && draftFixAt === QU.curIdx(q)) { draftFixAt = -1; return fillNow(t); } return chatSend(t); }   // C-61(2026-10-29): 보내기는 칸에 적지 않는다 — 플로로가 정리 카드로 돌려주고 사람이 [칸 n개에 적기]를 누른다. F-150(2026-11-04): 초안 확인 중에도 같다 — 플로로에게 한 말("무슨 뜻이야?")이 칸의 답이 됐다. '고칠래요'를 누른 칸만 다음 말이 그 줄이 된다(C-36)
     if (st.screen === "gate" && st.step === "question") { st.question = t; return answer(); }
     if (st.j && st.j.next && st.screen !== "gate" && !st.todos) { st.ownText = t; return decide(t); }
@@ -161,6 +164,12 @@
   //   by — 누가 정했나(C-39): 고르는 칩은 "pick", 아니면 quest.js가 플로로 초안과 맞대어 그대로 · 고침 · 직접
   //   at — MCP로 이은 AI의 제안처럼 지금 할 일이 아닌 칸에 적을 때(C-38 시험판)
   function fillNow(t, by, at = QU.curIdx(st.quest)) {
+    // F-161-8(claude-drafted: 2026-11-06 사용자 시험 — 7단계 '잰 값' 초안 "걸린 시간: (재고 적기) · …"을 고르기만 해도 칸이 '했음'이 되고 관문에서야 막혔다):
+    //   빈칸 표시가 든 틀은 칸에 적지 않고 입력 칸에 넣는다 — 그 자리를 잰 값으로 바꿔 보내면 그때 적힌다
+    if (N.BLANK_MARK && N.BLANK_MARK.test(t) && st.quest && st.quest.draft && at === QU.curIdx(st.quest)) {
+      st.say = t; draftFixAt = at; render(); focusAct("[data-act=say]");
+      return say("틀이라 아직 적지 않았어요 — '(재고 적기)' 자리를 잰 값으로 바꿔 보내요. 못 쟀으면 '아직 못 함 — 까닭'으로 적어요");
+    }
     st.quest = QU.fill(st.quest, at, t, by);
     afterFill();
   }
@@ -190,6 +199,11 @@
   let draftFixAt = -1;   // F-150 — '고칠래요'를 누른 칸. 다음에 보낸 말이 그 칸의 줄이 된다
   // F-157-3(claude-drafted: 2026-11-05 사용자 시험 — 7단계 '2단계 Ⅱ 보기'가 고칠 수 없는 한눈에 보기로 보내 막다른 길이었다): 지난 칸 { s, i } — 다음에 보낸 말이 그 칸의 줄이 된다
   let pastFixAt = null;
+  // F-161-3 — 경고 뒤 '그대로 적기': 보내려던 칸(지난 칸 · 고칠래요 칸)에 그대로 적는다
+  function fillAnyway() { const f = st.fillWarn; st.fillWarn = null; if (!f) return render(); const q = st.quest;
+    if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, f.t); }
+    if (q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q)) { draftFixAt = -1; return fillNow(f.t); }
+    render(); say("적을 칸이 바뀌어 적지 않았어요 — 그 칸에서 다시 적어요"); }
   //   g.name — 칸을 기준 글로 찾는다(등급이 바뀌면 번호가 달라진다, 새 맥락 리뷰 제안 1). 고친 줄은 사람이 쓴 것(by: "me" — 문서에 플로로 초안으로 남지 않게, 리뷰 C)
   const pastIdx = (g) => { const r = st.results[g.s]; if (!r) return -1; const k = g.name ? r.items.findIndex((x) => x.name === g.name) : -1; return k >= 0 ? k : g.i; };
   function fixPast(g, t) {
@@ -197,8 +211,22 @@
     if (!it) { render(); return say("그 칸을 찾지 못했어요 — 퀘스트 카드에서 '아직 못 함으로 적기'를 눌러요"); }
     g = { ...g, i: at };
     st.results = { ...st.results, [g.s]: { ...r, items: r.items.map((x, k) => (k === g.i ? { ...x, lines: [t], by: "me" } : x)) } };
+    // F-161-1(앱 확인 2026-11-07): 기준 카드에 옮겨 온 칸(by "moved")은 고친 결과로 다시 옮긴다 — 1단계 칸을 고쳐도 카드의 '만드는 것'에 옛 줄(키)이 남아 경고가 계속 났다. 사람이 적은 칸은 그대로
+    if (st.card && BC) { const fresh = BC.build({ results: st.results, source: st.source }); st.card = Object.fromEntries(Object.entries(st.card).map(([k, v]) => [k, v && v.by === "moved" && fresh[k] ? fresh[k] : v])); }
     save(); if (st.quest) st.quest = applyStates(st.quest);
     render(); say(`${LB(g.s)} ${ROMAN(g.i)} ${QU.shortOf(it.name)}${eul(QU.shortOf(it.name))} 고쳤어요 — 이 단계를 이어서 해요`);
+    if (g.secret && !secretPast(null)) say(st.quest && !st.quest.draft && !st.quest.objs.some((_, k) => QU.filled(st.quest, k)) ? "이제 '초안 다시 받기'를 누르면 이 단계 초안을 받아요" : "이제 하려던 일(코드 맡기기 · 보내기)을 다시 눌러요");
+  }
+  // F-161-1(claude-drafted: 2026-11-06 사용자 시험 — 3단계 칸에 키 모양 글을 적은 뒤 5단계 코드 맡기기가 "그 칸을 고친 뒤 다시"만 말하고, 지난 장의 칸은 고칠 길이 없었다).
+  //   비밀값 모양이 든 지난 칸(앞 단계부터) → 채팅에서 그 칸을 고친다('먼저' 카드의 지난 칸 고치기와 같은 길). 지금 줄은 가려서 보인다
+  //   text — 경고 · 거절의 까닭이 된 글: 그 안에 실제로 든 칸만(새 맥락 리뷰 보완 2 — 관계없는 칸으로 보내지 않게). null이면 아무 칸이나
+  const secretPast = (text) => { for (const [s, r] of Object.entries(st.results || {})) { const k = ((r && r.items) || []).findIndex((x) => sensitive((x.lines || []).join("\n")).length && (text == null || (x.lines || []).some((y) => y && String(text).includes(y)))); if (k >= 0) return { s: Number(s), i: k, name: r.items[k].name, secret: true }; } return null; };
+  function fixSecretPast(g) {
+    if (!g) return false;
+    const at = pastIdx(g), it = st.results[g.s].items[at], line = (it.lines || []).join(" · ");   // 줄이 여럿이면 다 보인다 — 고친 줄이 칸 전체를 바꾼다(보완 4)
+    pastFixAt = g; render();
+    say(`${LB(g.s)} ${ROMAN(at)} ${QU.shortOf(it.name)}에 ${sensitive(line).join(", ")}처럼 보이는 글이 있어요 — 지금 줄은 “${window.NavSensitive ? window.NavSensitive.redact(line) : "…"}”예요. 그 글을 뺀 줄을 아래 칸에 적어 보내면 그 칸이 바뀌어요`);
+    focusAct("[data-act=say]"); return true;
   }
   // 새 단계(C-61 · C-63, 2026-10-29): 대화에 구분선(단계 · 이름 · 날짜)과 '지난 단계에서 가져온 것'(정한 줄 요약 — 틀리면 말로 고친다), 섬은 저절로 가운데(칸이 비었으니), 대화 표시 자리는 구분선 뒤. islBig은 저장하지 않는다 — 다시 켜면 칸 상태대로 저절로
   const questStarted = () => {
@@ -273,7 +301,9 @@
       render();
     } catch { /* 다시 맞추기는 덤 — 못 받으면 조용히(다음 알림에 다시) */ }
   }
-  const refitBanner = (q) => (st.refit && q && st.refit.chap === q.chap ? { banner: `방금 바뀜 — ${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요${st.refit.changed.length ? ` · 바뀐 칸 ${st.refit.changed.map(ROMAN).join(" · ")}` : ""}${st.refit.review.length ? ` · 적어 둔 칸 ${st.refit.review.map((x) => ROMAN(x.i)).join(" · ")}은 다시 볼까요?` : ""}` } : {});
+  // F-161-5(claude-drafted: 2026-11-06 사용자 시험 — 방금 사람이 고른 칸도 '바뀐 칸'으로 남았고 "Ⅰ · Ⅱ은"): 바뀐 칸은 아직 사람이 적지 않은 칸만, 보일 게 없으면 띠도 없다. 조사 없이 괄호로
+  const refitBanner = (q) => { if (!st.refit || !q || st.refit.chap !== q.chap) return {}; const ch = st.refit.changed.filter((i) => !QU.filled(q, i)), rv = st.refit.review;
+    return ch.length || rv.length ? { banner: `방금 바뀜 — ${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요${ch.length ? ` · 바뀐 칸 ${ch.map(ROMAN).join(" · ")}` : ""}${rv.length ? ` · 적어 둔 칸(${rv.map((x) => ROMAN(x.i)).join(" · ")})도 다시 볼까요?` : ""}` } : {}; };
   const refitChips = (q) => (st.refit && q && st.refit.chap === q.chap ? st.refit.review.map((x) => ({ label: `${ROMAN(x.i)} 다시 볼까요?`, act: "refit-review", i: x.i, kind: "soft" })) : []);
   function prefetch(q) {
     if (!q || !QU || st.mode !== "live" || !canLive) return;

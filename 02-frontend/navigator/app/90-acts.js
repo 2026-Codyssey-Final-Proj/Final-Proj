@@ -21,7 +21,11 @@
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
     restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, mats: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [], pushedAt: null }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => { if (st.warn && RETRY[st.warn.then]) RETRY[st.warn.then](); },   // 두 번 누르면 둘째는 st.warn이 이미 없다(앱 작업실은 다시 그려 보내는 데 시간이 걸린다) — F-144-18
-    "stop-send": () => set({ warn: null }),
+    "stop-send": () => { const stage = st.warn && st.warn.then === "stage"; set({ warn: null }); if (stage) say("이 단계 초안은 받지 않았어요 — 그 글을 고친 뒤 '초안 다시 받기'를 누르거나, 칸을 직접 적어요"); },   // F-161-1 — 초안이 왜 없는지 · 다시 받는 길
+    "fill-anyway": () => fillAnyway(),
+    "fill-fix": () => { const f = st.fillWarn; st.fillWarn = null; if (f) st.say = f.t; render(); focusAct("[data-act=say]"); },   // 글을 입력 칸에 돌려놓는다 — 고칠 칸(pastFixAt · draftFixAt)은 그대로
+    "secret-fix": () => { const g = st.warn && secretPast(st.warn.text); st.warn = null; if (!fixSecretPast(g)) render(); },
+    "stage-redraft": () => { const q = st.quest; if (q && !q.draft && N.DRAFT_STAGES.includes(q.chap) && st.results[q.chap - 1]) stageDraft(q.chap); },
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
     // 선택지를 한 번 누르면 정해진다 — 누른 자리에서 물방울이 튄다
     "pick-opt": (i, el) => {
@@ -347,8 +351,7 @@
     "notes-copy": async () => {
       if (!NT || !noteList.length) return;
       const text = NT.toJira(noteList, (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t));
-      let ok = false;
-      try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
+      const ok = await copyText(text);
       set({ noteCopy: ok ? "" : text }); say(ok ? `느낀 점 ${noteList.length}개를 복사했어요 — Jira에 붙여 넣어요` : "자동 복사가 안 돼서 글을 아래 두었어요");
     },
     // 자동 살펴보기 · 다음 장 미리 보기(퀘스트 창의 도전과제) · 느낀 점 열기

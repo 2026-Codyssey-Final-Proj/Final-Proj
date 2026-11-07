@@ -92,12 +92,13 @@
   // 준비 끝의 요약 세 줄
   const VIA = { cli: "Claude Code로 연결", api: "API 키로 연결", practice: "연습용 예시(AI 없이)" };
   function summary(s) {
-    const gh = githubReady(s.gh) ? "로그인됨" : s.ghSkip ? "건너뜀 — 나중에 설정에서" : "아직 로그인 전";
+    const gh = s.ghSkip ? "건너뜀 — 나중에 설정에서" : githubReady(s.gh) ? "로그인됨" : "아직 로그인 전";   // F-161-6 — 건너뛰었으면 로그인돼 있어도 건너뜀
     const p = s.project ? `${s.project.name}${s.project.where ? ` · ${s.project.where}` : ""}` : "아직 안 골랐어요 — 설정에서 언제든";
     return [["AI", VIA[s.via] || "나중에"], ["GitHub", gh], ["프로젝트", p]];
   }
   // 새로 만든 빈 폴더면 GitHub 저장소도 만들지 묻는다 — 만들기는 사용자의 Claude Code가(C-25), 허락은 섬에서. Claude Code가 없으면 맡길 곳이 없어 묻지 않는다
-  const offerRepo = (s) => !!(githubReady(s.gh) && s.st && s.st.claude && s.st.claude.found && s.project && s.project.made && !s.project.repo);
+  //   F-161-6(claude-drafted: 2026-11-06 사용자 시험 — 'GitHub 없이 할래요'를 골라도 저장소 만들기가 켜진 채 나왔다): 건너뛰었으면 묻지 않는다
+  const offerRepo = (s) => !!(!s.ghSkip && githubReady(s.gh) && s.st && s.st.claude && s.st.claude.found && s.project && s.project.made && !s.project.repo);
   // ── 처음 설정 안내(C-73, 2026-11-05 두승현 "처음 설정할 때도 온보딩") — 걸음은 상태로 계산한다. 그리기는 coach.js ──
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const LOGIN_CMD = { claude: "claude auth login", gh: "gh auth login --web --hostname github.com --git-protocol https" };   // 보이는 글 — 실제 명령은 앱의 표(electron/lib.js LOGIN_COMMANDS). 같은지 시험이 본다
@@ -385,7 +386,7 @@
   async function act(el, e) {
     const a = el.dataset.s;
     if (a === "go") { enter(firstStep(el.dataset.to)); return; }
-    if (a === "next") { enter(firstStep(nextStage(flow, s.step))); if (stageOf(s.step) === "done") burst("star", 14); return; }
+    if (a === "next") { if (s.step === "github") s.ghSkip = false; enter(firstStep(nextStage(flow, s.step))); if (stageOf(s.step) === "done") burst("star", 14); return; }
     if (a === "later") return close("later", false);
     if (a === "practice") { s.via = "practice"; enter("done"); burst("star", 12); return; }
     if (a === "pick") { s.via = el.dataset.via; s.checked = null; enter(s.via); refresh(); return; }

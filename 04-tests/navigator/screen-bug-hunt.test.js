@@ -224,7 +224,7 @@ test("F-103-7 맡긴 일 지켜보기 — 묻는 사이 새 일을 지키기 시
 test("F-103-8 웹 AI 제안 — 고른 카드를 늦게 온 목록이 되살리지 않고, 서버가 이미 처리됐다고 하면(404) 적지 않는다", async () => {
   const p = { id: "p1", kind: "report", chap: 2, todo: 0, text: "한 줄" }; let filled = 0; const poll = later();
   const st = { quest: { phase: "quest", chap: 2, objs: [{}] }, ui: "home", j: null };
-  const env = { st, postState() {}, peek() {}, render() {}, say() {}, logMsg() {}, esc: (x) => x, startDraft() {}, QU: {}, fillNow: () => filled++, ROMAN: () => "Ⅰ",
+  const env = { st, postState() {}, peek() {}, render() {}, say() {}, logMsg() {}, esc: (x) => x, startDraft() {}, QU: {}, N: { BLANK_MARK: /\(재고 적기\)/ }, fillNow: () => filled++, ROMAN: () => "Ⅰ",
     fetch: async (url) => url === "/api/proposals" ? { json: async () => { await poll.wait(); return { ok: true, items: [p] }; } } : { ok: true, status: 200, json: async () => ({ ok: true }) } };
   const m = new Function(...Object.keys(env), `let proposals = [${JSON.stringify(p)}]; const decided = new Set(); ${fnSrc("pollProposals")} ${fnSrc("decideProposal")}; return { pollProposals, decideProposal, list: () => proposals };`)(...Object.values(env));
   const polling = m.pollProposals(); await tick();   // 목록을 묻는 중

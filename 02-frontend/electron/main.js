@@ -6,7 +6,7 @@
 // Mac이 아니면(Windows · Linux) 테두리 없는 창에는 메뉴 줄이 없다 — 같은 메뉴를 **창 우클릭**과 **알림 영역(트레이) 아이콘**에 둔다.
 // 2026-10-20(이재엽, C-10 · 서재 전환): ① 창을 **먼저** 만들어 '켜지는 중'(lib.js bootPage)을 보이고 서버가 켜지면 화면을 연다(빈 화면 없이)
 //   ② 서고에 있는 동안은 창을 사람이 조절할 수 있고(resizable) 조절한 크기를 기억한다 ③ 작업 화면으로 돌아오면 섬 자리로 되돌린다(Mac은 줄어드는 것이 보인다)
-const { app, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, shell, screen } = require("electron");
+const { app, BrowserWindow, Menu, Tray, nativeImage, dialog, ipcMain, shell, screen, clipboard } = require("electron");
 const fs = require("node:fs");
 const http = require("node:http");
 const net = require("node:net");
@@ -306,6 +306,8 @@ ipcMain.handle("floe:project-new", async (e, name) => { if (!fromIsland(e)) retu
 ipcMain.handle("floe:project-clone", async (e, text) => { if (!fromIsland(e)) return { ok: false, message: "" }; return afterPick(await Project.cloneRepo(os.homedir(), text, { ghReady: await Project.ghReady() })); });
 ipcMain.handle("floe:project-repos", async (e) => (fromIsland(e) ? Project.myRepos({ ghReady: await Project.ghReady() }) : []));
 ipcMain.handle("floe:disconnect", (e) => (fromIsland(e) ? pickAndConnect(false) : { ok: false, message: "" }));
+// F-161-2 — 섬이 부탁한 글을 클립보드에(포커스 없는 섬 창의 navigator.clipboard 대신). 섬에서 온 것만, 200,000자까지
+ipcMain.handle("floe:copy", (e, text) => { if (!fromIsland(e) || typeof text !== "string" || !text || text.length > 200000) return false; clipboard.writeText(text); return true; });
 ipcMain.handle("floe:open-settings", (e) => (fromIsland(e) ? shell.openPath(app.getPath("userData")) : ""));
 // ── 설정 창 · 퀘스트 창(C-22, 2026-10-21 이재엽 "설정 창과 퀘스트 창 그리고 채팅을 입력하는 창 이렇게 3개") — 섬 창 옆에 뜨는 창 둘 ──
 // 상태는 섬(app.js) 하나가 갖는다: 섬이 창의 내용(HTML)을 그려 보내고(floe:win-html), 창의 누름 · 바뀜 · 입력은 섬으로 돌아가(floe:win-event) 섬이 처리하고 다시 그려 보낸다.

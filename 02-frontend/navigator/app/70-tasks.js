@@ -223,6 +223,7 @@
     build: { end: buildEnd, stop: () => { st.build = null; } }, code: { end: buildEnd, stop: () => { st.build = null; } },   // F-70 뼈대 · 6단계 코드 물음 '예'
     line: { end: buildEnd, stop: () => { st.build = null; } }, run: { end: runEnd, stop: () => { st.build = null; } },   // F-70 기능 줄 · 돌려 보기
   };
+  const TASK_WORD = { ship: "문서 올리기", build: "뼈대 코드 만들기", code: "코드 만들기", line: "기능 줄 만들기", run: "돌려 보기", commit: "커밋", repo: "저장소 만들기", preset: "문서 틀 채우기", send: "넘긴 일" };   // F-161-7 — 한 장의 '맡긴 일' 이름
   let tw = null, twTimer = null, twBusy = false;   // tw — 지금 지켜보는 맡긴 일 { at, kind }
   function watchTask(task, kind) {
     if (!task || !Number.isFinite(task.at) || !canLive) return;
@@ -231,7 +232,13 @@
     if (st.blocked && st.blocked.at !== task.at) st.blocked = null;
     clearInterval(twTimer); twTimer = setInterval(twTick, 3000);
   }
-  function twStop() { clearInterval(twTimer); twTimer = null; tw = null; }
+  function twStop() { if (tw) twLast = { kind: tw.kind, end: Date.now() }; clearInterval(twTimer); twTimer = null; tw = null; }
+  // F-161-4(claude-drafted: 2026-11-06 사용자 시험 — 3 · 4 · 6 · 8단계 끝마다 '방금 작업을 마쳤어요 — 살펴봐 주세요'가 관문 앞을 가렸다. 그 알림은 Floe가 맡긴 문서 올리기 · 돌려 보기의 끝이었다):
+  //   Floe가 맡긴 일(지켜보는 중이거나 끝난 지 OWN_MS 안)의 알림 — 결과는 그 일의 끝맺음(TASK_END)이 보고하므로 '어디쯤인지' 카드를 띄우지 않는다. 문서 · 실행 · 저장소 일은 퀘스트도 다시 맞추지 않는다(코드가 바뀌지 않음)
+  let twLast = null;
+  //   (새 맥락 리뷰 보완 1) 코드를 바꾸는 일(뼈대 · 코드 · 기능 줄 · 맡길 일 · 넘긴 일)은 전처럼 살펴본다 — 문서 올리기 · 돌려 보기 · 커밋 · 저장소 · 문서 틀만
+  const OWN_MS = 30000, NO_REFIT = new Set(["ship", "repo", "commit", "run", "preset"]);
+  const ownTask = () => { const k = tw ? tw.kind : twLast && Date.now() - twLast.end < OWN_MS ? twLast.kind : ""; return NO_REFIT.has(k) ? k : ""; };
   async function twTick() {
     if (!tw) { twStop(); return; }
     if (twBusy) return;
@@ -248,6 +255,8 @@
     if (t.state === "stopped") { twStop(); st.blocked = null; if (h.stop) h.stop("다른 화면에서 멈췄어요"); render(); return; }   // C-50 사람이 멈췄다(다른 화면에서)
     twStop(); st.blocked = null;
     if (t.state === "done" && t.denied > 0) logMsg("sys", `허락 카드에서 거절한 ${t.denied}번은 하지 않았어요`);   // 사람이 고른 거절뿐이라 끝남 — 그래도 빠진 것은 말한다(security-records 6-1)
+    // F-161-7(claude-drafted: 2026-11-06 사용자 시험 — 문서 올리기 · 돌려 보기를 맡긴 단계의 한 장이 "맡긴 일 · 바뀐 파일은 없었어요"였다): 끝난 맡긴 일은 한 장의 재료로(맡길 일 plan은 planEnd가 이미 남긴다)
+    if (t.state === "done" && w.kind !== "plan") mat("report", (t.report && t.report.easy) || TASK_WORD[w.kind] || "맡긴 일");
     if (h.end) h.end(t);
     render();
   }
@@ -375,6 +384,7 @@
       return startDraft(p.text);
     }
     if (!q || q.phase !== "quest" || q.chap !== p.chap || !q.objs[p.todo]) { render(); return say("지금 퀘스트와 맞지 않아 적지 않았어요"); }
+    if (N.BLANK_MARK && N.BLANK_MARK.test(p.text)) { render(); return say(`웹 AI의 제안에 빈칸 표시가 남아 ${ROMAN(p.todo)}에 적지 않았어요`); }   // F-161-8 새 맥락 리뷰 제안
     logMsg("floro", `웹 AI의 제안을 ${esc(ROMAN(p.todo))}에 적었어요 — ${esc(p.text)}`);
     fillNow(p.text, undefined, p.todo);
   }
@@ -455,7 +465,7 @@
     "blocked-again": () => retryBlocked("again"),
     "blocked-files": () => retryBlocked("files-only"),
     "blocked-self": () => retryBlocked("brief"),
-    "blocked-copy": async () => { const t = st.blocked && st.blocked.brief; if (!t) return; try { await navigator.clipboard.writeText(t); say("복사했어요 — Claude Code에 붙여 넣어요"); } catch { say("복사하지 못했어요 — 글을 골라 직접 복사해요"); } },
+    "blocked-copy": async () => { const t = st.blocked && st.blocked.brief; if (!t) return; say(await copyText(t) ? "복사했어요 — Claude Code에 붙여 넣어요" : "복사하지 못했어요 — 글을 골라 직접 복사해요"); },
     "blocked-done": () => endBlocked("직접 해 보세요 — 그 폴더에서 Claude Code가 일하면 플로로가 진행을 따라가요", "직접 하기로 했어요"),
     "blocked-stop": () => endBlocked("그만뒀어요 — 언제든 다시 맡길 수 있어요", "허락을 못 받아 그만뒀어요"),
     // C-64 오류 같이 보기 — 열기 · 다음 · 모름 · 고르기(예 · 아니요 · 모름) · 그만두기

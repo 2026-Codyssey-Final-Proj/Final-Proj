@@ -22,7 +22,7 @@ const met = (stage) => ({ stage, reason: "돌아보기를 다 했어요.", crite
 function makeOnEvent(st) {
   const calls = { look: 0, peek: 0, logs: [] };
   const make = new Function("st", "A", "logMsg", "esc", "toolName", "fetchUsage", "twTick", "sensitive", "scheduleRefit", "render", "activity", "lookAfterWork", "view", "peek",
-    `let appName = "", tw = null, lastPing = null; const changesRefresh = () => {}, loadFiles = () => {}; ${fnSrc("onEvent")} return onEvent;`);   // changesRefresh — F-157-6
+    `let appName = "", tw = null, lastPing = null; const changesRefresh = () => {}, loadFiles = () => {}, ownTask = () => "", NO_REFIT = new Set(); ${fnSrc("onEvent")} return onEvent;`);   // changesRefresh — F-157-6
   const onEvent = make(st, { accept: () => true, notifies: () => true, add: (a) => a || [] }, (who, t) => calls.logs.push(t), (s) => s, () => "Claude Code",
     () => {}, () => {}, () => [], () => {}, () => {}, () => {}, async () => { calls.look++; }, () => {}, () => { calls.peek++; });
   return { onEvent, calls };

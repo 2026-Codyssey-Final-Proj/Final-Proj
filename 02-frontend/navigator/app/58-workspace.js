@@ -132,7 +132,7 @@
     const chips = (c) => (strip || !(c.state === "done" || c.state === "now") ? "" : `<span class="sm-chips">${stageCells(c.n).map((x, k) => `<i class="${x.by ? `by-${x.by}` : ""}${x.line ? "" : " miss"}">${ROMAN(k)} ${x.by ? QU.BY_WORD[x.by] : x.line ? "적음" : "아직"}</i>`).join("")}</span>${gv(N.STAGES[c.n]) ? `<span class="sm-gives">건네준 것 — ${esc(gv(N.STAGES[c.n]))}</span>` : ""}`);   // 건네준 것은 늘 gv(shownGives)를 거친다 — 확인 질문의 정답이 새지 않게
     const gateNow = !!(st.quest && st.quest.phase === "done" && st.quest.chap === cur && st.results[cur] && !st.results[cur].passed);   // C-71 완료 보고 뒤 · 관문 전 — 지금 카드는 '관문 앞', 다음 카드는 '다음'
     const card = (c) => { const p = c.prepared, sel = st.mapSel === c.n || st.qview === c.n;   // qview는 저장되고 mapSel은 아니다 — 다시 켜도 아래 띠의 '고른 장'과 상자 표시가 맞게(F-151)
-      const body = c.state === "later" ? `<span class="sm-note">2단계에서 그려져요</span>`
+      const body = c.state === "later" ? `<span class="sm-note">${st.results[1] ? "지도 보기의 '기획서로 3 ~ 8단계 그리기'로 그려요" : "2단계에서 그려져요"}</span>`   // F-161-9 — 2단계를 지난 뒤에는 그리는 단추를 가리킨다
         : c.state === "done" ? `<span class="sm-line">${c.q ? `퀘스트 ${c.q.k}/${c.q.n}` : "지났어요"}</span>`
         : c.state === "now" ? `<span class="sm-line">${gateNow ? `관문 앞 · ${c.q ? `${c.q.k}/${c.q.n}` : "다 적음"}` : c.q ? `${c.q.n}칸 중 ${Math.min(c.q.k + 1, c.q.n)}번째 · ${c.q.k}/${c.q.n}` : "퀘스트 받기 전"}${c.gateLeft && !gateNow ? ` · 관문 남은 ${c.gateLeft}` : ""}</span>`
         : gateNow && c.n === cur + 1 ? `<span class="sm-line next">다음</span>${p ? `<span class="sm-from">${esc(p.from)}</span>` : ""}`

@@ -23,11 +23,13 @@
   const WARN_NAME = { secret: "비밀번호나 비밀 열쇠", rrn: "주민등록번호", email: "이메일 주소", phone: "전화번호", ip: "인터넷 주소(IP)" };
   // 값은 다시 보이지 않고 종류만 말한다
   const sensitive = (text) => (window.NavSensitive ? [...new Set(window.NavSensitive.scan(text).findings.filter((x) => WARN_NAME[x.type]).map((x) => WARN_NAME[x.type]))] : []);
+  // F-161-2(claude-drafted: 2026-11-06 사용자 시험) — 클립보드에 넣기. 작업실 창의 단추도 섬 창이 처리해 navigator.clipboard가 "Document is not focused"로 거절했다 → 앱이면 앱의 클립보드(preload copyText)
+  const copyText = async (t) => { try { if (window.floeApp && window.floeApp.copyText) return !!(await window.floeApp.copyText(t)); await navigator.clipboard.writeText(t); return true; } catch { return false; } };
   // 진짜 AI로 보내기 전에 비밀번호 같은 게 보이면 멈추고 묻는다. "괜찮아요"를 누르면 RETRY[then]으로 다시 한다
   function guard(text, then) {
     const w = sensitive(text);
     if (!w.length) return false;
-    st.warn = { w, then }; render();
+    st.warn = { w, then, text }; render();   // text — '그 칸 고치기'가 그 글에 든 지난 칸만 찾게(F-161-1, 저장하지 않는다)
     return true;
   }
   const RETRY = { chat: () => chatSend(chatText, true), start: () => startDraft(startText, true), stage: () => stageDraft(st.quest ? st.quest.chap : atStage(), true), judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk, true); } };   // plan* — 준비 계획판(C-34)

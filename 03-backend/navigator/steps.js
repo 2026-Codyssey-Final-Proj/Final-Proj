@@ -3,7 +3,7 @@
 // 넘기는 것은 이름 · 첫 줄 · 줄 수뿐이다. 파일 내용(content) · 고친 글(old_string · new_string) · 도구 결과(tool_response)는 어떤 칸에도 넣지 않는다.
 (function (root) {
   // 훅의 도구 이름 → 화면의 말. 표에 없는 도구는 OTHER
-  const VERBS = { Read: "읽었어요", Edit: "고쳤어요", MultiEdit: "고쳤어요", Write: "만들었어요", Bash: "실행했어요", PowerShell: "실행했어요", Grep: "찾았어요", Glob: "찾았어요" };   // PowerShell — Windows의 Claude Code 명령 도구(F-157-5, 2026-11-05)
+  const VERBS = { Read: "읽었어요", Edit: "고쳤어요", MultiEdit: "고쳤어요", Write: "만들었어요", Bash: "실행했어요", PowerShell: "실행했어요", Grep: "찾았어요", Glob: "찾았어요", StructuredOutput: "정리했어요" };   // PowerShell — Windows의 Claude Code 명령 도구(F-157-5, 2026-11-05)
   const OTHER = "했어요";
   const MAX = 80;   // 한 줄 최대 글자 수 [제안 2026-10-20]
 
@@ -51,6 +51,7 @@
     } else if (name === "Write") { what = where(input.file_path, cwd); add = lines(input.content); }
     else if (name === "Bash" || name === "PowerShell") what = str(input.command).split(/\r?\n/)[0].trim();
     else if (name === "Grep" || name === "Glob") what = str(input.pattern).split(/\r?\n/)[0].trim();
+    else if (name === "StructuredOutput") what = "끝 조건 보고";   // F-161-9(claude-drafted: 2026-11-06 사용자 시험) — 맡긴 일의 마지막 보고. 안쪽 도구 이름을 보이지 않는다
     return { verb, what: cut(what), add, del };
   }
 

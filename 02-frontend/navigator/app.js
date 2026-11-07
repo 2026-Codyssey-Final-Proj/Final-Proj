@@ -190,7 +190,7 @@
   const holding = () => !!(st.hold && st.j && st.hold.stage === st.j.stage && !st.finished);
   let colHover = false, colTyping = false;   // 작업실 옆 칸(win.js)에서 온 '마우스 올림' · '글 쓰는 중' — 섬 창의 hovering · typing과 같은 뜻(C-46, 새 맥락 리뷰 2026-10-27 막힘: 옆 칸에 글을 쓰는 중에도 접혔다)
   // apWait · blocked · stall — 허락 카드 · 막힌 일 · 멈춘 것 같은 일은 사람이 고를 때까지 접지 않는다(F-69 · C-50, 새 맥락 리뷰 2026-10-28 — 전에는 15초 뒤 알약으로 접혀 카드가 안 보였다)
-  const pinned = () => st.userPin || !!st.apWait || !!(st.blocked && !st.blocked.retrying) || !!(st.stall && st.stall.lv !== "calm" && st.stall.wait !== st.stall.lv) || st.screen === "gate" || !!st.warn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || !!st.coach || st.openInput || typing() || colTyping;   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
+  const pinned = () => st.userPin || !!st.apWait || !!(st.blocked && !st.blocked.retrying) || !!(st.stall && st.stall.lv !== "calm" && st.stall.wait !== st.stall.lv) || st.screen === "gate" || !!st.warn || !!st.fillWarn || st.busy || (allDone() && !holding()) || st.settings || (st.qwin && !WINS) || !!st.gacha || !!st.coach || st.openInput || typing() || colTyping;   // 앱의 작업실(옆 칸)은 열려 있어도 접힌다 — C-46 R-2(이재엽 버튼 "설정의 시간대로"). 브라우저의 옆 판은 전처럼 붙든다
   // 플로로의 [표정, 말] — 기다림·경고·오류가 먼저, 그다음 확인 질문·잠시 멈추기(understand.js), 나머지는 navigator.js
   function face() {
     const base = N.face({ busy: st.busy, warn: st.warn, error: st.error, gate: st.screen === "gate", step: st.step,
@@ -715,8 +715,11 @@
       const fix = st.warn.then === "judge";
       return { tone: "amber", mood: "alert", title: "보내기 전에 잠깐!",
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
-        acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };
+        acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, ...(!fix && st.warn.then === "stage" && secretPast(st.warn.text) ? [{ label: "그 칸 고치기", act: "secret-fix", kind: "soft" }] : []), { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };   // F-161-1 — 지난 칸에 있으면 그 칸을 고칠 길
     }
+    if (st.fillWarn) return { tone: "amber", mood: "alert", title: "적기 전에 잠깐!",   // F-161-3 — 칸에 바로 적는 글
+      sub: `글 안에 ${esc(st.fillWarn.w.join(", "))}처럼 보이는 게 있어요. 칸에 적으면 화면 · 다음 단계 초안에 그대로 쓰여요(단계 문서에는 가려서 들어가요). 그대로 적을까요?`,
+      acts: [{ label: "고칠게요", act: "fill-fix", key: "Enter", pri: true }, { label: "그대로 적기", act: "fill-anyway" }] };
     if (st.keyBad && st.mode === "live") return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "API 키가 거절됐어요.", sub: "키가 맞지 않거나 쓸 수 있는 권한이 없어요. 키를 고치기 전까지 연습용 예시로 둘러볼 수 있어요 — 키는 설정의 '처음 설정 다시 하기'에서 다시 넣어요.", acts: [{ label: "연습용 예시로 둘러보기", act: "practice-now", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };   // F-106
     if (st.error) return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요.", sub: esc(st.error),
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
@@ -765,7 +768,7 @@
       title: "잠시 멈춰 뒀어요.", sub: HOLD.later,
       acts: [{ label: "다시 이어 하기", act: "hold-resume", key: "Enter", pri: true }] };
     if (allDone()) return { tone: "green", mood: f[0], meta: stageMeta(), title: `${LB(s.n)} 할 일을 모두 했어요!`,
-      sub: "다음 단계로 가기 전에, 이번 단계를 이해했는지 한 번만 같이 확인해요.",
+      sub: s.n === N.STAGES.length - 1 ? "마지막 단계예요 — 이번 단계를 이해했는지 한 번만 같이 확인하고 마쳐요." : "다음 단계로 가기 전에, 이번 단계를 이해했는지 한 번만 같이 확인해요.",   // F-161-9
       acts: [{ label: "확인하고 넘어가기", act: "gate", key: "Enter", pri: true }] };
     if (st.todos) return { tone: "blue", mood: f[0], say: f[1], meta: stageMeta(), title: `지금 할 일 · ${esc(todosNow()[0])}`,
       sub: WORK_NOTE,
@@ -1059,7 +1062,7 @@
   function momentQuest() {
     const q = st.quest, f = face(), meta = stageMetaQ();
     if (q.phase === "draft") return { tone: "blue", mood: "happy", meta, title: `${LB(q.chap)} 퀘스트를 만들었어요.`,
-      sub: `퀘스트 창에서 조건 · 할 일 ${q.objs.length}개 · 보상을 보고 큰 단추로 받아 주세요. 이름이나 할 일 수는 거기서 고칠 수 있어요.`,
+      sub: `조건 · 할 일 ${q.objs.length}개 · 보상을 보고 '퀘스트 받기'를 눌러 주세요. 이름이나 할 일 수는 '고쳐 주세요'로 고쳐요.`,   // F-161-9 — 이 카드의 단추를 가리킨다(전에는 '퀘스트 창의 큰 단추')
       acts: [{ label: "퀘스트 받기", act: "quest-ok", key: "Enter", pri: true }, { label: "고쳐 주세요", act: "quest-fix" }, { label: "나중에", act: "quest-later", key: "Escape", kind: "ghost" }] };
     const i = QU.curIdx(q);
     if (i < 0) return { tone: "green", mood: "wow", meta, title: "다 됐어요! 완료 보고할까요?",
@@ -1088,7 +1091,8 @@
     if (q.draft) { const c = momentConfirm(q, i, meta); return { ...c, ...refitBanner(q), acts: [...c.acts, ...buildActs(q.chap)] }; }   // F-70 — 초안을 확인하는 중에도 코드 맡기기(A-02)   // 받은 글로 만든 1단계 초안(C-36) · 1단계 결과로 만든 2단계 초안(C-37) — 칸마다 확인만
     const o = q.objs[i], ex = QU.example(q, i);   // 연습은 1단계의 연습 글, 진짜 AI는 AI가 만든 예시(/api/quest)
     return { tone: "blue", mood: f[0], meta, ...refitBanner(q), title: `${ROMAN(i)}. ${esc(QU.nameOf(q, i))}`, sub: `${esc(QU.askOf(q, i))}${QU.doneOf(q, i) ? ` <small class="done-when">끝: ${esc(QU.doneOf(q, i))}</small>` : ""}${o.term ? ` ${termTag(o.term)}` : ""}`,
-      body: foundHTML(q, i), acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), ...buildActs(q.chap), { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
+      body: foundHTML(q, i), acts: [...(ex ? [{ label: "예시로 적어 줘", act: "quest-example", key: "1", kind: "soft" }] : []),
+        ...(N.DRAFT_STAGES.includes(q.chap) && st.results[q.chap - 1] && st.mode === "live" && canLive && !q.objs.some((_, k) => QU.filled(q, k)) ? [{ label: "초안 다시 받기", act: "stage-redraft", kind: "soft" }] : []), ...findChip(q, i), ...refitChips(q), ...buildActs(q.chap), { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };   // F-161-1 '초안 다시 받기' — 비밀값 경고에서 그만뒀거나 초안을 못 받았을 때
   }
   // 1단계 초안 확인(C-36, 2026-10-25 — 이재엽 "불편한게 맞는 내용은 이게 플로로가 생각한 내용인데 맞나요 … 누가 쓰는 내용은 … 사람에 대한 내용이 있으면 이 내용이 맞는지 요청을 보내고
   //   없다면 본인 / 소수 / 불특정다수 … 얼마 크게도 … 짧음 / 보통 / 긺"): Ⅰ 불편 · Ⅱ 달라지는 것 · Ⅲ 누가(글에 사람이 있으면) — 맞나요, Ⅲ 사람이 없으면 셋 중 고르기, Ⅳ 플로로가 본 크기 + 셋 중 고르기.
@@ -1180,6 +1184,9 @@
     mat("chat", t);   // C-47 재료 — 내가 적어 보낸 말의 한 줄(48-sheet, 가린 뒤 80자)
     if (planNow()) return planSay(t);   // 준비 계획 · 맡길 일(C-35)
     const q = st.quest;
+    // F-161-3(claude-drafted: 2026-11-06 사용자 시험 — '고칠래요'로 적은 키 모양 글이 경고 없이 칸 · 퀘스트 카드 · 다음 단계 '가져온 것'에 원문으로 남았다): 칸에 바로 적는 말이면 먼저 묻는다 — 막지 않고 그대로 적기 / 고칠게요(보안 기준 6-3)
+    if ((pastFixAt || (q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q))) && sensitive(t).length) { st.fillWarn = { t, w: sensitive(t) }; render(); return; }
+    if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, t); }   // F-157-3 · F-161-1(앱 확인: 다음 단계 퀘스트를 받기 전에도 — 전에는 아래 '먼저 퀘스트를 받아 주세요'가 먼저였다) — '먼저' 카드에서 지난 칸으로 간 뒤 보낸 말은 그 칸의 새 줄
     if (!st.j && !q && QU) return startDraft(t);    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }
     if (q && q.draft && q.phase === "quest" && QU.pickOf(q, QU.curIdx(q))) {   // 기획서로 키울지(2단계)는 셋 중 하나로 — 글로 답해도 맞춰 고른다
       const k = /경량|가볍|짧/.test(t) ? 0 : /상세|자세/.test(t) ? 1 : /안 함|않|없|아니/.test(t) ? 2 : -1;
@@ -1191,7 +1198,6 @@
       if (k < 0) { render(); return say("짧음 · 보통 · 긺 중에서 골라 주세요"); }
       return ACT["draft-size"](k);
     }
-    if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, t); }   // F-157-3 — '먼저' 카드에서 지난 칸으로 간 뒤 보낸 말은 그 칸의 새 줄
     if (q && q.phase === "quest" && QU.curIdx(q) >= 0) { if (q.draft && draftFixAt === QU.curIdx(q)) { draftFixAt = -1; return fillNow(t); } return chatSend(t); }   // C-61(2026-10-29): 보내기는 칸에 적지 않는다 — 플로로가 정리 카드로 돌려주고 사람이 [칸 n개에 적기]를 누른다. F-150(2026-11-04): 초안 확인 중에도 같다 — 플로로에게 한 말("무슨 뜻이야?")이 칸의 답이 됐다. '고칠래요'를 누른 칸만 다음 말이 그 줄이 된다(C-36)
     if (st.screen === "gate" && st.step === "question") { st.question = t; return answer(); }
     if (st.j && st.j.next && st.screen !== "gate" && !st.todos) { st.ownText = t; return decide(t); }
@@ -1208,6 +1214,12 @@
   //   by — 누가 정했나(C-39): 고르는 칩은 "pick", 아니면 quest.js가 플로로 초안과 맞대어 그대로 · 고침 · 직접
   //   at — MCP로 이은 AI의 제안처럼 지금 할 일이 아닌 칸에 적을 때(C-38 시험판)
   function fillNow(t, by, at = QU.curIdx(st.quest)) {
+    // F-161-8(claude-drafted: 2026-11-06 사용자 시험 — 7단계 '잰 값' 초안 "걸린 시간: (재고 적기) · …"을 고르기만 해도 칸이 '했음'이 되고 관문에서야 막혔다):
+    //   빈칸 표시가 든 틀은 칸에 적지 않고 입력 칸에 넣는다 — 그 자리를 잰 값으로 바꿔 보내면 그때 적힌다
+    if (N.BLANK_MARK && N.BLANK_MARK.test(t) && st.quest && st.quest.draft && at === QU.curIdx(st.quest)) {
+      st.say = t; draftFixAt = at; render(); focusAct("[data-act=say]");
+      return say("틀이라 아직 적지 않았어요 — '(재고 적기)' 자리를 잰 값으로 바꿔 보내요. 못 쟀으면 '아직 못 함 — 까닭'으로 적어요");
+    }
     st.quest = QU.fill(st.quest, at, t, by);
     afterFill();
   }
@@ -1237,6 +1249,11 @@
   let draftFixAt = -1;   // F-150 — '고칠래요'를 누른 칸. 다음에 보낸 말이 그 칸의 줄이 된다
   // F-157-3(claude-drafted: 2026-11-05 사용자 시험 — 7단계 '2단계 Ⅱ 보기'가 고칠 수 없는 한눈에 보기로 보내 막다른 길이었다): 지난 칸 { s, i } — 다음에 보낸 말이 그 칸의 줄이 된다
   let pastFixAt = null;
+  // F-161-3 — 경고 뒤 '그대로 적기': 보내려던 칸(지난 칸 · 고칠래요 칸)에 그대로 적는다
+  function fillAnyway() { const f = st.fillWarn; st.fillWarn = null; if (!f) return render(); const q = st.quest;
+    if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, f.t); }
+    if (q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q)) { draftFixAt = -1; return fillNow(f.t); }
+    render(); say("적을 칸이 바뀌어 적지 않았어요 — 그 칸에서 다시 적어요"); }
   //   g.name — 칸을 기준 글로 찾는다(등급이 바뀌면 번호가 달라진다, 새 맥락 리뷰 제안 1). 고친 줄은 사람이 쓴 것(by: "me" — 문서에 플로로 초안으로 남지 않게, 리뷰 C)
   const pastIdx = (g) => { const r = st.results[g.s]; if (!r) return -1; const k = g.name ? r.items.findIndex((x) => x.name === g.name) : -1; return k >= 0 ? k : g.i; };
   function fixPast(g, t) {
@@ -1244,8 +1261,22 @@
     if (!it) { render(); return say("그 칸을 찾지 못했어요 — 퀘스트 카드에서 '아직 못 함으로 적기'를 눌러요"); }
     g = { ...g, i: at };
     st.results = { ...st.results, [g.s]: { ...r, items: r.items.map((x, k) => (k === g.i ? { ...x, lines: [t], by: "me" } : x)) } };
+    // F-161-1(앱 확인 2026-11-07): 기준 카드에 옮겨 온 칸(by "moved")은 고친 결과로 다시 옮긴다 — 1단계 칸을 고쳐도 카드의 '만드는 것'에 옛 줄(키)이 남아 경고가 계속 났다. 사람이 적은 칸은 그대로
+    if (st.card && BC) { const fresh = BC.build({ results: st.results, source: st.source }); st.card = Object.fromEntries(Object.entries(st.card).map(([k, v]) => [k, v && v.by === "moved" && fresh[k] ? fresh[k] : v])); }
     save(); if (st.quest) st.quest = applyStates(st.quest);
     render(); say(`${LB(g.s)} ${ROMAN(g.i)} ${QU.shortOf(it.name)}${eul(QU.shortOf(it.name))} 고쳤어요 — 이 단계를 이어서 해요`);
+    if (g.secret && !secretPast(null)) say(st.quest && !st.quest.draft && !st.quest.objs.some((_, k) => QU.filled(st.quest, k)) ? "이제 '초안 다시 받기'를 누르면 이 단계 초안을 받아요" : "이제 하려던 일(코드 맡기기 · 보내기)을 다시 눌러요");
+  }
+  // F-161-1(claude-drafted: 2026-11-06 사용자 시험 — 3단계 칸에 키 모양 글을 적은 뒤 5단계 코드 맡기기가 "그 칸을 고친 뒤 다시"만 말하고, 지난 장의 칸은 고칠 길이 없었다).
+  //   비밀값 모양이 든 지난 칸(앞 단계부터) → 채팅에서 그 칸을 고친다('먼저' 카드의 지난 칸 고치기와 같은 길). 지금 줄은 가려서 보인다
+  //   text — 경고 · 거절의 까닭이 된 글: 그 안에 실제로 든 칸만(새 맥락 리뷰 보완 2 — 관계없는 칸으로 보내지 않게). null이면 아무 칸이나
+  const secretPast = (text) => { for (const [s, r] of Object.entries(st.results || {})) { const k = ((r && r.items) || []).findIndex((x) => sensitive((x.lines || []).join("\n")).length && (text == null || (x.lines || []).some((y) => y && String(text).includes(y)))); if (k >= 0) return { s: Number(s), i: k, name: r.items[k].name, secret: true }; } return null; };
+  function fixSecretPast(g) {
+    if (!g) return false;
+    const at = pastIdx(g), it = st.results[g.s].items[at], line = (it.lines || []).join(" · ");   // 줄이 여럿이면 다 보인다 — 고친 줄이 칸 전체를 바꾼다(보완 4)
+    pastFixAt = g; render();
+    say(`${LB(g.s)} ${ROMAN(at)} ${QU.shortOf(it.name)}에 ${sensitive(line).join(", ")}처럼 보이는 글이 있어요 — 지금 줄은 “${window.NavSensitive ? window.NavSensitive.redact(line) : "…"}”예요. 그 글을 뺀 줄을 아래 칸에 적어 보내면 그 칸이 바뀌어요`);
+    focusAct("[data-act=say]"); return true;
   }
   // 새 단계(C-61 · C-63, 2026-10-29): 대화에 구분선(단계 · 이름 · 날짜)과 '지난 단계에서 가져온 것'(정한 줄 요약 — 틀리면 말로 고친다), 섬은 저절로 가운데(칸이 비었으니), 대화 표시 자리는 구분선 뒤. islBig은 저장하지 않는다 — 다시 켜면 칸 상태대로 저절로
   const questStarted = () => {
@@ -1320,7 +1351,9 @@
       render();
     } catch { /* 다시 맞추기는 덤 — 못 받으면 조용히(다음 알림에 다시) */ }
   }
-  const refitBanner = (q) => (st.refit && q && st.refit.chap === q.chap ? { banner: `방금 바뀜 — ${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요${st.refit.changed.length ? ` · 바뀐 칸 ${st.refit.changed.map(ROMAN).join(" · ")}` : ""}${st.refit.review.length ? ` · 적어 둔 칸 ${st.refit.review.map((x) => ROMAN(x.i)).join(" · ")}은 다시 볼까요?` : ""}` } : {});
+  // F-161-5(claude-drafted: 2026-11-06 사용자 시험 — 방금 사람이 고른 칸도 '바뀐 칸'으로 남았고 "Ⅰ · Ⅱ은"): 바뀐 칸은 아직 사람이 적지 않은 칸만, 보일 게 없으면 띠도 없다. 조사 없이 괄호로
+  const refitBanner = (q) => { if (!st.refit || !q || st.refit.chap !== q.chap) return {}; const ch = st.refit.changed.filter((i) => !QU.filled(q, i)), rv = st.refit.review;
+    return ch.length || rv.length ? { banner: `방금 바뀜 — ${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요${ch.length ? ` · 바뀐 칸 ${ch.map(ROMAN).join(" · ")}` : ""}${rv.length ? ` · 적어 둔 칸(${rv.map((x) => ROMAN(x.i)).join(" · ")})도 다시 볼까요?` : ""}` } : {}; };
   const refitChips = (q) => (st.refit && q && st.refit.chap === q.chap ? st.refit.review.map((x) => ({ label: `${ROMAN(x.i)} 다시 볼까요?`, act: "refit-review", i: x.i, kind: "soft" })) : []);
   function prefetch(q) {
     if (!q || !QU || st.mode !== "live" || !canLive) return;
@@ -1583,7 +1616,7 @@
     // Claude Code가 기준(커밋 · 푸시)마다 보고한다(C-32) — 끝났다(0)는 것만으로 올라갔다고 말하지 않는다(푸시를 건너뛰거나 허락을 거절해도 0으로 끝난다, 2026-10-25 리뷰)
     const r = t.report, pushed = !!(r && r.items[1] && r.items[1].done);
     if (pushed) { st.pushedAt = Date.now(); save(); if (st.quest) st.quest = applyStates(st.quest); }   // F-157-4 — 8단계 '저장소에 올리기'가 실제로 올렸는지 본다
-    say(t.state !== "done" ? "올리기가 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요" : pushed ? "올리기를 마쳤어요 — GitHub에서 docs 폴더를 볼 수 있어요"
+    say(t.state !== "done" ? "올리기가 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요" : pushed ? "올리기를 마쳤어요 — 내 저장소(origin)의 docs 폴더에 올라갔어요"   /* F-161-9 — origin이 GitHub가 아닐 수도 */
       : r ? `푸시는 못 했어요 — ${r.easy}` : "Claude Code가 일을 마쳤어요 — 푸시됐는지 진행 보기에서 봐 주세요");
   }
   // 퀘스트 글 받기(C-22, API.md 3-17) — 진짜 AI 모드에서만. 설명 · 질문 · 예시만 받고 할 일 이름 · 개수는 코드 그대로. 못 받으면 기본 글(quest.js)로 두고 까닭만 말한다
@@ -1753,7 +1786,7 @@
       const t = HO.build(handoffCtx(), { redact: window.NavSensitive.redact });
       if (!t) return;
       hoText = t;
-      try { await navigator.clipboard.writeText(t); hoCopied = true; } catch { hoCopied = false; }
+      hoCopied = await copyText(t);
       render();
     },
     "handoff-close": () => { hoText = ""; render(); },
@@ -1980,7 +2013,7 @@
     if (!BUILD || !job) return;
     if (!canLive || st.mode === "fixture") return say("연습 모드라 맡기지 않아요 — 진짜 폴더를 연결한 앱에서 돼요");
     if (tw && !(st.blocked && st.blocked.at === tw.at)) return say("맡긴 일이 아직 돌고 있어요 — 끝난 뒤에 맡겨요");   // 막혀 있는 일은 새로 맡기면 끝맺는다(watchTask)
-    const w = sensitive(job.text); if (w.length) return say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요 — 그 칸을 고친 뒤 다시`);
+    const w = sensitive(job.text); if (w.length) { say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요`); return fixSecretPast(secretPast(job.text)) || say("그 칸을 고친 뒤 다시 눌러요"); }   // F-161-1 — 지난 칸이면 채팅에서 바로 고친다
     if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "hand";
     const r = await callAI("/api/task/start", { text: job.text, checks: job.checks });
@@ -2208,7 +2241,7 @@
     const chips = (c) => (strip || !(c.state === "done" || c.state === "now") ? "" : `<span class="sm-chips">${stageCells(c.n).map((x, k) => `<i class="${x.by ? `by-${x.by}` : ""}${x.line ? "" : " miss"}">${ROMAN(k)} ${x.by ? QU.BY_WORD[x.by] : x.line ? "적음" : "아직"}</i>`).join("")}</span>${gv(N.STAGES[c.n]) ? `<span class="sm-gives">건네준 것 — ${esc(gv(N.STAGES[c.n]))}</span>` : ""}`);   // 건네준 것은 늘 gv(shownGives)를 거친다 — 확인 질문의 정답이 새지 않게
     const gateNow = !!(st.quest && st.quest.phase === "done" && st.quest.chap === cur && st.results[cur] && !st.results[cur].passed);   // C-71 완료 보고 뒤 · 관문 전 — 지금 카드는 '관문 앞', 다음 카드는 '다음'
     const card = (c) => { const p = c.prepared, sel = st.mapSel === c.n || st.qview === c.n;   // qview는 저장되고 mapSel은 아니다 — 다시 켜도 아래 띠의 '고른 장'과 상자 표시가 맞게(F-151)
-      const body = c.state === "later" ? `<span class="sm-note">2단계에서 그려져요</span>`
+      const body = c.state === "later" ? `<span class="sm-note">${st.results[1] ? "지도 보기의 '기획서로 3 ~ 8단계 그리기'로 그려요" : "2단계에서 그려져요"}</span>`   // F-161-9 — 2단계를 지난 뒤에는 그리는 단추를 가리킨다
         : c.state === "done" ? `<span class="sm-line">${c.q ? `퀘스트 ${c.q.k}/${c.q.n}` : "지났어요"}</span>`
         : c.state === "now" ? `<span class="sm-line">${gateNow ? `관문 앞 · ${c.q ? `${c.q.k}/${c.q.n}` : "다 적음"}` : c.q ? `${c.q.n}칸 중 ${Math.min(c.q.k + 1, c.q.n)}번째 · ${c.q.k}/${c.q.n}` : "퀘스트 받기 전"}${c.gateLeft && !gateNow ? ` · 관문 남은 ${c.gateLeft}` : ""}</span>`
         : gateNow && c.n === cur + 1 ? `<span class="sm-line next">다음</span>${p ? `<span class="sm-from">${esc(p.from)}</span>` : ""}`
@@ -3071,6 +3104,7 @@
     build: { end: buildEnd, stop: () => { st.build = null; } }, code: { end: buildEnd, stop: () => { st.build = null; } },   // F-70 뼈대 · 6단계 코드 물음 '예'
     line: { end: buildEnd, stop: () => { st.build = null; } }, run: { end: runEnd, stop: () => { st.build = null; } },   // F-70 기능 줄 · 돌려 보기
   };
+  const TASK_WORD = { ship: "문서 올리기", build: "뼈대 코드 만들기", code: "코드 만들기", line: "기능 줄 만들기", run: "돌려 보기", commit: "커밋", repo: "저장소 만들기", preset: "문서 틀 채우기", send: "넘긴 일" };   // F-161-7 — 한 장의 '맡긴 일' 이름
   let tw = null, twTimer = null, twBusy = false;   // tw — 지금 지켜보는 맡긴 일 { at, kind }
   function watchTask(task, kind) {
     if (!task || !Number.isFinite(task.at) || !canLive) return;
@@ -3079,7 +3113,13 @@
     if (st.blocked && st.blocked.at !== task.at) st.blocked = null;
     clearInterval(twTimer); twTimer = setInterval(twTick, 3000);
   }
-  function twStop() { clearInterval(twTimer); twTimer = null; tw = null; }
+  function twStop() { if (tw) twLast = { kind: tw.kind, end: Date.now() }; clearInterval(twTimer); twTimer = null; tw = null; }
+  // F-161-4(claude-drafted: 2026-11-06 사용자 시험 — 3 · 4 · 6 · 8단계 끝마다 '방금 작업을 마쳤어요 — 살펴봐 주세요'가 관문 앞을 가렸다. 그 알림은 Floe가 맡긴 문서 올리기 · 돌려 보기의 끝이었다):
+  //   Floe가 맡긴 일(지켜보는 중이거나 끝난 지 OWN_MS 안)의 알림 — 결과는 그 일의 끝맺음(TASK_END)이 보고하므로 '어디쯤인지' 카드를 띄우지 않는다. 문서 · 실행 · 저장소 일은 퀘스트도 다시 맞추지 않는다(코드가 바뀌지 않음)
+  let twLast = null;
+  //   (새 맥락 리뷰 보완 1) 코드를 바꾸는 일(뼈대 · 코드 · 기능 줄 · 맡길 일 · 넘긴 일)은 전처럼 살펴본다 — 문서 올리기 · 돌려 보기 · 커밋 · 저장소 · 문서 틀만
+  const OWN_MS = 30000, NO_REFIT = new Set(["ship", "repo", "commit", "run", "preset"]);
+  const ownTask = () => { const k = tw ? tw.kind : twLast && Date.now() - twLast.end < OWN_MS ? twLast.kind : ""; return NO_REFIT.has(k) ? k : ""; };
   async function twTick() {
     if (!tw) { twStop(); return; }
     if (twBusy) return;
@@ -3096,6 +3136,8 @@
     if (t.state === "stopped") { twStop(); st.blocked = null; if (h.stop) h.stop("다른 화면에서 멈췄어요"); render(); return; }   // C-50 사람이 멈췄다(다른 화면에서)
     twStop(); st.blocked = null;
     if (t.state === "done" && t.denied > 0) logMsg("sys", `허락 카드에서 거절한 ${t.denied}번은 하지 않았어요`);   // 사람이 고른 거절뿐이라 끝남 — 그래도 빠진 것은 말한다(security-records 6-1)
+    // F-161-7(claude-drafted: 2026-11-06 사용자 시험 — 문서 올리기 · 돌려 보기를 맡긴 단계의 한 장이 "맡긴 일 · 바뀐 파일은 없었어요"였다): 끝난 맡긴 일은 한 장의 재료로(맡길 일 plan은 planEnd가 이미 남긴다)
+    if (t.state === "done" && w.kind !== "plan") mat("report", (t.report && t.report.easy) || TASK_WORD[w.kind] || "맡긴 일");
     if (h.end) h.end(t);
     render();
   }
@@ -3223,6 +3265,7 @@
       return startDraft(p.text);
     }
     if (!q || q.phase !== "quest" || q.chap !== p.chap || !q.objs[p.todo]) { render(); return say("지금 퀘스트와 맞지 않아 적지 않았어요"); }
+    if (N.BLANK_MARK && N.BLANK_MARK.test(p.text)) { render(); return say(`웹 AI의 제안에 빈칸 표시가 남아 ${ROMAN(p.todo)}에 적지 않았어요`); }   // F-161-8 새 맥락 리뷰 제안
     logMsg("floro", `웹 AI의 제안을 ${esc(ROMAN(p.todo))}에 적었어요 — ${esc(p.text)}`);
     fillNow(p.text, undefined, p.todo);
   }
@@ -3303,7 +3346,7 @@
     "blocked-again": () => retryBlocked("again"),
     "blocked-files": () => retryBlocked("files-only"),
     "blocked-self": () => retryBlocked("brief"),
-    "blocked-copy": async () => { const t = st.blocked && st.blocked.brief; if (!t) return; try { await navigator.clipboard.writeText(t); say("복사했어요 — Claude Code에 붙여 넣어요"); } catch { say("복사하지 못했어요 — 글을 골라 직접 복사해요"); } },
+    "blocked-copy": async () => { const t = st.blocked && st.blocked.brief; if (!t) return; say(await copyText(t) ? "복사했어요 — Claude Code에 붙여 넣어요" : "복사하지 못했어요 — 글을 골라 직접 복사해요"); },
     "blocked-done": () => endBlocked("직접 해 보세요 — 그 폴더에서 Claude Code가 일하면 플로로가 진행을 따라가요", "직접 하기로 했어요"),
     "blocked-stop": () => endBlocked("그만뒀어요 — 언제든 다시 맡길 수 있어요", "허락을 못 받아 그만뒀어요"),
     // C-64 오류 같이 보기 — 열기 · 다음 · 모름 · 고르기(예 · 아니요 · 모름) · 그만두기
@@ -3844,11 +3887,13 @@
   const WARN_NAME = { secret: "비밀번호나 비밀 열쇠", rrn: "주민등록번호", email: "이메일 주소", phone: "전화번호", ip: "인터넷 주소(IP)" };
   // 값은 다시 보이지 않고 종류만 말한다
   const sensitive = (text) => (window.NavSensitive ? [...new Set(window.NavSensitive.scan(text).findings.filter((x) => WARN_NAME[x.type]).map((x) => WARN_NAME[x.type]))] : []);
+  // F-161-2(claude-drafted: 2026-11-06 사용자 시험) — 클립보드에 넣기. 작업실 창의 단추도 섬 창이 처리해 navigator.clipboard가 "Document is not focused"로 거절했다 → 앱이면 앱의 클립보드(preload copyText)
+  const copyText = async (t) => { try { if (window.floeApp && window.floeApp.copyText) return !!(await window.floeApp.copyText(t)); await navigator.clipboard.writeText(t); return true; } catch { return false; } };
   // 진짜 AI로 보내기 전에 비밀번호 같은 게 보이면 멈추고 묻는다. "괜찮아요"를 누르면 RETRY[then]으로 다시 한다
   function guard(text, then) {
     const w = sensitive(text);
     if (!w.length) return false;
-    st.warn = { w, then }; render();
+    st.warn = { w, then, text }; render();   // text — '그 칸 고치기'가 그 글에 든 지난 칸만 찾게(F-161-1, 저장하지 않는다)
     return true;
   }
   const RETRY = { chat: () => chatSend(chatText, true), start: () => startDraft(startText, true), stage: () => stageDraft(st.quest ? st.quest.chap : atStage(), true), judge: () => judge(true), draft: () => draft(true), review: () => review(true), plan: () => makePlan(true), planAgain: () => revisePlan(true), planAsk: () => { st.warn = null; askPlan(st.planAsk, true); } };   // plan* — 준비 계획판(C-34)
@@ -4058,7 +4103,11 @@
     "fill-example": () => { set({ text: S.first.text, error: "", warn: null }); focusText(); },
     restart: () => { Object.assign(st, { j: null, finished: false, todos: null, hold: null, todoLater: [], results: {}, mats: {}, carryUse: {}, carryDone: false, ship: null, topic: "", prep: null, mapSel: null, codeless: null, linesDone: [], pushedAt: null }); ACT.ex(S.examples.indexOf(S.first)); },
     "send-anyway": () => { if (st.warn && RETRY[st.warn.then]) RETRY[st.warn.then](); },   // 두 번 누르면 둘째는 st.warn이 이미 없다(앱 작업실은 다시 그려 보내는 데 시간이 걸린다) — F-144-18
-    "stop-send": () => set({ warn: null }),
+    "stop-send": () => { const stage = st.warn && st.warn.then === "stage"; set({ warn: null }); if (stage) say("이 단계 초안은 받지 않았어요 — 그 글을 고친 뒤 '초안 다시 받기'를 누르거나, 칸을 직접 적어요"); },   // F-161-1 — 초안이 왜 없는지 · 다시 받는 길
+    "fill-anyway": () => fillAnyway(),
+    "fill-fix": () => { const f = st.fillWarn; st.fillWarn = null; if (f) st.say = f.t; render(); focusAct("[data-act=say]"); },   // 글을 입력 칸에 돌려놓는다 — 고칠 칸(pastFixAt · draftFixAt)은 그대로
+    "secret-fix": () => { const g = st.warn && secretPast(st.warn.text); st.warn = null; if (!fixSecretPast(g)) render(); },
+    "stage-redraft": () => { const q = st.quest; if (q && !q.draft && N.DRAFT_STAGES.includes(q.chap) && st.results[q.chap - 1]) stageDraft(q.chap); },
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
     // 선택지를 한 번 누르면 정해진다 — 누른 자리에서 물방울이 튄다
     "pick-opt": (i, el) => {
@@ -4384,8 +4433,7 @@
     "notes-copy": async () => {
       if (!NT || !noteList.length) return;
       const text = NT.toJira(noteList, (t) => (window.NavSensitive ? window.NavSensitive.redact(t) : t));
-      let ok = false;
-      try { await navigator.clipboard.writeText(text); ok = true; } catch { ok = false; }
+      const ok = await copyText(text);
       set({ noteCopy: ok ? "" : text }); say(ok ? `느낀 점 ${noteList.length}개를 복사했어요 — Jira에 붙여 넣어요` : "자동 복사가 안 돼서 글을 아래 두었어요");
     },
     // 자동 살펴보기 · 다음 장 미리 보기(퀘스트 창의 도전과제) · 느낀 점 열기
@@ -4458,7 +4506,8 @@
   function clickAct(t) {
     if (!t || !ACT[t.dataset.act]) return;
     if (t.dataset.label && !t.classList.contains("ghost")) logMe(t.dataset.label);   // 채팅의 칩을 누르면 내 말로 남는다(C-22)
-    if (pastFixAt && !["send", "say", "first-go"].includes(t.dataset.act)) pastFixAt = null;   // F-157-3 — 다른 단추를 누르면 지난 칸 고치기를 그만둔다(다음 말이 엉뚱하게 그 칸의 줄이 되지 않게, 새 맥락 리뷰 D)
+    if (pastFixAt && !["send", "say", "first-go", "fill-fix", "fill-anyway", "secret-fix"].includes(t.dataset.act)) pastFixAt = null;
+    if (st.fillWarn && !["fill-fix", "fill-anyway", "say"].includes(t.dataset.act)) st.fillWarn = null;   // F-161-3 새 맥락 리뷰 보완 3 — 다른 단추를 누르면 묻던 카드를 걷는다(남아 섬이 접히지 않던 것)   // F-157-3 — 다른 단추를 누르면 지난 칸 고치기를 그만둔다(다음 말이 엉뚱하게 그 칸의 줄이 되지 않게, 새 맥락 리뷰 D)
     run({ act: t.dataset.act, i: t.dataset.i === undefined ? undefined : Number(t.dataset.i) }, t);
   }
   // 책 보기 설정(C-9 · C-3) — 판의 단추(구조 · 보기 · 크기 · 탭)와 칸 체크. 고르면 바로 저장하고 다시 그린다. '전체 화면'을 고르면 지금 책을 서고에서 연다
@@ -4611,7 +4660,8 @@
     if (st.settings && !ev.sim) fetchUsage();   // 일을 마쳤다 — 열려 있는 토큰 칸을 새 값으로(2026-10-24)
     if (!ev.sim && tw) twTick();   // 맡긴 일이 끝났을 수 있다 — 3초를 기다리지 않고 바로 묻는다(C-32 · F-69)
     st.alerts = A.add(st.alerts, ev, (t) => sensitive(t).length > 0);
-    scheduleRefit(ev);   // C-56 R-5 — 몇 초 모아 지금 단계 초안을 다시 맞춘다
+    const own = ev.sim ? "" : ownTask();   // F-161-4 — Floe가 맡긴 일의 알림
+    if (!NO_REFIT.has(own)) scheduleRefit(ev);   // C-56 R-5 — 몇 초 모아 지금 단계 초안을 다시 맞춘다
     if (!ev.sim) { changesRefresh(); if (st.files && st.files.src === "mine") loadFiles(); }   // F-157-6 — 한 장의 '바뀐 파일' · 코드 파일 수(5 · 6단계 '코드 파일을 만드시겠습니까?'가 옛 목록으로 계속 묻지 않게, 새 맥락 리뷰 F)
     if (st.busy) return render();
     if (ev.work) st.text = ev.work;
@@ -4622,6 +4672,7 @@
     // F-153(임유정 2026-11-04 "8단계 … 관문을 통과했는데도 … 계속 루프가 돈다"): 다 마친 뒤의 알림(문서 올리기의 커밋 · 푸시도)은 채팅 한 줄로 끝 —
     //   '어디쯤인지 볼까요?'를 누르면 살펴보기가 끝난 상태를 풀어 8단계 관문이 다시 열렸다. claude-drafted: 2026-11-04
     if (st.finished) { st.ping = ""; return render(); }
+    if (own) return render();   // F-161-4 — 보고는 그 일의 끝맺음이 한다(채팅 한 줄은 위에)
     const auto = st.screen !== "gate" && (ev.sim ? st.mode === "fixture" : st.auto && st.mode === "live");
     if (auto) {
       await lookAfterWork(lastPing);

@@ -345,8 +345,11 @@
       const fix = st.warn.then === "judge";
       return { tone: "amber", mood: "alert", title: "보내기 전에 잠깐!",
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
-        acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };
+        acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, ...(!fix && st.warn.then === "stage" && secretPast(st.warn.text) ? [{ label: "그 칸 고치기", act: "secret-fix", kind: "soft" }] : []), { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };   // F-161-1 — 지난 칸에 있으면 그 칸을 고칠 길
     }
+    if (st.fillWarn) return { tone: "amber", mood: "alert", title: "적기 전에 잠깐!",   // F-161-3 — 칸에 바로 적는 글
+      sub: `글 안에 ${esc(st.fillWarn.w.join(", "))}처럼 보이는 게 있어요. 칸에 적으면 화면 · 다음 단계 초안에 그대로 쓰여요(단계 문서에는 가려서 들어가요). 그대로 적을까요?`,
+      acts: [{ label: "고칠게요", act: "fill-fix", key: "Enter", pri: true }, { label: "그대로 적기", act: "fill-anyway" }] };
     if (st.keyBad && st.mode === "live") return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "API 키가 거절됐어요.", sub: "키가 맞지 않거나 쓸 수 있는 권한이 없어요. 키를 고치기 전까지 연습용 예시로 둘러볼 수 있어요 — 키는 설정의 '처음 설정 다시 하기'에서 다시 넣어요.", acts: [{ label: "연습용 예시로 둘러보기", act: "practice-now", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };   // F-106
     if (st.error) return { tone: "red", mood: "think", extra: "oops", meta: s ? stageMeta() : "", title: "음, 잘 안 됐어요.", sub: esc(st.error),
       acts: [{ label: "글 고쳐서 다시 해 보기", act: "retry-input", key: "Enter", pri: true }, { label: "닫기", act: "dismiss", key: "Escape", kind: "ghost" }] };
@@ -395,7 +398,7 @@
       title: "잠시 멈춰 뒀어요.", sub: HOLD.later,
       acts: [{ label: "다시 이어 하기", act: "hold-resume", key: "Enter", pri: true }] };
     if (allDone()) return { tone: "green", mood: f[0], meta: stageMeta(), title: `${LB(s.n)} 할 일을 모두 했어요!`,
-      sub: "다음 단계로 가기 전에, 이번 단계를 이해했는지 한 번만 같이 확인해요.",
+      sub: s.n === N.STAGES.length - 1 ? "마지막 단계예요 — 이번 단계를 이해했는지 한 번만 같이 확인하고 마쳐요." : "다음 단계로 가기 전에, 이번 단계를 이해했는지 한 번만 같이 확인해요.",   // F-161-9
       acts: [{ label: "확인하고 넘어가기", act: "gate", key: "Enter", pri: true }] };
     if (st.todos) return { tone: "blue", mood: f[0], say: f[1], meta: stageMeta(), title: `지금 할 일 · ${esc(todosNow()[0])}`,
       sub: WORK_NOTE,
