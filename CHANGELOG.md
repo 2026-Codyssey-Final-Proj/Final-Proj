@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v66.9 | 2026-11-07 | 임유정 | 5단계 코드 맡기기가 비밀값 때문에 거절될 때 그 지난 칸을 못 찾아 막다른 길로 돌아가던 것 — 공백을 맞춰 비교하고, 못 찾으면 비밀값이 든 아무 지난 칸으로 (F-161-1 보완) (#349) | `02-frontend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v66.8 | 2026-11-07 | 임유정 | 사용자 시험 둘째(처음 설정 ~ 8단계)에서 나온 것 — 비밀값이 든 지난 칸을 채팅에서 고치기 · 초안 다시 받기 · 작업실의 복사가 막히던 것 · 칸에 적기 전 비밀값 확인 · Floe가 맡긴 일 뒤의 살펴보기 카드 · GitHub 건너뛰기와 gh repo create 확인 · 한 장의 맡긴 일 · 빈칸 틀 · 사소한 말 (F-161) (#347) | `02-frontend/navigator/` · `02-frontend/electron/` · `03-backend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
 | v66.7 | 2026-11-07 | 두승현 | Floe 홍보영상 5초 · 30초판(애플 광고풍)과 스토리보드 — 원본 페이지 · 굽는 스크립트 · mp4 (#345) | `01-docs/04-pattern-implementation/`(promo-5s-storyboard.html · promo-5s/ · promo-30s/) |
 | v66.6 | 2026-11-07 | 두승현 | 최종 발표 HTML 덱 초안 — 발표 PDF v1.3의 29장 구성을 html-ppt 틀(발표자 창 · 대본)로 옮김, 숫자는 11/7 실측으로 갱신 (KAN-14) (#346) | `01-docs/04-pattern-implementation/presentation-10min/`(담당 고한결 — 이 줄이 알림), `presentation-10min.html`(앞 판, 비교용) |
