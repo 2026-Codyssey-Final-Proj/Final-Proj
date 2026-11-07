@@ -58,7 +58,9 @@
     for (const type of ["click", "dblclick", "pointerdown", "mousedown", "contextmenu", "mouseover", "keydown"]) doc.addEventListener(type, guard, true);
   }
   const send = (act) => (STEPS[cur] && STEPS[cur].own ? STEPS[cur].own(act) : onAct(act));
-  const allowed = (t) => !!t && !!t.closest && (!!t.closest("#floe-coach") || (!STEPS[cur].look && !!t.closest(STEPS[cur].sel)));
+  // pass — 밝히지는 않지만 눌러도 되는 곳(처음 설정의 '‹ 뒤로'). 없으면 밝은 곳만 눌린다
+  const lets = (step, t) => !!t && !!t.closest && (!!t.closest("#floe-coach") || (!step.look && !!t.closest(step.sel)) || (!!step.pass && !!t.closest(step.pass)));
+  const allowed = (t) => lets(STEPS[cur], t);
   function guard(e) {
     if (!cur || layer.hidden) return;
     if (e.type === "keydown" && e.key === "Escape") { e.preventDefault(); e.stopImmediatePropagation(); return send("coach-skip"); }
@@ -118,7 +120,7 @@
   // 걸음표 등록 — own: 그 걸음의 말풍선 단추를 받을 곳(처음 설정은 섬의 누르기 표 밖에 있다)
   function define(steps, own) { for (const id of Object.keys(steps)) STEPS[id] = { ...steps[id], own }; }
 
-  const api = { STEPS, TOTAL, stepOf, numberOf, unionRect, placeBubble, init, define, sync };
+  const api = { STEPS, TOTAL, stepOf, numberOf, unionRect, placeBubble, lets, init, define, sync };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else root.FloeCoach = api;
 })(typeof window !== "undefined" ? window : globalThis);

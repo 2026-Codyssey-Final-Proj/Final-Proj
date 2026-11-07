@@ -124,7 +124,7 @@
     if (s.step === "github") {
       if (!s.gh) return "";
       const now = githubSteps(s.gh).find((x) => !x.done);
-      return now ? (now.k === "gh" ? "su-gh-find" : "su-gh-login") : "su-next";
+      return now ? (now.k === "gh" ? "su-gh-find" : "su-gh-login") : "su-gh-next";   // AI 연결의 'su-next'(점 2개)를 같이 쓰면 같이 쓸 앱(3개) 다음에 점이 줄었다(F-163)
     }
     if (s.step === "project") return s.project ? "su-project-next" : "su-project";
     return s.step === "done" ? "su-done" : "";
@@ -133,7 +133,8 @@
   function coachSteps({ app, platform }) {
     const term = /win/i.test(platform) ? "시작 메뉴에서 'PowerShell'을 찾아 켜고" : /mac/i.test(platform) ? "Spotlight(⌘ + Space)에서 '터미널'을 찾아 켜고" : "터미널을 켜고";
     const S = "#floe-setup ", li = (k) => `${S}.su-steps li[data-k="${k}"]`, skip = `${S}[data-s="ghskip"]`, next = `${S}[data-s="next"]`;
-    const step = (dot, sel, mood, text, focus) => ({ clip: `${S}.su`, dot: [dot, 6], sel, mood, text, ...(focus ? { focus } : {}) });
+    // pass — '‹ 뒤로' · '‹ 다시 고르기'(data-s="go")는 밝히지 않아도 늘 눌린다. 막혀서 앞 칸으로 못 돌아갔다(F-162, 임유정 2026-11-07)
+    const step = (dot, sel, mood, text, focus) => ({ clip: `${S}.su`, dot: [dot, 6], sel, pass: `${S}[data-s="go"]`, mood, text, ...(focus ? { focus } : {}) });
     return {
       "su-hello": step(1, `${S}[data-s="go"], ${S}[data-s="later"]`, "happy", "처음이라 막막해도 괜찮아요! 제가 한 칸씩 같이 할게요. '준비 시작하기'를 눌러 주세요.", `${S}[data-s="go"]`),
       "su-choose": step(2, `${S}.su-picks, ${S}[data-s="practice"]`, "look", "AI를 어떻게 부를지 골라요. Claude Code를 쓰고 있으면 왼쪽, API 키가 있으면 오른쪽이에요. 잘 모르겠으면 연습용 예시로 먼저 둘러봐도 돼요."),
@@ -146,6 +147,7 @@
       "su-apps": step(3, `${S}.su-card, ${next}`, "look", "Claude Desktop 앱을 쓰고 있으면 이어 둘 수 있어요. 안 쓰면 그냥 건너뛰면 돼요.", next),
       "su-gh-find": step(4, `${li("gh")}, ${skip}`, "look", "GitHub는 내 작업을 온라인에 보관하는 곳이에요. 나중에 해도 괜찮으니 지금은 'GitHub 없이 할래요'를 눌러도 돼요."),
       "su-gh-login": step(4, `${li("login")}, ${skip}`, "look", app ? "GitHub는 내 작업을 온라인에 보관하는 곳이에요. '실행'을 누르면 코드와 주소가 나와요. 코드를 복사하고 주소를 열어 붙여 넣어 주세요. 나중에 해도 괜찮아요." : `GitHub는 내 작업을 온라인에 보관하는 곳이에요. 터미널은 컴퓨터에 글로 명령하는 창이에요. ${term} 복사한 명령을 붙여 넣어 주세요. 나중에 해도 괜찮아요.`, `${S}[data-s="login"]`),
+      "su-gh-next": step(4, next, "happy", "GitHub도 이어졌어요! '다음'을 눌러 넘어가요.", next),
       "su-project": step(5, `${S}.su-proj, ${next}`, "look", "이제 만들 곳을 정해요. 처음이면 '새로 만들기'가 제일 쉬워요. 이 폴더에서 저랑 Claude Code가 일해요."),
       "su-project-next": step(5, next, "happy", "좋아요! '다음'을 눌러 주세요.", next),
       "su-done": step(6, `${S}.su-repo, ${S}[data-s="done"]`, "happy", "다 됐어요! '시작하기'를 누르면 무엇을 만들지 같이 정해요.", `${S}[data-s="done"]`),

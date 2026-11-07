@@ -112,7 +112,7 @@ test("처음 설정 걸음 — 상태에 맞는 것만", () => {
   assert.equal(U.coachStep(S({ step: "apps" })), "su-apps");
   assert.equal(U.coachStep(S({ step: "github", gh: gh(false, null) })), "su-gh-find");
   assert.equal(U.coachStep(S({ step: "github", gh: gh(true, false) })), "su-gh-login");
-  assert.equal(U.coachStep(S({ step: "github", gh: gh(true, true) })), "su-next");
+  assert.equal(U.coachStep(S({ step: "github", gh: gh(true, true) })), "su-gh-next", "AI 연결의 su-next(점 2개)가 아니라 GitHub 칸의 걸음(F-163)");
   assert.equal(U.coachStep(S({ step: "project" })), "su-project");
   assert.equal(U.coachStep(S({ step: "project", project: { name: "a" } })), "su-project-next");
   assert.equal(U.coachStep(S({ step: "done" })), "su-done");
@@ -131,7 +131,7 @@ test("처음 설정 안내 — 꺼져 있거나 기다리는 동안 어둡게 �
 test("처음 설정 걸음표 — 나올 수 있는 걸음마다 말 · 밝힐 곳이 있고, 카드 안만 어둡게 한다", () => {
   for (const app of [true, false]) {
     const t = U.coachSteps({ app, platform: "Win32" });
-    for (const id of ["su-hello", "su-choose", "su-find", "su-login", "su-unkey", "su-check", "su-key", "su-next", "su-apps", "su-gh-find", "su-gh-login", "su-project", "su-project-next", "su-done", "su-run", "su-gh-run"]) {
+    for (const id of ["su-hello", "su-choose", "su-find", "su-login", "su-unkey", "su-check", "su-key", "su-next", "su-apps", "su-gh-find", "su-gh-login", "su-gh-next", "su-project", "su-project-next", "su-done", "su-run", "su-gh-run"]) {
       assert.ok(t[id] && t[id].sel && t[id].text, id);
       assert.equal(t[id].clip, "#floe-setup .su", `${id} — 앱의 창은 투명해서 창 전체를 어둡게 하면 바탕 화면에 회색 네모가 생긴다`);
       assert.ok(t[id].dot[0] >= 1 && t[id].dot[1] === 6);
@@ -228,4 +228,30 @@ test("로그인 실행 잇기 — 섬 창에서 온 요청만, 결과를 파일 
   assert.match(fs.readFileSync(path.join(NAV, "../electron/preload.js"), "utf8"), /runLogin: \(name\) => ipcRenderer\.invoke\("floe:login-run", String\(name \|\| ""\)\)/);
   const src = fs.readFileSync(path.join(NAV, "setup.js"), "utf8");
   assert.doesNotMatch(src, /runLogin\([^)]*(CMD|LOGIN_CMD)/, "화면은 이름만 보낸다"); assert.doesNotMatch(src, /localStorage\.setItem\([^)]*login/i);
+});
+
+// claude-drafted: 2026-11-07 — F-162(임유정 "'뒤로'버튼을 클릭해도 뒤로 가지 않는 버그"). 안내 층이 밝힌 곳 밖을 막아 '‹ 뒤로'가 눌리지 않았다
+test("처음 설정 안내 중에도 '‹ 뒤로'는 눌린다 — 밝히지는 않고(pass) 눌러도 되는 곳으로", () => {
+  const at = (sel) => ({ closest: (q) => (q.split(",").map((x) => x.trim()).some((x) => x === sel) ? {} : null) });
+  const back = at('#floe-setup [data-s="go"]'), other = at('#floe-setup [data-s="nowhere"]');
+  for (const app of [true, false]) {
+    const t = U.coachSteps({ app, platform: "Win32" });
+    for (const id of Object.keys(t)) {
+      assert.ok(C.lets(t[id], back), `${id} — 뒤로`);
+      assert.ok(!C.lets(t[id], other), `${id} — 밝히지 않은 다른 단추는 여전히 막힌다`);
+    }
+    assert.doesNotMatch(t["su-choose"].sel, /"go"/, "밝히는 자리는 그대로 — 고르기 카드 · 연습용 예시만");
+  }
+  assert.ok(!C.lets({ sel: ".a" }, at('#floe-setup [data-s="go"]')), "pass가 없는 걸음(작업실 안내)은 전처럼");
+});
+
+// claude-drafted: 2026-11-07 — F-163(임유정 "버튼을 눌러서 다음 단계로 왔는데도 갑자기 점 색이 3개에서 2개로 줄어들어서"). 단계를 넘기면 말풍선 점은 줄지 않는다
+test("말풍선 점은 처음 설정을 앞으로 넘길 때 줄지 않는다 — 어느 길로 가도", () => {
+  const t = U.coachSteps({ app: true, platform: "Win32" }), dot = (st) => t[U.coachStep(S(st))].dot[0];
+  const ai = { st: st({}) };
+  const paths = [
+    [{}, { step: "choose" }, { step: "cli", ...ai }, { step: "cli", ...ai, checked: true }, { step: "apps" }, { step: "github", gh: gh(true, true) }, { step: "project" }, { step: "project", project: { name: "a" } }, { step: "done" }],
+    [{}, { step: "choose" }, { step: "api", st: st({}, { apiKey: false }) }, { step: "api", st: st({}, { apiKey: true }), checked: true }, { step: "apps" }, { step: "github", gh: gh(false, null) }, { step: "github", gh: gh(true, false) }, { step: "github", gh: gh(true, true) }, { step: "project" }, { step: "done" }],
+  ];
+  for (const p of paths) { const ns = p.map(dot); for (let i = 1; i < ns.length; i++) assert.ok(ns[i] >= ns[i - 1], `점 ${ns.join(" → ")}`); }
 });
