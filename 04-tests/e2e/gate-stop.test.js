@@ -68,6 +68,11 @@ test("R-10 — 빈칸 표시가 남은 채 보고하면 관문 앞에서 멈추�
     await page.click("[data-act=gate-skip-save]"); await wait(600);
     c = await card(page);
     assert.match(c.title, /모두 했어요/, `넘기면 '모두 했어요' — 관문 단추가 생긴다: ${JSON.stringify(c)}`); assert.ok(c.acts.includes("gate"), c.acts.join(","));
+    // F-166-3(2026-11-07 사용자 시험 셋째, claude-drafted): 넘긴 뒤 다시 살펴봐도(줄 고치기 → 완료 보고) 사람이 넘긴 기준은 덮이지 않는다 — 전에는 까닭이 사라지고 '안 됨'으로 되돌아갔다
+    await page.evaluate(() => document.querySelector("[data-act=gate-fill]")?.click() || document.querySelector(".qwin .gatebox [data-act=gate-fill]")?.click()); await wait(400);
+    await page.click("[data-act=quest-report]"); await wait(600);
+    c = await card(page);
+    assert.match(c.title, /모두 했어요/, `다시 살펴봐도 넘긴 것은 그대로: ${JSON.stringify(c)}`); assert.ok(c.acts.includes("gate"), c.acts.join(","));
     await page.click("[data-act=gate]"); await wait(400);
     assert.match((await card(page)).title, /이해되셨나요/, "관문(넘어가기 전 확인)");
     const me = await page.evaluate(() => [...document.querySelectorAll(".isl .msg.me")].map((m) => m.textContent.trim()));

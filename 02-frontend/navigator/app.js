@@ -3913,12 +3913,20 @@
   //   F-166-2(2026-11-07 사용자 시험 셋째): 가장 최근 세션 하나만 보면 뼈대 코드를 만든 뒤 돈 문서 올리기 · 돌려 보기(파일을 안 고침)가 그 기록을 가려 늘 '증거 없음'이었다 —
   //   이 단계를 시작한 뒤(st.workSince, 관문을 지날 때 적는다)의 이 폴더 세션 전부에서 찾는다. 옛 저장(시작 때를 모름)이면 때를 따지지 않는다
   const workEvidence = () => { if (st.mode === "fixture") return true; if (aiMode !== "live") return false; return N.workSeen ? N.workSeen(mine(), st.workSince) : false; };
-  const gateApply = (j) => { if (!j || !N.gateRules) return j; const q = st.quest && st.quest.chap === j.stage ? st.quest : null; const g = N.gateRules(j, { lines: q ? q.objs.map((_, i) => (q.lines[i] || []).join(" / ")) : [], work: workEvidence() });
+  const gateApply = (j) => keepSkips(gateRaw(j));   // F-166-3 — 사람이 넘긴 기준은 다시 살펴봐도 그대로
+  const gateRaw = (j) => { if (!j || !N.gateRules) return j; const q = st.quest && st.quest.chap === j.stage ? st.quest : null; const g = N.gateRules(j, { lines: q ? q.objs.map((_, i) => (q.lines[i] || []).join(" / ")) : [], work: workEvidence() });
     if (!q || !QS) return g;   // C-56: 건너뛴 칸의 기준은 넘김(까닭을 결정 기록 · 문서로, F-62와 같은 줄), 먼저인 칸은 '안 됨'(관문 닫힘)
     // 지금 장의 줄(기능 수 등)을 사실에 넣는다 — 첫 판정 때는 아직 st.results에 없다(새 맥락 리뷰 2026-10-28 막힘)
     const sts = qstates(q, { [q.chap]: QU.resultOf(q) }); return { ...g, criteria: g.criteria.map((c, i) => { const x = sts[i]; if (!x) return c; if (x.state === "skip") return { ...c, met: true, skipped: true, reason: x.why }; if (x.state === "first") return { ...c, met: false, why: "first" }; return c; }) }; };
   const skipOf = (j) => { const sk = (j && j.criteria ? j.criteria : []).filter((c) => c.skipped && c.reason); return sk.length ? { reason: [...new Set(sk.map((c) => c.reason))].join(" · ").slice(0, 200), items: sk.map((c) => c.text) } : null; };
   const checkOf = (j) => j.criteria.map((c) => ({ text: c.text, met: !!c.met, evidence: String(c.evidence || "").slice(0, 300), ...(c.why ? { why: c.why } : {}), ...(c.skipped ? { skipped: true } : {}) }));
+  // F-166-3(2026-11-07 사용자 시험 셋째): 사람이 '까닭 적고 넘기기'로 넘긴 기준은 같은 장을 다시 살펴봐도(살펴봐 주세요 · 완료 보고) 그대로 둔다 —
+  //   전에는 새 판정이 st.j를 통째로 바꿔 적은 까닭이 사라지고 관문 앞 '안 됨'으로 되돌아갔다. 새 판정이 '됨'이면 그쪽이 먼저
+  function keepSkips(j) {
+    const prev = st.j && j && st.j.stage === j.stage && Array.isArray(st.j.criteria) ? st.j.criteria.filter((c) => c.skipBy === "me" && c.reason) : [];
+    if (!prev.length) return j;
+    return { ...j, criteria: j.criteria.map((c) => { const p = c.met ? null : prev.find((x) => x.text === c.text); return p ? { ...c, met: true, skipped: true, reason: p.reason, skipBy: "me", why: undefined } : c; }) };
+  }
   function landed(j0, tokens, sent = st.text, checkBy = "") {
     const j = gateApply(j0);
     const was = allDone();
@@ -4291,7 +4299,7 @@
     "gate-skip-save": () => {
       const reason = String((st.skip && st.skip.reason) || "").trim().slice(0, 200); if (!reason) return say("까닭을 한 줄 적어 주세요");
       const items = st.j.criteria.filter((c) => !c.met).map((c) => c.text);
-      st.j = { ...st.j, criteria: st.j.criteria.map((c) => (c.met ? c : { ...c, met: true, skipped: true, reason })) };
+      st.j = { ...st.j, criteria: st.j.criteria.map((c) => (c.met ? c : { ...c, met: true, skipped: true, reason, skipBy: "me" })) };   // skipBy — 사람이 넘김: 다시 살펴봐도 덮이지 않는다(F-166-3)
       const r = st.results[st.j.stage]; if (r) st.results = { ...st.results, [st.j.stage]: { ...r, check: checkOf(st.j), skip: { reason, items } } };
       st.skip = null; logMe(`넘겨요 — ${reason}`); save();
       if (allDone()) { view("alert"); return; } render();

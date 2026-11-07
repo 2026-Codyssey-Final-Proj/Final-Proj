@@ -205,7 +205,7 @@
     "gate-skip-save": () => {
       const reason = String((st.skip && st.skip.reason) || "").trim().slice(0, 200); if (!reason) return say("까닭을 한 줄 적어 주세요");
       const items = st.j.criteria.filter((c) => !c.met).map((c) => c.text);
-      st.j = { ...st.j, criteria: st.j.criteria.map((c) => (c.met ? c : { ...c, met: true, skipped: true, reason })) };
+      st.j = { ...st.j, criteria: st.j.criteria.map((c) => (c.met ? c : { ...c, met: true, skipped: true, reason, skipBy: "me" })) };   // skipBy — 사람이 넘김: 다시 살펴봐도 덮이지 않는다(F-166-3)
       const r = st.results[st.j.stage]; if (r) st.results = { ...st.results, [st.j.stage]: { ...r, check: checkOf(st.j), skip: { reason, items } } };
       st.skip = null; logMe(`넘겨요 — ${reason}`); save();
       if (allDone()) { view("alert"); return; } render();
