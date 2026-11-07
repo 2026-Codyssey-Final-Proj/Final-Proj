@@ -110,7 +110,7 @@
   }
   // 퀘스트 판(C-65 · C-66 · C-69, 2026-10-30 두승현 목업 확정본): 보기 고르기(지도 · 흐름 · 상자) + 지도 띠(지금 장이 있는 줄) + 그 장 카드에서 올라오는 퀘스트 카드.
   //   세로 줄(장 여덟) · 장 화면(관문 전에 알아 둘 것 · 이 장에서 쓰는 말 · 그림 사슬 · 곁 퀘스트)은 뺐다 — 장으로 가는 길은 지도 카드 하나. 카드를 내리면(S4) 여덟 장이 다 보이고 아래 띠로 남는다
-  let treeView = "cards";   // 한눈에 보기의 보기(C-54): cards 지도 · flow 흐름 · box 상자
+  let treeView = "cards";   // 한눈에 보기의 보기(C-54): cards 지도 · flow 흐름. '상자'(문서 지도) 보기는 2026-11-07 뺐다(F-165, 임유정 "퀘스트 탭에서 상자 기능 없애줘") — docmap.html · mapPane · 서버는 남김
   // ── C-54 카드 지도(stagemap.js) — 카드 = 그 단계의 퀘스트(다섯 칸 · 관문)와 문서, 2단계 칸을 다 채우면 기획서로 3 ~ 8단계를 그리고 준비된 퀘스트를 미리 채운다(맞아요 한 번에 / 고칠래요) ──
   const haveDocs = () => { const h = new Set(); if (st.files && st.files.src === "mine" && st.files.list) for (const x of st.files.list) if (!x.dir) h.add(x.path); for (const d of st.docs) if (FDOCS && FDOCS.SLUGS[d.stage]) h.add(nowDocPath(d.stage)); return h; };
   const stageMap = () => (SM ? SM.build({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], results: st.results, j: st.j, quest: st.quest, finished: st.finished, have: haveDocs(), prep: st.prep }) : null);
@@ -153,11 +153,11 @@
   }
   function questBoard() {
     const cur = st.finished ? N.STAGES.length - 1 : st.j ? st.j.stage : st.quest ? st.quest.chap : 0;
-    const views = [["cards", "지도"], ["flow", "흐름"], ["box", "상자"]], viewBar = `<div class="sm-views" role="tablist" aria-label="보기">${views.map(([v, l]) => `<button type="button" role="tab" data-act="tree-view" data-v="${v}" aria-selected="${treeView === v}">${l}</button>`).join("")}</div>`;
+    const views = [["cards", "지도"], ["flow", "흐름"]], viewBar = `<div class="sm-views" role="tablist" aria-label="보기">${views.map(([v, l]) => `<button type="button" role="tab" data-act="tree-view" data-v="${v}" aria-selected="${treeView === v}">${l}</button>`).join("")}</div>`;
     const q = st.quest && st.quest.chap === cur && st.quest.phase !== "draft" ? st.quest : null, ci = q ? QU.curIdx(q) : -1, got = q ? q.objs.filter((_, i) => QU.filled(q, i)).length : 0;
-    // C-67(2026-10-30): 흐름 · 상자를 고르면 지도 띠 · 퀘스트 카드를 접고 작업 칸 가득(판 안의 판 없음). 돌아가는 길은 보기 줄 오른쪽 알약 하나 — 지금 줄 · 진행을 같이 보인다
-    // class는 view-flow · view-box — 그냥 'flow'면 1단계 화면의 .flow(가운데 맞춤 격자)가 겹쳐 흐름에서만 보기 줄이 가운데로 밀렸다(F-110, 임유정 2026-11-01)
-    if (treeView !== "cards") return `<div class="qboard full view-${treeView}"><div class="qtop">${viewBar}<button type="button" class="q-back" data-act="quest-back">퀘스트로${q ? ` · ${ci >= 0 ? `${ROMAN(ci)} ${esc(QU.nameOf(q, ci))}` : "다 적음"} <b>${got}/${q.objs.length}</b>` : ""}</button></div><div class="board">${treeView === "flow" ? treeMap(cur) : mapPane(Math.min(cur, N.STAGES.length - 1))}</div></div>`;
+    // C-67(2026-10-30): 흐름을 고르면 지도 띠 · 퀘스트 카드를 접고 작업 칸 가득(판 안의 판 없음). 돌아가는 길은 보기 줄 오른쪽 알약 하나 — 지금 줄 · 진행을 같이 보인다
+    // class는 view-flow — 그냥 'flow'면 1단계 화면의 .flow(가운데 맞춤 격자)가 겹쳐 흐름에서만 보기 줄이 가운데로 밀렸다(F-110, 임유정 2026-11-01)
+    if (treeView !== "cards") return `<div class="qboard full view-${treeView}"><div class="qtop">${viewBar}<button type="button" class="q-back" data-act="quest-back">퀘스트로${q ? ` · ${ci >= 0 ? `${ROMAN(ci)} ${esc(QU.nameOf(q, ci))}` : "다 적음"} <b>${got}/${q.objs.length}</b>` : ""}</button></div><div class="board">${treeMap(cur)}</div></div>`;
     if (st.qview != null && (st.qview === cur || !N.STAGES[st.qview])) st.qview = null;   // 지금 장이 바뀌었으면 보던 지난 장 카드는 접고 지금 퀘스트로
     const up = qUp();
     // 범례(누가 정했나)는 카드를 내렸을 때만 — 올라와 있으면 지도 띠 한 줄에 칩이 없어 뜻이 없다(두승현 2026-10-30, 요구 문서 9절 7번)
@@ -348,7 +348,7 @@
       const r = MDV.format(ta.value, ta.selectionStart, ta.selectionEnd, el.dataset.fmt); ta.value = r.text; f.text = r.text; f.dirty = f.text !== f.saved; render();
       const t2 = $nav.querySelector(`.fv-edit[data-v="${k}"]`); if (t2) { t2.focus(); t2.setSelectionRange(r.start, r.end); } },
     // C-54 지도 — 보기 셋 · 기획서로 그리기 · 맞아요(한 번에) · 고칠래요 · 카드 누름(오른쪽 칸 + 문서가 있으면 파일 보기)
-    "tree-view": (i, el) => { const v = el && el.dataset.v; if (["cards", "flow", "box"].includes(v)) treeView = v; render(); },
+    "tree-view": (i, el) => { const v = el && el.dataset.v; if (["cards", "flow"].includes(v)) treeView = v; render(); },
     "prep-draw": async () => { if (!SM || !st.results[1] || st.prep || st.busy) return;   // 바쁠 때 누르면 바쁨을 실패로 읽어 규칙 카드를 저장하던 것(F-103-5 새 맥락 리뷰)
       const rule = SM.prepare({ stages: N.STAGES, slugs: FDOCS ? FDOCS.SLUGS : [], plan: st.results[1], criteria: crits });
       let ai = null;   // C-56 R-2(2026-10-28): 진짜 AI면 한 번에 이 프로젝트의 말로(/api/prepare) — 못 받으면 규칙(기획서의 절)으로만, 연습은 규칙
@@ -363,7 +363,7 @@
     "map-card": (i) => { const m = stageMap(), c = m && m.cards[i]; if (!c) return; st.mapLine = null;
       if (c.state === "now") { st.mapSel = null; st.qview = null; } else { st.qview = st.qview === c.n ? null : c.n; st.mapSel = st.qview != null ? c.n : null; if (st.mapSel != null && c.prepared) wsideQuest = true; }   // 오른쪽 칸(이 탭에서는 접힘)은 준비된 카드만 바로 켠다 — 끝낸 장은 줄을 누를 때(map-line)
       render(); },   // F-151(임유정 2026-11-04 "'퀘스트 카드 올리기' 버튼을 눌렀을때만"): 번호 상자는 고르기만 — 카드를 내린 여덟 장 지도는 그대로, 올라와 있으면 그 장의 카드로 바뀐다. 올리는 길은 quest-up 하나. claude-drafted: 2026-11-04
-    "quest-back": () => { treeView = "cards"; set({ questUp: true }); },   // 흐름 · 상자에서 퀘스트 카드가 올라온 지도로(C-67)
+    "quest-back": () => { treeView = "cards"; set({ questUp: true }); },   // 흐름에서 퀘스트 카드가 올라온 지도로(C-67)
     "quest-down": () => set({ questUp: false }),   // 지도 보기 — 카드를 내려 여덟 장 + 아래 띠(S4)
     "quest-up": () => set({ questUp: true }),
     "quest-view-off": () => { st.qview = null; st.mapSel = null; render(); },

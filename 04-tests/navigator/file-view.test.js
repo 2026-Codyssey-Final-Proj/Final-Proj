@@ -67,7 +67,7 @@ test("app.js · win.js · app.css — 작업실 세 칸(파일 · 작업 · 오�
 test("app.js — 도전과제 탭의 보기 셋(지도 · 흐름 · 상자), 카드 지도는 stagemap.js, 그리기 · 맞아요 · 고칠래요, 카드를 누르면 오른쪽 칸에 그 퀘스트 · 문서(준비된 ① 생각을 보이던 캔버스 ① 칸은 2026-11-02에 뺐다)", () => {
   const a = read("navigator/app.js");
   assert.match(a, /const SM = window\.NavStageMap/, "규칙은 stagemap.js"); assert.match(a, /"prep", "source", "card"\]/, "준비된 퀘스트는 기록(KEEP)에");
-  assert.match(a, /const views = \[\["cards", "지도"\], \["flow", "흐름"\], \["box", "상자"\]\]/, "보기 셋"); assert.match(a, /data-act="tree-view" data-v="\$\{v\}"/);
+  assert.match(a, /const views = \[\["cards", "지도"\], \["flow", "흐름"\]\]/, "보기 둘 — '상자'(문서 지도)는 2026-11-07 뺐다(F-165)"); assert.match(a, /data-act="tree-view" data-v="\$\{v\}"/);
   for (const act of ["prep-draw", "prep-ok", "prep-fix", "map-card"]) assert.match(a, new RegExp(`"${act}": `), act);
   assert.match(a, /SM\.build\(\{/); assert.match(a, /SM\.prepare\(\{/);
   assert.match(a, /st\.qtab === "quest" && st\.mapSel != null/, "오른쪽 칸 — 누른 카드의 퀘스트 · 문서(합친 탭, C-65)");

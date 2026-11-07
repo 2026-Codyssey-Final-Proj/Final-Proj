@@ -30,7 +30,10 @@ const SHOTS = process.env.FLOE_SHOTS || "";
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const freePort = () => new Promise((resolve) => { const s = net.createServer(); s.listen(0, "127.0.0.1", () => { const p = s.address().port; s.close(() => resolve(p)); }); });
 
-test("C-45 · C-44 — 문서 지도 탭에 보드(문서 상자 · 재료 선), 밖으로 요청 없음, 상자 → '파일 보기에서 열기' → 파일이 열린다; 연 파일 머리에 '틀로 맡기기', 채팅에 '문서 틀' 칩", { skip }, async () => {
+// F-165(2026-11-07, 임유정 "퀘스트 탭에서 상자 기능 없애줘"): 문서 지도로 들어가는 길이던 퀘스트 탭의 '상자' 보기를 뺐다 — 화면에서 열 길이 없어 이 시험은 건너뛴다.
+//   docmap.html · 서버(/api/docmap)는 남겼다. 상자 보기를 되살리면 이 줄을 지우고 다시 켠다
+const BOX_GONE = "퀘스트 탭의 '상자' 보기를 뺐다(F-165) — 문서 지도를 화면에서 열 길이 없다";
+test("C-45 · C-44 — 문서 지도 탭에 보드(문서 상자 · 재료 선), 밖으로 요청 없음, 상자 → '파일 보기에서 열기' → 파일이 열린다; 연 파일 머리에 '틀로 맡기기', 채팅에 '문서 틀' 칩", { skip: skip || BOX_GONE }, async () => {
   const TMP = fs.mkdtempSync(path.join(os.tmpdir(), "floe-dm-")), PROJ = path.join(TMP, "my-club-app");
   fs.writeFileSync(path.join(TMP, "claude-stub.js"), `process.stdin.resume(); process.stdin.on("end", () => setTimeout(() => { process.stdout.write(JSON.stringify({ type: "result", result: "ok" })); process.exit(0); }, 300));`);   // 가짜 claude — 저장마다 커밋을 맡기므로, 진짜 Claude Code가 시험 폴더에서 돌지 않게(NAV_CLAUDE_BIN)
   Object.assign(process.env, { CLAUDE_CONFIG_DIR: require("../navigator/hook-home.js")(TMP), NAV_EVENT_TOKEN_FILE: path.join(TMP, "tok"), NAV_USAGE_FILE: path.join(TMP, "usage.json"), NAV_REPLAY: path.join(TMP, "replay.json"), NAV_CLAUDE_BIN: path.join(TMP, "claude-stub.js") });
