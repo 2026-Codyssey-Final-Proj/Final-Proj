@@ -337,6 +337,13 @@ body{align-items:flex-start}.deck{transform-origin:center top}
 .jira img{width:100%;border-radius:14px;box-shadow:var(--shadow-lg);border:1px solid #333;display:block;max-height:690px;object-fit:cover;object-position:top}
 .jira figcaption{font-size:22px;font-weight:700;color:var(--text-1);text-align:center}
 .biz.big{font-size:25px}.biz.big th{font-size:18px}.biz.big td{padding:14px 18px}
+
+.collab2 .tour .st span{font-size:19px;font-weight:800;color:var(--text-3);white-space:nowrap}
+.collab2 .tour .st b{font-size:15px;color:var(--text-3);font-weight:600;white-space:nowrap}
+.collab2 .tour .st.done span{color:var(--text-2)}
+.collab2 .tour .st.on span,.collab2 .tour .st.on b{color:var(--accent)}
+.collab2 .tour .c2 .stg{display:inline-block;margin:0 0 8px;padding:4px 16px;border-radius:999px;background:var(--accent);color:#fff;font-size:22px;font-weight:800}
+.collab2 .tour .c2.next .stg{background:var(--accent-3)}
 </style>
 </head>
 <body class="tpl-presenter-mode-reveal" data-fit="fill"><!-- 화면 비율에 맞춰 캔버스를 늘리고 모든 크기를 같은 배율로(이재엽 2026-11-07 "길이가 고정된 것이 아니라 상황마다 비율에 맞춰서") -->
@@ -570,32 +577,32 @@ body{align-items:flex-start}.deck{transform-origin:center top}
   <aside class="notes"><p>(발표: 이재엽) 그럼 무엇이 남느냐. <strong>AI가 초안을 쓰고, 사람이 칸마다 확인한 것이 한 권의 책</strong>으로 묶입니다. 8단계가 8장이 되고, 관문을 넘을 때마다 V.1, V.2, V.3으로 쌓입니다.</p><p>글만이 아닙니다. 한 단계의 흐름 — 생각, 행동, 기록, 저장, 버전, 관문 — 을 그림으로, 문서끼리 어떻게 이어졌는지를 문서 지도로 보여 줍니다. 화면은 실제 앱에 연습용 예시를 넣은 것입니다. 이 책이 내 GitHub에 커밋되어, 다 만든 뒤에도 "왜 이렇게 만들었나요?"에 답할 수 있습니다.</p></aside>
 </section>
 
-<!-- 14 협업 — 목적마다 네 명이 이렇게 준비했다(빠르게 하나씩) + Jira 화면(2026-11-08 실제 화면: 에픽 5개 · KAN-28 일감과 담당). 4.5초마다 다음 목적으로, 동그라미를 누르면 그 단계로. 이재엽 2026-11-08 "글 줄이고, 하나씩 빠르게, Jira도" -->
+<!-- 14 협업 — 아이디어 → 프리 프로토타입 → 프로토타입 → 시연 → 결과 → 발표 순으로, 단계마다 목적과 네 명이 한 일(4.5초마다 하나씩, 위 줄에 단계 이름과 날짜) + Jira 화면. 이재엽 2026-11-08 -->
 <section class="slide" data-title="협업 과정">
   <header class="hd"><p class="kicker">협업 — 격주 목표 · 역할 · Jira</p><h2 class="h2">목적마다 일을 나눠, 이렇게 준비했습니다</h2></header>
   <div class="collab2">
     <div class="tour" data-interval="4500">
       <div class="rail">
-        <button class="st"><i>0</i><b>9월</b></button>
-        <button class="st"><i>1</i><b>10/12</b></button>
-        <button class="st"><i>2</i><b>10/20</b></button>
-        <button class="st"><i>3</i><b>10/26</b></button>
-        <button class="st"><i>4</i><b>11/2</b></button>
-        <button class="st"><i>5</i><b>11/9</b></button>
+        <button class="st"><i>1</i><span>아이디어</span><b>9월</b></button>
+        <button class="st"><i>2</i><span>프리 프로토타입</span><b>10/12 ~ 10/25</b></button>
+        <button class="st"><i>3</i><span>프로토타입</span><b>10/26 ~ 11/1</b></button>
+        <button class="st"><i>4</i><span>시연</span><b>11/2 ~ 11/7</b></button>
+        <button class="st"><i>5</i><span>결과</span><b>11/7 ~ 11/8</b></button>
+        <button class="st"><i>6</i><span>발표</span><b>11/9 ~ 11/13</b></button>
       </div>
       <div class="view"><div class="trk">
-        <article class="c2"><div class="lhs"><p class="dt" style="margin:0 0 6px">9월</p><p class="gl">무엇을 왜 만들지</p><span class="res">역할 나눔</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">방향 <span class="k">KAN-9</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">인터뷰 <span class="k">KAN-12</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">화면 구조 <span class="k">KAN-4</span></div></div><div class="p"><div class="nm">두승현</div><div class="tx">검증 틀 <span class="k">KAN-17</span></div></div></div></article>
-        <article class="c2"><div class="lhs"><p class="dt" style="margin:0 0 6px">10/12 ~ 10/19</p><p class="gl">함께 일할 틀</p><span class="res">요구 17개 확정</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">규칙 · Jira <span class="k">KAN-25</span></div></div><div class="p"><div class="nm">다 같이</div><div class="tx">진짜 AI 켜 보기 <span class="k">KAN-7</span></div></div></div></article>
-        <article class="c2"><div class="lhs"><p class="dt" style="margin:0 0 6px">10/20 ~ 10/25</p><p class="gl">어떻게 만들지 · 직접 묻기</p><span class="res">구조 결정 8건</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">구조 결정 <span class="k">KAN-8</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">화면 흐름 <span class="k">KAN-13</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">창 오류 고침</div></div><div class="p"><div class="nm">두승현</div><div class="tx">검증 계획 <span class="k">KAN-18</span></div></div></div></article>
-        <article class="c2"><div class="lhs"><p class="dt" style="margin:0 0 6px">10/26 ~ 11/1</p><p class="gl">꼭 필요한 것만, 11/1에 멈춤</p><span class="res">앱 11.0 · 요구 10/11</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">단계 초안 <span class="k">KAN-101</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">온보딩 <span class="k">KAN-55</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">시연 화면 <span class="k">KAN-15</span></div></div><div class="p"><div class="nm">두승현</div><div class="tx">작업실 개편 <span class="k">KAN-98</span></div></div></div></article>
-        <article class="c2"><div class="lhs"><p class="dt" style="margin:0 0 6px">11/2 ~ 11/8</p><p class="gl">써 보게 하고, 고쳐서 낸다</p><span class="res">앱 11.3 · 3개 OS</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">제출 · 영상 <span class="k">KAN-11</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">사용자 테스트 <span class="k">KAN-14</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">코드 점검 <span class="k">KAN-104</span></div></div><div class="p"><div class="nm">두승현</div><div class="tx">동결 뒤 고침 <span class="k">KAN-100</span></div></div></div></article>
-        <article class="c2 next"><div class="lhs"><p class="dt" style="margin:0 0 6px">11/9 ~ 11/13</p><p class="gl">10분 안에 전한다</p><span class="res">지금 여기</span></div><div class="ps"><div class="p"><div class="nm">다 같이</div><div class="tx">리허설 <span class="k">KAN-46</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">예상 질문 <span class="k">KAN-47</span></div></div><div class="p"><div class="nm">네 명</div><div class="tx">발표 <span class="k">KAN-48</span></div></div></div></article>
+        <article class="c2"><div class="lhs"><p class="stg">아이디어</p><p class="dt" style="margin:0 0 6px">9월</p><p class="gl">무엇을 왜 만들지</p><span class="res">요구 17개 · 역할 나눔</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">방향 <span class="k">KAN-9</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">인터뷰 <span class="k">KAN-12</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">화면 구조 <span class="k">KAN-4</span></div></div><div class="p"><div class="nm">두승현</div><div class="tx">검증 틀 <span class="k">KAN-17</span></div></div></div></article>
+        <article class="c2"><div class="lhs"><p class="stg">프리 프로토타입</p><p class="dt" style="margin:0 0 6px">10/12 ~ 10/25 · 에픽 KAN-25 · 26</p><p class="gl">어떻게 만들지 정하고, 직접 묻기</p><span class="res">구조 결정 8건 · 멘토링</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">구조 · 판정 규칙 <span class="k">KAN-8</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">화면 흐름 <span class="k">KAN-13</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">창 오류 고침</div></div><div class="p"><div class="nm">두승현</div><div class="tx">검증 계획 <span class="k">KAN-18</span></div></div></div></article>
+        <article class="c2"><div class="lhs"><p class="stg">프로토타입</p><p class="dt" style="margin:0 0 6px">10/26 ~ 11/1 · 에픽 KAN-27</p><p class="gl">꼭 필요한 것만, 11/1에 멈춤</p><span class="res">앱 11.0 · 요구 10/11</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">단계 초안 <span class="k">KAN-101</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">온보딩 <span class="k">KAN-55</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">시연 화면 <span class="k">KAN-15</span></div></div><div class="p"><div class="nm">두승현</div><div class="tx">작업실 개편 <span class="k">KAN-98</span></div></div></div></article>
+        <article class="c2"><div class="lhs"><p class="stg">시연</p><p class="dt" style="margin:0 0 6px">11/2 ~ 11/7 · 에픽 KAN-28</p><p class="gl">써 보게 하고, 보여 준다</p><span class="res">앱 11.3 · 시연 영상</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">홍보 영상 <span class="k">KAN-95</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">사용자 테스트 <span class="k">KAN-14</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">코드 점검 <span class="k">KAN-104</span></div></div><div class="p"><div class="nm">두승현</div><div class="tx">동결 뒤 고침 <span class="k">KAN-100</span></div></div></div></article>
+        <article class="c2"><div class="lhs"><p class="stg">결과</p><p class="dt" style="margin:0 0 6px">11/7 ~ 11/8 · 에픽 KAN-28</p><p class="gl">돌아보고, 낸다</p><span class="res">11/8 제출</span></div><div class="ps"><div class="p"><div class="nm">이재엽</div><div class="tx">최종 보고 · 제출 <span class="k">KAN-11</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">설문지 <span class="k">KAN-96</span></div></div><div class="p"><div class="nm">임유정</div><div class="tx">구동 영상 <span class="k">KAN-16</span></div></div><div class="p"><div class="nm">두승현</div><div class="tx">검증 결과 · 기획서 <span class="k">KAN-19</span></div></div></div></article>
+        <article class="c2 next"><div class="lhs"><p class="stg">발표</p><p class="dt" style="margin:0 0 6px">11/9 ~ 11/13 · 에픽 KAN-29</p><p class="gl">10분 안에 전한다</p><span class="res">지금 여기</span></div><div class="ps"><div class="p"><div class="nm">다 같이</div><div class="tx">리허설 <span class="k">KAN-46</span></div></div><div class="p"><div class="nm">고한결</div><div class="tx">예상 질문 <span class="k">KAN-47</span></div></div><div class="p"><div class="nm">네 명</div><div class="tx">발표 <span class="k">KAN-48</span></div></div></div></article>
       </div></div>
     </div>
     <figure class="jira"><img src="shots/jira-timeline.png" alt="Jira 프로젝트 Floe 타임라인 — 에픽 5개(KAN-25 ~ 29)와 검증과 제출 에픽의 일감 · 담당자"><figcaption>Jira · 에픽 5개 · 일감 76개 · 네 명이 나눠 맡음</figcaption></figure>
   </div>
   <div class="deck-footer"><span class="who">Floe · 1:30 · 누적 8:40</span><span class="slide-number" data-current="14" data-total="25"></span></div>
-  <aside class="notes"><p>협업은 격주 목표로 준비했습니다. 목표마다 <strong>목적</strong>을 먼저 정하고, Jira에 에픽으로 올려 네 명이 일감을 나눠 맡았습니다(오른쪽이 실제 Jira 화면 — 에픽 다섯 개, 펼친 것은 '검증과 제출'의 일감과 담당자).</p><p>왼쪽이 4.5초마다 넘어갑니다. 9월 — 무엇을 왜 만들지 정하고 역할을 나눴습니다. 10월 중순 — 함께 일할 틀과 요구 17개. 설계 · 인터뷰 주 — 어떻게 만들지 정하고 쓸 사람에게 직접 물었습니다. 구현 주 — 꼭 필요한 것만 만들고 11월 1일 앱 11.0으로 멈췄습니다. 검증과 제출 주 — 써 보게 하고 고쳐서 11.3을 냈습니다. 지금은 10분 안에 전하는 단계입니다.</p><p>각 줄의 KAN 번호는 Jira 일감 — 그대로 열어 볼 수 있습니다.</p></aside>
+  <aside class="notes"><p>협업은 여섯 목표 — <strong>아이디어 → 프리 프로토타입 → 프로토타입 → 시연 → 결과 → 발표</strong> — 순으로 준비했습니다. 목표마다 목적을 먼저 정하고, Jira에 에픽으로 올려 네 명이 일감을 나눠 맡았습니다(오른쪽이 실제 Jira 화면).</p><p>왼쪽이 4.5초마다 넘어갑니다. 아이디어(9월) — 무엇을 왜 만들지, 역할 나눔. 프리 프로토타입(10/12 ~ 10/25) — 어떻게 만들지 정하고 쓸 사람에게 직접 물음, 구조 결정 8건. 프로토타입(10/26 ~ 11/1) — 꼭 필요한 것만 만들고 11/1 앱 11.0으로 멈춤. 시연(11/2 ~ 11/7) — 써 보게 하고 영상으로 보임, 앱 11.3. 결과(11/7 ~ 11/8) — 돌아보고 11/8 제출. 발표(11/9 ~ 11/13) — 지금 이 자리.</p><p>각 줄의 KAN 번호는 Jira 일감입니다.</p></aside>
 </section>
 
 <!-- 15 앞으로 — 사업계획서(2026 AI 바이브코딩 아이디어경진대회 · 최종 제출본) 3절을 표로 · 발표 이재엽 -->
