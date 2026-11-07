@@ -1270,7 +1270,9 @@
   // F-161-1(claude-drafted: 2026-11-06 사용자 시험 — 3단계 칸에 키 모양 글을 적은 뒤 5단계 코드 맡기기가 "그 칸을 고친 뒤 다시"만 말하고, 지난 장의 칸은 고칠 길이 없었다).
   //   비밀값 모양이 든 지난 칸(앞 단계부터) → 채팅에서 그 칸을 고친다('먼저' 카드의 지난 칸 고치기와 같은 길). 지금 줄은 가려서 보인다
   //   text — 경고 · 거절의 까닭이 된 글: 그 안에 실제로 든 칸만(새 맥락 리뷰 보완 2 — 관계없는 칸으로 보내지 않게). null이면 아무 칸이나
-  const secretPast = (text) => { for (const [s, r] of Object.entries(st.results || {})) { const k = ((r && r.items) || []).findIndex((x) => sensitive((x.lines || []).join("\n")).length && (text == null || (x.lines || []).some((y) => y && String(text).includes(y)))); if (k >= 0) return { s: Number(s), i: k, name: r.items[k].name, secret: true }; } return null; };
+  //   비교는 공백을 한 칸으로 줄인 뒤 줄의 앞 20자로 — 5단계 맡길 글(build.js)은 공백을 줄이고(norm) 길이를 자른다(cut). 글자 그대로 찾으면 못 찾아 막다른 길로 돌아갔다(2026-11-07 다시 읽다 찾음)
+  const secretPast = (text) => { const nm = (t) => String(t).replace(/\s+/g, " ").trim(), T = text == null ? null : nm(text);
+    for (const [s, r] of Object.entries(st.results || {})) { const k = ((r && r.items) || []).findIndex((x) => sensitive((x.lines || []).join("\n")).length && (T == null || (x.lines || []).some((y) => { const n = nm(y || ""); return n && T.includes(n.slice(0, 20)); }))); if (k >= 0) return { s: Number(s), i: k, name: r.items[k].name, secret: true }; } return null; };
   function fixSecretPast(g) {
     if (!g) return false;
     const at = pastIdx(g), it = st.results[g.s].items[at], line = (it.lines || []).join(" · ");   // 줄이 여럿이면 다 보인다 — 고친 줄이 칸 전체를 바꾼다(보완 4)
@@ -2013,7 +2015,7 @@
     if (!BUILD || !job) return;
     if (!canLive || st.mode === "fixture") return say("연습 모드라 맡기지 않아요 — 진짜 폴더를 연결한 앱에서 돼요");
     if (tw && !(st.blocked && st.blocked.at === tw.at)) return say("맡긴 일이 아직 돌고 있어요 — 끝난 뒤에 맡겨요");   // 막혀 있는 일은 새로 맡기면 끝맺는다(watchTask)
-    const w = sensitive(job.text); if (w.length) { say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요`); return fixSecretPast(secretPast(job.text)) || say("그 칸을 고친 뒤 다시 눌러요"); }   // F-161-1 — 지난 칸이면 채팅에서 바로 고친다
+    const w = sensitive(job.text); if (w.length) { say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요`); return fixSecretPast(secretPast(job.text) || secretPast(null)) || say("그 칸을 고친 뒤 다시 눌러요"); }   // F-161-1 — 지난 칸이면 채팅에서 바로 고친다
     if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "hand";
     const r = await callAI("/api/task/start", { text: job.text, checks: job.checks });
