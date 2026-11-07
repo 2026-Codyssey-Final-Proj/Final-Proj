@@ -255,3 +255,9 @@ test("말풍선 점은 처음 설정을 앞으로 넘길 때 줄지 않는다 �
   ];
   for (const p of paths) { const ns = p.map(dot); for (let i = 1; i < ns.length; i++) assert.ok(ns[i] >= ns[i - 1], `점 ${ns.join(" → ")}`); }
 });
+
+// claude-drafted: 2026-11-07 — F-166-1. 준비 끝의 안내는 저장소 만들기 칸이 있으면 그 칸에 먼저 초점 — 시작하기에 초점이 가면 Enter 한 번에 GitHub 저장소가 맡겨졌다
+test("준비 끝 안내의 초점은 저장소 만들기 칸이 먼저, 없으면 시작하기", () => {
+  const t = U.coachSteps({ app: true, platform: "Win32" });
+  assert.match(t["su-done"].focus, /^#floe-setup \[data-s="makerepo"\], #floe-setup \[data-s="done"\]$/);
+});

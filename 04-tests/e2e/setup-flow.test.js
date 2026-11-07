@@ -168,6 +168,10 @@ test("새로 만들기면 준비 끝에서 GitHub 저장소도 만들지 묻고(
     assert.ok(await page.$(".su-repo"), "저장소도 만들지 묻는다");
     assert.equal(await page.$eval('.su-repo input[data-s="makerepo"]', (e) => e.checked), true);
     assert.equal(await page.$eval('[data-s="repovis"][data-v="private"]', (e) => e.getAttribute("aria-pressed")), "true");
+    // F-166-1(2026-11-07 사용자 시험 셋째, claude-drafted): 저장소 만들기가 켜져 있으면 Enter로 시작하기가 눌리지 않는다 — 이름 칸 Enter 뒤 Enter 두 번(다음 → 시작하기)이면 확인 없이 맡겨졌다
+    assert.equal(await page.$('[data-s="done"] kbd'), null, "시작하기에 Enter 표시가 없다");
+    await page.evaluate(() => document.querySelector("#su-title").focus()); await page.keyboard.press("Enter"); await wait(300); await page.keyboard.press("Enter"); await wait(500);
+    assert.ok(await page.$("#floe-setup"), "Enter로는 닫히지 않는다"); assert.deepEqual(seen.create, [], "Enter로는 저장소를 맡기지 않는다");
     await click(page, '[data-s="done"]');
     await page.waitForFunction(() => true); await wait(500);
     assert.deepEqual(seen.create, [{ visibility: "private" }]);
