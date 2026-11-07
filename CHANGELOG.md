@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v66.13 | 2026-11-07 | 임유정 | 처음 설정 안내에서 뒤로 단추가 눌리지 않던 것 (F-162) · GitHub 칸에서 말풍선 점이 3개에서 2개로 줄던 것 (F-163) (#352) | `02-frontend/navigator/` · `04-tests/navigator/` · `04-tests/known-failures.json`(F-102 기한 11/14 · F-164 다섯 더함) · `01-docs/07-maintenance/` |
 | v66.12 | 2026-11-07 | 이재엽 | 외부 도구 표 — 후보 넷(vibe-coding-skills · Superpowers 다섯 · AgentBrowser · Graphify)에 이재엽 개인 설치와 고친 곳 · 뺀 것을 적고, html-ppt 줄의 설치 경로를 공용 폴더 + 링크로 바로잡음 (#351) | `01-docs/catalog/external-tools.md` |
 | v66.11 | 2026-11-07 | 두승현 | 발표 덱 시간 맞추기 — 기능 여섯 장을 둘로 합쳐 본문 21장, 장마다 시간 · 누적(합 10:00), 부록 장 번호 다시 매김, + − 0 키로 글자 크기 조절 (KAN-14) (#350) | `01-docs/04-pattern-implementation/presentation-10min/`(담당 고한결 — 이 줄이 알림) |
 | v66.10 | 2026-11-07 | 이재엽 | 외부 도구 표에 html-ppt — 발표 덱(#346)이 이미 쓰는 사본과 이재엽 개인 설치, 밖으로 나가는 것(Google Fonts · jsdelivr)과 쓸 때 주의 (#348) | `01-docs/catalog/external-tools.md` |
