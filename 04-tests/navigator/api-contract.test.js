@@ -527,7 +527,7 @@ test("POST /api/quest(C-22): {ok, quest:{desc, why, qa[]}, tokens} — qa는 그
   assert.equal(l.json.quest.qa.length, Nav.criteriaFor(1, "Lite").length);
 });
 
-test("POST /api/quest(C-22): 거절 — 빈 idea · IDEA_MAX + 1자(F-165 — 8,001자) · 없는 단계 · 모르는 등급은 400(AI를 부르기 전), 개수가 다르거나 칸이 빈 답은 502 '퀘스트 형식이 맞지 않음'", async () => {
+test("POST /api/quest(C-22): 거절 — 빈 idea · IDEA_MAX + 1자(F-167 — 8,001자) · 없는 단계 · 모르는 등급은 400(AI를 부르기 전), 개수가 다르거나 칸이 빈 답은 502 '퀘스트 형식이 맞지 않음'", async () => {
   assert.equal((await post({ route: "/api/quest", body: { idea: "", stage: 0 } })).status, 400);
   assert.equal((await post({ route: "/api/quest", body: { idea: "가".repeat(Nav.IDEA_MAX + 1), stage: 0 } })).status, 400);
   assert.equal((await post({ route: "/api/quest", body: { idea: "앱", stage: 8 } })).status, 400);

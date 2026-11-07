@@ -105,7 +105,7 @@ test("source — 받은 글 전부를 docs/00-source/idea.md에(줄 번호 · �
   const idea = f.find((x) => x.path === "docs/01-idea/idea.md").text, prd = f.find((x) => x.path === "docs/PRD.md").text;
   assert.match(idea, /통째로: \[00-source\/idea\.md\]\(\.\.\/00-source\/idea\.md\) 1 ~ 30줄/, "1단계 문서는 줄로 가리킨다"); assert.match(prd, /\[00-source\/idea\.md\]\(00-source\/idea\.md\) 1 ~ 30줄/);
   assert.ok(!idea.includes("30번째 줄"), "1단계 문서에는 앞 400자만");
-  const same = D.files({ topic: "앱", results: RESULTS, idea: long, source: long });   // F-165 — idea도 받은 글 그대로(8,000자까지)일 때
+  const same = D.files({ topic: "앱", results: RESULTS, idea: long, source: long });   // F-167 — idea도 받은 글 그대로(8,000자까지)일 때
   assert.ok(same.some((x) => x.path === "docs/00-source/idea.md"), "idea가 source와 같아도 400자를 넘으면 통째 파일");
   assert.ok(!same.find((x) => x.path === "docs/01-idea/idea.md").text.includes("30번째 줄"), "문서에는 여전히 앞 400자만(D.IDEA_DOC)");
   assert.equal(D.IDEA_DOC, 400);

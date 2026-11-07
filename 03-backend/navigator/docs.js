@@ -119,9 +119,9 @@
   }
 
   // 사용자 저장소에 둘 파일 — [{ path, text, merge? }]. merge면 그 파일의 글에 mergeSection으로 한 절만
-  // F-68(2026-10-28, 이재엽 버튼 "통째로 파일에"): source(받은 글 전부)가 idea(IDEA_MAX — F-165부터 8,000자)보다 길면 docs/00-source/idea.md에 줄 번호와 함께 통째로 두고, 1단계 문서 · 기획서는 그 파일을 줄로 가리킨다. 가림(redact)을 거친다
+  // F-68(2026-10-28, 이재엽 버튼 "통째로 파일에"): source(받은 글 전부)가 idea(IDEA_MAX — F-167부터 8,000자)보다 길면 docs/00-source/idea.md에 줄 번호와 함께 통째로 두고, 1단계 문서 · 기획서는 그 파일을 줄로 가리킨다. 가림(redact)을 거친다
   const SOURCE_DOC = "docs/00-source/idea.md";
-  const IDEA_DOC = 400;   // 1단계 문서 · 기획서에 옮기는 '처음 말한 것'의 앞 글자 수 — idea는 F-165부터 8,000자라, 넘는 글은 통째 파일(SOURCE_DOC)이 맡는다
+  const IDEA_DOC = 400;   // 1단계 문서 · 기획서에 옮기는 '처음 말한 것'의 앞 글자 수 — idea는 F-167부터 8,000자라, 넘는 글은 통째 파일(SOURCE_DOC)이 맡는다
   const sourceDoc = (text, name) => { const lines = text.replace(/\r\n?/g, "\n").replace(/\n$/, "").split("\n"), w = String(lines.length).length;
     return `# 처음 말한 것 — 받은 글 그대로${name ? ` (${name})` : ""}\n\nFloe가 받은 글을 자르지 않고 그대로 두었어요. 단계 문서의 '처음 말한 것'은 이 파일의 줄을 가리켜요. 비밀값 모양은 가렸어요.\n\n${lines.map((l, i) => `${String(i + 1).padStart(w)} | ${l}`).join("\n")}\n`; };
   const CARD_DOC = "docs/base.md";   // 기준 카드 한 장(C-56 R-1) — Floe가 만든 카드라 덮어쓴다. 이름은 영문(파일 이름 규칙 — 받은 글이 경로가 되지 않게 A-Za-z0-9._/-만), 제목은 '이 프로젝트의 기준'

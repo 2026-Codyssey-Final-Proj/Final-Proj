@@ -96,7 +96,7 @@ test("본문 모양 — 단계 · 등급 · 대화(마지막은 사람, 40줄 ·
   refused(await chat({ stage: 2, talk: Array.from({ length: 9 }, () => ({ who: "me", text: "가".repeat(900) })) }), 400, /대화가 너무 김/);
   refused(await chat({ stage: 2, tier: "Xpress", talk: TALK, lines: [[]] }), 400, /적은 줄의 모양이 맞지 않음/, "칸 수가 다르다");
   refused(await chat({ stage: 2, tier: "Xpress", talk: TALK, lines: LINES.map((l, i) => (i ? l : ["가".repeat(401)])) }), 400, /적은 줄의 모양이 맞지 않음/);
-  refused(await chat({ stage: 2, talk: TALK, idea: "가".repeat(Nav.IDEA_MAX + 1) }), 400, /처음 말한 것/);   // F-165 — 처음 입력과 같은 길이까지
+  refused(await chat({ stage: 2, talk: TALK, idea: "가".repeat(Nav.IDEA_MAX + 1) }), 400, /처음 말한 것/);   // F-167 — 처음 입력과 같은 길이까지
   refused(await chat({ stage: 2, tier: "Xpress", talk: TALK, prev: [{ stage: 5, items: [] }] }), 400, /지난 단계 결과의 모양/);
 });
 

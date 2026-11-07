@@ -148,7 +148,7 @@ test("꾸미기: 같은 자리를 다시 고르면 벗는다, 모르는 아이�
 
 test("퀘스트 제작 요청문(navigator.js questPrompt): 말한 것 · 번호 1~8 · 할 일 개수 · 플로로 말투가 들어가고, parseQuest는 개수가 다르거나 칸이 비면 null", () => {
   const p = Nav.questPrompt(0, "독서 모임 알림 앱", "Full");
-  assert.equal(p.split("독서 모임 알림 앱").length - 1, 1, "말한 것은 <만들고싶은것> 태그 안에 한 번만 — 지시문에 다시 넣지 않는다(F-165, 길어진 글이 두 번 가지 않게)");
+  assert.equal(p.split("독서 모임 알림 앱").length - 1, 1, "말한 것은 <만들고싶은것> 태그 안에 한 번만 — 지시문에 다시 넣지 않는다(F-167, 길어진 글이 두 번 가지 않게)");
   assert.ok(p.includes("독서 모임 알림 앱") && p.includes("1단계") && p.includes(`${Nav.criteriaFor(0).length}개`) && p.includes(Nav.FLORO_VOICE));
   assert.ok(p.includes("<만들고싶은것>"), "넘길 글은 꼬리표 안에");
   const good = { desc: "설명", why: "왜", qa: Nav.criteriaFor(0).map(() => ({ question: "무엇을?", examples: ["예", "예2", "예3", "예4"] })) };
@@ -158,7 +158,7 @@ test("퀘스트 제작 요청문(navigator.js questPrompt): 말한 것 · 번호
   assert.equal(Nav.parseQuest({ ...good, desc: " " }, 0, "Full"), null);
   assert.equal(Nav.parseQuest({ ...good, qa: good.qa.map((x) => ({ ...x, examples: [] })) }, 0, "Full"), null);
   assert.ok(Nav.parseQuest({ ...good, qa: Nav.criteriaFor(0, "Lite").map(() => ({ question: "q", examples: ["e"] })) }, 0, "Lite"), "등급의 개수로");
-  assert.equal(Nav.IDEA_MAX, Nav.START_MAX, "처음 받은 글은 다음 장에서도 자르지 않는다 — 처음 입력이 받는 길이와 같다(F-165)"); assert.ok(Nav.QUEST_SCHEMA.required.includes("qa"));
+  assert.equal(Nav.IDEA_MAX, Nav.START_MAX, "처음 받은 글은 다음 장에서도 자르지 않는다 — 처음 입력이 받는 길이와 같다(F-167)"); assert.ok(Nav.QUEST_SCHEMA.required.includes("qa"));
 });
 
 // C-56 R-2(2026-10-28): 칸의 이름 — 초안에 이 프로젝트의 말로 된 이름(title)이 있으면 그것, 없으면 짧은 이름. 방법 이름은 꼬리표(termOf)

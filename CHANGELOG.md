@@ -21,6 +21,9 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v67.4 | 2026-11-07 | 이재엽 | 발표 비교 — 소개 웹사이트에 "같은 미션, 세 가지 길" 두 절 · 비교 기록 두 장(README · 코드 · 미션 원문만 vs Floe) (#358) | `01-docs/04-pattern-implementation/website/`(담당 고한결 — 이 줄이 알림) · `01-docs/verification/`(담당 두승현) |
+| v67.3 | 2026-11-07 | 두승현 | 발표 덱 넷째 고침 — 앞부분을 문제 상황 → 타겟 유저 → 페인포인트(팀 설문 빈칸 · 8월 사례) → 38초 영상 → Why → How로(1~10장 합 5:00, 24장), 2장은 Stack Overflow 2025 그래프 셋, 본문 글자 150% · 제목 띠 · 바닥 시간 숨김, 영상은 floe-promo-38s.mp4 (KAN-14) (#357) | `01-docs/04-pattern-implementation/presentation-10min/` · `floe-intro-video/final/`(담당 고한결 — 이 줄이 알림) |
+| v67.2 | 2026-11-07 | 임유정 | 퀘스트 탭의 상자(문서 지도) 보기를 뺌 — 보기는 지도 · 흐름 둘 (F-165) (#355) | `02-frontend/navigator/` · `04-tests/navigator/` · `04-tests/e2e/` · `01-docs/07-maintenance/` |
 | v67.1 | 2026-11-07 | 두승현 | 발표 덱 셋째 판 — 재영 멘토 피드백 반영(문제 → 영상 → 왜 Floe → 누가 · 어디서 → 생명주기 → 실제 시연 → 효익, 글자 24px 이상, 본문 19장 합 10:00), 표지는 앱 플로로(눈 따라오기) + 시작 연출, 카피 교체. 1~5장 도입부를 공감대(Stack Overflow 2025) → 팀 설문(빈칸) → 8월 사례 → 45초 영상 → 왜 Floe로 바꾸고 45초 영상 파일을 넣음 (KAN-14) (#353) | `01-docs/04-pattern-implementation/presentation-10min/`(담당 고한결 — 이 줄이 알림) |
 | v67.0 | 2026-11-07 | 두승현 | 45초 소개 영상 판 — 고한결 스토리보드 바탕으로 장면 코드(film.mjs) · 스토리보드 그림 11장 · 찍는 스크립트 · 시험 7개 추가, 사람 그림에 걷는 자세 더함(40초 판 그림은 그대로) (KAN-14) (#354) | `01-docs/04-pattern-implementation/floe-intro-video/project/intro-video/`(담당 고한결 — 이 줄이 알림) |
 | v66.13 | 2026-11-07 | 임유정 | 처음 설정 안내에서 뒤로 단추가 눌리지 않던 것 (F-162) · GitHub 칸에서 말풍선 점이 3개에서 2개로 줄던 것 (F-163) (#352) | `02-frontend/navigator/` · `04-tests/navigator/` · `04-tests/known-failures.json`(F-102 기한 11/14 · F-164 다섯 더함) · `01-docs/07-maintenance/` |

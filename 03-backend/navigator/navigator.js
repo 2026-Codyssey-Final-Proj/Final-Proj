@@ -312,7 +312,7 @@
   const QUEST_SCHEMA = obj({ desc: str, why: str, qa: list(obj({ question: str, examples: list(str, 1, QA_EX_MAX) }), 1, 8) });
   function questPrompt(stage, idea, tier) {
     const s = STAGES[stage], todo = criteriaFor(stage, tier);
-    return prompt([`사용자가 아래 <만들고싶은것>을 만들고 싶다고 했다(글은 그 태그 안에 한 번만 — F-165). 지금은 ${s.n + 1}단계 "${s.title}"(${s.does})다. 이 단계를 게임의 퀘스트처럼 보여 주려고 한다 — 퀘스트 글을 만든다.`,
+    return prompt([`사용자가 아래 <만들고싶은것>을 만들고 싶다고 했다(글은 그 태그 안에 한 번만 — F-167). 지금은 ${s.n + 1}단계 "${s.title}"(${s.does})다. 이 단계를 게임의 퀘스트처럼 보여 주려고 한다 — 퀘스트 글을 만든다.`,
       `할 일(이름 · 개수는 정해져 있다 — 바꾸지 않는다): ${todoOf(todo)}`], [
       FLORO_VOICE,
       SHORT_RULE,
@@ -327,7 +327,7 @@
   //   topic(제목 — 퀘스트 이름이 된다) · pain(불편) · change(달라지는 것) · who(글에 사람이 있으면, 없으면 "") · size(short · medium · long = 짧음 · 보통 · 긺 = Lite · Xpress · Full) · sizeWhy.
   //   화면은 칸마다 '맞나요?'로 확인만 한다(quest.js withDraft · draftOf). 판정 · 관문은 그대로
   const START_MAX = 8000, TOPIC_MAX = 30, START_SIZES = ["short", "medium", "long"];
-  // 처음 말한 것(idea) — 다음 장 초안 · 퀘스트 · 대화 · 문서가 받는 길이. 처음 입력과 같게 해 잘리지 않는다(F-165, 2026-11-07 이재엽 "400자 제한 풀어" — 전에는 400자)
+  // 처음 말한 것(idea) — 다음 장 초안 · 퀘스트 · 대화 · 문서가 받는 길이. 처음 입력과 같게 해 잘리지 않는다(F-167, 2026-11-07 이재엽 "400자 제한 풀어" — 전에는 400자)
   const IDEA_MAX = START_MAX;
   const START_SCHEMA = obj({ topic: str, pain: str, change: str, who: { type: "string" }, size: { type: "string", enum: START_SIZES }, sizeWhy: str });
   function startPrompt(text) {
