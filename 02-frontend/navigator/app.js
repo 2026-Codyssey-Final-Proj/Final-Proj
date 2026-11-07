@@ -1903,17 +1903,19 @@
   const fileTabs = () => st.openFiles.map((f, k) => `<span class="ftab${f.dirty ? " dirty" : ""}"><button type="button" role="tab" data-act="ftab" data-v="${k}" aria-selected="${st.qtab === "file" && st.fileSel === k}" title="${esc(f.path)}">${esc(f.name)}${f.dirty ? " •" : ""}</button><button type="button" class="ftab-x" data-act="fclose" data-v="${k}" aria-label="${esc(f.name)} 닫기" title="닫기">×</button></span>`).join("");
   async function openFile(i) {
     const n = Number(i), x = st.files && st.files.list && st.files.list[n]; if (!x || x.dir) return;
+    // claude-drafted: 2026-11-07 — 문서가 열리면 섬은 옆 칸으로(임유정 2026-11-07) — 섬이 가운데(islBig)면 문서 칸(.wbody)이 CSS로 숨어 연 문서가 안 보였다. 열지 못하면 그대로
+    const show = (k) => { st.fileSel = k; st.qtab = "file"; st.islBig = false; render(); };
     const k = st.openFiles.findIndex((f) => f.path === x.path);
-    if (k >= 0) { st.fileSel = k; st.qtab = "file"; return render(); }
+    if (k >= 0) return show(k);
     try {
       const r = await (await fetch(`/api/file?i=${n}`, { cache: "no-store" })).json();
       if (!r || !r.ok) return say(`'${x.name}'은 열지 않았어요 — ${(r && r.reason) || "서버가 답하지 않았어요"}`);
       const again = st.openFiles.findIndex((f) => f.path === r.path);   // 기다리는 동안 같은 파일이 열렸으면(빠른 두 번 누름) 그 탭으로 — 탭 둘이면 한쪽 저장 뒤 다른 쪽 409(F-103-6)
-      if (again >= 0) { st.fileSel = again; st.qtab = "file"; return render(); }
+      if (again >= 0) return show(again);
       if (st.openFiles.length >= 12) return say("연 파일이 12개예요 — 하나를 닫고 열어요");   // 저장 이력(20번 × 512KB)이 파일 수만큼 늘지 않게(새 맥락 리뷰)
       const text = r.text.replace(/\r\n/g, "\n");   // 글 칸은 LF — 저장할 때 eol로 되돌린다(CRLF 파일이 LF로 바뀌지 않게)
       st.openFiles.push({ i: n, path: r.path, name: r.name, kind: r.kind, eol: r.eol || "lf", text, saved: text, mtime: r.mtime, changed: r.changed, dirty: false, edit: false, raw: false, hist: [], note: null });
-      st.fileSel = st.openFiles.length - 1; st.qtab = "file"; render();
+      show(st.openFiles.length - 1);
     } catch { say("서버에 닿지 않았어요"); }
   }
   async function reloadFile(k) {
@@ -2095,7 +2097,7 @@
     "preset-pick": () => {},
     // 파일 보기 · 고치기(C-43)
     "fn-open": (i, el) => { if (el && el.dataset.v !== undefined) openFile(el.dataset.v); },
-    ftab: (i, el) => { const k = Number(el && el.dataset.v); if (st.openFiles[k]) { st.fileSel = k; st.qtab = "file"; render(); } },
+    ftab: (i, el) => { const k = Number(el && el.dataset.v); if (st.openFiles[k]) { st.fileSel = k; st.qtab = "file"; st.islBig = false; render(); } },   // claude-drafted: 2026-11-07 — 섬은 옆 칸으로(qtab과 같다)
     fclose: (i, el) => { const k = Number(el && el.dataset.v), f = st.openFiles[k]; if (!f) return; if (f.dirty && !f.closing) { f.closing = true; f.note = { kind: "ask", text: "고친 것을 저장하지 않았어요 — 한 번 더 닫기를 누르면 버려요", acts: [["저장", "fsave"], ["그냥 둘게요", "fnote-x"]] }; st.fileSel = k; st.qtab = "file"; return render(); } st.openFiles.splice(k, 1); if (k < st.fileSel) st.fileSel--; if (st.fileSel >= st.openFiles.length) st.fileSel = st.openFiles.length - 1; if (st.fileSel < 0) st.qtab = "quest"; render(); },
     fedit: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.edit = !f.edit; render(); } },
     fraw: (i, el) => { const f = st.openFiles[Number(el && el.dataset.v)]; if (f) { f.raw = !f.raw; render(); } },
@@ -4306,7 +4308,7 @@
     },   // 퀘스트 창의 ×(닫기만 — 옆 창에서 두 번 눌러도 다시 열리지 않게)
     "qwin-toggle": () => { if (st.qwin) return closeQwin(); openQwin("quest"); render(); },   // 위 줄의 '퀘스트' 단추(C-35, 이재엽 그림 2026-10-24) — 작업실은 퀘스트 탭부터(캔버스 탭은 2026-11-02 뺌)
     "qwin-quest": () => { openQwin("quest"); set({ questUp: true }); }, "qwin-tree": () => { openQwin("quest"); render(); },   // 섬 칩 '퀘스트 보기' — 합친 탭을 열고 카드를 올린다(C-65) "qwin-lib": () => { openQwin("lib"); render(); },
-    qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },
+    qtab: (i, el) => { set({ qtab: (el && el.dataset.tab) || "quest", islBig: false, libSel: null, libConfirm: false, libDoc: null }); if (st.qtab === "lib") loadReadme(); },   // claude-drafted: 2026-11-07 — 탭을 누르면 섬은 옆 칸으로(임유정: 크게일 때는 작업실 판이 숨어 화면이 그대로였다)
     "set-tab": (i, el) => { setTab = (el && el.dataset.tab) || "room"; render(); },
     // 기본 화면(C-13, 2026-10-20) — 집 · 바이브 코딩 · 알림 판 · AI 진행 판 · 단추로 돌아가기
     base: () => { setPlace("home"); set({ settings: false, pane: "" }); },   // 집 — 기본 화면으로, 열어 둔 판도 닫는다
