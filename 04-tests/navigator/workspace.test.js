@@ -99,7 +99,7 @@ test("app.js — R-8 파일 칸: 작업실을 열 때 /api/files를 받아 진�
 test("app.js — R-10: landed는 gateRules를 거친다(빈칸 · 증거 — 그 장의 줄과 Claude Code 파일 기록), 보고한 뒤 '안 됨'이 남으면 멈춤 카드(채우러 가기 · 까닭 적고 넘기기), 넘기면 까닭과 함께 '됨'으로 · 결과의 check도 최신 판정으로", () => {
   const a = read("navigator/app.js");
   assert.match(a, /function landed\(j0, tokens, sent = st\.text, checkBy = ""\) \{\n\s+const j = gateApply\(j0\);/, "판정 뒤 코드 규칙");
-  assert.match(a, /const workEvidence = \(\) => \{ if \(st\.mode === "fixture"\) return true; if \(aiMode !== "live"\) return false; const s = latestSession\(\);/, "증거 = 진짜 세션의 파일 기록만, 연습은 면제(이재엽 버튼 2026-10-27)");
+  assert.match(a, /const workEvidence = \(\) => \{ if \(st\.mode === "fixture"\) return true; if \(aiMode !== "live"\) return false; return N\.workSeen \? N\.workSeen\(mine\(\), st\.workSince\) : false; \};/, "증거 = 진짜 세션의 파일 기록만(이 단계를 시작한 뒤 세션 전부 — F-166-2), 연습은 면제(이재엽 버튼 2026-10-27)");
   assert.match(a, /!holding\(\) && !st\.openInput && left\(\) > 0\);/, "멈춰 둔 단계 · 글 칸 연 동안은 멈춤 카드가 서지 않는다");
   assert.match(a, /N\.gateRules\(j, \{ lines: q \? q\.objs\.map\(\(_, i\) => \(q\.lines\[i\] \|\| \[\]\)\.join\(" \/ "\)\) : \[\], work: workEvidence\(\) \}\)/);
   assert.match(a, /if \(gateStop\(\)\) return momentStop\(\);/, "멈춤 카드가 먼저");
@@ -125,4 +125,20 @@ test("app.js · app.css — F-67 파일 칸이 폴더 트리처럼: 꺾쇠 · �
   assert.match(c, /\.wnav \.fn \.chev-w\.on svg\{transform:rotate\(90deg\)\}/);
   assert.match(c, /\.wnav \.fn li\.d2::before,\.wnav \.fn li\.d3::before,\.wnav \.fn li\.d3::after\{content:"";position:absolute;/, "깊이마다 안내선");
   assert.match(c, /\.wnav \.fn li\.dir button\{all:unset;cursor:pointer;min-height:44px;/, "누르는 곳 44px 그대로");
+});
+
+// claude-drafted: 2026-11-07 — F-166-2(사용자 시험 셋째): 뼈대 코드를 만든 뒤 돈 문서 올리기 · 돌려 보기(파일을 안 고침)가 가장 최근 세션이 되어 '증거 없음'으로 막혔다
+test("관문 증거(workSeen) — 이 단계를 시작한 뒤의 세션 전부에서 파일 고침을 찾는다(가장 최근 세션 하나가 아니라)", () => {
+  const N = require("../../03-backend/navigator/navigator.js");
+  const build = { at: 300, steps: [{ at: 200, what: "dues.py", add: 40, del: 0 }] }, run = { at: 400, steps: [{ at: 390, what: "python3 dues.py", add: 0, del: 0 }] };
+  assert.equal(N.workSeen([run, build], 100), true, "뒤에 돈 돌려 보기가 앞의 코드 고침을 가리지 않는다");
+  assert.equal(N.workSeen([run], 100), false, "파일을 안 고친 세션만이면 증거가 아니다");
+  assert.equal(N.workSeen([run, build], 250), false, "이 단계를 시작하기 전의 고침은 세지 않는다");
+  assert.equal(N.workSeen([build], 0), true, "시작 때를 모르면(옛 저장) 때를 따지지 않는다");
+  assert.equal(N.workSeen(null, 0), false);
+  const a = read("navigator/app.js");
+  assert.match(a, /libDoc: null, workSince: Date\.now\(\) \}\);/, "관문을 지날 때 다음 단계의 시작 때를 적는다");
+  assert.ok(a.includes('"workSince"];'), "시작 때는 저장된다(껐다 켜도)");
+  assert.match(a, /n >= 4 && n <= 6 \? \[\{ label: "돌려 보기", act: "run-go"/, "5단계에도 돌려 보기");
+  assert.match(a, /say\(gateFillSay\(\)\)/, "채우러 가기는 빠진 증거를 말한다");
 });

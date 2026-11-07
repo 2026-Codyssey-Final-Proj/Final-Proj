@@ -249,7 +249,7 @@
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const CHAT_KEY = `${KEY}:chat`;   // C-63 — 연습 모드의 대화는 따로 저장(넘쳐도 다른 저장을 막지 않게 — 새 맥락 리뷰)
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card"];   // prep — 준비된 퀘스트(C-54)
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card", "workSince"];   // workSince — 이 단계를 시작한 때(관문 증거, F-166-2)   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   let saveWarned = false;   // 저장 칸이 가득 찼다고 이미 알렸나(F-124) — 다시 저장되면 풀린다
   // 기능 조각이 저장할 것을 더한다(새 기능은 KEEP 한 줄 대신 자기 조각 맨 위에서 — 2026-10-29 나누기 2차). load는 이미 지나갔으니
@@ -2008,7 +2008,7 @@
   const nowStage = () => (st.quest && st.quest.phase !== "done" ? st.quest.chap : st.finished ? N.STAGES.length - 1 : atStage());
   // 5단계 '뼈대 코드 맡기기' · 6단계 '기능 줄 맡기기' · 6 · 7단계 '돌려 보기'(A-02 — 퀘스트 안의 버튼). 진짜 폴더 · 진짜 AI 모드에서만
   const buildActs = (n) => (!BUILD || !canLive || st.mode === "fixture" ? [] : [...(n === 4 ? [{ label: "뼈대 코드 맡기기", act: "build-skeleton", kind: "soft" }] : []),
-    ...(n === 5 ? [{ label: "기능 줄 맡기기", act: "line-open", kind: "soft" }] : []), ...(n === 5 || n === 6 ? [{ label: "돌려 보기", act: "run-go", kind: "ghost" }] : [])]);
+    ...(n === 5 ? [{ label: "기능 줄 맡기기", act: "line-open", kind: "soft" }] : []), ...(n >= 4 && n <= 6 ? [{ label: "돌려 보기", act: "run-go", kind: "ghost" }] : [])]);   // 5단계(n 4)도 — '도는지 확인'에서 막혔는데 돌려 볼 단추가 없었다(F-166-2)
   const BUILD_SAID = { build: "뼈대 코드를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 '허용'을 눌러 주세요", code: "실행할 수 있는 코드를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 '허용'을 눌러 주세요",
     line: "이 기능 줄을 Claude Code에 맡겼어요 — 허락 카드가 뜨면 '허용'을 눌러 주세요", run: "돌려 보기를 Claude Code에 맡겼어요 — 명령 허락 카드가 뜨면 '허용'을 눌러 주세요" };
   async function buildGo(kind, job, extra = {}) {
@@ -3910,7 +3910,9 @@
   //   checkBy — 완료 기준을 누가 봤나(C-40 confirm — 초안을 칸마다 확인한 대로). 그 보고에만 붙는다(2026-10-26 리뷰 — 전역 값이 실패 뒤 다음 판정에 남을 수 있었다)
   // R-10(C-42 · F-60, 2026-10-27): 판정이 오면 코드 규칙(navigator.js gateRules)을 한 번 더 — 빈칸 표시 · 증거(그 장의 줄과 Claude Code가 파일을 고친 기록). 확인한 대로(C-40)도 같다
   //   증거는 진짜 세션(aiMode live)의 파일 기록만 — 서버 없이 열면 예시 세션이라 증거가 아니다. 연습 모드(fixture)는 증거 면제(빈칸 표시 규칙만 — 이재엽 버튼 2026-10-27 "연습은 증거 면제")
-  const workEvidence = () => { if (st.mode === "fixture") return true; if (aiMode !== "live") return false; const s = latestSession(); return !!(s && (s.steps || []).some((x) => x.what && (x.add || x.del))); };
+  //   F-166-2(2026-11-07 사용자 시험 셋째): 가장 최근 세션 하나만 보면 뼈대 코드를 만든 뒤 돈 문서 올리기 · 돌려 보기(파일을 안 고침)가 그 기록을 가려 늘 '증거 없음'이었다 —
+  //   이 단계를 시작한 뒤(st.workSince, 관문을 지날 때 적는다)의 이 폴더 세션 전부에서 찾는다. 옛 저장(시작 때를 모름)이면 때를 따지지 않는다
+  const workEvidence = () => { if (st.mode === "fixture") return true; if (aiMode !== "live") return false; return N.workSeen ? N.workSeen(mine(), st.workSince) : false; };
   const gateApply = (j) => { if (!j || !N.gateRules) return j; const q = st.quest && st.quest.chap === j.stage ? st.quest : null; const g = N.gateRules(j, { lines: q ? q.objs.map((_, i) => (q.lines[i] || []).join(" / ")) : [], work: workEvidence() });
     if (!q || !QS) return g;   // C-56: 건너뛴 칸의 기준은 넘김(까닭을 결정 기록 · 문서로, F-62와 같은 줄), 먼저인 칸은 '안 됨'(관문 닫힘)
     // 지금 장의 줄(기능 수 등)을 사실에 넣는다 — 첫 판정 때는 아직 st.results에 없다(새 맥락 리뷰 2026-10-28 막힘)
@@ -4037,7 +4039,7 @@
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`, at: ymd(),   // at — 세션별 보기(C-3, my-books.js dated)가 읽는다(2026-10-20). 옛 기록은 글 끝의 날짜로
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
         last ? ` · 확인 질문 ${last.ok ? "맞힘" : "정답 보고 넘어감"}` : ""} · ${ymd()}` });
-    Object.assign(st, { screen: "main", notice: "", ping: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null });
+    Object.assign(st, { screen: "main", notice: "", ping: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null, workSince: Date.now() });   // workSince — 다음 단계의 관문 증거는 이때부터(F-166-2)
     if (nx) st.j = { stage: nx.n, reason: `${LB(s.n)}를 마쳤어요! 이제 ${LB(nx.n)} "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;   // F-153의 st.ping = ""은 위 Object.assign의 ping: ""이 맡는다(F-157-7)
@@ -4086,6 +4088,14 @@
   const set = (patch) => { Object.assign(st, patch); render(); };
   // 헷갈린 곳 고르기/빼기 (PC 단추·iPhone 체크 상자)
   const toggleHard = (i, on = !st.hard.includes(i)) => set({ hard: on ? [...new Set([...st.hard, i])].sort() : st.hard.filter((x) => x !== i) });
+  // F-166-2 — '채우러 가기'의 말: 빠진 것이 증거(관문 규칙 why: evidence)면 카드의 칸이 아니라 그 증거를 말한다 — 전에는 카드에 '안 됨' 표시가 없는데 "'안 됨'인 칸을 고치세요"였다
+  function gateFillSay() {
+    const ev = st.j && Array.isArray(st.j.criteria) ? st.j.criteria.filter((c) => !c.met && c.why === "evidence") : [];
+    if (!ev.length) return "퀘스트 카드에서 '안 됨'인 칸을 고치고 다시 완료 보고를 눌러요";
+    const names = ev.map((c) => `'${QU ? QU.shortOf(c.text) : c.text}'`).join(" · ");
+    return st.j.stage === 6 ? `${names}에 잰 숫자가 있어야 해요 — 그 칸에 잰 값을 적고 다시 완료 보고를 눌러요`
+      : `${names}의 증거는 이 단계에서 Claude Code가 파일을 바꾼 기록이에요 — '뼈대 코드 맡기기' · '기능 줄 맡기기'로 만든 뒤 다시 완료 보고를 눌러요. 직접 확인했으면 '까닭 적고 넘기기'도 돼요`;
+  }
   // 공통 누르기 — 기능의 누르기는 그 조각이 Object.assign(ACT, …)로 더한다(00-base의 ACT, 2026-10-29)
   Object.assign(ACT, {
     strip: () => view("enter"),
@@ -4273,7 +4283,7 @@
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
     qwin: () => closeQwin(),
     // R-10 관문 앞 멈춤(2026-10-27)
-    "gate-fill": () => { if (!st.quest) return; st.quest = { ...st.quest, phase: "quest", edit: false }; st.skip = null; openQwin("quest"); set({ questUp: true }); say("퀘스트 카드에서 '안 됨'인 칸을 고치고 다시 완료 보고를 눌러요"); },
+    "gate-fill": () => { if (!st.quest) return; st.quest = { ...st.quest, phase: "quest", edit: false }; st.skip = null; openQwin("quest"); set({ questUp: true }); say(gateFillSay()); },
     "gate-skip": () => { st.skip = { reason: "" }; render(); },
     "goal-same": () => set({ goalDraft: st.goalDraft && st.goalDraft.same ? null : { same: true } }),   // C-47 처음 뜻 — 다시 누르면 고르지 않음
     "goal-changed": () => set({ goalDraft: st.goalDraft && st.goalDraft.changed != null ? null : { changed: "" } }),

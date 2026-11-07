@@ -2,6 +2,14 @@
   const set = (patch) => { Object.assign(st, patch); render(); };
   // 헷갈린 곳 고르기/빼기 (PC 단추·iPhone 체크 상자)
   const toggleHard = (i, on = !st.hard.includes(i)) => set({ hard: on ? [...new Set([...st.hard, i])].sort() : st.hard.filter((x) => x !== i) });
+  // F-166-2 — '채우러 가기'의 말: 빠진 것이 증거(관문 규칙 why: evidence)면 카드의 칸이 아니라 그 증거를 말한다 — 전에는 카드에 '안 됨' 표시가 없는데 "'안 됨'인 칸을 고치세요"였다
+  function gateFillSay() {
+    const ev = st.j && Array.isArray(st.j.criteria) ? st.j.criteria.filter((c) => !c.met && c.why === "evidence") : [];
+    if (!ev.length) return "퀘스트 카드에서 '안 됨'인 칸을 고치고 다시 완료 보고를 눌러요";
+    const names = ev.map((c) => `'${QU ? QU.shortOf(c.text) : c.text}'`).join(" · ");
+    return st.j.stage === 6 ? `${names}에 잰 숫자가 있어야 해요 — 그 칸에 잰 값을 적고 다시 완료 보고를 눌러요`
+      : `${names}의 증거는 이 단계에서 Claude Code가 파일을 바꾼 기록이에요 — '뼈대 코드 맡기기' · '기능 줄 맡기기'로 만든 뒤 다시 완료 보고를 눌러요. 직접 확인했으면 '까닭 적고 넘기기'도 돼요`;
+  }
   // 공통 누르기 — 기능의 누르기는 그 조각이 Object.assign(ACT, …)로 더한다(00-base의 ACT, 2026-10-29)
   Object.assign(ACT, {
     strip: () => view("enter"),
@@ -189,7 +197,7 @@
     wear: (i, el) => { if (!QU || !el) return; set({ wear: QU.toggleWear(st.wear, el.dataset.v) }); },
     qwin: () => closeQwin(),
     // R-10 관문 앞 멈춤(2026-10-27)
-    "gate-fill": () => { if (!st.quest) return; st.quest = { ...st.quest, phase: "quest", edit: false }; st.skip = null; openQwin("quest"); set({ questUp: true }); say("퀘스트 카드에서 '안 됨'인 칸을 고치고 다시 완료 보고를 눌러요"); },
+    "gate-fill": () => { if (!st.quest) return; st.quest = { ...st.quest, phase: "quest", edit: false }; st.skip = null; openQwin("quest"); set({ questUp: true }); say(gateFillSay()); },
     "gate-skip": () => { st.skip = { reason: "" }; render(); },
     "goal-same": () => set({ goalDraft: st.goalDraft && st.goalDraft.same ? null : { same: true } }),   // C-47 처음 뜻 — 다시 누르면 고르지 않음
     "goal-changed": () => set({ goalDraft: st.goalDraft && st.goalDraft.changed != null ? null : { changed: "" } }),
