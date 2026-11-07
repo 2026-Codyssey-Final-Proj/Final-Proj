@@ -49,3 +49,25 @@ test("문서를 열지 못하면 — 섬은 가운데 그대로(보일 문서가
   assert.equal(st.qtab, "quest");
   assert.equal(st.islBig, true);
 });
+
+// 위쪽 탭(퀘스트 · 책 · 연 파일 탭)도 같다 — 임유정 2026-11-07 "퀘스트나 책 같은 버튼을 눌렀을 때도 플로로가 우측 사이드탭 크기로"
+//   크게일 때는 작업실 판이 숨어 탭을 눌러도 화면이 그대로였다
+const actSrc = (name) => { const m = a.match(new RegExp(`\\n\\s*${name}: (\\(i, el\\) => \\{[^\\n]*?\\}),(?:\\s*//[^\\n]*)?\\n`)); assert.ok(m, `${name} 손잡이를 찾지 못했어요`); return m[1]; };
+const makeAct = (name, env) => new Function(...Object.keys(env), `return ${actSrc(name)};`)(...Object.values(env));
+const tabEnv = (st) => ({ st, set: (p) => Object.assign(st, p), render() {}, loadReadme() {} });
+
+for (const tab of ["quest", "lib"]) {
+  test(`섬이 크게일 때 위쪽 '${tab}' 탭을 누르면 — 섬은 옆 칸으로`, () => {
+    const st = { qtab: "file", islBig: true };
+    makeAct("qtab", tabEnv(st))(0, { dataset: { tab } });
+    assert.equal(st.qtab, tab);
+    assert.equal(st.islBig, false);
+  });
+}
+
+test("섬이 크게일 때 위쪽의 연 파일 탭을 누르면 — 섬은 옆 칸으로", () => {
+  const st = { qtab: "quest", islBig: null, openFiles: [{ path: "a.md" }], fileSel: -1 };
+  makeAct("ftab", tabEnv(st))(0, { dataset: { v: "0" } });
+  assert.equal(st.fileSel, 0);
+  assert.equal(st.islBig, false);
+});
