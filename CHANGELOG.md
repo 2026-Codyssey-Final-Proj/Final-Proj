@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v66.12 | 2026-11-07 | 이재엽 | 외부 도구 표 — 후보 넷(vibe-coding-skills · Superpowers 다섯 · AgentBrowser · Graphify)에 이재엽 개인 설치와 고친 곳 · 뺀 것을 적고, html-ppt 줄의 설치 경로를 공용 폴더 + 링크로 바로잡음 (#351) | `01-docs/catalog/external-tools.md` |
 | v66.11 | 2026-11-07 | 두승현 | 발표 덱 시간 맞추기 — 기능 여섯 장을 둘로 합쳐 본문 21장, 장마다 시간 · 누적(합 10:00), 부록 장 번호 다시 매김, + − 0 키로 글자 크기 조절 (KAN-14) (#350) | `01-docs/04-pattern-implementation/presentation-10min/`(담당 고한결 — 이 줄이 알림) |
 | v66.10 | 2026-11-07 | 이재엽 | 외부 도구 표에 html-ppt — 발표 덱(#346)이 이미 쓰는 사본과 이재엽 개인 설치, 밖으로 나가는 것(Google Fonts · jsdelivr)과 쓸 때 주의 (#348) | `01-docs/catalog/external-tools.md` |
 | v66.9 | 2026-11-07 | 임유정 | 5단계 코드 맡기기가 비밀값 때문에 거절될 때 그 지난 칸을 못 찾아 막다른 길로 돌아가던 것 — 공백을 맞춰 비교하고, 못 찾으면 비밀값이 든 아무 지난 칸으로 (F-161-1 보완) (#349) | `02-frontend/navigator/` · `04-tests/navigator/` · `01-docs/07-maintenance/` |
