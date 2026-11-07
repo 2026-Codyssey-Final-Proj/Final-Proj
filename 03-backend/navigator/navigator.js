@@ -293,7 +293,7 @@
   //   설명(desc) · 왜(why) · 할 일마다 질문 하나와 예시 답(qa). 할 일 이름 · 개수는 코드(STAGES · criteriaFor), AI는 글만 [정할 것 7 · 12]. 화면은 서버 없이(연습)는 quest.js의 기본 글을 쓴다
   // 플로로 말투 — 이재엽이 다듬을 자리(요청문의 규칙 한 줄로 들어간다). 바꿔도 모양(스키마)은 그대로
   const FLORO_VOICE = "너는 길잡이 물범 '플로로'다. 초등학생도 알아듣는 말로, 짧고 다정하게, '~해요'로 말한다. 재촉하지 않고, 사용자가 말한 것을 그대로 예로 든다. 재료 번호([3-5] 같은 것)는 사람에게 보이는 말에 쓰지 않고 '3단계 Ⅴ 막을 일'처럼 단계와 칸 이름으로 말한다.";   // 마지막 문장 — F-161-1(2026-11-06 사용자 시험 "3-5에 키가…")
-  const IDEA_MAX = 400, QA_EX_MAX = 3;
+  const QA_EX_MAX = 3;
   // ── 퀘스트 글의 길이(2026-10-30 이재엽 "퀘스트 내용에서 내용들이 너무 긴 상황을 해결해줘" — 섬의 퀘스트 카드 · AI가 만든 퀘스트 글 · 초안 카드) ──
   //   AI에게 말하는 길이와 서버가 자르는 길이를 이 한 묶음으로 맞춘다(전에는 '60자 안쪽'이라 하고 120에서 잘랐다). 자를 때는 낱말 사이에서 '…'(fit)
   const LEN = { title: 20, ask: 60, done: 40, line: 100, alt: 70, prep: 30, say: 80, pain: 60, change: 60, who: 40, sizeWhy: 40, example: 80, desc: 160, why: 80 };
@@ -312,7 +312,7 @@
   const QUEST_SCHEMA = obj({ desc: str, why: str, qa: list(obj({ question: str, examples: list(str, 1, QA_EX_MAX) }), 1, 8) });
   function questPrompt(stage, idea, tier) {
     const s = STAGES[stage], todo = criteriaFor(stage, tier);
-    return prompt([`사용자가 "${String(idea).trim()}"를 만들고 싶다고 했다. 지금은 ${s.n + 1}단계 "${s.title}"(${s.does})다. 이 단계를 게임의 퀘스트처럼 보여 주려고 한다 — 퀘스트 글을 만든다.`,
+    return prompt([`사용자가 아래 <만들고싶은것>을 만들고 싶다고 했다(글은 그 태그 안에 한 번만 — F-165). 지금은 ${s.n + 1}단계 "${s.title}"(${s.does})다. 이 단계를 게임의 퀘스트처럼 보여 주려고 한다 — 퀘스트 글을 만든다.`,
       `할 일(이름 · 개수는 정해져 있다 — 바꾸지 않는다): ${todoOf(todo)}`], [
       FLORO_VOICE,
       SHORT_RULE,
@@ -327,6 +327,8 @@
   //   topic(제목 — 퀘스트 이름이 된다) · pain(불편) · change(달라지는 것) · who(글에 사람이 있으면, 없으면 "") · size(short · medium · long = 짧음 · 보통 · 긺 = Lite · Xpress · Full) · sizeWhy.
   //   화면은 칸마다 '맞나요?'로 확인만 한다(quest.js withDraft · draftOf). 판정 · 관문은 그대로
   const START_MAX = 8000, TOPIC_MAX = 30, START_SIZES = ["short", "medium", "long"];
+  // 처음 말한 것(idea) — 다음 장 초안 · 퀘스트 · 대화 · 문서가 받는 길이. 처음 입력과 같게 해 잘리지 않는다(F-165, 2026-11-07 이재엽 "400자 제한 풀어" — 전에는 400자)
+  const IDEA_MAX = START_MAX;
   const START_SCHEMA = obj({ topic: str, pain: str, change: str, who: { type: "string" }, size: { type: "string", enum: START_SIZES }, sizeWhy: str });
   function startPrompt(text) {
     const s = STAGES[0];

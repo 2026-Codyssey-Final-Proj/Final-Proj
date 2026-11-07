@@ -282,7 +282,7 @@
       const d = R.data, nx = resumeStage(d.stages);
       st.results = Object.fromEntries(R.got.map((n) => [n, { chap: n, title: d.topic || "", ...d.stages[n].result }]));
       if (!st.topic && d.topic) st.topic = d.topic;
-      if (!st.idea && d.idea) st.idea = d.idea;   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰)
+      if (!st.idea && (d.source || d.idea)) st.idea = String(d.source || d.idea).slice(0, N.IDEA_MAX);   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰). 통째 글(idea.md)이 있으면 그것에서 — 문서에는 앞 400자뿐이다(F-165)
       if (!st.source && d.source) st.source = d.source;
       const all = Object.entries(d.stages);   // 읽을 수 없는 문서(result null)도 — 사람 것으로 두고 덮지 않는다
       st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
