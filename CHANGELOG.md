@@ -21,6 +21,7 @@
 
 | 버전 | 날짜 | 누가 | 무엇이 달라졌나 | 건드린 곳 |
 |---|---|---|---|---|
+| v67.0 | 2026-11-07 | 두승현 | 45초 소개 영상 판 — 고한결 스토리보드 바탕으로 장면 코드(film.mjs) · 스토리보드 그림 11장 · 찍는 스크립트 · 시험 7개 추가, 사람 그림에 걷는 자세 더함(40초 판 그림은 그대로) (KAN-14) (#354) | `01-docs/04-pattern-implementation/floe-intro-video/project/intro-video/`(담당 고한결 — 이 줄이 알림) |
 | v66.13 | 2026-11-07 | 임유정 | 처음 설정 안내에서 뒤로 단추가 눌리지 않던 것 (F-162) · GitHub 칸에서 말풍선 점이 3개에서 2개로 줄던 것 (F-163) (#352) | `02-frontend/navigator/` · `04-tests/navigator/` · `04-tests/known-failures.json`(F-102 기한 11/14 · F-164 다섯 더함) · `01-docs/07-maintenance/` |
 | v66.12 | 2026-11-07 | 이재엽 | 외부 도구 표 — 후보 넷(vibe-coding-skills · Superpowers 다섯 · AgentBrowser · Graphify)에 이재엽 개인 설치와 고친 곳 · 뺀 것을 적고, html-ppt 줄의 설치 경로를 공용 폴더 + 링크로 바로잡음 (#351) | `01-docs/catalog/external-tools.md` |
 | v66.11 | 2026-11-07 | 두승현 | 발표 덱 시간 맞추기 — 기능 여섯 장을 둘로 합쳐 본문 21장, 장마다 시간 · 누적(합 10:00), 부록 장 번호 다시 매김, + − 0 키로 글자 크기 조절 (KAN-14) (#350) | `01-docs/04-pattern-implementation/presentation-10min/`(담당 고한결 — 이 줄이 알림) |
