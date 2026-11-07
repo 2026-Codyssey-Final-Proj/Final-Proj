@@ -180,7 +180,7 @@ test("app.js — C-40: 1단계 '남은 칸 모두 맞아요'는 만드는 크기
 // F-68(2026-10-28, 이재엽 버튼 "통째로 파일에"): 받은 글은 자르지 않고 기록(source)에 두고 문서로 묶을 때 docs/00-source/idea.md로. AI에 넘기는 앞 400자(idea)는 그대로 — 잘라 넘기면 화면에 한 줄
 test("app.js — 받은 글 전부(source)를 기록에 두고 /api/docs에 보낸다, 400자를 넘으면 '앞 400자만 넘겨요' 한 줄, API.md 3-23에 source", () => {
   const a = read("navigator/app.js");
-  assert.match(a, /"results", "prep", "source", "card"\]/, "source는 기록(KEEP)에");
+  assert.match(a, /"results", "prep", "source", "card", "workSince"\]/, "source는 기록(KEEP)에");
   assert.match(a, /st\.source = text;/, "처음 말한 글 전부"); assert.match(a, /source: st\.source \|\| ""/, "/api/docs에 source");
   assert.match(a, /앞 \$\{N\.IDEA_MAX\}자만/, "잘라 넘기면 화면에 한 줄");
   assert.match(fs.readFileSync(path.join(__dirname, "../../03-backend/navigator/API.md"), "utf8"), /`source`[^\n]*64KB/, "API.md 3-23");
@@ -199,7 +199,7 @@ test("app.js — 상태 넷: applyStates가 초안 뒤에 붙고, gateApply가 �
 // C-56 R-1(2026-10-28, 이재엽 버튼 "1단계 관문에서"): 1단계 관문 카드에 기준 카드(옮겨 온 줄은 출처 칩 · 성공은 사람이 채우는 빈칸) → 지나면 st.card(기록)에, /api/docs에 card로, 카드를 고치면 준비된 퀘스트를 다시 짓는다
 test("app.js — 기준 카드: 1단계 관문에 보이고(basecard.js), 성공 칸을 적으면 '직접', 지나면 기록 · 문서로, 고치면 준비된 퀘스트 다시", () => {
   const a = read("navigator/app.js");
-  assert.match(a, /const BC = window\.NavBaseCard/); assert.match(a, /"prep", "source", "card"\]/, "기록(KEEP)에");
+  assert.match(a, /const BC = window\.NavBaseCard/); assert.match(a, /"prep", "source", "card", "workSince"\]/, "기록(KEEP)에");
   assert.match(a, /s\.n === 0 && BC \? baseCardHTML\(/, "1단계 관문 카드의 몸통"); assert.match(a, /data-act="card-field"/, "사람이 채우는 칸");
   assert.match(a, /st\.card = BC\.withEdits\(BC\.build\(\{ results: st\.results, source: st\.source \}\), st\.cardEdits\)/, "지날 때 카드를 기록에");
   assert.match(a, /card: st\.card \|\| null/, "/api/docs에 card"); assert.match(a, /"card-edit": /, "고치면 다시 짓는다");

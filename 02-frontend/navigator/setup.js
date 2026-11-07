@@ -150,7 +150,7 @@
       "su-gh-next": step(4, next, "happy", "GitHub도 이어졌어요! '다음'을 눌러 넘어가요.", next),
       "su-project": step(5, `${S}.su-proj, ${next}`, "look", "이제 만들 곳을 정해요. 처음이면 '새로 만들기'가 제일 쉬워요. 이 폴더에서 저랑 Claude Code가 일해요."),
       "su-project-next": step(5, next, "happy", "좋아요! '다음'을 눌러 주세요.", next),
-      "su-done": step(6, `${S}.su-repo, ${S}[data-s="done"]`, "happy", "다 됐어요! '시작하기'를 누르면 무엇을 만들지 같이 정해요.", `${S}[data-s="done"]`),
+      "su-done": step(6, `${S}.su-repo, ${S}[data-s="done"]`, "happy", "다 됐어요! '시작하기'를 누르면 무엇을 만들지 같이 정해요.", `${S}[data-s="makerepo"], ${S}[data-s="done"]`),   // F-166-1 — 저장소 만들기 칸이 있으면 그 칸에 먼저(querySelector는 앞의 것) — Enter가 바로 시작하기를 누르지 않게
       "su-run": step(2, `${S}.su-run`, "think", "브라우저에서 로그인해 주세요. 끝나면 제가 저절로 확인할게요. 브라우저가 안 열리면 '여기를 눌러 열기'를 눌러요."),
       "su-gh-run": step(4, `${S}.su-run`, "think", "코드 옆 '복사'를 누르고, '여기를 눌러 열기'로 GitHub를 열어 코드를 붙여 넣어 주세요. 끝나면 제가 저절로 확인할게요."),
     };
@@ -195,6 +195,7 @@
   const stepList = (steps) => `<ol class="su-steps">${steps.map((x) => `<li class="${x.done ? "ok" : ""}" data-k="${x.k}"><span class="su-ck" aria-hidden="true">${x.done ? "✓" : ""}</span>
         <div><b>${esc(x.title)}</b><span class="su-line">${esc(x.line)}</span>${tools(x)}</div></li>`).join("")}</ol>`;
   const note = () => (s.note ? `<p class="su-note" role="status">${esc(s.note)}</p>` : "");
+  const repoAsk = (st) => st.step === "done" && offerRepo(st) && st.makeRepo;   // 준비 끝에서 GitHub 저장소 만들기가 켜져 있나(F-166-1)
   const back = (to, label = "‹ 뒤로") => `<button type="button" class="b ghost" data-s="go" data-to="${to}">${label}</button>`;
 
   const MOOD = { hello: "happy", choose: "look", cli: "idle", api: "idle", apps: "look", github: "idle", project: "look", done: "done" };
@@ -260,7 +261,7 @@
     return `
       <h2 id="su-title" class="mc-title">준비 끝!</h2>
       <p class="mc-sub">${esc(line)}</p>${rows}${repo}
-      <div class="su-acts"><button type="button" class="b pri" data-s="done">시작하기<kbd aria-hidden="true">Enter</kbd></button></div>`;
+      <div class="su-acts"><button type="button" class="b pri" data-s="done">시작하기${repoAsk(s) ? "" : '<kbd aria-hidden="true">Enter</kbd>'}</button></div>`;
   }
   // 프로젝트 칸 — 고른 폴더가 플로로와 Claude Code가 일하는 자리(C-31). 앱이면 셋을 앱에게 부탁하고, 브라우저면 명령 안내
   function projectView() {
@@ -490,6 +491,7 @@
       e.stopPropagation();   // 뒤의 오버레이 단축키가 같이 움직이지 않게
       if (e.key === "Escape") { e.preventDefault(); return close(s.resumed || s.step === "done" ? s.via || "later" : "later", false); }   // 설정에서 다시 연 것이면 저장된 AI 연결 방식을 덮지 않는다
       if (e.key === "Enter" && !e.isComposing && !/^(INPUT|TEXTAREA|BUTTON|A|SUMMARY)$/.test(e.target.tagName)) {
+        if (repoAsk(s)) return;   // F-166-1 — GitHub에 저장소를 만드는 일은 단추를 직접 눌러야 — Enter 두 번(다음 → 시작하기)으로 맡겨지지 않게
         const pri = host.querySelector(".su-main .su-acts .b.pri:not([disabled])"); if (pri) { e.preventDefault(); pri.click(); }
       }
     });

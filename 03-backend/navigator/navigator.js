@@ -86,6 +86,12 @@
   const EVIDENCE_CRITERIA = { 4: ["이어진 게 실제로 도는지 확인하기"], 5: ["작은 부분마다 확인 통과하기"], 6: ["잰 값을 그대로 적어 두기"] };
   const GATE_WHY = { blank: "빈칸 표시가 남았어요", evidence: "증거가 아직 없어요" };
   const UNMEASURED = /아직\s*(못|안|모름)|못\s*(잼|쟀|재)|재지\s*못|모르겠/;   // '2단계 숫자를 아직 못 잼'처럼 숫자가 섞여도 잰 값이 아니다(새 맥락 리뷰 2026-10-27)
+  // F-166-2(2026-11-07): 증거 ② '그 장에서 Claude Code가 파일을 고친 기록' — 연결한 폴더의 세션 전부에서, 이 단계를 시작한 때(since) 뒤의 파일 고침을 찾는다.
+  //   가장 최근 세션 하나만 보면 뒤에 돈 문서 올리기 · 돌려 보기(파일을 안 고침)가 가렸다. since가 없으면(옛 저장) 때를 따지지 않는다
+  function workSeen(sessions, since = 0) {
+    const t = Number(since) || 0;
+    return (Array.isArray(sessions) ? sessions : []).some((s) => s && Array.isArray(s.steps) && s.steps.some((x) => x && x.what && (x.add || x.del) && (!t || (Number(x.at) || 0) >= t)));
+  }
   function gateRules(j, ctx = {}) {
     if (!j || !Array.isArray(j.criteria)) return j;
     const lines = Array.isArray(ctx.lines) ? ctx.lines : [], work = !!ctx.work, need = EVIDENCE_CRITERIA[j.stage] || [];
@@ -679,7 +685,7 @@
     };
   }
 
-  const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, gateRules, BLANK_MARK, EVIDENCE_CRITERIA, GATE_WHY, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
+  const api = { STAGES, TIERS, criteriaFor, JARGON, SAY_MAX, canAdvance, gateRules, workSeen, BLANK_MARK, EVIDENCE_CRITERIA, GATE_WHY, reorder, nextView, PLACES, nextPlace, ticker, face, docFace, decisionLine, blanks, welcome,
     JUDGE_SCHEMA, ANSWER_SCHEMA, DRAFT_SCHEMA, REVIEW_SCHEMA, TASK_SCHEMA, judgePrompt, answerPrompt, draftPrompt, reviewPrompt, taskPrompt,
     parseJudgement, parseDraft, parseReview, parseTask, taskLines, filled,
     FLORO_VOICE, IDEA_MAX, QUEST_SCHEMA, questPrompt, parseQuest, LEN, SHORT_RULE, fit,   // 퀘스트 글의 길이(2026-10-30) — C-22 퀘스트 제작(2026-10-21)
