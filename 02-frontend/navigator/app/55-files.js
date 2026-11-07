@@ -120,7 +120,7 @@
     if (!BUILD || !job) return;
     if (!canLive || st.mode === "fixture") return say("연습 모드라 맡기지 않아요 — 진짜 폴더를 연결한 앱에서 돼요");
     if (tw && !(st.blocked && st.blocked.at === tw.at)) return say("맡긴 일이 아직 돌고 있어요 — 끝난 뒤에 맡겨요");   // 막혀 있는 일은 새로 맡기면 끝맺는다(watchTask)
-    const w = sensitive(job.text); if (w.length) { say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요`); return fixSecretPast(secretPast(job.text)) || say("그 칸을 고친 뒤 다시 눌러요"); }   // F-161-1 — 지난 칸이면 채팅에서 바로 고친다
+    const w = sensitive(job.text); if (w.length) { say(`보낼 글에 ${w.join(", ")}처럼 보이는 게 있어 맡기지 않았어요`); return fixSecretPast(secretPast(job.text) || secretPast(null)) || say("그 칸을 고친 뒤 다시 눌러요"); }   // F-161-1 — 지난 칸이면 채팅에서 바로 고친다
     if (st.busy) return;   // 앞 호출의 '무엇을 기다리나'를 지우지 않게(F-103-5)
     st.planBusy = "hand";
     const r = await callAI("/api/task/start", { text: job.text, checks: job.checks });

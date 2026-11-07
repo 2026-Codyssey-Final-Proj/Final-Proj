@@ -21,7 +21,7 @@ test("F-161-1: 비밀값 모양이 든 지난 칸 때문에 맡기지 못하면 
   assert.match(fx, /pastFixAt = g/, "다음에 보낸 말이 그 칸의 줄이 된다(F-157-3과 같은 길)");
   assert.match(fx, /NavSensitive\.redact\(line\)/, "지금 줄은 가려서 보인다 — 키를 다시 보이지 않는다");
   assert.match(fx, /line = \(it\.lines \|\| \[\]\)\.join\(" · "\)/, "줄이 여럿이면 다 보인다(새 맥락 리뷰 보완 4)");
-  assert.match(app, /맡기지 않았어요`\); return fixSecretPast\(secretPast\(job\.text\)\) \|\| say\(/, "코드 맡기기가 거절되면 맡길 글에 든 지난 칸 고치기로");
+  assert.match(app, /맡기지 않았어요`\); return fixSecretPast\(secretPast\(job\.text\) \|\| secretPast\(null\)\) \|\| say\(/, "코드 맡기기가 거절되면 맡길 글에 든 지난 칸 고치기로");
   assert.match(app, /st\.warn\.then === "stage" && secretPast\(st\.warn\.text\) \? \[\{ label: "그 칸 고치기", act: "secret-fix"/, "단계 초안 경고에만, 그 글에 든 칸이 있을 때 그 칸 고치기");
   assert.match(app, /st\.warn = \{ w, then, text \}/);
   assert.match(app, /"secret-fix": \(\) =>/);
@@ -132,4 +132,21 @@ test("F-161-9: 사소한 말 — 안쪽 도구 이름 · 마지막 단계 · 올
   assert.ok(!/GitHub에서 docs 폴더를 볼 수 있어요/.test(app));
   assert.ok(!/큰 단추로 받아 주세요/.test(app));
   assert.match(app, /st\.results\[1\] \? "지도 보기의 '기획서로 3 ~ 8단계 그리기'로 그려요" : "2단계에서 그려져요"/);
+});
+
+// F-161-1 보완(claude-drafted: 2026-11-07 — 임유정 "이번 대화에서 수정한 것들이 합리적인 버그 수정이야?" → 다시 읽다 찾은 구멍 → "고쳐 줘"):
+//   5단계 맡길 글(build.js)은 줄의 공백을 한 칸으로 줄이고(norm) 길이를 자른다(cut) — 칸의 줄을 글자 그대로 찾으면 못 찾아 옛 막다른 길로 돌아갔다
+test("F-161-1 보완: 맡길 글의 공백이 다르거나 잘렸어도 비밀값이 든 지난 칸을 찾는다 · 못 찾으면 비밀값이 든 아무 지난 칸", () => {
+  const at = app.indexOf("  const secretPast = "), line = app.slice(at, app.indexOf("return null; };", at) + "return null; };".length);
+  const KEY = ["sk", "ant", "api03", "Zx9Qw8Er7Ty6Ui5Op4As3Df2Gh1Jk0LzXcVbNm"].join("-");   // 가짜 키 — 조각으로 지어 비밀값 검사(check-secrets)에 걸리지 않게
+  const sensitive = (t) => (String(t).includes("sk-ant-") ? ["비밀번호나 비밀 열쇠"] : []);
+  const st = { results: { 0: { items: [{ name: "a", lines: ["보통 줄"] }] }, 2: { items: [{ name: "b", lines: ["x"] }, { name: "막을 일", lines: [`카드번호는  찍지 않아요.\n키는 ${KEY} 이에요`] }] } } };
+  const secretPast = new Function("st", "sensitive", `${line}; return secretPast;`)(st, sensitive);
+  const norm = (t) => t.replace(/\s+/g, " ").trim();
+  const job = `[3단계]\n- 막을 일: ${norm(st.results[2].items[1].lines[0])}`;
+  assert.deepEqual(secretPast(job) && [secretPast(job).s, secretPast(job).i], [2, 1], "공백을 줄인 맡길 글에서도 그 칸");
+  assert.deepEqual(secretPast(`- 막을 일: 카드번호는 찍지 않아요. 키는 ${KEY.slice(0, 30)}…`) && secretPast(`- 막을 일: 카드번호는 찍지 않아요. 키는 ${KEY.slice(0, 30)}…`).s, 2, "잘린 글에 든 키 조각으로도");
+  assert.equal(secretPast(null).s, 2, "text가 null이면 아무 칸");
+  assert.equal(secretPast("관계없는 글"), null, "그 글에 없으면 null — 경고 카드는 엉뚱한 칸으로 보내지 않는다");
+  assert.match(app, /fixSecretPast\(secretPast\(job\.text\) \|\| secretPast\(null\)\)/, "맡길 글은 지난 칸으로만 지어지니 못 찾으면 비밀값이 든 아무 지난 칸으로");
 });
