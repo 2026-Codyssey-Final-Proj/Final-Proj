@@ -118,6 +118,7 @@ ul.plain{margin:0;padding-left:1.1em;font-size:22px;line-height:1.7;color:var(--
 /* 시작 연출 — 아래에서 빼꼼하는 플로로. 슬라이드가 overflow:hidden이라 내려가면 안 보인다 */
 #peek{position:absolute;left:50%;bottom:-6px;width:230px;height:230px;transform:translate(-50%,110%);pointer-events:none}
 #peek svg.cat{width:100%;height:100%}
+body{align-items:flex-start}.deck{transform-origin:center top} /* 16:10 화면(전체 화면)에서 덱을 위에 붙인다 — 위 여백 없이, 남는 띠는 아래로(두승현 2026-11-07) */
 .deck-footer .who{visibility:hidden} /* 자리는 남겨 오른쪽 장 번호가 제자리에 있게. 바닥 왼쪽 "Floe · 0:20 · 누적 0:20"은 화면에서 숨김(두승현 2026-11-07) — 시간은 코드에 남겨 리허설 때 본다 */
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
 .g4 .card{padding:20px 22px}.g4 .card h4{font-size:22px;margin-bottom:8px}.g4 .card .dim{font-size:17px}
