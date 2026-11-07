@@ -1,15 +1,22 @@
 // 브라우저 쪽: renderAt(t)로 한 장을 그리고, 미리 보기에서는 재생 · 시간 막대를 단다.
 import { renderFrame } from './frame.mjs';
 import { DURATION } from './timeline.mjs';
+import { renderStill } from './v45/stills.mjs';
+import { renderFrame45, DURATION45 } from './v45/film.mjs';
 
 const stage = document.getElementById('stage');
-const RENDER = new URLSearchParams(location.search).get('render') === '1';
+const QUERY = new URLSearchParams(location.search);
+const RENDER = QUERY.get('render') === '1';
 if (RENDER) document.documentElement.classList.add('render');
+// claude-drafted: 2026-11-06 — 45초 판: ?film45=1은 움직이는 영상(미리 보기도 됨), ?v45=1은 스토리보드 정지 그림(번호 0부터)
+const FILM45 = QUERY.get('film45') === '1';
+const draw = FILM45 ? renderFrame45 : QUERY.get('v45') === '1' ? renderStill : renderFrame;
+const LENGTH = FILM45 ? DURATION45 : DURATION;
 
 const nextPaint = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
 window.renderAt = (t) => {
-  stage.innerHTML = renderFrame(t);
+  stage.innerHTML = draw(t);
   return nextPaint();
 };
 
@@ -35,11 +42,12 @@ if (!RENDER) {
     stage.style.transform = `scale(${k})`;
     wrap.style.width = `${1920 * k}px`; wrap.style.height = `${1080 * k}px`;
   };
-  const show = () => { stage.innerHTML = renderFrame(t); scrub.value = t; time.textContent = `${t.toFixed(2)}초`; };
+  scrub.max = LENGTH - 0.01;
+  const show = () => { stage.innerHTML = draw(t); scrub.value = t; time.textContent = `${t.toFixed(2)}초`; };
   const loop = (now) => {
     if (!playing) return;
     t += (now - last) / 1000; last = now;
-    if (t >= DURATION) t = 0;
+    if (t >= LENGTH) t = 0;
     show();
     requestAnimationFrame(loop);
   };
@@ -50,7 +58,7 @@ if (!RENDER) {
   scrub.oninput = () => { t = Number(scrub.value); show(); };
   addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); play.click(); } });
   addEventListener('resize', fit);
-  const start = Number(new URLSearchParams(location.search).get('t'));
+  const start = Number(QUERY.get('t'));
   if (start) t = start;
   fit(); window.videoReady.then(show);
 }
