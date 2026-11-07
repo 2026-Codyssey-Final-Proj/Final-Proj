@@ -14,9 +14,9 @@ const prev2 = [R(0, {}), R(1, { 1: ["3초 안에 '신청됨' · 마감 하루 �
 test("factsFrom — 결과 · 받은 글 · 파일 목록에서 사실만 뽑는다: 기능 수(3단계 Ⅰ 줄 수), 공개 여부(2단계 Ⅳ 글), 성공 숫자가 있나(2단계 Ⅱ), 코드 파일 수. 모르면 null — 지어내지 않는다", () => {
   const results = { 0: R(0, {}), 1: prev2[1], 2: R(2, { 0: ["회원이 신청을 누르면, 앱은 신청서를 보인다", "운영진이 행사를 만들면, 앱은 목록에 올린다", "마감 하루 전이 되면, 앱은 알림을 보낸다", "명단을 내려받으면, 앱은 CSV를 준다"] }) };
   const f = S.factsFrom({ results, files: [{ path: "src/app.js", dir: false }, { path: "docs", dir: true }, { path: "README.md", dir: false }] });
-  assert.deepEqual(f, { features: 4, publish: false, success: true, codeFiles: 1, pushed: null, codeless: false });
+  assert.deepEqual(f, { features: 4, publish: false, success: true, codeFiles: 1, pushed: null, dirty: null, codeless: false });
   assert.equal(S.factsFrom({ results: { 2: R(2, { 0: ["신청하면, 앱은 받는다 / 만들면, 앱은 올린다 / 마감 전이면, 앱은 알린다 / 내려받으면, 앱은 CSV를 준다 / 지우면, 앱은 지운다 / 바꾸면, 앱은 고친다"] }) } }).features, 6, "' / '로 이은 한 줄은 조각 수로(3단계 초안 지시 그대로 — 리뷰 막힘)");
-  assert.deepEqual(S.factsFrom({ results: {}, files: null }), { features: null, publish: null, success: null, codeFiles: null, pushed: null, codeless: false }, "모르면 null");
+  assert.deepEqual(S.factsFrom({ results: {}, files: null }), { features: null, publish: null, success: null, codeFiles: null, pushed: null, dirty: null, codeless: false }, "모르면 null");
   assert.equal(S.factsFrom({ results: { 1: R(1, { 1: ["언제 성공: 아직 모름"] }) } }).success, false, "'아직 모름' · 숫자 없음은 성공 숫자 빈칸");
   assert.equal(S.factsFrom({ results: { 1: R(1, { 3: ["누구나 쓰게 웹에 공개해요"] }) } }).publish, true);
   assert.equal(S.factsFrom({ results: { 1: R(1, { 3: ["이름만 다뤄요"] }) } }).publish, null, "공개 말이 없으면 모름");
@@ -52,4 +52,16 @@ test("questStates · gateOpen · allOkOnly — 퀘스트의 칸마다 상태, �
   assert.deepEqual(st7.map((x) => x.state), ["first", "write", "write", "skip"]); assert.equal(S.gateOpen(st7), false, "먼저는 관문을 닫는다");
   assert.deepEqual(S.STATE_WORD, { write: "쓰기", moved: "옮겨 옴", skip: "건너뜀", first: "먼저" });
   assert.ok(Q.BY.includes("moved") && Q.BY_WORD.moved === "옮김" && Q.BY.includes("skip") && Q.BY_WORD.skip === "건너뜀", "누가 정했나에 '옮김' · '건너뜀'(이재엽 버튼)");
+});
+
+// claude-drafted: 2026-11-07 — F-166-6(사용자 시험 셋째): 8단계 '저장소에 올리기'가 단계 문서만 올리고 코드는 커밋하지 않은 채 '했음'이 됐다
+test("8단계 저장소에 올리기 — 문서를 올렸어도 커밋하지 않은 파일이 남으면 먼저(코드도 커밋 · 푸시)", () => {
+  const COMMIT = 4;
+  const on = (facts) => S.stateOf({ stage: 7, i: COMMIT, facts });
+  const a = on(S.factsFrom({ pushed: true, dirty: 3 }));
+  assert.equal(a.state, "first"); assert.equal(a.commit, true); assert.match(a.why, /커밋하지 않은 파일이 3개/);
+  assert.equal(on(S.factsFrom({ pushed: true, dirty: 0 })).state, "write", "다 커밋했으면 적는다");
+  assert.equal(on(S.factsFrom({ pushed: true, dirty: null })).state, "write", "모르면 막지 않는다");
+  assert.equal(on(S.factsFrom({ pushed: false, dirty: 3 })).ship, true, "올린 적이 없으면 전처럼 문서 올리기부터");
+  assert.equal(S.factsFrom({ dirty: -1 }).dirty, null);
 });

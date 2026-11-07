@@ -581,6 +581,16 @@ function readmeText(dir) {
 }
 // C-42 R-8(2026-10-27): 작업실 파일 칸 — 연결한 폴더(readme와 같은 '폴더 고르기')의 파일 · 폴더 이름만, 깊이 3 · 200개(files.js). 경로를 받지 않고 · 주지 않는다. 폴더를 모르면 files: null, why: "folder"
 let lastFiles = null;   // 마지막 목록 { dir, list } — /api/file은 이 목록의 번호로만 연다(경로를 요청에서 받지 않는다, C-43)
+// F-166-6(2026-11-07 사용자 시험 셋째): 커밋하지 않은 파일 수(문서 · Floe 설정 밖) — 8단계 '저장소에 올리기'가 단계 문서만 올리고 코드는 한 번도 커밋하지 않은 채 '했음'이 됐다.
+//   git이 없거나 저장소가 아니면 null(모름 — 막지 않는다). 이름은 보내지 않고 수만
+async function dirtyNow(dir) {
+  try {
+    const g = await Project.runCommand("git", ["-c", "core.quotepath=false", "status", "--porcelain", "-z", "--untracked-files=all"], { cwd: dir, timeout: 4000 });
+    if (g.code !== 0) return null;
+    return Project.porcelainPaths(g.out).filter((p) => !/^(docs\/|README\.md$|CLAUDE\.md$|\.claude\/)/.test(p)).length;
+  } catch { return null; }
+}
+async function filesNowAsync() { const r = filesNow(); if (!r.files) return r; const s = projectNow(); return { ...r, dirty: s ? await dirtyNow(s.dir) : null }; }
 function filesNow() {
   const s = projectNow();
   if (!s) { lastFiles = null; return { ok: true, project: "", files: null, why: "folder" }; }
@@ -1147,7 +1157,7 @@ async function handleRoute(req, res) {
   if (req.method === "POST" && route === "/api/knowledge-store") { const body = await readJson(req); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = sbPost(body || {}); return send(res, code, out); }
   if (req.method === "GET" && route === "/api/exclude") return send(res, 200, excludeGet());   // C-52 빼 둘 곳(API.md 3-34) — 폴더마다의 줄 목록
   if (req.method === "POST" && route === "/api/exclude") { const body = await readJson(req, 16 * 1024); if (body === TOO_BIG) return refuse(res, "너무 커요", 413); const [code, out] = excludePost(body); return send(res, code, out); }   // C-52 저장(거절할 줄이 있으면 바꾸지 않음)
-  if (req.method === "GET" && route === "/api/files") return send(res, 200, filesNow());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
+  if (req.method === "GET" && route === "/api/files") return send(res, 200, await filesNowAsync());   // C-42 R-8 작업실 파일 칸(API.md 3-25) — 이름만, 읽기만
   if (req.method === "GET" && route === "/api/docmap") { const [code, out] = await docmapNow(new URL(req.url, "http://localhost").searchParams.get("now") || ""); return send(res, code, out); }   // C-45 문서 지도(API.md 3-27) — 읽기만
   if (req.method === "GET" && route === "/api/find") { const q = String(new URL(req.url, "http://localhost").searchParams.get("q") || "").trim().slice(0, 200); if (!q) return send(res, 400, { ok: false, why: "q", reason: "무엇을 찾을지가 없어요" }); return send(res, 200, findNow(q)); }   // C-56 R-4 폴더에서 후보 줄(API.md 3-30) — 읽기만
   if (req.method === "GET" && route === "/api/file") { const [code, out] = await readFileNow(new URL(req.url, "http://localhost").searchParams.get("i")); return send(res, code, out); }   // C-43 파일 열기(API.md 3-26)

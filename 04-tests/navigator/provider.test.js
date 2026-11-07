@@ -478,3 +478,27 @@ test("claude가 입력을 읽기 전에 끝나도 서버가 죽지 않고 오류
   assert.equal(r.status, 0, r.stderr);
   assert.ok(JSON.parse(r.stdout.trim()).error);
 });
+
+// claude-drafted: 2026-11-07 — F-166-4(사용자 시험 셋째): 빠른 모델(sonnet)이 '3 ~ 8단계 그리기'를 보호 장치로 거절해(reasoning_extraction) 규칙으로만 그렸다 — 기본 모델로 한 번 더
+test("빠른 모델이 거절하면 기본 모델로 한 번 더 묻는다 — claude -p", async () => {
+  const seen = [];
+  const cli = async (prompt, schema, opts) => { seen.push(opts && opts.fast ? "fast" : "base"); return opts && opts.fast ? { error: "Claude가 이 글에는 답하지 않았어요", refused: true, tokens: 5 } : { data: { ok: true }, tokens: 9 }; };
+  const { callClaude } = make({}, ok(), { callCli: cli });
+  const r = await callClaude("p", SCHEMA, { fast: true });
+  assert.deepEqual(seen, ["fast", "base"]); assert.deepEqual(r.data, { ok: true });
+  seen.length = 0; const plain = await callClaude("p", SCHEMA, {});
+  assert.deepEqual(seen, ["base"], "빠른 모델이 아니면 그대로 한 번"); assert.deepEqual(plain.data, { ok: true });
+  const cli2 = async (p, s, opts) => { seen.push(opts && opts.fast ? "fast" : "base"); return { error: "Claude가 정해진 형식으로 답하지 않음", tokens: 3 }; };
+  seen.length = 0; const r2 = await make({}, ok(), { callCli: cli2 }).callClaude("p", SCHEMA, { fast: true });
+  assert.deepEqual(seen, ["fast"], "거절이 아닌 실패는 다시 묻지 않는다"); assert.match(r2.error, /정해진 형식/);
+});
+
+test("빠른 모델이 거절하면 기본 모델로 한 번 더 묻는다 — API", async () => {
+  const f = fake(null); let n = 0; const models = [];
+  f.client.messages.create = async (r) => { models.push(r.model); n += 1; return n === 1 ? { stop_reason: "refusal", content: [], usage: { input_tokens: 10, output_tokens: 0 } } : ok(); };
+  f.client.beta.messages.create = f.client.messages.create;
+  const meter = P.createMeter(null, memStore(0));
+  const callClaude = P.createCaller({ env: { ANTHROPIC_API_KEY: KEY }, callCli: async () => ({}), makeClient: () => f.client, meter });
+  const r = await callClaude("p", SCHEMA, { fast: true });
+  assert.equal(models.length, 2); assert.notEqual(models[0], models[1], "두 번째는 기본 모델"); assert.deepEqual(r.data, { ok: true });
+});

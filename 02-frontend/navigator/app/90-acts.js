@@ -31,7 +31,7 @@
     "send-anyway": () => { if (st.warn && RETRY[st.warn.then]) RETRY[st.warn.then](); },   // 두 번 누르면 둘째는 st.warn이 이미 없다(앱 작업실은 다시 그려 보내는 데 시간이 걸린다) — F-144-18
     "stop-send": () => { const stage = st.warn && st.warn.then === "stage"; set({ warn: null }); if (stage) say("이 단계 초안은 받지 않았어요 — 그 글을 고친 뒤 '초안 다시 받기'를 누르거나, 칸을 직접 적어요"); },   // F-161-1 — 초안이 왜 없는지 · 다시 받는 길
     "fill-anyway": () => fillAnyway(),
-    "fill-fix": () => { const f = st.fillWarn; st.fillWarn = null; if (f) st.say = f.t; render(); focusAct("[data-act=say]"); },   // 글을 입력 칸에 돌려놓는다 — 고칠 칸(pastFixAt · draftFixAt)은 그대로
+    "fill-fix": () => { const f = st.fillWarn; st.fillWarn = null; if (f) { st.say = f.t; unmat("chat", f.t); } render(); focusAct("[data-act=say]"); },   // F-166-13 — 고칠게요로 버린 말은 한 장의 '처음 한 말'이 되지 않게 재료에서 뺀다   // 글을 입력 칸에 돌려놓는다 — 고칠 칸(pastFixAt · draftFixAt)은 그대로
     "secret-fix": () => { const g = st.warn && secretPast(st.warn.text); st.warn = null; if (!fixSecretPast(g)) render(); },
     "stage-redraft": () => { const q = st.quest; if (q && !q.draft && N.DRAFT_STAGES.includes(q.chap) && st.results[q.chap - 1]) stageDraft(q.chap); },
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
@@ -75,6 +75,17 @@
       pastFixAt = g; render();
       say(`${LB(g.s)} ${ROMAN(at)} ${QU.shortOf(it.name)} — 지금 줄은 “${(it.lines || [])[0] || "비었어요"}”예요. 고친 줄을 아래 칸에 적어 보내면 그 칸이 바뀌어요`); focusAct("[data-act=say]"); },
     "first-notyet": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, x = i >= 0 ? qstates(q)[i] : null; if (!x || x.state !== "first") return; fillNow(`아직 못 함 — ${x.why}`, "me"); },   // 비워 두지 않고 적되 관문 규칙(evidence)이 막는다
+    // F-166-6 — 8단계: 커밋하지 않은 코드를 Claude Code에 커밋 · 푸시로 맡긴다(일 넘기기 3-16, 끝에 기준마다 보고). 끝나면 파일 목록을 다시 받아 칸이 열린다
+    "commit-code": async () => {
+      if (!canLive || st.mode === "fixture" || st.busy) return;
+      const text = ["이 폴더에서 아직 커밋하지 않은 파일을 커밋하고 origin에 푸시해 주세요.",
+        "1. .env · *.pem · 키나 비밀번호가 든 파일과 .claude/settings.local.json은 .gitignore에 넣고 커밋하지 않아요. 그런 파일이 보이면 무엇을 뺐는지 알려 줘요.",
+        "2. 커밋 메시지는 무엇을 만들었는지 한 줄로 써요.", "3. 강제 푸시 · 파일 지우기 · 기록 고쳐 쓰기는 하지 않아요. origin이 없으면 멈추고 알려 줘요."].join("\n");
+      const checks = ["비밀값 파일을 빼고 커밋했다(뺀 파일 이름을 근거에)", "origin에 푸시했다(푸시한 가지 이름을 근거에)"];
+      let r = null; try { r = await (await fetch("/api/task/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, checks }) })).json(); } catch {}
+      if (!r || !r.ok) return say(`맡기지 못했어요 — ${(r && r.reason) || "서버에 닿지 않았어요"}`);
+      if (r.task) watchTask(r.task, "commit"); say("코드 커밋 · 푸시를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 '허용'을 눌러 주세요");
+    },
     "draft-again": async () => {
       const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex.length < 2) return;
       const swap = (it) => ({ ...st.quest, draft: { ...st.quest.draft, items: st.quest.draft.items.map((x, k) => (k === i ? it : x)) } });

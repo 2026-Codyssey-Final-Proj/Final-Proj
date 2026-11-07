@@ -13,6 +13,7 @@
   const matStage = () => (st.quest ? st.quest.chap : atStage());   // 채팅 기록(logMsg)과 같은 단계
   const sheetRed = (t) => window.NavSensitive.redact(t);
   function mat(kind, text) { if (!SH || !window.NavSensitive) return; st.mats = SH.add(st.mats, matStage(), kind, text, sheetRed); }
+  function unmat(kind, text) { if (!SH || !SH.drop || !window.NavSensitive) return; st.mats = SH.drop(st.mats, matStage(), kind, text, sheetRed); }   // 버린 말을 재료에서 뺀다(F-166-13)
   // Floe가 쓴 문서(단계 문서 · 기획서 · 결정 기록 · 목차 · 기준 카드 · 받은 글) — 바뀐 파일에 넣지 않는다
   const floeDoc = (p) => !!FDOCS && (p === FDOCS.MAIN_DOC || p === FDOCS.LOG_DOC || p === FDOCS.CARD_DOC || p === FDOCS.SOURCE_DOC || p === "docs/README.md"
     || FDOCS.SLUGS.some((s, k) => p === FDOCS.stagePath(k) || p === `docs/${s}/README.md`));

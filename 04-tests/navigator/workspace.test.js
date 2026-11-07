@@ -91,7 +91,7 @@ test("app.js — R-8 파일 칸: 작업실을 열 때 /api/files를 받아 진�
   assert.match(read("navigator/app.css"), /\.wnav \.fn li\.dir button\{all:unset;cursor:pointer;min-height:44px;/, "폴더 단추는 44px(이재엽 버튼 2026-10-27)");
   assert.ok(!a.includes("진짜 파일 목록은 다음 판에"), "'다음 판' 글은 없다 — 이 판이다");
   assert.match(s, /const BOOK_ROUTES = \["\/api\/readme", "\/api\/files",/, "확인 값이 필요한 주소");
-  assert.match(s, /if \(req\.method === "GET" && route === "\/api\/files"\) return send\(res, 200, filesNow\(\)\);/);
+  assert.match(s, /if \(req\.method === "GET" && route === "\/api\/files"\) return send\(res, 200, await filesNowAsync\(\)\);/);
   assert.match(s, /const r = Files\.listFiles\(s\.dir, \{ redact: Sensitive\.redact, exclude: Exclude\.matcher\(ex\) \}\);/, "이름은 가린다 · 폴더는 서버가 아는 것만(요청의 경로 없음) · C-52 빼 둔 곳은 목록에 없다(#287 뒤 맞춤, 2026-10-30)");
 });
 
@@ -141,4 +141,13 @@ test("관문 증거(workSeen) — 이 단계를 시작한 뒤의 세션 전부�
   assert.ok(a.includes('"workSince"];'), "시작 때는 저장된다(껐다 켜도)");
   assert.match(a, /n >= 4 && n <= 6 \? \[\{ label: "돌려 보기", act: "run-go"/, "5단계에도 돌려 보기");
   assert.match(a, /say\(gateFillSay\(\)\)/, "채우러 가기는 빠진 증거를 말한다");
+});
+
+// claude-drafted: 2026-11-07 — F-166-5 · 7(사용자 시험 셋째)
+test("F-166-5 권한 예시와 다른 것을 고르면 남은 빈 칸의 예시를 이 단계에서 정한 칸으로 다시 받는다 · F-166-7 흐름의 관문 칸은 넘긴 기준을 보인다", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const q0 = st\.quest, swerve = !!\(q0 && q0\.draft && String\(t\)\.trim\(\) !== String\(QU\.proposalOf\(q0, at\) \|\| ""\)\.trim\(\)\);/, "권한 것과 다르게 적었나");
+  assert.match(a, /if \(swerve && st\.quest && !QU\.isDone\(st\.quest\)\) refitChosen\(\);/);
+  assert.match(a, /body: JSON\.stringify\(\{ stage: q\.chap, tier: st\.tier, idea, prev, base: baseText\(\), talk \}\)/, "정한 칸은 대화(talk)로 — 적은 칸은 QU.refit이 덮지 않는다");
+  assert.match(a, /` · 넘김 \$\{sk\}\$\{r\.skip && r\.skip\.reason \? ` — \$\{esc\(r\.skip\.reason\)\}` : ""\}`/, "흐름 관문 칸 — 넘김 수와 까닭");
 });

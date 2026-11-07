@@ -26,6 +26,9 @@
       foot: "아니요 — 결정 기록에 '코드 없이 지남'으로 남아요.",
       acts: [...(canLive && st.mode !== "fixture" ? [{ label: "예 — Claude Code에 맡기기", act: "code-yes", key: "Enter", pri: true }] : []), { label: "아니요 — 코드 없이 하기", act: "code-no", ...(canLive && st.mode !== "fixture" ? {} : { key: "Enter", pri: true }) }, { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
     // F-157-4 — 8단계 '저장소에 올리기': 아직 올린 적이 없으면 올리기로(커밋 문구만 고르고 '했음'이 되던 것)
+    if (fx && fx.state === "first" && fx.commit) return { tone: "amber", mood: "think", meta, title: "먼저 — 코드도 올려요.", sub: `${esc(fx.why)}.`,   // F-166-6
+      foot: "Claude Code가 비밀값 파일(.env 등)은 빼고 커밋 · 푸시해요. 허락이 필요하면 카드가 떠요.",
+      acts: [...(canLive && st.mode !== "fixture" ? [{ label: "코드도 커밋 · 푸시 맡기기", act: "commit-code", key: "Enter", pri: true }] : []), { label: "아직 못 함으로 적기", act: "first-notyet", kind: "ghost" }, { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
     if (fx && fx.state === "first" && fx.ship) return { tone: "amber", mood: "think", meta, title: "먼저 — 저장소에 올려요.", sub: `${esc(fx.why)}.`,
       foot: "'문서로 묶어 GitHub에'는 단계 문서만 올려요 — 코드도 올리려면 Claude Code에 커밋 · 푸시를 맡겨요.",
       acts: [{ label: "문서로 묶어 GitHub에", act: "ship-open", key: "Enter", pri: true }, { label: "아직 못 함으로 적기", act: "first-notyet", kind: "ghost" }, { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
@@ -170,8 +173,29 @@
       st.say = t; draftFixAt = at; render(); focusAct("[data-act=say]");
       return say("틀이라 아직 적지 않았어요 — '(재고 적기)' 자리를 잰 값으로 바꿔 보내요. 못 쟀으면 '아직 못 함 — 까닭'으로 적어요");
     }
+    const q0 = st.quest, swerve = !!(q0 && q0.draft && String(t).trim() !== String(QU.proposalOf(q0, at) || "").trim());   // 권한 예시와 다른 것을 골랐거나 고쳐 적었나(F-166-5)
     st.quest = QU.fill(st.quest, at, t, by);
     afterFill();
+    if (swerve && st.quest && !QU.isDone(st.quest)) refitChosen();
+  }
+  // F-166-5(2026-11-07 사용자 시험 셋째): 예시는 장을 시작할 때 한 번에 받아, 앞 칸에서 권한 것과 다른 것을 고르면 뒤 칸의 예시가 고르지 않은 쪽을 따랐다
+  //   (4단계: 후보는 '화면 하나짜리 웹 / 휴대폰 앱'인데 '고른 방법: 표 계산 도구', '둘 곳: 서버'). 이 단계에서 정한 칸을 대화로 넣어 남은 빈 칸의 예시만 다시 받는다 — 적은 칸은 덮지 않는다(QU.refit)
+  async function refitChosen() {
+    const q = st.quest;
+    if (!refitOk() || st.busy || !q) return;
+    const told = q.objs.map((o, k) => (QU.filled(q, k) ? `${ROMAN(k)} ${QU.shortOf(QU.nameOf(q, k))}: ${(q.lines[k] || []).join(" / ")}` : "")).filter(Boolean);
+    const talk = [{ who: "me", text: `이 단계에서 이미 정한 칸이에요 — 남은 칸은 이것과 맞게 정해 주세요.\n${told.join("\n")}`.slice(0, 1000) }];   // 서버의 한 줄 상한(CHAT_LINE_MAX)
+    const idea = ideaNow(), prev = prevOf(q.chap);
+    if (sensitive([idea, talk[0].text, baseText(), ...prev.flatMap((p) => p.items.flatMap((x) => x.lines))].join("\n")).length) return;   // 비밀값처럼 보이면 밖에 보내지 않는다(refitNow와 같은 생각)
+    try {
+      const r = await (await fetch("/api/stagedraft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage: q.chap, tier: st.tier, idea, prev, base: baseText(), talk }) })).json();
+      if (!r || !r.ok || !r.draft || !st.quest || st.quest.chap !== q.chap || st.quest.phase !== "quest") return;
+      const f = QU.refit(st.quest, r.draft);
+      if (!f.changed.length) return;
+      st.quest = applyStates(f.q); st.tokens = r.tokens || 0; fetchUsage();
+      st.refit = { chap: q.chap, tool: "", why: "고른 칸에 맞춰 남은 칸의 예시를 다시 받았어요", at: Date.now(), changed: f.changed, review: [] };
+      render();
+    } catch { /* 덤 — 못 받으면 처음 예시 그대로 */ }
   }
   // 칸을 적은 뒤 — 다 적었으면 다음 장 초안을 실제 결과로 미리 부르고(C-40), 초안을 확인한 장은 한 줄로 정리해 저절로 완료 보고
   function afterFill() {
@@ -257,7 +281,7 @@
   // ── C-56 R-3 · R-4 상태 넷(2026-10-28): 퀘스트가 생기거나 초안이 오면 칸마다 상태를 매긴다(queststate.js — 규칙으로 정할 수 있는 것만). 옮겨 온 칸은 그 글을 '옮김'으로 미리 적고, 건너뛸 칸은 '건너뜀 — 까닭'으로 적어 둔다(판정에서 넘김으로, F-62와 같은 줄).
   //   먼저인 칸은 비워 두고 채팅 카드가 갈 곳을 말한다(관문은 닫힌 채). 사람이 적은 줄은 덮지 않는다
   const factsNow = (extra = null) => (QS ? QS.factsFrom({ results: extra ? { ...st.results, ...extra } : st.results, source: st.source, files: st.files && st.files.src === "mine" ? st.files.list : null, codeless: !!st.codeless, card: st.card,
-    pushed: st.mode === "live" && canLive ? pushedSince(7) : null }) : {});   // extra — 아직 결과로 남기 전의 지금 장(관문을 볼 때, 새 맥락 리뷰 2026-10-28 막힘). card — 기준 카드의 성공(F-157-2) · pushed — 8단계에 들어온 뒤 '문서로 묶어 GitHub에'로 푸시까지 했나(F-157-4, 연습은 모름)
+    pushed: st.mode === "live" && canLive ? pushedSince(7) : null, dirty: st.mode === "live" && canLive && st.files && st.files.src === "mine" ? st.files.dirty : null }) : {});   // dirty — 커밋하지 않은 파일 수(F-166-6)   // extra — 아직 결과로 남기 전의 지금 장(관문을 볼 때, 새 맥락 리뷰 2026-10-28 막힘). card — 기준 카드의 성공(F-157-2) · pushed — 8단계에 들어온 뒤 '문서로 묶어 GitHub에'로 푸시까지 했나(F-157-4, 연습은 모름)
   // 그 단계의 구분선(대화의 kind "stage") 뒤에 푸시했나 — 2단계 뒤에 한 번 올린 것으로 8단계 칸이 늘 열리지 않게(새 맥락 리뷰 B). pushedAt은 시각(ms)
   const pushedSince = (n) => { const mark = [...st.chat].reverse().find((m) => m.kind === "stage" && m.n === n); return !!st.pushedAt && Number.isFinite(st.pushedAt) && st.pushedAt >= (mark ? mark.at : 0); };
   const qstates = (q = st.quest, extra = null) => (QS && q ? QS.questStates(q, { prev: prevOf(q.chap), facts: factsNow(extra), draftOf: QU.draftOf }) : []);
@@ -305,7 +329,7 @@
   }
   // F-161-5(claude-drafted: 2026-11-06 사용자 시험 — 방금 사람이 고른 칸도 '바뀐 칸'으로 남았고 "Ⅰ · Ⅱ은"): 바뀐 칸은 아직 사람이 적지 않은 칸만, 보일 게 없으면 띠도 없다. 조사 없이 괄호로
   const refitBanner = (q) => { if (!st.refit || !q || st.refit.chap !== q.chap) return {}; const ch = st.refit.changed.filter((i) => !QU.filled(q, i)), rv = st.refit.review;
-    return ch.length || rv.length ? { banner: `방금 바뀜 — ${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요${ch.length ? ` · 바뀐 칸 ${ch.map(ROMAN).join(" · ")}` : ""}${rv.length ? ` · 적어 둔 칸(${rv.map((x) => ROMAN(x.i)).join(" · ")})도 다시 볼까요?` : ""}` } : {}; };
+    return ch.length || rv.length ? { banner: `방금 바뀜 — ${st.refit.why || `${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요`}${ch.length ? ` · 바뀐 칸 ${ch.map(ROMAN).join(" · ")}` : ""}${rv.length ? ` · 적어 둔 칸(${rv.map((x) => ROMAN(x.i)).join(" · ")})도 다시 볼까요?` : ""}` } : {}; };
   const refitChips = (q) => (st.refit && q && st.refit.chap === q.chap ? st.refit.review.map((x) => ({ label: `${ROMAN(x.i)} 다시 볼까요?`, act: "refit-review", i: x.i, kind: "soft" })) : []);
   function prefetch(q) {
     if (!q || !QU || st.mode !== "live" || !canLive) return;

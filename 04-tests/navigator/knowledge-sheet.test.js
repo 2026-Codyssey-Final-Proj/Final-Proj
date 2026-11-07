@@ -193,3 +193,19 @@ test("화면 — 가리기가 없으면 모으지도 카드를 띄우지도 않�
   assert.match(read(path.join(FRONT, "app/20-feed.js")), /\$\{sheetGate\(n\)\}/, "관문의 배운 것 칸에 그 단계의 한 장(또는 확인하기)");
   assert.match(frag, /"sheet-open"/);
 });
+
+// claude-drafted: 2026-11-07 — F-166-13(사용자 시험 셋째): '고칠게요'로 버린 키 모양 글이 한 장의 '이 단계에서 처음 한 말'로 남아 README · 단계 문서에도 실렸다
+test("버린 말 빼기(drop) — 고칠게요로 버린 글은 처음 한 말이 되지 않는다, 같은 말을 두 번 보냈으면 수만 하나 준다", () => {
+  const SHx = require("../../03-backend/navigator/sheet.js"), red = (t) => t.replace(/sk-ant-\S+/g, "[비밀값]");
+  let m = SHx.add({}, 1, "chat", "키는 sk-ant-api03-XYZ 이에요", red);
+  m = SHx.add(m, 1, "chat", "회원 이름만 다뤄요", red);
+  m = SHx.drop(m, 1, "chat", "키는 sk-ant-api03-XYZ 이에요", red);
+  assert.deepEqual(m[1].map((x) => x.t), ["회원 이름만 다뤄요"]);
+  const d = SHx.draft({ title: "아이디어", mats: m[1] }, { redact: red });
+  assert.match(d.think || JSON.stringify(d), /처음 한 말: “회원 이름만 다뤄요”/);
+  let two = SHx.add(SHx.add({}, 1, "chat", "같은 말", red), 1, "chat", "같은 말", red);
+  two = SHx.drop(two, 1, "chat", "같은 말", red); assert.equal(two[1][0].c, 1);
+  assert.deepEqual(SHx.drop(two, 1, "chat", "없는 말", red), two, "없으면 그대로");
+  const a = require("node:fs").readFileSync(require("node:path").join(__dirname, "../../02-frontend/navigator/app.js"), "utf8");
+  assert.match(a, /"fill-fix": \(\) => \{ const f = st\.fillWarn; st\.fillWarn = null; if \(f\) \{ st\.say = f\.t; unmat\("chat", f\.t\); \}/, "고칠게요가 재료에서 뺀다");
+});

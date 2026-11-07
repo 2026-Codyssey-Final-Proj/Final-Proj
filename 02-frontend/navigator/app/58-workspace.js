@@ -226,7 +226,9 @@
         if (state === "cur") { open += 1; return `<li class="jm-cell jm-miss" data-cell="${id}">${nm}<span class="jm-line">${c.draft ? `${q && QU.examplesOf(q, k).length > 1 ? `플로로 예시 ${QU.examplesOf(q, k).length}개 — 권하는 것: ` : "플로로 초안: "}${esc(c.draft)}` : "비었어요"}</span>${ref}<button type="button" data-act="jmap-fill">채우기</button></li>`; }
         return `<li class="jm-cell jm-old" data-cell="${id}">${nm}<span class="jm-line">지났어요 — 적은 글이 남아 있지 않아요</span></li>`;
       }).join("");
-      const ck = r && r.check ? r.check : null, met = ck ? `기준 ${ck.filter((x) => x.met).length}/${ck.length}` : "";
+      // F-166-7(2026-11-07 사용자 시험 셋째): 넘긴 기준을 '맞음'으로 세어 '기준 4/4'로만 보였다 — 결정 기록처럼 '기준 n/m · 넘김 k — 까닭'
+      const ck = r && r.check ? r.check : null, sk = ck ? ck.filter((x) => x.skipped).length : 0;
+      const met = ck ? `기준 ${ck.filter((x) => x.met && !x.skipped).length}/${ck.length}${sk ? ` · 넘김 ${sk}${r.skip && r.skip.reason ? ` — ${esc(r.skip.reason)}` : ""}` : ""}` : "";
       const gate = r && r.passed ? `지났어요 ${esc(r.passed.slice(5))} — 이해했어요${met ? ` · ${met}` : ""}` : state === "done" ? "지났어요 — 날짜는 남아 있지 않아요" : r ? `칸을 다 확인했어요${met ? ` · ${met}` : ""} — 관문은 아직` : "아직 — 칸을 다 채우면 완료 보고 → 관문";   // 증빙 전(C-37)에 지난 장은 날짜가 없다
       return `<section class="jm-stage ${state}" data-n="${n}">${rails}${head}<ol class="jm-flow">${step("in", "넣은 것", input)}${step("ai", "플로로가 한 것", ai)}${step("me", "내가 정한 것", `<ul class="jm-cells">${cells}</ul>`)}${step("gate", "관문", gate)}</ol></section>`;
     });
