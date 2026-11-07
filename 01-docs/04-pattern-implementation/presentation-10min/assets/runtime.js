@@ -58,9 +58,16 @@
     deck.style.setProperty('--deck-w', w + 'px');
     deck.style.setProperty('--deck-h', h + 'px');
 
+    /* data-fit="fill" (Floe 발표 덱, 2026-11-07): 모든 px는 같은 배율로 커지고 작아지고(설계 1920x1080 기준),
+     * 화면이 16:9보다 세로로 길면(16:10 · 4:3) 캔버스를 그 비율만큼 아래로 늘려 빈 띠 대신 캔버스가 된다 —
+     * 16:10이면 1920x1200, 4:3이면 1920x1440. 16:9보다 넓은 화면은 폭을 늘리지 않는다(이미지 · 카드가 같이
+     * 커져 세로가 넘쳤다 — 21:9에서 7 · 10 · 24 · 26장), 양옆은 덱 바탕색. */
+    const fill = document.body.getAttribute('data-fit') === 'fill';
     function fit() {
-      const scale = Math.min(window.innerWidth / w, window.innerHeight / h);
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const scale = Math.min(vw / w, vh / h);
       deck.style.setProperty('--deck-scale', String(scale));
+      if (fill) deck.style.setProperty('--deck-h', Math.max(h, vh / scale) + 'px');
     }
     fit();
     window.addEventListener('resize', fit);
