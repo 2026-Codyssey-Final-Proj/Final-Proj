@@ -5,6 +5,7 @@
      · 본문 19장 합 10:00 + 부록 4장 = 23장. 바닥에 장마다 시간 · 누적.
      둘째 판(PDF v1.3 25장)에서 옮긴 숫자: 커밋 1,164 · 병합 PR 317 · 결정 기록 8 · 앱 v11.3.0 · 시험 1,167은 2026-11-07 실측.
      토큰 5.2만 / 8.8만 · −29% · Anthropic 67/50/65% · 결정 35칸 · 관문 8번 · 요구 17개(11개 중 10개) · TAM/SAM/SOM은 PDF v1.3 값 그대로 — 확인하지 못했다.
+     · 2026-11-07 넷째 고침(두승현 요청): 1~5장 도입부를 공감대(2025 Stack Overflow 개발자 설문 84% · 66%, 2026-11-07 원문 확인) → 팀 설문(빈칸 _, 고한결 진행 중) → 8월 사례 → 45초 영상 → 왜 Floe로 바꿨다. Anthropic 67/50/65% 장은 뺐다(대본에서만 쓰던 숫자).
      16장 사용 테스트 결과는 빈칸(_). html-ppt 스킬(MIT, assets/LICENSE-html-ppt.txt) presenter-mode-reveal 틀 + arctic-cool 테마.
      쓰는 법: ← → 넘김 · S 발표자 창(지금 장 · 다음 장 · 대본 · 타이머) · T 테마 · F 전체 화면 · O 전체 보기 · + − 0 글자 크기 · Ctrl+P → PDF -->
 <html lang="ko" data-themes="arctic-cool,corporate-clean,minimal-white,nord,tokyo-night">
@@ -111,12 +112,36 @@ ul.plain{margin:0;padding-left:1.1em;font-size:22px;line-height:1.7;color:var(--
   </div>
   <div id="peek" aria-hidden="true"></div>
   <div class="deck-footer"><span class="who">Floe · 0:20 · 누적 0:20</span><span class="slide-number" data-current="1" data-total="23"></span></div>
-  <aside class="notes"><p>안녕하세요, Floe 팀입니다. 한 문장으로 시작합니다. <strong>AI가 일하는 시대에도, 성장하는 건 사람이어야 합니다.</strong></p><p>Floe는 끝까지 만들고, 이해하고, 배움을 쌓도록 길을 안내하는 데스크톱 앱입니다.</p></aside>
+  <aside class="notes"><p>안녕하세요, Floe 팀입니다. 요즘 AI로 앱이나 서비스를 직접 만들어 보신 분들, 많으시죠. 말로 시키면 코드가 나옵니다.</p><p>그런데 처음 해 보는 분들은 공통으로 한 벽을 만납니다. <strong>지금 뭘 해야 하고, 앞으로 뭘 해야 하는지가 막막합니다.</strong></p></aside>
 </section>
 
-<!-- 2 문제 -->
+<!-- 2 근거 — 공감대(Stack Overflow) + 우리 설문 -->
+<section class="slide" data-title="막막함">
+  <header class="hd"><p class="kicker">요즘 AI로 앱 · 서비스를 만드는 사람이 많습니다</p><h2 class="h2">처음 하는 사람이 만나는 벽 — 지금 뭘 해야 하는지가 막막하다</h2></header>
+  <div class="grid g2">
+    <div class="card">
+      <h4>개발자들은 이미 쓰고, 쓰면서 애를 먹습니다</h4>
+      <div class="stat mt-m" style="grid-template-columns:1fr 1fr">
+        <div><div class="n">84%</div><div class="l">AI 도구를 쓰거나 쓸 계획</div></div>
+        <div><div class="n" style="color:var(--bad)">66%</div><div class="l">"거의 맞는데 아닌" 결과에 애먹음</div></div>
+      </div>
+      <p class="dim mt-m" style="font-size:16px">2025 Stack Overflow 개발자 설문 · survey.stackoverflow.co/2025/ai</p>
+    </div>
+    <div class="card card-accent">
+      <h4>코딩을 배우는 분들께 직접 물었습니다</h4>
+      <div class="stat mt-m" style="grid-template-columns:1fr">
+        <div><div class="n" style="font-size:52px;white-space:nowrap">_명 중 _명</div><div class="l">"다음에 뭘 할지 몰라서 멈췄다"</div></div>
+      </div>
+      <p class="dim mt-m" style="font-size:16px">팀 설문 · 진행 중 — 숫자가 나오기 전에는 이 장을 건너뜁니다</p>
+    </div>
+  </div>
+  <div class="deck-footer"><span class="who">Floe · 0:25 · 누적 0:45</span><span class="slide-number" data-current="2" data-total="23"></span></div>
+  <aside class="notes"><p>저희만의 느낌이 아닙니다. Stack Overflow 설문에서 개발자 <strong>84%가 AI 도구를 쓰거나 쓸 계획</strong>이고, 66%는 "거의 맞는데 아닌" 결과에 애를 먹습니다.</p><p>저희가 코딩을 배우는 분들께 직접 물어봤더니, <strong>[N]명 중 [M]명</strong>이 "다음에 뭘 할지 몰라서 멈췄다"고 했습니다. <em>(결과 전에는 이 장을 건너뛰고 "저희 팀도 8월에 똑같이 멈췄습니다"로 다음 장.)</em></p></aside>
+</section>
+
+<!-- 3 우리 사례 -->
 <section class="slide" data-title="8월의 프로그램">
-  <header class="hd"><p class="kicker">어떤 문제를 풀고 싶었나</p><h2 class="h2">8월, 돌아가는 프로그램은 만들었습니다</h2></header>
+  <header class="hd"><p class="kicker">저희도 그랬습니다</p><h2 class="h2">8월, 돌아가는 프로그램은 만들었습니다</h2></header>
   <div class="grid g2">
     <div class="term"><span class="p">$</span> python3 main.py
        My Prompt Manager
@@ -133,39 +158,16 @@ ul.plain{margin:0;padding-left:1.1em;font-size:22px;line-height:1.7;color:var(--
       <p class="lede mt-l">코드는 남았는데, <strong>'왜'가 남지 않았습니다.</strong></p>
     </div>
   </div>
-  <div class="deck-footer"><span class="who">Floe · 0:25 · 누적 0:45</span><span class="slide-number" data-current="2" data-total="23"></span></div>
-  <aside class="notes"><p>8월에 팀원이 AI로 만든 프로그램입니다. 잘 돕니다. 그런데 세 가지를 못 답했습니다. <strong>코드는 남았는데 '왜'가 남지 않았습니다.</strong></p></aside>
-</section>
-
-<!-- 3 -->
-<section class="slide" data-title="바이브 코딩">
-  <header class="hd"><p class="kicker">어떤 문제를 풀고 싶었나</p><h2 class="h2">바이브 코딩은 결과를 남기고, 이해를 지웁니다</h2></header>
-  <div class="grid g2">
-    <div>
-      <div class="feature-row"><span class="num">“</span><div><b>지금 어디까지 왔지?</b></div></div>
-      <div class="feature-row"><span class="num">“</span><div><b>이거 왜 이렇게 했지?</b></div></div>
-      <div class="feature-row"><span class="num">“</span><div><b>지난번에 뭘 배웠지?</b></div></div>
-    </div>
-    <div>
-      <p class="lede">AI를 쓰느냐보다, <strong>어떻게</strong> 쓰느냐</p>
-      <div class="stat mt-m">
-        <div><div class="n">67%</div><div class="l">손으로 직접</div></div>
-        <div><div class="n" style="color:var(--bad)">50%</div><div class="l">AI에 맡김</div></div>
-        <div><div class="n">65%</div><div class="l">AI에게 묻고 확인</div></div>
-      </div>
-      <p class="dim mt-m" style="font-size:16px">개념 퀴즈 점수 · Anthropic 실험(2026.1, 개발자 52명)</p>
-    </div>
-  </div>
-  <div class="deck-footer"><span class="who">Floe · 0:30 · 누적 1:15</span><span class="slide-number" data-current="3" data-total="23"></span></div>
-  <aside class="notes"><p>Anthropic 실험에서 개념 퀴즈 점수가 <strong>AI에 맡기면 50%, 묻고 확인하면 65%</strong>였습니다. AI를 쓰느냐가 아니라 <strong>어떻게</strong> 쓰느냐의 문제입니다. 그래서 같은 미션을 다시 해 봤습니다.</p></aside>
+  <div class="deck-footer"><span class="who">Floe · 0:25 · 누적 1:10</span><span class="slide-number" data-current="3" data-total="23"></span></div>
+  <aside class="notes"><p>저희도 그랬습니다. 8월에 팀원이 AI로 만든 프로그램입니다. 잘 돕니다. 그런데 어디까지 왔는지, 왜 이렇게 했는지, 다음엔 뭘 다르게 할지 — 셋 다 못 답했습니다. <strong>코드는 남았는데 '왜'가 남지 않았습니다.</strong></p></aside>
 </section>
 
 <!-- 4 영상 -->
 <section class="slide" data-title="영상">
-  <header class="hd"><p class="kicker">같은 미션을, Floe로 다시</p><h2 class="h2">40초 영상 — 아이디어 한 줄에서 관문까지</h2></header>
-  <div class="fig"><figure class="img-frame contain"><video controls preload="none" src="../floe-intro-video/final/floe-intro-40s.mp4"></video></figure></div>
-  <div class="deck-footer"><span class="who">Floe · 0:45 · 누적 2:00 · 영상 40초</span><span class="slide-number" data-current="4" data-total="23"></span></div>
-  <aside class="notes"><p>8월의 그 미션을 Floe로 다시 했습니다. 영상을 틀고 <strong>장면마다 한 문장만</strong>. 영상이 끝나면 "왜 Floe인가"로.</p><p>(현장 시연이 막히면 이 영상이 대신한다 — 8 · 9장.)</p></aside>
+  <header class="hd"><p class="kicker">그 막막함을 없애려고 만든 것</p><h2 class="h2">45초 영상 — 막힘에서 다음 프로젝트까지</h2></header>
+  <div class="fig"><figure class="img-frame contain"><video controls preload="none" src="../floe-intro-video/final/floe-intro-45s.mp4"></video></figure></div>
+  <div class="deck-footer"><span class="who">Floe · 0:50 · 누적 2:00 · 영상 45초</span><span class="slide-number" data-current="4" data-total="23"></span></div>
+  <aside class="notes"><p>그 막막함을 없애려고 만든 게 Floe입니다. 45초만 보시죠. <strong>영상 중에는 말하지 않는다</strong> — 자막이 있다.</p><p>(현장 시연이 막히면 이 영상이 대신한다 — 8 · 9장.)</p></aside>
 </section>
 
 <!-- 5 왜 Floe -->
@@ -178,7 +180,7 @@ ul.plain{margin:0;padding-left:1.1em;font-size:22px;line-height:1.7;color:var(--
   </div>
   <p class="lede mt-l">다 만든 뒤에도 <strong>"왜 이렇게 만들었나요?"</strong>에 답할 수 있어요.</p>
   <div class="deck-footer"><span class="who">Floe · 0:30 · 누적 2:30</span><span class="slide-number" data-current="5" data-total="23"></span></div>
-  <aside class="notes"><p>영상에서 본 차이가 이겁니다. AI 코딩 도구는 빠르지만 '왜'가 묻히고, 강의는 내 프로젝트와 따로입니다. Floe는 <strong>도구를 대신하지 않고 그 위에서</strong> 내 프로젝트를 8단계로 안내합니다.</p></aside>
+  <aside class="notes"><p>영상에서 보신 대로, 다음 할 일은 늘 하나이고 넘어갈 때마다 배운 것이 남습니다. AI 코딩 도구는 빠르지만 '왜'가 묻히고, 강의는 내 프로젝트와 따로입니다. Floe는 <strong>도구를 대신하지 않고 그 위에서</strong> 내 프로젝트를 8단계로 안내합니다.</p><p>한 문장으로 말하면 — <strong>AI가 일하는 시대에도, 성장하는 건 사람이어야 하니까요.</strong></p></aside>
 </section>
 
 <!-- 6 누가 어디서 -->
