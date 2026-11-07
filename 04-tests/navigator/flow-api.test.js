@@ -179,7 +179,7 @@ test("POST /api/docs(C-39): 누가 정했나 · 플로로 초안 · 재료 · �
     const b = await call("POST", "/api/docs", { body: { topic: "앱", results: { 0: E0, 1: bad } } });
     assert.equal(b.status, 400, JSON.stringify(bad).slice(0, 80)); assert.match(b.json.reason, /2단계 결과의 모양/);
   }
-  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", idea: "가".repeat(1000), results: { 0: E0, 1: E1 } } })).status, 400, "처음 말한 것은 400자까지");
+  assert.equal((await call("POST", "/api/docs", { body: { topic: "앱", idea: "가".repeat(Nav.IDEA_MAX + 1), results: { 0: E0, 1: E1 } } })).status, 400, "처음 말한 것은 IDEA_MAX까지(F-167)");
 });
 
 // F-62(2026-10-28): 관문에서 까닭을 적고 넘긴 기준(check[].skipped · skip{reason, items})이 단계 문서의 완료 기준 표에 '넘김(까닭: …)', 결정 기록의 관문 줄에 '넘김 n — 까닭: …'으로 남는다 — 서버가 버리지 않게

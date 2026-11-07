@@ -1377,7 +1377,7 @@
   async function startDraft(text, skipCheck) {
     if (st.busy) return say("앞의 일을 아직 기다리고 있어요 — 끝난 뒤에 다시 해 주세요");   // 다른 호출이 도는 중(웹 AI 제안 '시작' 등) — 빈 퀘스트를 만들지 않는다(F-103-5)
     startText = text;   // st.source는 비밀값 경고(guard)를 지난 뒤에 — 전에는 '그만둘게요'를 골라도 보내지 않기로 한 원문이 기록(KEEP)에 남아 idea.md를 덮을 수 있었다(F-144-11)
-    //   F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 앞 400자(idea) 그대로
+    //   F-68(2026-10-28 이재엽 버튼 "통째로 파일에"): 받은 글 전부를 기록에 — 문서로 묶을 때 docs/00-source/idea.md로. AI · 문서의 '처음 말한 것'은 idea(IDEA_MAX — 처음 입력과 같은 8,000자, F-167)
     if (st.mode !== "live" || !canLive) { st.source = text; return beginQuest({ ...QU.EXAMPLE_DRAFT, example: true }); }
     if (!skipCheck && guard(text, "start")) return;
     st.source = text;
@@ -1390,7 +1390,7 @@
     render(); say(`초안은 만들지 못했어요 — ${r.reason || "AI에 연결하지 못했어요"}. 한 줄씩 같이 적어요`); questText();
   }
   function beginQuest(d) {
-    st.topic = d.topic; st.idea = startText.slice(0, N.IDEA_MAX);   // 처음 말한 것은 받은 글 그대로(앞 400자) — 다음 장 퀘스트 글 · 계획 세우기가 쓴다
+    st.topic = d.topic; st.idea = startText.slice(0, N.IDEA_MAX);   // 처음 말한 것은 받은 글 그대로(IDEA_MAX까지 — F-167) — 다음 장 퀘스트 글 · 계획 세우기가 쓴다
     st.quest = applyStates(QU.withDraft(QU.makeQuest(N.STAGES[0], crits(0)), d)); questStarted();
     if (qauto) openQwin("quest");
     prefetch(st.quest);   // 2단계 초안을 뒤에서 미리(C-40)
@@ -1730,7 +1730,7 @@
       const d = R.data, nx = resumeStage(d.stages);
       st.results = Object.fromEntries(R.got.map((n) => [n, { chap: n, title: d.topic || "", ...d.stages[n].result }]));
       if (!st.topic && d.topic) st.topic = d.topic;
-      if (!st.idea && d.idea) st.idea = d.idea;   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰)
+      if (!st.idea && (d.source || d.idea)) st.idea = String(d.source || d.idea).slice(0, N.IDEA_MAX);   // 처음 말한 것 — 되살리지 않으면 다음 올리기에서 기획서의 처음 말이 지워진다(새 맥락 리뷰). 통째 글(idea.md)이 있으면 그것에서 — 문서에는 앞 400자뿐이다(F-167)
       if (!st.source && d.source) st.source = d.source;
       const all = Object.entries(d.stages);   // 읽을 수 없는 문서(result null)도 — 사람 것으로 두고 덮지 않는다
       st.docPrints = { project: d.key || "", seen: Object.fromEntries(all.map(([n, x]) => [n, x.print])), wrote: Object.fromEntries(all.filter(([, x]) => x.lossless).map(([n, x]) => [n, x.print])), own: Object.fromEntries(all.filter(([, x]) => !x.lossless).map(([n, x]) => [n, x.print])), dirty: false };
