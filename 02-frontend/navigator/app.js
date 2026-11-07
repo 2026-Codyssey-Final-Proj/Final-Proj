@@ -1903,17 +1903,19 @@
   const fileTabs = () => st.openFiles.map((f, k) => `<span class="ftab${f.dirty ? " dirty" : ""}"><button type="button" role="tab" data-act="ftab" data-v="${k}" aria-selected="${st.qtab === "file" && st.fileSel === k}" title="${esc(f.path)}">${esc(f.name)}${f.dirty ? " •" : ""}</button><button type="button" class="ftab-x" data-act="fclose" data-v="${k}" aria-label="${esc(f.name)} 닫기" title="닫기">×</button></span>`).join("");
   async function openFile(i) {
     const n = Number(i), x = st.files && st.files.list && st.files.list[n]; if (!x || x.dir) return;
+    // claude-drafted: 2026-11-07 — 문서가 열리면 섬은 옆 칸으로(임유정 2026-11-07) — 섬이 가운데(islBig)면 문서 칸(.wbody)이 CSS로 숨어 연 문서가 안 보였다. 열지 못하면 그대로
+    const show = (k) => { st.fileSel = k; st.qtab = "file"; st.islBig = false; render(); };
     const k = st.openFiles.findIndex((f) => f.path === x.path);
-    if (k >= 0) { st.fileSel = k; st.qtab = "file"; return render(); }
+    if (k >= 0) return show(k);
     try {
       const r = await (await fetch(`/api/file?i=${n}`, { cache: "no-store" })).json();
       if (!r || !r.ok) return say(`'${x.name}'은 열지 않았어요 — ${(r && r.reason) || "서버가 답하지 않았어요"}`);
       const again = st.openFiles.findIndex((f) => f.path === r.path);   // 기다리는 동안 같은 파일이 열렸으면(빠른 두 번 누름) 그 탭으로 — 탭 둘이면 한쪽 저장 뒤 다른 쪽 409(F-103-6)
-      if (again >= 0) { st.fileSel = again; st.qtab = "file"; return render(); }
+      if (again >= 0) return show(again);
       if (st.openFiles.length >= 12) return say("연 파일이 12개예요 — 하나를 닫고 열어요");   // 저장 이력(20번 × 512KB)이 파일 수만큼 늘지 않게(새 맥락 리뷰)
       const text = r.text.replace(/\r\n/g, "\n");   // 글 칸은 LF — 저장할 때 eol로 되돌린다(CRLF 파일이 LF로 바뀌지 않게)
       st.openFiles.push({ i: n, path: r.path, name: r.name, kind: r.kind, eol: r.eol || "lf", text, saved: text, mtime: r.mtime, changed: r.changed, dirty: false, edit: false, raw: false, hist: [], note: null });
-      st.fileSel = st.openFiles.length - 1; st.qtab = "file"; render();
+      show(st.openFiles.length - 1);
     } catch { say("서버에 닿지 않았어요"); }
   }
   async function reloadFile(k) {
