@@ -145,7 +145,7 @@
     const row1 = m.cards.slice(0, 4).map(card).join(""), row2 = m.cards.slice(4).reverse().map(card).join("");
     const ban = m.canDraw ? `<div class="sm-ban"><b>2단계 칸을 다 채웠어요</b><span>기획서(2단계에서 정한 것)로 3 ~ 8단계의 퀘스트와 문서를 한 번에 그려요</span><button type="button" class="b" data-act="prep-draw">기획서로 3 ~ 8단계 그리기</button></div>`
       : m.drawn && !m.confirmed ? `<div class="sm-ban"><b>퀘스트 ${Object.keys(st.prep.cards).length}개를 준비했어요</b><span>${fix ? "카드마다 ① 생각을 고친 뒤 '맞아요'를 눌러요" : "카드마다 어느 절에서 왔는지 적었어요 — 맞으면 한 번에 넘어가요"}</span><button type="button" class="b" data-act="prep-ok">맞아요 — 이대로 준비해요</button>${fix ? "" : `<button type="button" class="b ghost" data-act="prep-fix">고칠래요</button>`}</div>`
-      : m.cur < 2 ? `<div class="sm-ban soft"><span>1단계에서는 길이 한 칸만 보여요. 2단계 칸을 다 채우면 3단계부터 8단계까지의 퀘스트와 문서가 한 번에 그려져요</span></div>` : "";
+      : m.cur < 2 && !m.drawn ? `<div class="sm-ban soft"><span>${m.cur === 0 ? "1단계에서는 길이 한 칸만 보여요. " : ""}2단계 칸을 다 채우면 3단계부터 8단계까지의 퀘스트와 문서가 한 번에 그려져요</span></div>` : "";   // 이미 그렸으면 띄우지 않는다 · 2단계에서는 '1단계에서는'을 빼고(F-166-12)
     const legend = `<p class="sm-legend">${["done", "now", "ready", "later"].map((k) => `<span><i class="st-${k}" aria-hidden="true"></i>${STATE_WORD[k]}</span>`).join("")}<small>카드를 누르면 오른쪽 칸에 그 퀘스트와 문서 — 끝난 · 지금 카드는 커져서 줄마다 보여요</small></p>`;
     const docs = `<ul class="sm-docs">${m.docs.map((d) => `<li class="${d.has ? "has" : ""}"><code>${esc(d.path)}</code><span>${esc(d.what)}</span><small>${d.has ? "있음" : "아직"}</small></li>`).join("")}</ul>`;
     const ship = FDOCS && st.results[0] && st.results[1] ? `<p class="sm-ship"><button type="button" class="b" data-act="ship-open">문서로 묶어 GitHub에</button><small>지금까지 정한 것을 단계 문서 · 기획서 · 결정 기록으로</small></p>` : "";   // 흐름 보기(jmap)와 같은 단추
@@ -226,7 +226,9 @@
         if (state === "cur") { open += 1; return `<li class="jm-cell jm-miss" data-cell="${id}">${nm}<span class="jm-line">${c.draft ? `${q && QU.examplesOf(q, k).length > 1 ? `플로로 예시 ${QU.examplesOf(q, k).length}개 — 권하는 것: ` : "플로로 초안: "}${esc(c.draft)}` : "비었어요"}</span>${ref}<button type="button" data-act="jmap-fill">채우기</button></li>`; }
         return `<li class="jm-cell jm-old" data-cell="${id}">${nm}<span class="jm-line">지났어요 — 적은 글이 남아 있지 않아요</span></li>`;
       }).join("");
-      const ck = r && r.check ? r.check : null, met = ck ? `기준 ${ck.filter((x) => x.met).length}/${ck.length}` : "";
+      // F-166-7(2026-11-07 사용자 시험 셋째): 넘긴 기준을 '맞음'으로 세어 '기준 4/4'로만 보였다 — 결정 기록처럼 '기준 n/m · 넘김 k — 까닭'
+      const ck = r && r.check ? r.check : null, sk = ck ? ck.filter((x) => x.skipped).length : 0;
+      const met = ck ? `기준 ${ck.filter((x) => x.met && !x.skipped).length}/${ck.length}${sk ? ` · 넘김 ${sk}${r.skip && r.skip.reason ? ` — ${esc(r.skip.reason)}` : ""}` : ""}` : "";
       const gate = r && r.passed ? `지났어요 ${esc(r.passed.slice(5))} — 이해했어요${met ? ` · ${met}` : ""}` : state === "done" ? "지났어요 — 날짜는 남아 있지 않아요" : r ? `칸을 다 확인했어요${met ? ` · ${met}` : ""} — 관문은 아직` : "아직 — 칸을 다 채우면 완료 보고 → 관문";   // 증빙 전(C-37)에 지난 장은 날짜가 없다
       return `<section class="jm-stage ${state}" data-n="${n}">${rails}${head}<ol class="jm-flow">${step("in", "넣은 것", input)}${step("ai", "플로로가 한 것", ai)}${step("me", "내가 정한 것", `<ul class="jm-cells">${cells}</ul>`)}${step("gate", "관문", gate)}</ol></section>`;
     });

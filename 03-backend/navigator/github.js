@@ -8,6 +8,8 @@
 "use strict";
 const { spawn } = require("node:child_process");
 const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const TIMEOUT_MS = 4000;
 // 기다리는 동안 서버(앱의 메인 프로세스)를 붙잡지 않게 spawn으로 — 전에는 spawnSync라 gh가 느리면 호출마다 4초씩 앱이 멈췄다(F-104-7). 답: { status, stdout } 또는 { error }
@@ -49,6 +51,16 @@ function parseRemote(url) {
   return { kind: "github", owner, repo, web: `https://github.com/${owner}/${repo}` };
 }
 
+// F-166-9(2026-11-07 사용자 시험 셋째): 폴더가 다른 저장소 안에 있나 — 홈처럼 위 폴더가 git 저장소면, 이 폴더의 git 명령 · 원격이 그 저장소의 것이 된다
+//   (시험에서 새 프로젝트가 홈 저장소의 원격을 자기 것으로 보였다 — 그대로 올리면 남의 저장소에 커밋 · 푸시). 맨 위를 알 수 없으면 false(막지 않는다)
+async function parentRepo(dir, run = runner()) {
+  if (!dir) return false;
+  const t = await run("git", ["rev-parse", "--show-toplevel"], dir);
+  if (!t || t.code !== 0 || !t.out) return false;
+  const real = (p) => { try { return fs.realpathSync(p); } catch { return path.resolve(p); } };
+  return real(t.out) !== real(dir);
+}
+
 // /api/github의 답 — dir은 서버가 훅 알림에서 고른 폴더(화면이 보낸 경로는 받지 않는다). 경로는 답에 넣지 않는다
 async function status(dir, project, run = runner()) {
   const gh = await run("gh", ["--version"]);
@@ -58,6 +70,7 @@ async function status(dir, project, run = runner()) {
   const inside = await run("git", ["rev-parse", "--is-inside-work-tree"], dir);
   if (!inside.found) return { ...base, git: false, remote: null, why: "no-git" };   // git 명령이 없다
   if (inside.code !== 0 || inside.out !== "true") return { ...base, git: false, remote: null, why: "not-repo" };
+  if (await parentRepo(dir, run)) return { ...base, git: false, remote: null, why: "parent-repo" };   // F-166-9 — 위 저장소의 원격을 이 폴더의 것으로 보이지 않는다
   const r = await run("git", ["remote", "get-url", "origin"], dir);
   const remote = r.code === 0 ? parseRemote(r.out) : null;
   return { ...base, git: true, remote, why: remote ? "" : "no-remote" };
@@ -97,4 +110,4 @@ async function visibility(o, run = runner()) {
   return v.code === 0 && v.out === "true" ? "private" : v.code === 0 && v.out === "false" ? "public" : "";
 }
 
-module.exports = { parseRemote, status, runner, createRequest, originKey, visibility, VIS, TIMEOUT_MS };
+module.exports = { parseRemote, parentRepo, status, runner, createRequest, originKey, visibility, VIS, TIMEOUT_MS };

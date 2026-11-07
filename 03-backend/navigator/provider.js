@@ -152,7 +152,7 @@ async function callApi(client, cfg, prompt, schema) {
   const u = res.usage || {};
   const tokens = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.output_tokens || 0);
   const usage = Tokens.usageOf(u);
-  if (res.stop_reason === "refusal") return { error: "Claude가 이 글에는 답하지 않았어요", tokens, usage };
+  if (res.stop_reason === "refusal") return { error: "Claude가 이 글에는 답하지 않았어요", refused: true, tokens, usage };
   if (res.stop_reason === "max_tokens") return { error: "답이 길어서 잘렸어요 — NAV_MAX_TOKENS를 늘려 보세요", tokens, usage };
   const text = (res.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
   try { return { data: extractJson(text), tokens, usage }; } catch { return { error: "Claude가 정해진 형식으로 답하지 않음", tokens, usage }; }
@@ -222,6 +222,8 @@ function callCli(prompt, schema, opts = null, L = claudeLaunch()) {   // L — �
         const u = r.usage || {};
         const tokens = (u.input_tokens || 0) + (u.cache_creation_input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.output_tokens || 0);
         const paid = { tokens, usage: Tokens.usageOf(u), cost: Number.isFinite(r.total_cost_usd) ? r.total_cost_usd : null };   // 형식이 틀린 답도 토큰은 나갔다 — 장부에 남긴다
+        // F-166-4(2026-11-07): 빠른 모델이 보호 장치로 거절하면(stop_reason refusal · 'safeguards flagged') 형식 오류가 아니라 거절로 알린다 — 부른 쪽이 기본 모델로 한 번 더 묻는다
+        if (r.stop_reason === "refusal" || /safeguards flagged/i.test(String(r.result || ""))) return resolve({ error: "Claude가 이 글에는 답하지 않았어요", refused: true, ...paid });
         if (r.is_error || !r.structured_output) return resolve({ error: "Claude가 정해진 형식으로 답하지 않음", ...paid });
         resolve({ data: r.structured_output, ...paid });
       } catch { resolve({ error: "Claude 응답을 읽지 못함" }); }
@@ -267,8 +269,11 @@ function createCaller({ env = process.env, callCli: cli = callCli, makeClient, m
         : { error: "녹화에 없는 요청이에요 — 같은 글·같은 단계로 node --env-file=.env record-demo.js를 다시 돌려 녹화하세요" };
     }
     let r;
-    if (providerOf(env) === "cli") r = await cli(prompt, schema, meta.fast ? { fast: true, ...(env.NAV_DRAFT_MODEL ? { model: env.NAV_DRAFT_MODEL } : {}) } : undefined);
-    else {
+    if (providerOf(env) === "cli") {
+      r = await cli(prompt, schema, meta.fast ? { fast: true, ...(env.NAV_DRAFT_MODEL ? { model: env.NAV_DRAFT_MODEL } : {}) } : undefined);
+      // F-166-4(2026-11-07 사용자 시험 셋째): 빠른 모델(sonnet)이 '3 ~ 8단계 그리기'를 보호 장치로 거절해(reasoning_extraction) 규칙으로만 그렸다 — 기본 모델로 한 번 더
+      if (meta.fast && r && r.refused) { if (ledger && r.tokens > 0) ledger.add("floe", meta && meta.label, r.usage || Tokens.usageOf({ input_tokens: r.tokens }), r.cost ?? null); r = await cli(prompt, schema, undefined); }
+    } else {
       const gate = meter.gate({ purpose: cfg.purpose, tester: cfg.tester, reserve: cfg.useReserve });
       if (!gate.ok) return { error: gate.reason };
       const who = `${env.ANTHROPIC_API_KEY || ""}|${env.ANTHROPIC_BASE_URL || ""}`;
@@ -277,6 +282,11 @@ function createCaller({ env = process.env, callCli: cli = callCli, makeClient, m
       const use = meta.fast && !cfg.relay ? { ...cfg, model: draftModel, effort: FAST.effort } : cfg;   // 초안은 빠른 모델 · 낮은 effort(C-40)
       r = await callApi(client, meta.maxTokens > use.maxTokens ? { ...use, maxTokens: meta.maxTokens } : use, prompt, schema);   // 예시 셋은 글이 길다 — 그 요청만 넉넉히
       if (r.tokens) meter.add(r.tokens, { bucket: gate.bucket, tester: cfg.tester });
+      if (use !== cfg && r.refused) {   // F-166-4 — 빠른 모델이 거절하면 기본 모델로 한 번 더
+        if (ledger && r.tokens > 0) ledger.add("floe", meta && meta.label, r.usage || Tokens.usageOf({ input_tokens: r.tokens }), r.cost ?? null);
+        r = await callApi(client, meta.maxTokens > cfg.maxTokens ? { ...cfg, maxTokens: meta.maxTokens } : cfg, prompt, schema);
+        if (r.tokens) meter.add(r.tokens, { bucket: gate.bucket, tester: cfg.tester });
+      }
     }
     if (record && r.data !== undefined) record(key, r.data);
     if (ledger && r.tokens > 0) ledger.add("floe", meta && meta.label, r.usage || Tokens.usageOf({ input_tokens: r.tokens }), r.cost ?? null);

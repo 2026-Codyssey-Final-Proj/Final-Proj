@@ -255,7 +255,7 @@
     else if (st.finished) main = `<b>모든 단계를 마쳤어요</b>`;
     else if (!s) main = `<b>플로로</b><span class="pl-now">눌러서 지금 만드는 걸 보여 주세요</span>`;
     else if (holding() && st.screen !== "gate") main = `<b>${LB(s.n)} · 보류 중</b><span class="pl-now">${esc(U.holdLine(st.hold, ymd()).replace(/^보류 중 · /, ""))}</span>`;
-    else main = `<b>${allDone() ? "다 했어요! · " : ""}${LB(s.n)}</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
+    else main = `<b>${allDone() ? "다 했어요! · " : ""}${LB(s.n)}</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : allDone() ? "지금: 넘어가기 전 확인" : `지금: ${esc(tick().now)}`}</span>`;   // 다 했으면 '아직 안 적은 할 일'(살펴본 결과의 next)을 보이지 않는다(F-166-19)
     // C-46 R-1: 켤 때 인사는 알약 안에서 — 인사 중이면 플로로가 솟아 손을 흔들고(app.css [data-greet]) 글은 시간대 인사 한 줄(다시 온 사람에게는 그 말)
     const greeting = document.documentElement.classList.contains("greeting");
     if (greeting) main = `<b>플로로</b><span class="pl-now pl-hello" aria-live="polite">${esc(st.back || C.greeting(new Date().getHours()))}</span>`;

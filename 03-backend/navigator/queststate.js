@@ -20,7 +20,8 @@
   // 사실 — 결과(단계마다 { items: [{ name, lines }] }) · 파일 목록(/api/files의 { path, dir })에서. 모르면 null
   //   card — 1단계 관문의 기준 카드(basecard.js). 사람이 거기 '성공'에 숫자를 적었으면 2단계 Ⅱ가 '아직 모름'이어도 성공 숫자가 있다(F-157-2 — claude-drafted: 2026-11-05)
   //   pushed — 화면이 '문서로 묶어 GitHub에'로 푸시까지 한 적이 있나(true · false), 모르면(연습 · 서버 없음) null
-  function factsFrom({ results = {}, files = null, codeless = false, card = null, pushed = null } = {}) {
+  //   dirty — 커밋하지 않은 파일 수(문서 · Floe 설정 밖, 서버 /api/files), 모르면 null(F-166-6)
+  function factsFrom({ results = {}, files = null, codeless = false, card = null, pushed = null, dirty = null } = {}) {
     const feat = lineOf(stageOf(results, 2), FEATURE_LINE), succ = lineOf(stageOf(results, 1), SUCCESS_LINE), out = lineOf(stageOf(results, 1), OUT_LINE);
     const outText = out ? norm(out.join(" ")) : "";
     const cardSucc = card && card.success && typeof card.success.text === "string" ? card.success.text : "", measured = (l) => /\d/.test(l) && !UNMEASURED.test(l);
@@ -30,6 +31,7 @@
       success: measured(cardSucc) ? true : !succ || !succ.length ? null : succ.some(measured),
       codeFiles: Array.isArray(files) ? files.filter((f) => f && !f.dir && CODE_RE.test(String(f.path || ""))).length : null,
       pushed: typeof pushed === "boolean" ? pushed : null,
+      dirty: Number.isInteger(dirty) && dirty >= 0 ? dirty : null,
       codeless: !!codeless,   // 6단계에서 '코드 파일을 만드시겠습니까?'에 아니요(결정 모음 A-04 — 문서만 만드는 일일 수 있다, F-70) — 코드 0개여도 막지 않는다
     };
   }
@@ -44,6 +46,8 @@
     if (stage === 6 && is(MEASURE_LINE, 0) && facts.success === false) return { state: "first", go: { s: 1, i: 1, name: SUCCESS_LINE }, why: "2단계 '언제 성공'의 숫자가 비어 있어요 — 그것부터 적어요" };
     // F-157-4(2026-11-05 사용자 시험 — 코드가 하나도 없는데 5단계 할 일이 '다 했어요'가 되고 관문이 열렸다): 5단계 '도는지 보기'도 6단계처럼 먼저 코드를 묻는다
     if (stage === 4 && is(SMOKE_LINE, 1) && facts.codeFiles === 0 && !facts.codeless) return { state: "first", go: { s: 4, i: 0 }, code: true, why: "코드 파일이 없어요 — 뼈대 코드부터 만들어 돌려 봐요" };
+    // F-166-6(2026-11-07 사용자 시험 셋째): 문서는 올렸어도 커밋하지 않은 코드가 남았으면 아직 — 코드 커밋 · 푸시를 맡기는 단추(commit)
+    if (stage === 7 && is(COMMIT_LINE, 4) && facts.pushed === true && facts.dirty > 0) return { state: "first", go: { s: 7, i: 4 }, commit: true, why: `커밋하지 않은 파일이 ${facts.dirty}개 남았어요 — 단계 문서만 올라갔어요` };
     if (stage === 7 && is(COMMIT_LINE, 4) && facts.pushed === false) return { state: "first", go: { s: 7, i: 4 }, ship: true, why: "아직 저장소에 올리지 않았어요 — '문서로 묶어 GitHub에'로 올리면 이 칸을 적을 수 있어요" };
     if (stage === 5 && facts.codeFiles === 0 && !facts.codeless) return { state: "first", go: { s: 4, i: 0 }, code: true, why: "코드 파일이 없어요 — 5단계 뼈대 코드부터" };   // code — 화면이 '코드 파일을 만드시겠습니까?'로 묻는다(A-04)
     return { state: "write" };

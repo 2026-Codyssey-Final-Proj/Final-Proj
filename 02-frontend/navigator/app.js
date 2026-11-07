@@ -249,7 +249,7 @@
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const CHAT_KEY = `${KEY}:chat`;   // C-63 — 연습 모드의 대화는 따로 저장(넘쳐도 다른 저장을 막지 않게 — 새 맥락 리뷰)
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card", "workSince"];   // workSince — 이 단계를 시작한 때(관문 증거, F-166-2)   // prep — 준비된 퀘스트(C-54)
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card", "workSince", "shippedStages", "runOut"];   // runOut — 돌려 본 결과 카드: 작업실을 여는 사이 다시 읽혀도 '확인했어요'까지 남게(F-166-18)   // workSince — 이 단계를 시작한 때(관문 증거, F-166-2)   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   let saveWarned = false;   // 저장 칸이 가득 찼다고 이미 알렸나(F-124) — 다시 저장되면 풀린다
   // 기능 조각이 저장할 것을 더한다(새 기능은 KEEP 한 줄 대신 자기 조각 맨 위에서 — 2026-10-29 나누기 2차). load는 이미 지나갔으니
@@ -491,6 +491,7 @@
     else if (g.remote && g.remote.kind === "github") repo = `${ledRow("on", `${where} → <b>${esc(g.remote.owner)}/${esc(g.remote.repo)}</b>`, `<a class="btn" href="${esc(g.remote.web)}" target="_blank" rel="noopener">GitHub에서 열기</a>`)}
       <span class="meta">기록 · 저장은 이 저장소의 README와 커밋으로 남아요. 올리는 일은 Claude Code가 하고, Floe는 읽기만 해요.</span>`;
     else if (g.remote) repo = ledRow("", `${where}는 GitHub가 아닌 곳과 이어져 있어요 — 그대로 써도 되고, 책(README)은 똑같이 읽혀요.`);
+    else if (g.why === "parent-repo") repo = ledRow("off", `${where}는 다른 git 저장소 안에 있어요 — 그대로 올리면 그 저장소로 커밋 · 푸시돼요. 이 폴더에서 git init으로 따로 저장소를 만든 뒤 '다시 확인'을 눌러요.`);   // F-166-9 — 저장소 만들기 단추를 보이지 않는다
     else {
       const can = g.gh.found && g.gh.signedIn, live = st.mode === "live";
       repo = `${ledRow("off", `${where}는 ${g.why === "not-repo" ? "아직 git 저장소가 아니에요" : "아직 GitHub 저장소와 이어지지 않았어요"}`)}
@@ -717,6 +718,9 @@
         sub: `글 안에 ${esc(st.warn.w.join(", "))}처럼 보이는 게 있어요. 그래도 AI(Claude)에게 보낼까요?`,
         acts: [{ label: fix ? "고칠게요" : "그만둘게요", act: fix ? "edit" : "stop-send", key: "Enter", pri: true }, ...(!fix && st.warn.then === "stage" && secretPast(st.warn.text) ? [{ label: "그 칸 고치기", act: "secret-fix", kind: "soft" }] : []), { label: "괜찮아요, 보낼게요", act: "send-anyway" }] };   // F-161-1 — 지난 칸에 있으면 그 칸을 고칠 길
     }
+    if (st.fillWarn && st.fillWarn.vague) return { tone: "blue", mood: "think", title: "숫자로 바꿔 볼까요?",   // F-166-16 — 애매한 말(FR-11)
+      sub: `'${esc(st.fillWarn.w.join("' · '"))}'은 사람마다 다르게 읽혀요. '10초 안에' · '하루 한 번'처럼 숫자로 적으면 나중에 재 볼 수 있어요. 아직 모르면 그대로 적어도 돼요.`,
+      acts: [{ label: "숫자로 고칠게요", act: "fill-fix", key: "Enter", pri: true }, { label: "그대로 적기", act: "fill-anyway" }] };
     if (st.fillWarn) return { tone: "amber", mood: "alert", title: "적기 전에 잠깐!",   // F-161-3 — 칸에 바로 적는 글
       sub: `글 안에 ${esc(st.fillWarn.w.join(", "))}처럼 보이는 게 있어요. 칸에 적으면 화면 · 다음 단계 초안에 그대로 쓰여요(단계 문서에는 가려서 들어가요). 그대로 적을까요?`,
       acts: [{ label: "고칠게요", act: "fill-fix", key: "Enter", pri: true }, { label: "그대로 적기", act: "fill-anyway" }] };
@@ -1063,7 +1067,10 @@
     const q = st.quest, f = face(), meta = stageMetaQ();
     if (q.phase === "draft") return { tone: "blue", mood: "happy", meta, title: `${LB(q.chap)} 퀘스트를 만들었어요.`,
       sub: `조건 · 할 일 ${q.objs.length}개 · 보상을 보고 '퀘스트 받기'를 눌러 주세요. 이름이나 할 일 수는 '고쳐 주세요'로 고쳐요.`,   // F-161-9 — 이 카드의 단추를 가리킨다(전에는 '퀘스트 창의 큰 단추')
-      acts: [{ label: "퀘스트 받기", act: "quest-ok", key: "Enter", pri: true }, { label: "고쳐 주세요", act: "quest-fix" }, { label: "나중에", act: "quest-later", key: "Escape", kind: "ghost" }] };
+      acts: [{ label: "퀘스트 받기", act: "quest-ok", key: "Enter", pri: true }, { label: "고쳐 주세요", act: "quest-fix" }, { label: "나중에", act: "quest-later", key: "Escape", kind: "ghost" }],
+      // F-166-14(2026-11-07 사용자 시험 셋째): 진짜 AI로 단계 초안을 곧 받는 장(2단계부터)에서는 이 카드가 잠깐만 보이고 바로 칸 확인으로 넘어간다 —
+      //   지난 말로 채팅에 남아 없는 단추('퀘스트 받기' · '고쳐 주세요')를 가리켰다. 기다리는 말처럼 쌓지 않는다(초안을 못 받으면 따로 말하고 이 카드가 그대로 남는다)
+      passing: q.chap >= 1 && st.mode === "live" && canLive && !q.draft };
     const i = QU.curIdx(q);
     if (i < 0) return { tone: "green", mood: "wow", meta, title: "다 됐어요! 완료 보고할까요?",
       sub: st.mode === "live" ? "적은 글을 AI(Claude)가 보고 어디쯤인지 봐요. 고칠 곳이 있으면 퀘스트 카드에서 먼저 고쳐요." : "연습이라 적은 대로 한 것으로 봐요. 고칠 곳이 있으면 퀘스트 카드에서 먼저 고쳐요.",
@@ -1076,6 +1083,9 @@
       foot: "아니요 — 결정 기록에 '코드 없이 지남'으로 남아요.",
       acts: [...(canLive && st.mode !== "fixture" ? [{ label: "예 — Claude Code에 맡기기", act: "code-yes", key: "Enter", pri: true }] : []), { label: "아니요 — 코드 없이 하기", act: "code-no", ...(canLive && st.mode !== "fixture" ? {} : { key: "Enter", pri: true }) }, { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
     // F-157-4 — 8단계 '저장소에 올리기': 아직 올린 적이 없으면 올리기로(커밋 문구만 고르고 '했음'이 되던 것)
+    if (fx && fx.state === "first" && fx.commit) return { tone: "amber", mood: "think", meta, title: "먼저 — 코드도 올려요.", sub: `${esc(fx.why)}.`,   // F-166-6
+      foot: "Claude Code가 비밀값 파일(.env 등)은 빼고 커밋 · 푸시해요. 허락이 필요하면 카드가 떠요.",
+      acts: [...(canLive && st.mode !== "fixture" ? [{ label: "코드도 커밋 · 푸시 맡기기", act: "commit-code", key: "Enter", pri: true }] : []), { label: "아직 못 함으로 적기", act: "first-notyet", kind: "ghost" }, { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
     if (fx && fx.state === "first" && fx.ship) return { tone: "amber", mood: "think", meta, title: "먼저 — 저장소에 올려요.", sub: `${esc(fx.why)}.`,
       foot: "'문서로 묶어 GitHub에'는 단계 문서만 올려요 — 코드도 올리려면 Claude Code에 커밋 · 푸시를 맡겨요.",
       acts: [{ label: "문서로 묶어 GitHub에", act: "ship-open", key: "Enter", pri: true }, { label: "아직 못 함으로 적기", act: "first-notyet", kind: "ghost" }, { label: "퀘스트 보기", act: "qwin-quest", kind: "ghost" }] };
@@ -1186,6 +1196,9 @@
     const q = st.quest;
     // F-161-3(claude-drafted: 2026-11-06 사용자 시험 — '고칠래요'로 적은 키 모양 글이 경고 없이 칸 · 퀘스트 카드 · 다음 단계 '가져온 것'에 원문으로 남았다): 칸에 바로 적는 말이면 먼저 묻는다 — 막지 않고 그대로 적기 / 고칠게요(보안 기준 6-3)
     if ((pastFixAt || (q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q))) && sensitive(t).length) { st.fillWarn = { t, w: sensitive(t) }; render(); return; }
+    // F-166-16(2026-11-07 사용자 시험 셋째 · FR-11 · FR-12): 고쳐 적는 칸에 숫자 없는 애매한 말('빨리' 등)이 있으면 한 번 묻는다 — 같은 칸은 다시 묻지 않는다
+    { const at = q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q) ? `${q.chap}-${draftFixAt}` : "", vw = at && N.vagueIn ? N.vagueIn(t) : [];
+      if (vw.length && !vagueAsked.has(at)) { vagueAsked.add(at); st.fillWarn = { t, w: vw, vague: true }; render(); return; } }
     if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, t); }   // F-157-3 · F-161-1(앱 확인: 다음 단계 퀘스트를 받기 전에도 — 전에는 아래 '먼저 퀘스트를 받아 주세요'가 먼저였다) — '먼저' 카드에서 지난 칸으로 간 뒤 보낸 말은 그 칸의 새 줄
     if (!st.j && !q && QU) return startDraft(t);    if (q && q.phase === "draft") { render(); return say("먼저 퀘스트 창에서 퀘스트를 받아 주세요"); }
     if (q && q.draft && q.phase === "quest" && QU.pickOf(q, QU.curIdx(q))) {   // 기획서로 키울지(2단계)는 셋 중 하나로 — 글로 답해도 맞춰 고른다
@@ -1220,8 +1233,29 @@
       st.say = t; draftFixAt = at; render(); focusAct("[data-act=say]");
       return say("틀이라 아직 적지 않았어요 — '(재고 적기)' 자리를 잰 값으로 바꿔 보내요. 못 쟀으면 '아직 못 함 — 까닭'으로 적어요");
     }
+    const q0 = st.quest, swerve = !!(q0 && q0.draft && String(t).trim() !== String(QU.proposalOf(q0, at) || "").trim());   // 권한 예시와 다른 것을 골랐거나 고쳐 적었나(F-166-5)
     st.quest = QU.fill(st.quest, at, t, by);
     afterFill();
+    if (swerve && st.quest && !QU.isDone(st.quest)) refitChosen();
+  }
+  // F-166-5(2026-11-07 사용자 시험 셋째): 예시는 장을 시작할 때 한 번에 받아, 앞 칸에서 권한 것과 다른 것을 고르면 뒤 칸의 예시가 고르지 않은 쪽을 따랐다
+  //   (4단계: 후보는 '화면 하나짜리 웹 / 휴대폰 앱'인데 '고른 방법: 표 계산 도구', '둘 곳: 서버'). 이 단계에서 정한 칸을 대화로 넣어 남은 빈 칸의 예시만 다시 받는다 — 적은 칸은 덮지 않는다(QU.refit)
+  async function refitChosen() {
+    const q = st.quest;
+    if (!refitOk() || st.busy || !q) return;
+    const told = q.objs.map((o, k) => (QU.filled(q, k) ? `${ROMAN(k)} ${QU.shortOf(QU.nameOf(q, k))}: ${(q.lines[k] || []).join(" / ")}` : "")).filter(Boolean);
+    const talk = [{ who: "me", text: `이 단계에서 이미 정한 칸이에요 — 남은 칸은 이것과 맞게 정해 주세요.\n${told.join("\n")}`.slice(0, 1000) }];   // 서버의 한 줄 상한(CHAT_LINE_MAX)
+    const idea = ideaNow(), prev = prevOf(q.chap);
+    if (sensitive([idea, talk[0].text, baseText(), ...prev.flatMap((p) => p.items.flatMap((x) => x.lines))].join("\n")).length) return;   // 비밀값처럼 보이면 밖에 보내지 않는다(refitNow와 같은 생각)
+    try {
+      const r = await (await fetch("/api/stagedraft", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage: q.chap, tier: st.tier, idea, prev, base: baseText(), talk }) })).json();
+      if (!r || !r.ok || !r.draft || !st.quest || st.quest.chap !== q.chap || st.quest.phase !== "quest") return;
+      const f = QU.refit(st.quest, r.draft);
+      if (!f.changed.length) return;
+      st.quest = applyStates(f.q); st.tokens = r.tokens || 0; fetchUsage();
+      st.refit = { chap: q.chap, tool: "", why: "고른 칸에 맞춰 남은 칸의 예시를 다시 받았어요", at: Date.now(), changed: f.changed, review: [] };
+      render();
+    } catch { /* 덤 — 못 받으면 처음 예시 그대로 */ }
   }
   // 칸을 적은 뒤 — 다 적었으면 다음 장 초안을 실제 결과로 미리 부르고(C-40), 초안을 확인한 장은 한 줄로 정리해 저절로 완료 보고
   function afterFill() {
@@ -1250,6 +1284,7 @@
   // F-157-3(claude-drafted: 2026-11-05 사용자 시험 — 7단계 '2단계 Ⅱ 보기'가 고칠 수 없는 한눈에 보기로 보내 막다른 길이었다): 지난 칸 { s, i } — 다음에 보낸 말이 그 칸의 줄이 된다
   let pastFixAt = null;
   // F-161-3 — 경고 뒤 '그대로 적기': 보내려던 칸(지난 칸 · 고칠래요 칸)에 그대로 적는다
+  const vagueAsked = new Set();   // 애매한 말을 이미 물은 칸(장-칸) — 같은 칸은 한 번만(F-166-16)
   function fillAnyway() { const f = st.fillWarn; st.fillWarn = null; if (!f) return render(); const q = st.quest;
     if (pastFixAt) { const g = pastFixAt; pastFixAt = null; return fixPast(g, f.t); }
     if (q && q.draft && q.phase === "quest" && draftFixAt === QU.curIdx(q)) { draftFixAt = -1; return fillNow(f.t); }
@@ -1307,7 +1342,7 @@
   // ── C-56 R-3 · R-4 상태 넷(2026-10-28): 퀘스트가 생기거나 초안이 오면 칸마다 상태를 매긴다(queststate.js — 규칙으로 정할 수 있는 것만). 옮겨 온 칸은 그 글을 '옮김'으로 미리 적고, 건너뛸 칸은 '건너뜀 — 까닭'으로 적어 둔다(판정에서 넘김으로, F-62와 같은 줄).
   //   먼저인 칸은 비워 두고 채팅 카드가 갈 곳을 말한다(관문은 닫힌 채). 사람이 적은 줄은 덮지 않는다
   const factsNow = (extra = null) => (QS ? QS.factsFrom({ results: extra ? { ...st.results, ...extra } : st.results, source: st.source, files: st.files && st.files.src === "mine" ? st.files.list : null, codeless: !!st.codeless, card: st.card,
-    pushed: st.mode === "live" && canLive ? pushedSince(7) : null }) : {});   // extra — 아직 결과로 남기 전의 지금 장(관문을 볼 때, 새 맥락 리뷰 2026-10-28 막힘). card — 기준 카드의 성공(F-157-2) · pushed — 8단계에 들어온 뒤 '문서로 묶어 GitHub에'로 푸시까지 했나(F-157-4, 연습은 모름)
+    pushed: st.mode === "live" && canLive ? pushedSince(7) : null, dirty: st.mode === "live" && canLive && st.files && st.files.src === "mine" ? st.files.dirty : null }) : {});   // dirty — 커밋하지 않은 파일 수(F-166-6)   // extra — 아직 결과로 남기 전의 지금 장(관문을 볼 때, 새 맥락 리뷰 2026-10-28 막힘). card — 기준 카드의 성공(F-157-2) · pushed — 8단계에 들어온 뒤 '문서로 묶어 GitHub에'로 푸시까지 했나(F-157-4, 연습은 모름)
   // 그 단계의 구분선(대화의 kind "stage") 뒤에 푸시했나 — 2단계 뒤에 한 번 올린 것으로 8단계 칸이 늘 열리지 않게(새 맥락 리뷰 B). pushedAt은 시각(ms)
   const pushedSince = (n) => { const mark = [...st.chat].reverse().find((m) => m.kind === "stage" && m.n === n); return !!st.pushedAt && Number.isFinite(st.pushedAt) && st.pushedAt >= (mark ? mark.at : 0); };
   const qstates = (q = st.quest, extra = null) => (QS && q ? QS.questStates(q, { prev: prevOf(q.chap), facts: factsNow(extra), draftOf: QU.draftOf }) : []);
@@ -1355,7 +1390,7 @@
   }
   // F-161-5(claude-drafted: 2026-11-06 사용자 시험 — 방금 사람이 고른 칸도 '바뀐 칸'으로 남았고 "Ⅰ · Ⅱ은"): 바뀐 칸은 아직 사람이 적지 않은 칸만, 보일 게 없으면 띠도 없다. 조사 없이 괄호로
   const refitBanner = (q) => { if (!st.refit || !q || st.refit.chap !== q.chap) return {}; const ch = st.refit.changed.filter((i) => !QU.filled(q, i)), rv = st.refit.review;
-    return ch.length || rv.length ? { banner: `방금 바뀜 — ${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요${ch.length ? ` · 바뀐 칸 ${ch.map(ROMAN).join(" · ")}` : ""}${rv.length ? ` · 적어 둔 칸(${rv.map((x) => ROMAN(x.i)).join(" · ")})도 다시 볼까요?` : ""}` } : {}; };
+    return ch.length || rv.length ? { banner: `방금 바뀜 — ${st.refit.why || `${st.refit.tool}가 한 일로 ${LB(q.chap)} 퀘스트를 다시 맞췄어요`}${ch.length ? ` · 바뀐 칸 ${ch.map(ROMAN).join(" · ")}` : ""}${rv.length ? ` · 적어 둔 칸(${rv.map((x) => ROMAN(x.i)).join(" · ")})도 다시 볼까요?` : ""}` } : {}; };
   const refitChips = (q) => (st.refit && q && st.refit.chap === q.chap ? st.refit.review.map((x) => ({ label: `${ROMAN(x.i)} 다시 볼까요?`, act: "refit-review", i: x.i, kind: "soft" })) : []);
   function prefetch(q) {
     if (!q || !QU || st.mode !== "live" || !canLive) return;
@@ -1617,7 +1652,7 @@
     st.ship = null;
     // Claude Code가 기준(커밋 · 푸시)마다 보고한다(C-32) — 끝났다(0)는 것만으로 올라갔다고 말하지 않는다(푸시를 건너뛰거나 허락을 거절해도 0으로 끝난다, 2026-10-25 리뷰)
     const r = t.report, pushed = !!(r && r.items[1] && r.items[1].done);
-    if (pushed) { st.pushedAt = Date.now(); save(); if (st.quest) st.quest = applyStates(st.quest); }   // F-157-4 — 8단계 '저장소에 올리기'가 실제로 올렸는지 본다
+    if (pushed) { st.pushedAt = Date.now(); st.shippedStages = shipStages(); save(); if (st.quest) st.quest = applyStates(st.quest); }   // shippedStages — 그때 문서에 든 단계(F-166-10)   // F-157-4 — 8단계 '저장소에 올리기'가 실제로 올렸는지 본다
     say(t.state !== "done" ? "올리기가 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요" : pushed ? "올리기를 마쳤어요 — 내 저장소(origin)의 docs 폴더에 올라갔어요"   /* F-161-9 — origin이 GitHub가 아닐 수도 */
       : r ? `푸시는 못 했어요 — ${r.easy}` : "Claude Code가 일을 마쳤어요 — 푸시됐는지 진행 보기에서 봐 주세요");
   }
@@ -1674,7 +1709,7 @@
       if (r && r.ok && r.files) {
         const n = st.finished ? N.STAGES.length - 1 : atStage(), slug = FDOCS ? FDOCS.SLUGS[n] : "";
         st.fnOpen = r.files.map((f, i) => (f.dir && (f.path === "docs" || (slug && f.path === `docs/${slug}`)) ? String(i) : "")).filter(Boolean);   // 지금 장의 폴더는 펼쳐 둔다 — 열쇠는 목록의 번호(가린 이름끼리 경로가 겹칠 수 있다, 새 맥락 리뷰)
-        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, excluded: r.excluded || 0, exBroken: !!r.excludeBroken, why: "" };   // excluded · exBroken — C-52 빼 둔 곳 줄 수 · 저장 파일이 깨졌나
+        st.files = { src: "mine", project: r.project, list: r.files, total: r.total, cut: !!r.cut, unread: r.unread || 0, depth: r.depth, excluded: r.excluded || 0, exBroken: !!r.excludeBroken, dirty: Number.isInteger(r.dirty) ? r.dirty : null, why: "" };   // excluded · exBroken — C-52 빼 둔 곳 줄 수 · 저장 파일이 깨졌나
         for (const f of st.openFiles) f.i = r.files.findIndex((x) => !x.dir && x.path === f.path);   // 열린 파일은 새 목록의 번호로 다시 잇는다(없어졌으면 -1 — 저장하지 못한다)
       } else st.files = { src: "example", why: "연결한 폴더를 아직 몰라요" };
     } catch { st.files = { src: "example", why: "서버에 닿지 않았어요" }; }
@@ -1809,6 +1844,7 @@
   const matStage = () => (st.quest ? st.quest.chap : atStage());   // 채팅 기록(logMsg)과 같은 단계
   const sheetRed = (t) => window.NavSensitive.redact(t);
   function mat(kind, text) { if (!SH || !window.NavSensitive) return; st.mats = SH.add(st.mats, matStage(), kind, text, sheetRed); }
+  function unmat(kind, text) { if (!SH || !SH.drop || !window.NavSensitive) return; st.mats = SH.drop(st.mats, matStage(), kind, text, sheetRed); }   // 버린 말을 재료에서 뺀다(F-166-13)
   // Floe가 쓴 문서(단계 문서 · 기획서 · 결정 기록 · 목차 · 기준 카드 · 받은 글) — 바뀐 파일에 넣지 않는다
   const floeDoc = (p) => !!FDOCS && (p === FDOCS.MAIN_DOC || p === FDOCS.LOG_DOC || p === FDOCS.CARD_DOC || p === FDOCS.SOURCE_DOC || p === "docs/README.md"
     || FDOCS.SLUGS.some((s, k) => p === FDOCS.stagePath(k) || p === `docs/${s}/README.md`));
@@ -2258,7 +2294,7 @@
     const row1 = m.cards.slice(0, 4).map(card).join(""), row2 = m.cards.slice(4).reverse().map(card).join("");
     const ban = m.canDraw ? `<div class="sm-ban"><b>2단계 칸을 다 채웠어요</b><span>기획서(2단계에서 정한 것)로 3 ~ 8단계의 퀘스트와 문서를 한 번에 그려요</span><button type="button" class="b" data-act="prep-draw">기획서로 3 ~ 8단계 그리기</button></div>`
       : m.drawn && !m.confirmed ? `<div class="sm-ban"><b>퀘스트 ${Object.keys(st.prep.cards).length}개를 준비했어요</b><span>${fix ? "카드마다 ① 생각을 고친 뒤 '맞아요'를 눌러요" : "카드마다 어느 절에서 왔는지 적었어요 — 맞으면 한 번에 넘어가요"}</span><button type="button" class="b" data-act="prep-ok">맞아요 — 이대로 준비해요</button>${fix ? "" : `<button type="button" class="b ghost" data-act="prep-fix">고칠래요</button>`}</div>`
-      : m.cur < 2 ? `<div class="sm-ban soft"><span>1단계에서는 길이 한 칸만 보여요. 2단계 칸을 다 채우면 3단계부터 8단계까지의 퀘스트와 문서가 한 번에 그려져요</span></div>` : "";
+      : m.cur < 2 && !m.drawn ? `<div class="sm-ban soft"><span>${m.cur === 0 ? "1단계에서는 길이 한 칸만 보여요. " : ""}2단계 칸을 다 채우면 3단계부터 8단계까지의 퀘스트와 문서가 한 번에 그려져요</span></div>` : "";   // 이미 그렸으면 띄우지 않는다 · 2단계에서는 '1단계에서는'을 빼고(F-166-12)
     const legend = `<p class="sm-legend">${["done", "now", "ready", "later"].map((k) => `<span><i class="st-${k}" aria-hidden="true"></i>${STATE_WORD[k]}</span>`).join("")}<small>카드를 누르면 오른쪽 칸에 그 퀘스트와 문서 — 끝난 · 지금 카드는 커져서 줄마다 보여요</small></p>`;
     const docs = `<ul class="sm-docs">${m.docs.map((d) => `<li class="${d.has ? "has" : ""}"><code>${esc(d.path)}</code><span>${esc(d.what)}</span><small>${d.has ? "있음" : "아직"}</small></li>`).join("")}</ul>`;
     const ship = FDOCS && st.results[0] && st.results[1] ? `<p class="sm-ship"><button type="button" class="b" data-act="ship-open">문서로 묶어 GitHub에</button><small>지금까지 정한 것을 단계 문서 · 기획서 · 결정 기록으로</small></p>` : "";   // 흐름 보기(jmap)와 같은 단추
@@ -2339,7 +2375,9 @@
         if (state === "cur") { open += 1; return `<li class="jm-cell jm-miss" data-cell="${id}">${nm}<span class="jm-line">${c.draft ? `${q && QU.examplesOf(q, k).length > 1 ? `플로로 예시 ${QU.examplesOf(q, k).length}개 — 권하는 것: ` : "플로로 초안: "}${esc(c.draft)}` : "비었어요"}</span>${ref}<button type="button" data-act="jmap-fill">채우기</button></li>`; }
         return `<li class="jm-cell jm-old" data-cell="${id}">${nm}<span class="jm-line">지났어요 — 적은 글이 남아 있지 않아요</span></li>`;
       }).join("");
-      const ck = r && r.check ? r.check : null, met = ck ? `기준 ${ck.filter((x) => x.met).length}/${ck.length}` : "";
+      // F-166-7(2026-11-07 사용자 시험 셋째): 넘긴 기준을 '맞음'으로 세어 '기준 4/4'로만 보였다 — 결정 기록처럼 '기준 n/m · 넘김 k — 까닭'
+      const ck = r && r.check ? r.check : null, sk = ck ? ck.filter((x) => x.skipped).length : 0;
+      const met = ck ? `기준 ${ck.filter((x) => x.met && !x.skipped).length}/${ck.length}${sk ? ` · 넘김 ${sk}${r.skip && r.skip.reason ? ` — ${esc(r.skip.reason)}` : ""}` : ""}` : "";
       const gate = r && r.passed ? `지났어요 ${esc(r.passed.slice(5))} — 이해했어요${met ? ` · ${met}` : ""}` : state === "done" ? "지났어요 — 날짜는 남아 있지 않아요" : r ? `칸을 다 확인했어요${met ? ` · ${met}` : ""} — 관문은 아직` : "아직 — 칸을 다 채우면 완료 보고 → 관문";   // 증빙 전(C-37)에 지난 장은 날짜가 없다
       return `<section class="jm-stage ${state}" data-n="${n}">${rails}${head}<ol class="jm-flow">${step("in", "넣은 것", input)}${step("ai", "플로로가 한 것", ai)}${step("me", "내가 정한 것", `<ul class="jm-cells">${cells}</ul>`)}${step("gate", "관문", gate)}</ol></section>`;
     });
@@ -2797,7 +2835,7 @@
     else if (st.finished) main = `<b>모든 단계를 마쳤어요</b>`;
     else if (!s) main = `<b>플로로</b><span class="pl-now">눌러서 지금 만드는 걸 보여 주세요</span>`;
     else if (holding() && st.screen !== "gate") main = `<b>${LB(s.n)} · 보류 중</b><span class="pl-now">${esc(U.holdLine(st.hold, ymd()).replace(/^보류 중 · /, ""))}</span>`;
-    else main = `<b>${allDone() ? "다 했어요! · " : ""}${LB(s.n)}</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
+    else main = `<b>${allDone() ? "다 했어요! · " : ""}${LB(s.n)}</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : allDone() ? "지금: 넘어가기 전 확인" : `지금: ${esc(tick().now)}`}</span>`;   // 다 했으면 '아직 안 적은 할 일'(살펴본 결과의 next)을 보이지 않는다(F-166-19)
     // C-46 R-1: 켤 때 인사는 알약 안에서 — 인사 중이면 플로로가 솟아 손을 흔들고(app.css [data-greet]) 글은 시간대 인사 한 줄(다시 온 사람에게는 그 말)
     const greeting = document.documentElement.classList.contains("greeting");
     if (greeting) main = `<b>플로로</b><span class="pl-now pl-hello" aria-live="polite">${esc(st.back || C.greeting(new Date().getHours()))}</span>`;
@@ -3103,7 +3141,7 @@
     plan: { end: planEnd, lost: planLost, stop: (why) => { const id = st.plan && FP.running(st.plan); if (id) { st.plan = FP.failed(st.plan, id, why || "그만뒀어요"); save(); } } },
     preset: { end: (t) => presetEnd(t) },
     send: { end: (t) => say(t.state === "done" ? "Claude Code가 넘긴 일을 마쳤어요" : "넘긴 일이 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요") },
-    commit: { end: (t) => { if (t.state !== "done") say("커밋을 맡긴 일이 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요"); } },
+    commit: { end: (t) => { if (t.state !== "done") say("커밋을 맡긴 일이 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요"); loadFiles(); } },   // 파일 목록(커밋 안 한 수 — F-166-6)을 다시 받는다
     repo: { end: () => { st.gh = null; loadGithub(); } },   // 저장소가 생겼는지 다시 묻는다(설정의 GitHub 칸)
     build: { end: buildEnd, stop: () => { st.build = null; } }, code: { end: buildEnd, stop: () => { st.build = null; } },   // F-70 뼈대 · 6단계 코드 물음 '예'
     line: { end: buildEnd, stop: () => { st.build = null; } }, run: { end: runEnd, stop: () => { st.build = null; } },   // F-70 기능 줄 · 돌려 보기
@@ -3920,6 +3958,7 @@
     if (!q || !QS) return g;   // C-56: 건너뛴 칸의 기준은 넘김(까닭을 결정 기록 · 문서로, F-62와 같은 줄), 먼저인 칸은 '안 됨'(관문 닫힘)
     // 지금 장의 줄(기능 수 등)을 사실에 넣는다 — 첫 판정 때는 아직 st.results에 없다(새 맥락 리뷰 2026-10-28 막힘)
     const sts = qstates(q, { [q.chap]: QU.resultOf(q) }); return { ...g, criteria: g.criteria.map((c, i) => { const x = sts[i]; if (!x) return c; if (x.state === "skip") return { ...c, met: true, skipped: true, reason: x.why }; if (x.state === "first") return { ...c, met: false, why: "first" }; return c; }) }; };
+  const shipStages = () => Object.keys(st.results || {}).filter((k) => st.results[k] && st.results[k].at).sort((a, b) => a - b).join(",");   // 문서에 든 단계(칸을 다 확인한 단계) — F-166-10
   const skipOf = (j) => { const sk = (j && j.criteria ? j.criteria : []).filter((c) => c.skipped && c.reason); return sk.length ? { reason: [...new Set(sk.map((c) => c.reason))].join(" · ").slice(0, 200), items: sk.map((c) => c.text) } : null; };
   const checkOf = (j) => j.criteria.map((c) => ({ text: c.text, met: !!c.met, evidence: String(c.evidence || "").slice(0, 300), ...(c.why ? { why: c.why } : {}), ...(c.skipped ? { skipped: true } : {}) }));
   // F-166-3(2026-11-07 사용자 시험 셋째): 사람이 '까닭 적고 넘기기'로 넘긴 기준은 같은 장을 다시 살펴봐도(살펴봐 주세요 · 완료 보고) 그대로 둔다 —
@@ -4049,7 +4088,7 @@
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`, at: ymd(),   // at — 세션별 보기(C-3, my-books.js dated)가 읽는다(2026-10-20). 옛 기록은 글 끝의 날짜로
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
         last ? ` · 확인 질문 ${last.ok ? "맞힘" : "정답 보고 넘어감"}` : ""} · ${ymd()}` });
-    Object.assign(st, { screen: "main", notice: "", ping: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null, workSince: Date.now() });   // workSince — 다음 단계의 관문 증거는 이때부터(F-166-2)
+    Object.assign(st, { screen: "main", notice: "", ping: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null, workSince: Date.now(), qview: null });   // qview — 지난 장에서 골라 둔 카드는 장이 바뀌면 푼다(F-166-11)   // workSince — 다음 단계의 관문 증거는 이때부터(F-166-2)
     if (nx) st.j = { stage: nx.n, reason: `${LB(s.n)}를 마쳤어요! 이제 ${LB(nx.n)} "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;   // F-153의 st.ping = ""은 위 Object.assign의 ping: ""이 맡는다(F-157-7)
@@ -4061,7 +4100,7 @@
     if (st.results[s.n]) st.results = { ...st.results, [s.n]: { ...st.results[s.n], passed: ymd(), learned, ...(goal && s.n >= 1 ? { goal } : {}) } };
     st.learnDraft = ""; st.goalDraft = null;
     if (st.qwin) loadFiles();   // 작업실 파일 칸 — 장이 바뀌면 '● 지금' · 펼친 폴더도 바뀐다(R-8, 새 맥락 리뷰)
-    if (QU && FDOCS && s.n >= 1 && st.results[0] && st.results[1]) { st.ship = { phase: "offer" }; st.qfocus = "stage"; }   // 마지막(8단계) 관문도(2026-10-25 리뷰)   // 2단계부터 관문마다 — 단계 문서 · 기획서 · 결정 기록을 다시 묶어 올릴지 묻는다(C-37 → C-39 버튼 "2단계부터 관문마다")
+    if (QU && FDOCS && s.n >= 1 && st.results[0] && st.results[1] && (s.n === N.STAGES.length - 1 || shipStages() !== (st.shippedStages || ""))) { st.ship = { phase: "offer" }; st.qfocus = "stage"; }   // F-166-10 — 마지막 단계가 아니면 지난번 올린 뒤 새로 확인한 단계가 있을 때만 묻는다(방금 올린 1 · 2단계를 3단계에 들어서자마자 또 물었다)   // 마지막(8단계) 관문도(2026-10-25 리뷰)   // 2단계부터 관문마다 — 단계 문서 · 기획서 · 결정 기록을 다시 묶어 올릴지 묻는다(C-37 → C-39 버튼 "2단계부터 관문마다")
     carryMaybe();   // C-48 8단계(돌아보기)에 오면 가져갈 것을 정리할지
     render();
     if (nx) carryLoad(nx.n);   // C-48 지난 프로젝트에서 그 단계에 가져온 것(있으면 카드)
@@ -4127,7 +4166,7 @@
     "send-anyway": () => { if (st.warn && RETRY[st.warn.then]) RETRY[st.warn.then](); },   // 두 번 누르면 둘째는 st.warn이 이미 없다(앱 작업실은 다시 그려 보내는 데 시간이 걸린다) — F-144-18
     "stop-send": () => { const stage = st.warn && st.warn.then === "stage"; set({ warn: null }); if (stage) say("이 단계 초안은 받지 않았어요 — 그 글을 고친 뒤 '초안 다시 받기'를 누르거나, 칸을 직접 적어요"); },   // F-161-1 — 초안이 왜 없는지 · 다시 받는 길
     "fill-anyway": () => fillAnyway(),
-    "fill-fix": () => { const f = st.fillWarn; st.fillWarn = null; if (f) st.say = f.t; render(); focusAct("[data-act=say]"); },   // 글을 입력 칸에 돌려놓는다 — 고칠 칸(pastFixAt · draftFixAt)은 그대로
+    "fill-fix": () => { const f = st.fillWarn; st.fillWarn = null; if (f) { st.say = f.t; if (!f.vague) unmat("chat", f.t); } render(); focusAct("[data-act=say]"); },   // F-166-13 — 고칠게요로 버린 말은 한 장의 '처음 한 말'이 되지 않게 재료에서 뺀다   // 글을 입력 칸에 돌려놓는다 — 고칠 칸(pastFixAt · draftFixAt)은 그대로
     "secret-fix": () => { const g = st.warn && secretPast(st.warn.text); st.warn = null; if (!fixSecretPast(g)) render(); },
     "stage-redraft": () => { const q = st.quest; if (q && !q.draft && N.DRAFT_STAGES.includes(q.chap) && st.results[q.chap - 1]) stageDraft(q.chap); },
     edit: () => { set({ warn: null, openInput: !!st.j }); focusText(); },
@@ -4171,6 +4210,17 @@
       pastFixAt = g; render();
       say(`${LB(g.s)} ${ROMAN(at)} ${QU.shortOf(it.name)} — 지금 줄은 “${(it.lines || [])[0] || "비었어요"}”예요. 고친 줄을 아래 칸에 적어 보내면 그 칸이 바뀌어요`); focusAct("[data-act=say]"); },
     "first-notyet": () => { const q = st.quest, i = q ? QU.curIdx(q) : -1, x = i >= 0 ? qstates(q)[i] : null; if (!x || x.state !== "first") return; fillNow(`아직 못 함 — ${x.why}`, "me"); },   // 비워 두지 않고 적되 관문 규칙(evidence)이 막는다
+    // F-166-6 — 8단계: 커밋하지 않은 코드를 Claude Code에 커밋 · 푸시로 맡긴다(일 넘기기 3-16, 끝에 기준마다 보고). 끝나면 파일 목록을 다시 받아 칸이 열린다
+    "commit-code": async () => {
+      if (!canLive || st.mode === "fixture" || st.busy) return;
+      const text = ["이 폴더에서 아직 커밋하지 않은 파일을 커밋하고 origin에 푸시해 주세요.",
+        "1. .env · *.pem · 키나 비밀번호가 든 파일과 .claude/settings.local.json은 .gitignore에 넣고 커밋하지 않아요. 그런 파일이 보이면 무엇을 뺐는지 알려 줘요.",
+        "2. 커밋 메시지는 무엇을 만들었는지 한 줄로 써요.", "3. 강제 푸시 · 파일 지우기 · 기록 고쳐 쓰기는 하지 않아요. origin이 없으면 멈추고 알려 줘요."].join("\n");
+      const checks = ["비밀값 파일을 빼고 커밋했다(뺀 파일 이름을 근거에)", "origin에 푸시했다(푸시한 가지 이름을 근거에)"];
+      let r = null; try { r = await (await fetch("/api/task/start", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, checks }) })).json(); } catch {}
+      if (!r || !r.ok) return say(`맡기지 못했어요 — ${(r && r.reason) || "서버에 닿지 않았어요"}`);
+      if (r.task) watchTask(r.task, "commit"); say("코드 커밋 · 푸시를 Claude Code에 맡겼어요 — 허락 카드가 뜨면 '허용'을 눌러 주세요");
+    },
     "draft-again": async () => {
       const q = st.quest, i = q ? QU.curIdx(q) : -1, ex = i >= 0 ? QU.examplesOf(q, i) : []; if (ex.length < 2) return;
       const swap = (it) => ({ ...st.quest, draft: { ...st.quest.draft, items: st.quest.draft.items.map((x, k) => (k === i ? it : x)) } });

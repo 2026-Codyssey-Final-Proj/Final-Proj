@@ -135,3 +135,21 @@ test("서버: 연결한 폴더의 원격을 이름만 보인다 — 경로 · �
   const c = await call("POST", "/api/github/create", { body: { visibility: "private" } });
   assert.equal(c.status, 409);
 });
+
+// claude-drafted: 2026-11-07 — F-166-9: 폴더가 다른 저장소 안에 있으면(홈이 저장소 등) 그 저장소의 원격을 이 폴더의 것으로 보이지 않는다 — 저장소 만들기 · 문서 올리기가 남의 저장소로 가지 않게
+test("상태: 다른 저장소 안의 폴더는 parent-repo — 원격을 보이지 않는다(진짜 git으로 한 번)", async () => {
+  const fs = require("node:fs"), os = require("node:os"), path = require("node:path"), { spawnSync } = require("node:child_process");
+  const inside = { "git rev-parse --is-inside-work-tree": { found: true, code: 0, out: "true" } };
+  const r = await GH.status("/p/inner", "inner", fake({ ...GH_OK, ...inside, "git rev-parse --show-toplevel": { found: true, code: 0, out: "/p" }, "git remote get-url origin": { found: true, code: 0, out: "git@github.com:other/db.git" } }));
+  assert.deepEqual([r.git, r.remote, r.why], [false, null, "parent-repo"]);
+  assert.equal(await GH.parentRepo("/p", fake({ "git rev-parse --show-toplevel": { found: true, code: 0, out: "/p" } })), false, "자기가 맨 위면 아니다");
+  assert.equal(await GH.parentRepo("/p", fake({})), false, "모르면 막지 않는다");
+  if (spawnSync("git", ["--version"]).status !== 0) return;
+  const top = fs.mkdtempSync(path.join(os.tmpdir(), "floe-parent-")); spawnSync("git", ["init", "-q"], { cwd: top });
+  const inner = path.join(top, "Floe", "club"); fs.mkdirSync(inner, { recursive: true });
+  try {
+    assert.equal(await GH.parentRepo(inner), true, "위 폴더가 저장소");
+    spawnSync("git", ["init", "-q"], { cwd: inner });
+    assert.equal(await GH.parentRepo(inner), false, "자기 저장소가 되면 아니다");
+  } finally { fs.rmSync(top, { recursive: true, force: true }); }
+});
