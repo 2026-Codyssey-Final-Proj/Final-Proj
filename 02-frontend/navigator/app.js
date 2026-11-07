@@ -249,7 +249,7 @@
   const writeBound = (id) => { try { localStorage.setItem(BOUND_KEY, JSON.stringify([...new Set([...readBound(), id])])); } catch {} };
   const CHAT_KEY = `${KEY}:chat`;   // C-63 — 연습 모드의 대화는 따로 저장(넘쳐도 다른 저장을 막지 않게 — 새 맥락 리뷰)
   const KEEP = ["mode", "textSize", "text", "j", "todos", "history", "learned", "auto", "doc", "docs", "project", "pets", "since", "finished", "libGone",
-    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card", "workSince"];   // workSince — 이 단계를 시작한 때(관문 증거, F-166-2)   // prep — 준비된 퀘스트(C-54)
+    "checks", "hold", "todoLater", "alerts", "tier", "unplug", "judged", "fed", "inbox", "sorted", "quest", "idea", "shells", "owned", "wear", "plan", "planDraft", "planReadme", "qfocus", "topic", "results", "prep", "source", "card", "workSince", "shippedStages", "runOut"];   // runOut — 돌려 본 결과 카드: 작업실을 여는 사이 다시 읽혀도 '확인했어요'까지 남게(F-166-18)   // workSince — 이 단계를 시작한 때(관문 증거, F-166-2)   // prep — 준비된 퀘스트(C-54)
   let forgotten = false;
   let saveWarned = false;   // 저장 칸이 가득 찼다고 이미 알렸나(F-124) — 다시 저장되면 풀린다
   // 기능 조각이 저장할 것을 더한다(새 기능은 KEEP 한 줄 대신 자기 조각 맨 위에서 — 2026-10-29 나누기 2차). load는 이미 지나갔으니
@@ -1642,7 +1642,7 @@
     st.ship = null;
     // Claude Code가 기준(커밋 · 푸시)마다 보고한다(C-32) — 끝났다(0)는 것만으로 올라갔다고 말하지 않는다(푸시를 건너뛰거나 허락을 거절해도 0으로 끝난다, 2026-10-25 리뷰)
     const r = t.report, pushed = !!(r && r.items[1] && r.items[1].done);
-    if (pushed) { st.pushedAt = Date.now(); save(); if (st.quest) st.quest = applyStates(st.quest); }   // F-157-4 — 8단계 '저장소에 올리기'가 실제로 올렸는지 본다
+    if (pushed) { st.pushedAt = Date.now(); st.shippedStages = shipStages(); save(); if (st.quest) st.quest = applyStates(st.quest); }   // shippedStages — 그때 문서에 든 단계(F-166-10)   // F-157-4 — 8단계 '저장소에 올리기'가 실제로 올렸는지 본다
     say(t.state !== "done" ? "올리기가 끝까지 가지 못했어요 — 진행 보기에서 까닭을 봐 주세요" : pushed ? "올리기를 마쳤어요 — 내 저장소(origin)의 docs 폴더에 올라갔어요"   /* F-161-9 — origin이 GitHub가 아닐 수도 */
       : r ? `푸시는 못 했어요 — ${r.easy}` : "Claude Code가 일을 마쳤어요 — 푸시됐는지 진행 보기에서 봐 주세요");
   }
@@ -2284,7 +2284,7 @@
     const row1 = m.cards.slice(0, 4).map(card).join(""), row2 = m.cards.slice(4).reverse().map(card).join("");
     const ban = m.canDraw ? `<div class="sm-ban"><b>2단계 칸을 다 채웠어요</b><span>기획서(2단계에서 정한 것)로 3 ~ 8단계의 퀘스트와 문서를 한 번에 그려요</span><button type="button" class="b" data-act="prep-draw">기획서로 3 ~ 8단계 그리기</button></div>`
       : m.drawn && !m.confirmed ? `<div class="sm-ban"><b>퀘스트 ${Object.keys(st.prep.cards).length}개를 준비했어요</b><span>${fix ? "카드마다 ① 생각을 고친 뒤 '맞아요'를 눌러요" : "카드마다 어느 절에서 왔는지 적었어요 — 맞으면 한 번에 넘어가요"}</span><button type="button" class="b" data-act="prep-ok">맞아요 — 이대로 준비해요</button>${fix ? "" : `<button type="button" class="b ghost" data-act="prep-fix">고칠래요</button>`}</div>`
-      : m.cur < 2 ? `<div class="sm-ban soft"><span>1단계에서는 길이 한 칸만 보여요. 2단계 칸을 다 채우면 3단계부터 8단계까지의 퀘스트와 문서가 한 번에 그려져요</span></div>` : "";
+      : m.cur < 2 && !m.drawn ? `<div class="sm-ban soft"><span>${m.cur === 0 ? "1단계에서는 길이 한 칸만 보여요. " : ""}2단계 칸을 다 채우면 3단계부터 8단계까지의 퀘스트와 문서가 한 번에 그려져요</span></div>` : "";   // 이미 그렸으면 띄우지 않는다 · 2단계에서는 '1단계에서는'을 빼고(F-166-12)
     const legend = `<p class="sm-legend">${["done", "now", "ready", "later"].map((k) => `<span><i class="st-${k}" aria-hidden="true"></i>${STATE_WORD[k]}</span>`).join("")}<small>카드를 누르면 오른쪽 칸에 그 퀘스트와 문서 — 끝난 · 지금 카드는 커져서 줄마다 보여요</small></p>`;
     const docs = `<ul class="sm-docs">${m.docs.map((d) => `<li class="${d.has ? "has" : ""}"><code>${esc(d.path)}</code><span>${esc(d.what)}</span><small>${d.has ? "있음" : "아직"}</small></li>`).join("")}</ul>`;
     const ship = FDOCS && st.results[0] && st.results[1] ? `<p class="sm-ship"><button type="button" class="b" data-act="ship-open">문서로 묶어 GitHub에</button><small>지금까지 정한 것을 단계 문서 · 기획서 · 결정 기록으로</small></p>` : "";   // 흐름 보기(jmap)와 같은 단추
@@ -2825,7 +2825,7 @@
     else if (st.finished) main = `<b>모든 단계를 마쳤어요</b>`;
     else if (!s) main = `<b>플로로</b><span class="pl-now">눌러서 지금 만드는 걸 보여 주세요</span>`;
     else if (holding() && st.screen !== "gate") main = `<b>${LB(s.n)} · 보류 중</b><span class="pl-now">${esc(U.holdLine(st.hold, ymd()).replace(/^보류 중 · /, ""))}</span>`;
-    else main = `<b>${allDone() ? "다 했어요! · " : ""}${LB(s.n)}</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : `지금: ${esc(tick().now)}`}</span>`;
+    else main = `<b>${allDone() ? "다 했어요! · " : ""}${LB(s.n)}</b>${mini()}<span class="pl-now">${st.screen === "gate" ? "넘어가기 전 확인 중" : allDone() ? "지금: 넘어가기 전 확인" : `지금: ${esc(tick().now)}`}</span>`;   // 다 했으면 '아직 안 적은 할 일'(살펴본 결과의 next)을 보이지 않는다(F-166-19)
     // C-46 R-1: 켤 때 인사는 알약 안에서 — 인사 중이면 플로로가 솟아 손을 흔들고(app.css [data-greet]) 글은 시간대 인사 한 줄(다시 온 사람에게는 그 말)
     const greeting = document.documentElement.classList.contains("greeting");
     if (greeting) main = `<b>플로로</b><span class="pl-now pl-hello" aria-live="polite">${esc(st.back || C.greeting(new Date().getHours()))}</span>`;
@@ -3948,6 +3948,7 @@
     if (!q || !QS) return g;   // C-56: 건너뛴 칸의 기준은 넘김(까닭을 결정 기록 · 문서로, F-62와 같은 줄), 먼저인 칸은 '안 됨'(관문 닫힘)
     // 지금 장의 줄(기능 수 등)을 사실에 넣는다 — 첫 판정 때는 아직 st.results에 없다(새 맥락 리뷰 2026-10-28 막힘)
     const sts = qstates(q, { [q.chap]: QU.resultOf(q) }); return { ...g, criteria: g.criteria.map((c, i) => { const x = sts[i]; if (!x) return c; if (x.state === "skip") return { ...c, met: true, skipped: true, reason: x.why }; if (x.state === "first") return { ...c, met: false, why: "first" }; return c; }) }; };
+  const shipStages = () => Object.keys(st.results || {}).filter((k) => st.results[k] && st.results[k].at).sort((a, b) => a - b).join(",");   // 문서에 든 단계(칸을 다 확인한 단계) — F-166-10
   const skipOf = (j) => { const sk = (j && j.criteria ? j.criteria : []).filter((c) => c.skipped && c.reason); return sk.length ? { reason: [...new Set(sk.map((c) => c.reason))].join(" · ").slice(0, 200), items: sk.map((c) => c.text) } : null; };
   const checkOf = (j) => j.criteria.map((c) => ({ text: c.text, met: !!c.met, evidence: String(c.evidence || "").slice(0, 300), ...(c.why ? { why: c.why } : {}), ...(c.skipped ? { skipped: true } : {}) }));
   // F-166-3(2026-11-07 사용자 시험 셋째): 사람이 '까닭 적고 넘기기'로 넘긴 기준은 같은 장을 다시 살펴봐도(살펴봐 주세요 · 완료 보고) 그대로 둔다 —
@@ -4077,7 +4078,7 @@
     st.history.push({ short: `${s.n}단계 ${s.title} 마침`, at: ymd(),   // at — 세션별 보기(C-3, my-books.js dated)가 읽는다(2026-10-20). 옛 기록은 글 끝의 날짜로
       text: `${s.n}단계 "${s.title}" → ${nx ? `${nx.n}단계로 넘어갔어요` : "마무리했어요"} · '잘 모르겠어요' ${st.noCount}번${
         last ? ` · 확인 질문 ${last.ok ? "맞힘" : "정답 보고 넘어감"}` : ""} · ${ymd()}` });
-    Object.assign(st, { screen: "main", notice: "", ping: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null, workSince: Date.now() });   // workSince — 다음 단계의 관문 증거는 이때부터(F-166-2)
+    Object.assign(st, { screen: "main", notice: "", ping: "", tab: "today", showCrit: false, mapSel: null, hold: null, check: null, undo: [], own: false, libDoc: null, workSince: Date.now(), qview: null });   // qview — 지난 장에서 골라 둔 카드는 장이 바뀌면 푼다(F-166-11)   // workSince — 다음 단계의 관문 증거는 이때부터(F-166-2)
     if (nx) st.j = { stage: nx.n, reason: `${LB(s.n)}를 마쳤어요! 이제 ${LB(nx.n)} "${nx.title}"예요. 정한 순서대로 하나씩 해 봐요.`,
       criteria: crits(nx.n).map((c) => ({ text: c.text, term: c.term, met: false, evidence: "" })), next: null };
     else st.finished = true;   // F-153의 st.ping = ""은 위 Object.assign의 ping: ""이 맡는다(F-157-7)
@@ -4089,7 +4090,7 @@
     if (st.results[s.n]) st.results = { ...st.results, [s.n]: { ...st.results[s.n], passed: ymd(), learned, ...(goal && s.n >= 1 ? { goal } : {}) } };
     st.learnDraft = ""; st.goalDraft = null;
     if (st.qwin) loadFiles();   // 작업실 파일 칸 — 장이 바뀌면 '● 지금' · 펼친 폴더도 바뀐다(R-8, 새 맥락 리뷰)
-    if (QU && FDOCS && s.n >= 1 && st.results[0] && st.results[1]) { st.ship = { phase: "offer" }; st.qfocus = "stage"; }   // 마지막(8단계) 관문도(2026-10-25 리뷰)   // 2단계부터 관문마다 — 단계 문서 · 기획서 · 결정 기록을 다시 묶어 올릴지 묻는다(C-37 → C-39 버튼 "2단계부터 관문마다")
+    if (QU && FDOCS && s.n >= 1 && st.results[0] && st.results[1] && (s.n === N.STAGES.length - 1 || shipStages() !== (st.shippedStages || ""))) { st.ship = { phase: "offer" }; st.qfocus = "stage"; }   // F-166-10 — 마지막 단계가 아니면 지난번 올린 뒤 새로 확인한 단계가 있을 때만 묻는다(방금 올린 1 · 2단계를 3단계에 들어서자마자 또 물었다)   // 마지막(8단계) 관문도(2026-10-25 리뷰)   // 2단계부터 관문마다 — 단계 문서 · 기획서 · 결정 기록을 다시 묶어 올릴지 묻는다(C-37 → C-39 버튼 "2단계부터 관문마다")
     carryMaybe();   // C-48 8단계(돌아보기)에 오면 가져갈 것을 정리할지
     render();
     if (nx) carryLoad(nx.n);   // C-48 지난 프로젝트에서 그 단계에 가져온 것(있으면 카드)

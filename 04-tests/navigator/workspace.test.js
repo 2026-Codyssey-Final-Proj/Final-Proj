@@ -137,8 +137,8 @@ test("관문 증거(workSeen) — 이 단계를 시작한 뒤의 세션 전부�
   assert.equal(N.workSeen([build], 0), true, "시작 때를 모르면(옛 저장) 때를 따지지 않는다");
   assert.equal(N.workSeen(null, 0), false);
   const a = read("navigator/app.js");
-  assert.match(a, /libDoc: null, workSince: Date\.now\(\) \}\);/, "관문을 지날 때 다음 단계의 시작 때를 적는다");
-  assert.ok(a.includes('"workSince"];'), "시작 때는 저장된다(껐다 켜도)");
+  assert.match(a, /libDoc: null, workSince: Date\.now\(\), qview: null \}\);/, "관문을 지날 때 다음 단계의 시작 때를 적는다(골라 둔 장 카드는 푼다 — F-166-11)");
+  assert.ok(a.includes('"workSince", "shippedStages", "runOut"];'), "시작 때는 저장된다(껐다 켜도)");
   assert.match(a, /n >= 4 && n <= 6 \? \[\{ label: "돌려 보기", act: "run-go"/, "5단계에도 돌려 보기");
   assert.match(a, /say\(gateFillSay\(\)\)/, "채우러 가기는 빠진 증거를 말한다");
 });
@@ -150,4 +150,14 @@ test("F-166-5 권한 예시와 다른 것을 고르면 남은 빈 칸의 예시�
   assert.match(a, /if \(swerve && st\.quest && !QU\.isDone\(st\.quest\)\) refitChosen\(\);/);
   assert.match(a, /body: JSON\.stringify\(\{ stage: q\.chap, tier: st\.tier, idea, prev, base: baseText\(\), talk \}\)/, "정한 칸은 대화(talk)로 — 적은 칸은 QU.refit이 덮지 않는다");
   assert.match(a, /` · 넘김 \$\{sk\}\$\{r\.skip && r\.skip\.reason \? ` — \$\{esc\(r\.skip\.reason\)\}` : ""\}`/, "흐름 관문 칸 — 넘김 수와 까닭");
+});
+
+// claude-drafted: 2026-11-07 — F-166-10 · 11 · 12 · 19(사용자 시험 셋째, 화면)
+test("F-166 화면 — 같은 문서를 또 올리자고 묻지 않고(10), 장이 바뀌면 골라 둔 장을 풀고(11), 그린 뒤에는 '1단계에서는' 띠가 없고(12), 다 했으면 알약이 넘어가기 전 확인(19)", () => {
+  const a = read("navigator/app.js");
+  assert.match(a, /const shipStages = \(\) => Object\.keys\(st\.results \|\| \{\}\)\.filter\(\(k\) => st\.results\[k\] && st\.results\[k\]\.at\)/);
+  assert.match(a, /st\.pushedAt = Date\.now\(\); st\.shippedStages = shipStages\(\);/, "올린 때 든 단계를 적는다");
+  assert.match(a, /workSince: Date\.now\(\), qview: null \}\);/);
+  assert.match(a, /: m\.cur < 2 && !m\.drawn \? `<div class="sm-ban soft"><span>\$\{m\.cur === 0 \? "1단계에서는 길이 한 칸만 보여요\. " : ""\}/);
+  assert.match(a, /allDone\(\) \? "지금: 넘어가기 전 확인" : `지금: \$\{esc\(tick\(\)\.now\)\}`/);
 });

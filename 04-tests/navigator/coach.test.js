@@ -261,3 +261,9 @@ test("준비 끝 안내의 초점은 저장소 만들기 칸이 먼저, 없으�
   const t = U.coachSteps({ app: true, platform: "Win32" });
   assert.match(t["su-done"].focus, /^#floe-setup \[data-s="makerepo"\], #floe-setup \[data-s="done"\]$/);
 });
+
+// claude-drafted: 2026-11-07 — F-166-8(사용자 시험 셋째): GitHub에 로그인돼 있으면 안내가 '다음'만 밝혀 'GitHub 없이 할래요'가 눌리지 않았다
+test("GitHub 칸 '다 됐어요' 안내도 'GitHub 없이 할래요'를 밝힌다", () => {
+  const t = U.coachSteps({ app: true, platform: "Win32" });
+  assert.match(t["su-gh-next"].sel, /ghskip/); assert.match(t["su-gh-next"].sel, /data-s="next"/);
+});
