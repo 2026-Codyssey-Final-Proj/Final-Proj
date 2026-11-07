@@ -2,9 +2,10 @@
      2026-10-19 갱신(이재엽 요청 "총합 리드미에 올려줘") — 실제로 써 보기(v2.0, PR #108)와 오버레이 앱 .dmg(v3.0, PR #111), 버전 기록 vN.M · Jira로 옮긴 할 일을 반영했다.
      2026-10-28 갱신(두승현 요청 "현재 리드미가 구식이어서 변경된 화면에 맞춰서 리드미 최신화하여 리치하게") — v37.4 · 앱 10.0.0 기준으로 다시 썼다.
      2026-11-01 갱신(두승현 요청 "ReadME 리치하게 다시 만들어줘 … my-data-assistant 이것처럼") — v60.8 · 앱 11.0.0(11/1 기능 동결 판) 기준. 참고 저장소의 차례(한 문장 → 첫 화면 → 왜 → 주요 기능 → 어떻게 동작하나 → 안전장치 → 기술 구성 → 로컬 실행 → 환경 변수 → API → 품질 → 구조 → 한계)를 따르되, 원시 HTML(div · sub · details)은 넣지 않았다(두승현 규칙). 숫자는 모두 잰 날짜와 함께 적었고, 화면 사진은 새로 찍지 않고 01-docs/features/shots/의 10/28 · 10/30 것을 썼다.
-     2026-11-04 갱신(두승현 요청 "리드미 최신화해줘") — v63.0 · 앱 11.1.0 기준으로 숫자를 다시 쟀고, 자동 허용(F-149) · 초안 확인 중 보낸 말(F-150)을 반영했다. 장면 표의 색은 다시 재지 않았다고 적었다. -->
+     2026-11-04 갱신(두승현 요청 "리드미 최신화해줘") — v63.0 · 앱 11.1.0 기준으로 숫자를 다시 쟀고, 자동 허용(F-149) · 초안 확인 중 보낸 말(F-150)을 반영했다. 장면 표의 색은 다시 재지 않았다고 적었다.
+     2026-11-08 갱신(두승현 요청 "리드미 고쳐주고, 플로로 아이콘이 좌측에 있는 데 중앙으로 정렬시켜서 리드미 다듬어줘") — v67.20 · 앱 11.3.0 기준으로 시험 · 코드 숫자를 다시 쟀고, 11/6 · 11/7 사용자 시험 둘째 · 셋째, 발표 덱 · 시연 영상 · 비교 기록 · 검증 기록 폴더를 넣었다. 머리의 플로로는 원시 HTML 없이 가운데 두려고 가로로 긴 floro-banner.svg(make-svg.js가 뽑는다)로 바꿨다. 장면 표의 색은 이번에도 다시 칠하지 않았다. -->
 
-![플로로 — 물에서 고개를 내민 길잡이 물범](02-frontend/assets/mascot/floro.svg)
+![플로로 — 물에서 고개를 내민 길잡이 물범](02-frontend/assets/mascot/floro-banner.svg)
 
 # 🧊 Floe — 얼음 위 작업실에서, 플로로와 함께 🦭
 
@@ -25,7 +26,7 @@
 
 | 📦 버전 기록 | 🖥 앱 | 🗓 일정 | 🏷 이름 |
 |---|---|---|---|
-| **v66.1** (2026-11-05) · [CHANGELOG](CHANGELOG.md) | **11.3.0** (2026-11-05) · Mac · Windows · 우분투 · [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) | 🧪 사용 테스트 **11/4 ~ 7** · 📮 제출 **11/8 18:00** · 🎤 발표 **11/12 · 13** | **Floe**(제품) · **플로로**(마스코트) — 2026-10-17 확정 [#51](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/issues/51) |
+| **v67.20** (2026-11-08) · [CHANGELOG](CHANGELOG.md) | **11.3.0** (2026-11-05) · Mac · Windows · 우분투 · [Releases](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/releases) | 🧪 사용 테스트 세 번 **11/4 ~ 7** 마침 · 📮 제출 **11/8 18:00** · 🎤 발표 **11/12 · 13** | **Floe**(제품) · **플로로**(마스코트) — 2026-10-17 확정 [#51](https://github.com/2026-Codyssey-Final-Proj/Final-Proj/issues/51) |
 
 코디세이 Final-Project · 작업 이름 Project Navigator · 할 일은 Jira 프로젝트 Floe([jira.md](01-docs/00-overview/jira.md))
 
@@ -208,11 +209,11 @@ npm run dist                                      # 📦 앱 묶기 (Windows: di
 
 ## 품질 확인
 
-🧪 **2026-11-04** `python 04-tests/run_all_tests.py`(Windows 11, Node v24.18.1 · Python 3.14.6)로 잰 값 — 노드 시험 **1,215개 중 1,121 통과 · 실패 0** · 94개는 건너뜀(대부분 브라우저 도구 `PUPPETEER_PATH`가 없어서), 노드 시험 파일 146 · 파이썬 시험 파일 23/23 통과. 시간을 재는 `hook-steps`의 600ms 시험은 컴퓨터가 바쁠 때 가끔 실패한다(같은 날 두 번, 그 파일만 다시 돌리면 통과).
+🧪 **2026-11-08** `python 04-tests/run_all_tests.py`(Windows 11, Node v24.18.1 · Python 3.14.6)로 잰 값 — 노드 시험 **1,302개 중 1,207 통과 · 실패 1** · 94개는 건너뜀(대부분 브라우저 도구 `PUPPETEER_PATH`가 없어서), 노드 시험 파일 152 · 파이썬 시험 파일 23/23 통과. 실패 1은 `files-api.test.js` — Windows에서 원래 깨지던 것(10/31 기능 목록에도 적혀 있다)이고 알려진 실패 목록에는 아직 없다. 시간을 재는 `hook-steps`의 600ms 시험은 컴퓨터가 바쁠 때 가끔 실패한다(11/4에 두 번, 그 파일만 다시 돌리면 통과).
 
 | 무엇 | 어떻게 |
 |---|---|
-| 규칙 · 서버 · 화면 조각 | node `--test` — 시험 파일 navigator 105 · library 7 · acceptance 2 (2026-11-04 센 값). 실제 AI · 실제 GitHub 없이 녹화 재생으로 |
+| 규칙 · 서버 · 화면 조각 | node `--test` — 시험 파일 navigator 111 · library 7 · acceptance 2 (2026-11-08 센 값). 실제 AI · 실제 GitHub 없이 녹화 재생으로 |
 | 실제 브라우저로 누르기 | e2e 27 파일 — `PUPPETEER_PATH`에 Chrome을 주면 돈다. 없으면 건너뛴다 |
 | 저장소 규칙 | python 2 + 훅 시험 7(그 밖의 파이썬 시험 13개는 세컨드 브레인) — 변경 조각 네 줄, CHANGELOG 겹침, 링크, Mermaid, 비밀값 |
 | 커밋 전 | 훅 12개([CLAUDE.md "훅"](CLAUDE.md)) — 시험 실패 · 비밀값 · `main` 직접 커밋 · `--force`를 기계적으로 막는다 |
@@ -241,7 +242,8 @@ Final-Proj/
 ├─ 01-docs/
 │  ├─ 00-overview/                       # 요구사항 · 일정 · 결정 모음 · 시연 한 줄기
 │  ├─ features/                          # 기능별 README + GIF · 기능 전체 목록 · 우선순위 · 줄이기 제안 · shots/
-│  ├─ 04-pattern-implementation/         # 0~8단계 스토리보드 · 디자인 기준
+│  ├─ verification/                      # 검증 기록 — 실제 AI 점검 · 코드 vs Floe 비교 · 사용자 시험 계획 · 협업 증빙
+│  ├─ 04-pattern-implementation/         # 0~8단계 스토리보드 · 디자인 기준 · 발표 덱(presentation-10min) · 소개 영상 · 소개 웹사이트
 │  └─ 07-maintenance/fix-map.md          # 고칠 곳 지도 (F-번호)
 ├─ changes/                              # PR마다 변경 조각 한 장 → 병합되면 CHANGELOG로
 ├─ .claude/                              # 규칙 · 훅 · 스킬 — Claude가 읽는 설정
@@ -249,7 +251,7 @@ Final-Proj/
 ├─ CHANGELOG.md · TEAM.md · CLAUDE.md
 ```
 
-코드 크기(2026-11-04, `.js` 파일 줄 수): 섬 조각 4,718줄 · 서버 53 파일 6,551줄 · 문서 지도 엔진 1,802줄 · 숨긴 서재 1,479줄.
+코드 크기(2026-11-08, `.js` 파일 줄 수): 섬 조각 4,937줄 · 서버 53 파일 6,657줄 · 문서 지도 엔진 1,802줄 · 숨긴 서재 1,479줄.
 
 ---
 
@@ -268,7 +270,9 @@ Final-Proj/
 
 🟢 연습 판에서 끝까지 되고 시험도 초록 · 🟡 되지만 남은 일 있음 · 🔴 시연 메시지와 어긋나거나 막힘.
 
-**색은 11/1 기록이고 그 뒤 다시 재지 않았다.** 그 뒤 바뀐 것: 자동 허용이 처음부터 켜져(F-149, 11/4) 장면 4의 허락 카드는 위험한 일에만 뜬다 — 시연 대본은 아직 맞추지 않았다. 처음 설정을 마치면 작업실의 플로로 홈으로 간다(F-146).
+**색은 11/1 기록이고 그 뒤 다시 칠하지 않았다.** 그 뒤 바뀐 것: 자동 허용이 처음부터 켜져(F-149, 11/4) 장면 4의 허락 카드는 위험한 일에만 뜬다 — 시연 영상은 녹화 때만 자동 허용을 끄고 찍었다. 처음 설정을 마치면 작업실의 플로로 홈으로 간다(F-146).
+
+**11/4 ~ 11/7 사용자 시험 세 번.** 처음 설정에서 8단계까지 사람처럼 지나며 찾은 것을 묶음으로 고쳤다 — 둘째(11/6, [F-161](01-docs/07-maintenance/fixes/user-test-fixes-2.md)) · 셋째(11/7, [F-166](01-docs/07-maintenance/fixes/user-test-fixes-3.md): 막힘 3 · 불편 16 · 사소 13, 계획은 [user-test-3-plan.md](01-docs/verification/user-test-3-plan.md)). 같은 미션을 사람이 짠 코드와 Floe 문서로 각각 새 Claude에게 준 비교([코드 vs Floe](01-docs/verification/code-vs-floe-2026-11-07.md) · [미션 원문 vs Floe](01-docs/verification/mission-vs-floe-2026-11-07.md))는 발표의 결과 장에 쓴다.
 
 게이트 · 고칠 목록 → [게이트 로그](01-docs/01-problem-save/sessions/project-track/2026-10-18-floe.md) · [고칠 곳 지도](01-docs/07-maintenance/fix-map.md) · 일정 → [schedule.md](01-docs/00-overview/schedule.md)
 
@@ -309,4 +313,4 @@ Final-Proj/
 
 ## 🔗 더 읽기
 
-📋 [요구사항](01-docs/00-overview/requirements.md) · 🎬 [시연 한 줄기](01-docs/00-overview/시연-한-줄기.md) · 🗓 [일정](01-docs/00-overview/schedule.md) · 🎯 [우선순위](01-docs/00-overview/team-priorities.md) · 📐 [0~8단계 스토리보드](01-docs/04-pattern-implementation/stage-storyboard/README.md) · 🏛 [ADR](01-docs/03-pattern-analysis/adr/) · 🔒 [공유 · 보안](01-docs/00-overview/team-sharing-security.md) · 📦 [버전 기록](CHANGELOG.md) · 🛠 [고칠 곳 지도](01-docs/07-maintenance/fix-map.md) · 🧭 [시작하기](GETTING_STARTED.md)
+🎤 [발표 덱 10분](01-docs/04-pattern-implementation/presentation-10min/) · 🎥 [시연 영상 56초](01-docs/04-pattern-implementation/floe-intro-video/final/floe-demo.webm) · 📣 [홍보 영상 30초](01-docs/04-pattern-implementation/promo-30s/floe-promo-30s-silent.mp4) · 🌐 [소개 웹사이트](01-docs/04-pattern-implementation/website/README.md) · 🧪 [검증 기록](01-docs/verification/README.md) · 🤝 [협업 증빙](01-docs/verification/2026-11-06-협업증빙.pptx) · 📋 [요구사항](01-docs/00-overview/requirements.md) · 🎬 [시연 한 줄기](01-docs/00-overview/시연-한-줄기.md) · 🗓 [일정](01-docs/00-overview/schedule.md) · 🎯 [우선순위](01-docs/00-overview/team-priorities.md) · 📐 [0~8단계 스토리보드](01-docs/04-pattern-implementation/stage-storyboard/README.md) · 🏛 [ADR](01-docs/03-pattern-analysis/adr/) · 🔒 [공유 · 보안](01-docs/00-overview/team-sharing-security.md) · 📦 [버전 기록](CHANGELOG.md) · 🛠 [고칠 곳 지도](01-docs/07-maintenance/fix-map.md) · 🧭 [시작하기](GETTING_STARTED.md)
