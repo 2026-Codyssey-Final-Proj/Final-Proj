@@ -161,7 +161,7 @@ test("C-49 화면 — 지문을 기억하고(KEEP docPrints), 폴더를 알면 �
   assert.match(app, /keep\(\[[^\]]*"docPrints"/, "지문을 저장한다(45-knowledge 조각이 keep으로)");
   assert.match(app, /wrote: \{ \.\.\.\(same \? P\.wrote : \{\}\), \.\.\.w \}/, "올린 뒤 Floe가 쓴 지문을 기억");
   assert.match(app, /\.\.\.\(known \? \{ prints: known\.prints, keep: known\.keep \} : \{\}\)/, "올릴 때 아는 지문 · 사람 것을 준다 — 서버가 사람이 고친 문서는 덮지 않는다");
-  assert.match(app, /if \(!st\.idea && d\.idea\) st\.idea = d\.idea;/, "처음 말한 것도 되살린다");
+  assert.match(app, /if \(!st\.idea && \(d\.source \|\| d\.idea\)\) st\.idea = String\(d\.source \|\| d\.idea\)\.slice\(0, N\.IDEA_MAX\);/, "처음 말한 것도 되살린다 — 통째 글(idea.md)이 있으면 그것에서, 문서의 앞 400자가 아니라(F-167)");
   assert.match(app, /if \(!mine\) return;/, "다른 폴더의 기록과 견주지 않는다");
   assert.match(app, /fetch\("\/api\/docs", \{ cache: "no-store" \}\)/, "폴더의 단계 문서를 읽는다");
   for (const a of ["restore-go", "restore-read", "restore-later"]) assert.match(app, new RegExp(`"${a}": `), a);
