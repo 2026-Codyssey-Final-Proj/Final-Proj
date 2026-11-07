@@ -33,13 +33,14 @@ function parseArgs(argv) {
   return a;
 }
 
-async function openPage() {
+// query: 주소 뒤에 더 붙일 것(예: '&v45=1' — 45초 판 정지 그림, render/stills45.mjs가 쓴다)
+export async function openPage(query = '') {
   const srv = await startServer({ port: 0 });
   const chrome = await launchChrome();
   await chrome.send('Page.enable');
   await chrome.send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
   const loaded = chrome.once('Page.loadEventFired');
-  await chrome.send('Page.navigate', { url: `${srv.url}/intro-video/video/index.html?render=1` });
+  await chrome.send('Page.navigate', { url: `${srv.url}/intro-video/video/index.html?render=1${query}` });
   await loaded;
   const ready = await chrome.evaluate('window.videoReady');
   if (!ready || !ready.fonts) throw new Error('글꼴(Gowun Dodum · Bagel Fat One)을 불러오지 못해 멈춤');

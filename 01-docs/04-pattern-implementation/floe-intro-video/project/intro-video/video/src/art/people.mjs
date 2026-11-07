@@ -117,7 +117,7 @@ export function seatedBack({ pose = 'chin', arms = null, turn = null, face = 'th
 
 // ── ④·⑤ 서 있는 사람 (오른쪽을 봄, 발 y 151, 몸 가운데 x 142) ──────────
 // 팔 자세(앞팔: 어깨 → 팔꿈치 → 손목)
-const FRONT_ARM = {
+export const FRONT_ARM = {
   rest: { pts: [[152, 71.6], [154.6, 87.4], [155.4, 99.4]], kind: 'mitt', rot: 0 },
   open: { pts: [[152, 71.6], [161, 85.4], [170.4, 78]], kind: 'open', rot: -6 },
   point: { pts: [[152, 71.6], [160.4, 81.6], [165, 68.4]], kind: 'point', rot: 0 },
@@ -128,14 +128,17 @@ export function mixArm(a, b, k) {
   return { pts: A.pts.map((p, i) => [lerp(p[0], B.pts[i][0], k), lerp(p[1], B.pts[i][1], k)]), kind: k < 0.5 ? A.kind : B.kind, rot: lerp(A.rot, B.rot, k) };
 }
 
-function figure({ pal, hairStyle = 'quiff', glasses = false, top = 'sweater', front = FRONT_ARM.rest, blink = false, talk = 0, smile = true, nod = 0, tilt = 0, sway = 0, breathe = 0, prop = '' }) {
-  const legs = `${limb([[136, 103], [135, 126.5], [136, 146.4]], [10, 8, 6.6], pal.pantsB)}
-    ${limb([[146.4, 103], [147.6, 126], [148, 146.4]], [10.6, 8.4, 7], pal.pantsA)}
-    <path d="M148.6 108 L148.2 144" stroke="${pal.pantsB}" stroke-width=".7" opacity=".7"/>
-    <path d="M144.4 127 q2 1.4 4.4 0.4" fill="none" stroke="${pal.pantsB}" stroke-width=".8" stroke-linecap="round"/>`;
+// claude-drafted: 2026-11-06 — 45초 판(두승현 요청)에서 걷는 자세 · 덤덤한 입을 쓰려고 stride · flat을 더하고 내보냈다. 기본값이면 40초 판 그림 그대로다.
+// stride −1 ~ 1: 두 다리를 앞뒤로 벌림(걷는 자세), flat: 웃지 않는 입
+export function figure({ pal, hairStyle = 'quiff', glasses = false, top = 'sweater', front = FRONT_ARM.rest, blink = false, talk = 0, smile = true, nod = 0, tilt = 0, sway = 0, breathe = 0, prop = '', stride = 0, flat = false }) {
+  const sd = 9 * stride, knee = (u) => (u > 0 ? 6.4 * u : 1.4 * u); // 내딛는 다리는 무릎이 앞으로, 밀어내는 다리는 거의 곧게. stride가 −1 ~ 1을 오가면 걷는다
+  const legs = `${limb([[136, 103], [135 + knee(-stride), 126.5], [136 - sd, 146.4]], [10, 8, 6.6], pal.pantsB)}
+    ${limb([[146.4, 103], [147.6 + knee(stride), 126], [148 + sd, 146.4]], [10.6, 8.4, 7], pal.pantsA)}
+    ${stride ? '' : `<path d="M148.6 108 L148.2 144" stroke="${pal.pantsB}" stroke-width=".7" opacity=".7"/>
+    <path d="M144.4 127 q2 1.4 4.4 0.4" fill="none" stroke="${pal.pantsB}" stroke-width=".8" stroke-linecap="round"/>`}`;
   const shoe = (x, c) => `<path d="M${x - 4.6} 145 C${x - 4.6} 143.6 ${x - 3.2} 143.2 ${x - 1.8} 143.6 L${x + 3.4} 144.6 C${x + 7.4} 145.4 ${x + 9.4} 146.8 ${x + 9.6} 149.4 L${x + 9.6} 150.6 L${x - 4.6} 150.6 Z" fill="${c}"/>
     <path d="M${x - 4.8} 150.8 H${x + 9.8}" stroke="${pal.sole}" stroke-width="1.6" stroke-linecap="round"/>`;
-  const shoes = `${shoe(136.2, pal.shoeB)}${shoe(148.2, pal.shoeA)}`;
+  const shoes = `${shoe(n2(136.2 - sd), pal.shoeB)}${shoe(n2(148.2 + sd), pal.shoeA)}`;
   const torso = `<path d="M128 104.6 C126.2 93 126.6 79 130.6 71.4 C133.6 66.4 139 64.6 144 64.8 C150 65 154.6 68.4 156.2 73.6 C158 81 158.4 94 156.6 104.6 Z" fill="${pal.top}"/>
     <path d="M128 104.6 C126.2 93 126.6 79 130.6 71.4 C131.8 69.4 133.2 68 134.8 67 C132 76 131.6 92 133 104.6 Z" fill="${pal.topShade}"/>
     ${top === 'cardigan' ? `<path d="M145.6 68 L146.6 104.6" stroke="${pal.topDark}" stroke-width="1"/>
@@ -149,7 +152,8 @@ function figure({ pal, hairStyle = 'quiff', glasses = false, top = 'sweater', fr
     : smile ? `<path d="M145.4 47.6 q1.5 -1.6 3 0" fill="none" stroke="${C.ink}" stroke-width="1" stroke-linecap="round"/>`
       : `<circle cx="146.8" cy="47" r=".95" fill="${C.ink}"/>`;
   const mouth = talk > 0.5 ? `<path d="M145.8 53 q1.8 2.6 3.6 0 Z" fill="${C.lip}"/>`
-    : `<path d="M145.8 53.2 q1.8 1.3 3.6 0" fill="none" stroke="${C.lip}" stroke-width=".95" stroke-linecap="round"/>`;
+    : flat ? `<path d="M146 53.5 h3" stroke="${C.lip}" stroke-width=".95" stroke-linecap="round"/>`
+      : `<path d="M145.8 53.2 q1.8 1.3 3.6 0" fill="none" stroke="${C.lip}" stroke-width=".95" stroke-linecap="round"/>`;
   const hair = hairStyle === 'curly'
     ? `<path d="M133.6 49.4 C131.8 42 135.8 36.4 142.6 36.4 C148.6 36.4 152.4 39.6 152 43.6 C149 42.2 145.6 42 143.4 43 C141.8 43.8 141 45.6 140.2 47.4 C139 46.6 137.6 46.8 137 48.2 C136.4 49.8 136.6 51.6 136 53 C135 54.2 134 52.6 133.6 49.4 Z" fill="${pal.hair}"/>
       ${[[134.6, 41.6, 3.2], [138.4, 37.6, 3.4], [143.4, 36, 3.4], [148.4, 37.4, 3.1], [151.6, 40.8, 2.6], [133.6, 46.4, 2.6], [135.4, 51, 2.2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${pal.hair}"/>`).join('')}
@@ -176,7 +180,7 @@ function figure({ pal, hairStyle = 'quiff', glasses = false, top = 'sweater', fr
   return `${legs}${shoes}<g transform="rotate(${n2(sway)} 142 150)">${body}</g>`;
 }
 
-const USER_PAL = { top: C.sweater, topShade: SHADE, topDark: C.sweaterDark, skin: C.skin, skinShade: C.skinShade, hair: C.hair, hairLight: HAIR_LIGHT,
+export const USER_PAL = { top: C.sweater, topShade: SHADE, topDark: C.sweaterDark, skin: C.skin, skinShade: C.skinShade, hair: C.hair, hairLight: HAIR_LIGHT,
   pantsA: C.pants, pantsB: C.pantsDark, shoeA: C.shoe, shoeB: '#D48E2E', sole: '#FFFFFF' };
 const EVAL_PAL = { top: C.evalSweater, topShade: '#286D60', topDark: C.evalSweaterDark, skin: C.evalSkin, skinShade: C.evalSkinShade, hair: C.evalHair, hairLight: '#7A5338',
   pantsA: C.evalPants, pantsB: C.evalPantsDark, shoeA: C.evalShoe, shoeB: '#2C2F5E', sole: '#1B1D3D', button: '#CFE7DF' };
