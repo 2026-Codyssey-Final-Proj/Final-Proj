@@ -1051,7 +1051,7 @@ body{align-items:flex-start}.deck{transform-origin:center top}
 <section class="slide" data-title="협업 과정">
   <header class="hd"><p class="kicker">협업 — 목표 · 역할 · Jira</p><h2 class="h2">목적마다 일을 나눠, 이렇게 준비했습니다</h2></header>
   <div class="collab3">
-    <div class="tour" data-interval="4500">
+    <div class="tour" data-steps="key">
       <div class="rail"><div class="st"><i>1</i><span>아이디어</span><b>9월</b></div><div class="st"><i>2</i><span>프리 프로토타입</span><b>10/12 ~ 10/25</b></div><div class="st"><i>3</i><span>프로토타입</span><b>10/26 ~ 11/1</b></div><div class="st"><i>4</i><span>시연</span><b>11/2 ~ 11/7</b></div><div class="st"><i>5</i><span>결과</span><b>11/7</b></div></div>
       <div class="cumrow"><div class="cum"><div class="cum-bar"><i></i></div><span class="cum-l">Floe가 자란 만큼 <b></b></span></div><div class="shelf"><span><i>1</i>요구 17개</span><span><i>2</i>구조 결정 8건</span><span><i>3</i>앱 11.0</span><span><i>4</i>앱 11.3 · 시연 영상</span><span><i>5</i>제출 · 한 권의 책</span></div></div>
       <div class="view"><div class="trk">
@@ -1065,7 +1065,7 @@ body{align-items:flex-start}.deck{transform-origin:center top}
     </div>
   </div>
   <div class="deck-footer"><span class="who">Floe · 1:30 · 누적 8:40</span><span class="slide-number" data-current="17" data-total="28"></span></div>
-  <aside class="notes"><p>(장을 넘기면 저절로 움직인다 — 누를 필요 없음. 처음 4.5초 = Jira 한 번(에픽 5개 · 일감 76개, 네 명의 역할). 그다음 단계마다 오른쪽 큰 그림이 그때의 모습으로: 첫 구상(게임) → 10/17 도서관 시안 · 단계 지도 → 10/28 작업실 시안 → 11.0 → 11.3 시연 흐름 여섯 장면 → 남은 책. 결과에서 멈춘다.) 협업은 여섯 목표 — <strong>아이디어 → 프리 프로토타입 → 프로토타입 → 시연 → 결과 → 발표</strong> — 순으로 준비했습니다. 목표마다 목적을 먼저 정하고, Jira에 에픽으로 올려 네 명이 일감을 나눠 맡았습니다(처음 화면이 실제 Jira).</p><p>왼쪽이 4.5초마다 넘어갑니다. 아이디어(9월) — 무엇을 왜 만들지, 역할 나눔. 프리 프로토타입(10/12 ~ 10/25) — 어떻게 만들지 정하고 쓸 사람에게 직접 물음, 구조 결정 8건. 프로토타입(10/26 ~ 11/1) — 꼭 필요한 것만 만들고 11/1 앱 11.0으로 멈춤. 시연(11/2 ~ 11/7) — 써 보게 하고 영상으로 보임, 앱 11.3. 결과(11/7) — 돌아보고 11/8 제출.</p><p>각 줄의 KAN 번호는 Jira 일감입니다.</p></aside>
+  <aside class="notes"><p>(다음 키를 누를 때마다 하나씩 — 처음 = Jira 한 번(에픽 5개 · 일감 76개, 네 명의 역할). 그다음 단계마다 오른쪽 큰 그림이 그때의 모습으로: 첫 구상(게임) → 10/17 도서관 시안 · 단계 지도 → 10/28 작업실 시안 → 11.0 → 11.3 시연 흐름 여섯 장면 → 남은 책. 결과에서 한 번 더 누르면 다음 장.) 협업은 여섯 목표 — <strong>아이디어 → 프리 프로토타입 → 프로토타입 → 시연 → 결과 → 발표</strong> — 순으로 준비했습니다. 목표마다 목적을 먼저 정하고, Jira에 에픽으로 올려 네 명이 일감을 나눠 맡았습니다(처음 화면이 실제 Jira).</p><p>왼쪽이 4.5초마다 넘어갑니다. 아이디어(9월) — 무엇을 왜 만들지, 역할 나눔. 프리 프로토타입(10/12 ~ 10/25) — 어떻게 만들지 정하고 쓸 사람에게 직접 물음, 구조 결정 8건. 프로토타입(10/26 ~ 11/1) — 꼭 필요한 것만 만들고 11/1 앱 11.0으로 멈춤. 시연(11/2 ~ 11/7) — 써 보게 하고 영상으로 보임, 앱 11.3. 결과(11/7) — 돌아보고 11/8 제출.</p><p>각 줄의 KAN 번호는 Jira 일감입니다.</p></aside>
 </section>
 
 <!-- 18 앞으로 — 사업계획서(2026 AI 바이브코딩 아이디어경진대회 · 최종 제출본) 3절을 표로 · 발표 이재엽 -->
@@ -1314,8 +1314,9 @@ if(window.NavSeal) [].forEach.call(document.querySelectorAll('[data-floro]'),fun
 })();
 </script>
 <script>
-// 14장 협업 — 장이 보이면 처음부터, data-interval마다 다음 목적으로(마지막에서 멈춤). 위 동그라미를 누르면 그 단계로.
-// 하나의 시계(250ms)가 지금 보이는 장의 .tour만 움직인다 — 전체 보기(O)의 복제본이나 다른 장은 건드리지 않는다.
+// 협업 장 — 넘길 때마다 하나씩(2026-11-08 이재엽). 다음 키(→ · 스페이스 · PageDown · Enter · 리모컨)를 누르면 다음 단계가 보이고,
+// 마지막 단계(결과)에서 한 번 더 누르면 다음 장으로. 이전 키(← · PageUp · Backspace)는 한 단계 뒤로, 처음이면 앞 장으로.
+// 장에 앞에서 들어오면 처음(Jira)부터, 뒤 장에서 돌아오면 마지막 단계부터. 저절로 넘어가지 않는다.
 (function(){
   function render(t,i){
     var cards=t.querySelectorAll('.c2'), sts=t.querySelectorAll('.rail .st'), trk=t.querySelector('.trk');
@@ -1326,22 +1327,25 @@ if(window.NavSeal) [].forEach.call(document.querySelectorAll('[data-floro]'),fun
     var bar=t.querySelector('.cum-bar i'), lab=t.querySelector('.cum-l b');
     if(bar&&cards[i]) bar.style.width=(cards[i].dataset.cum||0)+'%'; if(lab&&cards[i]) lab.textContent=cards[i].dataset.vlabel||'';
     [].forEach.call(t.querySelectorAll('.shelf > span'),function(c,k){ c.classList.toggle('got',k<=j); });
+    t.__i=i;
   }
-  function st(t){ return t.__tour||(t.__tour={i:0,last:Date.now()}); }
-  document.addEventListener('click',function(e){
-    var b=null; if(!b) return; // 2026-11-08 이재엽: 누르는 방식 없이, 장을 넘기면 저절로만
-    e.stopPropagation(); e.preventDefault();
-    var t=b.closest('.tour'), k=[].indexOf.call(t.querySelectorAll('.rail .st'),b), s=st(t);
-    var o2=(t.querySelector('.c2.intro'))?1:0; s.i=k+o2; s.last=Date.now(); render(t,k+o2);
+  function slidesAll(){ return [].slice.call(document.querySelectorAll('.deck > .slide')); }
+  function activeTour(){ return document.querySelector('.deck > .slide.is-active .tour'); }
+  var NEXT={ArrowRight:1,' ':1,PageDown:1,Enter:1}, PREV={ArrowLeft:1,PageUp:1,Backspace:1};
+  window.addEventListener('keydown',function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    var t=activeTour(); if(!t) return;
+    var n=t.querySelectorAll('.c2').length, i=t.__i||0;
+    if(NEXT[e.key] && i<n-1){ render(t,i+1); e.preventDefault(); e.stopImmediatePropagation(); }
+    else if(PREV[e.key] && i>0){ render(t,i-1); e.preventDefault(); e.stopImmediatePropagation(); }
   },true);
-  var cur=null;
+  // 장에 들어올 때: 앞에서 오면 0, 뒤에서 오면 마지막
+  var curT=null, lastIdx=-1;
   setInterval(function(){
-    var t=document.querySelector('.deck > .slide.is-active .tour');
-    if(t!==cur){ cur=t; if(t){ var s0=st(t); s0.i=0; s0.last=Date.now(); render(t,0); } return; }
-    if(!t) return;
-    var s=st(t), iv=+t.dataset.interval||5000, n=t.querySelectorAll('.c2').length;
-    if(s.i<n-1 && Date.now()-s.last>=iv){ s.i++; s.last=Date.now(); render(t,s.i); }
-  },250);
+    var all=slidesAll(), a=document.querySelector('.deck > .slide.is-active'), ai=all.indexOf(a), t=activeTour();
+    if(t!==curT){ curT=t; if(t){ var n=t.querySelectorAll('.c2').length; render(t, (lastIdx>ai && lastIdx>=0) ? n-1 : 0); } }
+    lastIdx=ai;
+  },120);
   [].forEach.call(document.querySelectorAll('.tour'),function(t){ render(t,0); });
 })();
 </script>
